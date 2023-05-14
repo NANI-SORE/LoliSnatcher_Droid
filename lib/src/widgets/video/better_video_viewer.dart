@@ -325,7 +325,7 @@ class BetterVideoViewerState extends State<BetterVideoViewer> {
     videoController?.setVolume(0);
     videoController?.pause();
     videoController?.removeEventsListener(updateVideoState);
-    videoController?.dispose();
+    videoController?.dispose(forceDispose: true);
     videoController = null;
     videoSource = null;
 
