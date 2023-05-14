@@ -58,6 +58,7 @@ class SettingsHandler extends GetxController {
   bool disableImageScaling = false;
   bool gifsAsThumbnails = false;
   bool desktopListsDrag = false;
+  bool betterVideoViewer = false;
 
   ////////////////////////////////////////////////////
 

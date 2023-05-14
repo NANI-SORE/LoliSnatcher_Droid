@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:photo_view/photo_view.dart';
 
 import 'package:lolisnatcher/src/widgets/image/image_viewer.dart';
+import 'package:lolisnatcher/src/widgets/video/better_video_viewer.dart';
 import 'package:lolisnatcher/src/widgets/video/unknown_viewer_placeholder.dart';
 import 'package:lolisnatcher/src/widgets/video/video_viewer.dart';
 import 'package:lolisnatcher/src/widgets/video/video_viewer_desktop.dart';
@@ -93,6 +94,13 @@ class ViewerHandler extends GetxController {
           isFullscreen.value = widgetState.chewieController?.isFullScreen ?? false;
           viewState.value = widgetState.viewController.value;
           break;
+        case BetterVideoViewer:
+          var widgetState = state as BetterVideoViewerState;
+          isZoomed.value = widgetState.isZoomed;
+          isLoaded.value = widgetState.isVideoInited;
+          isFullscreen.value = widgetState.videoController?.isFullScreen ?? false;
+          viewState.value = widgetState.viewController.value;
+          break;
         case VideoViewerDesktop:
           var widgetState = state as VideoViewerDesktopState;
           isZoomed.value = widgetState.isZoomed;
@@ -103,11 +111,11 @@ class ViewerHandler extends GetxController {
           break;
         case VideoViewerPlaceholder:
         case UnknownViewerPlaceholder:
+        default:
           isLoaded.value = true;
           isFullscreen.value = false;
           viewState.value = null;
           break;
-        default: break;
       }
     });
   }

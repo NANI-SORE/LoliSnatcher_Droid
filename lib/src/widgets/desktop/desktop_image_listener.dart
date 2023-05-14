@@ -13,6 +13,7 @@ import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/widgets/gallery/notes_renderer.dart';
 import 'package:lolisnatcher/src/widgets/image/image_viewer.dart';
+import 'package:lolisnatcher/src/widgets/video/better_video_viewer.dart';
 import 'package:lolisnatcher/src/widgets/video/unknown_viewer_placeholder.dart';
 import 'package:lolisnatcher/src/widgets/video/video_viewer.dart';
 import 'package:lolisnatcher/src/widgets/video/video_viewer_desktop.dart';
@@ -45,20 +46,22 @@ class _DesktopImageListenerState extends State<DesktopImageListener> {
   // TODO fix key duplicate exception when entering exiting fullscreen
 
   //This function decides what media widget to return
-  Widget getImageWidget(BooruItem value) {
-    if (value.isImage) {
-      return ImageViewer(value, 1, key: value.key);
-    } else if (value.isVideo) {
+  Widget getImageWidget() {
+    if (item.isImage) {
+      return ImageViewer(item, 1, key: item.key);
+    } else if (item.isVideo) {
       if (Platform.isAndroid || Platform.isIOS) {
-        return VideoViewer(value.key, value, 1, true);
+        return settingsHandler.betterVideoViewer
+          ? BetterVideoViewer(item.key, item, 1, true)
+          : VideoViewer(item.key, item, 1, true);
       } else if (Platform.isWindows || Platform.isLinux) {
         // return VideoViewerPlaceholder(item: value, index: 1);
-        return VideoViewerDesktop(value.key, value, 1);
+        return VideoViewerDesktop(item.key, item, 1);
       } else {
-        return VideoViewerPlaceholder(item: value, index: 1);
+        return VideoViewerPlaceholder(item: item, index: 1);
       }
     } else {
-      return UnknownViewerPlaceholder(item: value, index: 1);
+      return UnknownViewerPlaceholder(item: item, index: 1);
     }
   }
 
@@ -120,7 +123,7 @@ class _DesktopImageListenerState extends State<DesktopImageListener> {
       return const SizedBox();
     }
 
-    Widget itemWidget = isDelayed ? const SizedBox() : getImageWidget(item);
+    Widget itemWidget = isDelayed ? const SizedBox() : getImageWidget();
 
     return Stack(
       children: [

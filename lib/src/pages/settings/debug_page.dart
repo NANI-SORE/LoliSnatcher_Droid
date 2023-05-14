@@ -105,6 +105,15 @@ class _DebugPageState extends State<DebugPage> {
                 title: 'Show Image Stats',
               ),
               SettingsToggle(
+                value: settingsHandler.betterVideoViewer,
+                onChanged: (newValue) {
+                  setState(() {
+                    settingsHandler.betterVideoViewer = newValue;
+                  });
+                },
+                title: 'Better video player [TEST]',
+              ),
+              SettingsToggle(
                 value: settingsHandler.disableImageScaling,
                 onChanged: (newValue) {
                   setState(() {

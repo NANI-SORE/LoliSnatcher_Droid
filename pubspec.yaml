@@ -30,6 +30,9 @@ dependencies:
   app_links: ^3.4.2
   auto_size_text: ^3.0.0
   awesome_notifications: ^0.7.4+1
+  better_player: # ^0.0.83
+    git:
+      url: https://github.com/tintran-dev/betterplayer.git
   chewie: ^1.5.0
   crypto: ^3.0.2
   cupertino_icons: ^1.0.5

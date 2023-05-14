@@ -30,6 +30,7 @@ import 'package:lolisnatcher/src/widgets/gallery/notes_renderer.dart';
 import 'package:lolisnatcher/src/widgets/gallery/tag_view.dart';
 import 'package:lolisnatcher/src/widgets/gallery/viewer_tutorial.dart';
 import 'package:lolisnatcher/src/widgets/image/image_viewer.dart';
+import 'package:lolisnatcher/src/widgets/video/better_video_viewer.dart';
 import 'package:lolisnatcher/src/widgets/video/unknown_viewer_placeholder.dart';
 import 'package:lolisnatcher/src/widgets/video/video_viewer.dart';
 import 'package:lolisnatcher/src/widgets/video/video_viewer_desktop.dart';
@@ -209,7 +210,9 @@ class _GalleryViewPageState extends State<GalleryViewPage> {
                           itemWidget = const Center(child: Text("Video Disabled", style: TextStyle(fontSize: 20)));
                         } else {
                           if(Platform.isAndroid || Platform.isIOS) {
-                            itemWidget = VideoViewer(item.key, item, index, true);
+                            itemWidget = settingsHandler.betterVideoViewer
+                              ? BetterVideoViewer(item.key, item, index, true)
+                              : VideoViewer(item.key, item, index, true);
                           } else if(Platform.isWindows || Platform.isLinux) {
                             // itemWidget = VideoViewerPlaceholder(item: item, index: index);
                             itemWidget = VideoViewerDesktop(item.key, item, index);
@@ -223,9 +226,10 @@ class _GalleryViewPageState extends State<GalleryViewPage> {
 
                       return Obx(() {
                         bool isViewed = index == searchHandler.viewedIndex.value;
-                        bool isNear = (searchHandler.viewedIndex.value - index).abs() <= settingsHandler.preloadCount;
-                        // print('!! preloadpageview item build $index $isViewed $isNear !!');
-                        if(!isViewed && !isNear) {
+                        bool isNear = settingsHandler.preloadCount == 0 ? false : (searchHandler.viewedIndex.value - index).abs() <= settingsHandler.preloadCount;
+                        bool isNextOrPrev = settingsHandler.preloadCount == 0 ? false : (searchHandler.viewedIndex.value - index).abs() <= 1;
+                        // print('!! preloadpageview item build $index $isViewed $isNear $isNextOrPrev !!');
+                        if (!isViewed && (isVideo ? !isNextOrPrev : !isNear)) {
                           // don't render if out of preload range
                           return Center(child: Container(color: Colors.black));
                         }
