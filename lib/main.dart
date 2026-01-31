@@ -44,7 +44,7 @@ import 'package:lolisnatcher/src/widgets/root/scroll_physics.dart';
 import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  CustomWidgetsBinding.ensureInitialized();
 
   if (Platform.isWindows || Platform.isLinux) {
     sqfliteFfiInit();
@@ -203,7 +203,7 @@ class _MainAppState extends State<MainApp> {
                 valueListenable: settingsHandler.showPerf,
                 builder: (context, showPerf, _) {
                   return MaterialApp(
-                    title: loc.appName,
+                    title: settingsHandler.appAlias.locName(context),
                     debugShowCheckedModeBanner: false,
                     showPerformanceOverlay: showPerf,
                     scrollBehavior: const CustomScrollBehavior(),
@@ -448,7 +448,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
 
     if (url.contains('loli.snatcher')) {
       final Booru booru = Booru.fromLink(url);
-      if (booru.name != null && booru.name!.isNotEmpty) {
+      if (booru.name != null && booru.name!.isNotEmpty && booru.type!.isSaveable) {
         if (settingsHandler.booruList.indexWhere((b) => b.name == booru.name) != -1) {
           // Rename config if its already in the list
           booru.name = '${booru.name!} (duplicate)';

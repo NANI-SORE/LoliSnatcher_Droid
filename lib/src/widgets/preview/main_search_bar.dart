@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:fading_edge_scrollview/fading_edge_scrollview.dart';
 import 'package:get/get.dart' hide ContextExt, FirstWhereOrNullExt;
-import 'package:lolisnatcher/src/widgets/desktop/desktop_scroll_wrap.dart';
+import 'package:lolisnatcher/src/widgets/desktop/desktop_scroll.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
@@ -270,7 +270,7 @@ class _MainSearchBarState extends State<MainSearchBar> {
                               //
                               for (int i = 0; i < tags.length; i++)
                                 AutoScrollTag(
-                                  key: Key('${tags[i]}-$currentTabId'),
+                                  key: Key('${tags[i]}-$i-$currentTabId'),
                                   controller: scrollController,
                                   index: i,
                                   child: Padding(

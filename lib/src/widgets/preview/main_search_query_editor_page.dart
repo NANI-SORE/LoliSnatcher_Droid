@@ -12,7 +12,7 @@ import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:keyboard_actions/keyboard_actions.dart';
-import 'package:lolisnatcher/src/widgets/desktop/desktop_scroll_wrap.dart';
+import 'package:lolisnatcher/src/widgets/desktop/desktop_scroll.dart';
 import 'package:rich_text_controller/rich_text_controller.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -776,7 +776,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                             if (suggestionTextControllerRawInput.isEmpty) {
                               return SuggestionsMainContent(
                                 onMetatagSelect: onMetatagSelect,
-                                onPinnedTagTap: (tag) => onSuggestionTap(TagSuggestion(tag: tag)),
+                                onTagTap: (tag) => onSuggestionTap(TagSuggestion(tag: tag)),
                               );
                             }
 
@@ -789,8 +789,8 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     const Kaomoji(
-                                      type: KaomojiType.shrug,
-                                      style: TextStyle(fontSize: 40),
+                                      category: KaomojiCategory.indifference,
+                                      style: TextStyle(fontSize: 36),
                                     ),
                                     Text(
                                       searchHandler.currentBooruHandler.hasTagSuggestions
@@ -1370,13 +1370,13 @@ class AddMetatagBottomSheet extends StatelessWidget {
 class SuggestionsMainContent extends StatefulWidget {
   const SuggestionsMainContent({
     required this.onMetatagSelect,
-    required this.onPinnedTagTap,
+    required this.onTagTap,
     this.hideHistory = false,
     super.key,
   });
 
   final void Function(AddMetatagBottomSheetResult result) onMetatagSelect;
-  final void Function(String tag) onPinnedTagTap;
+  final void Function(String tag) onTagTap;
   final bool hideHistory;
 
   @override
@@ -1395,20 +1395,21 @@ class _SuggestionsMainContentState extends State<SuggestionsMainContent> {
       children: [
         // blocks have a small delay to force order of requests, from fast to slow (i.e. favs popular search will lock db for too long and history and pinned won't load until it's done)
         PopularTagsBlock(
-          onTagTap: widget.onPinnedTagTap,
+          onTagTap: widget.onTagTap,
           delay: const Duration(milliseconds: 20),
         ),
         //
         if (!widget.hideHistory)
-          const HistoryBlock(
-            delay: Duration(milliseconds: 10),
+          HistoryBlock(
+            delay: const Duration(milliseconds: 10),
+            onTagApply: widget.onTagTap,
           ),
         //
         MetatagsBlock(onSelect: widget.onMetatagSelect),
         //
         PinnedTagsBlock(
           key: _pinnedTagsKey,
-          onTagTap: widget.onPinnedTagTap,
+          onTagTap: widget.onTagTap,
           onTagLongTap: (tagName, pinnedTag) async {
             await showUnpinTagDialog(context, tagName, pinnedTag);
             await _pinnedTagsKey.currentState?.init();
@@ -1580,9 +1581,14 @@ class _RangeDatePickerBottomSheetState extends State<RangeDatePickerBottomSheet>
 }
 
 class HistoryBlock extends StatefulWidget {
-  const HistoryBlock({this.delay = Duration.zero, super.key});
+  const HistoryBlock({
+    this.delay = Duration.zero,
+    this.onTagApply,
+    super.key,
+  });
 
   final Duration delay;
+  final void Function(String tag)? onTagApply;
 
   @override
   State<HistoryBlock> createState() => _HistoryBlockState();
@@ -1627,6 +1633,19 @@ class _HistoryBlockState extends State<HistoryBlock> {
             Text(context.loc.searchBar.lastSearch(date: formatDate(entry.timestamp)), textAlign: TextAlign.center),
             //
             const SizedBox(height: 20),
+            if (widget.onTagApply != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    widget.onTagApply?.call(entry.searchText);
+                    Navigator.of(context).pop();
+                  },
+                  icon: const Icon(Icons.add),
+                  label: Text(context.loc.tabs.filters.apply),
+                ),
+              ),
+            //
             ElevatedButton.icon(
               onPressed: () {
                 if (booru != null) {
@@ -1779,7 +1798,9 @@ class _HistoryBlockState extends State<HistoryBlock> {
 
                   final item = history[index];
                   final booru = settingsHandler.booruList.value.firstWhere(
-                    (b) => b.name == item.booruName && b.type == item.booruType,
+                    (b) =>
+                        b.type == item.booruType &&
+                        (b.type?.isFavouritesOrDownloads == true || b.name == item.booruName),
                     orElse: Booru.unknown,
                   );
 
@@ -2183,25 +2204,25 @@ class _PopularTagsBlockState extends State<PopularTagsBlock> {
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: ActionChip(
-                        label: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              tag.tag.replaceAll('_', ' '),
-                              style: TextStyle(
-                                color: tagColor == Colors.transparent ? null : tagColor,
-                              ),
-                            ),
-                            if (tag.count > 0)
-                              Padding(
-                                padding: const EdgeInsets.only(left: 8),
-                                child: Text(
-                                  tag.count.toShortString(),
-                                  style: context.theme.textTheme.bodySmall,
+                        label: RichText(
+                          // richtext to align texts with different height
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: tag.tag.replaceAll('_', ' '),
+                                style: TextStyle(
+                                  color: tagColor == Colors.transparent ? null : tagColor,
                                 ),
                               ),
-                          ],
+                              if (tag.count > 0) ...[
+                                TextSpan(text: ' ' * 3),
+                                TextSpan(
+                                  text: tag.count.toShortString(),
+                                  style: context.theme.textTheme.bodySmall,
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
                         onPressed: () => widget.onTagTap(tag.tag),
                       ),
@@ -2645,7 +2666,9 @@ class _PinnedTagsBlockState extends State<PinnedTagsBlock> {
                           ? null
                           : BooruFavicon(
                               settingsHandler.booruList.value.firstWhere(
-                                (b) => b.name == pinnedTag.booruName && b.type == pinnedTag.booruType,
+                                (b) =>
+                                    b.type == pinnedTag.booruType &&
+                                    (b.type?.isFavouritesOrDownloads == true || b.name == pinnedTag.booruName),
                                 orElse: Booru.unknown,
                               ),
                             ),
@@ -2990,7 +3013,9 @@ class _PinnedTagsReorderDialogState extends State<PinnedTagsReorderDialog> {
                   else
                     BooruFavicon(
                       settingsHandler.booruList.value.firstWhere(
-                        (b) => b.name == pinnedTag.booruName && b.type == pinnedTag.booruType,
+                        (b) =>
+                            b.type == pinnedTag.booruType &&
+                            (b.type?.isFavouritesOrDownloads == true || b.name == pinnedTag.booruName),
                         orElse: Booru.unknown,
                       ),
                     ),
@@ -3366,7 +3391,9 @@ class _PinnedTagsManageDialogState extends State<PinnedTagsManageDialog> {
                                 ? null
                                 : BooruFavicon(
                                     settingsHandler.booruList.value.firstWhere(
-                                      (b) => b.name == pinnedTag.booruName && b.type == pinnedTag.booruType,
+                                      (b) =>
+                                          b.type == pinnedTag.booruType &&
+                                          (b.type?.isFavouritesOrDownloads == true || b.name == pinnedTag.booruName),
                                       orElse: Booru.unknown,
                                     ),
                                   ),

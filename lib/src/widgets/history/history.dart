@@ -332,7 +332,9 @@ class _HistoryListState extends State<HistoryList> {
     Booru? booru;
     if (settingsHandler.booruList.isNotEmpty) {
       booru = settingsHandler.booruList.firstWhereOrNull(
-        (b) => b.type == currentEntry.booruType && b.name == currentEntry.booruName,
+        (b) =>
+            b.type == currentEntry.booruType &&
+            (b.type?.isFavouritesOrDownloads == true || b.name == currentEntry.booruName),
       );
     }
 
@@ -449,8 +451,8 @@ class _HistoryListState extends State<HistoryList> {
                 const CircularProgressIndicator()
               else if (history.isEmpty) ...[
                 const Kaomoji(
-                  type: KaomojiType.shrug,
-                  style: TextStyle(fontSize: 40),
+                  category: KaomojiCategory.indifference,
+                  style: TextStyle(fontSize: 36),
                 ),
                 const SizedBox(height: 10),
                 Text(
@@ -459,8 +461,8 @@ class _HistoryListState extends State<HistoryList> {
                 ),
               ] else if (filteredHistory.isEmpty) ...[
                 const Kaomoji(
-                  type: KaomojiType.shrug,
-                  style: TextStyle(fontSize: 40),
+                  category: KaomojiCategory.indifference,
+                  style: TextStyle(fontSize: 36),
                 ),
                 const SizedBox(height: 10),
                 Text(

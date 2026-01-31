@@ -9,7 +9,7 @@ import 'package:fading_edge_scrollview/fading_edge_scrollview.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:intl/intl.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
-import 'package:lolisnatcher/src/widgets/desktop/desktop_scroll_wrap.dart';
+import 'package:lolisnatcher/src/widgets/desktop/desktop_scroll.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
@@ -420,7 +420,7 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
                             if (queryController.suggestionTextControllerRawInput.isEmpty) {
                               return SuggestionsMainContent(
                                 onMetatagSelect: onMetatagSelect,
-                                onPinnedTagTap: (tag) => onSuggestionTap(TagSuggestion(tag: tag)),
+                                onTagTap: (tag) => onSuggestionTap(TagSuggestion(tag: tag)),
                                 hideHistory: true,
                               );
                             }
@@ -434,8 +434,8 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     const Kaomoji(
-                                      type: KaomojiType.shrug,
-                                      style: TextStyle(fontSize: 40),
+                                      category: KaomojiCategory.indifference,
+                                      style: TextStyle(fontSize: 36),
                                     ),
                                     Text(
                                       context.loc.searchBar.noSuggestionsFound,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:lolisnatcher/src/utils/text_parser/comment_parser.dart';
 import 'package:lolisnatcher/src/widgets/common/parsed_text.dart';
+import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 
 class TextParserTestPage extends StatefulWidget {
   const TextParserTestPage({super.key});
@@ -239,6 +240,45 @@ class _TextParserTestPageState extends State<TextParserTestPage> {
       ],
     ),
 
+    // Malformed/Overlapping Tags
+    _TestSample(
+      category: 'Malformed Tags',
+      samples: [
+        _SampleItem(
+          name: 'Overlapping BBCode (i/u)',
+          text: '[i][u]italic and underline[/i][/u]',
+        ),
+        _SampleItem(
+          name: 'Overlapping BBCode (b/i/u)',
+          text: '[b][i][u]bold italic underline[/b][/i][/u]',
+        ),
+        _SampleItem(
+          name: 'Overlapping HTML',
+          text: '<b><i>bold italic</b></i>',
+        ),
+        _SampleItem(
+          name: 'Mixed BBCode/HTML overlap',
+          text: '[b]<i>mixed bold italic[/b]</i>',
+        ),
+        _SampleItem(
+          name: 'Uppercase tags',
+          text: '[B]Bold[/B] and [I]Italic[/I] and [U]Underline[/U]',
+        ),
+        _SampleItem(
+          name: 'Complex overlap',
+          text: '[B]<i>[u]text[/B]</i>[/u] end',
+        ),
+        _SampleItem(
+          name: 'Orphaned closing tags',
+          text: 'text [/b] orphan [/i] tags',
+        ),
+        _SampleItem(
+          name: 'Unclosed tags',
+          text: '[b]bold [i]italic text without closing',
+        ),
+      ],
+    ),
+
     // Edge cases
     _TestSample(
       category: 'Edge Cases',
@@ -291,9 +331,7 @@ class _TextParserTestPageState extends State<TextParserTestPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Text Parser Test'),
-      ),
+      appBar: const SettingsAppBar(title: 'Text Parser Test'),
       body: ListView(
         controller: _scrollController,
         padding: const EdgeInsets.all(16),

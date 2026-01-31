@@ -18,6 +18,7 @@ import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
+import 'package:lolisnatcher/src/data/settings/app_alias.dart';
 import 'package:lolisnatcher/src/data/settings/app_mode.dart';
 import 'package:lolisnatcher/src/data/settings/button_position.dart';
 import 'package:lolisnatcher/src/data/settings/gallery_button.dart';
@@ -98,6 +99,7 @@ class SettingsHandler {
   ////////////////////////////////////////////////////
 
   // saveable settings vars
+  AppAlias appAlias = AppAlias.defaultValue;
   String defTags = 'rating:safe';
   PreviewQuality previewMode = PreviewQuality.defaultValue;
   VideoCacheMode videoCacheMode = VideoCacheMode.defaultValue;
@@ -271,6 +273,7 @@ class SettingsHandler {
     'isDebug',
     'desktopListsDrag',
     'incognitoKeyboard',
+    'appAlias',
     'showBottomSearchbar',
     'useTopSearchbarInput',
     'showSearchbarQuickActions',
@@ -491,7 +494,7 @@ class SettingsHandler {
     'mousewheelScrollSpeed': {
       'type': 'double',
       'default': 10.0,
-      'upperLimit': 20.0,
+      'upperLimit': 100.0,
       'lowerLimit': 0.1,
       'step': 0.5,
     },
@@ -620,6 +623,11 @@ class SettingsHandler {
       'type': 'bool',
       'default': false,
     },
+    'appAlias': {
+      'type': 'appAlias',
+      'default': AppAlias.defaultValue,
+      'options': AppAlias.values,
+    },
     'hideNotes': {
       'type': 'bool',
       'default': false,
@@ -639,10 +647,6 @@ class SettingsHandler {
     'disableVibration': {
       'type': 'bool',
       'default': false,
-    },
-    'useAltVideoPlayer': {
-      'type': 'bool',
-      'default': isDesktopPlatform,
     },
     'altVideoPlayerHwAccel': {
       'type': 'bool',
@@ -1163,6 +1167,8 @@ class SettingsHandler {
         return disableCustomPageTransitions;
       case 'incognitoKeyboard':
         return incognitoKeyboard;
+      case 'appAlias':
+        return appAlias;
       case 'hideNotes':
         return hideNotes;
       case 'startVideosMuted':
@@ -1412,6 +1418,9 @@ class SettingsHandler {
         break;
       case 'incognitoKeyboard':
         incognitoKeyboard = validatedValue;
+        break;
+      case 'appAlias':
+        appAlias = validatedValue;
         break;
       case 'hideNotes':
         hideNotes = validatedValue;
@@ -1699,17 +1708,11 @@ class SettingsHandler {
     }
 
     try {
-      final List<String> legacyKeys = [
-        'useAltVideoPlayer',
-      ];
+      final List<String> legacyKeys = [];
       for (final String key in legacyKeys) {
         if (json.keys.contains(key)) {
           switch (key) {
-            case 'useAltVideoPlayer':
-              setByString(
-                'videoBackendMode',
-                (json[key] is bool && json[key]) ? VideoBackendMode.mpv.name : videoBackendMode.name,
-              );
+            default:
               break;
           }
         }
@@ -1788,8 +1791,8 @@ class SettingsHandler {
       }
 
       if (dbEnabled && tempList.isNotEmpty) {
-        tempList.add(Booru('Favourites', BooruType.Favourites, '', '', ''));
-        tempList.add(Booru('Downloads', BooruType.Downloads, '', '', ''));
+        tempList.add(Booru(loc.favourites, BooruType.Favourites, '', '', ''));
+        tempList.add(Booru(loc.downloads, BooruType.Downloads, '', '', ''));
       }
     } catch (e, s) {
       Logger.Inst().log(
@@ -2120,7 +2123,11 @@ class SettingsHandler {
               );
             },
             icon: const Icon(Icons.list_alt_rounded),
-            label: Text(loc.settings.checkForUpdates.viewLatestChangelog),
+            label: Text(
+              loc.settings.checkForUpdates.viewLatestChangelog,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ];
       },
@@ -2143,15 +2150,14 @@ class SettingsHandler {
       SettingsPageOpen(
         context: ctx,
         page: (_) => Scaffold(
-          appBar: AppBar(
-            title: Text(
-              '${isDiffVersion ? loc.settings.checkForUpdates.updateAvailable : '${isAfterUpdate ? "What's new" : loc.settings.checkForUpdates.updateChangelog}:'} ${updateInfo.value!.versionName}+${updateInfo.value!.buildNumber}',
-            ),
+          appBar: SettingsAppBar(
+            title:
+                '${isDiffVersion ? loc.settings.checkForUpdates.updateAvailable : '${isAfterUpdate ? loc.settings.checkForUpdates.whatsNew : loc.settings.checkForUpdates.updateChangelog}:'} ${updateInfo.value!.versionName}+${updateInfo.value!.buildNumber}',
           ),
           body: SafeArea(
             child: Column(
               children: [
-                Flexible(
+                Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(16),
                     child: Column(
