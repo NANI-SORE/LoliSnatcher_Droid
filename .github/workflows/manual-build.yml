@@ -1,0 +1,10 @@
+name: Manual Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      custom_message:
+        description: 'Custom message for Discord notification'
+        required: false
+        default: 'Manual build triggered'
+        type: string
