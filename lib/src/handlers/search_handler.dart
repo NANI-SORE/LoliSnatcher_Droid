@@ -91,7 +91,6 @@ class SearchHandler {
       secondaryBoorus,
       searchText,
     );
-    newTab.pageRestored = true;
     newTab.savePageEnabled = SettingsHandler.instance.defaultSavePageEnabled;
     if (customPage != null) {
       newTab.booruHandler.pageNum = customPage;
@@ -180,7 +179,6 @@ class SearchHandler {
       searchTextController.text = defaultText;
 
       final SearchTab newTab = SearchTab(currentBooru, null, defaultText);
-      newTab.pageRestored = true;
       newTab.savePageEnabled = settingsHandler.defaultSavePageEnabled;
       tabs[0] = newTab;
       changeTabIndex(0);
@@ -217,7 +215,6 @@ class SearchHandler {
       searchTextController.text = defaultText;
 
       final SearchTab newTab = SearchTab(currentBooru, null, defaultText);
-      newTab.pageRestored = true;
       newTab.savePageEnabled = settingsHandler.defaultSavePageEnabled;
       tabs.value[0] = newTab;
       changeTabIndex(0);
@@ -297,7 +294,6 @@ class SearchHandler {
   }
 
   void _updateCurrentScrollPage() {
-    // dont update page if current tab page is not restored
     if (currentTab.pageRestored == false) return;
     if (currentFetched.isEmpty) return;
     if (!gridScrollController.hasClients) return;
@@ -452,7 +448,6 @@ class SearchHandler {
     );
     newTab.booruHandler.pageNum = newPageNum;
     pageNum.value = newPageNum;
-    newTab.pageRestored = true;
     newTab.savePageEnabled = tabs[currentIndex].savePageEnabled;
     tabs[currentIndex] = newTab;
 
@@ -549,7 +544,6 @@ class SearchHandler {
           currentSecondaryBoorus.value,
           text,
         );
-        newTab.pageRestored = true;
         newTab.savePageEnabled = settingsHandler.defaultSavePageEnabled;
         tabs.add(newTab);
       } else {
@@ -561,7 +555,6 @@ class SearchHandler {
         currentSecondaryBoorus.value,
         text,
       );
-      newTab.pageRestored = true;
       newTab.savePageEnabled = tabs[currentIndex].savePageEnabled;
       tabs[currentIndex] = newTab;
     }
@@ -655,7 +648,6 @@ class SearchHandler {
     final List<Booru>? secondary = canAddSecondary ? secondaryBoorus : null;
 
     final SearchTab newTab = SearchTab(currentBooru, secondary, currentTab.tags);
-    newTab.pageRestored = true;
     newTab.savePageEnabled = tabs[currentIndex].savePageEnabled;
     tabs[currentIndex] = newTab;
 
@@ -984,6 +976,7 @@ class SearchHandler {
         // Track page restore for this tab
         if (tabBackup.pageNum != null && tabBackup.pageNum! > -1) {
           _pendingPageRestores[restoredTabs.length - 1] = tabBackup.pageNum!;
+          restoredTabs.last.pageRestored = newTab.selectedBooru.value.name == null;
         }
 
         // get index of selected tab
@@ -1048,7 +1041,6 @@ class SearchHandler {
       searchTextController.text = defaultText;
       if (defaultBooru.type != null) {
         final defaultTab = SearchTab(defaultBooru, null, defaultText);
-        defaultTab.pageRestored = true;
         defaultTab.savePageEnabled = SettingsHandler.instance.defaultSavePageEnabled;
         tabs.add(defaultTab);
         await changeTabIndex(0);
@@ -1254,7 +1246,6 @@ class SearchHandler {
       searchTextController.text = defaultText;
       if (defaultBooru.type != null) {
         final SearchTab newTab = SearchTab(defaultBooru, null, defaultText);
-        newTab.pageRestored = true;
         newTab.savePageEnabled = settingsHandler.defaultSavePageEnabled;
         tabs.clear();
         tabs.add(newTab);
@@ -1489,7 +1480,7 @@ class SearchTab {
   bool savePageEnabled = false;
 
   /// Whether page restore has already been applied for this tab in this session.
-  bool pageRestored = false;
+  bool pageRestored = true;
 
   BooruItem? itemWithKey(Key? key) {
     return booruHandler.filteredFetched.firstWhereOrNull((item) => item.key == key);
