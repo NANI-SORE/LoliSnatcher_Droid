@@ -10,6 +10,8 @@ import 'package:lolisnatcher/src/data/settings/button_position.dart';
 import 'package:lolisnatcher/src/data/settings/hand_side.dart';
 import 'package:lolisnatcher/src/data/settings/preview_display_mode.dart';
 import 'package:lolisnatcher/src/data/settings/preview_quality.dart';
+import 'package:lolisnatcher/src/data/settings/tab_page_restore_mode.dart';
+import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/confirm_button.dart';
@@ -32,6 +34,8 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
   late PreviewQuality previewMode;
   late PreviewDisplayMode previewDisplay, previewDisplayFallback;
   late ButtonPosition scrollGridButtonsPosition;
+  late TabPageRestoreMode tabPageRestoreMode;
+  late bool defaultSavePageEnabled;
   late bool showBottomSearchbar,
       useTopSearchbarInput,
       showSearchbarQuickActions,
@@ -58,6 +62,8 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
     previewDisplayFallback = settingsHandler.previewDisplayFallback;
     previewMode = settingsHandler.previewMode;
     scrollGridButtonsPosition = settingsHandler.scrollGridButtonsPosition;
+    tabPageRestoreMode = settingsHandler.tabPageRestoreMode;
+    defaultSavePageEnabled = settingsHandler.defaultSavePageEnabled;
     mouseSpeedController.text = settingsHandler.mousewheelScrollSpeed.toString();
   }
 
@@ -83,6 +89,8 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
     settingsHandler.previewDisplay = previewDisplay;
     settingsHandler.previewDisplayFallback = previewDisplayFallback;
     settingsHandler.scrollGridButtonsPosition = scrollGridButtonsPosition;
+    settingsHandler.tabPageRestoreMode = tabPageRestoreMode;
+    settingsHandler.defaultSavePageEnabled = defaultSavePageEnabled;
     settingsHandler.landscapeColumns = max(1, int.tryParse(columnsLandscapeController.text) ?? 6);
     settingsHandler.portraitColumns = max(1, int.tryParse(columnsPortraitController.text) ?? 3);
     settingsHandler.mousewheelScrollSpeed = double.parse(mouseSpeedController.text);
@@ -395,6 +403,49 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
                         subtitle: Text(context.loc.settings.interface.previewDisplayFallbackHelp),
                       )
                     : const SizedBox(width: double.infinity),
+              ),
+              SettingsOptionsList<TabPageRestoreMode>(
+                value: tabPageRestoreMode,
+                items: TabPageRestoreMode.values,
+                onChanged: (TabPageRestoreMode? newValue) {
+                  setState(() {
+                    tabPageRestoreMode = newValue ?? TabPageRestoreMode.defaultValue;
+                  });
+                },
+                title: context.loc.settings.interface.tabPageRestoreMode,
+                itemTitleBuilder: (e) => e?.locName ?? '',
+              ),
+              SettingsToggle(
+                value: defaultSavePageEnabled,
+                title: context.loc.settings.interface.saveTabViewedPageByDefault,
+                onChanged: (newValue) async {
+                  setState(() {
+                    defaultSavePageEnabled = newValue;
+                  });
+                  final res = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(context.loc.settings.interface.applyToAllTabs),
+                      actions: [
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.cancel_outlined),
+                          label: Text(context.loc.no),
+                          onPressed: () => Navigator.of(context).pop(false),
+                        ),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.check_circle_outline_rounded),
+                          label: Text(context.loc.yes),
+                          onPressed: () => Navigator.of(context).pop(true),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (res == true) {
+                    for (final tab in SearchHandler.instance.tabs) {
+                      tab.savePageEnabled = newValue;
+                    }
+                  }
+                },
               ),
               SettingsToggle(
                 value: settingsHandler.disableImageScaling,

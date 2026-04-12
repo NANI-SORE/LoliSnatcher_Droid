@@ -513,6 +513,12 @@ class TranslationsSearchHandlerEn {
         other: 'Restored ${count} tabs from previous session',
       );
 
+  /// en: 'Restoring page'
+  String get restoringPage => TranslationOverrides.string(_root.$meta, 'searchHandler.restoringPage', {}) ?? 'Restoring page';
+
+  /// en: 'Page restore mode'
+  String get pageRestoreMode => TranslationOverrides.string(_root.$meta, 'searchHandler.pageRestoreMode', {}) ?? 'Page restore mode';
+
   /// en: 'Some restored tabs had unknown boorus or broken characters.'
   String get someRestoredTabsHadIssues =>
       TranslationOverrides.string(_root.$meta, 'searchHandler.someRestoredTabsHadIssues', {}) ??
@@ -1153,11 +1159,36 @@ class TranslationsPageChangerEn {
   String get searchCurrentlyRunning =>
       TranslationOverrides.string(_root.$meta, 'pageChanger.searchCurrentlyRunning', {}) ?? 'Search currently running!';
 
+  /// en: 'Scroll to fetched page'
+  String get scrollToFetchedPage => TranslationOverrides.string(_root.$meta, 'pageChanger.scrollToFetchedPage', {}) ?? 'Scroll to fetched page';
+
+  /// en: 'Save viewed page'
+  String get saveViewedPage => TranslationOverrides.string(_root.$meta, 'pageChanger.saveViewedPage', {}) ?? 'Save viewed page';
+
   /// en: 'Jump to page'
   String get jumpToPage => TranslationOverrides.string(_root.$meta, 'pageChanger.jumpToPage', {}) ?? 'Jump to page';
 
   /// en: 'Search until page'
   String get searchUntilPage => TranslationOverrides.string(_root.$meta, 'pageChanger.searchUntilPage', {}) ?? 'Search until page';
+
+  /// en: 'Scroll to page'
+  String get scrollToPage => TranslationOverrides.string(_root.$meta, 'pageChanger.scrollToPage', {}) ?? 'Scroll to page';
+
+  /// en: 'Restore last viewed page?'
+  String get restoreLastViewedPage =>
+      TranslationOverrides.string(_root.$meta, 'pageChanger.restoreLastViewedPage', {}) ?? 'Restore last viewed page?';
+
+  /// en: 'Browsed to page #${page: int} last time'
+  String browsedToPageLastTime({required int page}) =>
+      TranslationOverrides.string(_root.$meta, 'pageChanger.browsedToPageLastTime', {'page': page}) ?? 'Browsed to page #${page} last time';
+
+  /// en: 'Restoring too many pages at once or too fast may temporarily ban you from accessing the site'
+  String get tooManyPagesToRestoreWarning =>
+      TranslationOverrides.string(_root.$meta, 'pageChanger.tooManyPagesToRestoreWarning', {}) ??
+      'Restoring too many pages at once or too fast may temporarily ban you from accessing the site';
+
+  /// en: 'Remember my choice'
+  String get rememberMyChoice => TranslationOverrides.string(_root.$meta, 'pageChanger.rememberMyChoice', {}) ?? 'Remember my choice';
 
   /// en: 'Stop searching'
   String get stopSearching => TranslationOverrides.string(_root.$meta, 'pageChanger.stopSearching', {}) ?? 'Stop searching';
@@ -2517,6 +2548,19 @@ class TranslationsSettingsInterfaceEn {
       TranslationsSettingsInterfacePreviewDisplayModeValuesEn.internal(_root);
   late final TranslationsSettingsInterfaceAppModeValuesEn appModeValues = TranslationsSettingsInterfaceAppModeValuesEn.internal(_root);
   late final TranslationsSettingsInterfaceHandSideValuesEn handSideValues = TranslationsSettingsInterfaceHandSideValuesEn.internal(_root);
+
+  /// en: 'Tab page restore mode'
+  String get tabPageRestoreMode => TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreMode', {}) ?? 'Tab page restore mode';
+
+  /// en: 'Apply to all tabs?'
+  String get applyToAllTabs => TranslationOverrides.string(_root.$meta, 'settings.interface.applyToAllTabs', {}) ?? 'Apply to all tabs?';
+
+  /// en: 'Save viewed page by default'
+  String get saveTabViewedPageByDefault =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.saveTabViewedPageByDefault', {}) ?? 'Save viewed page by default';
+
+  late final TranslationsSettingsInterfaceTabPageRestoreModeValuesEn tabPageRestoreModeValues =
+      TranslationsSettingsInterfaceTabPageRestoreModeValuesEn.internal(_root);
 }
 
 // Path: settings.theme
@@ -4660,6 +4704,34 @@ class TranslationsSettingsInterfaceHandSideValuesEn {
   String get right => TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.right', {}) ?? 'Right';
 }
 
+// Path: settings.interface.tabPageRestoreModeValues
+class TranslationsSettingsInterfaceTabPageRestoreModeValuesEn {
+  TranslationsSettingsInterfaceTabPageRestoreModeValuesEn.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'Ask each time'
+  String get ask => TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.ask', {}) ?? 'Ask each time';
+
+  /// en: 'Fetch up to page and scroll to it'
+  String get fetchAndScroll =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.fetchAndScroll', {}) ??
+      'Fetch up to page and scroll to it';
+
+  /// en: 'Fetch up to page, no scroll'
+  String get fetchNoScroll =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.fetchNoScroll', {}) ?? 'Fetch up to page, no scroll';
+
+  /// en: 'Start from saved page'
+  String get fetchOnlyPage =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.fetchOnlyPage', {}) ?? 'Start from saved page';
+
+  /// en: 'Ignore saved page'
+  String get ignore => TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.ignore', {}) ?? 'Ignore saved page';
+}
+
 // Path: settings.viewer.imageQualityValues
 class TranslationsSettingsViewerImageQualityValuesEn {
   TranslationsSettingsViewerImageQualityValuesEn.internal(this._root);
@@ -5026,6 +5098,8 @@ extension on Translations {
                   many: 'Restored ${count} tabs from previous session',
                   other: 'Restored ${count} tabs from previous session',
                 ),
+          'searchHandler.restoringPage' => TranslationOverrides.string(_root.$meta, 'searchHandler.restoringPage', {}) ?? 'Restoring page',
+          'searchHandler.pageRestoreMode' => TranslationOverrides.string(_root.$meta, 'searchHandler.pageRestoreMode', {}) ?? 'Page restore mode',
           'searchHandler.someRestoredTabsHadIssues' =>
             TranslationOverrides.string(_root.$meta, 'searchHandler.someRestoredTabsHadIssues', {}) ??
                 'Some restored tabs had unknown boorus or broken characters.',
@@ -5550,6 +5624,24 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.left', {}) ?? 'Left',
           'settings.interface.handSideValues.right' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.right', {}) ?? 'Right',
+          'settings.interface.tabPageRestoreMode' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreMode', {}) ?? 'Tab page restore mode',
+          'settings.interface.applyToAllTabs' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.applyToAllTabs', {}) ?? 'Apply to all tabs?',
+          'settings.interface.saveTabViewedPageByDefault' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.saveTabViewedPageByDefault', {}) ?? 'Save viewed page by default',
+          'settings.interface.tabPageRestoreModeValues.ask' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.ask', {}) ?? 'Ask each time',
+          'settings.interface.tabPageRestoreModeValues.fetchAndScroll' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.fetchAndScroll', {}) ??
+                'Fetch up to page and scroll to it',
+          'settings.interface.tabPageRestoreModeValues.fetchNoScroll' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.fetchNoScroll', {}) ??
+                'Fetch up to page, no scroll',
+          'settings.interface.tabPageRestoreModeValues.fetchOnlyPage' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.fetchOnlyPage', {}) ?? 'Start from saved page',
+          'settings.interface.tabPageRestoreModeValues.ignore' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.ignore', {}) ?? 'Ignore saved page',
           'settings.theme.title' => TranslationOverrides.string(_root.$meta, 'settings.theme.title', {}) ?? 'Themes',
           'settings.theme.themeMode' => TranslationOverrides.string(_root.$meta, 'settings.theme.themeMode', {}) ?? 'Theme mode',
           'settings.theme.blackBg' => TranslationOverrides.string(_root.$meta, 'settings.theme.blackBg', {}) ?? 'Black background',
@@ -5739,6 +5831,9 @@ extension on Translations {
           'settings.video.startVideosMuted' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.startVideosMuted', {}) ?? 'Start videos muted',
           'settings.video.experimental' => TranslationOverrides.string(_root.$meta, 'settings.video.experimental', {}) ?? '[Experimental]',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.video.videoPlayerBackend' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.videoPlayerBackend', {}) ?? 'Video player backend',
           'settings.video.backendDefault' => TranslationOverrides.string(_root.$meta, 'settings.video.backendDefault', {}) ?? 'Default',
@@ -5759,9 +5854,6 @@ extension on Translations {
           'settings.video.mpvUseHardwareAcceleration' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.mpvUseHardwareAcceleration', {}) ?? 'MPV: use hardware acceleration',
           'settings.video.mpvVO' => TranslationOverrides.string(_root.$meta, 'settings.video.mpvVO', {}) ?? 'MPV: VO',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.video.mpvHWDEC' => TranslationOverrides.string(_root.$meta, 'settings.video.mpvHWDEC', {}) ?? 'MPV: HWDEC',
           'settings.video.videoCacheMode' => TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheMode', {}) ?? 'Video cache mode',
           'settings.video.cacheModes.title' => TranslationOverrides.string(_root.$meta, 'settings.video.cacheModes.title', {}) ?? 'Video cache modes',
@@ -6459,8 +6551,21 @@ extension on Translations {
                 TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? 'Possible max page #~${number}',
           'pageChanger.searchCurrentlyRunning' =>
             TranslationOverrides.string(_root.$meta, 'pageChanger.searchCurrentlyRunning', {}) ?? 'Search currently running!',
+          'pageChanger.scrollToFetchedPage' =>
+            TranslationOverrides.string(_root.$meta, 'pageChanger.scrollToFetchedPage', {}) ?? 'Scroll to fetched page',
+          'pageChanger.saveViewedPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.saveViewedPage', {}) ?? 'Save viewed page',
           'pageChanger.jumpToPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.jumpToPage', {}) ?? 'Jump to page',
           'pageChanger.searchUntilPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.searchUntilPage', {}) ?? 'Search until page',
+          'pageChanger.scrollToPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.scrollToPage', {}) ?? 'Scroll to page',
+          'pageChanger.restoreLastViewedPage' =>
+            TranslationOverrides.string(_root.$meta, 'pageChanger.restoreLastViewedPage', {}) ?? 'Restore last viewed page?',
+          'pageChanger.browsedToPageLastTime' =>
+            ({required int page}) =>
+                TranslationOverrides.string(_root.$meta, 'pageChanger.browsedToPageLastTime', {'page': page}) ?? 'Browsed to page #${page} last time',
+          'pageChanger.tooManyPagesToRestoreWarning' =>
+            TranslationOverrides.string(_root.$meta, 'pageChanger.tooManyPagesToRestoreWarning', {}) ??
+                'Restoring too many pages at once or too fast may temporarily ban you from accessing the site',
+          'pageChanger.rememberMyChoice' => TranslationOverrides.string(_root.$meta, 'pageChanger.rememberMyChoice', {}) ?? 'Remember my choice',
           'pageChanger.stopSearching' => TranslationOverrides.string(_root.$meta, 'pageChanger.stopSearching', {}) ?? 'Stop searching',
           'tagsFiltersDialogs.emptyInput' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.emptyInput', {}) ?? 'Empty input!',
           'tagsFiltersDialogs.addNewFilter' =>
@@ -6658,6 +6763,9 @@ extension on Translations {
           'mobileHome.fileAlreadyExists' => TranslationOverrides.string(_root.$meta, 'mobileHome.fileAlreadyExists', {}) ?? 'File already exists',
           'mobileHome.failedToDownload' => TranslationOverrides.string(_root.$meta, 'mobileHome.failedToDownload', {}) ?? 'Failed to download',
           'mobileHome.cancelledByUser' => TranslationOverrides.string(_root.$meta, 'mobileHome.cancelledByUser', {}) ?? 'Cancelled by user',
+          _ => null,
+        } ??
+        switch (path) {
           'mobileHome.saveAnyway' => TranslationOverrides.string(_root.$meta, 'mobileHome.saveAnyway', {}) ?? 'Save anyway',
           'mobileHome.skip' => TranslationOverrides.string(_root.$meta, 'mobileHome.skip', {}) ?? 'Skip',
           'mobileHome.retryAll' =>
@@ -6680,9 +6788,6 @@ extension on Translations {
           'mediaPreviews.addNewBooru' => TranslationOverrides.string(_root.$meta, 'mediaPreviews.addNewBooru', {}) ?? 'Add new Booru',
           'mediaPreviews.help' => TranslationOverrides.string(_root.$meta, 'mediaPreviews.help', {}) ?? 'Help',
           'mediaPreviews.settings' => TranslationOverrides.string(_root.$meta, 'mediaPreviews.settings', {}) ?? 'Settings',
-          _ => null,
-        } ??
-        switch (path) {
           'mediaPreviews.restoringPreviousSession' =>
             TranslationOverrides.string(_root.$meta, 'mediaPreviews.restoringPreviousSession', {}) ?? 'Restoring previous session…',
           'mediaPreviews.copiedFileURL' =>

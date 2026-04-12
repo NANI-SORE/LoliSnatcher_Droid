@@ -98,6 +98,9 @@ class BooruItem extends Equatable {
   double? previewAspectRatio;
   int? fileSize;
 
+  /// The API page number this item was fetched from. -1 means unknown/unset.
+  int fetchedPage = -1;
+
   bool get isLong {
     return fileAspectRatio != null && fileAspectRatio! < 0.3;
   }

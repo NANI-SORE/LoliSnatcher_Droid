@@ -276,7 +276,11 @@ class TabSelector extends StatelessWidget {
                                   bottomLeft: Radius.circular(radius),
                                 )
                               : null,
-                          onTap: () => dropdown.showDialog(context),
+                          onTap: () {
+                            if (searchHandler.isRunningAutoSearch.value) return;
+
+                            dropdown.showDialog(context);
+                          },
                           child: Padding(
                             padding: const EdgeInsets.only(
                               top: 12,
@@ -321,6 +325,8 @@ class TabSelector extends StatelessWidget {
                                   )
                                 : null,
                             onTap: () {
+                              if (searchHandler.isRunningAutoSearch.value) return;
+
                               SettingsPageOpen(
                                 context: context,
                                 page: (_) => const TabManagerPage(),
@@ -922,6 +928,23 @@ class _TabManagerPageState extends State<TabManagerPage> {
           leading: const Icon(Icons.close, color: Colors.red),
           title: Text(context.loc.tabs.remove),
         ),
+        const SizedBox(height: 10),
+        StatefulBuilder(
+          builder: (context, setLocalState) => SwitchListTile(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(5),
+              side: BorderSide(color: Theme.of(context).colorScheme.secondary),
+            ),
+            secondary: const Icon(Icons.bookmark_outline),
+            title: Text(context.loc.pageChanger.saveViewedPage),
+            value: tab.savePageEnabled,
+            onChanged: (value) {
+              setLocalState(() {
+                tab.savePageEnabled = value;
+              });
+            },
+          ),
+        ),
         const SizedBox(height: 20),
         ListTile(
           shape: RoundedRectangleBorder(
@@ -1030,7 +1053,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
             const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(Icons.arrow_circle_up),
+                const Icon(Icons.swipe_up),
                 const SizedBox(width: 10),
                 Expanded(child: Text(context.loc.tabs.scrollToTop)),
               ],
@@ -1038,7 +1061,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
             const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(Icons.arrow_circle_down),
+                const Icon(Icons.swipe_down),
                 const SizedBox(width: 10),
                 Expanded(child: Text(context.loc.tabs.scrollToBottom)),
               ],
@@ -1271,7 +1294,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
                     searchHandler.tabs.value = [...filteredTabs];
 
                     final int newIndex = searchHandler.tabs.indexOf(currentTab);
-                    searchHandler.changeTabIndex(newIndex);
+                    await searchHandler.changeTabIndex(newIndex);
 
                     getTabs();
                   },
@@ -1367,7 +1390,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
               final toTopBtn = ElevatedButton(
                 onPressed: scrollToTop,
                 child: const Icon(
-                  Icons.arrow_circle_up_rounded,
+                  Icons.swipe_up,
                   size: iconSize,
                 ),
               );
@@ -1445,7 +1468,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
               final toBottomBtn = ElevatedButton(
                 onPressed: scrollToBottom,
                 child: const Icon(
-                  Icons.arrow_circle_down_rounded,
+                  Icons.swipe_down,
                   size: iconSize,
                 ),
               );

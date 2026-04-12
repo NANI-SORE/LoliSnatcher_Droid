@@ -10,6 +10,7 @@ import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
+import 'package:lolisnatcher/src/widgets/preview/page_indicator.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_card_build.dart';
 
 class StaggeredBuilder extends StatelessWidget {
@@ -37,6 +38,7 @@ class StaggeredBuilder extends StatelessWidget {
     final SettingsHandler settingsHandler = SettingsHandler.instance;
 
     final int columnCount = context.isPortrait ? settingsHandler.portraitColumns : settingsHandler.landscapeColumns;
+    SearchHandler.instance.currentColumnCount = columnCount;
 
     return ValueListenableBuilder(
       valueListenable: tab.booruHandler.filteredFetched,
@@ -54,6 +56,8 @@ class StaggeredBuilder extends StatelessWidget {
             builder: (context, constraints) {
               return Obx(() {
                 final BooruItem item = currentFetched[index];
+
+                final bool isFirstOfPage = index == 0 || item.fetchedPage != currentFetched[index - 1].fetchedPage;
 
                 final double itemMaxWidth = constraints.maxWidth;
                 final double itemMaxHeight = itemMaxWidth * (16 / 9);
@@ -75,25 +79,37 @@ class StaggeredBuilder extends StatelessWidget {
                 final selectedIndex = tab.selected.indexOf(item);
                 final bool isSelected = selectedIndex != -1;
 
-                return SizedBox(
-                  height: possibleHeight,
-                  width: possibleWidth,
-                  child: Obx(
-                    () => ThumbnailCardBuild(
-                      index: index,
-                      item: item,
-                      handler: tab.booruHandler,
-                      scrollController: scrollController,
-                      isHighlighted: ViewerHandler.instance.current.value?.key == item.key,
-                      selectable: true,
-                      selectedIndex: isSelected ? selectedIndex : null,
-                      onSelected: hasSelected ? onSelected : null,
-                      onTap: onTap,
-                      onDoubleTap: onDoubleTap,
-                      onLongPress: onLongPress,
-                      onSecondaryTap: onSecondaryTap,
+                return Stack(
+                  children: [
+                    SizedBox(
+                      height: possibleHeight,
+                      width: possibleWidth,
+                      child: Obx(
+                        () => ThumbnailCardBuild(
+                          index: index,
+                          item: item,
+                          handler: tab.booruHandler,
+                          scrollController: scrollController,
+                          isHighlighted: ViewerHandler.instance.current.value?.key == item.key,
+                          selectable: true,
+                          selectedIndex: isSelected ? selectedIndex : null,
+                          onSelected: hasSelected ? onSelected : null,
+                          onTap: onTap,
+                          onDoubleTap: onDoubleTap,
+                          onLongPress: onLongPress,
+                          onSecondaryTap: onSecondaryTap,
+                        ),
+                      ),
                     ),
-                  ),
+                    if (isFirstOfPage && item.fetchedPage > -1)
+                      Positioned(
+                        top: 2,
+                        left: 2,
+                        child: IgnorePointer(
+                          child: GridPageIndicator(item.fetchedPage),
+                        ),
+                      ),
+                  ],
                 );
               });
             },

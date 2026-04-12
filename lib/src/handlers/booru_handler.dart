@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
-
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:get/get.dart' hide Response;
@@ -45,17 +43,31 @@ abstract class BooruHandler {
   RxList<BooruItem> fetched = RxList<BooruItem>([]);
   RxList<BooruItem> filteredFetched = RxList<BooruItem>([]);
 
-  /// Filters the list of fetched items and stores them in filteredFetched
+  /// Tracks which API page numbers have been loaded.
+  final Set<int> fetchedPageNumbers = {};
+
+  /// Watermark: index in `fetched` up to which we've already filtered.
+  int _filterWatermark = 0;
+
+  /// Seen file URLs for O(1) duplicate detection across incremental filter runs.
+  final Set<String> _seenFileURLs = {};
+
+  /// Seen server IDs for O(1) duplicate detection.
+  final Set<String> _seenServerIds = {};
+
+  /// Filters newly fetched items incrementally (from watermark to end of fetched list).
+  /// Only processes items that haven't been filtered yet.
   ///
   /// Should always be called after fetched changed (so don't forget to add it in custom afterParseResponse or search methods)
-  /// (See gelbooru of favourites handlers for example)
+  /// (See gelbooru or favourites handlers for example)
   void filterFetched() {
     final SettingsHandler settingsHandler = SettingsHandler.instance;
 
-    final List<BooruItem> itemsBeforeFilter = [...filteredFetched];
+    final List<BooruItem> newFilteredItems = [];
 
-    final List<BooruItem> filteredItems = [];
-    for (final item in fetched) {
+    for (int i = _filterWatermark; i < fetched.length; i++) {
+      final item = fetched[i];
+
       if (settingsHandler.filterHated && item.isHidden) {
         continue;
       }
@@ -78,19 +90,46 @@ abstract class BooruHandler {
         continue;
       }
 
-      final bool isDuplicate = filteredItems.any(
-        (e) => e.fileURL == item.fileURL || (e.serverId != null && e.serverId == item.serverId),
-      );
-      if (isDuplicate) {
+      // O(1) duplicate detection via Sets
+      if (_seenFileURLs.contains(item.fileURL)) {
+        continue;
+      }
+      final serverId = item.serverId;
+      if (serverId != null && _seenServerIds.contains(serverId)) {
         continue;
       }
 
-      filteredItems.add(item);
+      _seenFileURLs.add(item.fileURL);
+      if (serverId != null) {
+        _seenServerIds.add(serverId);
+      }
+
+      newFilteredItems.add(item);
     }
 
-    if (!listEquals(itemsBeforeFilter, filteredItems)) {
-      filteredFetched.value = filteredItems;
+    _filterWatermark = fetched.length;
+
+    if (newFilteredItems.isNotEmpty) {
+      filteredFetched.addAll(newFilteredItems);
     }
+  }
+
+  /// Full refilter: resets watermark and rebuilds filteredFetched from scratch.
+  /// Call when filter settings change (e.g., user toggles filterHated, marks/hides tags, toggles favourite).
+  void refilterAll() {
+    _filterWatermark = 0;
+    _seenFileURLs.clear();
+    _seenServerIds.clear();
+    filteredFetched.clear();
+    filterFetched();
+  }
+
+  /// Resets all filter state. Call when fetched list is cleared.
+  void resetFilterState() {
+    _filterWatermark = 0;
+    _seenFileURLs.clear();
+    _seenServerIds.clear();
+    filteredFetched.clear();
   }
 
   String get className => runtimeType.toString();
@@ -135,6 +174,8 @@ abstract class BooruHandler {
     // if tags are different than previous tags, reset fetched
     if (prevTags != tags) {
       fetched.value = [];
+      fetchedPageNumbers.clear();
+      resetFilterState();
       totalCount.value = 0;
     }
 
@@ -318,6 +359,11 @@ abstract class BooruHandler {
   }
 
   Future<void> afterParseResponse(List<BooruItem> newItems) async {
+    for (final item in newItems) {
+      item.fetchedPage = pageNum;
+    }
+    fetchedPageNumbers.add(pageNum);
+
     final int lengthBefore = fetched.length;
     fetched.addAll(newItems);
     filterFetched();

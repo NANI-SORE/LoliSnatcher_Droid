@@ -56,6 +56,8 @@ class HydrusHandler extends BooruHandler {
   Future search(String tags, int? pageNumCustom, {bool withCaptchaCheck = true}) async {
     if (prevTags != tags) {
       fetched.value = [];
+      fetchedPageNumbers.clear();
+      resetFilterState();
       prevTags = tags;
     }
 

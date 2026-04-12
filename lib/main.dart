@@ -431,7 +431,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   void initState() {
     super.initState();
 
-    backupTimer = Timer.periodic(const Duration(seconds: kDebugMode ? 10 : 30), (timer) {
+    backupTimer = Timer.periodic(const Duration(seconds: kDebugMode ? 5 : 20), (timer) {
       // TODO rework so it happens on every tab change/addition, NOT on timer
       searchHandler.backupTabs();
       if (!tagHandler.tagSaveActive) {

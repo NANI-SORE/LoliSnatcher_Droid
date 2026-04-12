@@ -33,6 +33,7 @@ import 'package:lolisnatcher/src/data/settings/preview_quality.dart';
 import 'package:lolisnatcher/src/data/settings/proxy_type.dart';
 import 'package:lolisnatcher/src/data/settings/scroll_direction.dart';
 import 'package:lolisnatcher/src/data/settings/share_action.dart';
+import 'package:lolisnatcher/src/data/settings/tab_page_restore_mode.dart';
 import 'package:lolisnatcher/src/data/settings/vertical_position.dart';
 import 'package:lolisnatcher/src/data/settings/video_backend_mode.dart';
 import 'package:lolisnatcher/src/data/settings/video_cache_mode.dart';
@@ -121,6 +122,8 @@ class SettingsHandler {
   ButtonPosition zoomButtonPosition = ButtonPosition.defaultValue;
   ButtonPosition changePageButtonsPosition = ButtonPosition.defaultValueDesktopOnly;
   ButtonPosition scrollGridButtonsPosition = ButtonPosition.defaultValueDesktopOnly;
+  TabPageRestoreMode tabPageRestoreMode = TabPageRestoreMode.defaultValue;
+  bool defaultSavePageEnabled = false;
   String lastSyncIp = '';
   String lastSyncPort = '';
   // TODO move it to boorus themselves to have different user agents for different boorus?
@@ -351,6 +354,15 @@ class SettingsHandler {
       'type': 'buttonPosition',
       'default': ButtonPosition.defaultValueDesktopOnly,
       'options': ButtonPosition.values,
+    },
+    'tabPageRestoreMode': {
+      'type': 'tabPageRestoreMode',
+      'default': TabPageRestoreMode.defaultValue,
+      'options': TabPageRestoreMode.values,
+    },
+    'defaultSavePageEnabled': {
+      'type': 'bool',
+      'default': false,
     },
     'videoBackendMode': {
       'type': 'videoBackendMode',
@@ -1127,6 +1139,10 @@ class SettingsHandler {
         return changePageButtonsPosition;
       case 'scrollGridButtonsPosition':
         return scrollGridButtonsPosition;
+      case 'tabPageRestoreMode':
+        return tabPageRestoreMode;
+      case 'defaultSavePageEnabled':
+        return defaultSavePageEnabled;
       case 'disableImageScaling':
         return disableImageScaling;
       case 'gifsAsThumbnails':
@@ -1378,6 +1394,12 @@ class SettingsHandler {
         break;
       case 'scrollGridButtonsPosition':
         scrollGridButtonsPosition = validatedValue;
+        break;
+      case 'tabPageRestoreMode':
+        tabPageRestoreMode = validatedValue;
+        break;
+      case 'defaultSavePageEnabled':
+        defaultSavePageEnabled = validatedValue;
         break;
       case 'disableImageScaling':
         disableImageScaling = validatedValue;
