@@ -16,6 +16,480 @@ Create a unified dynamic settings system where all properties and functions of a
 4. **Special setting types**: Dedicated classes for `Theme`, `ThemeMode`, `Locale`, `FontFamily` etc.
 5. **Category visibility**: Categories have optional `visibleWhen` function to hide entire sections (e.g., debug settings hidden in release)
 6. **Dynamic default values**: `defaultValue` is a function `() => T` to support platform-specific defaults (e.g., different column counts for desktop vs mobile)
+7. **Per-booru overrides**: Settings can have per-booru values that override the global value when viewing that booru
+
+---
+
+## Per-Booru Setting Overrides
+
+Settings can have per-booru values that override the global default. This allows users to customize behavior per site (e.g., different column counts, preview quality, or video settings for specific boorus).
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Setting<T>                               │
+├─────────────────────────────────────────────────────────────┤
+│  _globalValue: Rx<T>           // Global setting value       │
+│  _booruOverrides: Map<String, T>  // Booru ID -> override    │
+│  supportsPerBooru: bool        // Whether this setting       │
+│                                // can be overridden per booru│
+├─────────────────────────────────────────────────────────────┤
+│  value (getter):               // Returns effective value:   │
+│    1. Check if current booru has override                    │
+│    2. If yes, return override                                │
+│    3. If no, return global value                             │
+├─────────────────────────────────────────────────────────────┤
+│  globalValue: T                // Always returns global      │
+│  getOverrideFor(booruId): T?   // Get specific override      │
+│  setOverrideFor(booruId, val)  // Set specific override      │
+│  removeOverrideFor(booruId)    // Remove override (use global)│
+│  hasOverrideFor(booruId): bool // Check if override exists   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow
+
+```
+User changes setting for "Danbooru":
+  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+  │ Settings UI  │────►│   Setting    │────►│  JSON Save   │
+  │ (per-booru)  │     │ setOverride  │     │              │
+  └──────────────┘     └──────────────┘     └──────────────┘
+
+User views "Danbooru":
+  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+  │ SearchHandler│────►│   Setting    │────►│ Effective    │
+  │ currentBooru │     │   .value     │     │ Value Used   │
+  └──────────────┘     └──────────────┘     └──────────────┘
+                              │
+                              ▼
+                       Has override? ─Yes─► Return override
+                              │
+                              No
+                              │
+                              ▼
+                       Return global value
+```
+
+### Setting<T> Updates
+
+```dart
+abstract class Setting<T> {
+  Setting({
+    required this.key,
+    required this.getDefaultValue,
+    required this.localization,
+    this.categories = const [],
+    this.isDeviceSpecific = false,
+    this.supportsPerBooru = false,    // NEW: Can this setting be overridden per booru?
+    this.widgetConfig,
+    this.dependsOn,
+    this.enabledWhen,
+  }) : _globalValue = getDefaultValue().obs,
+       _booruOverrides = <String, T>{}.obs;
+
+  final SettingKey key;
+  final T Function() getDefaultValue;
+  final SettingLocalization localization;
+  final List<SettingCategory> categories;
+  final bool isDeviceSpecific;
+  final bool supportsPerBooru;              // NEW
+  final SettingWidgetConfig? widgetConfig;
+  final List<SettingKey>? dependsOn;
+  final bool Function()? enabledWhen;
+
+  final Rx<T> _globalValue;
+  final RxMap<String, T> _booruOverrides;   // NEW: Booru ID -> override value
+
+  // ============================================
+  // VALUE ACCESS
+  // ============================================
+
+  /// Get the effective value (considers current booru override)
+  T get value {
+    if (!supportsPerBooru) return _globalValue.value;
+
+    final currentBooruId = _getCurrentBooruId();
+    if (currentBooruId != null && _booruOverrides.containsKey(currentBooruId)) {
+      return _booruOverrides[currentBooruId]!;
+    }
+    return _globalValue.value;
+  }
+
+  /// Set the effective value (sets override if in per-booru context, otherwise global)
+  set value(T newValue) {
+    final validated = validate(newValue);
+
+    // If we're in a per-booru settings context, set the override
+    if (_isEditingBooruOverride && supportsPerBooru) {
+      final booruId = _getEditingBooruId();
+      if (booruId != null) {
+        _booruOverrides[booruId] = validated;
+        return;
+      }
+    }
+
+    _globalValue.value = validated;
+  }
+
+  /// Always get/set the global value (ignoring overrides)
+  T get globalValue => _globalValue.value;
+  set globalValue(T newValue) => _globalValue.value = validate(newValue);
+
+  /// Get the reactive global value
+  Rx<T> get rxGlobal => _globalValue;
+
+  /// Get reactive effective value (rebuilds when booru changes or override changes)
+  T get effectiveValue => value;
+
+  // ============================================
+  // PER-BOORU OVERRIDE MANAGEMENT
+  // ============================================
+
+  /// Check if a booru has an override
+  bool hasOverrideFor(String booruId) => _booruOverrides.containsKey(booruId);
+
+  /// Get override for specific booru (null if none)
+  T? getOverrideFor(String booruId) => _booruOverrides[booruId];
+
+  /// Set override for specific booru
+  void setOverrideFor(String booruId, T value) {
+    _booruOverrides[booruId] = validate(value);
+  }
+
+  /// Remove override for booru (will use global value)
+  void removeOverrideFor(String booruId) {
+    _booruOverrides.remove(booruId);
+  }
+
+  /// Get all booru IDs that have overrides
+  Iterable<String> get boorusWithOverrides => _booruOverrides.keys;
+
+  /// Clear all overrides
+  void clearAllOverrides() {
+    _booruOverrides.clear();
+  }
+
+  // ============================================
+  // CONTEXT HELPERS (implemented by registry)
+  // ============================================
+
+  String? _getCurrentBooruId() {
+    return SettingsRegistry.instance.currentBooruId;
+  }
+
+  bool get _isEditingBooruOverride {
+    return SettingsRegistry.instance.isEditingBooruOverride;
+  }
+
+  String? _getEditingBooruId() {
+    return SettingsRegistry.instance.editingBooruId;
+  }
+
+  // ============================================
+  // SERIALIZATION
+  // ============================================
+
+  /// Serialize to JSON (includes overrides)
+  @override
+  Map<String, dynamic> toFullJson() {
+    return {
+      'value': toJson(),  // Global value
+      if (_booruOverrides.isNotEmpty)
+        'booruOverrides': _booruOverrides.map(
+          (booruId, value) => MapEntry(booruId, _valueToJson(value)),
+        ),
+    };
+  }
+
+  /// Load from JSON (includes overrides)
+  void loadFromFullJson(Map<String, dynamic> json) {
+    if (json.containsKey('value')) {
+      _globalValue.value = fromJson(json['value']);
+    }
+
+    if (json.containsKey('booruOverrides') && supportsPerBooru) {
+      final overrides = json['booruOverrides'] as Map<String, dynamic>;
+      _booruOverrides.clear();
+      for (final entry in overrides.entries) {
+        _booruOverrides[entry.key] = fromJson(entry.value);
+      }
+    }
+  }
+
+  dynamic _valueToJson(T value);  // Implemented by subclasses
+}
+```
+
+### SettingsRegistry Updates
+
+```dart
+class SettingsRegistry {
+  // ... existing code ...
+
+  /// Current booru context (set by SearchHandler when booru changes)
+  String? _currentBooruId;
+  String? get currentBooruId => _currentBooruId;
+
+  void setCurrentBooru(String? booruId) {
+    _currentBooruId = booruId;
+  }
+
+  /// Editing context for per-booru settings pages
+  String? _editingBooruId;
+  bool _isEditingBooruOverride = false;
+
+  String? get editingBooruId => _editingBooruId;
+  bool get isEditingBooruOverride => _isEditingBooruOverride;
+
+  /// Enter per-booru editing mode
+  void beginEditingBooruOverride(String booruId) {
+    _editingBooruId = booruId;
+    _isEditingBooruOverride = true;
+  }
+
+  /// Exit per-booru editing mode
+  void endEditingBooruOverride() {
+    _editingBooruId = null;
+    _isEditingBooruOverride = false;
+  }
+
+  /// Get all settings that support per-booru overrides
+  List<Setting> get perBooruSettings {
+    return _settings.values.where((s) => s.supportsPerBooru).toList();
+  }
+
+  /// Get settings with overrides for a specific booru
+  List<Setting> getOverridesForBooru(String booruId) {
+    return _settings.values
+        .where((s) => s.supportsPerBooru && s.hasOverrideFor(booruId))
+        .toList();
+  }
+
+  /// Copy all overrides from one booru to another
+  void copyOverrides(String fromBooruId, String toBooruId) {
+    for (final setting in perBooruSettings) {
+      final override = setting.getOverrideFor(fromBooruId);
+      if (override != null) {
+        setting.setOverrideFor(toBooruId, override);
+      }
+    }
+  }
+
+  /// Remove all overrides for a booru (e.g., when booru is deleted)
+  void removeAllOverridesForBooru(String booruId) {
+    for (final setting in perBooruSettings) {
+      setting.removeOverrideFor(booruId);
+    }
+  }
+}
+```
+
+### JSON Storage Format
+
+```json
+{
+  "portraitColumns": {
+    "value": 2,
+    "booruOverrides": {
+      "danbooru_12345": 4,
+      "gelbooru_67890": 3
+    }
+  },
+  "previewMode": {
+    "value": "sample",
+    "booruOverrides": {
+      "danbooru_12345": "thumbnail"
+    }
+  },
+  "autoPlayEnabled": {
+    "value": true
+  }
+}
+```
+
+### Backwards Compatibility
+
+For settings without overrides, support simple format:
+```json
+{
+  "portraitColumns": 2,
+  "autoPlayEnabled": true
+}
+```
+
+Loading logic:
+```dart
+void loadFromJson(dynamic json) {
+  if (json is Map<String, dynamic>) {
+    // New format with potential overrides
+    loadFromFullJson(json);
+  } else {
+    // Legacy format - just the value
+    _globalValue.value = fromJson(json);
+  }
+}
+```
+
+### Per-Booru Settings Page
+
+```dart
+class BooruSettingsPage extends StatefulWidget {
+  const BooruSettingsPage({
+    required this.booru,
+    super.key,
+  });
+
+  final Booru booru;
+
+  @override
+  State<BooruSettingsPage> createState() => _BooruSettingsPageState();
+}
+
+class _BooruSettingsPageState extends State<BooruSettingsPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Enter per-booru editing mode
+    SettingsRegistry.instance.beginEditingBooruOverride(widget.booru.id);
+  }
+
+  @override
+  void dispose() {
+    // Exit per-booru editing mode
+    SettingsRegistry.instance.endEditingBooruOverride();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final perBooruSettings = SettingsRegistry.instance.perBooruSettings;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${widget.booru.name} Settings'),
+      ),
+      body: ListView.builder(
+        itemCount: perBooruSettings.length,
+        itemBuilder: (context, index) {
+          final setting = perBooruSettings[index];
+          final hasOverride = setting.hasOverrideFor(widget.booru.id);
+
+          return Column(
+            children: [
+              // Override toggle
+              SwitchListTile(
+                title: Text('Use custom value'),
+                subtitle: Text(hasOverride
+                    ? 'Custom value for ${widget.booru.name}'
+                    : 'Using global value'),
+                value: hasOverride,
+                onChanged: (enabled) {
+                  setState(() {
+                    if (enabled) {
+                      // Copy global value as starting point
+                      setting.setOverrideFor(widget.booru.id, setting.globalValue);
+                    } else {
+                      setting.removeOverrideFor(widget.booru.id);
+                    }
+                  });
+                },
+              ),
+              // Setting widget (only editable if override enabled)
+              if (hasOverride)
+                setting.buildWidget(context),
+              const Divider(),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+```
+
+### Widget Updates for Per-Booru Indicator
+
+```dart
+class SettingsToggle extends StatelessWidget {
+  // ... existing params ...
+  final bool hasOverride;  // NEW: Show indicator if per-booru override active
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Row(
+        children: [
+          Text(title),
+          if (hasOverride) ...[
+            const SizedBox(width: 8),
+            Tooltip(
+              message: 'Custom value for current booru',
+              child: Icon(
+                Icons.tune,
+                size: 16,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ],
+        ],
+      ),
+      // ... rest of widget
+    );
+  }
+}
+```
+
+### Example: Setting with Per-Booru Support
+
+```dart
+registry.register(IntSetting(
+  key: SettingKey.portraitColumns,
+  getDefaultValue: () => SettingsHandler.isDesktopPlatform ? 5 : 2,
+  min: 1, max: 100, step: 1,
+  categories: [SettingCategory.interface],
+  supportsPerBooru: true,  // This setting can be customized per booru!
+  localization: SettingLocalization(
+    title: (ctx) => ctx.loc.settings.interface.previewColumnsPortrait,
+    searchKeywords: (ctx) => [ctx.loc.search.columns, ctx.loc.search.grid],
+  ),
+));
+
+// Settings that should NOT have per-booru overrides:
+registry.register(ThemeModeSetting(
+  key: SettingKey.themeMode,
+  getDefaultValue: () => ThemeMode.system,
+  categories: [SettingCategory.theme],
+  supportsPerBooru: false,  // Theme is global, not per-booru
+  localization: SettingLocalization(
+    title: (ctx) => ctx.loc.settings.theme.themeMode,
+  ),
+));
+```
+
+### Settings Likely to Support Per-Booru Overrides
+
+| Setting | Reason |
+|---------|--------|
+| `portraitColumns` | Different sites may need different grid densities |
+| `landscapeColumns` | Same as above |
+| `previewMode` | Some sites have better thumbnails than others |
+| `limit` | Some sites handle pagination differently |
+| `autoPlayEnabled` | May want videos on some sites but not others |
+| `startVideosMuted` | Site-specific preference |
+| `filterHated` | Different filter preferences per site |
+| `defTags` | Default search tags per site |
+
+### Settings That Should Stay Global
+
+| Setting | Reason |
+|---------|--------|
+| `theme` | Visual preference is app-wide |
+| `themeMode` | Same as above |
+| `locale` | Language is app-wide |
+| `backupPath` | Storage location is device-specific |
+| `useLockscreen` | Security is app-wide |
 
 ---
 
@@ -1363,3 +1837,4 @@ Once all pages migrated:
 - `getDefaultValue` is a function to support platform-specific defaults (desktop vs mobile)
 - `visibleWhen` on categories allows hiding entire sections conditionally (e.g., debug settings)
 - Border handling moved to `AutoSettingsPage.settingBuilder` for flexibility
+- **Per-booru overrides**: Settings with `supportsPerBooru: true` can have custom values per booru that override the global value. The effective value is determined by checking if the current booru has an override, falling back to global. This enables site-specific customization (e.g., different column counts, preview quality, or filters for different boorus).
