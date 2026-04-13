@@ -113,6 +113,7 @@ class GelbooruAlikesHandler extends BooruHandler {
         score: getAttrOrElem(current, 'score')?.toString(),
         sources: getAttrOrElem(current, 'source') != null ? [getAttrOrElem(current, 'source')!] : null,
         md5String: getAttrOrElem(current, 'md5')?.toString(),
+        uploaderId: getAttrOrElem(current, 'creator_id')?.toString(),
         postDate: getAttrOrElem(current, 'created_at')?.toString(), // Fri Jun 18 02:13:45 -0500 2021
         postDateFormat: 'EEE MMM dd HH:mm:ss  yyyy', // when timezone support added: "EEE MMM dd HH:mm:ss Z yyyy",
       );
@@ -353,6 +354,7 @@ class GelbooruAlikesHandler extends BooruHandler {
   @override
   NoteItem? parseNote(dynamic responseItem, int index) {
     final current = responseItem;
+    if (current.getAttribute('is_active') == false) return null;
     return NoteItem(
       id: current.getAttribute('id'),
       postID: current.getAttribute('post_id'),
@@ -442,6 +444,14 @@ class GelbooruAlikesHandler extends BooruHandler {
             item.tagsList[tagIndex].count = t.count;
           }
         }
+
+        final uploaderElem = html.getElementById('stats')?.getElementsByTagName('a').firstOrNull;
+        if (uploaderElem != null &&
+            uploaderElem.attributes['href']?.isNotEmpty == true &&
+            uploaderElem.attributes['href'] != '#') {
+          item.uploaderName = uploaderElem.text.trim();
+        }
+
         item.isUpdated = true;
         return (item: item, failed: false, error: null);
       }
@@ -493,7 +503,7 @@ class GelbooruAlikesHandler extends BooruHandler {
       ),
       ComparableNumberMetaTag(name: 'Score', keyName: 'score'),
       StringMetaTag(name: 'ID', keyName: 'id'),
-      StringMetaTag(name: 'User', keyName: 'user'),
+      UserMetaTag(),
       // StringMetaTag(name: 'Favourites of user ID (fav:{id})', keyName: 'fav'),
       StringMetaTag(name: 'Parent ID', keyName: 'parent'),
       StringMetaTag(name: 'MD5', keyName: 'md5'),

@@ -9,6 +9,7 @@ import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/data/settings/proxy_type.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/http_overrides.dart';
+import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -54,30 +55,21 @@ class _NetworkPageState extends State<NetworkPage> {
     super.dispose();
   }
 
-  Future<void> _onPopInvoked(bool didPop, _) async {
-    if (didPop) {
-      return;
-    }
-
+  Future<void> _onPopInvoked(_, _) async {
     settingsHandler.allowSelfSignedCerts = allowSelfSignedCerts;
     settingsHandler.customUserAgent = userAgentController.text;
     settingsHandler.proxyType = proxyType;
     settingsHandler.proxyAddress = proxyAddressController.text;
     settingsHandler.proxyUsername = proxyUsernameController.text;
     settingsHandler.proxyPassword = proxyPasswordController.text;
-    final bool result = await settingsHandler.saveSettings(restate: false);
+    await settingsHandler.saveSettings(restate: false);
 
     await initProxy();
-
-    if (result) {
-      Navigator.of(context).pop();
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
       onPopInvokedWithResult: _onPopInvoked,
       child: Scaffold(
         resizeToAvoidBottomInset: false,
@@ -107,7 +99,7 @@ class _NetworkPageState extends State<NetworkPage> {
                 },
                 title: context.loc.settings.network.proxy,
                 subtitle: Text(context.loc.settings.network.proxySubtitle),
-                itemTitleBuilder: (e) => e?.locName(context) ?? '',
+                itemTitleBuilder: (e) => e?.locName ?? '',
               ),
               if (!proxyType.isDirect && !proxyType.isSystem) ...[
                 SettingsTextInput(
@@ -168,7 +160,6 @@ class _NetworkPageState extends State<NetworkPage> {
               if (userAgentController.text != Constants.defaultBrowserUserAgent)
                 SettingsButton(
                   name: context.loc.settings.network.setBrowserUserAgent,
-                  subtitle: const Text(Constants.defaultBrowserUserAgent),
                   action: () {
                     userAgentController.text = Constants.defaultBrowserUserAgent;
                     setState(() {});
@@ -196,7 +187,7 @@ class _NetworkPageState extends State<NetworkPage> {
                   }
                   setState(() {});
                 },
-                title: context.loc.settings.network.booru,
+                title: context.loc.booru,
                 subtitle: Text(context.loc.settings.network.selectBooruToClearCookies),
               ),
               if (selectedBooruCookies.isNotEmpty) ...[
@@ -208,12 +199,29 @@ class _NetworkPageState extends State<NetworkPage> {
                   SettingsButton(
                     name:
                         '${cookie.name} = ${cookie.value}${cookie.expiresDate != null ? '\nExpires: ${DateTime.fromMillisecondsSinceEpoch(cookie.expiresDate!)}' : ''}',
-                    action: () {
-                      CookieManager.instance(webViewEnvironment: webViewEnvironment).deleteCookie(
-                        url: WebUri(selectedBooru!.baseURL!),
-                        name: cookie.name,
-                      );
+                    action: () async {
+                      final bool res = await CookieManager.instance(webViewEnvironment: webViewEnvironment)
+                          .deleteCookie(
+                            url: WebUri(selectedBooru!.baseURL!),
+                            name: cookie.name,
+                          );
                       globalWindowsCookies[selectedBooru!.baseURL!]?.remove(cookie);
+
+                      if (!res) {
+                        Logger.Inst().log(
+                          'Failed to delete cookie',
+                          'NetworkPage',
+                          'deleteCookie',
+                          LogTypes.exception,
+                          s: StackTrace.current,
+                        );
+                        FlashElements.showSnackbar(
+                          context: context,
+                          title: Text(context.loc.error),
+                        );
+                        return;
+                      }
+
                       selectedBooruCookies.removeAt(selectedBooruCookies.indexOf(cookie));
                       setState(() {});
                       FlashElements.showSnackbar(
@@ -234,10 +242,26 @@ class _NetworkPageState extends State<NetworkPage> {
                 ),
                 action: () async {
                   if (selectedBooru != null) {
-                    await CookieManager.instance(
+                    final bool res = await CookieManager.instance(
                       webViewEnvironment: webViewEnvironment,
                     ).deleteCookies(url: WebUri(selectedBooru!.baseURL!));
                     globalWindowsCookies[selectedBooru!.baseURL!]?.clear();
+
+                    if (!res) {
+                      Logger.Inst().log(
+                        'Failed to delete cookies',
+                        'NetworkPage',
+                        'deleteCookies',
+                        LogTypes.exception,
+                        s: StackTrace.current,
+                      );
+                      FlashElements.showSnackbar(
+                        context: context,
+                        title: Text(context.loc.error),
+                      );
+                      return;
+                    }
+
                     FlashElements.showSnackbar(
                       context: context,
                       title: Text(

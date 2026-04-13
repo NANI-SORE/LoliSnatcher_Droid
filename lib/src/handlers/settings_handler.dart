@@ -12,6 +12,7 @@ import 'package:fvp/fvp.dart' as fvp;
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
+import 'package:lolisnatcher/src/pages/settings/language_page.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import 'package:lolisnatcher/gen/strings.g.dart';
@@ -43,6 +44,7 @@ import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/secure_storage_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
+import 'package:lolisnatcher/src/services/saf_file_cache.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/http_overrides.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
@@ -131,13 +133,14 @@ class SettingsHandler {
   MpvVideoOutput altVideoPlayerVO = MpvVideoOutput.defaultValue;
   MpvHardwareDecoding altVideoPlayerHWDEC = MpvHardwareDecoding.defaultValue;
 
-  List<String> hatedTags = [];
-  List<String> lovedTags = [];
+  Set<String> hiddenTags = {};
+  Set<String> markedTags = {};
 
   int itemLimit = Constants.defaultItemLimit;
   int portraitColumns = 2;
   int landscapeColumns = 4;
   int preloadCount = 1;
+  int preloadHeight = 4096 * 4;
   int snatchCooldown = 250;
   int volumeButtonsScrollSpeed = 200;
   int galleryAutoScrollTime = 4000;
@@ -160,19 +163,19 @@ class SettingsHandler {
   bool autoPlayEnabled = true;
   bool loadingGif = false;
   bool thumbnailCache = true;
-  bool mediaCache = false;
+  bool mediaCache = true;
   bool autoHideImageBar = false;
   bool dbEnabled = true;
   bool indexesEnabled = false;
   bool searchHistoryEnabled = true;
   bool filterHated = false;
+  bool filterMarked = false;
   bool filterFavourites = false;
   bool filterSnatched = false;
   bool filterAi = false;
   bool useVolumeButtonsForScroll = false;
   bool shitDevice = false;
   bool disableVideo = false;
-  bool longTapFastForwardVideo = false;
   bool enableDrawerMascot = false;
   bool allowSelfSignedCerts = false;
   bool wakeLockEnabled = true;
@@ -196,6 +199,7 @@ class SettingsHandler {
   bool showSearchbarQuickActions = false;
   bool autofocusSearchbar = true;
   bool expandDetails = false;
+  bool usePredictiveBack = true;
   final RxBool useLockscreen = false.obs;
   final RxBool blurOnLeave = false.obs;
   final RxList<Booru> booruList = RxList<Booru>([]);
@@ -224,7 +228,6 @@ class SettingsHandler {
   List<String> deviceSpecificSettings = [
     'shitDevice',
     'disableVideo',
-    'longTapFastForwardVideo',
     'thumbnailCache',
     'mediaCache',
     'dbEnabled',
@@ -279,6 +282,7 @@ class SettingsHandler {
     'showSearchbarQuickActions',
     'autofocusSearchbar',
     'expandDetails',
+    'usePredictiveBack',
     'useLockscreen',
     'blurOnLeave',
   ];
@@ -420,7 +424,15 @@ class SettingsHandler {
       'type': 'stringList',
       'default': <String>[],
     },
+    'hiddenTags': {
+      'type': 'stringList',
+      'default': <String>[],
+    },
     'lovedTags': {
+      'type': 'stringList',
+      'default': <String>[],
+    },
+    'markedTags': {
       'type': 'stringList',
       'default': <String>[],
     },
@@ -451,7 +463,14 @@ class SettingsHandler {
       'type': 'int',
       'default': 1,
       'step': 1,
-      'upperLimit': 3,
+      'upperLimit': 4,
+      'lowerLimit': 0,
+    },
+    'preloadHeight': {
+      'type': 'int',
+      'default': 4096 * 4,
+      'step': 1024,
+      'upperLimit': 2_000_000_000,
       'lowerLimit': 0,
     },
     'snatchCooldown': {
@@ -525,7 +544,7 @@ class SettingsHandler {
     },
     'mediaCache': {
       'type': 'bool',
-      'default': false,
+      'default': true,
     },
     'autoHideImageBar': {
       'type': 'bool',
@@ -544,6 +563,10 @@ class SettingsHandler {
       'default': true,
     },
     'filterHated': {
+      'type': 'bool',
+      'default': false,
+    },
+    'filterMarked': {
       'type': 'bool',
       'default': false,
     },
@@ -568,10 +591,6 @@ class SettingsHandler {
       'default': false,
     },
     'disableVideo': {
-      'type': 'bool',
-      'default': false,
-    },
-    'longTapFastForwardVideo': {
       'type': 'bool',
       'default': false,
     },
@@ -671,6 +690,10 @@ class SettingsHandler {
     'expandDetails': {
       'type': 'bool',
       'default': false,
+    },
+    'usePredictiveBack': {
+      'type': 'bool',
+      'default': true,
     },
     'useLockscreen': {
       'type': 'bool',
@@ -909,7 +932,7 @@ class SettingsHandler {
             return (value as AppLocale?)?.name;
           } else {
             if (value is String) {
-              return AppLocale.values.firstWhereOrNull((e) => e.name == value);
+              return AppLocaleExt.allowedValues.firstWhereOrNull((e) => e.name == value);
             } else {
               return settingParams['default'];
             }
@@ -1038,6 +1061,8 @@ class SettingsHandler {
         return landscapeColumns;
       case 'preloadCount':
         return preloadCount;
+      case 'preloadHeight':
+        return preloadHeight;
       case 'snatchCooldown':
         return snatchCooldown;
       case 'galleryBarPosition':
@@ -1049,9 +1074,11 @@ class SettingsHandler {
       case 'disabledButtons':
         return disabledButtons;
       case 'hatedTags':
-        return hatedTags;
+      case 'hiddenTags':
+        return hiddenTags;
       case 'lovedTags':
-        return lovedTags;
+      case 'markedTags':
+        return markedTags;
       case 'autoPlayEnabled':
         return autoPlayEnabled;
       case 'loadingGif':
@@ -1070,6 +1097,8 @@ class SettingsHandler {
         return searchHistoryEnabled;
       case 'filterHated':
         return filterHated;
+      case 'filterMarked':
+        return filterMarked;
       case 'filterFavourites':
         return filterFavourites;
       case 'filterSnatched':
@@ -1086,8 +1115,6 @@ class SettingsHandler {
         return preloadSizeLimit;
       case 'disableVideo':
         return disableVideo;
-      case 'longTapFastForwardVideo':
-        return longTapFastForwardVideo;
       case 'shitDevice':
         return shitDevice;
       case 'galleryAutoScrollTime':
@@ -1124,6 +1151,8 @@ class SettingsHandler {
         return autofocusSearchbar;
       case 'expandDetails':
         return expandDetails;
+      case 'usePredictiveBack':
+        return usePredictiveBack;
       case 'useLockscreen':
         return useLockscreen;
       case 'blurOnLeave':
@@ -1253,6 +1282,9 @@ class SettingsHandler {
       case 'preloadCount':
         preloadCount = validatedValue;
         break;
+      case 'preloadHeight':
+        preloadHeight = validatedValue;
+        break;
       case 'snatchCooldown':
         snatchCooldown = validatedValue;
         break;
@@ -1302,6 +1334,9 @@ class SettingsHandler {
       case 'filterHated':
         filterHated = validatedValue;
         break;
+      case 'filterMarked':
+        filterMarked = validatedValue;
+        break;
       case 'filterFavourites':
         filterFavourites = validatedValue;
         break;
@@ -1325,9 +1360,6 @@ class SettingsHandler {
         break;
       case 'disableVideo':
         disableVideo = validatedValue;
-        break;
-      case 'longTapFastForwardVideo':
-        longTapFastForwardVideo = validatedValue;
         break;
       case 'shitDevice':
         shitDevice = validatedValue;
@@ -1370,6 +1402,7 @@ class SettingsHandler {
         break;
       case 'extPathOverride':
         extPathOverride = validatedValue;
+        SAFFileCache.instance.invalidate();
         break;
       case 'backupPath':
         backupPath = validatedValue;
@@ -1464,6 +1497,9 @@ class SettingsHandler {
       case 'expandDetails':
         expandDetails = validatedValue;
         break;
+      case 'usePredictiveBack':
+        usePredictiveBack = validatedValue;
+        break;
       case 'useLockscreen':
         useLockscreen.value = validatedValue;
         break;
@@ -1519,10 +1555,12 @@ class SettingsHandler {
     // Auto-generate JSON from map keys
     for (final key in map.keys) {
       // Special handling for tags (need to be cleaned)
-      if (key == 'hatedTags') {
-        json[key] = cleanTagsList(hatedTags.map(Tag.new).toList());
-      } else if (key == 'lovedTags') {
-        json[key] = cleanTagsList(lovedTags.map(Tag.new).toList());
+      if (key == 'hatedTags' || key == 'lovedTags') {
+        // do nothing, legacy key
+      } else if (key == 'hiddenTags') {
+        json[key] = cleanTagsList(hiddenTags.map(Tag.new).toList());
+      } else if (key == 'markedTags') {
+        json[key] = cleanTagsList(markedTags.map(Tag.new).toList());
       } else {
         json[key] = validateValue(key, null, toJSON: true);
       }
@@ -1618,25 +1656,24 @@ class SettingsHandler {
     }
 
     try {
-      dynamic tempHatedTags = json['hatedTags'];
-      if (tempHatedTags is List) {
-        // print('hatedTags is a list');
-      } else if (tempHatedTags is String) {
-        // print('hatedTags is a string');
-        tempHatedTags = tempHatedTags.split(',');
+      dynamic tempHiddenTags = json['hiddenTags'] ?? json['hatedTags'];
+      if (tempHiddenTags is List) {
+        // print('hiddenTags is a list');
+      } else if (tempHiddenTags is String) {
+        // print('hiddenTags is a string');
+        tempHiddenTags = tempHiddenTags.split(',');
       } else {
-        // print('hatedTags is a ${tempHatedTags.runtimeType} type');
-        tempHatedTags = [];
+        // print('hiddenTags is a ${tempHiddenTags.runtimeType} type');
+        tempHiddenTags = [];
       }
-      final List<String> hateTags = List<String>.from(tempHatedTags);
-      for (int i = 0; i < hateTags.length; i++) {
-        if (!hatedTags.contains(hateTags.elementAt(i))) {
-          hatedTags.add(hateTags.elementAt(i));
-        }
+      hiddenTags.clear();
+      final List<String> hideTags = List<String>.from(tempHiddenTags);
+      for (int i = 0; i < hideTags.length; i++) {
+        hiddenTags.add(hideTags.elementAt(i));
       }
     } catch (e, s) {
       Logger.Inst().log(
-        'Failed to parse hated tags $e',
+        'Failed to parse hidden tags $e',
         'SettingsHandler',
         'loadFromJSON',
         LogTypes.exception,
@@ -1645,25 +1682,24 @@ class SettingsHandler {
     }
 
     try {
-      dynamic tempLovedTags = json['lovedTags'];
-      if (tempLovedTags is List) {
-        // print('lovedTags is a list');
-      } else if (tempLovedTags is String) {
-        // print('lovedTags is a string');
-        tempLovedTags = tempLovedTags.split(',');
+      dynamic tempMarkedTags = json['markedTags'] ?? json['lovedTags'];
+      if (tempMarkedTags is List) {
+        // print('markedTags is a list');
+      } else if (tempMarkedTags is String) {
+        // print('markedTags is a string');
+        tempMarkedTags = tempMarkedTags.split(',');
       } else {
-        // print('lovedTags is a ${tempLovedTags.runtimeType} type');
-        tempLovedTags = [];
+        // print('markedTags is a ${tempMarkedTags.runtimeType} type');
+        tempMarkedTags = [];
       }
-      final List<String> loveTags = List<String>.from(tempLovedTags);
-      for (int i = 0; i < loveTags.length; i++) {
-        if (!lovedTags.contains(loveTags.elementAt(i))) {
-          lovedTags.add(loveTags.elementAt(i));
-        }
+      markedTags.clear();
+      final List<String> markTags = List<String>.from(tempMarkedTags);
+      for (int i = 0; i < markTags.length; i++) {
+        markedTags.add(markTags.elementAt(i));
       }
     } catch (e, s) {
       Logger.Inst().log(
-        'Failed to parse loved tags $e',
+        'Failed to parse marked tags $e',
         'SettingsHandler',
         'loadFromJSON',
         LogTypes.exception,
@@ -1676,8 +1712,8 @@ class SettingsHandler {
           (e) => ![
             'buttonOrder',
             'disabledButtons',
-            'hatedTags',
-            'lovedTags',
+            'hiddenTags',
+            'markedTags',
           ].contains(e),
         )
         .toList();
@@ -1913,50 +1949,48 @@ class SettingsHandler {
 
   TagsListData parseTagsList(List<Tag> itemTags, {bool isCapped = true}) {
     final List<String> cleanItemTags = cleanTagsList(itemTags);
-    List<String> hatedInItem = hatedTags.where(cleanItemTags.contains).toList();
-    List<String> lovedInItem = lovedTags.where(cleanItemTags.contains).toList();
+    List<String> hiddenInItem = cleanItemTags.where(hiddenTags.contains).toList();
+    List<String> markedInItem = cleanItemTags.where(markedTags.contains).toList();
     final List<String> soundInItem = soundTags.where(cleanItemTags.contains).toList();
     final List<String> aiInItem = aiTags.where(cleanItemTags.contains).toList();
 
     if (isCapped) {
-      if (hatedInItem.length > 5) {
-        hatedInItem = [...hatedInItem.take(5), '...'];
+      if (hiddenInItem.length > 5) {
+        hiddenInItem = [...hiddenInItem.take(5), '...'];
       }
-      if (lovedInItem.length > 5) {
-        lovedInItem = [...lovedInItem.take(5), '...'];
+      if (markedInItem.length > 5) {
+        markedInItem = [...markedInItem.take(5), '...'];
       }
     }
 
-    return TagsListData(hatedInItem, lovedInItem, soundInItem, aiInItem);
+    return TagsListData(hiddenInItem, markedInItem, soundInItem, aiInItem);
   }
 
-  bool containsHated(List<String> itemTags) {
-    return hatedTags.where(itemTags.contains).isNotEmpty;
+  bool containsHidden(List<String> itemTags) {
+    return itemTags.any(hiddenTags.contains);
   }
 
-  bool containsLoved(List<String> itemTags) {
-    return lovedTags.where(itemTags.contains).isNotEmpty;
+  bool containsMarked(List<String> itemTags) {
+    return itemTags.any(markedTags.contains);
   }
 
   bool containsSound(List<String> itemTags) {
-    return soundTags.where(itemTags.contains).isNotEmpty;
+    return itemTags.any(soundTags.contains);
   }
 
   bool containsAI(List<String> itemTags) {
-    return aiTags.where(itemTags.contains).isNotEmpty;
+    return itemTags.any(aiTags.contains);
   }
 
   void addTagToList(String type, String tag) {
     switch (type) {
       case 'hated':
-        if (!hatedTags.contains(tag)) {
-          hatedTags.add(tag);
-        }
+      case 'hidden':
+        hiddenTags.add(tag);
         break;
       case 'loved':
-        if (!lovedTags.contains(tag)) {
-          lovedTags.add(tag);
-        }
+      case 'marked':
+        markedTags.add(tag);
         break;
       default:
         break;
@@ -1967,14 +2001,12 @@ class SettingsHandler {
   void removeTagFromList(String type, String tag) {
     switch (type) {
       case 'hated':
-        if (hatedTags.contains(tag)) {
-          hatedTags.remove(tag);
-        }
+      case 'hidden':
+        hiddenTags.remove(tag);
         break;
       case 'loved':
-        if (lovedTags.contains(tag)) {
-          lovedTags.remove(tag);
-        }
+      case 'marked':
+        markedTags.remove(tag);
         break;
       default:
         break;
@@ -2308,6 +2340,10 @@ class SettingsHandler {
           : null,
     );
 
+    if (Platform.isAndroid && extPathOverride.isNotEmpty) {
+      unawaited(SAFFileCache.instance.populate(extPathOverride));
+    }
+
     isInit.value = true;
     return;
   }
@@ -2392,14 +2428,14 @@ class EnvironmentConfig {
 
 class TagsListData {
   const TagsListData([
-    this.hatedTags = const [],
-    this.lovedTags = const [],
+    this.hiddenTags = const [],
+    this.markedTags = const [],
     this.soundTags = const [],
     this.aiTags = const [],
   ]);
 
-  final List<String> hatedTags;
-  final List<String> lovedTags;
+  final List<String> hiddenTags;
+  final List<String> markedTags;
   final List<String> soundTags;
   final List<String> aiTags;
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tf_list_item.dart';
 
@@ -43,13 +44,9 @@ class TagsFiltersList extends StatelessWidget {
         children: [
           SettingsTextInput(
             controller: tagSearchController,
-            title: isSearchActive
-                ? context.loc.settings.tagsFilters.searchFiltersFilteredCount(
-                    filtered: filteredCount,
-                    total: originalCount,
-                  )
-                : context.loc.settings.tagsFilters.searchFiltersCount(count: originalCount),
-            floatingLabelBehavior: FloatingLabelBehavior.always,
+            title:
+                '${context.loc.search} (${isSearchActive ? '${filteredCount.toFormattedString()}/${originalCount.toFormattedString()}' : originalCount.toFormattedString()})',
+            titleAsLabel: true,
             clearable: true,
             pasteable: true,
             onChanged: onSearchTextChanged,
@@ -59,8 +56,8 @@ class TagsFiltersList extends StatelessWidget {
           if (filteredTagsList.isEmpty)
             SettingsButton(
               name: isSearchActive
-                  ? context.loc.settings.tagsFilters.noFiltersFound
-                  : context.loc.settings.tagsFilters.noFiltersAdded,
+                  ? context.loc.settings.itemFilters.noFiltersFound
+                  : context.loc.settings.itemFilters.noFiltersAdded,
               action: () {
                 if (!isSearchActive) {
                   openAddDialog();

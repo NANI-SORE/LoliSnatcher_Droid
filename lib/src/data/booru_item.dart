@@ -32,6 +32,7 @@ class BooruItem extends Equatable {
     this.serverId,
     this.rating, // safe, explicit...
     this.score,
+    this.uploaderId,
     this.uploaderName,
     this.description,
     this.sources,
@@ -76,6 +77,7 @@ class BooruItem extends Equatable {
   String? serverId;
   String? rating;
   String? score;
+  String? uploaderId;
   String? uploaderName;
   String? description;
   String? md5String;
@@ -100,12 +102,12 @@ class BooruItem extends Equatable {
     return fileAspectRatio != null && fileAspectRatio! < 0.3;
   }
 
-  bool get isHated {
-    return SettingsHandler.instance.containsHated(tagsList.map((t) => t.fullString).toList());
+  bool get isHidden {
+    return SettingsHandler.instance.containsHidden(tagsList.map((t) => t.fullString).toList());
   }
 
-  bool get isLoved {
-    return SettingsHandler.instance.containsLoved(tagsList.map((t) => t.fullString).toList());
+  bool get isMarked {
+    return SettingsHandler.instance.containsMarked(tagsList.map((t) => t.fullString).toList());
   }
 
   bool get isSound {
@@ -160,6 +162,7 @@ class BooruItem extends Equatable {
     serverId,
     rating,
     score,
+    uploaderId,
     uploaderName,
     description,
     md5String,

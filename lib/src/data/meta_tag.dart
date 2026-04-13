@@ -15,15 +15,17 @@ enum MetaTagType {
   sort,
   string,
   stringFromList,
+  user,
   ;
 
-  bool get isBool => this == MetaTagType.boolean;
-  bool get isComparableNumber => this == MetaTagType.comparableNumber;
-  bool get isDate => this == MetaTagType.date;
-  bool get isNumber => this == MetaTagType.number;
-  bool get isSort => this == MetaTagType.sort;
-  bool get isString => this == MetaTagType.string;
-  bool get isStringFromList => this == MetaTagType.stringFromList;
+  bool get isBool => this == .boolean;
+  bool get isComparableNumber => this == .comparableNumber;
+  bool get isDate => this == .date;
+  bool get isNumber => this == .number;
+  bool get isSort => this == .sort;
+  bool get isString => this == .string;
+  bool get isStringFromList => this == .stringFromList;
+  bool get isUser => this == .user;
 }
 
 abstract class MetaTag {
@@ -34,7 +36,7 @@ abstract class MetaTag {
     this.isFree = false,
   });
 
-  MetaTagType get type => MetaTagType.string;
+  MetaTagType get type => .string;
 
   final String name;
 
@@ -93,20 +95,16 @@ abstract class MetaTag {
 
   Future<List<TagSuggestion>> getAutoComplete(String text) async {
     if (this is MetaTagWithValues) {
-      final List<dynamic> possibleValues = (this as MetaTagWithValues).values
-          .where((e) => (e is String && e.isNotEmpty) || e is MetaTagValue)
-          .toList();
+      final List<MetaTagValue> possibleValues = (this as MetaTagWithValues).values.toList();
 
       final List<TagSuggestion> suggestedTags = [];
       for (final value in possibleValues) {
-        final String v = value is String ? value : (value as MetaTagValue).value;
-
-        final tag = tagBuilder(null, null, v);
+        final tag = tagBuilder(null, null, value.value);
         if (tag.contains(text)) {
           suggestedTags.add(
             TagSuggestion(
               tag: tag,
-              description: value is MetaTagValue ? value.name : null,
+              description: value.value != value.name ? value.name : null,
             ),
           );
         }
@@ -116,26 +114,72 @@ abstract class MetaTag {
       return [];
     }
   }
+
+  MetaTag copyWith({
+    String? name,
+    String? keyName,
+    String? divider,
+    bool? isFree,
+  });
 }
 
-class MetaTagWithValues<T> extends MetaTag {
+class BasicMetaTag extends MetaTag {
+  BasicMetaTag({
+    required super.name,
+    required super.keyName,
+    super.divider = ':',
+    super.isFree = false,
+  });
+
+  @override
+  BasicMetaTag copyWith({
+    String? name,
+    String? keyName,
+    String? divider,
+    bool? isFree,
+  }) => BasicMetaTag(
+    name: name ?? this.name,
+    keyName: keyName ?? this.keyName,
+    divider: divider ?? this.divider,
+    isFree: isFree ?? this.isFree,
+  );
+}
+
+class MetaTagWithValues extends MetaTag {
   MetaTagWithValues({
     required super.name,
     required super.keyName,
     required this.values,
+    super.divider = ':',
     super.isFree = false,
   });
 
-  final List<T> values;
+  final List<MetaTagValue> values;
 
   @override
   bool get hasAutoComplete => true;
+
+  @override
+  MetaTagWithValues copyWith({
+    String? name,
+    String? keyName,
+    List<MetaTagValue>? values,
+    String? divider,
+    bool? isFree,
+  }) => MetaTagWithValues(
+    name: name ?? this.name,
+    keyName: keyName ?? this.keyName,
+    values: values ?? this.values,
+    divider: divider ?? this.divider,
+    isFree: isFree ?? this.isFree,
+  );
 }
 
 class MetaTagWithCompareModes extends MetaTag {
   MetaTagWithCompareModes({
     required super.name,
     required super.keyName,
+    super.divider = ':',
     this.compareModes = CompareMode.values,
     super.isFree = false,
   });
@@ -169,6 +213,21 @@ class MetaTagWithCompareModes extends MetaTag {
 
   @override
   RegExp get tagMatcher => RegExp('^($keyName)(:<=|:>=|:=|:)(\\S+)?');
+
+  @override
+  MetaTagWithCompareModes copyWith({
+    String? name,
+    String? keyName,
+    String? divider,
+    List<CompareMode>? compareModes,
+    bool? isFree,
+  }) => MetaTagWithCompareModes(
+    name: name ?? this.name,
+    keyName: keyName ?? this.keyName,
+    divider: divider ?? this.divider,
+    compareModes: compareModes ?? this.compareModes,
+    isFree: isFree ?? this.isFree,
+  );
 }
 
 //
@@ -183,7 +242,7 @@ class MetaTagValue {
   final String value;
 }
 
-class SortMetaTag extends MetaTagWithValues<MetaTagValue> {
+class SortMetaTag extends MetaTagWithValues {
   SortMetaTag({
     required super.values,
     super.isFree = false,
@@ -193,12 +252,12 @@ class SortMetaTag extends MetaTagWithValues<MetaTagValue> {
        );
 
   @override
-  MetaTagType get type => MetaTagType.sort;
+  MetaTagType get type => .sort;
 
   // values - score, score:desc, score:asc, date, date:desc, date:asc...
 }
 
-class OrderMetaTag extends MetaTagWithValues<MetaTagValue> {
+class OrderMetaTag extends MetaTagWithValues {
   OrderMetaTag({
     required super.values,
     super.isFree = false,
@@ -208,7 +267,7 @@ class OrderMetaTag extends MetaTagWithValues<MetaTagValue> {
        );
 
   @override
-  MetaTagType get type => MetaTagType.sort;
+  MetaTagType get type => .sort;
 }
 
 //
@@ -245,7 +304,7 @@ class DateMetaTag extends MetaTagWithCompareModes {
   final bool supportsRange;
 
   @override
-  MetaTagType get type => MetaTagType.date;
+  MetaTagType get type => .date;
 }
 
 class ComparableNumberMetaTag extends MetaTagWithCompareModes {
@@ -259,12 +318,12 @@ class ComparableNumberMetaTag extends MetaTagWithCompareModes {
   final String valuesDivider;
 
   @override
-  MetaTagType get type => MetaTagType.comparableNumber;
+  MetaTagType get type => .comparableNumber;
 }
 
 //
 
-class NumberMetaTag extends MetaTag {
+class NumberMetaTag extends BasicMetaTag {
   NumberMetaTag({
     required super.name,
     required super.keyName,
@@ -272,10 +331,10 @@ class NumberMetaTag extends MetaTag {
   });
 
   @override
-  MetaTagType get type => MetaTagType.number;
+  MetaTagType get type => .number;
 }
 
-class BoolMetaTag extends MetaTag {
+class BoolMetaTag extends BasicMetaTag {
   BoolMetaTag({
     required super.name,
     required super.keyName,
@@ -283,10 +342,10 @@ class BoolMetaTag extends MetaTag {
   });
 
   @override
-  MetaTagType get type => MetaTagType.boolean;
+  MetaTagType get type => .boolean;
 }
 
-class StringMetaTag extends MetaTag {
+class StringMetaTag extends BasicMetaTag {
   StringMetaTag({
     required super.name,
     required super.keyName,
@@ -294,25 +353,13 @@ class StringMetaTag extends MetaTag {
   });
 
   @override
-  MetaTagType get type => MetaTagType.string;
-}
-
-class StringFromListMetaTag extends MetaTagWithValues<String> {
-  StringFromListMetaTag({
-    required super.name,
-    required super.keyName,
-    required super.values,
-    super.isFree = false,
-  });
-
-  @override
-  MetaTagType get type => MetaTagType.stringFromList;
+  MetaTagType get type => .string;
 }
 
 /// Special tag, only used when booru has no metatags data.
 /// In that case this is used to do a generic detection of anything formatted like "key:value".
 /// Hidden from UI, only affects text styling in tag/tab widgets and tag suggestion search input
-class GenericMetaTag extends MetaTag {
+class GenericMetaTag extends BasicMetaTag {
   GenericMetaTag()
     : super(
         name: '',
@@ -335,7 +382,7 @@ class GenericMetaTag extends MetaTag {
   RegExp get tagMatcher => RegExp('^(\\w+)($divider)(\\S+)?');
 }
 
-class GenericRatingMetaTag extends MetaTagWithValues<MetaTagValue> {
+class GenericRatingMetaTag extends MetaTagWithValues {
   GenericRatingMetaTag()
     : super(
         name: 'Rating',
@@ -348,7 +395,7 @@ class GenericRatingMetaTag extends MetaTagWithValues<MetaTagValue> {
       );
 }
 
-class DanbooruGelbooruRatingMetaTag extends MetaTagWithValues<MetaTagValue> {
+class DanbooruGelbooruRatingMetaTag extends MetaTagWithValues {
   DanbooruGelbooruRatingMetaTag({
     super.isFree = false,
   }) : super(
@@ -363,7 +410,18 @@ class DanbooruGelbooruRatingMetaTag extends MetaTagWithValues<MetaTagValue> {
        );
 }
 
-class LocalDbSiteMetaTag extends MetaTagWithValues<MetaTagValue> {
+class UserMetaTag extends StringMetaTag {
+  UserMetaTag({
+    super.name = 'User',
+    super.keyName = 'user',
+    super.isFree = false,
+  });
+
+  @override
+  MetaTagType get type => .user;
+}
+
+class LocalDbSiteMetaTag extends MetaTagWithValues {
   LocalDbSiteMetaTag({
     super.isFree = false,
   }) : super(

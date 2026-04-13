@@ -6,8 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide FirstWhereOrNullExt;
 import 'package:get_it/get_it.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:uuid/uuid.dart';
 
@@ -267,10 +268,10 @@ class SearchHandler {
       AutoScrollController(); // will be overwritten on the first render because there is hasClients check
   RxDouble scrollOffset = 0.0.obs;
   // stream that will notify it's listeners about scroll events of the grid controller
-  StreamController<ScrollUpdateNotification>? _scrollStream;
-  Stream<ScrollUpdateNotification>? get scrollStream => _scrollStream?.stream;
+  StreamController<ScrollNotification>? _scrollStream;
+  Stream<ScrollNotification>? get scrollStream => _scrollStream?.stream;
 
-  void sendToScrollStream(ScrollUpdateNotification notification) {
+  void sendToScrollStream(ScrollNotification notification) {
     _scrollStream?.sink.add(notification);
 
     scrollOffset.value = gridScrollController.offset;
@@ -294,7 +295,11 @@ class SearchHandler {
 
   void removeTagFromSearch(String tag) {
     if (tag.isNotEmpty) {
-      searchTextController.text = searchTextController.text.replaceAll('-$tag', '').replaceAll(tag, '');
+      searchTextController.text = searchTextController.text
+          .replaceAll(RegExp(r'(?:-|~)?\d+#(?:-|~)?' + tag.regexpEscape()), '')
+          .replaceAll('-$tag', '')
+          .replaceAll('~$tag', '')
+          .replaceAll(tag, '');
     }
   }
 
@@ -408,45 +413,61 @@ class SearchHandler {
     isRunningAutoSearch.value = false;
   }
 
-  HasTabWithTagResult hasTabWithTag(String tag) {
+  HasTabWithTagResult hasTabWithTag(String tag, {Booru? customBooru}) {
     tag = tag.toLowerCase().trim();
-    List<SearchTab> tabsWithOnlyTag = tabs.where((tab) => tab.tags == tag).toList();
-    if (tabsWithOnlyTag.isNotEmpty) {
-      tabsWithOnlyTag = tabsWithOnlyTag.where((tab) => tab.tags.toLowerCase().trim() == tag).toList();
-      if (tabsWithOnlyTag.isNotEmpty) {
-        if (tabsWithOnlyTag.any((tab) => tab.selectedBooru.value == currentBooru)) {
-          return HasTabWithTagResult.onlyTag;
-        } else {
-          return HasTabWithTagResult.onlyTagDifferentBooru;
-        }
+    final Booru targetBooru = customBooru ?? currentBooru;
+
+    final onlyTagMatches = tabs.where((tab) => tab.tags.toLowerCase().trim() == tag);
+    if (onlyTagMatches.isNotEmpty) {
+      if (onlyTagMatches.any((tab) => tab.selectedBooru.value == targetBooru)) {
+        return HasTabWithTagResult.onlyTag;
       }
+      return HasTabWithTagResult.onlyTagDifferentBooru;
     }
 
-    List<SearchTab> tabsContainingTag = tabs
-        .where(
-          (tab) => tab.tags.contains(tag),
-        )
-        .toList();
-    if (tabsContainingTag.isNotEmpty) {
-      tabsContainingTag = tabsContainingTag
-          .where((tab) => tab.tags.toLowerCase().trim().split(' ').contains(tag))
-          .toList();
-      if (tabsContainingTag.isNotEmpty) {
-        return HasTabWithTagResult.containsTag;
-      }
+    if (getTabsContainingTag(tag).isNotEmpty) {
+      return HasTabWithTagResult.containsTag;
     }
 
     return HasTabWithTagResult.noTag;
   }
 
-  List<SearchTab> getTabsWithTag(String tag) {
-    final List<SearchTab> tabsWithTag = [];
-    for (final SearchTab tab in tabs) {
-      if (tab.tags.toLowerCase().trim().split(' ').contains(tag.toLowerCase().trim())) {
-        tabsWithTag.add(tab);
+  List<(int, SearchTab)> getTabsWithOnlyTag(String tag) {
+    tag = tag.toLowerCase().trim();
+    final result = <(int, SearchTab)>[];
+    for (int i = 0; i < tabs.length; i++) {
+      final tab = tabs[i];
+      final parts = tab.tags.toLowerCase().trim().split(' ');
+      if (parts.length == 1 && parts[0] == tag && tab.selectedBooru.value == currentBooru) {
+        result.add((i, tab));
       }
     }
-    return tabsWithTag;
+    return result;
+  }
+
+  List<(int, SearchTab)> getTabsWithOnlyTagDifferentBooru(String tag) {
+    tag = tag.toLowerCase().trim();
+    final result = <(int, SearchTab)>[];
+    for (int i = 0; i < tabs.length; i++) {
+      final tab = tabs[i];
+      final parts = tab.tags.toLowerCase().trim().split(' ');
+      if (parts.length == 1 && parts[0] == tag && tab.selectedBooru.value != currentBooru) {
+        result.add((i, tab));
+      }
+    }
+    return result;
+  }
+
+  List<(int, SearchTab)> getTabsContainingTag(String tag) {
+    tag = tag.toLowerCase().trim();
+    final result = <(int, SearchTab)>[];
+    for (int i = 0; i < tabs.length; i++) {
+      final tab = tabs[i];
+      if (tab.tags.toLowerCase().trim().split(' ').contains(tag)) {
+        result.add((i, tab));
+      }
+    }
+    return result;
   }
 
   int get currentIndex => index.value;
@@ -465,13 +486,13 @@ class SearchHandler {
   }
 
   // runs search on current tab
-  void searchAction(String text, Booru? newBooru) {
+  Future<void> searchAction(String text, Booru? newBooru) async {
     final SettingsHandler settingsHandler = SettingsHandler.instance;
 
     // Remove extra spaces
     text = text.trim();
 
-    // clear image emory cache
+    // clear image memory cache
     Tools.forceClearMemoryCache(withLive: true);
 
     // set new tab data
@@ -493,30 +514,47 @@ class SearchHandler {
       tabs[currentIndex] = newTab;
     }
 
-    searchReactions(text, newBooru ?? currentBooru);
+    unawaited(searchReactions(text, newBooru ?? currentBooru));
 
     // run search
     changeTabIndex(currentIndex, ignoreSameIndexCheck: true);
 
     // write to history
     if (text != '' && settingsHandler.searchHistoryEnabled) {
-      settingsHandler.dbHandler.updateSearchHistory(
-        text,
-        currentBooru.type?.name,
-        currentBooru.name,
+      unawaited(
+        settingsHandler.dbHandler.updateSearchHistory(
+          text,
+          currentBooru.type?.name,
+          currentBooru.name,
+        ),
       );
     }
   }
 
-  void searchReactions(String text, Booru booru) {
+  //
+
+  final Map<SearchReaction, int> _reactionsCount = {};
+  int getSearchReactionCount(SearchReaction r) => _reactionsCount[r] ?? 0;
+  void incrementSearchReactionCount(SearchReaction r) => _reactionsCount[r] = (_reactionsCount[r] ?? 0) + 1;
+  bool canSendSearchReaction(SearchReaction r) => getSearchReactionCount(r) < r.limit;
+
+  Future<void> searchReactions(String text, Booru booru) async {
+    final context = NavigationHandler.instance.navContext;
+
     // UOOOOOHHHHH
-    if (text.toLowerCase().contains('loli')) {
-      final context = NavigationHandler.instance.navContext;
-      FlashElements.showSnackbar(
+    if (text.toLowerCase().contains('loli') && canSendSearchReaction(.uoh)) {
+      incrementSearchReactionCount(.uoh);
+      await FlashElements.showSnackbar(
         duration: const Duration(seconds: 2),
-        title: Text(context.loc.searchHandler.uoh, style: const TextStyle(fontSize: 20)),
+        title: Text(
+          context.loc.searchHandler.uoh,
+          style: const TextStyle(fontSize: 20),
+        ),
         // TODO replace with image asset to avoid system-to-system font differences
-        overrideLeadingIconWidget: const Text(' 😭 ', style: TextStyle(fontSize: 40)),
+        overrideLeadingIconWidget: const Text(
+          ' 😭 ',
+          style: TextStyle(fontSize: 40),
+        ),
         sideColor: Colors.pink,
       );
     }
@@ -527,10 +565,12 @@ class SearchHandler {
           (booru.type?.isGelbooru == true && booru.baseURL!.contains('gelbooru.com')) ||
           (booru.type?.isDanbooru == true && booru.baseURL!.contains('danbooru.donmai.us'));
       if (isOnBooruWhereRatingsChanged) {
-        final context = NavigationHandler.instance.navContext;
-        FlashElements.showSnackbar(
+        await FlashElements.showSnackbar(
           duration: null,
-          title: Text(context.loc.searchHandler.ratingsChanged, style: const TextStyle(fontSize: 20)),
+          title: Text(
+            context.loc.searchHandler.ratingsChanged,
+            style: const TextStyle(fontSize: 20),
+          ),
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -552,6 +592,8 @@ class SearchHandler {
       }
     }
   }
+
+  //
 
   // add secondary boorus and run search
   void mergeAction(List<Booru>? secondaryBoorus) {
@@ -756,7 +798,6 @@ class SearchHandler {
       changeTabIndex(newIndex);
     } else {
       Booru defaultBooru = Booru.unknown();
-      // settingsHandler.getBooru();
       // Set the default booru and tags at the start
       if (settingsHandler.booruList.isNotEmpty) {
         defaultBooru = settingsHandler.booruList[0];
@@ -922,7 +963,9 @@ class SearchHandler {
               Text(context.loc.searchHandler.listOfBrokenTabs),
               Text(
                 brokenItems
-                    .map((t) => '${tabBackups.indexOf(t)}${t.booru}: ${t.tags.isEmpty ? '[empty]' : t.tags}')
+                    .map(
+                      (t) => '${tabBackups.indexOf(t)}${t.booru}: ${t.tags.isEmpty ? context.loc.tabs.empty : t.tags}',
+                    )
                     .join(', '),
               ),
             ],
@@ -1383,10 +1426,24 @@ enum HasTabWithTagResult {
   bool get isOnlyTagDifferentBooru => this == HasTabWithTagResult.onlyTagDifferentBooru;
   bool get isContainsTag => this == HasTabWithTagResult.containsTag;
   bool get isNoTag => this == HasTabWithTagResult.noTag;
-  bool get hasTag =>
+  bool get hasTagInAnyForm =>
       this == HasTabWithTagResult.onlyTag ||
       this == HasTabWithTagResult.onlyTagDifferentBooru ||
       this == HasTabWithTagResult.containsTag;
+
+  String? locName(BuildContext context) => switch (this) {
+    .onlyTag => context.loc.tagView.tabsWithOnlyTag,
+    .onlyTagDifferentBooru => context.loc.tagView.tabsWithOnlyTagDifferentBooru,
+    .containsTag => context.loc.tagView.tabsContainingTag,
+    _ => null,
+  };
+
+  Color? color(BuildContext context) => switch (this) {
+    onlyTag => Theme.of(context).colorScheme.onSurface,
+    onlyTagDifferentBooru => Colors.yellow,
+    containsTag => Colors.blue,
+    _ => null,
+  };
 }
 
 enum TabAddMode {
@@ -1405,4 +1462,13 @@ enum TabAddMode {
         return context.loc.tabs.addModeListEnd;
     }
   }
+}
+
+enum SearchReaction {
+  uoh,
+  ;
+
+  int get limit => switch (this) {
+    uoh => 5,
+  };
 }

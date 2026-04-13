@@ -5,9 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'package:path_provider/path_provider.dart';
-import 'package:vibration/vibration.dart';
 
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/services/saf_file_cache.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 
 //The ServiceHandler class calls kotlin functions in MainActivity.kt
@@ -154,6 +154,27 @@ class ServiceHandler {
     return result;
   }
 
+  static Future<bool> existsFileFromSAFDirectoryFast(String safUri, String fileName) async {
+    bool result = false;
+    try {
+      result = await platform.invokeMethod('existsFileByNameFast', {'uri': safUri, 'fileName': fileName});
+      log('found file (fast) $fileName $result');
+    } catch (e) {
+      log(e);
+    }
+    return result;
+  }
+
+  static Future<List<String>> listFileNamesFromSAFDirectory(String safUri) async {
+    try {
+      final List<dynamic>? names = await platform.invokeMethod('listFileNames', {'uri': safUri});
+      return names?.cast<String>() ?? [];
+    } catch (e) {
+      log(e);
+      return [];
+    }
+  }
+
   static Future<String?> createFileStreamFromSAFDirectory(
     String fileName,
     String mediaType,
@@ -224,6 +245,9 @@ class ServiceHandler {
     try {
       result = await platform.invokeMethod('deleteFileByName', {'uri': safUri, 'fileName': fileName});
       log('deleted file $fileName');
+      if (result) {
+        SAFFileCache.instance.onFileDeleted(fileName);
+      }
     } catch (e) {
       log(e);
     }
@@ -372,7 +396,7 @@ class ServiceHandler {
         {
           'path': filePath,
           'mimeType': mimeType,
-          if (text != null) 'text': text,
+          'text': ?text,
         },
       );
       return;
@@ -461,6 +485,21 @@ class ServiceHandler {
     return thumbnail;
   }
 
+  static Future<List<Uint8List>?> sliceImage(String path, int sliceHeight, {int quality = 90}) async {
+    if (!Platform.isAndroid) return null;
+    try {
+      final List<dynamic>? result = await platform.invokeMethod('sliceImage', {
+        'path': path,
+        'sliceHeight': sliceHeight,
+        'quality': quality,
+      });
+      return result?.map((e) => e as Uint8List).toList();
+    } catch (e) {
+      log(e);
+      return null;
+    }
+  }
+
   static Future<String?> writeImage(
     dynamic imageData,
     String fileName,
@@ -483,27 +522,14 @@ class ServiceHandler {
     return result;
   }
 
-  static Future<void> vibrate({
-    bool flutterWay = false,
-    int duration = 10,
-    int amplitude = -1,
-  }) async {
+  static Future<void> vibrate() async {
     if (SettingsHandler.instance.disableVibration) {
       return;
     }
 
     try {
       if (Platform.isAndroid || Platform.isIOS) {
-        if (flutterWay) {
-          await HapticFeedback.vibrate();
-        } else {
-          if (await Vibration.hasVibrator()) {
-            await Vibration.vibrate(
-              duration: duration,
-              amplitude: amplitude,
-            );
-          }
-        }
+        await HapticFeedback.lightImpact();
       }
     } catch (e, s) {
       log(e, s: s);

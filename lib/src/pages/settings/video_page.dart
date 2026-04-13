@@ -23,7 +23,6 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
   bool autoPlay = true;
   bool startVideosMuted = false;
   bool disableVideo = false;
-  bool longTapFastForwardVideo = false;
   bool altVideoPlayerHwAccel = true;
   VideoBackendMode videoBackendMode = SettingsHandler.isDesktopPlatform
       ? VideoBackendMode.mpv
@@ -39,7 +38,6 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
     autoPlay = settingsHandler.autoPlayEnabled;
     startVideosMuted = settingsHandler.startVideosMuted;
     disableVideo = settingsHandler.disableVideo;
-    longTapFastForwardVideo = settingsHandler.longTapFastForwardVideo;
     videoBackendMode = settingsHandler.videoBackendMode;
     altVideoPlayerHwAccel = settingsHandler.altVideoPlayerHwAccel;
     altVideoPlayerVO = settingsHandler.altVideoPlayerVO;
@@ -47,15 +45,10 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
     videoCacheMode = settingsHandler.videoCacheMode;
   }
 
-  Future<void> _onPopInvoked(bool didPop, _) async {
-    if (didPop) {
-      return;
-    }
-
+  Future<void> _onPopInvoked(_, _) async {
     settingsHandler.autoPlayEnabled = autoPlay;
     settingsHandler.startVideosMuted = startVideosMuted;
     settingsHandler.disableVideo = disableVideo;
-    settingsHandler.longTapFastForwardVideo = longTapFastForwardVideo;
     settingsHandler.videoBackendMode = SettingsHandler.isDesktopPlatform ? VideoBackendMode.mpv : videoBackendMode;
     settingsHandler.altVideoPlayerHwAccel = altVideoPlayerHwAccel;
     settingsHandler.altVideoPlayerVO = altVideoPlayerVO;
@@ -78,16 +71,12 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
       }
     }
 
-    final bool result = await settingsHandler.saveSettings(restate: false);
-    if (result) {
-      Navigator.of(context).pop();
-    }
+    await settingsHandler.saveSettings(restate: false);
   }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
       onPopInvokedWithResult: _onPopInvoked,
       child: Scaffold(
         resizeToAvoidBottomInset: false,
@@ -148,18 +137,6 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                 name: context.loc.settings.video.experimental,
                 icon: const Icon(Icons.science),
               ),
-              SettingsToggle(
-                value: longTapFastForwardVideo,
-                onChanged: (newValue) {
-                  setState(() {
-                    longTapFastForwardVideo = newValue;
-                  });
-                },
-                title: context.loc.settings.video.longTapToFastForwardVideo,
-                subtitle: Text(
-                  context.loc.settings.video.longTapToFastForwardVideoHelp,
-                ),
-              ),
               if (!SettingsHandler.isDesktopPlatform)
                 SettingsDropdown(
                   value: videoBackendMode,
@@ -219,7 +196,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                                 });
                               },
                               title: context.loc.settings.video.mpvVO,
-                              itemTitleBuilder: (e) => e?.locName(context) ?? '',
+                              itemTitleBuilder: (e) => e?.locName ?? '',
                             ),
                             SettingsDropdown<MpvHardwareDecoding>(
                               value: altVideoPlayerHWDEC,
@@ -235,7 +212,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                                 });
                               },
                               title: context.loc.settings.video.mpvHWDEC,
-                              itemTitleBuilder: (e) => e?.locName(context) ?? '',
+                              itemTitleBuilder: (e) => e?.locName ?? '',
                             ),
                           ],
                           SettingsOptionsList<VideoCacheMode>(
@@ -247,7 +224,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                               });
                             },
                             title: context.loc.settings.video.videoCacheMode,
-                            itemTitleBuilder: (e) => e?.locName(context) ?? '',
+                            itemTitleBuilder: (e) => e?.locName ?? '',
                             subtitle: const Text(
                               '''Videos on some Boorus may not work correctly (i.e. endless loading) when using Stream video cache mode. In that case try using Cache mode. Otherwise player will retry with Cache mode automatically if video is in initial buffering state for 10+ seconds and video file size is less than 25mb''',
                             ),

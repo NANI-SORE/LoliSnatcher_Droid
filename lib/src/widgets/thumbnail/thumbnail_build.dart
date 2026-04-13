@@ -49,11 +49,42 @@ class ThumbnailBuild extends StatelessWidget {
       child: Stack(
         alignment: settingsHandler.previewDisplay.isSquare ? .center : .bottomCenter,
         children: [
-          Thumbnail(
-            item: item,
-            booru: handler.booru,
-            isStandalone: true,
-            useHero: selectable,
+          RepaintBoundary(
+            child: Builder(
+              builder: (context) {
+                final bool isFavsOrDls = handler is FavouritesHandler || handler is DownloadsHandler;
+                Booru? possibleBooru;
+                if (isFavsOrDls) {
+                  final itemFileHost = Uri.tryParse(item.fileURL)?.host;
+                  final itemPostHost = Uri.tryParse(item.postURL)?.host;
+                  possibleBooru = SettingsHandler.instance.booruList.firstWhereOrNull((e) {
+                    final booruHost = Uri.tryParse(e.baseURL ?? '')?.host;
+
+                    return (itemPostHost?.isNotEmpty == true &&
+                            booruHost?.isNotEmpty == true &&
+                            (itemPostHost! == booruHost! ||
+                                switch (e.type) {
+                                  BooruType.IdolSankaku => IdolSankakuHandler.knownUrls.contains(itemPostHost),
+                                  BooruType.Sankaku => SankakuHandler.knownPostUrls.contains(itemPostHost),
+                                  _ => false,
+                                })) ||
+                        (itemFileHost?.isNotEmpty == true &&
+                            booruHost?.isNotEmpty == true &&
+                            itemFileHost! == booruHost!);
+                  });
+                  if (possibleBooru?.type?.isFavouritesOrDownloads == true) {
+                    possibleBooru = null;
+                  }
+                }
+
+                return Thumbnail(
+                  item: item,
+                  booru: possibleBooru ?? handler.booru,
+                  isStandalone: true,
+                  useHero: selectable,
+                );
+              },
+            ),
           ),
 
           // Image(
@@ -363,8 +394,8 @@ class _ThumbnailBottomRightIcons extends StatelessWidget {
       final IconData? itemIcon = Tools.getFileIcon(item.possibleMediaType.value ?? item.mediaType.value);
 
       final bool? isFav = item.isFavourite.value;
-      final bool isFavOrLoved = isFav == true || tagsData.lovedTags.isNotEmpty;
-      // final bool isHated = tagsData.hatedTags.isNotEmpty;
+      final bool isFavOrMarked = isFav == true || tagsData.markedTags.isNotEmpty;
+      // final bool isHidden = tagsData.hiddenTags.isNotEmpty;
       final bool isSnatched = item.isSnatched.value == true;
 
       final bool isInQueueToBeSnatched =
@@ -374,8 +405,8 @@ class _ThumbnailBottomRightIcons extends StatelessWidget {
           snatchHandler.total.value != 0;
 
       int bottomRightAmount = 0;
-      if (isFavOrLoved) bottomRightAmount += 1;
-      // if (isHated) bottomRightAmount += 1;
+      if (isFavOrMarked) bottomRightAmount += 1;
+      // if (isHidden) bottomRightAmount += 1;
       if (isCurrentlyBeingSnatched) bottomRightAmount += 1;
       if (isSnatched || isInQueueToBeSnatched || isCurrentlyBeingSnatched) bottomRightAmount += 1;
       if (isAi) bottomRightAmount += 1;
@@ -409,7 +440,7 @@ class _ThumbnailBottomRightIcons extends StatelessWidget {
             children: [
               AnimatedCrossFade(
                 duration: const Duration(milliseconds: 200),
-                crossFadeState: isFavOrLoved ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+                crossFadeState: isFavOrMarked ? CrossFadeState.showFirst : CrossFadeState.showSecond,
                 firstChild: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
                   child: (settingsHandler.dbEnabled && isFav == null)
@@ -433,7 +464,7 @@ class _ThumbnailBottomRightIcons extends StatelessWidget {
                 secondChild: const SizedBox.shrink(),
               ),
               //
-              // if (isHated)
+              // if (isHidden)
               //   const Icon(
               //     CupertinoIcons.eye_slash,
               //     color: Colors.white,

@@ -17,23 +17,13 @@ class _SettingsTemplateState extends State<SettingsTemplate> {
     super.initState();
   }
 
-  //called when page is clsoed, sets settingshandler variables and then writes settings to disk
-  Future<void> _onPopInvoked(bool didPop, _) async {
-    if (didPop) {
-      return;
-    }
-
-    // Set settingshandler values here
-    final bool result = await settingsHandler.saveSettings(restate: false);
-    if (result) {
-      Navigator.of(context).pop();
-    }
+  Future<void> _onPopInvoked(_, _) async {
+    await settingsHandler.saveSettings(restate: false);
   }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
       onPopInvokedWithResult: _onPopInvoked,
       child: Scaffold(
         resizeToAvoidBottomInset: false,

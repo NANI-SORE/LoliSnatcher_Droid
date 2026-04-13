@@ -46,6 +46,9 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
 
   final ValueNotifier<bool> isActive = ValueNotifier(true);
 
+  Timer? viewedItemCleanupTimer;
+  int viewedItemCleanupCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -176,6 +179,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
 
   @override
   void dispose() {
+    viewedItemCleanupTimer?.cancel();
     NavigationHandler.instance.routeObserver.unsubscribe(this);
     searchHandler.index.removeListener(tabIndexListener);
     searchHandler.tabId.removeListener(tabIdListener);
@@ -237,13 +241,15 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   }
 
   Future<void> onTap(int index) async {
-    viewerHandler.setCurrent(searchHandler.currentFetched[index]);
-
     if (isMobile) {
       // protection from opening multiple viewers at once
       if (!isActive.value) {
         return;
       }
+
+      viewedItemCleanupTimer?.cancel();
+      viewedItemCleanupCount = 0;
+      viewerHandler.setCurrent(searchHandler.currentFetched[index]);
 
       isActive.value = false;
       viewerHandler.showNotes.value = !settingsHandler.hideNotes;
@@ -277,6 +283,23 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
 
       viewerHandler.dropCurrent();
 
+      viewedItemCleanupTimer = Timer.periodic(
+        const Duration(milliseconds: 200),
+        (_) {
+          // workaround to forcefully clear the viewed item if it got set after we left the viewer (i.e. check after favouriting)
+          if (viewerHandler.current.value != null) {
+            viewerHandler.dropCurrent();
+          }
+
+          // run for 5s with 200ms interval
+          if (viewedItemCleanupCount < 25) {
+            viewedItemCleanupCount++;
+          } else {
+            viewedItemCleanupTimer?.cancel();
+          }
+        },
+      );
+
       isActive.value = true;
 
       // reset notes to default state, defined in settings
@@ -289,7 +312,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
         navigationHandler.bottomBarKey.currentState?.show();
       });
     } else {
-      //
+      viewerHandler.setCurrent(searchHandler.currentFetched[index]);
     }
   }
 
@@ -354,7 +377,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
     return Stack(
       alignment: Alignment.bottomCenter,
       children: [
-        NotificationListener<ScrollUpdateNotification>(
+        NotificationListener<ScrollNotification>(
           child: Scrollbar(
             controller: searchHandler.gridScrollController,
             interactive: true,
@@ -369,9 +392,10 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
               edgeOffset: MediaQuery.paddingOf(context).top + MainAppBar.height,
               strokeWidth: 4,
               color: Theme.of(context).colorScheme.secondary,
-              onRefresh: () async {
-                searchHandler.searchAction(searchHandler.currentTab.tags, null);
-              },
+              onRefresh: () => searchHandler.searchAction(
+                searchHandler.currentTab.tags,
+                null,
+              ),
               child: Stack(
                 children: [
                   ValueListenableBuilder(
@@ -393,12 +417,31 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
                         });
                       }
 
+                      // If loading just finished but content doesn't fill the viewport,
+                      // the NotificationListener won't fire (no scroll possible), so trigger next page here with a small delay.
+                      if (!searchHandler.isLoading.value && searchHandler.currentFetched.isNotEmpty) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) async {
+                          if (searchHandler.gridScrollController.hasClients && !searchHandler.isLoading.value) {
+                            final pos = searchHandler.gridScrollController.position;
+                            final bool screenNotFilled = pos.extentBefore == 0 && pos.extentAfter == 0;
+                            if (screenNotFilled) {
+                              await Future.delayed(const Duration(milliseconds: 500));
+                              unawaited(searchHandler.runSearch());
+                            }
+                          }
+                        });
+                      }
+
                       return CustomScrollView(
                         key: ValueKey('CustomScrollView-${searchHandler.currentTabId}'),
                         controller: searchHandler.gridScrollController,
-                        physics: isLoadingAndNoItems ? const NeverScrollableScrollPhysics() : null,
+                        physics: isLoadingAndNoItems
+                            ? const NeverScrollableScrollPhysics()
+                            : AlwaysScrollableScrollPhysics(
+                                parent: ScrollConfiguration.of(context).getScrollPhysics(context),
+                              ),
                         shrinkWrap: false,
-                        cacheExtent: 200,
+                        cacheExtent: 300 * MediaQuery.devicePixelRatioOf(context),
                         slivers: [
                           const MainAppBar(),
                           SliverPadding(
@@ -490,26 +533,28 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
             ),
           ),
           onNotification: (notif) {
-            searchHandler.sendToScrollStream(notif);
+            if (notif is ScrollUpdateNotification || notif is OverscrollNotification) {
+              searchHandler.sendToScrollStream(notif);
 
-            // print('SCROLL NOTIFICATION');
-            // print(searchHandler.gridScrollController.position.maxScrollExtent);
-            // print(notif.metrics); // pixels before viewport, in viewport, after viewport
+              // print('SCROLL NOTIFICATION');
+              // print(searchHandler.gridScrollController.position.maxScrollExtent);
+              // print(notif.metrics); // pixels before viewport, in viewport, after viewport
 
-            final bool isNotAtStart = notif.metrics.pixels > 0;
-            final bool isAtOrNearEdge =
-                notif.metrics.atEdge ||
-                notif.metrics.pixels >
-                    (notif.metrics.maxScrollExtent -
-                        (notif.metrics.extentInside *
-                            2)); // trigger new page when at edge or scroll position is less than 2 viewports
-            final bool isScreenFilled =
-                notif.metrics.extentBefore != 0 ||
-                notif.metrics.extentAfter != 0; // for cases when first page doesn't fill the screen
+              final bool isNotAtStart = notif.metrics.pixels > 0;
+              final bool isAtOrNearEdge =
+                  notif.metrics.atEdge ||
+                  notif.metrics.pixels >
+                      (notif.metrics.maxScrollExtent -
+                          (notif.metrics.extentInside *
+                              2)); // trigger new page when at edge or scroll position is less than 2 viewports
+              final bool isScreenFilled =
+                  notif.metrics.extentBefore != 0 ||
+                  notif.metrics.extentAfter != 0; // for cases when first page doesn't fill the screen
 
-            if (!searchHandler.isLoading.value) {
-              if (!isScreenFilled || (isNotAtStart && isAtOrNearEdge)) {
-                searchHandler.runSearch();
+              if (!searchHandler.isLoading.value) {
+                if (!isScreenFilled || (isNotAtStart && isAtOrNearEdge)) {
+                  searchHandler.runSearch();
+                }
               }
             }
             return true;

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart';
@@ -93,7 +95,7 @@ class DanbooruHandler extends BooruHandler {
 
   @override
   BooruItem? parseItemFromResponse(dynamic responseItem, int index) {
-    final current = responseItem;
+    final current = responseItem as Map<String, dynamic>;
     /**
      * This check is needed as danbooru will return items which have been banned or deleted and will not have any image urls
      * to go with the rest of the data so cannot be displayed and are pointless for the app
@@ -142,6 +144,7 @@ class DanbooruHandler extends BooruHandler {
           score: current['score'].toString(),
           sources: (current['source'] != null && current['source'] is String) ? [current['source']] : null,
           md5String: current['md5'].toString(),
+          uploaderId: current['uploader_id'].toString(),
           postDate: dateStr, // 2021-06-17T16:27:45.743-04:00
           postDateFormat: 'iso',
         );
@@ -173,7 +176,7 @@ class DanbooruHandler extends BooruHandler {
     // return "${booru.baseURL}/tags.json?search[name_matches]=$input*&limit=20&order=count";
 
     // EXAMPLE: https://danbooru.donmai.us/autocomplete.json?search[query]=fis&search[type]=tag_query&limit=20
-    return '${booru.baseURL}/autocomplete.json?search[query]=$input*&search[type]=tag_query&limit=20&order=count';
+    return '${booru.baseURL}/autocomplete.json?search[query]=*$input*&search[type]=tag_query&limit=20&order=count';
   }
 
   @override
@@ -190,7 +193,7 @@ class DanbooruHandler extends BooruHandler {
 
   @override
   TagSuggestion? parseTagSuggestion(dynamic responseItem, int index) {
-    final String tagStr = (responseItem['antecedent'] ?? responseItem['value'])?.toString() ?? '';
+    final String tagStr = responseItem['value']?.toString() ?? '';
     if (tagStr.isEmpty) {
       return null;
     }
@@ -249,6 +252,7 @@ class DanbooruHandler extends BooruHandler {
   @override
   NoteItem? parseNote(dynamic responseItem, int index) {
     final current = responseItem;
+    if (current['is_active'] == false) return null;
     return NoteItem(
       id: current['id'].toString(),
       postID: current['post_id'].toString(),
@@ -258,6 +262,33 @@ class DanbooruHandler extends BooruHandler {
       width: int.tryParse(current['width']?.toString() ?? '0') ?? 0,
       height: int.tryParse(current['height']?.toString() ?? '0') ?? 0,
     );
+  }
+
+  Map<String, String> uploaderNameCache = {};
+  Future<String?> getUploaderName(BooruItem item) async {
+    if (item.uploaderId?.isNotEmpty != true) return null;
+
+    if (uploaderNameCache.containsKey(item.uploaderId)) {
+      return uploaderNameCache[item.uploaderId!];
+    }
+
+    try {
+      final res = await DioNetwork.get(
+        '${booru.baseURL}/users.json',
+        queryParameters: {
+          'search[id]': item.uploaderId,
+        },
+      );
+      if (res.statusCode != HttpStatus.ok) return null;
+
+      final String? name = (res.data as List).firstOrNull?['name'];
+      if (name?.isNotEmpty == true) {
+        uploaderNameCache[item.uploaderId!] = name!;
+      }
+      return name;
+    } catch (_) {
+      return null;
+    }
   }
 
   @override
@@ -313,7 +344,7 @@ class DanbooruHandler extends BooruHandler {
         keyName: 'id',
         isFree: true,
       ),
-      StringMetaTag(name: 'User', keyName: 'user'),
+      UserMetaTag(),
       DateMetaTag(
         name: 'Date',
         keyName: 'date',
@@ -491,7 +522,31 @@ class DanbooruHandler extends BooruHandler {
       } else {
         final html = parse(response.data);
 
-        item.fileURL = html.getElementById('image')?.attributes['src'] ?? item.fileURL;
+        Element? source = html.getElementById('gelcomVideoPlayer');
+        if (source != null) {
+          // video
+          item.thumbnailURL = source.attributes['poster'] ?? item.thumbnailURL;
+          item.sampleURL = source.attributes['poster'] ?? item.sampleURL;
+          item.fileURL =
+              html.querySelector('meta[property="og:video"]')?.attributes['content'] ??
+              source.attributes['src'] ??
+              source.children.firstOrNull?.attributes['src'] ??
+              item.fileURL;
+        } else {
+          // image
+          source = html.getElementById('image');
+          if (source != null) {
+            final String? src = source.attributes['src'];
+            final isSample = src?.contains('sample') ?? false;
+            if (isSample) {
+              item.sampleURL = src ?? item.sampleURL;
+              item.fileURL = html.querySelector('meta[property="og:image"]')?.attributes['content'] ?? item.fileURL;
+            } else {
+              item.fileURL = src ?? item.fileURL;
+            }
+            item.thumbnailURL = isSample ? item.sampleURL : item.thumbnailURL;
+          }
+        }
 
         final sidebar = html.getElementById('tag-list');
         final copyrightTags = _tagsFromHtml(sidebar?.getElementsByClassName('tag-type-3'));

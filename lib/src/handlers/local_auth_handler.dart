@@ -72,6 +72,7 @@ class LocalAuthHandler {
             await auth.authenticate(
               localizedReason: NavigationHandler.instance.navContext.loc.authentication.pleaseAuthenticateToUseTheApp,
               persistAcrossBackgrounding: true,
+              sensitiveTransaction: false,
               biometricOnly: false,
             );
 
@@ -105,6 +106,10 @@ class LocalAuthHandler {
               leadingIcon: Icons.warning_amber,
             );
             break;
+          case LocalAuthExceptionCode.authInProgress:
+            // do nothing
+            break;
+
           // TODO handle all errors
           default:
             FlashElements.showSnackbar(

@@ -9,19 +9,10 @@ import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/preview/tag_search_query_editor_page.dart';
 import 'package:lolisnatcher/src/widgets/tabs/tab_booru_selector.dart';
 
-class AddNewTabDialog extends StatefulWidget {
-  const AddNewTabDialog({
-    super.key,
-  });
-
-  @override
-  State<AddNewTabDialog> createState() => _AddNewTabDialogState();
-}
-
 enum _Querymode {
   defaultTags,
   currentInput,
-  custom
+  custom,
   ;
 
   String locName(BuildContext context) {
@@ -36,6 +27,15 @@ enum _Querymode {
   }
 }
 
+class AddNewTabDialog extends StatefulWidget {
+  const AddNewTabDialog({
+    super.key,
+  });
+
+  @override
+  State<AddNewTabDialog> createState() => _AddNewTabDialogState();
+}
+
 class _AddNewTabDialogState extends State<AddNewTabDialog> {
   final SearchHandler searchHandler = SearchHandler.instance;
   final SettingsHandler settingsHandler = SettingsHandler.instance;
@@ -43,7 +43,7 @@ class _AddNewTabDialogState extends State<AddNewTabDialog> {
   Booru? booru;
   bool addSecondaryBoorus = false, useCustomPage = false, switchToNew = true;
   List<Booru> secondaryBoorus = [];
-  TabAddMode addMode = TabAddMode.end; // prev, next, end
+  TabAddMode addMode = TabAddMode.end;
   _Querymode queryMode = _Querymode.defaultTags;
   final TextEditingController customTagsController = TextEditingController(),
       customPageController = TextEditingController();
@@ -52,8 +52,8 @@ class _AddNewTabDialogState extends State<AddNewTabDialog> {
   @override
   void initState() {
     super.initState();
+    customTagsController.text = usedQuery;
     secondaryBoorus = searchHandler.currentSecondaryBoorus.value ?? <Booru>[];
-    customPageController.text = searchHandler.currentTab.booruHandler.pageNum.toString();
   }
 
   @override
@@ -79,13 +79,16 @@ class _AddNewTabDialogState extends State<AddNewTabDialog> {
 
   void addNewTab() {
     searchHandler.searchTextController.text = usedQuery;
+    int? customPage = int.tryParse(customPageController.text);
+    customPage = customPage == null ? null : customPage - 1;
+
     searchHandler.addTabByString(
       usedQuery,
       customBooru: booru,
       secondaryBoorus: (addSecondaryBoorus && secondaryBoorus.isNotEmpty) ? [...secondaryBoorus] : null,
       switchToNew: switchToNew,
       addMode: addMode,
-      customPage: (int.tryParse(customPageController.text) ?? 0) - 1,
+      customPage: useCustomPage ? customPage : null,
     );
 
     Navigator.of(context).pop();
@@ -110,47 +113,56 @@ class _AddNewTabDialogState extends State<AddNewTabDialog> {
               title: context.loc.booru,
               placeholder: context.loc.tabs.selectABooruOrLeaveEmpty,
               nullable: true,
+              titleAsLabel: true,
               onChanged: (value) {
                 setState(() {
                   booru = value;
                 });
               },
             ),
-            SettingsSegmentedButton(
+            SettingsDropdown(
               value: addMode,
-              values: TabAddMode.values,
-              itemTitleBuilder: (v) => v.locName(context),
+              items: TabAddMode.values,
+              titleAsLabel: true,
+              itemTitleBuilder: (v) => v?.locName(context) ?? '',
               onChanged: (v) {
                 setState(() {
-                  addMode = v;
+                  addMode = v ?? TabAddMode.end;
                 });
               },
               title: context.loc.tabs.addPosition,
             ),
-            SettingsSegmentedButton(
+            SettingsDropdown(
               value: queryMode,
-              values: _Querymode.values,
-              itemTitleBuilder: (v) => v.locName(context),
+              items: _Querymode.values,
+              titleAsLabel: true,
+              itemTitleBuilder: (v) => v?.locName(context) ?? '',
               onChanged: (v) {
                 setState(() {
-                  queryMode = v;
+                  queryMode = v ?? _Querymode.defaultTags;
+                  customTagsController.clear();
+                  customTagsController.text = usedQuery;
                 });
               },
               title: context.loc.tabs.usedQuery,
-              subtitle: queryMode == _Querymode.custom
-                  ? TagSearchBox(
-                      controller: customTagsController,
-                      title: context.loc.tabs.customQuery,
-                      hintText: context.loc.snatcher.enterTags,
-                      onlyInput: true,
-                      booru: booru ?? searchHandler.currentBooru,
-                      allowMultipleTags: true,
-                      showBooruSelector: true,
-                      clearable: true,
-                    )
-                  : Text(
-                      usedQuery.isEmpty ? context.loc.tabs.empty : usedQuery,
-                    ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: TagSearchBox(
+                  controller: customTagsController,
+                  title: queryMode == _Querymode.custom ? context.loc.tabs.customQuery : null,
+                  onlyInput: true,
+                  enabled: queryMode == _Querymode.custom,
+                  hintText: switch (queryMode) {
+                    _Querymode.defaultTags => context.loc.tabs.empty,
+                    _Querymode.currentInput => context.loc.tabs.empty,
+                    _Querymode.custom => context.loc.snatcher.enterTags,
+                  },
+                  booru: booru ?? searchHandler.currentBooru,
+                  allowMultipleTags: true,
+                  showBooruSelector: true,
+                  clearable: true,
+                ),
+              ),
             ),
             Material(
               color: Colors.transparent,
@@ -164,49 +176,58 @@ class _AddNewTabDialogState extends State<AddNewTabDialog> {
                             width: borderWidth,
                           ),
                         ),
-                        title: Padding(
-                          padding: const EdgeInsets.only(top: 8, bottom: 6),
-                          child: LoliMultiselectDropdown(
-                            key: secondaryBoorusDropdownKey,
-                            value: secondaryBoorus,
-                            onChanged: (List<Booru> value) {
-                              setState(() {
-                                secondaryBoorus = value;
-                              });
-                            },
-                            expandableByScroll: true,
-                            items: settingsHandler.booruList,
-                            itemBuilder: (item) => Container(
-                              padding: const EdgeInsets.only(left: 16),
-                              height: kMinInteractiveDimension,
-                              child: TabBooruSelectorItem(booru: item),
-                            ),
-                            labelText: context.loc.multibooru.labelSecondaryBoorusToInclude,
-                            selectedItemBuilder: (List<Booru> value) => Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Wrap(
-                                  spacing: 4,
-                                  runSpacing: 4,
+                        title: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(context.loc.multibooru.labelSecondaryBoorusToInclude),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8, bottom: 6),
+                              child: LoliMultiselectDropdown(
+                                key: secondaryBoorusDropdownKey,
+                                value: secondaryBoorus,
+                                onChanged: (List<Booru> value) {
+                                  setState(() {
+                                    secondaryBoorus = value;
+                                  });
+                                },
+                                expandableByScroll: true,
+                                items: settingsHandler.booruList,
+                                itemBuilder: (item) => Container(
+                                  padding: const EdgeInsets.only(left: 16),
+                                  height: 54,
+                                  child: TabBooruSelectorItem(booru: item),
+                                ),
+                                labelBuilder: () => const SizedBox.shrink(),
+                                labelText: context.loc.multibooru.labelSecondaryBoorusToInclude,
+                                hintText: context.loc.multibooru.selectSecondaryBoorus,
+                                selectedItemBuilder: (List<Booru> value) => Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    for (final item in value)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).colorScheme.secondaryContainer,
-                                          borderRadius: BorderRadius.circular(100),
-                                        ),
-                                        child: TabBooruSelectorItem(
-                                          booru: item,
-                                          compact: true,
-                                        ),
-                                      ),
+                                    Wrap(
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      children: [
+                                        for (final item in value)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: Theme.of(context).colorScheme.secondaryContainer,
+                                              borderRadius: BorderRadius.circular(100),
+                                            ),
+                                            child: TabBooruSelectorItem(
+                                              booru: item,
+                                              compact: true,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                                   ],
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       )
                     : SettingsToggle(

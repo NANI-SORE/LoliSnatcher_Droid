@@ -33,6 +33,7 @@ class _PerformancePageState extends State<PerformancePage> {
   final TextEditingController columnsPortraitController = TextEditingController();
   final TextEditingController preloadAmountController = TextEditingController();
   final TextEditingController preloadSizeController = TextEditingController();
+  final TextEditingController preloadHeightController = TextEditingController();
 
   @override
   void initState() {
@@ -45,30 +46,24 @@ class _PerformancePageState extends State<PerformancePage> {
     columnsLandscapeController.text = settingsHandler.landscapeColumns.toString();
     preloadAmountController.text = settingsHandler.preloadCount.toString();
     preloadSizeController.text = settingsHandler.preloadSizeLimit.toString();
+    preloadHeightController.text = settingsHandler.preloadHeight.toString();
     autoPlayEnabled = settingsHandler.autoPlayEnabled;
     disableVideo = settingsHandler.disableVideo;
   }
 
-  //called when page is clsoed, sets settingshandler variables and then writes settings to disk
-  Future<void> _onPopInvoked(bool didPop, _) async {
-    if (didPop) {
-      return;
-    }
-
+  Future<void> _onPopInvoked(_, _) async {
     settingsHandler.shitDevice = shitDevice;
     settingsHandler.previewMode = previewMode;
     settingsHandler.galleryMode = galleryMode;
     settingsHandler.portraitColumns = (int.tryParse(columnsPortraitController.text) ?? 3).clamp(1, 100);
     settingsHandler.landscapeColumns = (int.tryParse(columnsLandscapeController.text) ?? 6).clamp(1, 100);
-    settingsHandler.preloadCount = (int.tryParse(preloadAmountController.text) ?? 0).clamp(0, 3);
-    settingsHandler.preloadSizeLimit = (double.tryParse(preloadSizeController.text) ?? 0.2).clamp(0, double.maxFinite);
+    settingsHandler.preloadCount = (int.tryParse(preloadAmountController.text) ?? 1).clamp(0, 4);
+    settingsHandler.preloadSizeLimit = (double.tryParse(preloadSizeController.text) ?? 0.2).clamp(0, double.infinity);
+    settingsHandler.preloadHeight = (int.tryParse(preloadHeightController.text) ?? (4096 * 4)).clamp(0, 2_000_000_000);
     settingsHandler.autoPlayEnabled = autoPlayEnabled;
     settingsHandler.disableVideo = disableVideo;
 
-    final bool result = await settingsHandler.saveSettings(restate: false);
-    if (result) {
-      Navigator.of(context).pop();
-    }
+    await settingsHandler.saveSettings(restate: false);
   }
 
   Future<bool> showLowPerfConfirmDialog(bool withConfirmation) async {
@@ -83,15 +78,18 @@ class _PerformancePageState extends State<PerformancePage> {
                   context.loc.settings.performance.lowPerformanceModeDialogDisablesResourceIntensive,
                 ),
                 const Text(''),
-                Text(
-                  context.loc.settings.performance.lowPerformanceModeDialogSetsOptimal,
-                ),
-                Text(context.loc.settings.performance.lowPerformanceModeDialogPreviewQuality),
-                Text(context.loc.settings.performance.lowPerformanceModeDialogImageQuality),
-                Text(context.loc.settings.performance.lowPerformanceModeDialogPreviewColumns),
-                Text(context.loc.settings.performance.lowPerformanceModeDialogPreloadAmount),
-                Text(context.loc.settings.performance.lowPerformanceModeDialogVideoAutoplay),
-                Text(context.loc.settings.performance.lowPerformanceModeDialogDontScaleImages),
+                Text(context.loc.settings.performance.lowPerformanceModeDialogSetsOptimal),
+                ...[
+                  context.loc.settings.interface.previewQuality,
+                  context.loc.settings.viewer.imageQuality,
+                  context.loc.settings.interface.previewColumnsPortrait,
+                  context.loc.settings.interface.previewColumnsLandscape,
+                  context.loc.settings.viewer.preloadAmount,
+                  context.loc.settings.viewer.preloadSizeLimit,
+                  context.loc.settings.viewer.preloadHeightLimit,
+                  context.loc.settings.interface.dontScaleImages,
+                  context.loc.settings.performance.autoplayVideos,
+                ].map((s) => Text('- $s')),
               ],
               actionButtons: withConfirmation
                   ? [
@@ -121,13 +119,13 @@ class _PerformancePageState extends State<PerformancePage> {
     columnsLandscapeController.dispose();
     preloadAmountController.dispose();
     preloadSizeController.dispose();
+    preloadHeightController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
       onPopInvokedWithResult: _onPopInvoked,
       child: Scaffold(
         resizeToAvoidBottomInset: false,
@@ -150,6 +148,7 @@ class _PerformancePageState extends State<PerformancePage> {
                         columnsLandscapeController.text = '4';
                         preloadAmountController.text = '0';
                         preloadSizeController.text = '0.2';
+                        preloadHeightController.text = '8192';
                         autoPlayEnabled = false;
                         settingsHandler.disableImageScaling = false;
                       }
@@ -171,8 +170,8 @@ class _PerformancePageState extends State<PerformancePage> {
                     previewMode = newValue ?? PreviewQuality.defaultValue;
                   });
                 },
-                title: context.loc.settings.performance.previewQuality,
-                itemTitleBuilder: (e) => e?.locName(context) ?? '',
+                title: context.loc.settings.interface.previewQuality,
+                itemTitleBuilder: (e) => e?.locName ?? '',
               ),
               SettingsOptionsList<ImageQuality>(
                 value: galleryMode,
@@ -182,12 +181,12 @@ class _PerformancePageState extends State<PerformancePage> {
                     galleryMode = newValue ?? ImageQuality.defaultValue;
                   });
                 },
-                title: context.loc.settings.performance.imageQuality,
-                itemTitleBuilder: (e) => e?.locName(context) ?? '',
+                title: context.loc.settings.viewer.imageQuality,
+                itemTitleBuilder: (e) => e?.locName ?? '',
               ),
               SettingsTextInput(
                 controller: columnsPortraitController,
-                title: context.loc.settings.performance.previewColumnsPortrait,
+                title: context.loc.settings.interface.previewColumnsPortrait,
                 inputType: TextInputType.number,
                 inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
                 onChanged: (String? text) {
@@ -213,7 +212,7 @@ class _PerformancePageState extends State<PerformancePage> {
               ),
               SettingsTextInput(
                 controller: columnsLandscapeController,
-                title: context.loc.settings.performance.previewColumnsLandscape,
+                title: context.loc.settings.interface.previewColumnsLandscape,
                 inputType: TextInputType.number,
                 inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
                 resetText: () => settingsHandler.map['landscapeColumns']!['default']!.toString(),
@@ -236,7 +235,7 @@ class _PerformancePageState extends State<PerformancePage> {
               ),
               SettingsTextInput(
                 controller: preloadAmountController,
-                title: context.loc.settings.performance.preloadAmount,
+                title: context.loc.settings.viewer.preloadAmount,
                 inputType: TextInputType.number,
                 inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
                 resetText: () => settingsHandler.map['preloadCount']!['default']!.toString(),
@@ -261,8 +260,8 @@ class _PerformancePageState extends State<PerformancePage> {
               ),
               SettingsTextInput(
                 controller: preloadSizeController,
-                title: context.loc.settings.performance.preloadSizeLimit,
-                subtitle: Text(context.loc.settings.performance.preloadSizeLimitSubtitle),
+                title: context.loc.settings.viewer.preloadSizeLimit,
+                subtitle: Text(context.loc.settings.viewer.preloadSizeLimitSubtitle),
                 inputType: TextInputType.number,
                 resetText: () => settingsHandler.map['preloadSizeLimit']!['default']!.toString(),
                 numberButtons: true,
@@ -286,6 +285,34 @@ class _PerformancePageState extends State<PerformancePage> {
                   }
                 },
               ),
+              SettingsTextInput(
+                controller: preloadHeightController,
+                title: context.loc.settings.viewer.preloadHeightLimit,
+                subtitle: Text(context.loc.settings.viewer.preloadHeightLimitSubtitle),
+                inputType: TextInputType.number,
+                inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
+                resetText: () => settingsHandler.map['preloadHeight']!['default']!.toString(),
+                numberButtons: true,
+                numberStep: settingsHandler.map['preloadHeight']!['step']!.toDouble(),
+                numberMin: settingsHandler.map['preloadHeight']!['lowerLimit']!.toDouble(),
+                numberMax: settingsHandler.map['preloadHeight']!['upperLimit']!.toDouble(),
+                validator: (String? value) {
+                  final int? parse = int.tryParse(value ?? '');
+                  if (value == null || value.isEmpty) {
+                    return context.loc.validationErrors.required;
+                  } else if (parse == null) {
+                    return context.loc.validationErrors.invalidNumericValue;
+                  } else if (parse < settingsHandler.map['preloadHeight']!['lowerLimit']!.toDouble() ||
+                      parse > settingsHandler.map['preloadHeight']!['upperLimit']!.toDouble()) {
+                    return context.loc.validationErrors.rangeError(
+                      min: settingsHandler.map['preloadHeight']!['lowerLimit']!.toDouble(),
+                      max: settingsHandler.map['preloadHeight']!['upperLimit']!.toDouble(),
+                    );
+                  } else {
+                    return null;
+                  }
+                },
+              ),
               SettingsToggle(
                 value: settingsHandler.disableImageScaling,
                 onChanged: (newValue) async {
@@ -294,15 +321,15 @@ class _PerformancePageState extends State<PerformancePage> {
                       context: context,
                       builder: (BuildContext context) {
                         return SettingsDialog(
-                          title: Text(context.loc.settings.performance.dontScaleImagesWarningTitle),
+                          title: Text(context.loc.settings.interface.dontScaleImagesWarningTitle),
                           contentItems: [
                             Text(
-                              context.loc.settings.performance.dontScaleImagesWarningMsg,
+                              context.loc.settings.interface.dontScaleImagesWarning,
                               style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 10),
                             Text(
-                              context.loc.settings.performance.dontScaleImagesWarningPerformance,
+                              context.loc.settings.interface.dontScaleImagesWarningMsg,
                               style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ],
@@ -323,9 +350,9 @@ class _PerformancePageState extends State<PerformancePage> {
                     settingsHandler.disableImageScaling = newValue;
                   });
                 },
-                title: context.loc.settings.performance.dontScaleImages,
+                title: context.loc.settings.interface.dontScaleImages,
                 leadingIcon: const Icon(Icons.close_fullscreen),
-                subtitle: Text(context.loc.settings.performance.dontScaleImagesSubtitle),
+                subtitle: Text(context.loc.settings.interface.dontScaleImagesSubtitle),
               ),
               SettingsToggle(
                 value: autoPlayEnabled,

@@ -11,6 +11,8 @@ class TagsFiltersSettingsList extends StatelessWidget {
     required this.scrollController,
     required this.filterHated,
     required this.onFilterHatedChanged,
+    required this.filterMarked,
+    required this.onFilterMarkedChanged,
     required this.filterFavourites,
     required this.onFilterFavouritesChanged,
     required this.filterSnatched,
@@ -23,6 +25,8 @@ class TagsFiltersSettingsList extends StatelessWidget {
   final ScrollController scrollController;
   final bool filterHated;
   final Function(bool) onFilterHatedChanged;
+  final bool filterMarked;
+  final Function(bool) onFilterMarkedChanged;
   final bool filterFavourites;
   final Function(bool) onFilterFavouritesChanged;
   final bool filterSnatched;
@@ -38,25 +42,34 @@ class TagsFiltersSettingsList extends StatelessWidget {
         const SettingsButton(name: '', enabled: false),
         //
         SettingsToggle(
-          title: context.loc.settings.tagsFilters.removeHated,
+          title: context.loc.settings.itemFilters.removeHidden,
           value: filterHated,
           onChanged: onFilterHatedChanged,
           trailingIcon: const Icon(CupertinoIcons.eye_slash),
         ),
         SettingsToggle(
-          title: context.loc.settings.tagsFilters.removeFavourited,
+          title: context.loc.settings.itemFilters.removeMarked,
+          value: filterMarked,
+          onChanged: onFilterMarkedChanged,
+          trailingIcon: const Icon(
+            Icons.star,
+            color: Colors.yellow,
+          ),
+        ),
+        SettingsToggle(
+          title: context.loc.settings.itemFilters.removeFavourited,
           value: filterFavourites,
           onChanged: onFilterFavouritesChanged,
           trailingIcon: const Icon(Icons.favorite, color: Colors.red),
         ),
         SettingsToggle(
-          title: context.loc.settings.tagsFilters.removeSnatched,
+          title: context.loc.settings.itemFilters.removeSnatched,
           value: filterSnatched,
           onChanged: onFilterSnatchedChanged,
           trailingIcon: const Icon(Icons.file_download_outlined),
         ),
         SettingsToggle(
-          title: context.loc.settings.tagsFilters.removeAI,
+          title: context.loc.settings.itemFilters.removeAI,
           value: filterAi,
           onChanged: onFilterAiChanged,
           trailingIcon: const FaIcon(FontAwesomeIcons.robot, size: 20),

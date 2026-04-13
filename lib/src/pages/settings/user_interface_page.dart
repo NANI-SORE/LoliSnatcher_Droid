@@ -32,7 +32,12 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
   late PreviewQuality previewMode;
   late PreviewDisplayMode previewDisplay, previewDisplayFallback;
   late ButtonPosition scrollGridButtonsPosition;
-  late bool showBottomSearchbar, useTopSearchbarInput, showSearchbarQuickActions, autofocusSearchbar, disableVibration;
+  late bool showBottomSearchbar,
+      useTopSearchbarInput,
+      showSearchbarQuickActions,
+      autofocusSearchbar,
+      disableVibration,
+      usePredictiveBack;
   late AppMode appMode;
   late HandSide handSide;
 
@@ -48,6 +53,7 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
     showSearchbarQuickActions = settingsHandler.showSearchbarQuickActions;
     autofocusSearchbar = settingsHandler.autofocusSearchbar;
     disableVibration = settingsHandler.disableVibration;
+    usePredictiveBack = settingsHandler.usePredictiveBack;
     previewDisplay = settingsHandler.previewDisplay;
     previewDisplayFallback = settingsHandler.previewDisplayFallback;
     previewMode = settingsHandler.previewMode;
@@ -63,12 +69,7 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
     super.dispose();
   }
 
-  //called when page is clsoed, sets settingshandler variables and then writes settings to disk
-  Future<void> _onPopInvoked(bool didPop, _) async {
-    if (didPop) {
-      return;
-    }
-
+  Future<void> _onPopInvoked(_, _) async {
     settingsHandler.appMode.value = appMode;
     settingsHandler.handSide.value = handSide;
     settingsHandler.showBottomSearchbar = showBottomSearchbar;
@@ -76,6 +77,8 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
     settingsHandler.showSearchbarQuickActions = showSearchbarQuickActions;
     settingsHandler.autofocusSearchbar = autofocusSearchbar;
     settingsHandler.disableVibration = disableVibration;
+    final bool needThemeChange = usePredictiveBack != settingsHandler.usePredictiveBack;
+    settingsHandler.usePredictiveBack = usePredictiveBack;
     settingsHandler.previewMode = previewMode;
     settingsHandler.previewDisplay = previewDisplay;
     settingsHandler.previewDisplayFallback = previewDisplayFallback;
@@ -83,16 +86,12 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
     settingsHandler.landscapeColumns = max(1, int.tryParse(columnsLandscapeController.text) ?? 6);
     settingsHandler.portraitColumns = max(1, int.tryParse(columnsPortraitController.text) ?? 3);
     settingsHandler.mousewheelScrollSpeed = double.parse(mouseSpeedController.text);
-    final bool result = await settingsHandler.saveSettings(restate: false);
-    if (result) {
-      Navigator.of(context).pop();
-    }
+    await settingsHandler.saveSettings(restate: needThemeChange);
   }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
       onPopInvokedWithResult: _onPopInvoked,
       child: Scaffold(
         resizeToAvoidBottomInset: true,
@@ -182,7 +181,7 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
                   });
                 },
                 title: context.loc.settings.interface.handSide,
-                itemTitleBuilder: (item) => item?.locName(context) ?? '?',
+                itemTitleBuilder: (item) => item?.locName ?? '?',
                 trailingIcon: IconButton(
                   icon: const Icon(Icons.back_hand_outlined),
                   onPressed: () {
@@ -235,6 +234,15 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
                   });
                 },
                 title: context.loc.settings.interface.searchViewInputAutofocus,
+              ),
+              SettingsToggle(
+                value: usePredictiveBack,
+                onChanged: (newValue) {
+                  setState(() {
+                    usePredictiveBack = newValue;
+                  });
+                },
+                title: context.loc.settings.interface.usePredictiveBack,
               ),
               SettingsToggle(
                 value: disableVibration,
@@ -304,7 +312,7 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
                   });
                 },
                 title: context.loc.settings.interface.previewQuality,
-                itemTitleBuilder: (e) => e?.locName(context) ?? '',
+                itemTitleBuilder: (e) => e?.locName ?? '',
                 trailingIcon: IconButton(
                   icon: const Icon(Icons.help_outline),
                   onPressed: () {
@@ -334,9 +342,9 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
                 value: previewDisplay,
                 items: PreviewDisplayMode.values,
                 itemTitleBuilder: (item) => switch (item) {
-                  .square => '${item!.locName(context)} (1:1)',
-                  .rectangle => '${item!.locName(context)} (9:16)',
-                  .staggered => item!.locName(context),
+                  .square => '${item!.locName} (1:1)',
+                  .rectangle => '${item!.locName} (9:16)',
+                  .staggered => item!.locName,
                   _ => '?',
                 },
                 itemLeadingBuilder: (item) {
@@ -364,8 +372,8 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
                         value: previewDisplayFallback,
                         items: PreviewDisplayMode.values.where((e) => !e.isStaggered).toList(),
                         itemTitleBuilder: (item) => switch (item) {
-                          .square => '${item!.locName(context)} (1:1)',
-                          .rectangle => '${item!.locName(context)} (9:16)',
+                          .square => '${item!.locName} (1:1)',
+                          .rectangle => '${item!.locName} (9:16)',
                           _ => '?',
                         },
                         itemLeadingBuilder: (item) {
@@ -459,7 +467,7 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
                   });
                 },
                 title: context.loc.settings.interface.scrollPreviewsButtonsPosition,
-                itemTitleBuilder: (e) => e?.locName(context) ?? '',
+                itemTitleBuilder: (e) => e?.locName ?? '',
               ),
               if (SettingsHandler.isDesktopPlatform)
                 SettingsTextInput(

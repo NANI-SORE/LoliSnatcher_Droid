@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -227,13 +228,10 @@ class _HideableAppBarState extends State<HideableAppBar> {
           key: ValueKey(button.name),
           icon: buttonIcon(button),
           subIcon: buttonSubicon(button),
-          onTap: () async {
-            await buttonClick(button);
-          },
-          onLongTap: () {
-            buttonHold(button);
-          },
+          onTap: buttonClick(button),
+          onLongTap: buttonHold(button),
           stackWidget: buttonStackWidget(button),
+          tooltip: buttonText(button),
         ),
       );
     }
@@ -290,12 +288,10 @@ class _HideableAppBarState extends State<HideableAppBar> {
                 child: SizedBox(
                   width: double.infinity, // force button to take full width
                   child: ListTile(
-                    onLongPress: () {
-                      buttonHold(button);
-                    },
+                    onLongPress: buttonHold(button),
                     onTap: () async {
                       Navigator.of(context).pop(); // remove overflow menu
-                      await buttonClick(button);
+                      await buttonClick(button)?.call();
                     },
                     leading: ToolbarAction(
                       key: ValueKey(button.name),
@@ -518,7 +514,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
   }
 
   String buttonText(GalleryButton button) {
-    final String defaultLabel = button.locName(context);
+    final String defaultLabel = button.locName;
     late String label;
 
     if (page.value == -1) {
@@ -553,152 +549,170 @@ class _HideableAppBarState extends State<HideableAppBar> {
     return label;
   }
 
-  Future<void> buttonClick(GalleryButton button) async {
+  AsyncCallback? buttonClick(GalleryButton button) {
     final item = widget.tab.booruHandler.filteredFetched[page.value];
 
     switch (button) {
       case .info:
-        widget.onOpenDrawer?.call();
-        break;
+        return () async => widget.onOpenDrawer?.call();
       case .open:
-        // url to html encoded
-        final String url = Uri.encodeFull(item.postURL);
-        unawaited(
-          launchUrlString(
-            url,
-            mode: LaunchMode.externalApplication,
-          ),
-        );
-        break;
-      case .autoscroll:
-        autoScrollState(!autoScroll);
-        break;
-      case .snatch:
-        if (!await setPermissions()) return;
-
-        // call a function to save the currently viewed image when the save button is pressed
-        snatchHandler.queue(
-          [item],
-          widget.tab.booruHandler.booru,
-          settingsHandler.snatchCooldown,
-          false,
-        );
-        if (settingsHandler.favouriteOnSnatch) {
-          await widget.tab.toggleItemFavourite(
-            page.value,
-            forcedValue: true,
-            skipSnatching: true,
+        return () async {
+          // url to html encoded
+          final String url = Uri.encodeFull(item.postURL);
+          unawaited(
+            launchUrlString(
+              url,
+              mode: LaunchMode.externalApplication,
+            ),
           );
-        }
-        break;
-      case .favourite:
-        await widget.tab.toggleItemFavourite(page.value);
+        };
+      case .autoscroll:
+        return () async => autoScrollState(!autoScroll);
+      case .snatch:
+        return () async {
+          if (!await setPermissions()) return;
 
-        // set viewed item again in case favourites filter is enabled
-        WidgetsBinding.instance.addPostFrameCallback((_) async {
-          await Future.delayed(const Duration(seconds: 1));
-          viewerHandler.setCurrent(widget.tab.booruHandler.filteredFetched[page.value]);
-        });
-        break;
+          // call a function to save the currently viewed image when the save button is pressed
+          snatchHandler.queue(
+            [item],
+            widget.tab.booruHandler.booru,
+            settingsHandler.snatchCooldown,
+            false,
+          );
+          if (settingsHandler.favouriteOnSnatch) {
+            await widget.tab.toggleItemFavourite(
+              page.value,
+              forcedValue: true,
+              skipSnatching: true,
+            );
+          }
+          setState(() {});
+        };
+      case .favourite:
+        return () async {
+          await widget.tab.toggleItemFavourite(page.value);
+          setState(() {});
+
+          // set viewed item again in case favourites filter is enabled
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (!mounted) return;
+            await Future.delayed(const Duration(seconds: 1));
+            viewerHandler.setCurrent(
+              widget.tab.booruHandler.filteredFetched[page.value],
+            );
+          });
+        };
       case .share:
-        await onShareClick();
-        break;
+        return () async => onShareClick();
       case .select:
-        final bool isSelected = widget.tab.selected.contains(item);
-        if (isSelected) {
-          widget.tab.selected.remove(item);
-        } else {
-          widget.tab.selected.add(item);
-        }
-        break;
+        return () async {
+          final bool isSelected = widget.tab.selected.contains(item);
+          if (isSelected) {
+            widget.tab.selected.remove(item);
+          } else {
+            widget.tab.selected.add(item);
+          }
+          setState(() {});
+        };
       case .reloadnoscale:
-        item.isNoScale.toggle();
-        break;
+        return () async {
+          item.isNoScale.toggle();
+          setState(() {});
+        };
       case .toggleQuality:
-        item.toggleQuality.toggle();
-        break;
+        return () async {
+          item.toggleQuality.toggle();
+          setState(() {});
+        };
       case .externalPlayer:
-        ExternalVideoPlayerLauncher.launchOtherPlayer(item.fileURL, MIME.video, null);
-        break;
+        return () async => ExternalVideoPlayerLauncher.launchOtherPlayer(
+          item.fileURL,
+          MIME.video,
+          null,
+        );
       case .imageSearch:
-        await showImageSearchDialog(context, item);
-        break;
+        return () async => showImageSearchDialog(
+          context,
+          item.fileURL,
+        );
     }
   }
 
-  Future<void> buttonHold(GalleryButton button) async {
+  AsyncCallback? buttonHold(GalleryButton button) {
     // TODO long press slideshow button to set the timer
     switch (button) {
       case .share:
-        await ServiceHandler.vibrate();
-        // Ignore share setting on long press
-        showShareDialog(showTip: false);
-        break;
+        return () async {
+          await ServiceHandler.vibrate();
+          // Ignore share setting on long press
+          showShareDialog(showTip: false);
+        };
       case .snatch:
-        await showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            final item = widget.tab.booruHandler.filteredFetched[page.value];
+        return () async {
+          await showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              final item = widget.tab.booruHandler.filteredFetched[page.value];
 
-            return SettingsDialog(
-              title: Text(context.loc.gallery.snatchQuestion),
-              content: Column(
-                children: [
-                  SelectableText(item.fileURL),
-                  const SizedBox(height: 16),
-                  if (item.isSnatched.value != null)
+              return SettingsDialog(
+                title: Text(context.loc.gallery.snatchQuestion),
+                content: Column(
+                  children: [
+                    SelectableText(item.fileURL),
+                    const SizedBox(height: 16),
+                    if (item.isSnatched.value != null)
+                      ListTile(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: BorderSide(color: Theme.of(context).colorScheme.secondary),
+                        ),
+                        onTap: () async {
+                          item.isSnatched.value = !item.isSnatched.value!;
+                          await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
+                          Navigator.of(context).pop();
+                        },
+                        leading: item.isSnatched.value == true ? const Icon(Icons.clear) : const Icon(Icons.check),
+                        title: item.isSnatched.value == true
+                            ? Text(context.loc.viewer.appBar.dropSnatchedStatus)
+                            : Text(context.loc.viewer.appBar.setSnatchedStatus),
+                      ),
+                    //
+                    const SizedBox(height: 16),
                     ListTile(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                         side: BorderSide(color: Theme.of(context).colorScheme.secondary),
                       ),
                       onTap: () async {
-                        item.isSnatched.value = !item.isSnatched.value!;
-                        await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
+                        if (!await setPermissions()) return;
+
+                        snatchHandler.queue(
+                          [item],
+                          widget.tab.booruHandler.booru,
+                          settingsHandler.snatchCooldown,
+                          true,
+                        );
+                        if (settingsHandler.favouriteOnSnatch) {
+                          await widget.tab.toggleItemFavourite(
+                            page.value,
+                            forcedValue: true,
+                            skipSnatching: true,
+                          );
+                        }
                         Navigator.of(context).pop();
                       },
-                      leading: item.isSnatched.value == true ? const Icon(Icons.clear) : const Icon(Icons.check),
-                      title: item.isSnatched.value == true
-                          ? Text(context.loc.viewer.appBar.dropSnatchedStatus)
-                          : Text(context.loc.viewer.appBar.setSnatchedStatus),
+                      leading: const Icon(Icons.file_download_outlined),
+                      title: Text(
+                        '${context.loc.viewer.appBar.snatch} ${item.isSnatched.value == true ? context.loc.viewer.appBar.forced : ''}'
+                            .trim(),
+                      ),
                     ),
-                  //
-                  const SizedBox(height: 16),
-                  ListTile(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(color: Theme.of(context).colorScheme.secondary),
-                    ),
-                    onTap: () async {
-                      if (!await setPermissions()) return;
-
-                      snatchHandler.queue(
-                        [item],
-                        widget.tab.booruHandler.booru,
-                        settingsHandler.snatchCooldown,
-                        true,
-                      );
-                      if (settingsHandler.favouriteOnSnatch) {
-                        await widget.tab.toggleItemFavourite(
-                          page.value,
-                          forcedValue: true,
-                          skipSnatching: true,
-                        );
-                      }
-                      Navigator.of(context).pop();
-                    },
-                    leading: const Icon(Icons.file_download_outlined),
-                    title: Text(
-                      '${context.loc.viewer.appBar.snatch} ${item.isSnatched.value == true ? context.loc.viewer.appBar.forced : ''}'
-                          .trim(),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-        break;
+                  ],
+                ),
+              );
+            },
+          );
+        };
 
       //
 
@@ -711,7 +725,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
       case .toggleQuality:
       case .externalPlayer:
       case .imageSearch:
-        break;
+        return null;
     }
   }
 
@@ -1285,7 +1299,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
     final double extraPadding = isOnTop ? 0 : MediaQuery.paddingOf(context).bottom;
 
     return PopScope(
-      onPopInvokedWithResult: (bool didPop, _) {
+      onPopInvokedWithResult: (_, _) {
         // clear currently loading item from cache to avoid creating broken files
         // TODO move sharing download routine to somewhere in global context?
         shareCancelToken?.cancel();
@@ -1309,9 +1323,14 @@ class _HideableAppBarState extends State<HideableAppBar> {
           color: Colors.transparent,
           height: viewerHandler.displayAppbar.value ? (isOnTop ? null : (widget.defaultHeight + extraPadding)) : 0,
           padding: isOnTop ? null : EdgeInsets.only(bottom: extraPadding),
-          child: ValueListenableBuilder(
-            valueListenable: page,
-            builder: (context, page, _) {
+          child: ListenableBuilder(
+            listenable: Listenable.merge([page, widget.tab.booruHandler.filteredFetched]),
+            builder: (context, _) {
+              final pageVal = page.value;
+              final fetched = widget.tab.booruHandler.filteredFetched.value;
+              final String formattedViewedIndex = (pageVal + 1).toString();
+              final String formattedTotal = fetched.length.toString();
+
               return AppBar(
                 // toolbarHeight: widget.defaultHeight,
                 elevation: 0,
@@ -1326,16 +1345,9 @@ class _HideableAppBarState extends State<HideableAppBar> {
                 ),
                 title: FittedBox(
                   fit: BoxFit.fitWidth,
-                  child: ValueListenableBuilder(
-                    valueListenable: widget.tab.booruHandler.filteredFetched,
-                    builder: (_, fetched, _) {
-                      final String formattedViewedIndex = (page + 1).toString();
-                      final String formattedTotal = fetched.length.toString();
-                      return Text(
-                        '$formattedViewedIndex/$formattedTotal',
-                        style: const TextStyle(color: Colors.white),
-                      );
-                    },
+                  child: Text(
+                    '$formattedViewedIndex/$formattedTotal',
+                    style: const TextStyle(color: Colors.white),
                   ),
                 ),
                 actions: getActions(),

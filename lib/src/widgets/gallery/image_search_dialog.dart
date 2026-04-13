@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:url_launcher/url_launcher_string.dart';
 
-import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 
 // TODO change to bottom sheet
@@ -50,7 +49,7 @@ const List<ImageSearchEngine> imageSearchEngines = [
 
 Future<void> showImageSearchDialog(
   BuildContext context,
-  BooruItem item,
+  String url,
 ) async {
   await showDialog(
     context: context,
@@ -73,7 +72,7 @@ Future<void> showImageSearchDialog(
                     ),
                     onTap: () {
                       launchUrlString(
-                        e.url.replaceAll('<image_url>', item.fileURL),
+                        e.url.replaceAll('<image_url>', url),
                         mode: LaunchMode.externalApplication,
                       );
                       Navigator.of(context).pop();

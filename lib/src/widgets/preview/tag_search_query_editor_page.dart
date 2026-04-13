@@ -71,6 +71,7 @@ class TagSearchQueryEditorPage extends StatefulWidget {
     this.allowMultipleTags = false,
     this.showBooruSelector = false,
     this.readOnlyPreview = false,
+    this.showPinnedTags = true,
     this.onTagsSelected,
     super.key,
   });
@@ -89,6 +90,8 @@ class TagSearchQueryEditorPage extends StatefulWidget {
   final bool showBooruSelector;
 
   final bool readOnlyPreview;
+
+  final bool showPinnedTags;
 
   /// Optional callback when tags are selected (also returns via Navigator.pop)
   final void Function(String tags, Booru? booru)? onTagsSelected;
@@ -264,8 +267,23 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
             const SizedBox(height: 16),
             ListTile(
               title: Text(context.loc.add),
-              leading: const Icon(Icons.add_rounded),
+              leading: const Icon(
+                Icons.add_rounded,
+                color: Colors.green,
+              ),
               onTap: () async {
+                onSuggestionTap(tag);
+                Navigator.of(context).pop();
+              },
+            ),
+            ListTile(
+              title: Text(context.loc.exclude),
+              leading: const Icon(
+                Icons.remove_rounded,
+                color: Colors.red,
+              ),
+              onTap: () async {
+                tag = tag.copyWith(tag: '-${tag.tag}');
                 onSuggestionTap(tag);
                 Navigator.of(context).pop();
               },
@@ -422,6 +440,8 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
                                 onMetatagSelect: onMetatagSelect,
                                 onTagTap: (tag) => onSuggestionTap(TagSuggestion(tag: tag)),
                                 hideHistory: true,
+                                hidePopular: selectedBooru?.type?.isFavouritesOrDownloads == true,
+                                hidePinned: !widget.showPinnedTags,
                               );
                             }
 
@@ -535,7 +555,7 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
       // Tags bar (for multiple tags mode)
       if (hasMultipleTags)
         Container(
-          height: 60,
+          height: 44,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           decoration: BoxDecoration(
             border: Border(
@@ -594,6 +614,7 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
             value: selectedBooru,
             onChanged: onBooruChanged,
             title: context.loc.booru,
+            titleAsLabel: true,
             placeholder: context.loc.select,
             drawBottomBorder: false,
             contentPadding: EdgeInsets.zero,
@@ -615,6 +636,7 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
                   controller: queryController.suggestionTextController,
                   focusNode: queryController.suggestionTextFocusNode,
                   title: context.loc.searchBar.searchForTags,
+                  titleAsLabel: true,
                   hintText: context.loc.searchBar.searchForTags,
                   clearable: true,
                   onSubmitted: onSuggestionTextSubmitted,
@@ -701,7 +723,7 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
 /// ```
 class TagSearchBox extends StatefulWidget {
   const TagSearchBox({
-    required this.title,
+    this.title,
     this.controller,
     this.hintText,
     this.booru,
@@ -716,6 +738,8 @@ class TagSearchBox extends StatefulWidget {
     this.enabled = true,
     this.onlyInput = false,
     this.readOnlyPreview = false,
+    this.titleAsLabel = false,
+    this.showPinnedTags = true,
     super.key,
   });
 
@@ -723,7 +747,7 @@ class TagSearchBox extends StatefulWidget {
   final TextEditingController? controller;
 
   /// Label text for the input field
-  final String title;
+  final String? title;
 
   /// Hint text when empty
   final String? hintText;
@@ -750,6 +774,8 @@ class TagSearchBox extends StatefulWidget {
   final bool enabled;
   final bool onlyInput;
   final bool readOnlyPreview;
+  final bool titleAsLabel;
+  final bool showPinnedTags;
 
   @override
   State<TagSearchBox> createState() => _TagSearchBoxState();
@@ -786,6 +812,7 @@ class _TagSearchBoxState extends State<TagSearchBox> {
           allowMultipleTags: widget.allowMultipleTags,
           showBooruSelector: widget.showBooruSelector,
           readOnlyPreview: widget.readOnlyPreview,
+          showPinnedTags: widget.showPinnedTags,
           onTagsSelected: (tags, booru) {
             setState(() {
               _controller.text = tags;
@@ -823,72 +850,88 @@ class _TagSearchBoxState extends State<TagSearchBox> {
 
     final Widget field = Container(
       margin: widget.margin,
-      child: InkWell(
-        onTap: widget.enabled ? _openTagSearch : null,
-        borderRadius: BorderRadius.circular(4),
-        child: InputDecorator(
-          decoration: InputDecoration(
-            labelText: widget.title,
-            hintText: widget.hintText ?? widget.title,
-            contentPadding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-            suffixIcon: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (widget.clearable && hasText)
-                  IconButton(
-                    icon: Icon(
-                      Icons.close_rounded,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    onPressed: _clear,
-                  ),
-                IconButton(
-                  icon: Icon(
-                    Icons.search,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                  onPressed: widget.enabled ? _openTagSearch : null,
-                ),
-              ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (widget.title != null && !widget.titleAsLabel)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(widget.title!),
             ),
-            enabled: widget.enabled,
-          ),
-          child: hasText
-              ? widget.allowMultipleTags
-                    ? Wrap(
-                        spacing: 4,
-                        runSpacing: 4,
-                        children: _controller.text.split(' ').where((t) => t.isNotEmpty).map((tag) {
-                          final tagColor = tagHandler.getTag(tag).getColour();
-                          return Chip(
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
-                            label: Text(
-                              tag.replaceAll('_', ' '),
-                              style: TextStyle(
-                                color: tagColor == Colors.transparent ? null : tagColor,
-                              ),
-                            ),
-                            padding: EdgeInsets.zero,
-                            labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-                          );
-                        }).toList(),
-                      )
-                    : Text(
-                        _controller.text.replaceAll('_', ' '),
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: tagHandler.getTag(_controller.text).getColour(),
+          //
+          Material(
+            color: Theme.of(context).inputDecorationTheme.fillColor,
+            borderRadius: BorderRadius.circular(10),
+            child: InkWell(
+              onTap: widget.enabled ? _openTagSearch : null,
+              borderRadius: BorderRadius.circular(10),
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  labelText: widget.titleAsLabel ? widget.title : null,
+                  hintText: widget.hintText,
+                  fillColor: Colors.transparent,
+                  contentPadding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.clearable && hasText && widget.enabled)
+                        IconButton(
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          onPressed: _clear,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      )
-              : Text(
-                  widget.hintText ?? widget.title,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).hintColor,
+                      //
+                      IconButton(
+                        icon: Icon(
+                          Icons.search,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        onPressed: widget.enabled ? _openTagSearch : null,
+                      ),
+                    ],
                   ),
+                  enabled: widget.enabled,
                 ),
-        ),
+                child: hasText
+                    ? widget.allowMultipleTags
+                          ? Wrap(
+                              spacing: 4,
+                              runSpacing: 4,
+                              alignment: WrapAlignment.start,
+                              children: _controller.text
+                                  .split(' ')
+                                  .where((t) => t.isNotEmpty)
+                                  .map(
+                                    (t) => SizedBox(
+                                      height: 32,
+                                      child: MainSearchTagChip(tag: t),
+                                    ),
+                                  )
+                                  .toList(),
+                            )
+                          : Text(
+                              _controller.text.replaceAll('_', ' '),
+                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                color: tagHandler.getTag(_controller.text).getColour(),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            )
+                    : (widget.hintText != null
+                          ? Text(
+                              widget.hintText!,
+                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                color: Theme.of(context).hintColor,
+                              ),
+                            )
+                          : null),
+              ),
+            ),
+          ),
+        ],
       ),
     );
 

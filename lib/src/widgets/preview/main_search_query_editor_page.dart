@@ -13,6 +13,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:keyboard_actions/keyboard_actions.dart';
 import 'package:lolisnatcher/src/widgets/desktop/desktop_scroll.dart';
+import 'package:lolisnatcher/src/widgets/preview/tag_search_query_editor_page.dart';
 import 'package:rich_text_controller/rich_text_controller.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -65,7 +66,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
   final AutoScrollController searchBarScrollController = AutoScrollController();
 
   late final RichTextController suggestionTextController;
-  String get suggestionTextControllerRawInput => suggestionTextController.text
+  String get suggestionTextControllerCleanedInput => suggestionTextController.text
       .replaceAll(RegExp('^-'), '')
       .replaceAll(RegExp('^~'), '')
       .replaceAll(RegExp(r'^\d+#'), '')
@@ -167,7 +168,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
     bool instant = true,
   }) async {
     final handler = searchHandler.currentBooruHandler;
-    if (suggestionTextControllerRawInput.isEmpty) {
+    if (suggestionTextControllerCleanedInput.isEmpty) {
       debounce?.cancel();
       cancelToken?.cancel();
       loading = false;
@@ -204,11 +205,11 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
 
         final metaTags = searchHandler.currentBooruHandler.availableMetaTags();
         final MetaTag? metaTag = metaTags.firstWhereOrNull(
-          (p) => p.keyParser(suggestionTextControllerRawInput) != null,
+          (p) => p.keyParser(suggestionTextControllerCleanedInput) != null,
         );
         if (metaTag != null) {
           if (metaTag.hasAutoComplete) {
-            suggestedTags = await metaTag.getAutoComplete(suggestionTextControllerRawInput);
+            suggestedTags = await metaTag.getAutoComplete(suggestionTextControllerCleanedInput);
             suggestedTags.sort((a, b) => a.tag.compareTo(b.tag));
           } else {
             suggestedTags.clear();
@@ -221,7 +222,9 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
         } else if (handler.hasTagSuggestions) {
           cancelToken = CancelToken();
           final res = await handler.getTagSuggestions(
-            suggestionTextControllerRawInput,
+            searchHandler.currentBooruHandler is MergebooruHandler
+                ? suggestionTextController.text
+                : suggestionTextControllerCleanedInput,
             cancelToken: cancelToken,
           );
           res.fold(
@@ -254,18 +257,20 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
             },
           );
         } else {
-          final databaseSearch = (await settingsHandler.dbHandler.getTags(suggestionTextControllerRawInput, 10)).map((
-            tag,
-          ) {
-            return TagSuggestion(
-              tag: tag,
-              type: tagHandler.getTag(tag).tagType,
-              icon: const Icon(Icons.archive),
-            );
-          }).toList();
+          final databaseSearch = (await settingsHandler.dbHandler.getTags(suggestionTextControllerCleanedInput, 10))
+              .map((
+                tag,
+              ) {
+                return TagSuggestion(
+                  tag: tag,
+                  type: tagHandler.getTag(tag).tagType,
+                  icon: const Icon(Icons.archive),
+                );
+              })
+              .toList();
 
           final historySearch =
-              (await settingsHandler.dbHandler.getSearchHistoryByInput(suggestionTextControllerRawInput, 10))
+              (await settingsHandler.dbHandler.getSearchHistoryByInput(suggestionTextControllerCleanedInput, 10))
                   .map((tag) {
                     return TagSuggestion(
                       tag: tag,
@@ -353,6 +358,15 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
     searchHandler.searchTextController.text = searchHandler.currentTab.tags.trim();
   }
 
+  void onClearTap() {
+    if (tagToEditIndex != null) {
+      tagToEditIndex = null;
+      tagToEdit = null;
+      suggestionTextController.clear();
+      setState(() {});
+    }
+  }
+
   void onSearchTap() {
     Navigator.of(context).pop();
     searchHandler.searchTextController.clearComposing();
@@ -374,7 +388,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
 
     if (!raw) {
       final String extrasFromInput = suggestionTextController.text
-          .replaceAll(suggestionTextControllerRawInput, '')
+          .replaceAll(suggestionTextControllerCleanedInput, '')
           .trim();
       tagText = '$extrasFromInput$tagText';
     }
@@ -448,8 +462,23 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
             const SizedBox(height: 16),
             ListTile(
               title: Text(context.loc.add),
-              leading: const Icon(Icons.add_rounded),
+              leading: const Icon(
+                Icons.add_rounded,
+                color: Colors.green,
+              ),
               onTap: () async {
+                onSuggestionTap(tag);
+                Navigator.of(context).pop();
+              },
+            ),
+            ListTile(
+              title: Text(context.loc.exclude),
+              leading: const Icon(
+                Icons.remove_rounded,
+                color: Colors.red,
+              ),
+              onTap: () async {
+                tag = tag.copyWith(tag: '-${tag.tag}');
                 onSuggestionTap(tag);
                 Navigator.of(context).pop();
               },
@@ -471,7 +500,6 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
 
                 await Clipboard.setData(ClipboardData(text: tagText));
                 FlashElements.showSnackbar(
-                  context: context,
                   title: Text(context.loc.copied, style: const TextStyle(fontSize: 20)),
                   content: Text(context.loc.searchBar.copiedTagToClipboard(tag: tagText)),
                   sideColor: Colors.green,
@@ -488,8 +516,8 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                 booruType: searchHandler.currentBooru.type?.name,
                 booruName: searchHandler.currentBooru.name,
               ),
-              builder: (context, snapshot) {
-                final isPinned = snapshot.data != null;
+              builder: (_, snapshot) {
+                final isPinned = snapshot.data != null || tag.isPinned == true;
                 final pinnedTag = snapshot.data;
 
                 return ListTile(
@@ -498,9 +526,19 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                   onTap: () async {
                     Navigator.of(context).pop();
                     if (isPinned && pinnedTag != null) {
-                      await showUnpinTagDialog(context, tag.tag, pinnedTag);
+                      await showUnpinTagDialog(
+                        context,
+                        tag.tag,
+                        pinnedTag,
+                        () => onTagUnpinned(tag),
+                      );
                     } else {
-                      await showPinTagDialog(context, tag.tag, searchHandler.currentBooru);
+                      await showPinTagDialog(
+                        context,
+                        tag.tag,
+                        searchHandler.currentBooru,
+                        () => onTagPinned(tag),
+                      );
                     }
                   },
                 );
@@ -518,6 +556,24 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
       onSuggestionTap(TagSuggestion(tag: text), raw: true);
     } else {
       onSearchTap();
+    }
+  }
+
+  void onTagPinned(TagSuggestion tag) {
+    final index = suggestedTags.indexWhere((t) => t == tag);
+
+    if (index != -1) {
+      suggestedTags[index] = suggestedTags[index].copyWith(isPinned: true);
+      setState(() {});
+    }
+  }
+
+  void onTagUnpinned(TagSuggestion tag) {
+    final index = suggestedTags.indexWhere((t) => t == tag);
+
+    if (index != -1) {
+      suggestedTags[index] = suggestedTags[index].copyWith(isPinned: false);
+      setState(() {});
     }
   }
 
@@ -662,17 +718,17 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                         valueListenable: suggestionTextController,
                         builder: (context, _, _) {
                           return ElevatedButton(
-                            onPressed: suggestionTextControllerRawInput.isEmpty
+                            onPressed: suggestionTextControllerCleanedInput.isEmpty
                                 ? onSearchTap
                                 : () => onSuggestionTextSubmitted(suggestionTextController.text),
-                            onLongPress: suggestionTextControllerRawInput.isEmpty
+                            onLongPress: suggestionTextControllerCleanedInput.isEmpty
                                 ? onSearchLongTap
-                                : () => onSuggestionLongTap(TagSuggestion(tag: suggestionTextControllerRawInput)),
+                                : () => onSuggestionLongTap(TagSuggestion(tag: suggestionTextControllerCleanedInput)),
                             style: buttonStyle,
                             child: Padding(
                               padding: EdgeInsets.only(bottom: isKbVisible ? 0 : 20),
                               child: Icon(
-                                suggestionTextControllerRawInput.isEmpty ? Icons.search : Icons.add_rounded,
+                                suggestionTextControllerCleanedInput.isEmpty ? Icons.search : Icons.add_rounded,
                                 color: context.theme.colorScheme.onSecondary,
                               ),
                             ),
@@ -773,10 +829,11 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                               );
                             }
 
-                            if (suggestionTextControllerRawInput.isEmpty) {
+                            if (suggestionTextControllerCleanedInput.isEmpty) {
                               return SuggestionsMainContent(
                                 onMetatagSelect: onMetatagSelect,
                                 onTagTap: (tag) => onSuggestionTap(TagSuggestion(tag: tag)),
+                                hidePopular: searchHandler.currentBooru.type?.isFavouritesOrDownloads == true,
                               );
                             }
 
@@ -840,7 +897,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                                           children: [
                                             TagSuggestionText(
                                               tag: tag,
-                                              searchText: suggestionTextControllerRawInput,
+                                              searchText: suggestionTextControllerCleanedInput,
                                             ),
                                             if (tag.hasDescription)
                                               Text(
@@ -855,12 +912,24 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                                         ),
                                       ),
                                       //
+                                      FutureBuilder<PinnedTag?>(
+                                        future: settingsHandler.dbHandler.getPinnedTag(
+                                          tag.tag,
+                                          booruType: searchHandler.currentBooru.type?.name,
+                                          booruName: searchHandler.currentBooru.name,
+                                        ),
+                                        builder: (context, snapshot) {
+                                          final isPinned = snapshot.data != null || tag.isPinned == true;
+                                          if (isPinned) return const Icon(Icons.push_pin, size: 16);
+
+                                          return const SizedBox.shrink();
+                                        },
+                                      ),
                                       if (tag.count > 0)
                                         Padding(
                                           padding: const EdgeInsets.only(left: 12),
                                           child: Text(
-                                            // TODO locale
-                                            NumberFormat.compact(locale: 'en').format(tag.count),
+                                            tag.count.toShortString(),
                                             style: context.theme.textTheme.bodySmall?.copyWith(
                                               color: context.theme.colorScheme.onSurface.withValues(alpha: 0.66),
                                               height: 1,
@@ -908,6 +977,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                 onChipLongTap: onChipLongTap,
                 onChipDeleteTap: onChipDeleteTap,
                 onResetTap: onResetTap,
+                onClearTap: onClearTap,
                 onSearchTap: onSearchTap,
                 onSearchLongTap: onSearchLongTap,
                 scrollController: searchBarScrollController,
@@ -934,11 +1004,12 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                   controller: suggestionTextController,
                   focusNode: suggestionTextFocusNode,
                   title: context.loc.searchBar.searchForTags,
+                  titleAsLabel: true,
                   hintText: context.loc.searchBar.searchForTags,
                   clearable: true,
                   onSubmitted: onSuggestionTextSubmitted,
                   onSubmittedLongTap: (_) => onSuggestionLongTap(
-                    TagSuggestion(tag: suggestionTextControllerRawInput),
+                    TagSuggestion(tag: suggestionTextControllerCleanedInput),
                   ),
                   onlyInput: true,
                   floatingLabelBehavior: FloatingLabelBehavior.never,
@@ -956,8 +1027,11 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                           label: context.loc.searchBar.prefix,
                           onPressed: () {
                             ContextMenuController.removeAny();
-                            showDialog(
+                            showModalBottomSheet(
                               context: context,
+                              isScrollControlled: true,
+                              useSafeArea: true,
+                              showDragHandle: true,
                               builder: (_) => _PrefixEditDialog(suggestionTextController),
                             );
                           },
@@ -986,7 +1060,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                     return AnimatedSize(
                       duration: const Duration(milliseconds: 200),
                       child: SizedBox(
-                        width: double.infinity,
+                        width: double.maxFinite,
                         height:
                             (isKbVisible || (suggestionTextFocusNodeHasFocus && (Platform.isAndroid || Platform.isIOS)))
                             ? 0 // keyboardActionsHeight
@@ -1185,6 +1259,7 @@ class AddMetatagBottomSheet extends StatelessWidget {
               color: context.theme.colorScheme.surfaceContainer,
             ),
             child: Column(
+              crossAxisAlignment: .start,
               children: [
                 Row(
                   children: [
@@ -1210,7 +1285,7 @@ class AddMetatagBottomSheet extends StatelessWidget {
             child: InkWell(
               onTap: () async {
                 switch (tag.type) {
-                  case MetaTagType.date:
+                  case .date:
                     final metaTag = tag as DateMetaTag;
                     final res = await showSingleDatePicker(
                       context,
@@ -1271,7 +1346,7 @@ class AddMetatagBottomSheet extends StatelessWidget {
                                 child: Text(
                                   context.loc.searchBar.free,
                                   style: context.theme.textTheme.bodySmall?.copyWith(
-                                    color: context.theme.colorScheme.primary,
+                                    color: context.theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ),
@@ -1282,7 +1357,7 @@ class AddMetatagBottomSheet extends StatelessWidget {
                       ),
                       //
                       switch (tag.type) {
-                        MetaTagType.date => Builder(
+                        .date => Builder(
                           builder: (context) {
                             final metaTag = tag as DateMetaTag;
                             return Row(
@@ -1335,8 +1410,9 @@ class AddMetatagBottomSheet extends StatelessWidget {
                             );
                           },
                         ),
-                        MetaTagType.sort => const Icon(Icons.sort_rounded),
-                        MetaTagType.comparableNumber => Row(
+                        .sort => const Icon(Icons.sort_rounded),
+                        .user => const Icon(Icons.person_outline_rounded),
+                        .comparableNumber => Row(
                           spacing: 2,
                           children: [
                             for (final mode in (tag as MetaTagWithCompareModes).compareModes)
@@ -1372,12 +1448,16 @@ class SuggestionsMainContent extends StatefulWidget {
     required this.onMetatagSelect,
     required this.onTagTap,
     this.hideHistory = false,
+    this.hidePopular = false,
+    this.hidePinned = false,
     super.key,
   });
 
   final void Function(AddMetatagBottomSheetResult result) onMetatagSelect;
   final void Function(String tag) onTagTap;
   final bool hideHistory;
+  final bool hidePopular;
+  final bool hidePinned;
 
   @override
   State<SuggestionsMainContent> createState() => _SuggestionsMainContentState();
@@ -1390,34 +1470,43 @@ class _SuggestionsMainContentState extends State<SuggestionsMainContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      spacing: 16,
-      children: [
-        // blocks have a small delay to force order of requests, from fast to slow (i.e. favs popular search will lock db for too long and history and pinned won't load until it's done)
+    final bool isReverse = SettingsHandler.instance.useTopSearchbarInput;
+
+    List<Widget> blocks = [
+      if (!widget.hidePopular)
         PopularTagsBlock(
           onTagTap: widget.onTagTap,
           delay: const Duration(milliseconds: 20),
         ),
-        //
-        if (!widget.hideHistory)
-          HistoryBlock(
-            delay: const Duration(milliseconds: 10),
-            onTagApply: widget.onTagTap,
-          ),
-        //
-        MetatagsBlock(onSelect: widget.onMetatagSelect),
-        //
+      //
+      if (!widget.hideHistory)
+        HistoryBlock(
+          delay: const Duration(milliseconds: 10),
+          onTagApply: widget.onTagTap,
+        ),
+      //
+      MetatagsBlock(onSelect: widget.onMetatagSelect),
+      //
+      if (!widget.hidePinned)
         PinnedTagsBlock(
           key: _pinnedTagsKey,
           onTagTap: widget.onTagTap,
           onTagLongTap: (tagName, pinnedTag) async {
-            await showUnpinTagDialog(context, tagName, pinnedTag);
+            await showUnpinTagDialog(context, tagName, pinnedTag, () {});
             await _pinnedTagsKey.currentState?.init();
           },
         ),
-        //
-        const SizedBox(height: 16),
-      ],
+      //
+      const SizedBox(height: 16),
+    ];
+
+    if (isReverse) {
+      blocks = blocks.reversed.toList();
+    }
+
+    return Column(
+      spacing: 16,
+      children: blocks,
     );
   }
 }
@@ -1630,7 +1719,10 @@ class _HistoryBlockState extends State<HistoryBlock> {
             const SizedBox(width: double.maxFinite),
             Align(alignment: Alignment.center, child: row),
             const SizedBox(height: 10),
-            Text(context.loc.searchBar.lastSearch(date: formatDate(entry.timestamp)), textAlign: TextAlign.center),
+            Text(
+              context.loc.history.lastSearchWithDate(date: formatDate(entry.timestamp)),
+              textAlign: TextAlign.center,
+            ),
             //
             const SizedBox(height: 20),
             if (widget.onTagApply != null)
@@ -1653,8 +1745,7 @@ class _HistoryBlockState extends State<HistoryBlock> {
                   searchHandler.searchAction(entry.searchText, booru);
                 } else {
                   FlashElements.showSnackbar(
-                    context: context,
-                    title: Text(context.loc.searchBar.unknownBooruType, style: const TextStyle(fontSize: 20)),
+                    title: Text(context.loc.history.unknownBooruType, style: const TextStyle(fontSize: 20)),
                     leadingIcon: Icons.warning_amber,
                     leadingIconColor: Colors.red,
                     sideColor: Colors.red,
@@ -1680,8 +1771,7 @@ class _HistoryBlockState extends State<HistoryBlock> {
                   );
                 } else {
                   FlashElements.showSnackbar(
-                    context: context,
-                    title: Text(context.loc.searchBar.unknownBooruType, style: const TextStyle(fontSize: 20)),
+                    title: Text(context.loc.history.unknownBooruType, style: const TextStyle(fontSize: 20)),
                     leadingIcon: Icons.warning_amber,
                     leadingIconColor: Colors.red,
                     sideColor: Colors.red,
@@ -1700,7 +1790,6 @@ class _HistoryBlockState extends State<HistoryBlock> {
               onPressed: () async {
                 await Clipboard.setData(ClipboardData(text: entry.searchText));
                 FlashElements.showSnackbar(
-                  context: context,
                   duration: const Duration(seconds: 2),
                   title: Text(context.loc.copied, style: const TextStyle(fontSize: 20)),
                   content: Text(entry.searchText, style: const TextStyle(fontSize: 16)),
@@ -1787,11 +1876,12 @@ class _HistoryBlockState extends State<HistoryBlock> {
                   if (history.isEmpty) {
                     return GestureDetector(
                       onTap: init,
-                      child: Container(
+                      child: const Align(
                         alignment: Alignment.center,
-                        height: 30,
-                        width: 30,
-                        child: const CircularProgressIndicator(),
+                        child: SizedBox.square(
+                          dimension: 30,
+                          child: CircularProgressIndicator(),
+                        ),
                       ),
                     );
                   }
@@ -1987,19 +2077,23 @@ class _MetatagsBlockState extends State<MetatagsBlock> {
                     child: ActionChip(
                       label: Text(tag.name),
                       avatar: switch (tag.type) {
-                        MetaTagType.date => Icon(
+                        .date => Icon(
                           Icons.calendar_month_rounded,
                           color: context.theme.colorScheme.onSurface,
                         ),
-                        MetaTagType.sort => Icon(
+                        .sort => Icon(
                           Icons.sort_rounded,
+                          color: context.theme.colorScheme.onSurface,
+                        ),
+                        .user => Icon(
+                          Icons.person_outline_rounded,
                           color: context.theme.colorScheme.onSurface,
                         ),
                         _ => null,
                       },
                       onPressed: () async {
                         switch (tag.type) {
-                          case MetaTagType.date:
+                          case .date:
                             final metaTag = tag as DateMetaTag;
                             final res = await showSingleDatePicker(
                               context,
@@ -2156,12 +2250,7 @@ class _PopularTagsBlockState extends State<PopularTagsBlock> {
         ),
         const SizedBox(height: 8),
         if (loading)
-          const SizedBox(
-            height: 50,
-            child: Center(
-              child: CircularProgressIndicator(),
-            ),
-          )
+          const SizedBox(height: 50)
         else if (failed)
           SizedBox(
             height: 50,
@@ -2210,8 +2299,8 @@ class _PopularTagsBlockState extends State<PopularTagsBlock> {
                             children: [
                               TextSpan(
                                 text: tag.tag.replaceAll('_', ' '),
-                                style: TextStyle(
-                                  color: tagColor == Colors.transparent ? null : tagColor,
+                                style: context.theme.textTheme.labelLarge?.copyWith(
+                                  color: tagColor,
                                 ),
                               ),
                               if (tag.count > 0) ...[
@@ -2246,9 +2335,9 @@ class _PrefixEditDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final searchHandler = SearchHandler.instance;
 
-    return AlertDialog(
-      title: Text(context.loc.searchBar.prefix),
-      content: ValueListenableBuilder(
+    return BottomSheet(
+      onClosing: () {},
+      builder: (context) => ValueListenableBuilder(
         valueListenable: controller,
         builder: (context, value, child) {
           String text = value.text;
@@ -2275,111 +2364,123 @@ class _PrefixEditDialog extends StatelessWidget {
           isOr = isOr || text.startsWith('~');
           text = text.replaceAll(RegExp('^-'), '').replaceAll(RegExp('^~'), '').trim();
 
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            spacing: 12,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  controller.text = isExclude ? text : '-$text';
-                  if (isValidNumberMod) controller.text = '$booruNumber#${controller.text}';
-                },
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        context.loc.searchBar.exclude,
-                      ),
-                    ),
-                    IgnorePointer(
-                      ignoring: true,
-                      child: Checkbox(
-                        value: isExclude,
-                        onChanged: (_) {},
-                      ),
-                    ),
-                  ],
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              0,
+              16,
+              MediaQuery.viewInsetsOf(context).bottom + 32,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: 12,
+              children: [
+                Text(
+                  context.loc.searchBar.prefix,
+                  style: context.theme.textTheme.headlineMedium,
                 ),
-              ),
-              //
-              ElevatedButton(
-                onPressed: () {
-                  controller.text = isOr ? text : '~$text';
-                  if (isValidNumberMod) controller.text = '$booruNumber#${controller.text}';
-                },
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(context.loc.or),
-                    ),
-                    IgnorePointer(
-                      ignoring: true,
-                      child: Checkbox(
-                        value: isOr,
-                        onChanged: (_) {},
+                ElevatedButton(
+                  onPressed: () {
+                    controller.text = isExclude ? text : '-$text';
+                    if (isValidNumberMod) controller.text = '$booruNumber#${controller.text}';
+                  },
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          context.loc.searchBar.exclude,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              //
-              if (hasSecondaryBoorus)
-                Container(
-                  width: MediaQuery.sizeOf(context).width,
-                  height: 50,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: SettingsBooruDropdown(
-                    value: selectedBooru,
-                    items: usedBoorus,
-                    onChanged: (Booru? newBooru) {
-                      if (selectedBooru == newBooru) {
-                        newBooru = null;
-                      }
-
-                      controller.text =
-                          '${newBooru == null ? '' : usedBoorus.indexOf(newBooru) + 1}${newBooru == null ? '' : '#'}${isExclude ? '-' : ''}${isOr ? '~' : ''}$text';
-                    },
-                    title: context.loc.searchBar.booruNumberPrefix,
-                    contentPadding: EdgeInsets.zero,
-                    itemBuilder: (booru, _) {
-                      if (booru == null) {
-                        return const Text('');
-                      }
-
-                      return Row(
-                        spacing: 6,
-                        children: [
-                          Text('${usedBoorus.indexOf(booru) + 1}#'),
-                          BooruFavicon(booru),
-                          Expanded(
-                            child: Text(booru.name ?? ''),
-                          ),
-                        ],
-                      );
-                    },
-                    selectedItemBuilder: (booru) {
-                      if (booru == null) {
-                        return const Text('');
-                      }
-
-                      return Row(
-                        spacing: 6,
-                        children: [
-                          Text('${usedBoorus.indexOf(booru) + 1}#'),
-                          BooruFavicon(booru),
-                          Expanded(
-                            child: Text(booru.name ?? ''),
-                          ),
-                        ],
-                      );
-                    },
-                    drawBottomBorder: false,
+                      IgnorePointer(
+                        ignoring: true,
+                        child: Checkbox(
+                          value: isExclude,
+                          onChanged: (_) {},
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              //
-              const CancelButton(withIcon: true),
-            ],
+                //
+                ElevatedButton(
+                  onPressed: () {
+                    controller.text = isOr ? text : '~$text';
+                    if (isValidNumberMod) controller.text = '$booruNumber#${controller.text}';
+                  },
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(context.loc.or),
+                      ),
+                      IgnorePointer(
+                        ignoring: true,
+                        child: Checkbox(
+                          value: isOr,
+                          onChanged: (_) {},
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                //
+                if (hasSecondaryBoorus)
+                  Container(
+                    width: MediaQuery.sizeOf(context).width,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: SettingsBooruDropdown(
+                      value: selectedBooru,
+                      items: usedBoorus,
+                      onChanged: (Booru? newBooru) {
+                        if (selectedBooru == newBooru) {
+                          newBooru = null;
+                        }
+
+                        controller.text =
+                            '${newBooru == null ? '' : usedBoorus.indexOf(newBooru) + 1}${newBooru == null ? '' : '#'}${isExclude ? '-' : ''}${isOr ? '~' : ''}$text';
+                      },
+                      title: context.loc.searchBar.booruNumberPrefix,
+                      titleAsLabel: true,
+                      contentPadding: EdgeInsets.zero,
+                      itemBuilder: (booru, _) {
+                        if (booru == null) {
+                          return const Text('');
+                        }
+
+                        return Row(
+                          spacing: 6,
+                          children: [
+                            Text('${usedBoorus.indexOf(booru) + 1}#'),
+                            BooruFavicon(booru),
+                            Expanded(
+                              child: Text(booru.name ?? ''),
+                            ),
+                          ],
+                        );
+                      },
+                      selectedItemBuilder: (booru) {
+                        if (booru == null) {
+                          return const Text('');
+                        }
+
+                        return Row(
+                          spacing: 6,
+                          children: [
+                            Text('${usedBoorus.indexOf(booru) + 1}#'),
+                            BooruFavicon(booru),
+                            Expanded(
+                              child: Text(booru.name ?? ''),
+                            ),
+                          ],
+                        );
+                      },
+                      drawBottomBorder: false,
+                    ),
+                  ),
+                //
+                const CancelButton(withIcon: true),
+              ],
+            ),
           );
         },
       ),
@@ -2516,7 +2617,7 @@ class _PinnedTagsBlockState extends State<PinnedTagsBlock> {
 
   @override
   Widget build(BuildContext context) {
-    if (!settingsHandler.dbEnabled || (allPinnedTags.isEmpty && !loading)) {
+    if (!settingsHandler.dbEnabled) {
       return const SizedBox.shrink();
     }
 
@@ -2617,7 +2718,7 @@ class _PinnedTagsBlockState extends State<PinnedTagsBlock> {
                   ),
                 IconButton(
                   onPressed: () async {
-                    await showPinnedTagsManageDialog(
+                    await showPinnedTagsManagerDialog(
                       context,
                       currentBooru: searchHandler.currentBooru,
                       onTagTap: widget.onTagTap,
@@ -2642,44 +2743,65 @@ class _PinnedTagsBlockState extends State<PinnedTagsBlock> {
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: (filteredPinnedTags.isEmpty && loading) ? 1 : filteredPinnedTags.length,
+                itemCount: filteredPinnedTags.isEmpty ? 1 : filteredPinnedTags.length,
                 itemBuilder: (BuildContext context, int index) {
                   if (filteredPinnedTags.isEmpty) {
-                    return GestureDetector(
-                      onTap: init,
-                      child: Container(
-                        alignment: Alignment.center,
-                        height: 30,
-                        width: 30,
-                        child: const CircularProgressIndicator(),
-                      ),
+                    if (loading) {
+                      return GestureDetector(
+                        onTap: init,
+                        child: const Align(
+                          alignment: Alignment.center,
+                          child: SizedBox.square(
+                            dimension: 30,
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Row(
+                      spacing: 8,
+                      children: [
+                        const Kaomoji(
+                          category: .indifference,
+                          style: TextStyle(fontSize: 18),
+                        ),
+                        Text(
+                          context.loc.pinnedTags.noPinnedTagsYet,
+                          style: context.theme.textTheme.bodyLarge,
+                        ),
+                      ],
                     );
                   }
 
                   final pinnedTag = filteredPinnedTags[index];
                   final tagColor = tagHandler.getTag(pinnedTag.tagName).getColour();
+                  final bool isMultiword = pinnedTag.tagName.split(' ').length > 1;
 
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: InputChip(
-                      avatar: pinnedTag.isGlobal
-                          ? null
-                          : BooruFavicon(
-                              settingsHandler.booruList.value.firstWhere(
-                                (b) =>
-                                    b.type == pinnedTag.booruType &&
-                                    (b.type?.isFavouritesOrDownloads == true || b.name == pinnedTag.booruName),
-                                orElse: Booru.unknown,
+                    child: GestureDetector(
+                      onLongPress: () => widget.onTagLongTap(pinnedTag.tagName, pinnedTag),
+                      child: InputChip(
+                        avatar: pinnedTag.isGlobal
+                            ? null
+                            : BooruFavicon(
+                                settingsHandler.booruList.value.firstWhere(
+                                  (b) =>
+                                      b.type == pinnedTag.booruType &&
+                                      (b.type?.isFavouritesOrDownloads == true || b.name == pinnedTag.booruName),
+                                  orElse: Booru.unknown,
+                                ),
                               ),
-                            ),
-                      label: Text(
-                        pinnedTag.tagName.replaceAll('_', ' '),
-                        style: TextStyle(color: tagColor),
+                        label: Text(
+                          isMultiword ? pinnedTag.tagName : pinnedTag.tagName.replaceAll('_', ' '),
+                          style: TextStyle(color: tagColor),
+                        ),
+                        onPressed: () => widget.onTagTap(pinnedTag.tagName),
+                        onDeleted: () => widget.onTagLongTap(pinnedTag.tagName, pinnedTag),
+                        deleteIcon: const Icon(Icons.more_vert, size: 18),
+                        deleteButtonTooltipMessage: '',
                       ),
-                      onPressed: () => widget.onTagTap(pinnedTag.tagName),
-                      onDeleted: () => widget.onTagLongTap(pinnedTag.tagName, pinnedTag),
-                      deleteIcon: const Icon(Icons.more_vert, size: 18),
-                      deleteButtonTooltipMessage: '',
                     ),
                   );
                 },
@@ -2745,97 +2867,147 @@ class _PinTagDialogState extends State<PinTagDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(context.loc.pinnedTags.pinTag),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.loc.pinnedTags.pinQuestion(tag: widget.tagName.replaceAll('_', ' ')),
-            style: context.theme.textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 16),
-          CheckboxListTile(
-            value: pinForCurrentBooru,
-            onChanged: (value) => setState(() => pinForCurrentBooru = value ?? false),
-            title: Text(context.loc.pinnedTags.onlyForBooru(name: widget.currentBooru.name ?? '')),
-            controlAffinity: ListTileControlAffinity.leading,
-            contentPadding: EdgeInsets.zero,
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: labelController,
-                  decoration: InputDecoration(
-                    labelText: context.loc.pinnedTags.labelsOptional,
-                    hintText: context.loc.pinnedTags.typeAndEnterToAdd,
-                    border: const OutlineInputBorder(),
-                    isDense: true,
-                    suffixIcon: labelController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.add, size: 18),
-                            onPressed: () => _addLabel(labelController.text),
-                          )
-                        : null,
+    return BottomSheet(
+      onClosing: () {},
+      builder: (context) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          0,
+          16,
+          MediaQuery.viewInsetsOf(context).bottom + 32,
+        ),
+        child: Column(
+          mainAxisSize: .min,
+          crossAxisAlignment: .start,
+          spacing: 12,
+          children: [
+            Text(
+              context.loc.pinnedTags.pinTag,
+              style: context.theme.textTheme.headlineMedium,
+            ),
+            Builder(
+              builder: (context) {
+                final bool isMultiword = widget.tagName.split(' ').length > 1;
+
+                return Text(
+                  context.loc.pinnedTags.pinQuestion(
+                    tag: isMultiword ? widget.tagName : widget.tagName.replaceAll('_', ' '),
                   ),
-                  onSubmitted: _addLabel,
+                  style: context.theme.textTheme.bodyLarge,
+                );
+              },
+            ),
+            CheckboxListTile(
+              value: pinForCurrentBooru,
+              onChanged: (value) => setState(() => pinForCurrentBooru = value ?? false),
+              title: Text(context.loc.pinnedTags.onlyForBooru(name: widget.currentBooru.name ?? '')),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: labelController,
+                    decoration: InputDecoration(
+                      labelText: context.loc.pinnedTags.labelsOptional,
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                      suffixIcon: labelController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.add, size: 18),
+                              onPressed: () => _addLabel(labelController.text),
+                            )
+                          : null,
+                    ),
+                    onSubmitted: _addLabel,
+                  ),
                 ),
-              ),
-              if (widget.existingLabels.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.arrow_drop_down),
-                  tooltip: context.loc.pinnedTags.selectExistingLabel,
-                  onSelected: _addLabel,
-                  itemBuilder: (context) => widget.existingLabels
-                      .where((l) => !selectedLabels.contains(l))
-                      .map(
-                        (label) => PopupMenuItem(
-                          value: label,
-                          child: Text(label),
-                        ),
-                      )
-                      .toList(),
+                //
+                if (widget.existingLabels.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: PopupMenuButton<String>(
+                      icon: const Icon(Icons.arrow_drop_down),
+                      tooltip: context.loc.pinnedTags.selectExistingLabel,
+                      onSelected: _addLabel,
+                      itemBuilder: (context) => widget.existingLabels
+                          .where((l) => !selectedLabels.contains(l))
+                          .map(
+                            (label) => PopupMenuItem(
+                              value: label,
+                              child: Text(label),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                //
+                Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: AnimatedSize(
+                    duration: const Duration(milliseconds: 200),
+                    child: ValueListenableBuilder(
+                      valueListenable: labelController,
+                      builder: (_, value, _) {
+                        if (value.text.isNotEmpty) {
+                          return IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () => _addLabel(value.text),
+                          );
+                        }
+
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ),
                 ),
               ],
-            ],
-          ),
-          if (selectedLabels.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: selectedLabels
-                  .map(
-                    (label) => Chip(
-                      label: Text(label),
-                      onDeleted: () => _removeLabel(label),
-                      deleteIconColor: context.theme.colorScheme.error,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      visualDensity: VisualDensity.compact,
+            ),
+            //
+            Text(context.loc.pinnedTags.typeAndPressAdd),
+            //
+            if (selectedLabels.isNotEmpty)
+              Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: selectedLabels
+                    .map(
+                      (label) => Chip(
+                        label: Text(label),
+                        onDeleted: () => _removeLabel(label),
+                        deleteIconColor: context.theme.colorScheme.error,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    )
+                    .toList(),
+              ),
+            //
+            SizedBox(
+              width: double.maxFinite,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.end,
+                children: [
+                  const CancelButton(),
+                  ElevatedButton.icon(
+                    onPressed: () => Navigator.of(context).pop(
+                      PinTagDialogResult(
+                        pinForCurrentBooru: pinForCurrentBooru,
+                        labels: selectedLabels.toList(),
+                      ),
                     ),
-                  )
-                  .toList(),
+                    icon: const Icon(Icons.push_pin),
+                    label: Text(context.loc.pinnedTags.pin),
+                  ),
+                ],
+              ),
             ),
           ],
-        ],
-      ),
-      actions: [
-        const CancelButton(),
-        ElevatedButton.icon(
-          onPressed: () => Navigator.of(context).pop(
-            PinTagDialogResult(
-              pinForCurrentBooru: pinForCurrentBooru,
-              labels: selectedLabels.toList(),
-            ),
-          ),
-          icon: const Icon(Icons.push_pin),
-          label: Text(context.loc.pinnedTags.pin),
         ),
-      ],
+      ),
     );
   }
 }
@@ -2844,6 +3016,7 @@ Future<void> showPinTagDialog(
   BuildContext context,
   String tagName,
   Booru currentBooru,
+  VoidCallback onTagPinned,
 ) async {
   final settingsHandler = SettingsHandler.instance;
 
@@ -2853,10 +3026,11 @@ Future<void> showPinTagDialog(
     booruName: currentBooru.name,
   );
 
-  if (!context.mounted) return;
-
-  final result = await showDialog<PinTagDialogResult>(
+  final result = await showModalBottomSheet<PinTagDialogResult>(
     context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    showDragHandle: true,
     builder: (_) => PinTagDialog(
       tagName: tagName,
       currentBooru: currentBooru,
@@ -2872,45 +3046,82 @@ Future<void> showPinTagDialog(
       labels: result.labels,
     );
 
-    if (context.mounted) {
-      final labelText = result.labels.isNotEmpty ? ' [${result.labels.join(', ')}]' : '';
-      FlashElements.showSnackbar(
-        context: context,
-        title: Text(context.loc.pinnedTags.tagPinned, style: const TextStyle(fontSize: 20)),
-        content: Text(
-          result.pinForCurrentBooru
-              ? context.loc.pinnedTags.pinnedForBooru(name: currentBooru.name ?? '', labels: labelText)
-              : context.loc.pinnedTags.pinnedGloballyWithLabels(labels: labelText),
-        ),
-        sideColor: Colors.green,
-        leadingIcon: Icons.push_pin,
-        leadingIconColor: Colors.green,
-        duration: const Duration(seconds: 2),
-      );
-    }
+    onTagPinned();
+
+    final labelText = result.labels.isNotEmpty ? ' [${result.labels.join(', ')}]' : '';
+    FlashElements.showSnackbar(
+      title: Text(context.loc.pinnedTags.tagPinned, style: const TextStyle(fontSize: 20)),
+      content: Text(
+        result.pinForCurrentBooru
+            ? context.loc.pinnedTags.pinnedForBooru(name: currentBooru.name ?? '', labels: labelText)
+            : context.loc.pinnedTags.pinnedGloballyWithLabels(labels: labelText),
+      ),
+      sideColor: Colors.green,
+      leadingIcon: Icons.push_pin,
+      leadingIconColor: Colors.green,
+      duration: const Duration(seconds: 2),
+    );
   }
 }
 
-Future<void> showUnpinTagDialog(
+Future<bool> showUnpinTagDialog(
   BuildContext context,
   String tagName,
   PinnedTag pinnedTag,
+  VoidCallback onTagUnpinned,
 ) async {
-  final result = await showDialog<bool>(
+  final result = await showModalBottomSheet<bool>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(ctx.loc.pinnedTags.unpinTag),
-      content: Text(
-        ctx.loc.pinnedTags.unpinQuestion(tag: tagName.replaceAll('_', ' ')),
-      ),
-      actions: [
-        const CancelButton(),
-        ElevatedButton.icon(
-          onPressed: () => Navigator.of(ctx).pop(true),
-          icon: const Icon(Icons.push_pin_outlined),
-          label: Text(ctx.loc.pinnedTags.unpin),
-        ),
-      ],
+    isScrollControlled: true,
+    useSafeArea: true,
+    showDragHandle: true,
+    builder: (ctx) => BottomSheet(
+      onClosing: () {},
+      builder: (context) {
+        final bool isMultiword = tagName.split(' ').length > 1;
+
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            0,
+            16,
+            MediaQuery.viewInsetsOf(context).bottom + 32,
+          ),
+          child: Column(
+            mainAxisSize: .min,
+            crossAxisAlignment: .start,
+            spacing: 12,
+            children: [
+              Text(
+                ctx.loc.pinnedTags.unpinTag,
+                style: context.theme.textTheme.headlineMedium,
+              ),
+              Text(
+                ctx.loc.pinnedTags.unpinQuestion(tag: isMultiword ? tagName : tagName.replaceAll('_', ' ')),
+              ),
+              SizedBox(
+                width: double.maxFinite,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.end,
+                    children: [
+                      const CancelButton(),
+                      ElevatedButton.icon(
+                        onPressed: () => Navigator.of(ctx).pop(true),
+                        icon: const Icon(Icons.push_pin_outlined),
+                        label: Text(ctx.loc.pinnedTags.unpin),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     ),
   );
 
@@ -2918,25 +3129,29 @@ Future<void> showUnpinTagDialog(
     final settingsHandler = SettingsHandler.instance;
     await settingsHandler.dbHandler.removePinnedTag(pinnedTag.id);
 
-    if (context.mounted) {
-      FlashElements.showSnackbar(
-        context: context,
-        title: Text(context.loc.pinnedTags.tagUnpinned, style: const TextStyle(fontSize: 20)),
-        sideColor: Colors.orange,
-        leadingIcon: Icons.push_pin_outlined,
-        leadingIconColor: Colors.orange,
-        duration: const Duration(seconds: 2),
-      );
-    }
+    onTagUnpinned();
+
+    FlashElements.showSnackbar(
+      title: Text(context.loc.pinnedTags.tagUnpinned, style: const TextStyle(fontSize: 20)),
+      sideColor: Colors.orange,
+      leadingIcon: Icons.push_pin_outlined,
+      leadingIconColor: Colors.orange,
+      duration: const Duration(seconds: 2),
+    );
   }
+
+  return result ?? false;
 }
 
 Future<bool?> showPinnedTagsReorderDialog(
   BuildContext context,
   List<PinnedTag> initialTags,
 ) async {
-  return showDialog<bool>(
+  return showModalBottomSheet<bool>(
     context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    showDragHandle: true,
     builder: (_) => PinnedTagsReorderDialog(initialTags: initialTags),
   );
 }
@@ -2977,90 +3192,117 @@ class _PinnedTagsReorderDialogState extends State<PinnedTagsReorderDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(context.loc.pinnedTags.reorderPinnedTags),
-      contentPadding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-      content: SizedBox(
-        width: double.maxFinite,
-        height: min(tags.length * 56.0 + 16, MediaQuery.sizeOf(context).height * 0.5),
-        child: ReorderableListView.builder(
-          shrinkWrap: true,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          itemCount: tags.length,
-          onReorder: (oldIndex, newIndex) {
-            setState(() {
-              if (newIndex > oldIndex) newIndex--;
-              final item = tags.removeAt(oldIndex);
-              tags.insert(newIndex, item);
-            });
-          },
-          itemBuilder: (context, index) {
-            final pinnedTag = tags[index];
-            final tagColor = tagHandler.getTag(pinnedTag.tagName).getColour();
+    return BottomSheet(
+      onClosing: () {},
+      builder: (context) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          0,
+          16,
+          MediaQuery.viewInsetsOf(context).bottom + 32,
+        ),
+        child: Column(
+          mainAxisSize: .min,
+          crossAxisAlignment: .start,
+          spacing: 12,
+          children: [
+            Text(
+              context.loc.pinnedTags.reorderPinnedTags,
+              style: context.theme.textTheme.headlineMedium,
+            ),
+            SizedBox(
+              width: double.maxFinite,
+              height: min((tags.length * 72) + 16, MediaQuery.sizeOf(context).height * 0.5),
+              child: ReorderableListView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: tags.length,
+                onReorderItem: (oldIndex, newIndex) {
+                  setState(() {
+                    final item = tags.removeAt(oldIndex);
+                    tags.insert(newIndex, item);
+                  });
+                },
+                itemBuilder: (context, index) {
+                  final pinnedTag = tags[index];
+                  final tagColor = tagHandler.getTag(pinnedTag.tagName).getColour();
+                  final bool isMultiword = pinnedTag.tagName.split(' ').length > 1;
 
-            return ListTile(
-              key: ValueKey(pinnedTag.id),
-              leading: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ReorderableDragStartListener(
-                    index: index,
-                    child: const Icon(Icons.drag_handle),
-                  ),
-                  const SizedBox(width: 8),
-                  if (pinnedTag.isGlobal)
-                    const Icon(Icons.public, size: 20)
-                  else
-                    BooruFavicon(
-                      settingsHandler.booruList.value.firstWhere(
-                        (b) =>
-                            b.type == pinnedTag.booruType &&
-                            (b.type?.isFavouritesOrDownloads == true || b.name == pinnedTag.booruName),
-                        orElse: Booru.unknown,
+                  return ListTile(
+                    key: ValueKey(pinnedTag.id),
+                    leading: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ReorderableDragStartListener(
+                          index: index,
+                          child: const Icon(Icons.drag_handle),
+                        ),
+                        const SizedBox(width: 8),
+                        if (!pinnedTag.isGlobal)
+                          BooruFavicon(
+                            settingsHandler.booruList.value.firstWhere(
+                              (b) =>
+                                  b.type == pinnedTag.booruType &&
+                                  (b.type?.isFavouritesOrDownloads == true || b.name == pinnedTag.booruName),
+                              orElse: Booru.unknown,
+                            ),
+                          ),
+                      ],
+                    ),
+                    title: Text(
+                      isMultiword ? pinnedTag.tagName : pinnedTag.tagName.replaceAll('_', ' '),
+                      style: TextStyle(color: tagColor),
+                    ),
+                    subtitle: Text(pinnedTag.booruName ?? ''),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () => showUnpinTagDialog(
+                        context,
+                        pinnedTag.tagName,
+                        pinnedTag,
+                        () {
+                          setState(() {
+                            tags.removeAt(index);
+                          });
+                          if (tags.isEmpty && mounted) {
+                            Navigator.of(context).pop(true);
+                          }
+                        },
                       ),
                     ),
-                ],
-              ),
-              title: Text(
-                pinnedTag.tagName.replaceAll('_', ' '),
-                style: TextStyle(color: tagColor),
-              ),
-              subtitle: pinnedTag.isGlobal ? const Text('Global') : Text(pinnedTag.booruName ?? ''),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () async {
-                  await settingsHandler.dbHandler.removePinnedTag(pinnedTag.id);
-                  setState(() {
-                    tags.removeAt(index);
-                  });
-                  if (tags.isEmpty && mounted) {
-                    Navigator.of(context).pop(true);
-                  }
+                  );
                 },
               ),
-            );
-          },
+            ),
+            SizedBox(
+              width: double.maxFinite,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.end,
+                children: [
+                  const CancelButton(),
+                  ElevatedButton.icon(
+                    onPressed: saving ? null : saveOrder,
+                    icon: saving
+                        ? const SizedBox.square(
+                            dimension: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.check),
+                    label: Text(saving ? context.loc.pinnedTags.saving : context.loc.save),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-      actions: [
-        const CancelButton(),
-        ElevatedButton.icon(
-          onPressed: saving ? null : saveOrder,
-          icon: saving
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.check),
-          label: Text(saving ? context.loc.pinnedTags.saving : context.loc.save),
-        ),
-      ],
     );
   }
 }
 
-Future<bool?> showPinnedTagsManageDialog(
+Future<bool?> showPinnedTagsManagerDialog(
   BuildContext context, {
   required Booru currentBooru,
   required void Function(String tag) onTagTap,
@@ -3069,12 +3311,16 @@ Future<bool?> showPinnedTagsManageDialog(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (_) => PinnedTagsManageDialog(currentBooru: currentBooru, onTagTap: onTagTap),
+    showDragHandle: true,
+    builder: (_) => PinnedTagsManagerDialog(
+      currentBooru: currentBooru,
+      onTagTap: onTagTap,
+    ),
   );
 }
 
-class PinnedTagsManageDialog extends StatefulWidget {
-  const PinnedTagsManageDialog({
+class PinnedTagsManagerDialog extends StatefulWidget {
+  const PinnedTagsManagerDialog({
     required this.currentBooru,
     required this.onTagTap,
     super.key,
@@ -3084,10 +3330,10 @@ class PinnedTagsManageDialog extends StatefulWidget {
   final void Function(String tag) onTagTap;
 
   @override
-  State<PinnedTagsManageDialog> createState() => _PinnedTagsManageDialogState();
+  State<PinnedTagsManagerDialog> createState() => _PinnedTagsManagerDialogState();
 }
 
-class _PinnedTagsManageDialogState extends State<PinnedTagsManageDialog> {
+class _PinnedTagsManagerDialogState extends State<PinnedTagsManagerDialog> {
   final settingsHandler = SettingsHandler.instance;
   final searchHandler = SearchHandler.instance;
   final tagHandler = TagHandler.instance;
@@ -3182,10 +3428,16 @@ class _PinnedTagsManageDialogState extends State<PinnedTagsManageDialog> {
   };
 
   Future<void> _deleteTag(PinnedTag tag) async {
-    await settingsHandler.dbHandler.removePinnedTag(tag.id);
-    allTags.removeWhere((t) => t.id == tag.id);
-    _applyFilter();
-    hasChanges = true;
+    await showUnpinTagDialog(
+      context,
+      tag.tagName,
+      tag,
+      () {
+        allTags.removeWhere((t) => t.id == tag.id);
+        _applyFilter();
+        hasChanges = true;
+      },
+    );
   }
 
   Future<void> _editTagLabels(PinnedTag tag) async {
@@ -3196,8 +3448,11 @@ class _PinnedTagsManageDialogState extends State<PinnedTagsManageDialog> {
     }
     final sortedLabels = existingLabels.toList()..sort();
 
-    final result = await showDialog<List<String>>(
+    final result = await showModalBottomSheet<List<String>>(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
       builder: (context) => EditLabelsDialog(
         currentLabels: tag.labels,
         existingLabels: sortedLabels,
@@ -3228,8 +3483,11 @@ class _PinnedTagsManageDialogState extends State<PinnedTagsManageDialog> {
   Future<void> _addManualTag() async {
     final existingLabels = allTags.expand((t) => t.labels).toSet().toList()..sort();
 
-    final result = await showDialog<ManualPinTagDialogResult>(
+    final result = await showModalBottomSheet<ManualPinTagDialogResult>(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
       builder: (context) => ManualPinTagDialog(
         currentBooru: widget.currentBooru,
         existingLabels: existingLabels,
@@ -3251,198 +3509,174 @@ class _PinnedTagsManageDialogState extends State<PinnedTagsManageDialog> {
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      initialChildSize: 0.6,
+      initialChildSize: 0.9,
       minChildSize: 0.3,
       maxChildSize: 0.9,
       expand: false,
       builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: context.theme.colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              // Drag handle
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: context.theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
+        return Column(
+          mainAxisSize: .min,
+          crossAxisAlignment: .stretch,
+          spacing: 8,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      context.loc.pinnedTags.pinnedTags,
+                      style: context.theme.textTheme.titleLarge,
+                    ),
+                  ),
+                  Text(
+                    '${allTags.length}',
+                    style: context.theme.textTheme.titleSmall?.copyWith(
+                      color: context.theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(hasChanges),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
               ),
-              // Header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        context.loc.pinnedTags.pinnedTags,
-                        style: context.theme.textTheme.titleLarge,
+            ),
+            // Search and actions bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                spacing: 4,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: searchController,
+                      decoration: InputDecoration(
+                        labelText: context.loc.search,
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: searchController.clear,
+                              )
+                            : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        isDense: true,
                       ),
                     ),
-                    Text(
-                      '${allTags.length}',
-                      style: context.theme.textTheme.titleSmall?.copyWith(
-                        color: context.theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(hasChanges),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Search and actions bar
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: searchController,
-                        decoration: InputDecoration(
-                          hintText: context.loc.pinnedTags.searchPinnedTags,
-                          prefixIcon: const Icon(Icons.search),
-                          suffixIcon: searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  onPressed: searchController.clear,
-                                )
-                              : null,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                  ),
+                  IconButton(
+                    onPressed: _cycleSortMode,
+                    icon: Stack(
+                      children: [
+                        Icon(_sortIcon),
+                        if (sortMode == PinnedTagsSortMode.reverseAlphabetical)
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Icon(
+                              Icons.arrow_downward,
+                              size: 10,
+                              color: context.theme.colorScheme.primary,
+                            ),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          isDense: true,
-                        ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
+                    tooltip: _sortTooltip,
+                  ),
+                  if (allTags.length > 1)
                     IconButton(
-                      onPressed: _cycleSortMode,
-                      icon: Stack(
-                        children: [
-                          Icon(_sortIcon),
-                          if (sortMode == PinnedTagsSortMode.reverseAlphabetical)
-                            Positioned(
-                              right: 0,
-                              bottom: 0,
-                              child: Icon(
-                                Icons.arrow_downward,
-                                size: 10,
-                                color: context.theme.colorScheme.primary,
+                      onPressed: _openReorderDialog,
+                      icon: const Icon(Icons.reorder_rounded),
+                      tooltip: context.loc.pinnedTags.reorder,
+                    ),
+                  IconButton(
+                    onPressed: _addManualTag,
+                    icon: const Icon(Icons.add_rounded),
+                    tooltip: context.loc.pinnedTags.addTagManually,
+                  ),
+                ],
+              ),
+            ),
+            // Tags list
+            Expanded(
+              child: loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : filteredTags.isEmpty
+                  ? Center(
+                      child: Text(
+                        searchController.text.isNotEmpty
+                            ? context.loc.pinnedTags.noTagsMatchSearch
+                            : context.loc.pinnedTags.noPinnedTagsYet,
+                        style: context.theme.textTheme.bodyLarge,
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: scrollController,
+                      itemCount: filteredTags.length,
+                      itemBuilder: (context, index) {
+                        final pinnedTag = filteredTags[index];
+                        final tagColor = tagHandler.getTag(pinnedTag.tagName).getColour();
+                        final bool isMultiword = pinnedTag.tagName.split(' ').length > 1;
+
+                        final scopeText = pinnedTag.isGlobal ? null : '${pinnedTag.booruName ?? ''} '.trim();
+                        final labelText = pinnedTag.labels.isNotEmpty ? pinnedTag.labels.join(', ') : null;
+                        final List<String> subtitleParts = [
+                          ?scopeText,
+                          if (labelText != null && labelText.isNotEmpty) '[$labelText]',
+                        ];
+
+                        return ListTile(
+                          leading: pinnedTag.isGlobal
+                              ? null
+                              : BooruFavicon(
+                                  settingsHandler.booruList.value.firstWhere(
+                                    (b) =>
+                                        b.type == pinnedTag.booruType &&
+                                        (b.type?.isFavouritesOrDownloads == true || b.name == pinnedTag.booruName),
+                                    orElse: Booru.unknown,
+                                  ),
+                                ),
+                          title: Text(
+                            isMultiword ? pinnedTag.tagName : pinnedTag.tagName.replaceAll('_', ' '),
+                            style: TextStyle(color: tagColor),
+                          ),
+                          subtitle: Text(
+                            style: context.theme.textTheme.bodySmall,
+                            subtitleParts.join(''),
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  pinnedTag.labels.isNotEmpty ? Icons.label : Icons.label_outline,
+                                  size: 20,
+                                ),
+                                tooltip: context.loc.pinnedTags.editLabels,
+                                onPressed: () => _editTagLabels(pinnedTag),
                               ),
-                            ),
-                        ],
-                      ),
-                      tooltip: _sortTooltip,
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline),
+                                tooltip: context.loc.pinnedTags.unpin,
+                                onPressed: () => _deleteTag(pinnedTag),
+                              ),
+                            ],
+                          ),
+                          onTap: () {
+                            widget.onTagTap(pinnedTag.tagName);
+                            Navigator.of(context).pop(hasChanges);
+                          },
+                        );
+                      },
                     ),
-                    if (allTags.length > 1)
-                      IconButton(
-                        onPressed: _openReorderDialog,
-                        icon: const Icon(Icons.reorder_rounded),
-                        tooltip: context.loc.pinnedTags.reorder,
-                      ),
-                    IconButton(
-                      onPressed: _addManualTag,
-                      icon: const Icon(Icons.add_rounded),
-                      tooltip: context.loc.pinnedTags.addTagManually,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Tags list
-              Expanded(
-                child: loading
-                    ? const Center(child: CircularProgressIndicator())
-                    : filteredTags.isEmpty
-                    ? Center(
-                        child: Text(
-                          searchController.text.isNotEmpty
-                              ? context.loc.pinnedTags.noTagsMatchSearch
-                              : context.loc.pinnedTags.noPinnedTagsYet,
-                          style: context.theme.textTheme.bodyLarge,
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: scrollController,
-                        itemCount: filteredTags.length,
-                        itemBuilder: (context, index) {
-                          final pinnedTag = filteredTags[index];
-                          final tagColor = tagHandler.getTag(pinnedTag.tagName).getColour();
-
-                          final scopeText = pinnedTag.isGlobal ? 'Global' : pinnedTag.booruName ?? '';
-                          final labelText = pinnedTag.labels.isNotEmpty ? pinnedTag.labels.join(', ') : null;
-                          final subtitleParts = [
-                            scopeText,
-                            if (labelText != null && labelText.isNotEmpty) '[$labelText]',
-                          ];
-
-                          return ListTile(
-                            leading: pinnedTag.isGlobal
-                                ? null
-                                : BooruFavicon(
-                                    settingsHandler.booruList.value.firstWhere(
-                                      (b) =>
-                                          b.type == pinnedTag.booruType &&
-                                          (b.type?.isFavouritesOrDownloads == true || b.name == pinnedTag.booruName),
-                                      orElse: Booru.unknown,
-                                    ),
-                                  ),
-                            title: Text(
-                              pinnedTag.tagName.replaceAll('_', ' '),
-                              style: TextStyle(color: tagColor),
-                            ),
-                            subtitle: Text(
-                              subtitleParts.join(' '),
-                              style: context.theme.textTheme.bodySmall,
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.add_rounded),
-                                  tooltip: context.loc.pinnedTags.addToSearch,
-                                  onPressed: () {
-                                    widget.onTagTap(pinnedTag.tagName);
-                                    Navigator.of(context).pop(hasChanges);
-                                  },
-                                ),
-                                IconButton(
-                                  icon: Icon(
-                                    pinnedTag.labels.isNotEmpty ? Icons.label : Icons.label_outline,
-                                    size: 20,
-                                  ),
-                                  tooltip: context.loc.pinnedTags.editLabels,
-                                  onPressed: () => _editTagLabels(pinnedTag),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline),
-                                  tooltip: context.loc.pinnedTags.unpin,
-                                  onPressed: () => _deleteTag(pinnedTag),
-                                ),
-                              ],
-                            ),
-                            onTap: () {
-                              widget.onTagTap(pinnedTag.tagName);
-                              Navigator.of(context).pop(hasChanges);
-                            },
-                          );
-                        },
-                      ),
-              ),
-              // Bottom safe area
-              SizedBox(height: MediaQuery.paddingOf(context).bottom),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
@@ -3495,79 +3729,133 @@ class _EditLabelsDialogState extends State<EditLabelsDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(context.loc.pinnedTags.editLabels),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: labelController,
-                  decoration: InputDecoration(
-                    labelText: context.loc.pinnedTags.labels,
-                    hintText: context.loc.pinnedTags.typeAndEnterToAdd,
-                    border: const OutlineInputBorder(),
-                    isDense: true,
-                    suffixIcon: labelController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.add, size: 18),
-                            onPressed: () => _addLabel(labelController.text),
-                          )
-                        : null,
+    return BottomSheet(
+      onClosing: () {},
+      builder: (context) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          0,
+          16,
+          MediaQuery.viewInsetsOf(context).bottom + 32,
+        ),
+        child: Column(
+          mainAxisSize: .min,
+          crossAxisAlignment: .stretch,
+          spacing: 12,
+          children: [
+            Text(
+              context.loc.pinnedTags.editLabels,
+              style: context.theme.textTheme.headlineMedium,
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: labelController,
+                    decoration: InputDecoration(
+                      labelText: context.loc.pinnedTags.labels,
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                      suffixIcon: labelController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.add, size: 18),
+                              onPressed: () => _addLabel(labelController.text),
+                            )
+                          : null,
+                    ),
+                    onSubmitted: _addLabel,
+                    autofocus: true,
                   ),
-                  onSubmitted: _addLabel,
-                  autofocus: true,
                 ),
-              ),
-              if (widget.existingLabels.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.arrow_drop_down),
-                  tooltip: context.loc.pinnedTags.selectExistingLabel,
-                  onSelected: _addLabel,
-                  itemBuilder: (context) => widget.existingLabels
-                      .where((l) => !selectedLabels.contains(l))
+                //
+                if (widget.existingLabels.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: PopupMenuButton<String>(
+                      icon: const Icon(Icons.arrow_drop_down),
+                      tooltip: context.loc.pinnedTags.selectExistingLabel,
+                      onSelected: _addLabel,
+                      itemBuilder: (context) => widget.existingLabels
+                          .where((l) => !selectedLabels.contains(l))
+                          .map(
+                            (label) => PopupMenuItem(
+                              value: label,
+                              child: Text(label),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                //
+                Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: AnimatedSize(
+                    duration: const Duration(milliseconds: 200),
+                    child: ValueListenableBuilder(
+                      valueListenable: labelController,
+                      builder: (_, value, _) {
+                        if (value.text.isNotEmpty) {
+                          return IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () => _addLabel(value.text),
+                          );
+                        }
+
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            //
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(context.loc.pinnedTags.typeAndPressAdd),
+            ),
+            //
+            if (selectedLabels.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: selectedLabels
                       .map(
-                        (label) => PopupMenuItem(
-                          value: label,
-                          child: Text(label),
+                        (label) => Chip(
+                          label: Text(label),
+                          onDeleted: () => _removeLabel(label),
+                          deleteIconColor: context.theme.colorScheme.error,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
                         ),
                       )
                       .toList(),
                 ),
-              ],
-            ],
-          ),
-          if (selectedLabels.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: selectedLabels
-                  .map(
-                    (label) => Chip(
-                      label: Text(label),
-                      onDeleted: () => _removeLabel(label),
-                      deleteIconColor: context.theme.colorScheme.error,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      visualDensity: VisualDensity.compact,
+              ),
+            //
+            SizedBox(
+              width: double.maxFinite,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.end,
+                  children: [
+                    const CancelButton(),
+                    ElevatedButton.icon(
+                      onPressed: () => Navigator.of(context).pop(selectedLabels.toList()),
+                      icon: const Icon(Icons.check),
+                      label: Text(context.loc.save),
                     ),
-                  )
-                  .toList(),
+                  ],
+                ),
+              ),
             ),
           ],
-        ],
-      ),
-      actions: [
-        const CancelButton(),
-        ElevatedButton.icon(
-          onPressed: () => Navigator.of(context).pop(selectedLabels.toList()),
-          icon: const Icon(Icons.check),
-          label: Text(context.loc.save),
         ),
-      ],
+      ),
     );
   }
 }
@@ -3629,31 +3917,43 @@ class _ManualPinTagDialogState extends State<ManualPinTagDialog> {
   Widget build(BuildContext context) {
     final canSubmit = tagController.text.trim().isNotEmpty;
 
-    return AlertDialog(
-      title: Text(context.loc.pinnedTags.addPinnedTag),
-      content: SingleChildScrollView(
+    return BottomSheet(
+      onClosing: () {},
+      builder: (_) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          0,
+          16,
+          MediaQuery.viewInsetsOf(context).bottom + 32,
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: .min,
+          crossAxisAlignment: .stretch,
+          spacing: 12,
           children: [
-            TextField(
-              controller: tagController,
-              decoration: InputDecoration(
-                labelText: context.loc.pinnedTags.tagQuery,
-                hintText: context.loc.pinnedTags.tagQueryHint,
-                border: const OutlineInputBorder(),
-              ),
-              onChanged: (_) => setState(() {}),
-              autofocus: true,
+            Text(
+              context.loc.pinnedTags.addPinnedTag,
+              style: context.theme.textTheme.headlineMedium,
             ),
-            const SizedBox(height: 8),
+            TagSearchBox(
+              controller: tagController,
+              title: context.loc.pinnedTags.tagQuery,
+              hintText: context.loc.pinnedTags.tagQueryHint,
+              titleAsLabel: true,
+              allowMultipleTags: false,
+              showBooruSelector: true,
+              onlyInput: true,
+              showPinnedTags: false,
+              onChanged: (_, _) => setState(() {}),
+            ),
+            //
             Text(
               context.loc.pinnedTags.rawQueryHelp,
               style: context.theme.textTheme.bodySmall?.copyWith(
                 color: context.theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 16),
+            //
             CheckboxListTile(
               value: pinForCurrentBooru,
               onChanged: (value) => setState(() => pinForCurrentBooru = value ?? false),
@@ -3661,7 +3961,7 @@ class _ManualPinTagDialogState extends State<ManualPinTagDialog> {
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,
             ),
-            const SizedBox(height: 8),
+            //
             Row(
               children: [
                 Expanded(
@@ -3669,7 +3969,6 @@ class _ManualPinTagDialogState extends State<ManualPinTagDialog> {
                     controller: labelController,
                     decoration: InputDecoration(
                       labelText: context.loc.pinnedTags.labelsOptional,
-                      hintText: context.loc.pinnedTags.typeAndEnterToAdd,
                       border: const OutlineInputBorder(),
                       isDense: true,
                       suffixIcon: labelController.text.isNotEmpty
@@ -3682,62 +3981,103 @@ class _ManualPinTagDialogState extends State<ManualPinTagDialog> {
                     onSubmitted: _addLabel,
                   ),
                 ),
-                if (widget.existingLabels.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.arrow_drop_down),
-                    tooltip: context.loc.pinnedTags.selectExistingLabel,
-                    onSelected: _addLabel,
-                    itemBuilder: (context) => widget.existingLabels
-                        .where((l) => !selectedLabels.contains(l))
-                        .map(
-                          (label) => PopupMenuItem(
-                            value: label,
-                            child: Text(label),
-                          ),
-                        )
-                        .toList(),
+                //
+                if (widget.existingLabels.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: PopupMenuButton<String>(
+                      icon: const Icon(Icons.arrow_drop_down),
+                      tooltip: context.loc.pinnedTags.selectExistingLabel,
+                      onSelected: _addLabel,
+                      itemBuilder: (context) => widget.existingLabels
+                          .where((l) => !selectedLabels.contains(l))
+                          .map(
+                            (label) => PopupMenuItem(
+                              value: label,
+                              child: Text(label),
+                            ),
+                          )
+                          .toList(),
+                    ),
                   ),
-                ],
+                //
+                Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: AnimatedSize(
+                    duration: const Duration(milliseconds: 200),
+                    child: ValueListenableBuilder(
+                      valueListenable: labelController,
+                      builder: (_, value, _) {
+                        if (value.text.isNotEmpty) {
+                          return IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () => _addLabel(value.text),
+                          );
+                        }
+
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ),
+                ),
               ],
             ),
-            if (selectedLabels.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 4,
-                runSpacing: 4,
-                children: selectedLabels
-                    .map(
-                      (label) => Chip(
-                        label: Text(label),
-                        onDeleted: () => _removeLabel(label),
-                        deleteIconColor: context.theme.colorScheme.error,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    )
-                    .toList(),
+            //
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(context.loc.pinnedTags.typeAndPressAdd),
+            ),
+            //
+            if (selectedLabels.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: selectedLabels
+                      .map(
+                        (label) => Chip(
+                          label: Text(label),
+                          onDeleted: () => _removeLabel(label),
+                          deleteIconColor: context.theme.colorScheme.error,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      )
+                      .toList(),
+                ),
               ),
-            ],
+            //
+            SizedBox(
+              width: double.maxFinite,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: .end,
+                  children: [
+                    const CancelButton(),
+                    ElevatedButton.icon(
+                      onPressed: canSubmit
+                          ? () => Navigator.of(context).pop(
+                              ManualPinTagDialogResult(
+                                tagName: tagController.text.trim(),
+                                pinForCurrentBooru: pinForCurrentBooru,
+                                labels: selectedLabels.toList(),
+                              ),
+                            )
+                          : null,
+                      icon: const Icon(Icons.push_pin),
+                      label: Text(context.loc.pinnedTags.pin),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
-      actions: [
-        const CancelButton(),
-        ElevatedButton.icon(
-          onPressed: canSubmit
-              ? () => Navigator.of(context).pop(
-                  ManualPinTagDialogResult(
-                    tagName: tagController.text.trim(),
-                    pinForCurrentBooru: pinForCurrentBooru,
-                    labels: selectedLabels.toList(),
-                  ),
-                )
-              : null,
-          icon: const Icon(Icons.push_pin),
-          label: Text(context.loc.pinnedTags.pin),
-        ),
-      ],
     );
   }
 }

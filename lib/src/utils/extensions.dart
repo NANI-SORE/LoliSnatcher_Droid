@@ -71,6 +71,11 @@ extension StringExtras on String {
   String toPascalCase() => toTitleCase().replaceAll(' ', '');
 
   bool toBool() => this == 'true' || this == '1';
+
+  String regexpEscape() => RegExp.escape(this);
+
+  @Deprecated('MOVE THIS TO LOCALIZATION')
+  String get temploc => this;
 }
 
 extension IntExtras on int {
@@ -111,10 +116,16 @@ extension BoolExtras on bool {
 }
 
 String formatNumber(num number) {
-  final formatter = NumberFormat.decimalPattern(
-    SettingsHandler.instance.locale.value?.languageCode ?? PlatformDispatcher.instance.locale.languageCode,
-  );
-  return formatter.format(number);
+  try {
+    final formatter = NumberFormat.decimalPattern(
+      SettingsHandler.instance.locale.value?.languageCode ?? PlatformDispatcher.instance.locale.languageCode,
+    );
+    return formatter.format(number);
+  } catch (_) {
+    // use en format on exceptions
+    final formatter = NumberFormat.decimalPattern('en');
+    return formatter.format(number);
+  }
 }
 
 String formatNumberShort(num number) {
@@ -146,5 +157,14 @@ extension IterableExts<T> on Iterable<T> {
       if (test(e)) return e;
     }
     return null;
+  }
+}
+
+extension ColorExts on Color {
+  Color darken([double amount = .1]) {
+    assert(amount >= 0 && amount <= 1, 'Amount must be between 0 and 1');
+    final hsl = HSLColor.fromColor(this);
+    final hslDark = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
+    return hslDark.toColor();
   }
 }

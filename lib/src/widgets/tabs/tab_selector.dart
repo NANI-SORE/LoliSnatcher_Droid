@@ -51,11 +51,13 @@ enum TabSortingMode {
 class TabSelector extends StatelessWidget {
   const TabSelector({
     this.withBorder = true,
+    this.countOnTop = false,
     this.color,
     super.key,
   });
 
   final bool withBorder;
+  final bool countOnTop;
   final Color? color;
 
   @override
@@ -100,8 +102,12 @@ class TabSelector extends StatelessWidget {
           }
         },
         expandableByScroll: true,
+        searchable: settingsHandler.booruList.length > 5,
+        searchCheck: (searchText, item) =>
+            (item.name?.toLowerCase().contains(searchText) ?? true) ||
+            (item.type?.name.toLowerCase().contains(searchText) ?? true),
         items: settingsHandler.booruList,
-        itemExtent: kMinInteractiveDimension,
+        itemExtent: 54,
         itemBuilder: (item) {
           final bool isCurrent = currentTab.selectedBooru.value == item;
 
@@ -113,7 +119,7 @@ class TabSelector extends StatelessWidget {
             padding: settingsHandler.appMode.value.isDesktop
                 ? const EdgeInsets.all(5)
                 : const EdgeInsets.only(left: 16, right: 16),
-            height: kMinInteractiveDimension,
+            height: 54,
             decoration: isCurrent
                 ? BoxDecoration(
                     color: Theme.of(context).colorScheme.primaryContainer,
@@ -143,74 +149,116 @@ class TabSelector extends StatelessWidget {
               alignment: Alignment.centerLeft,
               children: [
                 Positioned.fill(
-                  child: InputDecorator(
-                    decoration: InputDecoration(
-                      label: Obx(() {
-                        final totalCount = currentTab.booruHandler.totalCount.value;
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      InputDecorator(
+                        decoration: InputDecoration(
+                          label: Obx(() {
+                            final totalCount = currentTab.booruHandler.totalCount.value;
 
-                        return RichText(
-                          text: TextSpan(
-                            style: inputDecoration.labelStyle?.copyWith(
-                              color: color ?? inputDecoration.labelStyle?.color,
-                            ),
-                            children: [
-                              TextSpan(
-                                text:
-                                    '${context.loc.tabs.tab} | ${(currentTabIndex + 1).toFormattedString()}/${totalTabs.toFormattedString()}',
-                              ),
-                              if (totalCount > 0) ...[
-                                const TextSpan(text: ' | '),
-                                WidgetSpan(
-                                  alignment: PlaceholderAlignment.middle,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                                    child: Icon(
-                                      Icons.image,
-                                      size: inputDecoration.labelStyle?.fontSize ?? 12,
-                                      color: color ?? inputDecoration.labelStyle?.color,
-                                    ),
+                            return RichText(
+                              text: TextSpan(
+                                style: inputDecoration.labelStyle?.copyWith(
+                                  color: color ?? inputDecoration.labelStyle?.color,
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text:
+                                        '${context.loc.tabs.tab} | ${(currentTabIndex + 1).toFormattedString()}/${totalTabs.toFormattedString()}',
                                   ),
-                                ),
-                                TextSpan(
-                                  text: totalCount.toFormattedString(),
-                                ),
-                              ],
-                            ],
+                                  if (totalCount > 0 && countOnTop) ...[
+                                    const TextSpan(text: ' | '),
+                                    WidgetSpan(
+                                      alignment: PlaceholderAlignment.middle,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                                        child: Icon(
+                                          Icons.image,
+                                          size: inputDecoration.labelStyle?.fontSize ?? 12,
+                                          color: color ?? inputDecoration.labelStyle?.color,
+                                        ),
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: totalCount.toFormattedString(),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            );
+                          }),
+                          labelStyle: inputDecoration.labelStyle?.copyWith(
+                            color: color ?? inputDecoration.labelStyle?.color,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      }),
-                      labelStyle: inputDecoration.labelStyle?.copyWith(
-                        color: color ?? inputDecoration.labelStyle?.color,
-                      ),
-                      contentPadding: contentPadding,
-                      border: inputDecoration.border?.copyWith(
-                        borderSide: BorderSide(
-                          color: withBorder
-                              ? (inputDecoration.border?.borderSide.color ?? Colors.transparent)
-                              : Colors.transparent,
-                          width: 1,
+                          contentPadding: contentPadding,
+                          border: inputDecoration.border?.copyWith(
+                            borderSide: BorderSide(
+                              color: withBorder
+                                  ? (inputDecoration.border?.borderSide.color ?? Colors.transparent)
+                                  : Colors.transparent,
+                              width: 1,
+                            ),
+                          ),
+                          enabledBorder: inputDecoration.enabledBorder?.copyWith(
+                            borderSide: BorderSide(
+                              color: withBorder
+                                  ? (inputDecoration.enabledBorder?.borderSide.color ?? Colors.transparent)
+                                  : Colors.transparent,
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: inputDecoration.focusedBorder?.copyWith(
+                            borderSide: BorderSide(
+                              color: withBorder
+                                  ? (inputDecoration.focusedBorder?.borderSide.color ?? Colors.transparent)
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
                         ),
+                        child: const SizedBox.expand(),
                       ),
-                      enabledBorder: inputDecoration.enabledBorder?.copyWith(
-                        borderSide: BorderSide(
-                          color: withBorder
-                              ? (inputDecoration.enabledBorder?.borderSide.color ?? Colors.transparent)
-                              : Colors.transparent,
-                          width: 1,
+                      //
+                      if (!countOnTop)
+                        Positioned(
+                          bottom: -8,
+                          left: 16,
+                          child: Obx(() {
+                            final totalCount = currentTab.booruHandler.totalCount.value;
+                            if (totalCount > 0) {
+                              final usedColor = (color ?? inputDecoration.labelStyle?.color)?.darken(0.2);
+                              return IgnorePointer(
+                                child: Row(
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                                      child: Icon(
+                                        Icons.image,
+                                        size: 14,
+                                        color: usedColor,
+                                      ),
+                                    ),
+                                    //
+                                    Text(
+                                      totalCount.toFormattedString(),
+                                      style: inputDecoration.labelStyle?.copyWith(
+                                        fontSize: 12,
+                                        color: usedColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            return const SizedBox.shrink();
+                          }),
                         ),
-                      ),
-                      focusedBorder: inputDecoration.focusedBorder?.copyWith(
-                        borderSide: BorderSide(
-                          color: withBorder
-                              ? (inputDecoration.focusedBorder?.borderSide.color ?? Colors.transparent)
-                              : Colors.transparent,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                    child: const SizedBox.expand(),
+                    ],
                   ),
                 ),
                 //
@@ -666,7 +714,8 @@ class _TabManagerPageState extends State<TabManagerPage> {
         children: [
           Expanded(
             child: SettingsTextInput(
-              title: context.loc.tabs.filterTabsInput,
+              title: context.loc.search,
+              titleAsLabel: true,
               controller: filterTextController,
               inputType: TextInputType.text,
               clearable: true,
@@ -1276,11 +1325,9 @@ class _TabManagerPageState extends State<TabManagerPage> {
                   child: ReorderableListView.builder(
                     scrollController: scrollController,
                     itemExtent: tabHeight,
-                    onReorder: (oldIndex, newIndex) {
+                    onReorderItem: (oldIndex, newIndex) {
                       if (oldIndex == newIndex) {
                         return;
-                      } else if (oldIndex < newIndex) {
-                        newIndex -= 1;
                       }
 
                       searchHandler.moveTab(oldIndex, newIndex);
@@ -1589,7 +1636,7 @@ class TabManagerItem extends StatelessWidget {
                                   else
                                     tab.booruHandler.booru.name ?? '',
                                   //
-                                  for (final booru in (tab.secondaryBoorus.value ?? [])) booru.name ?? '',
+                                  for (final Booru booru in (tab.secondaryBoorus.value ?? [])) booru.name ?? '',
                                 ];
                                 final String booruNamesStr = booruNames.join(', ');
 

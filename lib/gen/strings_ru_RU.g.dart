@@ -11,11 +11,11 @@ import 'package:slang/overrides.dart';
 import 'strings.g.dart';
 
 // Path: <root>
-class TranslationsRu extends Translations with BaseTranslations<AppLocale, Translations> {
+class TranslationsRuRu extends Translations with BaseTranslations<AppLocale, Translations> {
   /// You can call this constructor and build your own translation instance of this locale.
   /// Constructing via the enum [AppLocale.build] is preferred.
   /// [AppLocaleUtils.buildWithOverrides] is recommended for overriding.
-  TranslationsRu({
+  TranslationsRuRu({
     Map<String, Node>? overrides,
     PluralResolver? cardinalResolver,
     PluralResolver? ordinalResolver,
@@ -23,7 +23,7 @@ class TranslationsRu extends Translations with BaseTranslations<AppLocale, Trans
   }) : $meta =
            meta ??
            TranslationMetadata(
-             locale: AppLocale.ru,
+             locale: AppLocale.ruRu,
              overrides: overrides ?? {},
              cardinalResolver: cardinalResolver,
              ordinalResolver: ordinalResolver,
@@ -33,7 +33,7 @@ class TranslationsRu extends Translations with BaseTranslations<AppLocale, Trans
     $meta.setFlatMapFunction(_flatMapFunction);
   }
 
-  /// Metadata for the translations of <ru>.
+  /// Metadata for the translations of <ru-RU>.
   @override
   final TranslationMetadata<AppLocale, Translations> $meta;
 
@@ -41,14 +41,14 @@ class TranslationsRu extends Translations with BaseTranslations<AppLocale, Trans
   @override
   dynamic operator [](String key) => $meta.getTranslation(key) ?? super.$meta.getTranslation(key);
 
-  late final TranslationsRu _root = this; // ignore: unused_field
+  late final TranslationsRuRu _root = this; // ignore: unused_field
 
   @override
-  TranslationsRu $copyWith({TranslationMetadata<AppLocale, Translations>? meta}) => TranslationsRu(meta: meta ?? this.$meta);
+  TranslationsRuRu $copyWith({TranslationMetadata<AppLocale, Translations>? meta}) => TranslationsRuRu(meta: meta ?? this.$meta);
 
   // Translations
   @override
-  String get locale => TranslationOverrides.string(_root.$meta, 'locale', {}) ?? 'ru';
+  String get locale => TranslationOverrides.string(_root.$meta, 'locale', {}) ?? 'ru-RU';
   @override
   String get localeName => TranslationOverrides.string(_root.$meta, 'localeName', {}) ?? 'Русский';
   @override
@@ -64,6 +64,8 @@ class TranslationsRu extends Translations with BaseTranslations<AppLocale, Trans
   @override
   String get cancel => TranslationOverrides.string(_root.$meta, 'cancel', {}) ?? 'Отмена';
   @override
+  String get kReturn => TranslationOverrides.string(_root.$meta, 'kReturn', {}) ?? 'Вернуться';
+  @override
   String get later => TranslationOverrides.string(_root.$meta, 'later', {}) ?? 'Позже';
   @override
   String get close => TranslationOverrides.string(_root.$meta, 'close', {}) ?? 'Закрыть';
@@ -74,7 +76,7 @@ class TranslationsRu extends Translations with BaseTranslations<AppLocale, Trans
   @override
   String get no => TranslationOverrides.string(_root.$meta, 'no', {}) ?? 'Нет';
   @override
-  String get pleaseWait => TranslationOverrides.string(_root.$meta, 'pleaseWait', {}) ?? 'Подожди...';
+  String get pleaseWait => TranslationOverrides.string(_root.$meta, 'pleaseWait', {}) ?? 'Подожди…';
   @override
   String get show => TranslationOverrides.string(_root.$meta, 'show', {}) ?? 'Показать';
   @override
@@ -85,6 +87,8 @@ class TranslationsRu extends Translations with BaseTranslations<AppLocale, Trans
   String get disable => TranslationOverrides.string(_root.$meta, 'disable', {}) ?? 'Выключить';
   @override
   String get add => TranslationOverrides.string(_root.$meta, 'add', {}) ?? 'Добавить';
+  @override
+  String get exclude => TranslationOverrides.string(_root.$meta, 'exclude', {}) ?? 'Исключить';
   @override
   String get edit => TranslationOverrides.string(_root.$meta, 'edit', {}) ?? 'Редактировать';
   @override
@@ -102,7 +106,7 @@ class TranslationsRu extends Translations with BaseTranslations<AppLocale, Trans
   @override
   String get copy => TranslationOverrides.string(_root.$meta, 'copy', {}) ?? 'Копировать';
   @override
-  String get copied => TranslationOverrides.string(_root.$meta, 'copied', {}) ?? 'Скопировано!';
+  String get copied => TranslationOverrides.string(_root.$meta, 'copied', {}) ?? 'Скопировано';
   @override
   String get copiedToClipboard => TranslationOverrides.string(_root.$meta, 'copiedToClipboard', {}) ?? 'Скопировано в буфер обмена';
   @override
@@ -116,11 +120,9 @@ class TranslationsRu extends Translations with BaseTranslations<AppLocale, Trans
   @override
   String get goToSettings => TranslationOverrides.string(_root.$meta, 'goToSettings', {}) ?? 'В настройки';
   @override
-  String get areYouSure => TranslationOverrides.string(_root.$meta, 'areYouSure', {}) ?? 'Ты уверен?';
+  String get thisMayTakeSomeTime => TranslationOverrides.string(_root.$meta, 'thisMayTakeSomeTime', {}) ?? 'Это может занять некоторое время…';
   @override
-  String get thisMayTakeSomeTime => TranslationOverrides.string(_root.$meta, 'thisMayTakeSomeTime', {}) ?? 'Это может занять некоторое время...';
-  @override
-  String get doYouWantToExitApp => TranslationOverrides.string(_root.$meta, 'doYouWantToExitApp', {}) ?? 'Ты хочешь выйти из приложения?';
+  String get exitTheAppQuestion => TranslationOverrides.string(_root.$meta, 'exitTheAppQuestion', {}) ?? 'Выйти из приложения?';
   @override
   String get closeTheApp => TranslationOverrides.string(_root.$meta, 'closeTheApp', {}) ?? 'Закрыть приложение';
   @override
@@ -190,80 +192,97 @@ class TranslationsRu extends Translations with BaseTranslations<AppLocale, Trans
   @override
   String get downloads => TranslationOverrides.string(_root.$meta, 'downloads', {}) ?? 'Скачанное';
   @override
-  late final _TranslationsValidationErrorsRu validationErrors = _TranslationsValidationErrorsRu._(_root);
+  String get secondsShort => TranslationOverrides.string(_root.$meta, 'secondsShort', {}) ?? 'с';
   @override
-  late final _TranslationsInitRu init = _TranslationsInitRu._(_root);
+  String get minutesShort => TranslationOverrides.string(_root.$meta, 'minutesShort', {}) ?? 'м';
   @override
-  late final _TranslationsPermissionsRu permissions = _TranslationsPermissionsRu._(_root);
+  String get hoursShort => TranslationOverrides.string(_root.$meta, 'hoursShort', {}) ?? 'ч';
   @override
-  late final _TranslationsAuthenticationRu authentication = _TranslationsAuthenticationRu._(_root);
+  String get daysShort => TranslationOverrides.string(_root.$meta, 'daysShort', {}) ?? 'д';
   @override
-  late final _TranslationsSearchHandlerRu searchHandler = _TranslationsSearchHandlerRu._(_root);
+  String get leaveThisPageQuestion => TranslationOverrides.string(_root.$meta, 'leaveThisPageQuestion', {}) ?? 'Покинуть эту страницу?';
   @override
-  late final _TranslationsSnatcherRu snatcher = _TranslationsSnatcherRu._(_root);
+  String get pageWillCloseAutomatically =>
+      TranslationOverrides.string(_root.$meta, 'pageWillCloseAutomatically', {}) ?? 'Страница закроется автоматически';
   @override
-  late final _TranslationsMultibooruRu multibooru = _TranslationsMultibooruRu._(_root);
+  String get stay => TranslationOverrides.string(_root.$meta, 'stay', {}) ?? 'Остаться';
   @override
-  late final _TranslationsHydrusRu hydrus = _TranslationsHydrusRu._(_root);
+  String get leaveNow => TranslationOverrides.string(_root.$meta, 'leaveNow', {}) ?? 'Покинуть сейчас';
   @override
-  late final _TranslationsTabsRu tabs = _TranslationsTabsRu._(_root);
+  late final _TranslationsValidationErrorsRuRu validationErrors = _TranslationsValidationErrorsRuRu._(_root);
   @override
-  late final _TranslationsHistoryRu history = _TranslationsHistoryRu._(_root);
+  late final _TranslationsInitRuRu init = _TranslationsInitRuRu._(_root);
   @override
-  late final _TranslationsWebviewRu webview = _TranslationsWebviewRu._(_root);
+  late final _TranslationsPermissionsRuRu permissions = _TranslationsPermissionsRuRu._(_root);
   @override
-  late final _TranslationsSettingsRu settings = _TranslationsSettingsRu._(_root);
+  late final _TranslationsAuthenticationRuRu authentication = _TranslationsAuthenticationRuRu._(_root);
   @override
-  late final _TranslationsCommentsRu comments = _TranslationsCommentsRu._(_root);
+  late final _TranslationsSearchHandlerRuRu searchHandler = _TranslationsSearchHandlerRuRu._(_root);
   @override
-  late final _TranslationsPageChangerRu pageChanger = _TranslationsPageChangerRu._(_root);
+  late final _TranslationsSnatcherRuRu snatcher = _TranslationsSnatcherRuRu._(_root);
   @override
-  late final _TranslationsTagsFiltersDialogsRu tagsFiltersDialogs = _TranslationsTagsFiltersDialogsRu._(_root);
+  late final _TranslationsMultibooruRuRu multibooru = _TranslationsMultibooruRuRu._(_root);
   @override
-  late final _TranslationsTagsManagerRu tagsManager = _TranslationsTagsManagerRu._(_root);
+  late final _TranslationsHydrusRuRu hydrus = _TranslationsHydrusRuRu._(_root);
   @override
-  late final _TranslationsLockscreenRu lockscreen = _TranslationsLockscreenRu._(_root);
+  late final _TranslationsTabsRuRu tabs = _TranslationsTabsRuRu._(_root);
   @override
-  late final _TranslationsLoliSyncRu loliSync = _TranslationsLoliSyncRu._(_root);
+  late final _TranslationsHistoryRuRu history = _TranslationsHistoryRuRu._(_root);
   @override
-  late final _TranslationsImageSearchRu imageSearch = _TranslationsImageSearchRu._(_root);
+  late final _TranslationsWebviewRuRu webview = _TranslationsWebviewRuRu._(_root);
   @override
-  late final _TranslationsTagViewRu tagView = _TranslationsTagViewRu._(_root);
+  late final _TranslationsSettingsRuRu settings = _TranslationsSettingsRuRu._(_root);
   @override
-  late final _TranslationsPinnedTagsRu pinnedTags = _TranslationsPinnedTagsRu._(_root);
+  late final _TranslationsCommentsRuRu comments = _TranslationsCommentsRuRu._(_root);
   @override
-  late final _TranslationsSearchBarRu searchBar = _TranslationsSearchBarRu._(_root);
+  late final _TranslationsPageChangerRuRu pageChanger = _TranslationsPageChangerRuRu._(_root);
   @override
-  late final _TranslationsMobileHomeRu mobileHome = _TranslationsMobileHomeRu._(_root);
+  late final _TranslationsTagsFiltersDialogsRuRu tagsFiltersDialogs = _TranslationsTagsFiltersDialogsRuRu._(_root);
   @override
-  late final _TranslationsDesktopHomeRu desktopHome = _TranslationsDesktopHomeRu._(_root);
+  late final _TranslationsTagsManagerRuRu tagsManager = _TranslationsTagsManagerRuRu._(_root);
   @override
-  late final _TranslationsGalleryViewRu galleryView = _TranslationsGalleryViewRu._(_root);
+  late final _TranslationsLockscreenRuRu lockscreen = _TranslationsLockscreenRuRu._(_root);
   @override
-  late final _TranslationsMediaPreviewsRu mediaPreviews = _TranslationsMediaPreviewsRu._(_root);
+  late final _TranslationsLoliSyncRuRu loliSync = _TranslationsLoliSyncRuRu._(_root);
   @override
-  late final _TranslationsViewerRu viewer = _TranslationsViewerRu._(_root);
+  late final _TranslationsImageSearchRuRu imageSearch = _TranslationsImageSearchRuRu._(_root);
   @override
-  late final _TranslationsCommonRu common = _TranslationsCommonRu._(_root);
+  late final _TranslationsTagViewRuRu tagView = _TranslationsTagViewRuRu._(_root);
   @override
-  late final _TranslationsGalleryRu gallery = _TranslationsGalleryRu._(_root);
+  late final _TranslationsPinnedTagsRuRu pinnedTags = _TranslationsPinnedTagsRuRu._(_root);
   @override
-  late final _TranslationsGalleryButtonsRu galleryButtons = _TranslationsGalleryButtonsRu._(_root);
+  late final _TranslationsSearchBarRuRu searchBar = _TranslationsSearchBarRuRu._(_root);
   @override
-  late final _TranslationsMediaRu media = _TranslationsMediaRu._(_root);
+  late final _TranslationsMobileHomeRuRu mobileHome = _TranslationsMobileHomeRuRu._(_root);
   @override
-  late final _TranslationsImageStatsRu imageStats = _TranslationsImageStatsRu._(_root);
+  late final _TranslationsDesktopHomeRuRu desktopHome = _TranslationsDesktopHomeRuRu._(_root);
   @override
-  late final _TranslationsPreviewRu preview = _TranslationsPreviewRu._(_root);
+  late final _TranslationsGalleryViewRuRu galleryView = _TranslationsGalleryViewRuRu._(_root);
   @override
-  late final _TranslationsTagTypeRu tagType = _TranslationsTagTypeRu._(_root);
+  late final _TranslationsMediaPreviewsRuRu mediaPreviews = _TranslationsMediaPreviewsRuRu._(_root);
+  @override
+  late final _TranslationsViewerRuRu viewer = _TranslationsViewerRuRu._(_root);
+  @override
+  late final _TranslationsCommonRuRu common = _TranslationsCommonRuRu._(_root);
+  @override
+  late final _TranslationsGalleryRuRu gallery = _TranslationsGalleryRuRu._(_root);
+  @override
+  late final _TranslationsGalleryButtonsRuRu galleryButtons = _TranslationsGalleryButtonsRuRu._(_root);
+  @override
+  late final _TranslationsMediaRuRu media = _TranslationsMediaRuRu._(_root);
+  @override
+  late final _TranslationsImageStatsRuRu imageStats = _TranslationsImageStatsRuRu._(_root);
+  @override
+  late final _TranslationsPreviewRuRu preview = _TranslationsPreviewRuRu._(_root);
+  @override
+  late final _TranslationsTagTypeRuRu tagType = _TranslationsTagTypeRuRu._(_root);
 }
 
 // Path: validationErrors
-class _TranslationsValidationErrorsRu extends TranslationsValidationErrorsEn {
-  _TranslationsValidationErrorsRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsValidationErrorsRuRu extends TranslationsValidationErrorsEn {
+  _TranslationsValidationErrorsRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -304,31 +323,31 @@ class _TranslationsValidationErrorsRu extends TranslationsValidationErrorsEn {
 }
 
 // Path: init
-class _TranslationsInitRu extends TranslationsInitEn {
-  _TranslationsInitRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsInitRuRu extends TranslationsInitEn {
+  _TranslationsInitRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
   String get initError => TranslationOverrides.string(_root.$meta, 'init.initError', {}) ?? 'Ошибка инициализации!';
   @override
-  String get settingUpProxy => TranslationOverrides.string(_root.$meta, 'init.settingUpProxy', {}) ?? 'Настройка прокси...';
+  String get settingUpProxy => TranslationOverrides.string(_root.$meta, 'init.settingUpProxy', {}) ?? 'Настройка прокси…';
   @override
-  String get loadingDatabase => TranslationOverrides.string(_root.$meta, 'init.loadingDatabase', {}) ?? 'Загрузка базы данных...';
+  String get loadingDatabase => TranslationOverrides.string(_root.$meta, 'init.loadingDatabase', {}) ?? 'Загрузка базы данных…';
   @override
-  String get loadingBoorus => TranslationOverrides.string(_root.$meta, 'init.loadingBoorus', {}) ?? 'Загрузка конфигов сайтов...';
+  String get loadingBoorus => TranslationOverrides.string(_root.$meta, 'init.loadingBoorus', {}) ?? 'Загрузка конфигов сайтов…';
   @override
-  String get loadingTags => TranslationOverrides.string(_root.$meta, 'init.loadingTags', {}) ?? 'Загрузка тегов...';
+  String get loadingTags => TranslationOverrides.string(_root.$meta, 'init.loadingTags', {}) ?? 'Загрузка тегов…';
   @override
-  String get restoringTabs => TranslationOverrides.string(_root.$meta, 'init.restoringTabs', {}) ?? 'Восстановление вкладок...';
+  String get restoringTabs => TranslationOverrides.string(_root.$meta, 'init.restoringTabs', {}) ?? 'Восстановление вкладок…';
 }
 
 // Path: permissions
-class _TranslationsPermissionsRu extends TranslationsPermissionsEn {
-  _TranslationsPermissionsRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsPermissionsRuRu extends TranslationsPermissionsEn {
+  _TranslationsPermissionsRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -355,10 +374,10 @@ class _TranslationsPermissionsRu extends TranslationsPermissionsEn {
 }
 
 // Path: authentication
-class _TranslationsAuthenticationRu extends TranslationsAuthenticationEn {
-  _TranslationsAuthenticationRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsAuthenticationRuRu extends TranslationsAuthenticationEn {
+  _TranslationsAuthenticationRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -372,14 +391,15 @@ class _TranslationsAuthenticationRu extends TranslationsAuthenticationEn {
   String get temporaryLockout => TranslationOverrides.string(_root.$meta, 'authentication.temporaryLockout', {}) ?? 'Временная блокировка';
   @override
   String somethingWentWrong({required String error}) =>
-      TranslationOverrides.string(_root.$meta, 'authentication.somethingWentWrong', {'error': error}) ?? 'Что-то пошло не так: ${error}';
+      TranslationOverrides.string(_root.$meta, 'authentication.somethingWentWrong', {'error': error}) ??
+      'Что-то пошло не так во время аутентификации: ${error}';
 }
 
 // Path: searchHandler
-class _TranslationsSearchHandlerRu extends TranslationsSearchHandlerEn {
-  _TranslationsSearchHandlerRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSearchHandlerRuRu extends TranslationsSearchHandlerEn {
+  _TranslationsSearchHandlerRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -448,10 +468,10 @@ class _TranslationsSearchHandlerRu extends TranslationsSearchHandlerEn {
 }
 
 // Path: snatcher
-class _TranslationsSnatcherRu extends TranslationsSnatcherEn {
-  _TranslationsSnatcherRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSnatcherRuRu extends TranslationsSnatcherEn {
+  _TranslationsSnatcherRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -481,7 +501,7 @@ class _TranslationsSnatcherRu extends TranslationsSnatcherEn {
   String get itemWasCancelled => TranslationOverrides.string(_root.$meta, 'snatcher.itemWasCancelled', {}) ?? 'Элемент был отменён';
   @override
   String get startingNextQueueItem =>
-      TranslationOverrides.string(_root.$meta, 'snatcher.startingNextQueueItem', {}) ?? 'Запуск следующего элемента очереди...';
+      TranslationOverrides.string(_root.$meta, 'snatcher.startingNextQueueItem', {}) ?? 'Запуск следующего элемента очереди…';
   @override
   String get itemsSnatched => TranslationOverrides.string(_root.$meta, 'snatcher.itemsSnatched', {}) ?? 'Элементы скачаны';
   @override
@@ -543,10 +563,10 @@ class _TranslationsSnatcherRu extends TranslationsSnatcherEn {
 }
 
 // Path: multibooru
-class _TranslationsMultibooruRu extends TranslationsMultibooruEn {
-  _TranslationsMultibooruRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsMultibooruRuRu extends TranslationsMultibooruEn {
+  _TranslationsMultibooruRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -558,7 +578,7 @@ class _TranslationsMultibooruRu extends TranslationsMultibooruEn {
       TranslationOverrides.string(_root.$meta, 'multibooru.multibooruRequiresAtLeastTwoBoorus', {}) ?? 'Требует как минимум 2 настроенных сайта';
   @override
   String get selectSecondaryBoorus =>
-      TranslationOverrides.string(_root.$meta, 'multibooru.selectSecondaryBoorus', {}) ?? 'Выбери второстепенные конфиги:';
+      TranslationOverrides.string(_root.$meta, 'multibooru.selectSecondaryBoorus', {}) ?? 'Выбери дополнительные сайты:';
   @override
   String get akaMultibooruMode => TranslationOverrides.string(_root.$meta, 'multibooru.akaMultibooruMode', {}) ?? 'режим Мультисайта';
   @override
@@ -567,10 +587,10 @@ class _TranslationsMultibooruRu extends TranslationsMultibooruEn {
 }
 
 // Path: hydrus
-class _TranslationsHydrusRu extends TranslationsHydrusEn {
-  _TranslationsHydrusRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsHydrusRuRu extends TranslationsHydrusEn {
+  _TranslationsHydrusRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -586,10 +606,10 @@ class _TranslationsHydrusRu extends TranslationsHydrusEn {
 }
 
 // Path: tabs
-class _TranslationsTabsRu extends TranslationsTabsEn {
-  _TranslationsTabsRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsTabsRuRu extends TranslationsTabsEn {
+  _TranslationsTabsRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -606,7 +626,7 @@ class _TranslationsTabsRu extends TranslationsTabsEn {
   String get selectABooruOrLeaveEmpty =>
       TranslationOverrides.string(_root.$meta, 'tabs.selectABooruOrLeaveEmpty', {}) ?? 'Выбери сайт или оставь пустым';
   @override
-  String get addPosition => TranslationOverrides.string(_root.$meta, 'tabs.addPosition', {}) ?? 'Позиция добавления:';
+  String get addPosition => TranslationOverrides.string(_root.$meta, 'tabs.addPosition', {}) ?? 'Позиция добавления';
   @override
   String get addModePrevTab => TranslationOverrides.string(_root.$meta, 'tabs.addModePrevTab', {}) ?? 'Предыдущая вкладка';
   @override
@@ -614,7 +634,7 @@ class _TranslationsTabsRu extends TranslationsTabsEn {
   @override
   String get addModeListEnd => TranslationOverrides.string(_root.$meta, 'tabs.addModeListEnd', {}) ?? 'Конец списка';
   @override
-  String get usedQuery => TranslationOverrides.string(_root.$meta, 'tabs.usedQuery', {}) ?? 'Используемый запрос:';
+  String get usedQuery => TranslationOverrides.string(_root.$meta, 'tabs.usedQuery', {}) ?? 'Используемый запрос';
   @override
   String get queryModeDefault => TranslationOverrides.string(_root.$meta, 'tabs.queryModeDefault', {}) ?? 'По умолчанию';
   @override
@@ -659,7 +679,7 @@ class _TranslationsTabsRu extends TranslationsTabsEn {
   String get scrollToBottom => TranslationOverrides.string(_root.$meta, 'tabs.scrollToBottom', {}) ?? 'Прокрутить вниз';
   @override
   String get filterTabsByBooru =>
-      TranslationOverrides.string(_root.$meta, 'tabs.filterTabsByBooru', {}) ?? 'Фильтровать по сайту, состоянию, дубликатам...';
+      TranslationOverrides.string(_root.$meta, 'tabs.filterTabsByBooru', {}) ?? 'Фильтровать по сайту, состоянию, дубликатам…';
   @override
   String get scrolling => TranslationOverrides.string(_root.$meta, 'tabs.scrolling', {}) ?? 'Прокрутка:';
   @override
@@ -694,9 +714,6 @@ class _TranslationsTabsRu extends TranslationsTabsEn {
   String get longPressToMove =>
       TranslationOverrides.string(_root.$meta, 'tabs.longPressToMove', {}) ?? 'Длительное нажатие на вкладку для её перемещения';
   @override
-  String get resettingToDefaultTags =>
-      TranslationOverrides.string(_root.$meta, 'tabs.resettingToDefaultTags', {}) ?? 'Сброс поиска к тегам по умолчанию';
-  @override
   String get numbersInBottomRight =>
       TranslationOverrides.string(_root.$meta, 'tabs.numbersInBottomRight', {}) ?? 'Числа в правом нижнем углу вкладки:';
   @override
@@ -710,15 +727,13 @@ class _TranslationsTabsRu extends TranslationsTabsEn {
   String get specialFilters => TranslationOverrides.string(_root.$meta, 'tabs.specialFilters', {}) ?? 'Специальные фильтры:';
   @override
   String get loadedFilter =>
-      TranslationOverrides.string(_root.$meta, 'tabs.loadedFilter', {}) ?? '"Загружено" - показать вкладки с загруженными элементами';
+      TranslationOverrides.string(_root.$meta, 'tabs.loadedFilter', {}) ?? '«Загружено» - показать вкладки с загруженными элементами';
   @override
   String get notLoadedFilter =>
       TranslationOverrides.string(_root.$meta, 'tabs.notLoadedFilter', {}) ??
-      '"Не загружено" - показать вкладки, которые не загружены и/или имеют ноль элементов';
+      '«Не загружено» - показать вкладки, которые не загружены и/или имеют ноль элементов';
   @override
   String get notLoadedItalic => TranslationOverrides.string(_root.$meta, 'tabs.notLoadedItalic', {}) ?? 'Незагруженные вкладки имеют курсивный текст';
-  @override
-  String get filterTabsInput => TranslationOverrides.string(_root.$meta, 'tabs.filterTabsInput', {}) ?? 'Фильтровать вкладки';
   @override
   String get noTabsFound => TranslationOverrides.string(_root.$meta, 'tabs.noTabsFound', {}) ?? 'Вкладки не найдены';
   @override
@@ -754,16 +769,16 @@ class _TranslationsTabsRu extends TranslationsTabsEn {
         other: 'Ты уверен, что хочешь удалить ${count} вкладок?',
       );
   @override
-  late final _TranslationsTabsFiltersRu filters = _TranslationsTabsFiltersRu._(_root);
+  late final _TranslationsTabsFiltersRuRu filters = _TranslationsTabsFiltersRuRu._(_root);
   @override
-  late final _TranslationsTabsMoveRu move = _TranslationsTabsMoveRu._(_root);
+  late final _TranslationsTabsMoveRuRu move = _TranslationsTabsMoveRuRu._(_root);
 }
 
 // Path: history
-class _TranslationsHistoryRu extends TranslationsHistoryEn {
-  _TranslationsHistoryRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsHistoryRuRu extends TranslationsHistoryEn {
+  _TranslationsHistoryRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -775,8 +790,6 @@ class _TranslationsHistoryRu extends TranslationsHistoryEn {
   @override
   String get searchHistoryRequiresDatabase =>
       TranslationOverrides.string(_root.$meta, 'history.searchHistoryRequiresDatabase', {}) ?? 'История поиска требует включения базы данных';
-  @override
-  String get filterSearchHistory => TranslationOverrides.string(_root.$meta, 'history.filterSearchHistory', {}) ?? 'Фильтровать историю поиска';
   @override
   String lastSearch({required String search}) =>
       TranslationOverrides.string(_root.$meta, 'history.lastSearch', {'search': search}) ?? 'Последний поиск: ${search}';
@@ -827,10 +840,10 @@ class _TranslationsHistoryRu extends TranslationsHistoryEn {
 }
 
 // Path: webview
-class _TranslationsWebviewRu extends TranslationsWebviewEn {
-  _TranslationsWebviewRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsWebviewRuRu extends TranslationsWebviewEn {
+  _TranslationsWebviewRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -839,75 +852,83 @@ class _TranslationsWebviewRu extends TranslationsWebviewEn {
   String get notSupportedOnDevice =>
       TranslationOverrides.string(_root.$meta, 'webview.notSupportedOnDevice', {}) ?? 'Не поддерживается на этом устройстве';
   @override
-  late final _TranslationsWebviewNavigationRu navigation = _TranslationsWebviewNavigationRu._(_root);
+  String get captcha => TranslationOverrides.string(_root.$meta, 'webview.captcha', {}) ?? 'Капча';
+  @override
+  String get captchaCheckDescription =>
+      TranslationOverrides.string(_root.$meta, 'webview.captchaCheckDescription', {}) ??
+      'Обнаружена возможная капча. Пожалуйста реши ее и вернись обратно после выполнения';
+  @override
+  String get captchaCompleted => TranslationOverrides.string(_root.$meta, 'webview.captchaCompleted', {}) ?? 'Капча выполнена';
+  @override
+  late final _TranslationsWebviewNavigationRuRu navigation = _TranslationsWebviewNavigationRuRu._(_root);
 }
 
 // Path: settings
-class _TranslationsSettingsRu extends TranslationsSettingsEn {
-  _TranslationsSettingsRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsRuRu extends TranslationsSettingsEn {
+  _TranslationsSettingsRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
   String get title => TranslationOverrides.string(_root.$meta, 'settings.title', {}) ?? 'Настройки';
   @override
-  late final _TranslationsSettingsLanguageRu language = _TranslationsSettingsLanguageRu._(_root);
+  late final _TranslationsSettingsLanguageRuRu language = _TranslationsSettingsLanguageRuRu._(_root);
   @override
-  late final _TranslationsSettingsBooruRu booru = _TranslationsSettingsBooruRu._(_root);
+  late final _TranslationsSettingsBooruRuRu booru = _TranslationsSettingsBooruRuRu._(_root);
   @override
-  late final _TranslationsSettingsBooruEditorRu booruEditor = _TranslationsSettingsBooruEditorRu._(_root);
+  late final _TranslationsSettingsBooruEditorRuRu booruEditor = _TranslationsSettingsBooruEditorRuRu._(_root);
   @override
-  late final _TranslationsSettingsInterfaceRu interface = _TranslationsSettingsInterfaceRu._(_root);
+  late final _TranslationsSettingsInterfaceRuRu interface = _TranslationsSettingsInterfaceRuRu._(_root);
   @override
-  late final _TranslationsSettingsThemeRu theme = _TranslationsSettingsThemeRu._(_root);
+  late final _TranslationsSettingsThemeRuRu theme = _TranslationsSettingsThemeRuRu._(_root);
   @override
-  late final _TranslationsSettingsViewerRu viewer = _TranslationsSettingsViewerRu._(_root);
+  late final _TranslationsSettingsViewerRuRu viewer = _TranslationsSettingsViewerRuRu._(_root);
   @override
-  late final _TranslationsSettingsVideoRu video = _TranslationsSettingsVideoRu._(_root);
+  late final _TranslationsSettingsVideoRuRu video = _TranslationsSettingsVideoRuRu._(_root);
   @override
-  late final _TranslationsSettingsDownloadsRu downloads = _TranslationsSettingsDownloadsRu._(_root);
+  late final _TranslationsSettingsDownloadsRuRu downloads = _TranslationsSettingsDownloadsRuRu._(_root);
   @override
-  late final _TranslationsSettingsDatabaseRu database = _TranslationsSettingsDatabaseRu._(_root);
+  late final _TranslationsSettingsDatabaseRuRu database = _TranslationsSettingsDatabaseRuRu._(_root);
   @override
-  late final _TranslationsSettingsBackupAndRestoreRu backupAndRestore = _TranslationsSettingsBackupAndRestoreRu._(_root);
+  late final _TranslationsSettingsBackupAndRestoreRuRu backupAndRestore = _TranslationsSettingsBackupAndRestoreRuRu._(_root);
   @override
-  late final _TranslationsSettingsNetworkRu network = _TranslationsSettingsNetworkRu._(_root);
+  late final _TranslationsSettingsNetworkRuRu network = _TranslationsSettingsNetworkRuRu._(_root);
   @override
-  late final _TranslationsSettingsPrivacyRu privacy = _TranslationsSettingsPrivacyRu._(_root);
+  late final _TranslationsSettingsPrivacyRuRu privacy = _TranslationsSettingsPrivacyRuRu._(_root);
   @override
-  late final _TranslationsSettingsPerformanceRu performance = _TranslationsSettingsPerformanceRu._(_root);
+  late final _TranslationsSettingsPerformanceRuRu performance = _TranslationsSettingsPerformanceRuRu._(_root);
   @override
-  late final _TranslationsSettingsCacheRu cache = _TranslationsSettingsCacheRu._(_root);
+  late final _TranslationsSettingsCacheRuRu cache = _TranslationsSettingsCacheRuRu._(_root);
   @override
-  late final _TranslationsSettingsTagsFiltersRu tagsFilters = _TranslationsSettingsTagsFiltersRu._(_root);
+  late final _TranslationsSettingsItemFiltersRuRu itemFilters = _TranslationsSettingsItemFiltersRuRu._(_root);
   @override
-  late final _TranslationsSettingsSyncRu sync = _TranslationsSettingsSyncRu._(_root);
+  late final _TranslationsSettingsSyncRuRu sync = _TranslationsSettingsSyncRuRu._(_root);
   @override
-  late final _TranslationsSettingsAboutRu about = _TranslationsSettingsAboutRu._(_root);
+  late final _TranslationsSettingsAboutRuRu about = _TranslationsSettingsAboutRuRu._(_root);
   @override
-  late final _TranslationsSettingsCheckForUpdatesRu checkForUpdates = _TranslationsSettingsCheckForUpdatesRu._(_root);
+  late final _TranslationsSettingsCheckForUpdatesRuRu checkForUpdates = _TranslationsSettingsCheckForUpdatesRuRu._(_root);
   @override
-  late final _TranslationsSettingsLogsRu logs = _TranslationsSettingsLogsRu._(_root);
+  late final _TranslationsSettingsLogsRuRu logs = _TranslationsSettingsLogsRuRu._(_root);
   @override
-  late final _TranslationsSettingsHelpRu help = _TranslationsSettingsHelpRu._(_root);
+  late final _TranslationsSettingsHelpRuRu help = _TranslationsSettingsHelpRuRu._(_root);
   @override
-  late final _TranslationsSettingsDebugRu debug = _TranslationsSettingsDebugRu._(_root);
+  late final _TranslationsSettingsDebugRuRu debug = _TranslationsSettingsDebugRuRu._(_root);
   @override
-  late final _TranslationsSettingsLoggingRu logging = _TranslationsSettingsLoggingRu._(_root);
+  late final _TranslationsSettingsLoggingRuRu logging = _TranslationsSettingsLoggingRuRu._(_root);
   @override
-  late final _TranslationsSettingsWebviewRu webview = _TranslationsSettingsWebviewRu._(_root);
+  late final _TranslationsSettingsWebviewRuRu webview = _TranslationsSettingsWebviewRuRu._(_root);
   @override
-  late final _TranslationsSettingsDirPickerRu dirPicker = _TranslationsSettingsDirPickerRu._(_root);
+  late final _TranslationsSettingsDirPickerRuRu dirPicker = _TranslationsSettingsDirPickerRuRu._(_root);
   @override
   String get version => TranslationOverrides.string(_root.$meta, 'settings.version', {}) ?? 'Версия';
 }
 
 // Path: comments
-class _TranslationsCommentsRu extends TranslationsCommentsEn {
-  _TranslationsCommentsRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsCommentsRuRu extends TranslationsCommentsEn {
+  _TranslationsCommentsRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -920,10 +941,10 @@ class _TranslationsCommentsRu extends TranslationsCommentsEn {
 }
 
 // Path: pageChanger
-class _TranslationsPageChangerRu extends TranslationsPageChangerEn {
-  _TranslationsPageChangerRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsPageChangerRuRu extends TranslationsPageChangerEn {
+  _TranslationsPageChangerRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -947,16 +968,16 @@ class _TranslationsPageChangerRu extends TranslationsPageChangerEn {
   @override
   String get jumpToPage => TranslationOverrides.string(_root.$meta, 'pageChanger.jumpToPage', {}) ?? 'Перейти на страницу';
   @override
-  String get searchUntilPage => TranslationOverrides.string(_root.$meta, 'pageChanger.searchUntilPage', {}) ?? 'Искать до страницы';
+  String get searchUntilPage => TranslationOverrides.string(_root.$meta, 'pageChanger.searchUntilPage', {}) ?? 'Поиск до страницы';
   @override
   String get stopSearching => TranslationOverrides.string(_root.$meta, 'pageChanger.stopSearching', {}) ?? 'Остановить поиск';
 }
 
 // Path: tagsFiltersDialogs
-class _TranslationsTagsFiltersDialogsRu extends TranslationsTagsFiltersDialogsEn {
-  _TranslationsTagsFiltersDialogsRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsTagsFiltersDialogsRuRu extends TranslationsTagsFiltersDialogsEn {
+  _TranslationsTagsFiltersDialogsRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -974,10 +995,10 @@ class _TranslationsTagsFiltersDialogsRu extends TranslationsTagsFiltersDialogsEn
 }
 
 // Path: tagsManager
-class _TranslationsTagsManagerRu extends TranslationsTagsManagerEn {
-  _TranslationsTagsManagerRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsTagsManagerRuRu extends TranslationsTagsManagerEn {
+  _TranslationsTagsManagerRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1022,10 +1043,10 @@ class _TranslationsTagsManagerRu extends TranslationsTagsManagerEn {
 }
 
 // Path: lockscreen
-class _TranslationsLockscreenRu extends TranslationsLockscreenEn {
-  _TranslationsLockscreenRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsLockscreenRuRu extends TranslationsLockscreenEn {
+  _TranslationsLockscreenRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1039,10 +1060,10 @@ class _TranslationsLockscreenRu extends TranslationsLockscreenEn {
 }
 
 // Path: loliSync
-class _TranslationsLoliSyncRu extends TranslationsLoliSyncEn {
-  _TranslationsLoliSyncRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsLoliSyncRuRu extends TranslationsLoliSyncEn {
+  _TranslationsLoliSyncRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1055,9 +1076,9 @@ class _TranslationsLoliSyncRu extends TranslationsLoliSyncEn {
   @override
   String get noConnection => TranslationOverrides.string(_root.$meta, 'loliSync.noConnection', {}) ?? 'Нет соединения';
   @override
-  String get waitingForConnection => TranslationOverrides.string(_root.$meta, 'loliSync.waitingForConnection', {}) ?? 'Ожидание соединения...';
+  String get waitingForConnection => TranslationOverrides.string(_root.$meta, 'loliSync.waitingForConnection', {}) ?? 'Ожидание соединения…';
   @override
-  String get startingServer => TranslationOverrides.string(_root.$meta, 'loliSync.startingServer', {}) ?? 'Запуск сервера...';
+  String get startingServer => TranslationOverrides.string(_root.$meta, 'loliSync.startingServer', {}) ?? 'Запуск сервера…';
   @override
   String get keepScreenAwake => TranslationOverrides.string(_root.$meta, 'loliSync.keepScreenAwake', {}) ?? 'Держать экран активным';
   @override
@@ -1077,10 +1098,10 @@ class _TranslationsLoliSyncRu extends TranslationsLoliSyncEn {
 }
 
 // Path: imageSearch
-class _TranslationsImageSearchRu extends TranslationsImageSearchEn {
-  _TranslationsImageSearchRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsImageSearchRuRu extends TranslationsImageSearchEn {
+  _TranslationsImageSearchRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1088,10 +1109,10 @@ class _TranslationsImageSearchRu extends TranslationsImageSearchEn {
 }
 
 // Path: tagView
-class _TranslationsTagViewRu extends TranslationsTagViewEn {
-  _TranslationsTagViewRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsTagViewRuRu extends TranslationsTagViewEn {
+  _TranslationsTagViewRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1119,7 +1140,9 @@ class _TranslationsTagViewRu extends TranslationsTagViewEn {
   @override
   String get postURL => TranslationOverrides.string(_root.$meta, 'tagView.postURL', {}) ?? 'Ссылка на пост';
   @override
-  String get posted => TranslationOverrides.string(_root.$meta, 'tagView.posted', {}) ?? 'Опубликовано';
+  String get uploader => TranslationOverrides.string(_root.$meta, 'tagView.uploader', {}) ?? 'Опубликовал';
+  @override
+  String get posted => TranslationOverrides.string(_root.$meta, 'tagView.posted', {}) ?? 'Дата';
   @override
   String get details => TranslationOverrides.string(_root.$meta, 'tagView.details', {}) ?? 'Детали';
   @override
@@ -1139,8 +1162,6 @@ class _TranslationsTagViewRu extends TranslationsTagViewEn {
   @override
   String get score => TranslationOverrides.string(_root.$meta, 'tagView.score', {}) ?? 'Оценка';
   @override
-  String get searchTags => TranslationOverrides.string(_root.$meta, 'tagView.searchTags', {}) ?? 'Искать теги';
-  @override
   String get noTagsFound => TranslationOverrides.string(_root.$meta, 'tagView.noTagsFound', {}) ?? 'Теги не найдены';
   @override
   String get copy => TranslationOverrides.string(_root.$meta, 'tagView.copy', {}) ?? 'Копировать';
@@ -1151,57 +1172,28 @@ class _TranslationsTagViewRu extends TranslationsTagViewEn {
   @override
   String get addedToSearchBar => TranslationOverrides.string(_root.$meta, 'tagView.addedToSearchBar', {}) ?? 'Добавлено в строку поиска:';
   @override
-  String get addToSearchExclude => TranslationOverrides.string(_root.$meta, 'tagView.addToSearchExclude', {}) ?? 'Добавить в поиск (Исключить)';
+  String get excludeFromSearch => TranslationOverrides.string(_root.$meta, 'tagView.excludeFromSearch', {}) ?? 'Исключить из поиска';
   @override
-  String get addedToSearchBarExclude =>
-      TranslationOverrides.string(_root.$meta, 'tagView.addedToSearchBarExclude', {}) ?? 'Добавлено в строку поиска (Исключить):';
+  String get exclusionAddedToSearchBar =>
+      TranslationOverrides.string(_root.$meta, 'tagView.exclusionAddedToSearchBar', {}) ?? 'Исключение добавлено в строку поиска:';
   @override
-  String get addToLoved => TranslationOverrides.string(_root.$meta, 'tagView.addToLoved', {}) ?? 'Добавить в любимые';
+  String get addToMarked => TranslationOverrides.string(_root.$meta, 'tagView.addToMarked', {}) ?? 'Добавить в Отмеченные';
   @override
-  String get addToHated => TranslationOverrides.string(_root.$meta, 'tagView.addToHated', {}) ?? 'Добавить в ненавистные';
+  String get addToHidden => TranslationOverrides.string(_root.$meta, 'tagView.addToHidden', {}) ?? 'Добавить в Скрытые';
   @override
-  String get removeFromLoved => TranslationOverrides.string(_root.$meta, 'tagView.removeFromLoved', {}) ?? 'Удалить из любимых';
+  String get removeFromMarked => TranslationOverrides.string(_root.$meta, 'tagView.removeFromMarked', {}) ?? 'Убрать из Отмеченных';
   @override
-  String get removeFromHated => TranslationOverrides.string(_root.$meta, 'tagView.removeFromHated', {}) ?? 'Удалить из ненавистных';
+  String get removeFromHidden => TranslationOverrides.string(_root.$meta, 'tagView.removeFromHidden', {}) ?? 'Убрать из Скрытых';
   @override
   String get editTag => TranslationOverrides.string(_root.$meta, 'tagView.editTag', {}) ?? 'Редактировать тег';
   @override
-  String copiedSelected({required String type}) =>
-      TranslationOverrides.string(_root.$meta, 'tagView.copiedSelected', {'type': type}) ?? '${type}: скопировано в буфер обмена';
-  @override
-  String get selectedText => TranslationOverrides.string(_root.$meta, 'tagView.selectedText', {}) ?? 'выбранный текст';
-  @override
-  String get source => TranslationOverrides.string(_root.$meta, 'tagView.source', {}) ?? 'источник';
-  @override
   String get sourceDialogTitle => TranslationOverrides.string(_root.$meta, 'tagView.sourceDialogTitle', {}) ?? 'Источник';
-  @override
-  String get sourceDialogText1 =>
-      TranslationOverrides.string(_root.$meta, 'tagView.sourceDialogText1', {}) ??
-      'Текст в поле источника не может быть открыт как ссылка, либо потому что это не ссылка, либо потому что несколько ссылок в одной строке.';
-  @override
-  String get sourceDialogText2 =>
-      TranslationOverrides.string(_root.$meta, 'tagView.sourceDialogText2', {}) ??
-      'Ты можешь выбрать любой текст ниже длительным нажатием, затем нажми "Открыть выбранное", чтобы попытаться открыть его как ссылку:';
-  @override
-  String get noTextSelected => TranslationOverrides.string(_root.$meta, 'tagView.noTextSelected', {}) ?? '[Текст не выбран]';
-  @override
-  String copySelected({required String type}) =>
-      TranslationOverrides.string(_root.$meta, 'tagView.copySelected', {'type': type}) ?? 'Копировать ${type}';
-  @override
-  String get selected => TranslationOverrides.string(_root.$meta, 'tagView.selected', {}) ?? 'выбранное';
-  @override
-  String get all => TranslationOverrides.string(_root.$meta, 'tagView.all', {}) ?? 'всё';
-  @override
-  String openSelected({required String type}) =>
-      TranslationOverrides.string(_root.$meta, 'tagView.openSelected', {'type': type}) ?? 'Открыть ${type}';
   @override
   String get preview => TranslationOverrides.string(_root.$meta, 'tagView.preview', {}) ?? 'Предпросмотр';
   @override
-  String get booru => TranslationOverrides.string(_root.$meta, 'tagView.booru', {}) ?? 'Сайт';
-  @override
   String get selectBooruToLoad => TranslationOverrides.string(_root.$meta, 'tagView.selectBooruToLoad', {}) ?? 'Выбери сайт для загрузки';
   @override
-  String get previewIsLoading => TranslationOverrides.string(_root.$meta, 'tagView.previewIsLoading', {}) ?? 'Предпросмотр загружается...';
+  String get previewIsLoading => TranslationOverrides.string(_root.$meta, 'tagView.previewIsLoading', {}) ?? 'Предпросмотр загружается…';
   @override
   String get failedToLoadPreview =>
       TranslationOverrides.string(_root.$meta, 'tagView.failedToLoadPreview', {}) ?? 'Не удалось загрузить предпросмотр';
@@ -1220,13 +1212,24 @@ class _TranslationsTagViewRu extends TranslationsTagViewEn {
       TranslationOverrides.string(_root.$meta, 'tagView.failedToLoadPreviewPage', {}) ?? 'Не удалось загрузить страницу предпросмотра';
   @override
   String get tryAgain => TranslationOverrides.string(_root.$meta, 'tagView.tryAgain', {}) ?? 'Попробовать снова';
+  @override
+  String get detectedLinks => TranslationOverrides.string(_root.$meta, 'tagView.detectedLinks', {}) ?? 'Обнаруженные ссылки:';
+  @override
+  String get relatedTabs => TranslationOverrides.string(_root.$meta, 'tagView.relatedTabs', {}) ?? 'Связанные вкладки';
+  @override
+  String get tabsWithOnlyTag => TranslationOverrides.string(_root.$meta, 'tagView.tabsWithOnlyTag', {}) ?? 'Вкладки только с этим тегом';
+  @override
+  String get tabsWithOnlyTagDifferentBooru =>
+      TranslationOverrides.string(_root.$meta, 'tagView.tabsWithOnlyTagDifferentBooru', {}) ?? 'Вкладки только с этим тегом, но на другом сайте';
+  @override
+  String get tabsContainingTag => TranslationOverrides.string(_root.$meta, 'tagView.tabsContainingTag', {}) ?? 'Вкладки, содержащие этот тег';
 }
 
 // Path: pinnedTags
-class _TranslationsPinnedTagsRu extends TranslationsPinnedTagsEn {
-  _TranslationsPinnedTagsRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsPinnedTagsRuRu extends TranslationsPinnedTagsEn {
+  _TranslationsPinnedTagsRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1241,18 +1244,18 @@ class _TranslationsPinnedTagsRu extends TranslationsPinnedTagsEn {
   String get unpin => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpin', {}) ?? 'Открепить';
   @override
   String pinQuestion({required String tag}) =>
-      TranslationOverrides.string(_root.$meta, 'pinnedTags.pinQuestion', {'tag': tag}) ?? 'Закрепить "${tag}" для быстрого доступа?';
+      TranslationOverrides.string(_root.$meta, 'pinnedTags.pinQuestion', {'tag': tag}) ?? 'Закрепить «${tag}» для быстрого доступа?';
   @override
   String unpinQuestion({required String tag}) =>
-      TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinQuestion', {'tag': tag}) ?? 'Убрать "${tag}" из закрепленных тегов?';
+      TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinQuestion', {'tag': tag}) ?? 'Убрать «${tag}» из закрепленных тегов?';
   @override
   String onlyForBooru({required String name}) =>
       TranslationOverrides.string(_root.$meta, 'pinnedTags.onlyForBooru', {'name': name}) ?? 'Только для ${name}';
   @override
   String get labelsOptional => TranslationOverrides.string(_root.$meta, 'pinnedTags.labelsOptional', {}) ?? 'Метки (необязательно)';
   @override
-  String get typeAndEnterToAdd =>
-      TranslationOverrides.string(_root.$meta, 'pinnedTags.typeAndEnterToAdd', {}) ?? 'Введи и нажми отправить для добавления';
+  String get typeAndPressAdd =>
+      TranslationOverrides.string(_root.$meta, 'pinnedTags.typeAndPressAdd', {}) ?? 'Ввведи и нажми кнопку Добавить для включения метки в список';
   @override
   String get selectExistingLabel => TranslationOverrides.string(_root.$meta, 'pinnedTags.selectExistingLabel', {}) ?? 'Выбери существующую метку';
   @override
@@ -1271,9 +1274,7 @@ class _TranslationsPinnedTagsRu extends TranslationsPinnedTagsEn {
   String get reorderPinnedTags =>
       TranslationOverrides.string(_root.$meta, 'pinnedTags.reorderPinnedTags', {}) ?? 'Поменять порядок закрепленных тегов';
   @override
-  String get saving => TranslationOverrides.string(_root.$meta, 'pinnedTags.saving', {}) ?? 'Сохраняется...';
-  @override
-  String get searchPinnedTags => TranslationOverrides.string(_root.$meta, 'pinnedTags.searchPinnedTags', {}) ?? 'Искать закрепленные теги...';
+  String get saving => TranslationOverrides.string(_root.$meta, 'pinnedTags.saving', {}) ?? 'Сохраняется…';
   @override
   String get reorder => TranslationOverrides.string(_root.$meta, 'pinnedTags.reorder', {}) ?? 'Поменять порядок';
   @override
@@ -1282,8 +1283,6 @@ class _TranslationsPinnedTagsRu extends TranslationsPinnedTagsEn {
   String get noTagsMatchSearch => TranslationOverrides.string(_root.$meta, 'pinnedTags.noTagsMatchSearch', {}) ?? 'Нет подходящих тегов';
   @override
   String get noPinnedTagsYet => TranslationOverrides.string(_root.$meta, 'pinnedTags.noPinnedTagsYet', {}) ?? 'Пока нет закрепленных тегов';
-  @override
-  String get addToSearch => TranslationOverrides.string(_root.$meta, 'pinnedTags.addToSearch', {}) ?? 'Добавить в поиск';
   @override
   String get editLabels => TranslationOverrides.string(_root.$meta, 'pinnedTags.editLabels', {}) ?? 'Редактировать метки';
   @override
@@ -1299,10 +1298,10 @@ class _TranslationsPinnedTagsRu extends TranslationsPinnedTagsEn {
 }
 
 // Path: searchBar
-class _TranslationsSearchBarRu extends TranslationsSearchBarEn {
-  _TranslationsSearchBarRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSearchBarRuRu extends TranslationsSearchBarEn {
+  _TranslationsSearchBarRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1318,7 +1317,7 @@ class _TranslationsSearchBarRu extends TranslationsSearchBarEn {
       TranslationOverrides.string(_root.$meta, 'searchBar.tagSuggestionsNotAvailable', {}) ?? 'Предложения тегов недоступны для этого сайта';
   @override
   String copiedTagToClipboard({required String tag}) =>
-      TranslationOverrides.string(_root.$meta, 'searchBar.copiedTagToClipboard', {'tag': tag}) ?? '"${tag}": скопировано в буфер обмена';
+      TranslationOverrides.string(_root.$meta, 'searchBar.copiedTagToClipboard', {'tag': tag}) ?? '«${tag}»: скопировано в буфер обмена';
   @override
   String get prefix => TranslationOverrides.string(_root.$meta, 'searchBar.prefix', {}) ?? 'Префикс';
   @override
@@ -1342,29 +1341,20 @@ class _TranslationsSearchBarRu extends TranslationsSearchBarEn {
   @override
   String get popular => TranslationOverrides.string(_root.$meta, 'searchBar.popular', {}) ?? 'Популярное';
   @override
-  String get favourites => TranslationOverrides.string(_root.$meta, 'searchBar.favourites', {}) ?? 'Избранное';
-  @override
-  String get all => TranslationOverrides.string(_root.$meta, 'searchBar.all', {}) ?? '[Все]';
-  @override
   String get selectDate => TranslationOverrides.string(_root.$meta, 'searchBar.selectDate', {}) ?? 'Выбери дату';
   @override
   String get selectDatesRange => TranslationOverrides.string(_root.$meta, 'searchBar.selectDatesRange', {}) ?? 'Выбери диапазон дат';
   @override
-  String lastSearch({required String date}) =>
-      TranslationOverrides.string(_root.$meta, 'searchBar.lastSearch', {'date': date}) ?? 'Последний поиск: ${date}';
-  @override
-  String get unknownBooruType => TranslationOverrides.string(_root.$meta, 'searchBar.unknownBooruType', {}) ?? 'Неизвестный тип сайта!';
-  @override
   String get history => TranslationOverrides.string(_root.$meta, 'searchBar.history', {}) ?? 'История';
   @override
-  String get more => TranslationOverrides.string(_root.$meta, 'searchBar.more', {}) ?? '...';
+  String get more => TranslationOverrides.string(_root.$meta, 'searchBar.more', {}) ?? '…';
 }
 
 // Path: mobileHome
-class _TranslationsMobileHomeRu extends TranslationsMobileHomeEn {
-  _TranslationsMobileHomeRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsMobileHomeRuRu extends TranslationsMobileHomeEn {
+  _TranslationsMobileHomeRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1394,10 +1384,10 @@ class _TranslationsMobileHomeRu extends TranslationsMobileHomeEn {
 }
 
 // Path: desktopHome
-class _TranslationsDesktopHomeRu extends TranslationsDesktopHomeEn {
-  _TranslationsDesktopHomeRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsDesktopHomeRuRu extends TranslationsDesktopHomeEn {
+  _TranslationsDesktopHomeRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1413,10 +1403,10 @@ class _TranslationsDesktopHomeRu extends TranslationsDesktopHomeEn {
 }
 
 // Path: galleryView
-class _TranslationsGalleryViewRu extends TranslationsGalleryViewEn {
-  _TranslationsGalleryViewRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsGalleryViewRuRu extends TranslationsGalleryViewEn {
+  _TranslationsGalleryViewRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1428,10 +1418,10 @@ class _TranslationsGalleryViewRu extends TranslationsGalleryViewEn {
 }
 
 // Path: mediaPreviews
-class _TranslationsMediaPreviewsRu extends TranslationsMediaPreviewsEn {
-  _TranslationsMediaPreviewsRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsMediaPreviewsRuRu extends TranslationsMediaPreviewsEn {
+  _TranslationsMediaPreviewsRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1445,32 +1435,32 @@ class _TranslationsMediaPreviewsRu extends TranslationsMediaPreviewsEn {
   String get settings => TranslationOverrides.string(_root.$meta, 'mediaPreviews.settings', {}) ?? 'Настройки';
   @override
   String get restoringPreviousSession =>
-      TranslationOverrides.string(_root.$meta, 'mediaPreviews.restoringPreviousSession', {}) ?? 'Восстановление предыдущей сессии...';
+      TranslationOverrides.string(_root.$meta, 'mediaPreviews.restoringPreviousSession', {}) ?? 'Восстановление предыдущей сессии…';
   @override
   String get copiedFileURL =>
       TranslationOverrides.string(_root.$meta, 'mediaPreviews.copiedFileURL', {}) ?? 'Ссылка на файл скопирована в буфер обмена!';
 }
 
 // Path: viewer
-class _TranslationsViewerRu extends TranslationsViewerEn {
-  _TranslationsViewerRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsViewerRuRu extends TranslationsViewerEn {
+  _TranslationsViewerRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
-  late final _TranslationsViewerTutorialRu tutorial = _TranslationsViewerTutorialRu._(_root);
+  late final _TranslationsViewerTutorialRuRu tutorial = _TranslationsViewerTutorialRuRu._(_root);
   @override
-  late final _TranslationsViewerAppBarRu appBar = _TranslationsViewerAppBarRu._(_root);
+  late final _TranslationsViewerAppBarRuRu appBar = _TranslationsViewerAppBarRuRu._(_root);
   @override
-  late final _TranslationsViewerNotesRu notes = _TranslationsViewerNotesRu._(_root);
+  late final _TranslationsViewerNotesRuRu notes = _TranslationsViewerNotesRuRu._(_root);
 }
 
 // Path: common
-class _TranslationsCommonRu extends TranslationsCommonEn {
-  _TranslationsCommonRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsCommonRuRu extends TranslationsCommonEn {
+  _TranslationsCommonRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1481,10 +1471,10 @@ class _TranslationsCommonRu extends TranslationsCommonEn {
 }
 
 // Path: gallery
-class _TranslationsGalleryRu extends TranslationsGalleryEn {
-  _TranslationsGalleryRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsGalleryRuRu extends TranslationsGalleryEn {
+  _TranslationsGalleryRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1492,25 +1482,27 @@ class _TranslationsGalleryRu extends TranslationsGalleryEn {
   @override
   String get noPostUrl => TranslationOverrides.string(_root.$meta, 'gallery.noPostUrl', {}) ?? 'Нет ссылки на пост!';
   @override
-  String get loadingFile => TranslationOverrides.string(_root.$meta, 'gallery.loadingFile', {}) ?? 'Загрузка файла...';
+  String get loadingFile => TranslationOverrides.string(_root.$meta, 'gallery.loadingFile', {}) ?? 'Загрузка файла…';
   @override
   String get loadingFileMessage =>
-      TranslationOverrides.string(_root.$meta, 'gallery.loadingFileMessage', {}) ?? 'Это может занять некоторое время, пожалуйста, подожди...';
+      TranslationOverrides.string(_root.$meta, 'gallery.loadingFileMessage', {}) ?? 'Это может занять некоторое время, пожалуйста, подожди…';
   @override
   String sources({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'gallery.sources', {'count': count}) ??
       (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
         count,
         one: 'Источник',
-        other: 'Источников',
+        few: 'Источники',
+        many: 'Источники',
+        other: 'Источники',
       );
 }
 
 // Path: galleryButtons
-class _TranslationsGalleryButtonsRu extends TranslationsGalleryButtonsEn {
-  _TranslationsGalleryButtonsRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsGalleryButtonsRuRu extends TranslationsGalleryButtonsEn {
+  _TranslationsGalleryButtonsRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1538,23 +1530,23 @@ class _TranslationsGalleryButtonsRu extends TranslationsGalleryButtonsEn {
 }
 
 // Path: media
-class _TranslationsMediaRu extends TranslationsMediaEn {
-  _TranslationsMediaRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsMediaRuRu extends TranslationsMediaEn {
+  _TranslationsMediaRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
-  late final _TranslationsMediaLoadingRu loading = _TranslationsMediaLoadingRu._(_root);
+  late final _TranslationsMediaLoadingRuRu loading = _TranslationsMediaLoadingRuRu._(_root);
   @override
-  late final _TranslationsMediaVideoRu video = _TranslationsMediaVideoRu._(_root);
+  late final _TranslationsMediaVideoRuRu video = _TranslationsMediaVideoRuRu._(_root);
 }
 
 // Path: imageStats
-class _TranslationsImageStatsRu extends TranslationsImageStatsEn {
-  _TranslationsImageStatsRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsImageStatsRuRu extends TranslationsImageStatsEn {
+  _TranslationsImageStatsRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1570,21 +1562,21 @@ class _TranslationsImageStatsRu extends TranslationsImageStatsEn {
 }
 
 // Path: preview
-class _TranslationsPreviewRu extends TranslationsPreviewEn {
-  _TranslationsPreviewRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsPreviewRuRu extends TranslationsPreviewEn {
+  _TranslationsPreviewRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
-  late final _TranslationsPreviewErrorRu error = _TranslationsPreviewErrorRu._(_root);
+  late final _TranslationsPreviewErrorRuRu error = _TranslationsPreviewErrorRuRu._(_root);
 }
 
 // Path: tagType
-class _TranslationsTagTypeRu extends TranslationsTagTypeEn {
-  _TranslationsTagTypeRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsTagTypeRuRu extends TranslationsTagTypeEn {
+  _TranslationsTagTypeRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1602,10 +1594,10 @@ class _TranslationsTagTypeRu extends TranslationsTagTypeEn {
 }
 
 // Path: tabs.filters
-class _TranslationsTabsFiltersRu extends TranslationsTabsFiltersEn {
-  _TranslationsTabsFiltersRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsTabsFiltersRuRu extends TranslationsTabsFiltersEn {
+  _TranslationsTabsFiltersRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1645,10 +1637,10 @@ class _TranslationsTabsFiltersRu extends TranslationsTabsFiltersEn {
 }
 
 // Path: tabs.move
-class _TranslationsTabsMoveRu extends TranslationsTabsMoveEn {
-  _TranslationsTabsMoveRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsTabsMoveRuRu extends TranslationsTabsMoveEn {
+  _TranslationsTabsMoveRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1674,16 +1666,16 @@ class _TranslationsTabsMoveRu extends TranslationsTabsMoveEn {
 }
 
 // Path: webview.navigation
-class _TranslationsWebviewNavigationRu extends TranslationsWebviewNavigationEn {
-  _TranslationsWebviewNavigationRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsWebviewNavigationRuRu extends TranslationsWebviewNavigationEn {
+  _TranslationsWebviewNavigationRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
-  String get enterUrlLabel => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterUrlLabel', {}) ?? 'Введи ссылку';
+  String get enterUrlLabel => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterUrlLabel', {}) ?? 'Ввести ссылку';
   @override
-  String get enterCustomUrl => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterCustomUrl', {}) ?? 'Введи ссылку';
+  String get enterCustomUrl => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterCustomUrl', {}) ?? 'Ввести ссылку';
   @override
   String navigateTo({required String url}) =>
       TranslationOverrides.string(_root.$meta, 'webview.navigation.navigateTo', {'url': url}) ?? 'Перейти на ${url}';
@@ -1702,9 +1694,6 @@ class _TranslationsWebviewNavigationRu extends TranslationsWebviewNavigationEn {
   @override
   String get textAboveSelectable =>
       TranslationOverrides.string(_root.$meta, 'webview.navigation.textAboveSelectable', {}) ?? '(текст выше можно выбрать)';
-  @override
-  String get fieldToMergeTexts =>
-      TranslationOverrides.string(_root.$meta, 'webview.navigation.fieldToMergeTexts', {}) ?? 'Поле для объединения текстов:';
   @override
   String get copyUrl => TranslationOverrides.string(_root.$meta, 'webview.navigation.copyUrl', {}) ?? 'Копировать ссылку';
   @override
@@ -1725,10 +1714,10 @@ class _TranslationsWebviewNavigationRu extends TranslationsWebviewNavigationEn {
 }
 
 // Path: settings.language
-class _TranslationsSettingsLanguageRu extends TranslationsSettingsLanguageEn {
-  _TranslationsSettingsLanguageRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsLanguageRuRu extends TranslationsSettingsLanguageEn {
+  _TranslationsSettingsLanguageRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1740,20 +1729,18 @@ class _TranslationsSettingsLanguageRu extends TranslationsSettingsLanguageEn {
   @override
   String get visitForDetails =>
       TranslationOverrides.string(_root.$meta, 'settings.language.visitForDetails', {}) ??
-      'Посети <a href="https://github.com/NO-ob/LoliSnatcher_Droid/wiki/Localization">github</a> для подробностей или нажми на изображение ниже, чтобы перейти на Weblate';
+      'Посети <a href=\'https://github.com/NO-ob/LoliSnatcher_Droid/blob/master/CONTRIBUTING.md#localization--translations\'>github</a> для подробностей или нажми на изображение ниже, чтобы перейти на POEditor';
 }
 
 // Path: settings.booru
-class _TranslationsSettingsBooruRu extends TranslationsSettingsBooruEn {
-  _TranslationsSettingsBooruRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsBooruRuRu extends TranslationsSettingsBooruEn {
+  _TranslationsSettingsBooruRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
   String get title => TranslationOverrides.string(_root.$meta, 'settings.booru.title', {}) ?? 'Сайты и Поиск';
-  @override
-  String get dropdown => TranslationOverrides.string(_root.$meta, 'settings.booru.dropdown', {}) ?? 'Сайт';
   @override
   String get defaultTags => TranslationOverrides.string(_root.$meta, 'settings.booru.defaultTags', {}) ?? 'Теги по умолчанию';
   @override
@@ -1780,7 +1767,7 @@ class _TranslationsSettingsBooruRu extends TranslationsSettingsBooruEn {
   @override
   String get booruSharingMsgAndroid =>
       TranslationOverrides.string(_root.$meta, 'settings.booru.booruSharingMsgAndroid', {}) ??
-      'Как автоматически открывать ссылки с конфигами сайта в приложении на Android 12 и выше:\n1) Нажми на кнопку снизу чтобы открыть системные настройки ссылок по умолчанию\n2) Нажми на "Добавить ссылку" и выбери все доступные опции';
+      'Как автоматически открывать ссылки с конфигами сайта в приложении на Android 12 и выше:\n1) Нажми на кнопку снизу чтобы открыть системные настройки ссылок по умолчанию\n2) Нажми на «Добавить ссылку» и выбери все доступные опции';
   @override
   String get addedBoorus => TranslationOverrides.string(_root.$meta, 'settings.booru.addedBoorus', {}) ?? 'Добавленные сайты';
   @override
@@ -1796,7 +1783,7 @@ class _TranslationsSettingsBooruRu extends TranslationsSettingsBooruEn {
   String get deleteBooruError =>
       TranslationOverrides.string(_root.$meta, 'settings.booru.deleteBooruError', {}) ?? 'Что-то пошло не так при удалении конфига!';
   @override
-  String get booruDeleted => TranslationOverrides.string(_root.$meta, 'settings.booru.booruDeleted', {}) ?? 'Конфиг удален!';
+  String get booruDeleted => TranslationOverrides.string(_root.$meta, 'settings.booru.booruDeleted', {}) ?? 'Конфиг удален';
   @override
   String get booruDropdownInfo =>
       TranslationOverrides.string(_root.$meta, 'settings.booru.booruDropdownInfo', {}) ??
@@ -1812,7 +1799,7 @@ class _TranslationsSettingsBooruRu extends TranslationsSettingsBooruEn {
   String get changeToNewBooru => TranslationOverrides.string(_root.$meta, 'settings.booru.changeToNewBooru', {}) ?? 'Нажми [Да] чтобы сменить на: ';
   @override
   String get booruConfigLinkCopied =>
-      TranslationOverrides.string(_root.$meta, 'settings.booru.booruConfigLinkCopied', {}) ?? 'Конфиг в виде ссылки скопирован!';
+      TranslationOverrides.string(_root.$meta, 'settings.booru.booruConfigLinkCopied', {}) ?? 'Конфиг в виде ссылки скопирован';
   @override
   String get noBooruSelected => TranslationOverrides.string(_root.$meta, 'settings.booru.noBooruSelected', {}) ?? 'Сайт не выбран!';
   @override
@@ -1823,10 +1810,10 @@ class _TranslationsSettingsBooruRu extends TranslationsSettingsBooruEn {
 }
 
 // Path: settings.booruEditor
-class _TranslationsSettingsBooruEditorRu extends TranslationsSettingsBooruEditorEn {
-  _TranslationsSettingsBooruEditorRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsBooruEditorRuRu extends TranslationsSettingsBooruEditorEn {
+  _TranslationsSettingsBooruEditorRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1841,7 +1828,7 @@ class _TranslationsSettingsBooruEditorRu extends TranslationsSettingsBooruEditor
   @override
   String get saveBooru => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveBooru', {}) ?? 'Сохранить конфиг';
   @override
-  String get runningTest => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.runningTest', {}) ?? 'Выполнение теста...';
+  String get runningTest => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.runningTest', {}) ?? 'Выполнение теста…';
   @override
   String get booruConfigExistsError =>
       TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigExistsError', {}) ?? 'Такой конфиг уже существует';
@@ -1855,7 +1842,7 @@ class _TranslationsSettingsBooruEditorRu extends TranslationsSettingsBooruEditor
   String get thisBooruConfigWontBeAdded =>
       TranslationOverrides.string(_root.$meta, 'settings.booruEditor.thisBooruConfigWontBeAdded', {}) ?? 'Этот конфиг не будет добавлен';
   @override
-  String get booruConfigSaved => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigSaved', {}) ?? 'Конфиг сохранен!';
+  String get booruConfigSaved => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigSaved', {}) ?? 'Конфиг сохранен';
   @override
   String get existingTabsNeedReload =>
       TranslationOverrides.string(_root.$meta, 'settings.booruEditor.existingTabsNeedReload', {}) ??
@@ -1879,7 +1866,7 @@ class _TranslationsSettingsBooruEditorRu extends TranslationsSettingsBooruEditor
   @override
   String get hydrusInstructions =>
       TranslationOverrides.string(_root.$meta, 'settings.booruEditor.hydrusInstructions', {}) ??
-      'Для получения ключа Hydrus нужно открыть окно запроса в клиенте Hydrus. Services > Review services > Client api > Add > From API request';
+      'Для получения ключа Hydrus нужно открыть окно запроса в клиенте Hydrus. Services > Review services > Client API > Add > From API request';
   @override
   String get getHydrusApiKey => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.getHydrusApiKey', {}) ?? 'Получить ключ API Hydrus';
   @override
@@ -1894,18 +1881,11 @@ class _TranslationsSettingsBooruEditorRu extends TranslationsSettingsBooruEditor
   @override
   String get booruType => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruType', {}) ?? 'Тип конфига';
   @override
-  String booruTypeIs({required Object booruType}) =>
-      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruTypeIs', {'booruType': booruType}) ?? 'Сайт типа: ${booruType}';
-  @override
   String get booruFavicon => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruFavicon', {}) ?? 'URL иконки';
   @override
   String get booruFaviconPlaceholder =>
       TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruFaviconPlaceholder', {}) ??
       '(Автоматически заполняется, если оставить пустым)';
-  @override
-  String booruApiCredsInfo({required Object userIdTitle, required Object apiKeyTitle}) =>
-      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruApiCredsInfo', {'userIdTitle': userIdTitle, 'apiKeyTitle': apiKeyTitle}) ??
-      '${userIdTitle} и ${apiKeyTitle} могут быть обязательны для некоторых сайтов, но в большинстве случаев не нужны.';
   @override
   String get booruDefTags => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruDefTags', {}) ?? 'Теги по умолчанию';
   @override
@@ -1925,10 +1905,10 @@ class _TranslationsSettingsBooruEditorRu extends TranslationsSettingsBooruEditor
 }
 
 // Path: settings.interface
-class _TranslationsSettingsInterfaceRu extends TranslationsSettingsInterfaceEn {
-  _TranslationsSettingsInterfaceRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsInterfaceRuRu extends TranslationsSettingsInterfaceEn {
+  _TranslationsSettingsInterfaceRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -1979,6 +1959,8 @@ class _TranslationsSettingsInterfaceRu extends TranslationsSettingsInterfaceEn {
       TranslationOverrides.string(_root.$meta, 'settings.interface.disableVibrationSubtitle', {}) ??
       'Может всё ещё происходить при некоторых действиях даже при отключении';
   @override
+  String get usePredictiveBack => TranslationOverrides.string(_root.$meta, 'settings.interface.usePredictiveBack', {}) ?? 'Анимация смахивания';
+  @override
   String get previewColumnsPortrait =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.previewColumnsPortrait', {}) ?? 'Столбцы превью (портрет)';
   @override
@@ -1999,7 +1981,7 @@ class _TranslationsSettingsInterfaceRu extends TranslationsSettingsInterfaceEn {
   @override
   String get previewQualityHelpNote =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.previewQualityHelpNote', {}) ??
-      '[Примечание]: Качество "Семплы" может заметно снизить производительность, особенно если у тебя слишком много столбцов в сетке превью';
+      '[Примечание]: Качество «Семплы» может заметно снизить производительность, особенно если у тебя слишком много столбцов в сетке превью';
   @override
   String get previewDisplay => TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplay', {}) ?? 'Отображение превью';
   @override
@@ -2029,7 +2011,7 @@ class _TranslationsSettingsInterfaceRu extends TranslationsSettingsInterfaceEn {
   String get gifThumbnails => TranslationOverrides.string(_root.$meta, 'settings.interface.gifThumbnails', {}) ?? 'GIF превью';
   @override
   String get gifThumbnailsRequires =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.gifThumbnailsRequires', {}) ?? 'Требует "Не масштабировать изображения"';
+      TranslationOverrides.string(_root.$meta, 'settings.interface.gifThumbnailsRequires', {}) ?? 'Требует «Не масштабировать изображения»';
   @override
   String get scrollPreviewsButtonsPosition =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.scrollPreviewsButtonsPosition', {}) ?? 'Позиция кнопок прокрутки превью';
@@ -2039,23 +2021,23 @@ class _TranslationsSettingsInterfaceRu extends TranslationsSettingsInterfaceEn {
   @override
   String get scrollModifier => TranslationOverrides.string(_root.$meta, 'settings.interface.scrollModifier', {}) ?? 'Модификатор прокрутки';
   @override
-  late final _TranslationsSettingsInterfacePreviewQualityValuesRu previewQualityValues = _TranslationsSettingsInterfacePreviewQualityValuesRu._(
+  late final _TranslationsSettingsInterfacePreviewQualityValuesRuRu previewQualityValues = _TranslationsSettingsInterfacePreviewQualityValuesRuRu._(
     _root,
   );
   @override
-  late final _TranslationsSettingsInterfacePreviewDisplayModeValuesRu previewDisplayModeValues =
-      _TranslationsSettingsInterfacePreviewDisplayModeValuesRu._(_root);
+  late final _TranslationsSettingsInterfacePreviewDisplayModeValuesRuRu previewDisplayModeValues =
+      _TranslationsSettingsInterfacePreviewDisplayModeValuesRuRu._(_root);
   @override
-  late final _TranslationsSettingsInterfaceAppModeValuesRu appModeValues = _TranslationsSettingsInterfaceAppModeValuesRu._(_root);
+  late final _TranslationsSettingsInterfaceAppModeValuesRuRu appModeValues = _TranslationsSettingsInterfaceAppModeValuesRuRu._(_root);
   @override
-  late final _TranslationsSettingsInterfaceHandSideValuesRu handSideValues = _TranslationsSettingsInterfaceHandSideValuesRu._(_root);
+  late final _TranslationsSettingsInterfaceHandSideValuesRuRu handSideValues = _TranslationsSettingsInterfaceHandSideValuesRuRu._(_root);
 }
 
 // Path: settings.theme
-class _TranslationsSettingsThemeRu extends TranslationsSettingsThemeEn {
-  _TranslationsSettingsThemeRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsThemeRuRu extends TranslationsSettingsThemeEn {
+  _TranslationsSettingsThemeRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -2136,10 +2118,10 @@ class _TranslationsSettingsThemeRu extends TranslationsSettingsThemeEn {
 }
 
 // Path: settings.viewer
-class _TranslationsSettingsViewerRu extends TranslationsSettingsViewerEn {
-  _TranslationsSettingsViewerRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsViewerRuRu extends TranslationsSettingsViewerEn {
+  _TranslationsSettingsViewerRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -2150,7 +2132,12 @@ class _TranslationsSettingsViewerRu extends TranslationsSettingsViewerEn {
   String get preloadSizeLimit => TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadSizeLimit', {}) ?? 'Лимит размера предзагрузки';
   @override
   String get preloadSizeLimitSubtitle =>
-      TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadSizeLimitSubtitle', {}) ?? 'в ГБ, 0 для отключения лимита';
+      TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadSizeLimitSubtitle', {}) ?? 'в ГБ, 0 для отключения';
+  @override
+  String get preloadHeightLimit => TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadHeightLimit', {}) ?? 'Лимит высоты предзагрузки';
+  @override
+  String get preloadHeightLimitSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadHeightLimitSubtitle', {}) ?? 'в пикселях, 0 для отключения';
   @override
   String get imageQuality => TranslationOverrides.string(_root.$meta, 'settings.viewer.imageQuality', {}) ?? 'Качество изображения';
   @override
@@ -2179,8 +2166,7 @@ class _TranslationsSettingsViewerRu extends TranslationsSettingsViewerEn {
   String get enableRotation => TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotation', {}) ?? 'Включить вращение';
   @override
   String get enableRotationSubtitle =>
-      TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotationSubtitle', {}) ??
-      'Двойное нажатие для сброса (работает только на изображениях)';
+      TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotationSubtitle', {}) ?? 'Двойное нажатие для сброса';
   @override
   String get toolbarButtonsOrder =>
       TranslationOverrides.string(_root.$meta, 'settings.viewer.toolbarButtonsOrder', {}) ?? 'Порядок кнопок панели инструментов';
@@ -2208,7 +2194,7 @@ class _TranslationsSettingsViewerRu extends TranslationsSettingsViewerEn {
       TranslationOverrides.string(_root.$meta, 'settings.viewer.thisButtonCannotBeDisabled', {}) ?? 'Эта кнопка не может быть отключена';
   @override
   String get defaultShareAction =>
-      TranslationOverrides.string(_root.$meta, 'settings.viewer.defaultShareAction', {}) ?? 'Действие при "Поделиться" по умолчанию';
+      TranslationOverrides.string(_root.$meta, 'settings.viewer.defaultShareAction', {}) ?? 'Действие при «Поделиться» по умолчанию';
   @override
   String get shareActions => TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActions', {}) ?? 'Поделиться';
   @override
@@ -2293,22 +2279,26 @@ class _TranslationsSettingsViewerRu extends TranslationsSettingsViewerEn {
   @override
   String get kannaLoadingGif => TranslationOverrides.string(_root.$meta, 'settings.viewer.kannaLoadingGif', {}) ?? 'GIF-пасхалка во время загрузки';
   @override
-  late final _TranslationsSettingsViewerImageQualityValuesRu imageQualityValues = _TranslationsSettingsViewerImageQualityValuesRu._(_root);
+  late final _TranslationsSettingsViewerImageQualityValuesRuRu imageQualityValues = _TranslationsSettingsViewerImageQualityValuesRuRu._(_root);
   @override
-  late final _TranslationsSettingsViewerScrollDirectionValuesRu scrollDirectionValues = _TranslationsSettingsViewerScrollDirectionValuesRu._(_root);
+  late final _TranslationsSettingsViewerScrollDirectionValuesRuRu scrollDirectionValues = _TranslationsSettingsViewerScrollDirectionValuesRuRu._(
+    _root,
+  );
   @override
-  late final _TranslationsSettingsViewerToolbarPositionValuesRu toolbarPositionValues = _TranslationsSettingsViewerToolbarPositionValuesRu._(_root);
+  late final _TranslationsSettingsViewerToolbarPositionValuesRuRu toolbarPositionValues = _TranslationsSettingsViewerToolbarPositionValuesRuRu._(
+    _root,
+  );
   @override
-  late final _TranslationsSettingsViewerButtonPositionValuesRu buttonPositionValues = _TranslationsSettingsViewerButtonPositionValuesRu._(_root);
+  late final _TranslationsSettingsViewerButtonPositionValuesRuRu buttonPositionValues = _TranslationsSettingsViewerButtonPositionValuesRuRu._(_root);
   @override
-  late final _TranslationsSettingsViewerShareActionValuesRu shareActionValues = _TranslationsSettingsViewerShareActionValuesRu._(_root);
+  late final _TranslationsSettingsViewerShareActionValuesRuRu shareActionValues = _TranslationsSettingsViewerShareActionValuesRuRu._(_root);
 }
 
 // Path: settings.video
-class _TranslationsSettingsVideoRu extends TranslationsSettingsVideoEn {
-  _TranslationsSettingsVideoRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsVideoRuRu extends TranslationsSettingsVideoEn {
+  _TranslationsSettingsVideoRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -2325,13 +2315,6 @@ class _TranslationsSettingsVideoRu extends TranslationsSettingsVideoEn {
   String get startVideosMuted => TranslationOverrides.string(_root.$meta, 'settings.video.startVideosMuted', {}) ?? 'Запускать видео без звука';
   @override
   String get experimental => TranslationOverrides.string(_root.$meta, 'settings.video.experimental', {}) ?? '[Экспериментально]';
-  @override
-  String get longTapToFastForwardVideo =>
-      TranslationOverrides.string(_root.$meta, 'settings.video.longTapToFastForwardVideo', {}) ?? 'Длительное нажатие для перемотки видео';
-  @override
-  String get longTapToFastForwardVideoHelp =>
-      TranslationOverrides.string(_root.$meta, 'settings.video.longTapToFastForwardVideoHelp', {}) ??
-      'Когда это включено, панель инструментов можно скрыть нажатием, когда элементы управления видео видны. [Экспериментально] Может стать поведением по умолчанию в будущем.';
   @override
   String get videoPlayerBackend => TranslationOverrides.string(_root.$meta, 'settings.video.videoPlayerBackend', {}) ?? 'Движок видеоплеера';
   @override
@@ -2366,18 +2349,20 @@ class _TranslationsSettingsVideoRu extends TranslationsSettingsVideoEn {
   @override
   String get videoCacheMode => TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheMode', {}) ?? 'Режим кэширования видео';
   @override
-  late final _TranslationsSettingsVideoCacheModesRu cacheModes = _TranslationsSettingsVideoCacheModesRu._(_root);
+  late final _TranslationsSettingsVideoCacheModesRuRu cacheModes = _TranslationsSettingsVideoCacheModesRuRu._(_root);
   @override
-  late final _TranslationsSettingsVideoCacheModeValuesRu cacheModeValues = _TranslationsSettingsVideoCacheModeValuesRu._(_root);
+  late final _TranslationsSettingsVideoCacheModeValuesRuRu cacheModeValues = _TranslationsSettingsVideoCacheModeValuesRuRu._(_root);
   @override
-  late final _TranslationsSettingsVideoVideoBackendModeValuesRu videoBackendModeValues = _TranslationsSettingsVideoVideoBackendModeValuesRu._(_root);
+  late final _TranslationsSettingsVideoVideoBackendModeValuesRuRu videoBackendModeValues = _TranslationsSettingsVideoVideoBackendModeValuesRuRu._(
+    _root,
+  );
 }
 
 // Path: settings.downloads
-class _TranslationsSettingsDownloadsRu extends TranslationsSettingsDownloadsEn {
-  _TranslationsSettingsDownloadsRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsDownloadsRuRu extends TranslationsSettingsDownloadsEn {
+  _TranslationsSettingsDownloadsRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -2407,14 +2392,14 @@ class _TranslationsSettingsDownloadsRu extends TranslationsSettingsDownloadsEn {
   @override
   String get clearSelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.clearSelected', {}) ?? 'Очистить выбранные';
   @override
-  String get updatingData => TranslationOverrides.string(_root.$meta, 'settings.downloads.updatingData', {}) ?? 'Обновление данных...';
+  String get updatingData => TranslationOverrides.string(_root.$meta, 'settings.downloads.updatingData', {}) ?? 'Обновление данных…';
 }
 
 // Path: settings.database
-class _TranslationsSettingsDatabaseRu extends TranslationsSettingsDatabaseEn {
-  _TranslationsSettingsDatabaseRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsDatabaseRuRu extends TranslationsSettingsDatabaseEn {
+  _TranslationsSettingsDatabaseRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -2472,11 +2457,11 @@ class _TranslationsSettingsDatabaseRu extends TranslationsSettingsDatabaseEn {
       TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryInfo', {}) ?? 'Требует включения базы данных.';
   @override
   String searchHistoryRecords({required int limit}) =>
-      TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryRecords', {'limit': limit}) ?? 'Сохраняет последние ${limit} поисков.';
+      TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryRecords', {'limit': limit}) ?? 'Сохраняет последние ${limit} поисков';
   @override
   String get searchHistoryTapInfo =>
       TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryTapInfo', {}) ??
-      'Нажми на элемент для действий (Удалить, В избранное...)';
+      'Нажми на элемент для действий (Удалить, В избранное…)';
   @override
   String get searchHistoryFavouritesInfo =>
       TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryFavouritesInfo', {}) ??
@@ -2586,10 +2571,10 @@ class _TranslationsSettingsDatabaseRu extends TranslationsSettingsDatabaseEn {
 }
 
 // Path: settings.backupAndRestore
-class _TranslationsSettingsBackupAndRestoreRu extends TranslationsSettingsBackupAndRestoreEn {
-  _TranslationsSettingsBackupAndRestoreRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsBackupAndRestoreRuRu extends TranslationsSettingsBackupAndRestoreEn {
+  _TranslationsSettingsBackupAndRestoreRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -2600,7 +2585,7 @@ class _TranslationsSettingsBackupAndRestoreRu extends TranslationsSettingsBackup
   @override
   String duplicateFileDetectedMsg({required Object fileName}) =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.duplicateFileDetectedMsg', {'fileName': fileName}) ??
-      'Файл ${fileName} уже существует. Ты хочешь его перезаписать? Усли выбрать нет, то бэкап будет отменен.';
+      'Файл ${fileName} уже существует. Ты хочешь его перезаписать? Если выбрать нет, то бэкап будет отменен.';
   @override
   String get androidOnlyFeatureMsg =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.androidOnlyFeatureMsg', {}) ??
@@ -2610,7 +2595,7 @@ class _TranslationsSettingsBackupAndRestoreRu extends TranslationsSettingsBackup
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.selectBackupDir', {}) ?? 'Выбери папку для бэкапов';
   @override
   String get failedToGetBackupPath =>
-      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.failedToGetBackupPath', {}) ?? 'Не удалось получить путь к папке бэкапов!';
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.failedToGetBackupPath', {}) ?? 'Не удалось получить путь к папке бэкапов';
   @override
   String backupPathMsg({required Object backupPath}) =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupPathMsg', {'backupPath': backupPath}) ??
@@ -2628,16 +2613,18 @@ class _TranslationsSettingsBackupAndRestoreRu extends TranslationsSettingsBackup
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreSettings', {}) ?? 'Восстановление настроек';
   @override
   String get settingsBackedUp =>
-      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.settingsBackedUp', {}) ?? 'Настроики сохранены в settings.json';
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.settingsBackedUp', {}) ?? 'Настройки сохранены в settings.json';
   @override
   String get settingsRestored =>
-      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.settingsRestored', {}) ?? 'Настроики восстановлены из бэкапа!';
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.settingsRestored', {}) ?? 'Настройки восстановлены из бэкапа';
   @override
   String get backupSettingsError =>
-      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupSettingsError', {}) ?? 'Не удалось сохранить настроики!';
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupSettingsError', {}) ?? 'Не удалось сохранить настройки';
   @override
   String get restoreSettingsError =>
-      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreSettingsError', {}) ?? 'Не удалось восстановить настроики!';
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreSettingsError', {}) ?? 'Не удалось восстановить настройки';
+  @override
+  String get resetBackupDir => TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.resetBackupDir', {}) ?? 'Сбросить папку бэкапов';
   @override
   String get backupBoorus => TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupBoorus', {}) ?? 'Бэкап конфигов сайтов';
   @override
@@ -2648,13 +2635,13 @@ class _TranslationsSettingsBackupAndRestoreRu extends TranslationsSettingsBackup
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.boorusBackedUp', {}) ?? 'Конфиги сохранены в boorus.json';
   @override
   String get boorusRestored =>
-      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.boorusRestored', {}) ?? 'Конфиги восстановлены из бэкапа!';
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.boorusRestored', {}) ?? 'Конфиги восстановлены из бэкапа';
   @override
   String get backupBoorusError =>
-      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupBoorusError', {}) ?? 'Не удалось сохранить конфиги сайтов!';
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupBoorusError', {}) ?? 'Не удалось сохранить конфиги сайтов';
   @override
   String get restoreBoorusError =>
-      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreBoorusError', {}) ?? 'Не удалось восстановить конфиги сайтов!';
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreBoorusError', {}) ?? 'Не удалось восстановить конфиги сайтов';
   @override
   String get backupDatabase => TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupDatabase', {}) ?? 'Бэкап базы данных';
   @override
@@ -2673,10 +2660,10 @@ class _TranslationsSettingsBackupAndRestoreRu extends TranslationsSettingsBackup
       'База данных восстановлена из бэкапа! Приложение будет перезапущено через несколько секунд!';
   @override
   String get backupDatabaseError =>
-      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupDatabaseError', {}) ?? 'Не удалось сохранить базу данных!';
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupDatabaseError', {}) ?? 'Не удалось сохранить базу данных';
   @override
   String get restoreDatabaseError =>
-      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreDatabaseError', {}) ?? 'Не удалось восстановить базу данных!';
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreDatabaseError', {}) ?? 'Не удалось восстановить базу данных';
   @override
   String get databaseFileNotFound =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.databaseFileNotFound', {}) ??
@@ -2692,14 +2679,13 @@ class _TranslationsSettingsBackupAndRestoreRu extends TranslationsSettingsBackup
   @override
   String get tagsBackedUp => TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.tagsBackedUp', {}) ?? 'Теги сохранены в tags.json';
   @override
-  String get tagsRestored =>
-      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.tagsRestored', {}) ?? 'Теги восстановлены из бэкапа!';
+  String get tagsRestored => TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.tagsRestored', {}) ?? 'Теги восстановлены из бэкапа';
   @override
   String get backupTagsError =>
-      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupTagsError', {}) ?? 'Не удалось сохранить теги!';
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupTagsError', {}) ?? 'Не удалось сохранить теги';
   @override
   String get restoreTagsError =>
-      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreTagsError', {}) ?? 'Не удалось восстановить теги!';
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreTagsError', {}) ?? 'Не удалось восстановить теги';
   @override
   String get tagsFileNotFound =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.tagsFileNotFound', {}) ??
@@ -2716,14 +2702,14 @@ class _TranslationsSettingsBackupAndRestoreRu extends TranslationsSettingsBackup
   String get backupDirNoAccess =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupDirNoAccess', {}) ?? 'Нет доступа к папке бэкапов!';
   @override
-  String get backupCancelled => TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupCancelled', {}) ?? 'Бэкап отменен!';
+  String get backupCancelled => TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupCancelled', {}) ?? 'Бэкап отменен';
 }
 
 // Path: settings.network
-class _TranslationsSettingsNetworkRu extends TranslationsSettingsNetworkEn {
-  _TranslationsSettingsNetworkRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsNetworkRuRu extends TranslationsSettingsNetworkEn {
+  _TranslationsSettingsNetworkRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -2738,10 +2724,10 @@ class _TranslationsSettingsNetworkRu extends TranslationsSettingsNetworkEn {
       TranslationOverrides.string(_root.$meta, 'settings.network.proxySubtitle', {}) ??
       'Не применяется к режиму потокового видео, используй вместо него режим кэширования видео';
   @override
-  String get customUserAgent => TranslationOverrides.string(_root.$meta, 'settings.network.customUserAgent', {}) ?? 'Пользовательский user agent';
+  String get customUserAgent => TranslationOverrides.string(_root.$meta, 'settings.network.customUserAgent', {}) ?? 'Пользовательский User-Agent';
   @override
   String get customUserAgentTitle =>
-      TranslationOverrides.string(_root.$meta, 'settings.network.customUserAgentTitle', {}) ?? 'Пользовательский user agent';
+      TranslationOverrides.string(_root.$meta, 'settings.network.customUserAgentTitle', {}) ?? 'Пользовательский User-Agent';
   @override
   String get keepEmptyForDefault =>
       TranslationOverrides.string(_root.$meta, 'settings.network.keepEmptyForDefault', {}) ?? 'Оставь пустым для использования значения по умолчанию';
@@ -2758,11 +2744,9 @@ class _TranslationsSettingsNetworkRu extends TranslationsSettingsNetworkEn {
   @override
   String get setBrowserUserAgent =>
       TranslationOverrides.string(_root.$meta, 'settings.network.setBrowserUserAgent', {}) ??
-      'Нажми здесь, чтобы установить рекомендуемый user agent браузера (рекомендуется только когда сайты, которые ты используешь, банят небраузерные user agent):';
+      'Нажми здесь, чтобы установить User-Agent браузера Chrome (рекомендуется только когда сайт банит небраузерные user agent)';
   @override
   String get cookieCleaner => TranslationOverrides.string(_root.$meta, 'settings.network.cookieCleaner', {}) ?? 'Очистка куки';
-  @override
-  String get booru => TranslationOverrides.string(_root.$meta, 'settings.network.booru', {}) ?? 'Сайт';
   @override
   String get selectBooruToClearCookies =>
       TranslationOverrides.string(_root.$meta, 'settings.network.selectBooruToClearCookies', {}) ??
@@ -2772,7 +2756,7 @@ class _TranslationsSettingsNetworkRu extends TranslationsSettingsNetworkEn {
       TranslationOverrides.string(_root.$meta, 'settings.network.cookiesFor', {'booruName': booruName}) ?? 'Куки для ${booruName}:';
   @override
   String cookieDeleted({required String cookieName}) =>
-      TranslationOverrides.string(_root.$meta, 'settings.network.cookieDeleted', {'cookieName': cookieName}) ?? 'Куки "${cookieName}" удалено';
+      TranslationOverrides.string(_root.$meta, 'settings.network.cookieDeleted', {'cookieName': cookieName}) ?? 'Куки «${cookieName}» удалено';
   @override
   String get clearCookies => TranslationOverrides.string(_root.$meta, 'settings.network.clearCookies', {}) ?? 'Очистить куки';
   @override
@@ -2787,10 +2771,10 @@ class _TranslationsSettingsNetworkRu extends TranslationsSettingsNetworkEn {
 }
 
 // Path: settings.privacy
-class _TranslationsSettingsPrivacyRu extends TranslationsSettingsPrivacyEn {
-  _TranslationsSettingsPrivacyRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsPrivacyRuRu extends TranslationsSettingsPrivacyEn {
+  _TranslationsSettingsPrivacyRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -2839,10 +2823,10 @@ class _TranslationsSettingsPrivacyRu extends TranslationsSettingsPrivacyEn {
 }
 
 // Path: settings.performance
-class _TranslationsSettingsPerformanceRu extends TranslationsSettingsPerformanceEn {
-  _TranslationsSettingsPerformanceRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsPerformanceRuRu extends TranslationsSettingsPerformanceEn {
+  _TranslationsSettingsPerformanceRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -2864,71 +2848,11 @@ class _TranslationsSettingsPerformanceRu extends TranslationsSettingsPerformance
   @override
   String get lowPerformanceModeDialogDisablesResourceIntensive =>
       TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeDialogDisablesResourceIntensive', {}) ??
-      '- Отключает ресурсоёмкие элементы (размытие, анимированная прозрачность, некоторые анимации...)';
+      '- Отключает ресурсоёмкие элементы (размытие, анимированная прозрачность, некоторые анимации…)';
   @override
   String get lowPerformanceModeDialogSetsOptimal =>
       TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeDialogSetsOptimal', {}) ??
-      '- Устанавливает оптимальные настройки для этих опций (ты можешь потом изменить их отдельно):';
-  @override
-  String get lowPerformanceModeDialogPreviewQuality =>
-      TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeDialogPreviewQuality', {}) ??
-      '   - Качество предпросмотра [Миниатюра]';
-  @override
-  String get lowPerformanceModeDialogImageQuality =>
-      TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeDialogImageQuality', {}) ??
-      '   - Качество изображения [Семпл]';
-  @override
-  String get lowPerformanceModeDialogPreviewColumns =>
-      TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeDialogPreviewColumns', {}) ??
-      '   - Столбцы превью [2 - портрет, 4 - ландшафт]';
-  @override
-  String get lowPerformanceModeDialogPreloadAmount =>
-      TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeDialogPreloadAmount', {}) ??
-      '   - Количество и лимит предзагрузки [0, 0.2]';
-  @override
-  String get lowPerformanceModeDialogVideoAutoplay =>
-      TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeDialogVideoAutoplay', {}) ??
-      '   - Автовоспроизведение видео [отключено]';
-  @override
-  String get lowPerformanceModeDialogDontScaleImages =>
-      TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeDialogDontScaleImages', {}) ??
-      '   - Не масштабировать изображения [отключено]';
-  @override
-  String get previewQuality => TranslationOverrides.string(_root.$meta, 'settings.performance.previewQuality', {}) ?? 'Качество превью';
-  @override
-  String get imageQuality => TranslationOverrides.string(_root.$meta, 'settings.performance.imageQuality', {}) ?? 'Качество изображения';
-  @override
-  String get previewColumnsPortrait =>
-      TranslationOverrides.string(_root.$meta, 'settings.performance.previewColumnsPortrait', {}) ?? 'Столбцы превью (портрет)';
-  @override
-  String get previewColumnsLandscape =>
-      TranslationOverrides.string(_root.$meta, 'settings.performance.previewColumnsLandscape', {}) ?? 'Столбцы превью (ландшафт)';
-  @override
-  String get preloadAmount => TranslationOverrides.string(_root.$meta, 'settings.performance.preloadAmount', {}) ?? 'Количество предзагрузки';
-  @override
-  String get preloadSizeLimit =>
-      TranslationOverrides.string(_root.$meta, 'settings.performance.preloadSizeLimit', {}) ?? 'Лимит размера предзагрузки';
-  @override
-  String get preloadSizeLimitSubtitle =>
-      TranslationOverrides.string(_root.$meta, 'settings.performance.preloadSizeLimitSubtitle', {}) ?? 'в ГБ, 0 чтобы убрать лимит';
-  @override
-  String get dontScaleImages =>
-      TranslationOverrides.string(_root.$meta, 'settings.performance.dontScaleImages', {}) ?? 'Не масштабировать изображения';
-  @override
-  String get dontScaleImagesSubtitle =>
-      TranslationOverrides.string(_root.$meta, 'settings.performance.dontScaleImagesSubtitle', {}) ??
-      'Отключает масштабирование изображений, которое используется для улучшения производительности';
-  @override
-  String get dontScaleImagesWarningTitle =>
-      TranslationOverrides.string(_root.$meta, 'settings.performance.dontScaleImagesWarningTitle', {}) ?? 'Предупреждение';
-  @override
-  String get dontScaleImagesWarningMsg =>
-      TranslationOverrides.string(_root.$meta, 'settings.performance.dontScaleImagesWarningMsg', {}) ??
-      'Ты уверен, что хочешь отключить масштабирование изображений?';
-  @override
-  String get dontScaleImagesWarningPerformance =>
-      TranslationOverrides.string(_root.$meta, 'settings.performance.dontScaleImagesWarningPerformance', {}) ??
-      'Это может негативно повлиять на производительность, особенно на старых устройствах';
+      'Устанавливает оптимальные настройки для этих опций (ты можешь потом изменить их отдельно):';
   @override
   String get autoplayVideos => TranslationOverrides.string(_root.$meta, 'settings.performance.autoplayVideos', {}) ?? 'Автовоспроизведение видео';
   @override
@@ -2940,18 +2864,18 @@ class _TranslationsSettingsPerformanceRu extends TranslationsSettingsPerformance
 }
 
 // Path: settings.cache
-class _TranslationsSettingsCacheRu extends TranslationsSettingsCacheEn {
-  _TranslationsSettingsCacheRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsCacheRuRu extends TranslationsSettingsCacheEn {
+  _TranslationsSettingsCacheRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
-  String get title => TranslationOverrides.string(_root.$meta, 'settings.cache.title', {}) ?? 'Кэш';
+  String get title => TranslationOverrides.string(_root.$meta, 'settings.cache.title', {}) ?? 'Скачивание и Кэш';
   @override
-  String get snatchQuality => TranslationOverrides.string(_root.$meta, 'settings.cache.snatchQuality', {}) ?? 'Качество сохраненных';
+  String get snatchQuality => TranslationOverrides.string(_root.$meta, 'settings.cache.snatchQuality', {}) ?? 'Качество скачивания';
   @override
-  String get snatchCooldown => TranslationOverrides.string(_root.$meta, 'settings.cache.snatchCooldown', {}) ?? 'Задержка между загрузками (в мс)';
+  String get snatchCooldown => TranslationOverrides.string(_root.$meta, 'settings.cache.snatchCooldown', {}) ?? 'Задержка между скачиваниями (в мс)';
   @override
   String get pleaseEnterAValidTimeout =>
       TranslationOverrides.string(_root.$meta, 'settings.cache.pleaseEnterAValidTimeout', {}) ??
@@ -2960,19 +2884,19 @@ class _TranslationsSettingsCacheRu extends TranslationsSettingsCacheEn {
   String get biggerThan10 => TranslationOverrides.string(_root.$meta, 'settings.cache.biggerThan10', {}) ?? 'Пожалуйста, введи значение больше 10мс';
   @override
   String get showDownloadNotifications =>
-      TranslationOverrides.string(_root.$meta, 'settings.cache.showDownloadNotifications', {}) ?? 'Показывать уведомления о загрузке';
+      TranslationOverrides.string(_root.$meta, 'settings.cache.showDownloadNotifications', {}) ?? 'Показывать уведомления о скачивании';
   @override
   String get snatchItemsOnFavouriting =>
       TranslationOverrides.string(_root.$meta, 'settings.cache.snatchItemsOnFavouriting', {}) ?? 'Скачивать при добавлении в избранное';
   @override
   String get favouriteItemsOnSnatching =>
-      TranslationOverrides.string(_root.$meta, 'settings.cache.favouriteItemsOnSnatching', {}) ?? 'Добавлять в избранное при сохранении';
+      TranslationOverrides.string(_root.$meta, 'settings.cache.favouriteItemsOnSnatching', {}) ?? 'Добавлять в избранное при скачивании';
   @override
   String get writeImageDataOnSave =>
-      TranslationOverrides.string(_root.$meta, 'settings.cache.writeImageDataOnSave', {}) ?? 'Записывать данные в JSON при сохранении';
+      TranslationOverrides.string(_root.$meta, 'settings.cache.writeImageDataOnSave', {}) ?? 'Записывать данные в JSON при скачивании';
   @override
   String get requiresCustomStorageDirectory =>
-      TranslationOverrides.string(_root.$meta, 'settings.cache.requiresCustomStorageDirectory', {}) ?? 'Необходимо настроить пользовательскую папку';
+      TranslationOverrides.string(_root.$meta, 'settings.cache.requiresCustomStorageDirectory', {}) ?? 'Необходимо назначить папку хранилища';
   @override
   String get setStorageDirectory => TranslationOverrides.string(_root.$meta, 'settings.cache.setStorageDirectory', {}) ?? 'Назначить папку хранилища';
   @override
@@ -3020,7 +2944,7 @@ class _TranslationsSettingsCacheRu extends TranslationsSettingsCacheEn {
   @override
   String get cacheStats => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheStats', {}) ?? 'Статистика кэша:';
   @override
-  String get loading => TranslationOverrides.string(_root.$meta, 'settings.cache.loading', {}) ?? 'Загрузка...';
+  String get loading => TranslationOverrides.string(_root.$meta, 'settings.cache.loading', {}) ?? 'Загрузка…';
   @override
   String get empty => TranslationOverrides.string(_root.$meta, 'settings.cache.empty', {}) ?? 'Пусто';
   @override
@@ -3061,55 +2985,50 @@ class _TranslationsSettingsCacheRu extends TranslationsSettingsCacheEn {
       TranslationOverrides.string(_root.$meta, 'settings.cache.notAvailableForPlatform', {}) ?? 'В данный момент недоступно для этой платформы';
 }
 
-// Path: settings.tagsFilters
-class _TranslationsSettingsTagsFiltersRu extends TranslationsSettingsTagsFiltersEn {
-  _TranslationsSettingsTagsFiltersRu._(TranslationsRu root) : this._root = root, super.internal(root);
+// Path: settings.itemFilters
+class _TranslationsSettingsItemFiltersRuRu extends TranslationsSettingsItemFiltersEn {
+  _TranslationsSettingsItemFiltersRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
-  String get title => TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.title', {}) ?? 'Фильтры тегов';
+  String get title => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.title', {}) ?? 'Фильтры тегов';
   @override
-  String get hated => TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.hated', {}) ?? 'Ненавистные';
+  String get hidden => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hidden', {}) ?? 'Скрытые';
   @override
-  String get loved => TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.loved', {}) ?? 'Любимые';
+  String get marked => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.marked', {}) ?? 'Отмеченные';
   @override
-  String get duplicateTag => TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.duplicateTag', {}) ?? 'Дублирующийся тег';
+  String get duplicateFilter => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.duplicateFilter', {}) ?? 'Дублирующийся фильтр';
   @override
   String alreadyInList({required String tag, required String type}) =>
-      TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.alreadyInList', {'tag': tag, 'type': type}) ??
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.alreadyInList', {'tag': tag, 'type': type}) ??
       '\'${tag}\' уже есть в списке ${type}';
   @override
-  String searchFiltersCount({required int count}) =>
-      TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.searchFiltersCount', {'count': count}) ?? 'Искать фильтры (${count})';
+  String get noFiltersFound => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noFiltersFound', {}) ?? 'Фильтры не найдены';
   @override
-  String searchFiltersFilteredCount({required int filtered, required int total}) =>
-      TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.searchFiltersFilteredCount', {'filtered': filtered, 'total': total}) ??
-      'Искать фильтры (${filtered}/${total})';
+  String get noFiltersAdded => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noFiltersAdded', {}) ?? 'Нет фильтров';
   @override
-  String get noFiltersFound => TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.noFiltersFound', {}) ?? 'Фильтры не найдены';
+  String get removeHidden =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeHidden', {}) ??
+      'Полностью скрыть элементы, подпадающие под Скрытые фильтры';
   @override
-  String get noFiltersAdded => TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.noFiltersAdded', {}) ?? 'Нет фильтров';
+  String get removeMarked =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarked', {}) ??
+      'Полностью скрыть элементы, подпадающие под Отмеченные фильтры';
   @override
-  String get searchFilters => TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.searchFilters', {}) ?? 'Искать фильтры';
+  String get removeFavourited => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeFavourited', {}) ?? 'Скрыть избранные элементы';
   @override
-  String get removeHated =>
-      TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.removeHated', {}) ?? 'Скрывать элементы с ненавистными тегами';
+  String get removeSnatched => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeSnatched', {}) ?? 'Скрыть скачанные элементы';
   @override
-  String get removeFavourited =>
-      TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.removeFavourited', {}) ?? 'Скрывать избранные элементы';
-  @override
-  String get removeSnatched => TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.removeSnatched', {}) ?? 'Скрывать скачанные элементы';
-  @override
-  String get removeAI => TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.removeAI', {}) ?? 'Скрывать элементы с ИИ тегами';
+  String get removeAI => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeAI', {}) ?? 'Скрыть элементы с ИИ тегами';
 }
 
 // Path: settings.sync
-class _TranslationsSettingsSyncRu extends TranslationsSettingsSyncEn {
-  _TranslationsSettingsSyncRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsSyncRuRu extends TranslationsSettingsSyncEn {
+  _TranslationsSettingsSyncRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3153,7 +3072,7 @@ class _TranslationsSettingsSyncRu extends TranslationsSettingsSyncEn {
   String get sendFavouritesLegacy =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.sendFavouritesLegacy', {}) ?? 'Отправить избранное (Устаревшее)';
   @override
-  String get syncFavsFrom => TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFrom', {}) ?? 'Синхронизировать избранное с #...';
+  String get syncFavsFrom => TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFrom', {}) ?? 'Синхронизировать избранное с #…';
   @override
   String get syncFavsFromHelpText1 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText1', {}) ??
@@ -3175,8 +3094,7 @@ class _TranslationsSettingsSyncRu extends TranslationsSettingsSyncEn {
   String snatchedCount({required String count}) =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.snatchedCount', {'count': count}) ?? 'Скачанное: ${count}';
   @override
-  String get syncSnatchedFrom =>
-      TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFrom', {}) ?? 'Синхронизировать скачанное с #...';
+  String get syncSnatchedFrom => TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFrom', {}) ?? 'Синхронизировать скачанное с #…';
   @override
   String get syncSnatchedFromHelpText1 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText1', {}) ??
@@ -3228,13 +3146,13 @@ class _TranslationsSettingsSyncRu extends TranslationsSettingsSyncEn {
   @override
   String get tagsSyncModePreferTypeIfNone =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncModePreferTypeIfNone', {}) ??
-      'ПредпочитатьТипЕслиНет: Если тег существует с типом тега на другом устройстве, а на этом устройстве нет, он будет пропущен';
+      'Сохранять тип: Если тег существует с типом тега на другом устройстве, а на этом устройстве нет, он будет пропущен';
   @override
   String get tagsSyncModeOverwrite =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncModeOverwrite', {}) ??
       'Перезаписать: Все теги будут добавлены, если тег и тип тега существуют на другом устройстве, они будут перезаписаны';
   @override
-  String get preferTypeIfNone => TranslationOverrides.string(_root.$meta, 'settings.sync.preferTypeIfNone', {}) ?? 'ПредпочитатьТипЕслиНет';
+  String get preferTypeIfNone => TranslationOverrides.string(_root.$meta, 'settings.sync.preferTypeIfNone', {}) ?? 'Сохранять тип';
   @override
   String get overwrite => TranslationOverrides.string(_root.$meta, 'settings.sync.overwrite', {}) ?? 'Перезаписать';
   @override
@@ -3276,10 +3194,10 @@ class _TranslationsSettingsSyncRu extends TranslationsSettingsSyncEn {
 }
 
 // Path: settings.about
-class _TranslationsSettingsAboutRu extends TranslationsSettingsAboutEn {
-  _TranslationsSettingsAboutRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsAboutRuRu extends TranslationsSettingsAboutEn {
+  _TranslationsSettingsAboutRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3293,13 +3211,15 @@ class _TranslationsSettingsAboutRu extends TranslationsSettingsAboutEn {
   @override
   String get contact => TranslationOverrides.string(_root.$meta, 'settings.about.contact', {}) ?? 'Связаться';
   @override
-  String get emailCopied => TranslationOverrides.string(_root.$meta, 'settings.about.emailCopied', {}) ?? 'Email скопирован!';
+  String get emailCopied => TranslationOverrides.string(_root.$meta, 'settings.about.emailCopied', {}) ?? 'Email скопирован';
   @override
   String get logoArtistThanks =>
       TranslationOverrides.string(_root.$meta, 'settings.about.logoArtistThanks', {}) ??
       'Большая благодарность Showers-U за разрешение на использование их работы для лого приложения. Пожалуйста, зацените их работы на Pixiv';
   @override
   String get developers => TranslationOverrides.string(_root.$meta, 'settings.about.developers', {}) ?? 'Разработчики';
+  @override
+  String get localizers => TranslationOverrides.string(_root.$meta, 'settings.about.localizers', {}) ?? 'Переводчики';
   @override
   String get releases => TranslationOverrides.string(_root.$meta, 'settings.about.releases', {}) ?? 'Релизы';
   @override
@@ -3311,10 +3231,10 @@ class _TranslationsSettingsAboutRu extends TranslationsSettingsAboutEn {
 }
 
 // Path: settings.checkForUpdates
-class _TranslationsSettingsCheckForUpdatesRu extends TranslationsSettingsCheckForUpdatesEn {
-  _TranslationsSettingsCheckForUpdatesRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsCheckForUpdatesRuRu extends TranslationsSettingsCheckForUpdatesEn {
+  _TranslationsSettingsCheckForUpdatesRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3331,7 +3251,7 @@ class _TranslationsSettingsCheckForUpdatesRu extends TranslationsSettingsCheckFo
       TranslationOverrides.string(_root.$meta, 'settings.checkForUpdates.updateCheckError', {}) ?? 'Ошибка при проверке обновлений!';
   @override
   String get youHaveLatestVersion =>
-      TranslationOverrides.string(_root.$meta, 'settings.checkForUpdates.youHaveLatestVersion', {}) ?? 'У тебя последняя версия!';
+      TranslationOverrides.string(_root.$meta, 'settings.checkForUpdates.youHaveLatestVersion', {}) ?? 'У тебя последняя версия';
   @override
   String get viewLatestChangelog =>
       TranslationOverrides.string(_root.$meta, 'settings.checkForUpdates.viewLatestChangelog', {}) ?? 'Посмотреть последний список изменений';
@@ -3346,10 +3266,10 @@ class _TranslationsSettingsCheckForUpdatesRu extends TranslationsSettingsCheckFo
 }
 
 // Path: settings.logs
-class _TranslationsSettingsLogsRu extends TranslationsSettingsLogsEn {
-  _TranslationsSettingsLogsRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsLogsRuRu extends TranslationsSettingsLogsEn {
+  _TranslationsSettingsLogsRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3366,10 +3286,10 @@ class _TranslationsSettingsLogsRu extends TranslationsSettingsLogsEn {
 }
 
 // Path: settings.help
-class _TranslationsSettingsHelpRu extends TranslationsSettingsHelpEn {
-  _TranslationsSettingsHelpRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsHelpRuRu extends TranslationsSettingsHelpEn {
+  _TranslationsSettingsHelpRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3377,10 +3297,10 @@ class _TranslationsSettingsHelpRu extends TranslationsSettingsHelpEn {
 }
 
 // Path: settings.debug
-class _TranslationsSettingsDebugRu extends TranslationsSettingsDebugEn {
-  _TranslationsSettingsDebugRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsDebugRuRu extends TranslationsSettingsDebugEn {
+  _TranslationsSettingsDebugRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3415,18 +3335,6 @@ class _TranslationsSettingsDebugRu extends TranslationsSettingsDebugEn {
   @override
   String get tagsManager => TranslationOverrides.string(_root.$meta, 'settings.debug.tagsManager', {}) ?? 'Менеджер тегов';
   @override
-  String get vibration => TranslationOverrides.string(_root.$meta, 'settings.debug.vibration', {}) ?? 'Вибрация';
-  @override
-  String get vibrationTests => TranslationOverrides.string(_root.$meta, 'settings.debug.vibrationTests', {}) ?? 'Тесты вибрации';
-  @override
-  String get duration => TranslationOverrides.string(_root.$meta, 'settings.debug.duration', {}) ?? 'Длительность';
-  @override
-  String get amplitude => TranslationOverrides.string(_root.$meta, 'settings.debug.amplitude', {}) ?? 'Амплитуда';
-  @override
-  String get flutterway => TranslationOverrides.string(_root.$meta, 'settings.debug.flutterway', {}) ?? 'Flutterway';
-  @override
-  String get vibrate => TranslationOverrides.string(_root.$meta, 'settings.debug.vibrate', {}) ?? 'Вибрировать';
-  @override
   String resolution({required String width, required String height}) =>
       TranslationOverrides.string(_root.$meta, 'settings.debug.resolution', {'width': width, 'height': height}) ?? 'Разрешение: ${width}x${height}';
   @override
@@ -3453,10 +3361,10 @@ class _TranslationsSettingsDebugRu extends TranslationsSettingsDebugEn {
 }
 
 // Path: settings.logging
-class _TranslationsSettingsLoggingRu extends TranslationsSettingsLoggingEn {
-  _TranslationsSettingsLoggingRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsLoggingRuRu extends TranslationsSettingsLoggingEn {
+  _TranslationsSettingsLoggingRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3464,10 +3372,10 @@ class _TranslationsSettingsLoggingRu extends TranslationsSettingsLoggingEn {
 }
 
 // Path: settings.webview
-class _TranslationsSettingsWebviewRu extends TranslationsSettingsWebviewEn {
-  _TranslationsSettingsWebviewRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsWebviewRuRu extends TranslationsSettingsWebviewEn {
+  _TranslationsSettingsWebviewRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3478,10 +3386,10 @@ class _TranslationsSettingsWebviewRu extends TranslationsSettingsWebviewEn {
 }
 
 // Path: settings.dirPicker
-class _TranslationsSettingsDirPickerRu extends TranslationsSettingsDirPickerEn {
-  _TranslationsSettingsDirPickerRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsDirPickerRuRu extends TranslationsSettingsDirPickerEn {
+  _TranslationsSettingsDirPickerRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3510,10 +3418,10 @@ class _TranslationsSettingsDirPickerRu extends TranslationsSettingsDirPickerEn {
 }
 
 // Path: viewer.tutorial
-class _TranslationsViewerTutorialRu extends TranslationsViewerTutorialEn {
-  _TranslationsViewerTutorialRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsViewerTutorialRuRu extends TranslationsViewerTutorialEn {
+  _TranslationsViewerTutorialRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3529,10 +3437,10 @@ class _TranslationsViewerTutorialRu extends TranslationsViewerTutorialEn {
 }
 
 // Path: viewer.appBar
-class _TranslationsViewerAppBarRu extends TranslationsViewerAppBarEn {
-  _TranslationsViewerAppBarRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsViewerAppBarRuRu extends TranslationsViewerAppBarEn {
+  _TranslationsViewerAppBarRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3615,10 +3523,10 @@ class _TranslationsViewerAppBarRu extends TranslationsViewerAppBarEn {
 }
 
 // Path: viewer.notes
-class _TranslationsViewerNotesRu extends TranslationsViewerNotesEn {
-  _TranslationsViewerNotesRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsViewerNotesRuRu extends TranslationsViewerNotesEn {
+  _TranslationsViewerNotesRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3631,23 +3539,23 @@ class _TranslationsViewerNotesRu extends TranslationsViewerNotesEn {
 }
 
 // Path: media.loading
-class _TranslationsMediaLoadingRu extends TranslationsMediaLoadingEn {
-  _TranslationsMediaLoadingRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsMediaLoadingRuRu extends TranslationsMediaLoadingEn {
+  _TranslationsMediaLoadingRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
-  String get rendering => TranslationOverrides.string(_root.$meta, 'media.loading.rendering', {}) ?? 'Рендеринг...';
+  String get rendering => TranslationOverrides.string(_root.$meta, 'media.loading.rendering', {}) ?? 'Рендеринг…';
   @override
   String get loadingAndRenderingFromCache =>
-      TranslationOverrides.string(_root.$meta, 'media.loading.loadingAndRenderingFromCache', {}) ?? 'Загрузка и рендеринг из кэша...';
+      TranslationOverrides.string(_root.$meta, 'media.loading.loadingAndRenderingFromCache', {}) ?? 'Загрузка и рендеринг из кэша…';
   @override
-  String get loadingFromCache => TranslationOverrides.string(_root.$meta, 'media.loading.loadingFromCache', {}) ?? 'Загрузка из кэша...';
+  String get loadingFromCache => TranslationOverrides.string(_root.$meta, 'media.loading.loadingFromCache', {}) ?? 'Загрузка из кэша…';
   @override
-  String get buffering => TranslationOverrides.string(_root.$meta, 'media.loading.buffering', {}) ?? 'Буферизация...';
+  String get buffering => TranslationOverrides.string(_root.$meta, 'media.loading.buffering', {}) ?? 'Буферизация…';
   @override
-  String get loading => TranslationOverrides.string(_root.$meta, 'media.loading.loading', {}) ?? 'Загрузка...';
+  String get loading => TranslationOverrides.string(_root.$meta, 'media.loading.loading', {}) ?? 'Загрузка…';
   @override
   String get loadAnyway => TranslationOverrides.string(_root.$meta, 'media.loading.loadAnyway', {}) ?? 'Все равно загрузить';
   @override
@@ -3658,7 +3566,7 @@ class _TranslationsMediaLoadingRu extends TranslationsMediaLoadingEn {
   String startedSecondsAgo({required int seconds}) =>
       TranslationOverrides.string(_root.$meta, 'media.loading.startedSecondsAgo', {'seconds': seconds}) ?? 'Начато ${seconds}с назад';
   @override
-  late final _TranslationsMediaLoadingStopReasonsRu stopReasons = _TranslationsMediaLoadingStopReasonsRu._(_root);
+  late final _TranslationsMediaLoadingStopReasonsRuRu stopReasons = _TranslationsMediaLoadingStopReasonsRuRu._(_root);
   @override
   String get fileIsZeroBytes => TranslationOverrides.string(_root.$meta, 'media.loading.fileIsZeroBytes', {}) ?? 'Пустой файл';
   @override
@@ -3674,10 +3582,10 @@ class _TranslationsMediaLoadingRu extends TranslationsMediaLoadingEn {
 }
 
 // Path: media.video
-class _TranslationsMediaVideoRu extends TranslationsMediaVideoEn {
-  _TranslationsMediaVideoRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsMediaVideoRuRu extends TranslationsMediaVideoEn {
+  _TranslationsMediaVideoRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3692,7 +3600,7 @@ class _TranslationsMediaVideoRu extends TranslationsMediaVideoEn {
   String get failedToLoadItemData =>
       TranslationOverrides.string(_root.$meta, 'media.video.failedToLoadItemData', {}) ?? 'Не удалось загрузить данные об элементе';
   @override
-  String get loadingItemData => TranslationOverrides.string(_root.$meta, 'media.video.loadingItemData', {}) ?? 'Загрузка данных об элементе...';
+  String get loadingItemData => TranslationOverrides.string(_root.$meta, 'media.video.loadingItemData', {}) ?? 'Загрузка данных об элементе…';
   @override
   String get retry => TranslationOverrides.string(_root.$meta, 'media.video.retry', {}) ?? 'Повторить';
   @override
@@ -3708,10 +3616,10 @@ class _TranslationsMediaVideoRu extends TranslationsMediaVideoEn {
 }
 
 // Path: preview.error
-class _TranslationsPreviewErrorRu extends TranslationsPreviewErrorEn {
-  _TranslationsPreviewErrorRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsPreviewErrorRuRu extends TranslationsPreviewErrorEn {
+  _TranslationsPreviewErrorRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3724,10 +3632,10 @@ class _TranslationsPreviewErrorRu extends TranslationsPreviewErrorEn {
   @override
   String reachedEndSubtitle({required int pageNum}) =>
       TranslationOverrides.string(_root.$meta, 'preview.error.reachedEndSubtitle', {'pageNum': pageNum}) ??
-      'Загружено ${pageNum} страниц\nНажми здесь, чтобы перезагрузить последнюю страницу';
+      'Загружено страниц: ${pageNum}\nНажми здесь, чтобы перезагрузить последнюю страницу';
   @override
   String loadingPage({required int pageNum}) =>
-      TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? 'Загрузка страницы №${pageNum}...';
+      TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? 'Загрузка страницы №${pageNum}…';
   @override
   String startedAgo({required num seconds}) =>
       TranslationOverrides.plural(_root.$meta, 'preview.error.startedAgo', {'seconds': seconds}) ??
@@ -3755,10 +3663,10 @@ class _TranslationsPreviewErrorRu extends TranslationsPreviewErrorEn {
 }
 
 // Path: settings.interface.previewQualityValues
-class _TranslationsSettingsInterfacePreviewQualityValuesRu extends TranslationsSettingsInterfacePreviewQualityValuesEn {
-  _TranslationsSettingsInterfacePreviewQualityValuesRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsInterfacePreviewQualityValuesRuRu extends TranslationsSettingsInterfacePreviewQualityValuesEn {
+  _TranslationsSettingsInterfacePreviewQualityValuesRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3768,10 +3676,10 @@ class _TranslationsSettingsInterfacePreviewQualityValuesRu extends TranslationsS
 }
 
 // Path: settings.interface.previewDisplayModeValues
-class _TranslationsSettingsInterfacePreviewDisplayModeValuesRu extends TranslationsSettingsInterfacePreviewDisplayModeValuesEn {
-  _TranslationsSettingsInterfacePreviewDisplayModeValuesRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsInterfacePreviewDisplayModeValuesRuRu extends TranslationsSettingsInterfacePreviewDisplayModeValuesEn {
+  _TranslationsSettingsInterfacePreviewDisplayModeValuesRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3783,10 +3691,10 @@ class _TranslationsSettingsInterfacePreviewDisplayModeValuesRu extends Translati
 }
 
 // Path: settings.interface.appModeValues
-class _TranslationsSettingsInterfaceAppModeValuesRu extends TranslationsSettingsInterfaceAppModeValuesEn {
-  _TranslationsSettingsInterfaceAppModeValuesRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsInterfaceAppModeValuesRuRu extends TranslationsSettingsInterfaceAppModeValuesEn {
+  _TranslationsSettingsInterfaceAppModeValuesRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3796,10 +3704,10 @@ class _TranslationsSettingsInterfaceAppModeValuesRu extends TranslationsSettings
 }
 
 // Path: settings.interface.handSideValues
-class _TranslationsSettingsInterfaceHandSideValuesRu extends TranslationsSettingsInterfaceHandSideValuesEn {
-  _TranslationsSettingsInterfaceHandSideValuesRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsInterfaceHandSideValuesRuRu extends TranslationsSettingsInterfaceHandSideValuesEn {
+  _TranslationsSettingsInterfaceHandSideValuesRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3809,10 +3717,10 @@ class _TranslationsSettingsInterfaceHandSideValuesRu extends TranslationsSetting
 }
 
 // Path: settings.viewer.imageQualityValues
-class _TranslationsSettingsViewerImageQualityValuesRu extends TranslationsSettingsViewerImageQualityValuesEn {
-  _TranslationsSettingsViewerImageQualityValuesRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsViewerImageQualityValuesRuRu extends TranslationsSettingsViewerImageQualityValuesEn {
+  _TranslationsSettingsViewerImageQualityValuesRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3822,10 +3730,10 @@ class _TranslationsSettingsViewerImageQualityValuesRu extends TranslationsSettin
 }
 
 // Path: settings.viewer.scrollDirectionValues
-class _TranslationsSettingsViewerScrollDirectionValuesRu extends TranslationsSettingsViewerScrollDirectionValuesEn {
-  _TranslationsSettingsViewerScrollDirectionValuesRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsViewerScrollDirectionValuesRuRu extends TranslationsSettingsViewerScrollDirectionValuesEn {
+  _TranslationsSettingsViewerScrollDirectionValuesRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3835,10 +3743,10 @@ class _TranslationsSettingsViewerScrollDirectionValuesRu extends TranslationsSet
 }
 
 // Path: settings.viewer.toolbarPositionValues
-class _TranslationsSettingsViewerToolbarPositionValuesRu extends TranslationsSettingsViewerToolbarPositionValuesEn {
-  _TranslationsSettingsViewerToolbarPositionValuesRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsViewerToolbarPositionValuesRuRu extends TranslationsSettingsViewerToolbarPositionValuesEn {
+  _TranslationsSettingsViewerToolbarPositionValuesRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3848,10 +3756,10 @@ class _TranslationsSettingsViewerToolbarPositionValuesRu extends TranslationsSet
 }
 
 // Path: settings.viewer.buttonPositionValues
-class _TranslationsSettingsViewerButtonPositionValuesRu extends TranslationsSettingsViewerButtonPositionValuesEn {
-  _TranslationsSettingsViewerButtonPositionValuesRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsViewerButtonPositionValuesRuRu extends TranslationsSettingsViewerButtonPositionValuesEn {
+  _TranslationsSettingsViewerButtonPositionValuesRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3863,10 +3771,10 @@ class _TranslationsSettingsViewerButtonPositionValuesRu extends TranslationsSett
 }
 
 // Path: settings.viewer.shareActionValues
-class _TranslationsSettingsViewerShareActionValuesRu extends TranslationsSettingsViewerShareActionValuesEn {
-  _TranslationsSettingsViewerShareActionValuesRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsViewerShareActionValuesRuRu extends TranslationsSettingsViewerShareActionValuesEn {
+  _TranslationsSettingsViewerShareActionValuesRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3890,10 +3798,10 @@ class _TranslationsSettingsViewerShareActionValuesRu extends TranslationsSetting
 }
 
 // Path: settings.video.cacheModes
-class _TranslationsSettingsVideoCacheModesRu extends TranslationsSettingsVideoCacheModesEn {
-  _TranslationsSettingsVideoCacheModesRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsVideoCacheModesRuRu extends TranslationsSettingsVideoCacheModesEn {
+  _TranslationsSettingsVideoCacheModesRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3921,10 +3829,10 @@ class _TranslationsSettingsVideoCacheModesRu extends TranslationsSettingsVideoCa
 }
 
 // Path: settings.video.cacheModeValues
-class _TranslationsSettingsVideoCacheModeValuesRu extends TranslationsSettingsVideoCacheModeValuesEn {
-  _TranslationsSettingsVideoCacheModeValuesRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsVideoCacheModeValuesRuRu extends TranslationsSettingsVideoCacheModeValuesEn {
+  _TranslationsSettingsVideoCacheModeValuesRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3936,10 +3844,10 @@ class _TranslationsSettingsVideoCacheModeValuesRu extends TranslationsSettingsVi
 }
 
 // Path: settings.video.videoBackendModeValues
-class _TranslationsSettingsVideoVideoBackendModeValuesRu extends TranslationsSettingsVideoVideoBackendModeValuesEn {
-  _TranslationsSettingsVideoVideoBackendModeValuesRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsSettingsVideoVideoBackendModeValuesRuRu extends TranslationsSettingsVideoVideoBackendModeValuesEn {
+  _TranslationsSettingsVideoVideoBackendModeValuesRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3951,10 +3859,10 @@ class _TranslationsSettingsVideoVideoBackendModeValuesRu extends TranslationsSet
 }
 
 // Path: media.loading.stopReasons
-class _TranslationsMediaLoadingStopReasonsRu extends TranslationsMediaLoadingStopReasonsEn {
-  _TranslationsMediaLoadingStopReasonsRu._(TranslationsRu root) : this._root = root, super.internal(root);
+class _TranslationsMediaLoadingStopReasonsRuRu extends TranslationsMediaLoadingStopReasonsEn {
+  _TranslationsMediaLoadingStopReasonsRuRu._(TranslationsRuRu root) : this._root = root, super.internal(root);
 
-  final TranslationsRu _root; // ignore: unused_field
+  final TranslationsRuRu _root; // ignore: unused_field
 
   // Translations
   @override
@@ -3964,21 +3872,20 @@ class _TranslationsMediaLoadingStopReasonsRu extends TranslationsMediaLoadingSto
   @override
   String get fileIsTooBig => TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.fileIsTooBig', {}) ?? 'Файл слишком большой';
   @override
-  String get containsHatedTags =>
-      TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.containsHatedTags', {}) ?? 'Содержит ненавистные теги';
+  String get hiddenByFilters => TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.hiddenByFilters', {}) ?? 'Скрыто фильтрами:';
   @override
   String get videoError => TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.videoError', {}) ?? 'Ошибка видео';
 }
 
-/// The flat map containing all translations for locale <ru>.
+/// The flat map containing all translations for locale <ru-RU>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
 /// The Dart AOT compiler has issues with very large switch statements,
 /// so the map is split into smaller functions (512 entries each).
-extension on TranslationsRu {
+extension on TranslationsRuRu {
   dynamic _flatMapFunction(String path) {
     return switch (path) {
-          'locale' => TranslationOverrides.string(_root.$meta, 'locale', {}) ?? 'ru',
+          'locale' => TranslationOverrides.string(_root.$meta, 'locale', {}) ?? 'ru-RU',
           'localeName' => TranslationOverrides.string(_root.$meta, 'localeName', {}) ?? 'Русский',
           'appName' => TranslationOverrides.string(_root.$meta, 'appName', {}) ?? 'LoliSnatcher',
           'error' => TranslationOverrides.string(_root.$meta, 'error', {}) ?? 'Ошибка',
@@ -3986,17 +3893,19 @@ extension on TranslationsRu {
           'success' => TranslationOverrides.string(_root.$meta, 'success', {}) ?? 'Успешно',
           'successExclamation' => TranslationOverrides.string(_root.$meta, 'successExclamation', {}) ?? 'Успешно!',
           'cancel' => TranslationOverrides.string(_root.$meta, 'cancel', {}) ?? 'Отмена',
+          'kReturn' => TranslationOverrides.string(_root.$meta, 'kReturn', {}) ?? 'Вернуться',
           'later' => TranslationOverrides.string(_root.$meta, 'later', {}) ?? 'Позже',
           'close' => TranslationOverrides.string(_root.$meta, 'close', {}) ?? 'Закрыть',
           'ok' => TranslationOverrides.string(_root.$meta, 'ok', {}) ?? 'OK',
           'yes' => TranslationOverrides.string(_root.$meta, 'yes', {}) ?? 'Да',
           'no' => TranslationOverrides.string(_root.$meta, 'no', {}) ?? 'Нет',
-          'pleaseWait' => TranslationOverrides.string(_root.$meta, 'pleaseWait', {}) ?? 'Подожди...',
+          'pleaseWait' => TranslationOverrides.string(_root.$meta, 'pleaseWait', {}) ?? 'Подожди…',
           'show' => TranslationOverrides.string(_root.$meta, 'show', {}) ?? 'Показать',
           'hide' => TranslationOverrides.string(_root.$meta, 'hide', {}) ?? 'Скрыть',
           'enable' => TranslationOverrides.string(_root.$meta, 'enable', {}) ?? 'Включить',
           'disable' => TranslationOverrides.string(_root.$meta, 'disable', {}) ?? 'Выключить',
           'add' => TranslationOverrides.string(_root.$meta, 'add', {}) ?? 'Добавить',
+          'exclude' => TranslationOverrides.string(_root.$meta, 'exclude', {}) ?? 'Исключить',
           'edit' => TranslationOverrides.string(_root.$meta, 'edit', {}) ?? 'Редактировать',
           'remove' => TranslationOverrides.string(_root.$meta, 'remove', {}) ?? 'Убрать',
           'save' => TranslationOverrides.string(_root.$meta, 'save', {}) ?? 'Сохранить',
@@ -4005,16 +3914,15 @@ extension on TranslationsRu {
           'retry' => TranslationOverrides.string(_root.$meta, 'retry', {}) ?? 'Повторить',
           'clear' => TranslationOverrides.string(_root.$meta, 'clear', {}) ?? 'Сбросить',
           'copy' => TranslationOverrides.string(_root.$meta, 'copy', {}) ?? 'Копировать',
-          'copied' => TranslationOverrides.string(_root.$meta, 'copied', {}) ?? 'Скопировано!',
+          'copied' => TranslationOverrides.string(_root.$meta, 'copied', {}) ?? 'Скопировано',
           'copiedToClipboard' => TranslationOverrides.string(_root.$meta, 'copiedToClipboard', {}) ?? 'Скопировано в буфер обмена',
           'nothingFound' => TranslationOverrides.string(_root.$meta, 'nothingFound', {}) ?? 'Ничего не найдено',
           'paste' => TranslationOverrides.string(_root.$meta, 'paste', {}) ?? 'Вставить',
           'copyErrorText' => TranslationOverrides.string(_root.$meta, 'copyErrorText', {}) ?? 'Скопировать ошибку',
           'booru' => TranslationOverrides.string(_root.$meta, 'booru', {}) ?? 'Сайт',
           'goToSettings' => TranslationOverrides.string(_root.$meta, 'goToSettings', {}) ?? 'В настройки',
-          'areYouSure' => TranslationOverrides.string(_root.$meta, 'areYouSure', {}) ?? 'Ты уверен?',
-          'thisMayTakeSomeTime' => TranslationOverrides.string(_root.$meta, 'thisMayTakeSomeTime', {}) ?? 'Это может занять некоторое время...',
-          'doYouWantToExitApp' => TranslationOverrides.string(_root.$meta, 'doYouWantToExitApp', {}) ?? 'Ты хочешь выйти из приложения?',
+          'thisMayTakeSomeTime' => TranslationOverrides.string(_root.$meta, 'thisMayTakeSomeTime', {}) ?? 'Это может занять некоторое время…',
+          'exitTheAppQuestion' => TranslationOverrides.string(_root.$meta, 'exitTheAppQuestion', {}) ?? 'Выйти из приложения?',
           'closeTheApp' => TranslationOverrides.string(_root.$meta, 'closeTheApp', {}) ?? 'Закрыть приложение',
           'invalidUrl' => TranslationOverrides.string(_root.$meta, 'invalidUrl', {}) ?? 'Неправильная ссылка!',
           'clipboardIsEmpty' => TranslationOverrides.string(_root.$meta, 'clipboardIsEmpty', {}) ?? 'Буфер обмена пуст!',
@@ -4049,6 +3957,15 @@ extension on TranslationsRu {
           'username' => TranslationOverrides.string(_root.$meta, 'username', {}) ?? 'Имя пользователя',
           'favourites' => TranslationOverrides.string(_root.$meta, 'favourites', {}) ?? 'Избранное',
           'downloads' => TranslationOverrides.string(_root.$meta, 'downloads', {}) ?? 'Скачанное',
+          'secondsShort' => TranslationOverrides.string(_root.$meta, 'secondsShort', {}) ?? 'с',
+          'minutesShort' => TranslationOverrides.string(_root.$meta, 'minutesShort', {}) ?? 'м',
+          'hoursShort' => TranslationOverrides.string(_root.$meta, 'hoursShort', {}) ?? 'ч',
+          'daysShort' => TranslationOverrides.string(_root.$meta, 'daysShort', {}) ?? 'д',
+          'leaveThisPageQuestion' => TranslationOverrides.string(_root.$meta, 'leaveThisPageQuestion', {}) ?? 'Покинуть эту страницу?',
+          'pageWillCloseAutomatically' =>
+            TranslationOverrides.string(_root.$meta, 'pageWillCloseAutomatically', {}) ?? 'Страница закроется автоматически',
+          'stay' => TranslationOverrides.string(_root.$meta, 'stay', {}) ?? 'Остаться',
+          'leaveNow' => TranslationOverrides.string(_root.$meta, 'leaveNow', {}) ?? 'Покинуть сейчас',
           'validationErrors.required' => TranslationOverrides.string(_root.$meta, 'validationErrors.required', {}) ?? 'Введи значение',
           'validationErrors.invalid' => TranslationOverrides.string(_root.$meta, 'validationErrors.invalid', {}) ?? 'Введи валидное значение',
           'validationErrors.invalidNumber' =>
@@ -4079,11 +3996,11 @@ extension on TranslationsRu {
             TranslationOverrides.string(_root.$meta, 'validationErrors.moreThan8ColumnsWarning', {}) ??
                 'Использование более 8 столбцов может повлиять на производительность',
           'init.initError' => TranslationOverrides.string(_root.$meta, 'init.initError', {}) ?? 'Ошибка инициализации!',
-          'init.settingUpProxy' => TranslationOverrides.string(_root.$meta, 'init.settingUpProxy', {}) ?? 'Настройка прокси...',
-          'init.loadingDatabase' => TranslationOverrides.string(_root.$meta, 'init.loadingDatabase', {}) ?? 'Загрузка базы данных...',
-          'init.loadingBoorus' => TranslationOverrides.string(_root.$meta, 'init.loadingBoorus', {}) ?? 'Загрузка конфигов сайтов...',
-          'init.loadingTags' => TranslationOverrides.string(_root.$meta, 'init.loadingTags', {}) ?? 'Загрузка тегов...',
-          'init.restoringTabs' => TranslationOverrides.string(_root.$meta, 'init.restoringTabs', {}) ?? 'Восстановление вкладок...',
+          'init.settingUpProxy' => TranslationOverrides.string(_root.$meta, 'init.settingUpProxy', {}) ?? 'Настройка прокси…',
+          'init.loadingDatabase' => TranslationOverrides.string(_root.$meta, 'init.loadingDatabase', {}) ?? 'Загрузка базы данных…',
+          'init.loadingBoorus' => TranslationOverrides.string(_root.$meta, 'init.loadingBoorus', {}) ?? 'Загрузка конфигов сайтов…',
+          'init.loadingTags' => TranslationOverrides.string(_root.$meta, 'init.loadingTags', {}) ?? 'Загрузка тегов…',
+          'init.restoringTabs' => TranslationOverrides.string(_root.$meta, 'init.restoringTabs', {}) ?? 'Восстановление вкладок…',
           'permissions.noAccessToCustomStorageDirectory' =>
             TranslationOverrides.string(_root.$meta, 'permissions.noAccessToCustomStorageDirectory', {}) ?? 'Нет доступа к выбранной папке хранилища',
           'permissions.pleaseSetStorageDirectoryAgain' =>
@@ -4108,7 +4025,8 @@ extension on TranslationsRu {
             TranslationOverrides.string(_root.$meta, 'authentication.temporaryLockout', {}) ?? 'Временная блокировка',
           'authentication.somethingWentWrong' =>
             ({required String error}) =>
-                TranslationOverrides.string(_root.$meta, 'authentication.somethingWentWrong', {'error': error}) ?? 'Что-то пошло не так: ${error}',
+                TranslationOverrides.string(_root.$meta, 'authentication.somethingWentWrong', {'error': error}) ??
+                'Что-то пошло не так во время аутентификации: ${error}',
           'searchHandler.removedLastTab' =>
             TranslationOverrides.string(_root.$meta, 'searchHandler.removedLastTab', {}) ?? 'Последняя вкладка удалена',
           'searchHandler.resettingSearchToDefaultTags' =>
@@ -4179,7 +4097,7 @@ extension on TranslationsRu {
             TranslationOverrides.string(_root.$meta, 'snatcher.failedToSnatchItem', {}) ?? 'Не удалось скачать элемент',
           'snatcher.itemWasCancelled' => TranslationOverrides.string(_root.$meta, 'snatcher.itemWasCancelled', {}) ?? 'Элемент был отменён',
           'snatcher.startingNextQueueItem' =>
-            TranslationOverrides.string(_root.$meta, 'snatcher.startingNextQueueItem', {}) ?? 'Запуск следующего элемента очереди...',
+            TranslationOverrides.string(_root.$meta, 'snatcher.startingNextQueueItem', {}) ?? 'Запуск следующего элемента очереди…',
           'snatcher.itemsSnatched' => TranslationOverrides.string(_root.$meta, 'snatcher.itemsSnatched', {}) ?? 'Элементы скачаны',
           'snatcher.snatchedCount' =>
             ({required num count}) =>
@@ -4241,7 +4159,7 @@ extension on TranslationsRu {
             TranslationOverrides.string(_root.$meta, 'multibooru.multibooruRequiresAtLeastTwoBoorus', {}) ??
                 'Требует как минимум 2 настроенных сайта',
           'multibooru.selectSecondaryBoorus' =>
-            TranslationOverrides.string(_root.$meta, 'multibooru.selectSecondaryBoorus', {}) ?? 'Выбери второстепенные конфиги:',
+            TranslationOverrides.string(_root.$meta, 'multibooru.selectSecondaryBoorus', {}) ?? 'Выбери дополнительные сайты:',
           'multibooru.akaMultibooruMode' => TranslationOverrides.string(_root.$meta, 'multibooru.akaMultibooruMode', {}) ?? 'режим Мультисайта',
           'multibooru.labelSecondaryBoorusToInclude' =>
             TranslationOverrides.string(_root.$meta, 'multibooru.labelSecondaryBoorusToInclude', {}) ?? 'Выбранные дополнительные сайты',
@@ -4258,11 +4176,11 @@ extension on TranslationsRu {
           'tabs.addNewTab' => TranslationOverrides.string(_root.$meta, 'tabs.addNewTab', {}) ?? 'Добавить новую вкладку',
           'tabs.selectABooruOrLeaveEmpty' =>
             TranslationOverrides.string(_root.$meta, 'tabs.selectABooruOrLeaveEmpty', {}) ?? 'Выбери сайт или оставь пустым',
-          'tabs.addPosition' => TranslationOverrides.string(_root.$meta, 'tabs.addPosition', {}) ?? 'Позиция добавления:',
+          'tabs.addPosition' => TranslationOverrides.string(_root.$meta, 'tabs.addPosition', {}) ?? 'Позиция добавления',
           'tabs.addModePrevTab' => TranslationOverrides.string(_root.$meta, 'tabs.addModePrevTab', {}) ?? 'Предыдущая вкладка',
           'tabs.addModeNextTab' => TranslationOverrides.string(_root.$meta, 'tabs.addModeNextTab', {}) ?? 'Следующая вкладка',
           'tabs.addModeListEnd' => TranslationOverrides.string(_root.$meta, 'tabs.addModeListEnd', {}) ?? 'Конец списка',
-          'tabs.usedQuery' => TranslationOverrides.string(_root.$meta, 'tabs.usedQuery', {}) ?? 'Используемый запрос:',
+          'tabs.usedQuery' => TranslationOverrides.string(_root.$meta, 'tabs.usedQuery', {}) ?? 'Используемый запрос',
           'tabs.queryModeDefault' => TranslationOverrides.string(_root.$meta, 'tabs.queryModeDefault', {}) ?? 'По умолчанию',
           'tabs.queryModeCurrent' => TranslationOverrides.string(_root.$meta, 'tabs.queryModeCurrent', {}) ?? 'Текущий',
           'tabs.queryModeCustom' => TranslationOverrides.string(_root.$meta, 'tabs.queryModeCustom', {}) ?? 'Пользовательский',
@@ -4285,7 +4203,7 @@ extension on TranslationsRu {
           'tabs.scrollToTop' => TranslationOverrides.string(_root.$meta, 'tabs.scrollToTop', {}) ?? 'Прокрутить вверх',
           'tabs.scrollToBottom' => TranslationOverrides.string(_root.$meta, 'tabs.scrollToBottom', {}) ?? 'Прокрутить вниз',
           'tabs.filterTabsByBooru' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.filterTabsByBooru', {}) ?? 'Фильтровать по сайту, состоянию, дубликатам...',
+            TranslationOverrides.string(_root.$meta, 'tabs.filterTabsByBooru', {}) ?? 'Фильтровать по сайту, состоянию, дубликатам…',
           'tabs.scrolling' => TranslationOverrides.string(_root.$meta, 'tabs.scrolling', {}) ?? 'Прокрутка:',
           'tabs.sorting' => TranslationOverrides.string(_root.$meta, 'tabs.sorting', {}) ?? 'Сортировка:',
           'tabs.defaultTabsOrder' => TranslationOverrides.string(_root.$meta, 'tabs.defaultTabsOrder', {}) ?? 'Порядок вкладок по умолчанию',
@@ -4307,8 +4225,6 @@ extension on TranslationsRu {
           'tabs.deleteSelectedTabs' => TranslationOverrides.string(_root.$meta, 'tabs.deleteSelectedTabs', {}) ?? 'Удалить выбранные вкладки',
           'tabs.longPressToMove' =>
             TranslationOverrides.string(_root.$meta, 'tabs.longPressToMove', {}) ?? 'Длительное нажатие на вкладку для её перемещения',
-          'tabs.resettingToDefaultTags' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.resettingToDefaultTags', {}) ?? 'Сброс поиска к тегам по умолчанию',
           'tabs.numbersInBottomRight' =>
             TranslationOverrides.string(_root.$meta, 'tabs.numbersInBottomRight', {}) ?? 'Числа в правом нижнем углу вкладки:',
           'tabs.firstNumberTabIndex' =>
@@ -4318,13 +4234,12 @@ extension on TranslationsRu {
                 'Второе число - индекс вкладки в текущем списке, появляется при активной фильтрации/сортировке',
           'tabs.specialFilters' => TranslationOverrides.string(_root.$meta, 'tabs.specialFilters', {}) ?? 'Специальные фильтры:',
           'tabs.loadedFilter' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.loadedFilter', {}) ?? '"Загружено" - показать вкладки с загруженными элементами',
+            TranslationOverrides.string(_root.$meta, 'tabs.loadedFilter', {}) ?? '«Загружено» - показать вкладки с загруженными элементами',
           'tabs.notLoadedFilter' =>
             TranslationOverrides.string(_root.$meta, 'tabs.notLoadedFilter', {}) ??
-                '"Не загружено" - показать вкладки, которые не загружены и/или имеют ноль элементов',
+                '«Не загружено» - показать вкладки, которые не загружены и/или имеют ноль элементов',
           'tabs.notLoadedItalic' =>
             TranslationOverrides.string(_root.$meta, 'tabs.notLoadedItalic', {}) ?? 'Незагруженные вкладки имеют курсивный текст',
-          'tabs.filterTabsInput' => TranslationOverrides.string(_root.$meta, 'tabs.filterTabsInput', {}) ?? 'Фильтровать вкладки',
           'tabs.noTabsFound' => TranslationOverrides.string(_root.$meta, 'tabs.noTabsFound', {}) ?? 'Вкладки не найдены',
           'tabs.copy' => TranslationOverrides.string(_root.$meta, 'tabs.copy', {}) ?? 'Копировать',
           'tabs.moveAction' => TranslationOverrides.string(_root.$meta, 'tabs.moveAction', {}) ?? 'Переместить',
@@ -4386,8 +4301,6 @@ extension on TranslationsRu {
             TranslationOverrides.string(_root.$meta, 'history.searchHistoryIsDisabled', {}) ?? 'История поиска отключена',
           'history.searchHistoryRequiresDatabase' =>
             TranslationOverrides.string(_root.$meta, 'history.searchHistoryRequiresDatabase', {}) ?? 'История поиска требует включения базы данных',
-          'history.filterSearchHistory' =>
-            TranslationOverrides.string(_root.$meta, 'history.filterSearchHistory', {}) ?? 'Фильтровать историю поиска',
           'history.lastSearch' =>
             ({required String search}) =>
                 TranslationOverrides.string(_root.$meta, 'history.lastSearch', {'search': search}) ?? 'Последний поиск: ${search}',
@@ -4431,8 +4344,13 @@ extension on TranslationsRu {
           'webview.title' => TranslationOverrides.string(_root.$meta, 'webview.title', {}) ?? 'Вебвью',
           'webview.notSupportedOnDevice' =>
             TranslationOverrides.string(_root.$meta, 'webview.notSupportedOnDevice', {}) ?? 'Не поддерживается на этом устройстве',
-          'webview.navigation.enterUrlLabel' => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterUrlLabel', {}) ?? 'Введи ссылку',
-          'webview.navigation.enterCustomUrl' => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterCustomUrl', {}) ?? 'Введи ссылку',
+          'webview.captcha' => TranslationOverrides.string(_root.$meta, 'webview.captcha', {}) ?? 'Капча',
+          'webview.captchaCheckDescription' =>
+            TranslationOverrides.string(_root.$meta, 'webview.captchaCheckDescription', {}) ??
+                'Обнаружена возможная капча. Пожалуйста реши ее и вернись обратно после выполнения',
+          'webview.captchaCompleted' => TranslationOverrides.string(_root.$meta, 'webview.captchaCompleted', {}) ?? 'Капча выполнена',
+          'webview.navigation.enterUrlLabel' => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterUrlLabel', {}) ?? 'Ввести ссылку',
+          'webview.navigation.enterCustomUrl' => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterCustomUrl', {}) ?? 'Ввести ссылку',
           'webview.navigation.navigateTo' =>
             ({required String url}) => TranslationOverrides.string(_root.$meta, 'webview.navigation.navigateTo', {'url': url}) ?? 'Перейти на ${url}',
           'webview.navigation.listCookies' => TranslationOverrides.string(_root.$meta, 'webview.navigation.listCookies', {}) ?? 'Список куки',
@@ -4445,8 +4363,6 @@ extension on TranslationsRu {
           'webview.navigation.host' => TranslationOverrides.string(_root.$meta, 'webview.navigation.host', {}) ?? 'Хост:',
           'webview.navigation.textAboveSelectable' =>
             TranslationOverrides.string(_root.$meta, 'webview.navigation.textAboveSelectable', {}) ?? '(текст выше можно выбрать)',
-          'webview.navigation.fieldToMergeTexts' =>
-            TranslationOverrides.string(_root.$meta, 'webview.navigation.fieldToMergeTexts', {}) ?? 'Поле для объединения текстов:',
           'webview.navigation.copyUrl' => TranslationOverrides.string(_root.$meta, 'webview.navigation.copyUrl', {}) ?? 'Копировать ссылку',
           'webview.navigation.copiedUrlToClipboard' =>
             TranslationOverrides.string(_root.$meta, 'webview.navigation.copiedUrlToClipboard', {}) ?? 'Ссылка скопирована в буфер обмена',
@@ -4464,9 +4380,8 @@ extension on TranslationsRu {
             TranslationOverrides.string(_root.$meta, 'settings.language.helpUsTranslate', {}) ?? 'Помоги нам с переводом',
           'settings.language.visitForDetails' =>
             TranslationOverrides.string(_root.$meta, 'settings.language.visitForDetails', {}) ??
-                'Посети <a href="https://github.com/NO-ob/LoliSnatcher_Droid/wiki/Localization">github</a> для подробностей или нажми на изображение ниже, чтобы перейти на Weblate',
+                'Посети <a href=\'https://github.com/NO-ob/LoliSnatcher_Droid/blob/master/CONTRIBUTING.md#localization--translations\'>github</a> для подробностей или нажми на изображение ниже, чтобы перейти на POEditor',
           'settings.booru.title' => TranslationOverrides.string(_root.$meta, 'settings.booru.title', {}) ?? 'Сайты и Поиск',
-          'settings.booru.dropdown' => TranslationOverrides.string(_root.$meta, 'settings.booru.dropdown', {}) ?? 'Сайт',
           'settings.booru.defaultTags' => TranslationOverrides.string(_root.$meta, 'settings.booru.defaultTags', {}) ?? 'Теги по умолчанию',
           'settings.booru.itemsPerPage' => TranslationOverrides.string(_root.$meta, 'settings.booru.itemsPerPage', {}) ?? 'Элементов на странице',
           'settings.booru.itemsPerPageTip' =>
@@ -4486,7 +4401,7 @@ extension on TranslationsRu {
           'settings.booru.booruSharing' => TranslationOverrides.string(_root.$meta, 'settings.booru.booruSharing', {}) ?? 'Поделиться конфигом сайта',
           'settings.booru.booruSharingMsgAndroid' =>
             TranslationOverrides.string(_root.$meta, 'settings.booru.booruSharingMsgAndroid', {}) ??
-                'Как автоматически открывать ссылки с конфигами сайта в приложении на Android 12 и выше:\n1) Нажми на кнопку снизу чтобы открыть системные настройки ссылок по умолчанию\n2) Нажми на "Добавить ссылку" и выбери все доступные опции',
+                'Как автоматически открывать ссылки с конфигами сайта в приложении на Android 12 и выше:\n1) Нажми на кнопку снизу чтобы открыть системные настройки ссылок по умолчанию\n2) Нажми на «Добавить ссылку» и выбери все доступные опции',
           'settings.booru.addedBoorus' => TranslationOverrides.string(_root.$meta, 'settings.booru.addedBoorus', {}) ?? 'Добавленные сайты',
           'settings.booru.editBooru' => TranslationOverrides.string(_root.$meta, 'settings.booru.editBooru', {}) ?? 'Редактировать конфиг',
           'settings.booru.importBooru' =>
@@ -4497,7 +4412,7 @@ extension on TranslationsRu {
           'settings.booru.deleteBooru' => TranslationOverrides.string(_root.$meta, 'settings.booru.deleteBooru', {}) ?? 'Удалить конфиг сайта',
           'settings.booru.deleteBooruError' =>
             TranslationOverrides.string(_root.$meta, 'settings.booru.deleteBooruError', {}) ?? 'Что-то пошло не так при удалении конфига!',
-          'settings.booru.booruDeleted' => TranslationOverrides.string(_root.$meta, 'settings.booru.booruDeleted', {}) ?? 'Конфиг удален!',
+          'settings.booru.booruDeleted' => TranslationOverrides.string(_root.$meta, 'settings.booru.booruDeleted', {}) ?? 'Конфиг удален',
           'settings.booru.booruDropdownInfo' =>
             TranslationOverrides.string(_root.$meta, 'settings.booru.booruDropdownInfo', {}) ??
                 'Выбранный сайт будет использоваться по умолчанию после сохранения.\n\nСайт по умолчанию будет первым в выпадающих списках',
@@ -4509,7 +4424,7 @@ extension on TranslationsRu {
           'settings.booru.changeToNewBooru' =>
             TranslationOverrides.string(_root.$meta, 'settings.booru.changeToNewBooru', {}) ?? 'Нажми [Да] чтобы сменить на: ',
           'settings.booru.booruConfigLinkCopied' =>
-            TranslationOverrides.string(_root.$meta, 'settings.booru.booruConfigLinkCopied', {}) ?? 'Конфиг в виде ссылки скопирован!',
+            TranslationOverrides.string(_root.$meta, 'settings.booru.booruConfigLinkCopied', {}) ?? 'Конфиг в виде ссылки скопирован',
           'settings.booru.noBooruSelected' => TranslationOverrides.string(_root.$meta, 'settings.booru.noBooruSelected', {}) ?? 'Сайт не выбран!',
           'settings.booru.cantDeleteThisBooru' =>
             TranslationOverrides.string(_root.$meta, 'settings.booru.cantDeleteThisBooru', {}) ?? 'Нельзя удалить этот сайт!',
@@ -4523,7 +4438,7 @@ extension on TranslationsRu {
                 'Данные конфига неверны, сайт не дает доступ к API, запрос не вернул данные или есть проблемы с сетью.',
           'settings.booruEditor.saveBooru' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveBooru', {}) ?? 'Сохранить конфиг',
           'settings.booruEditor.runningTest' =>
-            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.runningTest', {}) ?? 'Выполнение теста...',
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.runningTest', {}) ?? 'Выполнение теста…',
           'settings.booruEditor.booruConfigExistsError' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigExistsError', {}) ?? 'Такой конфиг уже существует',
           'settings.booruEditor.booruSameNameExistsError' =>
@@ -4533,7 +4448,7 @@ extension on TranslationsRu {
           'settings.booruEditor.thisBooruConfigWontBeAdded' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.thisBooruConfigWontBeAdded', {}) ?? 'Этот конфиг не будет добавлен',
           'settings.booruEditor.booruConfigSaved' =>
-            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigSaved', {}) ?? 'Конфиг сохранен!',
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigSaved', {}) ?? 'Конфиг сохранен',
           'settings.booruEditor.existingTabsNeedReload' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.existingTabsNeedReload', {}) ??
                 'Существующие вкладки с этим сайтом должны быть перезагружены, чтобы применить изменения!',
@@ -4551,7 +4466,7 @@ extension on TranslationsRu {
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.accessKeyFailedMsg', {}) ?? 'Открыл ли ты окно запроса в Hydrus?',
           'settings.booruEditor.hydrusInstructions' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.hydrusInstructions', {}) ??
-                'Для получения ключа Hydrus нужно открыть окно запроса в клиенте Hydrus. Services > Review services > Client api > Add > From API request',
+                'Для получения ключа Hydrus нужно открыть окно запроса в клиенте Hydrus. Services > Review services > Client API > Add > From API request',
           'settings.booruEditor.getHydrusApiKey' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.getHydrusApiKey', {}) ?? 'Получить ключ API Hydrus',
           'settings.booruEditor.booruName' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruName', {}) ?? 'Имя конфига',
@@ -4561,20 +4476,10 @@ extension on TranslationsRu {
           'settings.booruEditor.booruUrlRequired' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruUrlRequired', {}) ?? 'URL обязательно!',
           'settings.booruEditor.booruType' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruType', {}) ?? 'Тип конфига',
-          'settings.booruEditor.booruTypeIs' =>
-            ({required Object booruType}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruTypeIs', {'booruType': booruType}) ?? 'Сайт типа: ${booruType}',
           'settings.booruEditor.booruFavicon' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruFavicon', {}) ?? 'URL иконки',
           'settings.booruEditor.booruFaviconPlaceholder' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruFaviconPlaceholder', {}) ??
                 '(Автоматически заполняется, если оставить пустым)',
-          'settings.booruEditor.booruApiCredsInfo' =>
-            ({required Object userIdTitle, required Object apiKeyTitle}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruApiCredsInfo', {
-                  'userIdTitle': userIdTitle,
-                  'apiKeyTitle': apiKeyTitle,
-                }) ??
-                '${userIdTitle} и ${apiKeyTitle} могут быть обязательны для некоторых сайтов, но в большинстве случаев не нужны.',
           'settings.booruEditor.booruDefTags' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruDefTags', {}) ?? 'Теги по умолчанию',
           'settings.booruEditor.booruDefTagsPlaceholder' =>
@@ -4625,6 +4530,8 @@ extension on TranslationsRu {
           'settings.interface.disableVibrationSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.disableVibrationSubtitle', {}) ??
                 'Может всё ещё происходить при некоторых действиях даже при отключении',
+          'settings.interface.usePredictiveBack' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.usePredictiveBack', {}) ?? 'Анимация смахивания',
           'settings.interface.previewColumnsPortrait' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewColumnsPortrait', {}) ?? 'Столбцы превью (портрет)',
           'settings.interface.previewColumnsLandscape' =>
@@ -4640,7 +4547,7 @@ extension on TranslationsRu {
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewQualityHelpThumbnail', {}) ?? ' - Миниатюра - Низкое разрешение',
           'settings.interface.previewQualityHelpNote' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewQualityHelpNote', {}) ??
-                '[Примечание]: Качество "Семплы" может заметно снизить производительность, особенно если у тебя слишком много столбцов в сетке превью',
+                '[Примечание]: Качество «Семплы» может заметно снизить производительность, особенно если у тебя слишком много столбцов в сетке превью',
           'settings.interface.previewDisplay' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplay', {}) ?? 'Отображение превью',
           'settings.interface.previewDisplayFallback' =>
@@ -4662,7 +4569,7 @@ extension on TranslationsRu {
                 'Это может негативно повлиять на производительность, особенно на старых устройствах',
           'settings.interface.gifThumbnails' => TranslationOverrides.string(_root.$meta, 'settings.interface.gifThumbnails', {}) ?? 'GIF превью',
           'settings.interface.gifThumbnailsRequires' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.gifThumbnailsRequires', {}) ?? 'Требует "Не масштабировать изображения"',
+            TranslationOverrides.string(_root.$meta, 'settings.interface.gifThumbnailsRequires', {}) ?? 'Требует «Не масштабировать изображения»',
           'settings.interface.scrollPreviewsButtonsPosition' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.scrollPreviewsButtonsPosition', {}) ?? 'Позиция кнопок прокрутки превью',
           'settings.interface.mouseWheelScrollModifier' =>
@@ -4740,7 +4647,11 @@ extension on TranslationsRu {
           'settings.viewer.preloadSizeLimit' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadSizeLimit', {}) ?? 'Лимит размера предзагрузки',
           'settings.viewer.preloadSizeLimitSubtitle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadSizeLimitSubtitle', {}) ?? 'в ГБ, 0 для отключения лимита',
+            TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadSizeLimitSubtitle', {}) ?? 'в ГБ, 0 для отключения',
+          'settings.viewer.preloadHeightLimit' =>
+            TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadHeightLimit', {}) ?? 'Лимит высоты предзагрузки',
+          'settings.viewer.preloadHeightLimitSubtitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadHeightLimitSubtitle', {}) ?? 'в пикселях, 0 для отключения',
           'settings.viewer.imageQuality' => TranslationOverrides.string(_root.$meta, 'settings.viewer.imageQuality', {}) ?? 'Качество изображения',
           'settings.viewer.viewerScrollDirection' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.viewerScrollDirection', {}) ?? 'Направление прокрутки просмотрщика',
@@ -4759,8 +4670,7 @@ extension on TranslationsRu {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.hideTranslationNotesByDefault', {}) ?? 'Скрывать заметки перевода по умолчанию',
           'settings.viewer.enableRotation' => TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotation', {}) ?? 'Включить вращение',
           'settings.viewer.enableRotationSubtitle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotationSubtitle', {}) ??
-                'Двойное нажатие для сброса (работает только на изображениях)',
+            TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotationSubtitle', {}) ?? 'Двойное нажатие для сброса',
           'settings.viewer.toolbarButtonsOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.toolbarButtonsOrder', {}) ?? 'Порядок кнопок панели инструментов',
           'settings.viewer.buttonsOrder' => TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonsOrder', {}) ?? 'Порядок кнопок',
@@ -4779,7 +4689,7 @@ extension on TranslationsRu {
           'settings.viewer.thisButtonCannotBeDisabled' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.thisButtonCannotBeDisabled', {}) ?? 'Эта кнопка не может быть отключена',
           'settings.viewer.defaultShareAction' =>
-            TranslationOverrides.string(_root.$meta, 'settings.viewer.defaultShareAction', {}) ?? 'Действие при "Поделиться" по умолчанию',
+            TranslationOverrides.string(_root.$meta, 'settings.viewer.defaultShareAction', {}) ?? 'Действие при «Поделиться» по умолчанию',
           'settings.viewer.shareActions' => TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActions', {}) ?? 'Поделиться',
           'settings.viewer.shareActionsAsk' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionsAsk', {}) ?? '- Спросить - всегда спрашивать, как поделиться',
@@ -4887,11 +4797,6 @@ extension on TranslationsRu {
           'settings.video.startVideosMuted' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.startVideosMuted', {}) ?? 'Запускать видео без звука',
           'settings.video.experimental' => TranslationOverrides.string(_root.$meta, 'settings.video.experimental', {}) ?? '[Экспериментально]',
-          'settings.video.longTapToFastForwardVideo' =>
-            TranslationOverrides.string(_root.$meta, 'settings.video.longTapToFastForwardVideo', {}) ?? 'Длительное нажатие для перемотки видео',
-          'settings.video.longTapToFastForwardVideoHelp' =>
-            TranslationOverrides.string(_root.$meta, 'settings.video.longTapToFastForwardVideoHelp', {}) ??
-                'Когда это включено, панель инструментов можно скрыть нажатием, когда элементы управления видео видны. [Экспериментально] Может стать поведением по умолчанию в будущем.',
           'settings.video.videoPlayerBackend' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.videoPlayerBackend', {}) ?? 'Движок видеоплеера',
           'settings.video.backendDefault' => TranslationOverrides.string(_root.$meta, 'settings.video.backendDefault', {}) ?? 'По умолчанию',
@@ -4912,6 +4817,9 @@ extension on TranslationsRu {
           'settings.video.mpvUseHardwareAcceleration' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.mpvUseHardwareAcceleration', {}) ?? 'MPV: использовать аппаратное ускорение',
           'settings.video.mpvVO' => TranslationOverrides.string(_root.$meta, 'settings.video.mpvVO', {}) ?? 'MPV: VO',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.video.mpvHWDEC' => TranslationOverrides.string(_root.$meta, 'settings.video.mpvHWDEC', {}) ?? 'MPV: HWDEC',
           'settings.video.videoCacheMode' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheMode', {}) ?? 'Режим кэширования видео',
@@ -4926,9 +4834,6 @@ extension on TranslationsRu {
           'settings.video.cacheModes.streamCacheMode' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.cacheModes.streamCacheMode', {}) ??
                 '- Потоковый+Кэш - Смешанный режим, но в данный момент приводит к двойной загрузке',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.video.cacheModes.cacheNote' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.cacheModes.cacheNote', {}) ??
                 '[Примечание]: Видео будут кэшироваться только если включено \'Кэшировать медиа\'.',
@@ -4968,7 +4873,7 @@ extension on TranslationsRu {
           'settings.downloads.clearSelected' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.clearSelected', {}) ?? 'Очистить выбранные',
           'settings.downloads.updatingData' =>
-            TranslationOverrides.string(_root.$meta, 'settings.downloads.updatingData', {}) ?? 'Обновление данных...',
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.updatingData', {}) ?? 'Обновление данных…',
           'settings.database.title' => TranslationOverrides.string(_root.$meta, 'settings.database.title', {}) ?? 'База данных',
           'settings.database.indexingDatabase' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.indexingDatabase', {}) ?? 'Индексирование базы данных',
@@ -5012,10 +4917,10 @@ extension on TranslationsRu {
           'settings.database.searchHistoryRecords' =>
             ({required int limit}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryRecords', {'limit': limit}) ??
-                'Сохраняет последние ${limit} поисков.',
+                'Сохраняет последние ${limit} поисков',
           'settings.database.searchHistoryTapInfo' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryTapInfo', {}) ??
-                'Нажми на элемент для действий (Удалить, В избранное...)',
+                'Нажми на элемент для действий (Удалить, В избранное…)',
           'settings.database.searchHistoryFavouritesInfo' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryFavouritesInfo', {}) ??
                 'Избранные запросы закреплены вверху списка и не будут учитываться в лимите.',
@@ -5109,7 +5014,7 @@ extension on TranslationsRu {
           'settings.backupAndRestore.duplicateFileDetectedMsg' =>
             ({required Object fileName}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.duplicateFileDetectedMsg', {'fileName': fileName}) ??
-                'Файл ${fileName} уже существует. Ты хочешь его перезаписать? Усли выбрать нет, то бэкап будет отменен.',
+                'Файл ${fileName} уже существует. Ты хочешь его перезаписать? Если выбрать нет, то бэкап будет отменен.',
           'settings.backupAndRestore.androidOnlyFeatureMsg' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.androidOnlyFeatureMsg', {}) ??
                 'Эта функция доступна только на Android, на десктопных билдах можно просто копировать файлы из папки данных приложения',
@@ -5117,7 +5022,7 @@ extension on TranslationsRu {
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.selectBackupDir', {}) ?? 'Выбери папку для бэкапов',
           'settings.backupAndRestore.failedToGetBackupPath' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.failedToGetBackupPath', {}) ??
-                'Не удалось получить путь к папке бэкапов!',
+                'Не удалось получить путь к папке бэкапов',
           'settings.backupAndRestore.backupPathMsg' =>
             ({required Object backupPath}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupPathMsg', {'backupPath': backupPath}) ??
@@ -5131,13 +5036,15 @@ extension on TranslationsRu {
           'settings.backupAndRestore.restoreSettings' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreSettings', {}) ?? 'Восстановление настроек',
           'settings.backupAndRestore.settingsBackedUp' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.settingsBackedUp', {}) ?? 'Настроики сохранены в settings.json',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.settingsBackedUp', {}) ?? 'Настройки сохранены в settings.json',
           'settings.backupAndRestore.settingsRestored' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.settingsRestored', {}) ?? 'Настроики восстановлены из бэкапа!',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.settingsRestored', {}) ?? 'Настройки восстановлены из бэкапа',
           'settings.backupAndRestore.backupSettingsError' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupSettingsError', {}) ?? 'Не удалось сохранить настроики!',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupSettingsError', {}) ?? 'Не удалось сохранить настройки',
           'settings.backupAndRestore.restoreSettingsError' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreSettingsError', {}) ?? 'Не удалось восстановить настроики!',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreSettingsError', {}) ?? 'Не удалось восстановить настройки',
+          'settings.backupAndRestore.resetBackupDir' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.resetBackupDir', {}) ?? 'Сбросить папку бэкапов',
           'settings.backupAndRestore.backupBoorus' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupBoorus', {}) ?? 'Бэкап конфигов сайтов',
           'settings.backupAndRestore.restoreBoorus' =>
@@ -5145,11 +5052,11 @@ extension on TranslationsRu {
           'settings.backupAndRestore.boorusBackedUp' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.boorusBackedUp', {}) ?? 'Конфиги сохранены в boorus.json',
           'settings.backupAndRestore.boorusRestored' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.boorusRestored', {}) ?? 'Конфиги восстановлены из бэкапа!',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.boorusRestored', {}) ?? 'Конфиги восстановлены из бэкапа',
           'settings.backupAndRestore.backupBoorusError' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupBoorusError', {}) ?? 'Не удалось сохранить конфиги сайтов!',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupBoorusError', {}) ?? 'Не удалось сохранить конфиги сайтов',
           'settings.backupAndRestore.restoreBoorusError' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreBoorusError', {}) ?? 'Не удалось восстановить конфиги сайтов!',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreBoorusError', {}) ?? 'Не удалось восстановить конфиги сайтов',
           'settings.backupAndRestore.backupDatabase' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupDatabase', {}) ?? 'Бэкап базы данных',
           'settings.backupAndRestore.restoreDatabase' =>
@@ -5163,9 +5070,9 @@ extension on TranslationsRu {
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.databaseRestored', {}) ??
                 'База данных восстановлена из бэкапа! Приложение будет перезапущено через несколько секунд!',
           'settings.backupAndRestore.backupDatabaseError' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupDatabaseError', {}) ?? 'Не удалось сохранить базу данных!',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupDatabaseError', {}) ?? 'Не удалось сохранить базу данных',
           'settings.backupAndRestore.restoreDatabaseError' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreDatabaseError', {}) ?? 'Не удалось восстановить базу данных!',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreDatabaseError', {}) ?? 'Не удалось восстановить базу данных',
           'settings.backupAndRestore.databaseFileNotFound' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.databaseFileNotFound', {}) ??
                 'Файл базы данных не найден или не может быть прочитан!',
@@ -5179,11 +5086,11 @@ extension on TranslationsRu {
           'settings.backupAndRestore.tagsBackedUp' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.tagsBackedUp', {}) ?? 'Теги сохранены в tags.json',
           'settings.backupAndRestore.tagsRestored' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.tagsRestored', {}) ?? 'Теги восстановлены из бэкапа!',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.tagsRestored', {}) ?? 'Теги восстановлены из бэкапа',
           'settings.backupAndRestore.backupTagsError' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupTagsError', {}) ?? 'Не удалось сохранить теги!',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupTagsError', {}) ?? 'Не удалось сохранить теги',
           'settings.backupAndRestore.restoreTagsError' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreTagsError', {}) ?? 'Не удалось восстановить теги!',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreTagsError', {}) ?? 'Не удалось восстановить теги',
           'settings.backupAndRestore.tagsFileNotFound' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.tagsFileNotFound', {}) ??
                 'Файл тегов не найден или не может быть прочитан!',
@@ -5196,7 +5103,7 @@ extension on TranslationsRu {
           'settings.backupAndRestore.backupDirNoAccess' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupDirNoAccess', {}) ?? 'Нет доступа к папке бэкапов!',
           'settings.backupAndRestore.backupCancelled' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupCancelled', {}) ?? 'Бэкап отменен!',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupCancelled', {}) ?? 'Бэкап отменен',
           'settings.network.title' => TranslationOverrides.string(_root.$meta, 'settings.network.title', {}) ?? 'Сеть',
           'settings.network.enableSelfSignedSSLCertificates' =>
             TranslationOverrides.string(_root.$meta, 'settings.network.enableSelfSignedSSLCertificates', {}) ??
@@ -5206,9 +5113,9 @@ extension on TranslationsRu {
             TranslationOverrides.string(_root.$meta, 'settings.network.proxySubtitle', {}) ??
                 'Не применяется к режиму потокового видео, используй вместо него режим кэширования видео',
           'settings.network.customUserAgent' =>
-            TranslationOverrides.string(_root.$meta, 'settings.network.customUserAgent', {}) ?? 'Пользовательский user agent',
+            TranslationOverrides.string(_root.$meta, 'settings.network.customUserAgent', {}) ?? 'Пользовательский User-Agent',
           'settings.network.customUserAgentTitle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.network.customUserAgentTitle', {}) ?? 'Пользовательский user agent',
+            TranslationOverrides.string(_root.$meta, 'settings.network.customUserAgentTitle', {}) ?? 'Пользовательский User-Agent',
           'settings.network.keepEmptyForDefault' =>
             TranslationOverrides.string(_root.$meta, 'settings.network.keepEmptyForDefault', {}) ??
                 'Оставь пустым для использования значения по умолчанию',
@@ -5222,9 +5129,8 @@ extension on TranslationsRu {
             TranslationOverrides.string(_root.$meta, 'settings.network.valueSavedAfterLeaving', {}) ?? 'Сохраняется при закрытии страницы',
           'settings.network.setBrowserUserAgent' =>
             TranslationOverrides.string(_root.$meta, 'settings.network.setBrowserUserAgent', {}) ??
-                'Нажми здесь, чтобы установить рекомендуемый user agent браузера (рекомендуется только когда сайты, которые ты используешь, банят небраузерные user agent):',
+                'Нажми здесь, чтобы установить User-Agent браузера Chrome (рекомендуется только когда сайт банит небраузерные user agent)',
           'settings.network.cookieCleaner' => TranslationOverrides.string(_root.$meta, 'settings.network.cookieCleaner', {}) ?? 'Очистка куки',
-          'settings.network.booru' => TranslationOverrides.string(_root.$meta, 'settings.network.booru', {}) ?? 'Сайт',
           'settings.network.selectBooruToClearCookies' =>
             TranslationOverrides.string(_root.$meta, 'settings.network.selectBooruToClearCookies', {}) ??
                 'Выбери сайт для очистки куки или оставь пустым для очистки всех',
@@ -5234,7 +5140,7 @@ extension on TranslationsRu {
           'settings.network.cookieDeleted' =>
             ({required String cookieName}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.network.cookieDeleted', {'cookieName': cookieName}) ??
-                'Куки "${cookieName}" удалено',
+                'Куки «${cookieName}» удалено',
           'settings.network.clearCookies' => TranslationOverrides.string(_root.$meta, 'settings.network.clearCookies', {}) ?? 'Очистить куки',
           'settings.network.clearCookiesFor' =>
             ({required String booruName}) =>
@@ -5292,55 +5198,10 @@ extension on TranslationsRu {
                 '- Отключает подробную информацию о прогрессе загрузки',
           'settings.performance.lowPerformanceModeDialogDisablesResourceIntensive' =>
             TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeDialogDisablesResourceIntensive', {}) ??
-                '- Отключает ресурсоёмкие элементы (размытие, анимированная прозрачность, некоторые анимации...)',
+                '- Отключает ресурсоёмкие элементы (размытие, анимированная прозрачность, некоторые анимации…)',
           'settings.performance.lowPerformanceModeDialogSetsOptimal' =>
             TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeDialogSetsOptimal', {}) ??
-                '- Устанавливает оптимальные настройки для этих опций (ты можешь потом изменить их отдельно):',
-          'settings.performance.lowPerformanceModeDialogPreviewQuality' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeDialogPreviewQuality', {}) ??
-                '   - Качество предпросмотра [Миниатюра]',
-          'settings.performance.lowPerformanceModeDialogImageQuality' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeDialogImageQuality', {}) ??
-                '   - Качество изображения [Семпл]',
-          'settings.performance.lowPerformanceModeDialogPreviewColumns' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeDialogPreviewColumns', {}) ??
-                '   - Столбцы превью [2 - портрет, 4 - ландшафт]',
-          'settings.performance.lowPerformanceModeDialogPreloadAmount' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeDialogPreloadAmount', {}) ??
-                '   - Количество и лимит предзагрузки [0, 0.2]',
-          'settings.performance.lowPerformanceModeDialogVideoAutoplay' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeDialogVideoAutoplay', {}) ??
-                '   - Автовоспроизведение видео [отключено]',
-          'settings.performance.lowPerformanceModeDialogDontScaleImages' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeDialogDontScaleImages', {}) ??
-                '   - Не масштабировать изображения [отключено]',
-          'settings.performance.previewQuality' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.previewQuality', {}) ?? 'Качество превью',
-          'settings.performance.imageQuality' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.imageQuality', {}) ?? 'Качество изображения',
-          'settings.performance.previewColumnsPortrait' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.previewColumnsPortrait', {}) ?? 'Столбцы превью (портрет)',
-          'settings.performance.previewColumnsLandscape' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.previewColumnsLandscape', {}) ?? 'Столбцы превью (ландшафт)',
-          'settings.performance.preloadAmount' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.preloadAmount', {}) ?? 'Количество предзагрузки',
-          'settings.performance.preloadSizeLimit' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.preloadSizeLimit', {}) ?? 'Лимит размера предзагрузки',
-          'settings.performance.preloadSizeLimitSubtitle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.preloadSizeLimitSubtitle', {}) ?? 'в ГБ, 0 чтобы убрать лимит',
-          'settings.performance.dontScaleImages' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.dontScaleImages', {}) ?? 'Не масштабировать изображения',
-          'settings.performance.dontScaleImagesSubtitle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.dontScaleImagesSubtitle', {}) ??
-                'Отключает масштабирование изображений, которое используется для улучшения производительности',
-          'settings.performance.dontScaleImagesWarningTitle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.dontScaleImagesWarningTitle', {}) ?? 'Предупреждение',
-          'settings.performance.dontScaleImagesWarningMsg' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.dontScaleImagesWarningMsg', {}) ??
-                'Ты уверен, что хочешь отключить масштабирование изображений?',
-          'settings.performance.dontScaleImagesWarningPerformance' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.dontScaleImagesWarningPerformance', {}) ??
-                'Это может негативно повлиять на производительность, особенно на старых устройствах',
+                'Устанавливает оптимальные настройки для этих опций (ты можешь потом изменить их отдельно):',
           'settings.performance.autoplayVideos' =>
             TranslationOverrides.string(_root.$meta, 'settings.performance.autoplayVideos', {}) ?? 'Автовоспроизведение видео',
           'settings.performance.disableVideos' =>
@@ -5348,26 +5209,25 @@ extension on TranslationsRu {
           'settings.performance.disableVideosHelp' =>
             TranslationOverrides.string(_root.$meta, 'settings.performance.disableVideosHelp', {}) ??
                 'Полезно на слабых устройствах, которые вылетают при попытке загрузить видео. Даёт возможность просмотреть видео во внешнем плеере или браузере.',
-          'settings.cache.title' => TranslationOverrides.string(_root.$meta, 'settings.cache.title', {}) ?? 'Кэш',
-          'settings.cache.snatchQuality' => TranslationOverrides.string(_root.$meta, 'settings.cache.snatchQuality', {}) ?? 'Качество сохраненных',
+          'settings.cache.title' => TranslationOverrides.string(_root.$meta, 'settings.cache.title', {}) ?? 'Скачивание и Кэш',
+          'settings.cache.snatchQuality' => TranslationOverrides.string(_root.$meta, 'settings.cache.snatchQuality', {}) ?? 'Качество скачивания',
           'settings.cache.snatchCooldown' =>
-            TranslationOverrides.string(_root.$meta, 'settings.cache.snatchCooldown', {}) ?? 'Задержка между загрузками (в мс)',
+            TranslationOverrides.string(_root.$meta, 'settings.cache.snatchCooldown', {}) ?? 'Задержка между скачиваниями (в мс)',
           'settings.cache.pleaseEnterAValidTimeout' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.pleaseEnterAValidTimeout', {}) ??
                 'Пожалуйста, введи корректное значение времени ожидания',
           'settings.cache.biggerThan10' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.biggerThan10', {}) ?? 'Пожалуйста, введи значение больше 10мс',
           'settings.cache.showDownloadNotifications' =>
-            TranslationOverrides.string(_root.$meta, 'settings.cache.showDownloadNotifications', {}) ?? 'Показывать уведомления о загрузке',
+            TranslationOverrides.string(_root.$meta, 'settings.cache.showDownloadNotifications', {}) ?? 'Показывать уведомления о скачивании',
           'settings.cache.snatchItemsOnFavouriting' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.snatchItemsOnFavouriting', {}) ?? 'Скачивать при добавлении в избранное',
           'settings.cache.favouriteItemsOnSnatching' =>
-            TranslationOverrides.string(_root.$meta, 'settings.cache.favouriteItemsOnSnatching', {}) ?? 'Добавлять в избранное при сохранении',
+            TranslationOverrides.string(_root.$meta, 'settings.cache.favouriteItemsOnSnatching', {}) ?? 'Добавлять в избранное при скачивании',
           'settings.cache.writeImageDataOnSave' =>
-            TranslationOverrides.string(_root.$meta, 'settings.cache.writeImageDataOnSave', {}) ?? 'Записывать данные в JSON при сохранении',
+            TranslationOverrides.string(_root.$meta, 'settings.cache.writeImageDataOnSave', {}) ?? 'Записывать данные в JSON при скачивании',
           'settings.cache.requiresCustomStorageDirectory' =>
-            TranslationOverrides.string(_root.$meta, 'settings.cache.requiresCustomStorageDirectory', {}) ??
-                'Необходимо настроить пользовательскую папку',
+            TranslationOverrides.string(_root.$meta, 'settings.cache.requiresCustomStorageDirectory', {}) ?? 'Необходимо назначить папку хранилища',
           'settings.cache.setStorageDirectory' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.setStorageDirectory', {}) ?? 'Назначить папку хранилища',
           'settings.cache.currentPath' =>
@@ -5402,7 +5262,7 @@ extension on TranslationsRu {
           'settings.cache.maximumTotalCacheSize' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.maximumTotalCacheSize', {}) ?? 'Максимальный общий размер кэша',
           'settings.cache.cacheStats' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheStats', {}) ?? 'Статистика кэша:',
-          'settings.cache.loading' => TranslationOverrides.string(_root.$meta, 'settings.cache.loading', {}) ?? 'Загрузка...',
+          'settings.cache.loading' => TranslationOverrides.string(_root.$meta, 'settings.cache.loading', {}) ?? 'Загрузка…',
           'settings.cache.empty' => TranslationOverrides.string(_root.$meta, 'settings.cache.empty', {}) ?? 'Пусто',
           'settings.cache.inFilesPlural' =>
             ({required String size, required int count}) =>
@@ -5429,36 +5289,31 @@ extension on TranslationsRu {
           'settings.cache.errorExclamation' => TranslationOverrides.string(_root.$meta, 'settings.cache.errorExclamation', {}) ?? 'Ошибка!',
           'settings.cache.notAvailableForPlatform' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.notAvailableForPlatform', {}) ?? 'В данный момент недоступно для этой платформы',
-          'settings.tagsFilters.title' => TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.title', {}) ?? 'Фильтры тегов',
-          'settings.tagsFilters.hated' => TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.hated', {}) ?? 'Ненавистные',
-          'settings.tagsFilters.loved' => TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.loved', {}) ?? 'Любимые',
-          'settings.tagsFilters.duplicateTag' =>
-            TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.duplicateTag', {}) ?? 'Дублирующийся тег',
-          'settings.tagsFilters.alreadyInList' =>
+          'settings.itemFilters.title' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.title', {}) ?? 'Фильтры тегов',
+          'settings.itemFilters.hidden' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hidden', {}) ?? 'Скрытые',
+          'settings.itemFilters.marked' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.marked', {}) ?? 'Отмеченные',
+          'settings.itemFilters.duplicateFilter' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.duplicateFilter', {}) ?? 'Дублирующийся фильтр',
+          'settings.itemFilters.alreadyInList' =>
             ({required String tag, required String type}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.alreadyInList', {'tag': tag, 'type': type}) ??
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.alreadyInList', {'tag': tag, 'type': type}) ??
                 '\'${tag}\' уже есть в списке ${type}',
-          'settings.tagsFilters.searchFiltersCount' =>
-            ({required int count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.searchFiltersCount', {'count': count}) ?? 'Искать фильтры (${count})',
-          'settings.tagsFilters.searchFiltersFilteredCount' =>
-            ({required int filtered, required int total}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.searchFiltersFilteredCount', {'filtered': filtered, 'total': total}) ??
-                'Искать фильтры (${filtered}/${total})',
-          'settings.tagsFilters.noFiltersFound' =>
-            TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.noFiltersFound', {}) ?? 'Фильтры не найдены',
-          'settings.tagsFilters.noFiltersAdded' =>
-            TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.noFiltersAdded', {}) ?? 'Нет фильтров',
-          'settings.tagsFilters.searchFilters' =>
-            TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.searchFilters', {}) ?? 'Искать фильтры',
-          'settings.tagsFilters.removeHated' =>
-            TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.removeHated', {}) ?? 'Скрывать элементы с ненавистными тегами',
-          'settings.tagsFilters.removeFavourited' =>
-            TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.removeFavourited', {}) ?? 'Скрывать избранные элементы',
-          'settings.tagsFilters.removeSnatched' =>
-            TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.removeSnatched', {}) ?? 'Скрывать скачанные элементы',
-          'settings.tagsFilters.removeAI' =>
-            TranslationOverrides.string(_root.$meta, 'settings.tagsFilters.removeAI', {}) ?? 'Скрывать элементы с ИИ тегами',
+          'settings.itemFilters.noFiltersFound' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noFiltersFound', {}) ?? 'Фильтры не найдены',
+          'settings.itemFilters.noFiltersAdded' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noFiltersAdded', {}) ?? 'Нет фильтров',
+          'settings.itemFilters.removeHidden' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeHidden', {}) ??
+                'Полностью скрыть элементы, подпадающие под Скрытые фильтры',
+          'settings.itemFilters.removeMarked' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarked', {}) ??
+                'Полностью скрыть элементы, подпадающие под Отмеченные фильтры',
+          'settings.itemFilters.removeFavourited' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeFavourited', {}) ?? 'Скрыть избранные элементы',
+          'settings.itemFilters.removeSnatched' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeSnatched', {}) ?? 'Скрыть скачанные элементы',
+          'settings.itemFilters.removeAI' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeAI', {}) ?? 'Скрыть элементы с ИИ тегами',
           'settings.sync.title' => TranslationOverrides.string(_root.$meta, 'settings.sync.title', {}) ?? 'LoliSync',
           'settings.sync.dbError' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.dbError', {}) ?? 'База данных должна быть включена чтобы использовать LoliSync',
@@ -5487,7 +5342,7 @@ extension on TranslationsRu {
           'settings.sync.sendFavouritesLegacy' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.sendFavouritesLegacy', {}) ?? 'Отправить избранное (Устаревшее)',
           'settings.sync.syncFavsFrom' =>
-            TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFrom', {}) ?? 'Синхронизировать избранное с #...',
+            TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFrom', {}) ?? 'Синхронизировать избранное с #…',
           'settings.sync.syncFavsFromHelpText1' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText1', {}) ??
                 'Позволяет установить, с какого места должна начаться синхронизация, полезно, если ты уже синхронизировал всё избранное ранее и хочешь синхронизировать только новейшие элементы',
@@ -5505,7 +5360,7 @@ extension on TranslationsRu {
             ({required String count}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.sync.snatchedCount', {'count': count}) ?? 'Скачанное: ${count}',
           'settings.sync.syncSnatchedFrom' =>
-            TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFrom', {}) ?? 'Синхронизировать скачанное с #...',
+            TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFrom', {}) ?? 'Синхронизировать скачанное с #…',
           'settings.sync.syncSnatchedFromHelpText1' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText1', {}) ??
                 'Позволяет установить, с какого места должна начаться синхронизация, полезно, если ты уже синхронизировал всю историю загрузок ранее и хочешь синхронизировать только новейшие элементы',
@@ -5542,12 +5397,11 @@ extension on TranslationsRu {
           'settings.sync.tagsSyncMode' => TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncMode', {}) ?? 'Режим синхронизации тегов',
           'settings.sync.tagsSyncModePreferTypeIfNone' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncModePreferTypeIfNone', {}) ??
-                'ПредпочитатьТипЕслиНет: Если тег существует с типом тега на другом устройстве, а на этом устройстве нет, он будет пропущен',
+                'Сохранять тип: Если тег существует с типом тега на другом устройстве, а на этом устройстве нет, он будет пропущен',
           'settings.sync.tagsSyncModeOverwrite' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncModeOverwrite', {}) ??
                 'Перезаписать: Все теги будут добавлены, если тег и тип тега существуют на другом устройстве, они будут перезаписаны',
-          'settings.sync.preferTypeIfNone' =>
-            TranslationOverrides.string(_root.$meta, 'settings.sync.preferTypeIfNone', {}) ?? 'ПредпочитатьТипЕслиНет',
+          'settings.sync.preferTypeIfNone' => TranslationOverrides.string(_root.$meta, 'settings.sync.preferTypeIfNone', {}) ?? 'Сохранять тип',
           'settings.sync.overwrite' => TranslationOverrides.string(_root.$meta, 'settings.sync.overwrite', {}) ?? 'Перезаписать',
           'settings.sync.testConnection' => TranslationOverrides.string(_root.$meta, 'settings.sync.testConnection', {}) ?? 'Проверить соединение',
           'settings.sync.testConnectionHelpText1' =>
@@ -5581,11 +5435,12 @@ extension on TranslationsRu {
                 'LoliSnatcher - это открытое программное обеспечение, распространяемое по лицензии GPLv3. Исходный код доступен на GitHub. Пожалуйста, сообщайте о любых проблемах или просьбах в разделе issues репозитория.',
           'settings.about.appOnGitHub' => TranslationOverrides.string(_root.$meta, 'settings.about.appOnGitHub', {}) ?? 'LoliSnatcher на Github',
           'settings.about.contact' => TranslationOverrides.string(_root.$meta, 'settings.about.contact', {}) ?? 'Связаться',
-          'settings.about.emailCopied' => TranslationOverrides.string(_root.$meta, 'settings.about.emailCopied', {}) ?? 'Email скопирован!',
+          'settings.about.emailCopied' => TranslationOverrides.string(_root.$meta, 'settings.about.emailCopied', {}) ?? 'Email скопирован',
           'settings.about.logoArtistThanks' =>
             TranslationOverrides.string(_root.$meta, 'settings.about.logoArtistThanks', {}) ??
                 'Большая благодарность Showers-U за разрешение на использование их работы для лого приложения. Пожалуйста, зацените их работы на Pixiv',
           'settings.about.developers' => TranslationOverrides.string(_root.$meta, 'settings.about.developers', {}) ?? 'Разработчики',
+          'settings.about.localizers' => TranslationOverrides.string(_root.$meta, 'settings.about.localizers', {}) ?? 'Переводчики',
           'settings.about.releases' => TranslationOverrides.string(_root.$meta, 'settings.about.releases', {}) ?? 'Релизы',
           'settings.about.releasesMsg' =>
             TranslationOverrides.string(_root.$meta, 'settings.about.releasesMsg', {}) ??
@@ -5601,7 +5456,7 @@ extension on TranslationsRu {
           'settings.checkForUpdates.updateCheckError' =>
             TranslationOverrides.string(_root.$meta, 'settings.checkForUpdates.updateCheckError', {}) ?? 'Ошибка при проверке обновлений!',
           'settings.checkForUpdates.youHaveLatestVersion' =>
-            TranslationOverrides.string(_root.$meta, 'settings.checkForUpdates.youHaveLatestVersion', {}) ?? 'У тебя последняя версия!',
+            TranslationOverrides.string(_root.$meta, 'settings.checkForUpdates.youHaveLatestVersion', {}) ?? 'У тебя последняя версия',
           'settings.checkForUpdates.viewLatestChangelog' =>
             TranslationOverrides.string(_root.$meta, 'settings.checkForUpdates.viewLatestChangelog', {}) ?? 'Посмотреть последний список изменений',
           'settings.checkForUpdates.currentVersion' =>
@@ -5644,12 +5499,6 @@ extension on TranslationsRu {
             ({required double speed}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.debug.animationSpeed', {'speed': speed}) ?? 'Скорость анимации (${speed})',
           'settings.debug.tagsManager' => TranslationOverrides.string(_root.$meta, 'settings.debug.tagsManager', {}) ?? 'Менеджер тегов',
-          'settings.debug.vibration' => TranslationOverrides.string(_root.$meta, 'settings.debug.vibration', {}) ?? 'Вибрация',
-          'settings.debug.vibrationTests' => TranslationOverrides.string(_root.$meta, 'settings.debug.vibrationTests', {}) ?? 'Тесты вибрации',
-          'settings.debug.duration' => TranslationOverrides.string(_root.$meta, 'settings.debug.duration', {}) ?? 'Длительность',
-          'settings.debug.amplitude' => TranslationOverrides.string(_root.$meta, 'settings.debug.amplitude', {}) ?? 'Амплитуда',
-          'settings.debug.flutterway' => TranslationOverrides.string(_root.$meta, 'settings.debug.flutterway', {}) ?? 'Flutterway',
-          'settings.debug.vibrate' => TranslationOverrides.string(_root.$meta, 'settings.debug.vibrate', {}) ?? 'Вибрировать',
           'settings.debug.resolution' =>
             ({required String width, required String height}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.debug.resolution', {'width': width, 'height': height}) ??
@@ -5706,7 +5555,7 @@ extension on TranslationsRu {
           'pageChanger.searchCurrentlyRunning' =>
             TranslationOverrides.string(_root.$meta, 'pageChanger.searchCurrentlyRunning', {}) ?? 'В данный момент выполняется поиск!',
           'pageChanger.jumpToPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.jumpToPage', {}) ?? 'Перейти на страницу',
-          'pageChanger.searchUntilPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.searchUntilPage', {}) ?? 'Искать до страницы',
+          'pageChanger.searchUntilPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.searchUntilPage', {}) ?? 'Поиск до страницы',
           'pageChanger.stopSearching' => TranslationOverrides.string(_root.$meta, 'pageChanger.stopSearching', {}) ?? 'Остановить поиск',
           'tagsFiltersDialogs.emptyInput' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.emptyInput', {}) ?? 'Пустой ввод!',
           'tagsFiltersDialogs.addNewFilter' =>
@@ -5754,9 +5603,8 @@ extension on TranslationsRu {
           'loliSync.stopServerQuestion' =>
             TranslationOverrides.string(_root.$meta, 'loliSync.stopServerQuestion', {}) ?? 'Ты хочешь остановить сервер?',
           'loliSync.noConnection' => TranslationOverrides.string(_root.$meta, 'loliSync.noConnection', {}) ?? 'Нет соединения',
-          'loliSync.waitingForConnection' =>
-            TranslationOverrides.string(_root.$meta, 'loliSync.waitingForConnection', {}) ?? 'Ожидание соединения...',
-          'loliSync.startingServer' => TranslationOverrides.string(_root.$meta, 'loliSync.startingServer', {}) ?? 'Запуск сервера...',
+          'loliSync.waitingForConnection' => TranslationOverrides.string(_root.$meta, 'loliSync.waitingForConnection', {}) ?? 'Ожидание соединения…',
+          'loliSync.startingServer' => TranslationOverrides.string(_root.$meta, 'loliSync.startingServer', {}) ?? 'Запуск сервера…',
           'loliSync.keepScreenAwake' => TranslationOverrides.string(_root.$meta, 'loliSync.keepScreenAwake', {}) ?? 'Держать экран активным',
           'loliSync.serverKilled' => TranslationOverrides.string(_root.$meta, 'loliSync.serverKilled', {}) ?? 'Сервер остановлен',
           'loliSync.testError' =>
@@ -5786,7 +5634,8 @@ extension on TranslationsRu {
           'tagView.addedNewTab' => TranslationOverrides.string(_root.$meta, 'tagView.addedNewTab', {}) ?? 'Добавлена новая вкладка:',
           'tagView.id' => TranslationOverrides.string(_root.$meta, 'tagView.id', {}) ?? 'ID',
           'tagView.postURL' => TranslationOverrides.string(_root.$meta, 'tagView.postURL', {}) ?? 'Ссылка на пост',
-          'tagView.posted' => TranslationOverrides.string(_root.$meta, 'tagView.posted', {}) ?? 'Опубликовано',
+          'tagView.uploader' => TranslationOverrides.string(_root.$meta, 'tagView.uploader', {}) ?? 'Опубликовал',
+          'tagView.posted' => TranslationOverrides.string(_root.$meta, 'tagView.posted', {}) ?? 'Дата',
           'tagView.details' => TranslationOverrides.string(_root.$meta, 'tagView.details', {}) ?? 'Детали',
           'tagView.filename' => TranslationOverrides.string(_root.$meta, 'tagView.filename', {}) ?? 'Имя файла',
           'tagView.url' => TranslationOverrides.string(_root.$meta, 'tagView.url', {}) ?? 'Ссылка',
@@ -5796,44 +5645,23 @@ extension on TranslationsRu {
           'tagView.md5' => TranslationOverrides.string(_root.$meta, 'tagView.md5', {}) ?? 'MD5',
           'tagView.rating' => TranslationOverrides.string(_root.$meta, 'tagView.rating', {}) ?? 'Рейтинг',
           'tagView.score' => TranslationOverrides.string(_root.$meta, 'tagView.score', {}) ?? 'Оценка',
-          'tagView.searchTags' => TranslationOverrides.string(_root.$meta, 'tagView.searchTags', {}) ?? 'Искать теги',
           'tagView.noTagsFound' => TranslationOverrides.string(_root.$meta, 'tagView.noTagsFound', {}) ?? 'Теги не найдены',
           'tagView.copy' => TranslationOverrides.string(_root.$meta, 'tagView.copy', {}) ?? 'Копировать',
           'tagView.removeFromSearch' => TranslationOverrides.string(_root.$meta, 'tagView.removeFromSearch', {}) ?? 'Удалить из поиска',
           'tagView.addToSearch' => TranslationOverrides.string(_root.$meta, 'tagView.addToSearch', {}) ?? 'Добавить в поиск',
           'tagView.addedToSearchBar' => TranslationOverrides.string(_root.$meta, 'tagView.addedToSearchBar', {}) ?? 'Добавлено в строку поиска:',
-          'tagView.addToSearchExclude' =>
-            TranslationOverrides.string(_root.$meta, 'tagView.addToSearchExclude', {}) ?? 'Добавить в поиск (Исключить)',
-          'tagView.addedToSearchBarExclude' =>
-            TranslationOverrides.string(_root.$meta, 'tagView.addedToSearchBarExclude', {}) ?? 'Добавлено в строку поиска (Исключить):',
-          'tagView.addToLoved' => TranslationOverrides.string(_root.$meta, 'tagView.addToLoved', {}) ?? 'Добавить в любимые',
-          'tagView.addToHated' => TranslationOverrides.string(_root.$meta, 'tagView.addToHated', {}) ?? 'Добавить в ненавистные',
-          'tagView.removeFromLoved' => TranslationOverrides.string(_root.$meta, 'tagView.removeFromLoved', {}) ?? 'Удалить из любимых',
-          'tagView.removeFromHated' => TranslationOverrides.string(_root.$meta, 'tagView.removeFromHated', {}) ?? 'Удалить из ненавистных',
+          'tagView.excludeFromSearch' => TranslationOverrides.string(_root.$meta, 'tagView.excludeFromSearch', {}) ?? 'Исключить из поиска',
+          'tagView.exclusionAddedToSearchBar' =>
+            TranslationOverrides.string(_root.$meta, 'tagView.exclusionAddedToSearchBar', {}) ?? 'Исключение добавлено в строку поиска:',
+          'tagView.addToMarked' => TranslationOverrides.string(_root.$meta, 'tagView.addToMarked', {}) ?? 'Добавить в Отмеченные',
+          'tagView.addToHidden' => TranslationOverrides.string(_root.$meta, 'tagView.addToHidden', {}) ?? 'Добавить в Скрытые',
+          'tagView.removeFromMarked' => TranslationOverrides.string(_root.$meta, 'tagView.removeFromMarked', {}) ?? 'Убрать из Отмеченных',
+          'tagView.removeFromHidden' => TranslationOverrides.string(_root.$meta, 'tagView.removeFromHidden', {}) ?? 'Убрать из Скрытых',
           'tagView.editTag' => TranslationOverrides.string(_root.$meta, 'tagView.editTag', {}) ?? 'Редактировать тег',
-          'tagView.copiedSelected' =>
-            ({required String type}) =>
-                TranslationOverrides.string(_root.$meta, 'tagView.copiedSelected', {'type': type}) ?? '${type}: скопировано в буфер обмена',
-          'tagView.selectedText' => TranslationOverrides.string(_root.$meta, 'tagView.selectedText', {}) ?? 'выбранный текст',
-          'tagView.source' => TranslationOverrides.string(_root.$meta, 'tagView.source', {}) ?? 'источник',
           'tagView.sourceDialogTitle' => TranslationOverrides.string(_root.$meta, 'tagView.sourceDialogTitle', {}) ?? 'Источник',
-          'tagView.sourceDialogText1' =>
-            TranslationOverrides.string(_root.$meta, 'tagView.sourceDialogText1', {}) ??
-                'Текст в поле источника не может быть открыт как ссылка, либо потому что это не ссылка, либо потому что несколько ссылок в одной строке.',
-          'tagView.sourceDialogText2' =>
-            TranslationOverrides.string(_root.$meta, 'tagView.sourceDialogText2', {}) ??
-                'Ты можешь выбрать любой текст ниже длительным нажатием, затем нажми "Открыть выбранное", чтобы попытаться открыть его как ссылку:',
-          'tagView.noTextSelected' => TranslationOverrides.string(_root.$meta, 'tagView.noTextSelected', {}) ?? '[Текст не выбран]',
-          'tagView.copySelected' =>
-            ({required String type}) => TranslationOverrides.string(_root.$meta, 'tagView.copySelected', {'type': type}) ?? 'Копировать ${type}',
-          'tagView.selected' => TranslationOverrides.string(_root.$meta, 'tagView.selected', {}) ?? 'выбранное',
-          'tagView.all' => TranslationOverrides.string(_root.$meta, 'tagView.all', {}) ?? 'всё',
-          'tagView.openSelected' =>
-            ({required String type}) => TranslationOverrides.string(_root.$meta, 'tagView.openSelected', {'type': type}) ?? 'Открыть ${type}',
           'tagView.preview' => TranslationOverrides.string(_root.$meta, 'tagView.preview', {}) ?? 'Предпросмотр',
-          'tagView.booru' => TranslationOverrides.string(_root.$meta, 'tagView.booru', {}) ?? 'Сайт',
           'tagView.selectBooruToLoad' => TranslationOverrides.string(_root.$meta, 'tagView.selectBooruToLoad', {}) ?? 'Выбери сайт для загрузки',
-          'tagView.previewIsLoading' => TranslationOverrides.string(_root.$meta, 'tagView.previewIsLoading', {}) ?? 'Предпросмотр загружается...',
+          'tagView.previewIsLoading' => TranslationOverrides.string(_root.$meta, 'tagView.previewIsLoading', {}) ?? 'Предпросмотр загружается…',
           'tagView.failedToLoadPreview' =>
             TranslationOverrides.string(_root.$meta, 'tagView.failedToLoadPreview', {}) ?? 'Не удалось загрузить предпросмотр',
           'tagView.tapToTryAgain' => TranslationOverrides.string(_root.$meta, 'tagView.tapToTryAgain', {}) ?? 'Нажми, чтобы попробовать снова',
@@ -5845,6 +5673,13 @@ extension on TranslationsRu {
           'tagView.failedToLoadPreviewPage' =>
             TranslationOverrides.string(_root.$meta, 'tagView.failedToLoadPreviewPage', {}) ?? 'Не удалось загрузить страницу предпросмотра',
           'tagView.tryAgain' => TranslationOverrides.string(_root.$meta, 'tagView.tryAgain', {}) ?? 'Попробовать снова',
+          'tagView.detectedLinks' => TranslationOverrides.string(_root.$meta, 'tagView.detectedLinks', {}) ?? 'Обнаруженные ссылки:',
+          'tagView.relatedTabs' => TranslationOverrides.string(_root.$meta, 'tagView.relatedTabs', {}) ?? 'Связанные вкладки',
+          'tagView.tabsWithOnlyTag' => TranslationOverrides.string(_root.$meta, 'tagView.tabsWithOnlyTag', {}) ?? 'Вкладки только с этим тегом',
+          'tagView.tabsWithOnlyTagDifferentBooru' =>
+            TranslationOverrides.string(_root.$meta, 'tagView.tabsWithOnlyTagDifferentBooru', {}) ??
+                'Вкладки только с этим тегом, но на другом сайте',
+          'tagView.tabsContainingTag' => TranslationOverrides.string(_root.$meta, 'tagView.tabsContainingTag', {}) ?? 'Вкладки, содержащие этот тег',
           'pinnedTags.pinnedTags' => TranslationOverrides.string(_root.$meta, 'pinnedTags.pinnedTags', {}) ?? 'Закрепленные теги',
           'pinnedTags.pinTag' => TranslationOverrides.string(_root.$meta, 'pinnedTags.pinTag', {}) ?? 'Закрепить тег',
           'pinnedTags.unpinTag' => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinTag', {}) ?? 'Открепить тег',
@@ -5852,15 +5687,16 @@ extension on TranslationsRu {
           'pinnedTags.unpin' => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpin', {}) ?? 'Открепить',
           'pinnedTags.pinQuestion' =>
             ({required String tag}) =>
-                TranslationOverrides.string(_root.$meta, 'pinnedTags.pinQuestion', {'tag': tag}) ?? 'Закрепить "${tag}" для быстрого доступа?',
+                TranslationOverrides.string(_root.$meta, 'pinnedTags.pinQuestion', {'tag': tag}) ?? 'Закрепить «${tag}» для быстрого доступа?',
           'pinnedTags.unpinQuestion' =>
             ({required String tag}) =>
-                TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinQuestion', {'tag': tag}) ?? 'Убрать "${tag}" из закрепленных тегов?',
+                TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinQuestion', {'tag': tag}) ?? 'Убрать «${tag}» из закрепленных тегов?',
           'pinnedTags.onlyForBooru' =>
             ({required String name}) => TranslationOverrides.string(_root.$meta, 'pinnedTags.onlyForBooru', {'name': name}) ?? 'Только для ${name}',
           'pinnedTags.labelsOptional' => TranslationOverrides.string(_root.$meta, 'pinnedTags.labelsOptional', {}) ?? 'Метки (необязательно)',
-          'pinnedTags.typeAndEnterToAdd' =>
-            TranslationOverrides.string(_root.$meta, 'pinnedTags.typeAndEnterToAdd', {}) ?? 'Введи и нажми отправить для добавления',
+          'pinnedTags.typeAndPressAdd' =>
+            TranslationOverrides.string(_root.$meta, 'pinnedTags.typeAndPressAdd', {}) ??
+                'Ввведи и нажми кнопку Добавить для включения метки в список',
           'pinnedTags.selectExistingLabel' =>
             TranslationOverrides.string(_root.$meta, 'pinnedTags.selectExistingLabel', {}) ?? 'Выбери существующую метку',
           'pinnedTags.tagPinned' => TranslationOverrides.string(_root.$meta, 'pinnedTags.tagPinned', {}) ?? 'Тег закреплен',
@@ -5875,14 +5711,11 @@ extension on TranslationsRu {
           'pinnedTags.all' => TranslationOverrides.string(_root.$meta, 'pinnedTags.all', {}) ?? 'Все',
           'pinnedTags.reorderPinnedTags' =>
             TranslationOverrides.string(_root.$meta, 'pinnedTags.reorderPinnedTags', {}) ?? 'Поменять порядок закрепленных тегов',
-          'pinnedTags.saving' => TranslationOverrides.string(_root.$meta, 'pinnedTags.saving', {}) ?? 'Сохраняется...',
-          'pinnedTags.searchPinnedTags' =>
-            TranslationOverrides.string(_root.$meta, 'pinnedTags.searchPinnedTags', {}) ?? 'Искать закрепленные теги...',
+          'pinnedTags.saving' => TranslationOverrides.string(_root.$meta, 'pinnedTags.saving', {}) ?? 'Сохраняется…',
           'pinnedTags.reorder' => TranslationOverrides.string(_root.$meta, 'pinnedTags.reorder', {}) ?? 'Поменять порядок',
           'pinnedTags.addTagManually' => TranslationOverrides.string(_root.$meta, 'pinnedTags.addTagManually', {}) ?? 'Добавить тег вручную',
           'pinnedTags.noTagsMatchSearch' => TranslationOverrides.string(_root.$meta, 'pinnedTags.noTagsMatchSearch', {}) ?? 'Нет подходящих тегов',
           'pinnedTags.noPinnedTagsYet' => TranslationOverrides.string(_root.$meta, 'pinnedTags.noPinnedTagsYet', {}) ?? 'Пока нет закрепленных тегов',
-          'pinnedTags.addToSearch' => TranslationOverrides.string(_root.$meta, 'pinnedTags.addToSearch', {}) ?? 'Добавить в поиск',
           'pinnedTags.editLabels' => TranslationOverrides.string(_root.$meta, 'pinnedTags.editLabels', {}) ?? 'Редактировать метки',
           'pinnedTags.labels' => TranslationOverrides.string(_root.$meta, 'pinnedTags.labels', {}) ?? 'Метки',
           'pinnedTags.addPinnedTag' => TranslationOverrides.string(_root.$meta, 'pinnedTags.addPinnedTag', {}) ?? 'Добавить закрепленный тег',
@@ -5900,7 +5733,7 @@ extension on TranslationsRu {
             TranslationOverrides.string(_root.$meta, 'searchBar.tagSuggestionsNotAvailable', {}) ?? 'Предложения тегов недоступны для этого сайта',
           'searchBar.copiedTagToClipboard' =>
             ({required String tag}) =>
-                TranslationOverrides.string(_root.$meta, 'searchBar.copiedTagToClipboard', {'tag': tag}) ?? '"${tag}": скопировано в буфер обмена',
+                TranslationOverrides.string(_root.$meta, 'searchBar.copiedTagToClipboard', {'tag': tag}) ?? '«${tag}»: скопировано в буфер обмена',
           'searchBar.prefix' => TranslationOverrides.string(_root.$meta, 'searchBar.prefix', {}) ?? 'Префикс',
           'searchBar.exclude' => TranslationOverrides.string(_root.$meta, 'searchBar.exclude', {}) ?? 'Исключить (—)',
           'searchBar.booruNumberPrefix' => TranslationOverrides.string(_root.$meta, 'searchBar.booruNumberPrefix', {}) ?? 'Сайт (N#)',
@@ -5912,20 +5745,11 @@ extension on TranslationsRu {
           'searchBar.free' => TranslationOverrides.string(_root.$meta, 'searchBar.free', {}) ?? 'Бесплатно',
           'searchBar.single' => TranslationOverrides.string(_root.$meta, 'searchBar.single', {}) ?? 'Одиночный',
           'searchBar.range' => TranslationOverrides.string(_root.$meta, 'searchBar.range', {}) ?? 'Диапазон',
-          _ => null,
-        } ??
-        switch (path) {
           'searchBar.popular' => TranslationOverrides.string(_root.$meta, 'searchBar.popular', {}) ?? 'Популярное',
-          'searchBar.favourites' => TranslationOverrides.string(_root.$meta, 'searchBar.favourites', {}) ?? 'Избранное',
-          'searchBar.all' => TranslationOverrides.string(_root.$meta, 'searchBar.all', {}) ?? '[Все]',
           'searchBar.selectDate' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDate', {}) ?? 'Выбери дату',
           'searchBar.selectDatesRange' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDatesRange', {}) ?? 'Выбери диапазон дат',
-          'searchBar.lastSearch' =>
-            ({required String date}) =>
-                TranslationOverrides.string(_root.$meta, 'searchBar.lastSearch', {'date': date}) ?? 'Последний поиск: ${date}',
-          'searchBar.unknownBooruType' => TranslationOverrides.string(_root.$meta, 'searchBar.unknownBooruType', {}) ?? 'Неизвестный тип сайта!',
           'searchBar.history' => TranslationOverrides.string(_root.$meta, 'searchBar.history', {}) ?? 'История',
-          'searchBar.more' => TranslationOverrides.string(_root.$meta, 'searchBar.more', {}) ?? '...',
+          'searchBar.more' => TranslationOverrides.string(_root.$meta, 'searchBar.more', {}) ?? '…',
           'mobileHome.selectBooruForWebview' =>
             TranslationOverrides.string(_root.$meta, 'mobileHome.selectBooruForWebview', {}) ?? 'Выбери сайт для вебвью',
           'mobileHome.lockApp' => TranslationOverrides.string(_root.$meta, 'mobileHome.lockApp', {}) ?? 'Заблокировать приложение',
@@ -5955,8 +5779,11 @@ extension on TranslationsRu {
           'mediaPreviews.addNewBooru' => TranslationOverrides.string(_root.$meta, 'mediaPreviews.addNewBooru', {}) ?? 'Добавить новый сайт',
           'mediaPreviews.help' => TranslationOverrides.string(_root.$meta, 'mediaPreviews.help', {}) ?? 'Помощь',
           'mediaPreviews.settings' => TranslationOverrides.string(_root.$meta, 'mediaPreviews.settings', {}) ?? 'Настройки',
+          _ => null,
+        } ??
+        switch (path) {
           'mediaPreviews.restoringPreviousSession' =>
-            TranslationOverrides.string(_root.$meta, 'mediaPreviews.restoringPreviousSession', {}) ?? 'Восстановление предыдущей сессии...',
+            TranslationOverrides.string(_root.$meta, 'mediaPreviews.restoringPreviousSession', {}) ?? 'Восстановление предыдущей сессии…',
           'mediaPreviews.copiedFileURL' =>
             TranslationOverrides.string(_root.$meta, 'mediaPreviews.copiedFileURL', {}) ?? 'Ссылка на файл скопирована в буфер обмена!',
           'viewer.tutorial.images' => TranslationOverrides.string(_root.$meta, 'viewer.tutorial.images', {}) ?? 'Изображения',
@@ -6027,16 +5854,18 @@ extension on TranslationsRu {
             TranslationOverrides.string(_root.$meta, 'common.booruItemCopiedToClipboard', {}) ?? 'Элемент скопирован в буфер обмена',
           'gallery.snatchQuestion' => TranslationOverrides.string(_root.$meta, 'gallery.snatchQuestion', {}) ?? 'Загрузить?',
           'gallery.noPostUrl' => TranslationOverrides.string(_root.$meta, 'gallery.noPostUrl', {}) ?? 'Нет ссылки на пост!',
-          'gallery.loadingFile' => TranslationOverrides.string(_root.$meta, 'gallery.loadingFile', {}) ?? 'Загрузка файла...',
+          'gallery.loadingFile' => TranslationOverrides.string(_root.$meta, 'gallery.loadingFile', {}) ?? 'Загрузка файла…',
           'gallery.loadingFileMessage' =>
-            TranslationOverrides.string(_root.$meta, 'gallery.loadingFileMessage', {}) ?? 'Это может занять некоторое время, пожалуйста, подожди...',
+            TranslationOverrides.string(_root.$meta, 'gallery.loadingFileMessage', {}) ?? 'Это может занять некоторое время, пожалуйста, подожди…',
           'gallery.sources' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'gallery.sources', {'count': count}) ??
                 (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
                   count,
                   one: 'Источник',
-                  other: 'Источников',
+                  few: 'Источники',
+                  many: 'Источники',
+                  other: 'Источники',
                 ),
           'galleryButtons.snatch' => TranslationOverrides.string(_root.$meta, 'galleryButtons.snatch', {}) ?? 'Скачать',
           'galleryButtons.favourite' => TranslationOverrides.string(_root.$meta, 'galleryButtons.favourite', {}) ?? 'В избранное',
@@ -6050,12 +5879,12 @@ extension on TranslationsRu {
           'galleryButtons.toggleQuality' => TranslationOverrides.string(_root.$meta, 'galleryButtons.toggleQuality', {}) ?? 'Переключить качество',
           'galleryButtons.externalPlayer' => TranslationOverrides.string(_root.$meta, 'galleryButtons.externalPlayer', {}) ?? 'Внешний плеер',
           'galleryButtons.imageSearch' => TranslationOverrides.string(_root.$meta, 'galleryButtons.imageSearch', {}) ?? 'Поиск по картинке',
-          'media.loading.rendering' => TranslationOverrides.string(_root.$meta, 'media.loading.rendering', {}) ?? 'Рендеринг...',
+          'media.loading.rendering' => TranslationOverrides.string(_root.$meta, 'media.loading.rendering', {}) ?? 'Рендеринг…',
           'media.loading.loadingAndRenderingFromCache' =>
-            TranslationOverrides.string(_root.$meta, 'media.loading.loadingAndRenderingFromCache', {}) ?? 'Загрузка и рендеринг из кэша...',
-          'media.loading.loadingFromCache' => TranslationOverrides.string(_root.$meta, 'media.loading.loadingFromCache', {}) ?? 'Загрузка из кэша...',
-          'media.loading.buffering' => TranslationOverrides.string(_root.$meta, 'media.loading.buffering', {}) ?? 'Буферизация...',
-          'media.loading.loading' => TranslationOverrides.string(_root.$meta, 'media.loading.loading', {}) ?? 'Загрузка...',
+            TranslationOverrides.string(_root.$meta, 'media.loading.loadingAndRenderingFromCache', {}) ?? 'Загрузка и рендеринг из кэша…',
+          'media.loading.loadingFromCache' => TranslationOverrides.string(_root.$meta, 'media.loading.loadingFromCache', {}) ?? 'Загрузка из кэша…',
+          'media.loading.buffering' => TranslationOverrides.string(_root.$meta, 'media.loading.buffering', {}) ?? 'Буферизация…',
+          'media.loading.loading' => TranslationOverrides.string(_root.$meta, 'media.loading.loading', {}) ?? 'Загрузка…',
           'media.loading.loadAnyway' => TranslationOverrides.string(_root.$meta, 'media.loading.loadAnyway', {}) ?? 'Все равно загрузить',
           'media.loading.restartLoading' => TranslationOverrides.string(_root.$meta, 'media.loading.restartLoading', {}) ?? 'Перезапустить загрузку',
           'media.loading.stopLoading' => TranslationOverrides.string(_root.$meta, 'media.loading.stopLoading', {}) ?? 'Остановить загрузку',
@@ -6068,8 +5897,8 @@ extension on TranslationsRu {
             TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.loadingError', {}) ?? 'Ошибка загрузки',
           'media.loading.stopReasons.fileIsTooBig' =>
             TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.fileIsTooBig', {}) ?? 'Файл слишком большой',
-          'media.loading.stopReasons.containsHatedTags' =>
-            TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.containsHatedTags', {}) ?? 'Содержит ненавистные теги',
+          'media.loading.stopReasons.hiddenByFilters' =>
+            TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.hiddenByFilters', {}) ?? 'Скрыто фильтрами:',
           'media.loading.stopReasons.videoError' =>
             TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.videoError', {}) ?? 'Ошибка видео',
           'media.loading.fileIsZeroBytes' => TranslationOverrides.string(_root.$meta, 'media.loading.fileIsZeroBytes', {}) ?? 'Пустой файл',
@@ -6089,7 +5918,7 @@ extension on TranslationsRu {
           'media.video.failedToLoadItemData' =>
             TranslationOverrides.string(_root.$meta, 'media.video.failedToLoadItemData', {}) ?? 'Не удалось загрузить данные об элементе',
           'media.video.loadingItemData' =>
-            TranslationOverrides.string(_root.$meta, 'media.video.loadingItemData', {}) ?? 'Загрузка данных об элементе...',
+            TranslationOverrides.string(_root.$meta, 'media.video.loadingItemData', {}) ?? 'Загрузка данных об элементе…',
           'media.video.retry' => TranslationOverrides.string(_root.$meta, 'media.video.retry', {}) ?? 'Повторить',
           'media.video.openFileInBrowser' =>
             TranslationOverrides.string(_root.$meta, 'media.video.openFileInBrowser', {}) ?? 'Открыть файл в браузере',
@@ -6119,10 +5948,10 @@ extension on TranslationsRu {
           'preview.error.reachedEndSubtitle' =>
             ({required int pageNum}) =>
                 TranslationOverrides.string(_root.$meta, 'preview.error.reachedEndSubtitle', {'pageNum': pageNum}) ??
-                'Загружено ${pageNum} страниц\nНажми здесь, чтобы перезагрузить последнюю страницу',
+                'Загружено страниц: ${pageNum}\nНажми здесь, чтобы перезагрузить последнюю страницу',
           'preview.error.loadingPage' =>
             ({required int pageNum}) =>
-                TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? 'Загрузка страницы №${pageNum}...',
+                TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? 'Загрузка страницы №${pageNum}…',
           'preview.error.startedAgo' =>
             ({required num seconds}) =>
                 TranslationOverrides.plural(_root.$meta, 'preview.error.startedAgo', {'seconds': seconds}) ??

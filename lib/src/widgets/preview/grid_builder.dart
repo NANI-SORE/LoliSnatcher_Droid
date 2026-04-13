@@ -43,6 +43,7 @@ class GridBuilder extends StatelessWidget {
       valueListenable: tab.booruHandler.filteredFetched,
       builder: (context, currentFetched, child) => SliverGrid.builder(
         addAutomaticKeepAlives: false,
+        addRepaintBoundaries: false, // ThumbnailCardBuild has its own RepaintBoundary
         itemCount: currentFetched.length,
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: columnCount,
@@ -51,20 +52,21 @@ class GridBuilder extends StatelessWidget {
           crossAxisSpacing: 4,
         ),
         itemBuilder: (BuildContext context, int index) {
-          return Obx(() {
-            final BooruItem item = currentFetched[index];
+          return GridTile(
+            child: Obx(() {
+              final BooruItem item = currentFetched[index];
 
-            final bool hasSelected = tab.selected.isNotEmpty;
-            final selectedIndex = tab.selected.indexOf(item);
-            final bool isSelected = selectedIndex != -1;
+              final bool hasSelected = tab.selected.isNotEmpty;
+              final selectedIndex = tab.selected.indexOf(item);
+              final bool isSelected = selectedIndex != -1;
+              final bool isHighlighted = ViewerHandler.instance.current.value?.key == item.key;
 
-            return GridTile(
-              child: ThumbnailCardBuild(
+              return ThumbnailCardBuild(
                 index: index,
                 item: item,
                 handler: tab.booruHandler,
                 scrollController: scrollController,
-                isHighlighted: ViewerHandler.instance.current.value?.key == item.key,
+                isHighlighted: isHighlighted,
                 selectable: true,
                 selectedIndex: isSelected ? selectedIndex : null,
                 onSelected: hasSelected ? onSelected : null,
@@ -72,9 +74,9 @@ class GridBuilder extends StatelessWidget {
                 onDoubleTap: onDoubleTap,
                 onLongPress: onLongPress,
                 onSecondaryTap: onSecondaryTap,
-              ),
-            );
-          });
+              );
+            }),
+          );
         },
       ),
     );

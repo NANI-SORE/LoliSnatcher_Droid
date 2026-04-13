@@ -90,7 +90,7 @@ class GelbooruHandler extends BooruHandler {
 
   @override
   BooruItem? parseItemFromResponse(dynamic responseItem, int index) {
-    final current = responseItem;
+    final current = responseItem as Map<String, dynamic>;
 
     if (current['file_url'] != null) {
       // Fix for bleachbooru
@@ -125,6 +125,7 @@ class GelbooruHandler extends BooruHandler {
         score: current['score']?.toString(),
         sources: (current['source'] != null && current['source'] is String) ? [current['source']] : null,
         md5String: current['md5']?.toString(),
+        uploaderName: current['owner'],
         postDate: current['created_at']?.toString(), // Fri Jun 18 02:13:45 -0500 2021
         postDateFormat: 'EEE MMM dd HH:mm:ss  yyyy', // when timezone support added: "EEE MMM dd HH:mm:ss Z yyyy",
       );
@@ -344,6 +345,7 @@ class GelbooruHandler extends BooruHandler {
   @override
   NoteItem? parseNote(dynamic responseItem, int index) {
     final current = responseItem;
+    if (current.getAttribute('is_active') == false) return null;
     return NoteItem(
       id: current.getAttribute('id'),
       postID: current.getAttribute('post_id'),
@@ -385,7 +387,7 @@ class GelbooruHandler extends BooruHandler {
       ),
       ComparableNumberMetaTag(name: 'Score', keyName: 'score'),
       StringMetaTag(name: 'ID', keyName: 'id'),
-      StringMetaTag(name: 'User', keyName: 'user'),
+      UserMetaTag(),
       // StringMetaTag(name: 'Favourites of user ID (fav:{id})', keyName: 'fav'),
       StringMetaTag(name: 'MD5', keyName: 'md5'),
       ComparableNumberMetaTag(name: 'Width', keyName: 'width'),
@@ -437,13 +439,13 @@ class GelbooruHandler extends BooruHandler {
           source = html.getElementById('image');
           if (source != null) {
             final String? src = source.attributes['src'];
-            item.fileURL = src ?? item.fileURL;
-            final isSample = src?.contains('/samples/') ?? false;
+            final isSample = src?.contains('sample') ?? false;
             if (isSample) {
               item.sampleURL = src ?? item.sampleURL;
               item.fileURL = html.querySelector('meta[property="og:image"]')?.attributes['content'] ?? item.fileURL;
+            } else {
+              item.fileURL = src ?? item.fileURL;
             }
-            item.thumbnailURL = isSample ? item.sampleURL : item.thumbnailURL;
           }
         }
 

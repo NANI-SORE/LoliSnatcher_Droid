@@ -5,20 +5,24 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lolisnatcher/src/widgets/common/long_press_repeater.dart';
 
 import 'package:photo_view/photo_view.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
+import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
+import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/close_dialog_button.dart';
+import 'package:lolisnatcher/src/widgets/common/long_press_repeater.dart';
 import 'package:lolisnatcher/src/widgets/gallery/gallery_buttons.dart';
 import 'package:lolisnatcher/src/widgets/gallery/hideable_appbar.dart';
 import 'package:lolisnatcher/src/widgets/gallery/notes_renderer.dart';
@@ -27,8 +31,8 @@ import 'package:lolisnatcher/src/widgets/gallery/viewer_tutorial.dart';
 import 'package:lolisnatcher/src/widgets/image/image_viewer.dart';
 import 'package:lolisnatcher/src/widgets/video/guess_extension_viewer.dart';
 import 'package:lolisnatcher/src/widgets/video/load_item_viewer.dart';
-import 'package:lolisnatcher/src/widgets/video/video_viewer.dart';
 import 'package:lolisnatcher/src/widgets/video/video_viewer_placeholder.dart';
+import 'package:lolisnatcher/src/widgets/video/video_viewer.dart';
 
 class GalleryViewPage extends StatefulWidget {
   const GalleryViewPage({
@@ -69,6 +73,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
   final ValueNotifier<bool> drawerOpen = ValueNotifier(false);
 
   final ValueNotifier<bool> isActive = ValueNotifier(true);
+  final ValueNotifier<bool> drawerVisibility = ValueNotifier(true);
 
   @override
   void initState() {
@@ -126,9 +131,11 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
 
     try {
       final item = widget.tab.booruHandler.filteredFetched[page.value];
-      viewerHandler.setCurrent(item);
+      if (mounted) {
+        viewerHandler.setCurrent(item);
+      }
     } catch (_) {
-      // attempt to recover from broken out of array bounds state (i.e. when adding tag to hated removes all items from the tab)
+      // attempt to recover from broken out of array bounds state (i.e. when adding tag to hidden removes all items from the tab)
       if (widget.tab.booruHandler.filteredFetched.isEmpty) {
         page.value = 0;
         controller.jumpToPage(page.value);
@@ -158,6 +165,8 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
     ServiceHandler.enableSleep();
     super.dispose();
   }
+
+  void drawerVisibilityChanged(bool visible) => drawerVisibility.value = visible;
 
   void volumeCallback(String event) {
     // print('in gallery $event');
@@ -191,7 +200,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
       },
     );
 
-    return Scaffold(
+    final scaffold = Scaffold(
       key: viewerScaffoldKey,
       extendBodyBehindAppBar: true,
       extendBody: true,
@@ -311,6 +320,9 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                           page.value,
                         );
                       }
+                    } else if (event.physicalKey == PhysicalKeyboardKey.keyR) {
+                      // force load on R
+                      viewerHandler.forceLoadCurrentItem();
                     } else if (event.physicalKey == PhysicalKeyboardKey.escape) {
                       // exit on escape if in focus
                       if (kbFocusNode.hasFocus) {
@@ -332,214 +344,233 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                             );
                           }
 
-                          return child!;
-                        },
-                        child: Builder(
-                          builder: (context) {
-                            final int preloadCount = settingsHandler.preloadCount;
-                            final bool isSankaku = [
-                              BooruType.Sankaku,
-                              BooruType.IdolSankaku,
-                            ].any((t) => t == widget.tab.booruHandler.booru.type);
+                          final int preloadCount = settingsHandler.preloadCount;
+                          final bool isSankaku = [
+                            BooruType.Sankaku,
+                            BooruType.IdolSankaku,
+                          ].any((t) => t == widget.tab.booruHandler.booru.type);
 
-                            return ValueListenableBuilder(
-                              valueListenable: widget.tab.booruHandler.filteredFetched,
-                              builder: (context, filteredFetched, child) {
-                                return PreloadPageView.builder(
-                                  controller: controller,
-                                  preloadPagesCount: preloadCount,
-                                  // allowImplicitScrolling: true,
-                                  scrollDirection: settingsHandler.galleryScrollDirection.isVertical
-                                      ? Axis.vertical
-                                      : Axis.horizontal,
-                                  physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
-                                  itemCount: filteredFetched.length,
-                                  itemBuilder: (context, index) {
-                                    final BooruItem item = widget.tab.booruHandler.filteredFetched[index];
-                                    // String fileURL = item.fileURL;
-                                    final bool isVideo = item.mediaType.value.isVideo;
-                                    final bool isImage = item.mediaType.value.isImageOrAnimation;
-                                    final bool isNeedToGuess = item.mediaType.value.isNeedToGuess;
-                                    final bool isNeedToLoadItem =
-                                        item.mediaType.value.isNeedToLoadItem &&
-                                        widget.tab.booruHandler.hasLoadItemSupport;
-                                    // print(fileURL);
-                                    // print('isVideo: '+isVideo.toString());
+                          return PreloadPageView.builder(
+                            controller: controller,
+                            preloadPagesCount: preloadCount,
+                            // allowImplicitScrolling: true,
+                            scrollDirection: settingsHandler.galleryScrollDirection.isVertical
+                                ? Axis.vertical
+                                : Axis.horizontal,
+                            physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
+                            itemCount: filteredFetched.length,
+                            itemBuilder: (context, index) {
+                              final BooruItem item = widget.tab.booruHandler.filteredFetched[index];
 
-                                    late Widget itemWidget;
-                                    if (isImage) {
+                              final bool isFavsOrDls =
+                                  widget.tab.booruHandler.booru.type?.isFavouritesOrDownloads == true;
+                              Booru? possibleBooru;
+                              if (isFavsOrDls) {
+                                final itemFileHost = Uri.tryParse(item.fileURL)?.host;
+                                final itemPostHost = Uri.tryParse(item.postURL)?.host;
+                                possibleBooru = SettingsHandler.instance.booruList.firstWhereOrNull((e) {
+                                  final booruHost = Uri.tryParse(e.baseURL ?? '')?.host;
+
+                                  return (itemPostHost?.isNotEmpty == true &&
+                                          booruHost?.isNotEmpty == true &&
+                                          (itemPostHost! == booruHost! ||
+                                              switch (e.type) {
+                                                BooruType.IdolSankaku => IdolSankakuHandler.knownUrls.contains(
+                                                  itemPostHost,
+                                                ),
+                                                BooruType.Sankaku => SankakuHandler.knownPostUrls.contains(
+                                                  itemPostHost,
+                                                ),
+                                                _ => false,
+                                              })) ||
+                                      (itemFileHost?.isNotEmpty == true &&
+                                          booruHost?.isNotEmpty == true &&
+                                          itemFileHost! == booruHost!);
+                                });
+                                if (possibleBooru?.type?.isFavouritesOrDownloads == true) {
+                                  possibleBooru = null;
+                                }
+                              }
+
+                              return ValueListenableBuilder(
+                                valueListenable: item.mediaType,
+                                builder: (context, mediaType, _) {
+                                  final bool isVideo = mediaType.isVideo;
+                                  final bool isImage = mediaType.isImageOrAnimation;
+                                  final bool isNeedToGuess = mediaType.isNeedToGuess;
+                                  final bool isNeedToLoadItem =
+                                      mediaType.isNeedToLoadItem && widget.tab.booruHandler.hasLoadItemSupport;
+
+                                  late Widget itemWidget;
+                                  if (isImage) {
+                                    itemWidget = ValueListenableBuilder(
+                                      valueListenable: page,
+                                      builder: (_, pageVal, _) {
+                                        return ImageViewer(
+                                          item,
+                                          booru: possibleBooru ?? widget.tab.booruHandler.booru,
+                                          isViewed: pageVal == index,
+                                          key: item.key,
+                                        );
+                                      },
+                                    );
+                                  } else if (isVideo) {
+                                    if (!settingsHandler.disableVideo &&
+                                        (Platform.isAndroid ||
+                                            Platform.isIOS ||
+                                            Platform.isWindows ||
+                                            Platform.isLinux)) {
                                       itemWidget = ValueListenableBuilder(
                                         valueListenable: page,
-                                        builder: (_, page, _) {
-                                          return ImageViewer(
+                                        builder: (_, pageVal, _) {
+                                          return VideoViewer(
                                             item,
-                                            booru: widget.tab.booruHandler.booru,
-                                            isViewed: page == index,
+                                            booru: possibleBooru ?? widget.tab.booruHandler.booru,
+                                            isViewed: pageVal == index,
+                                            enableFullscreen: true,
                                             key: item.key,
                                           );
                                         },
                                       );
-                                    } else if (isVideo) {
-                                      if (!settingsHandler.disableVideo &&
-                                          (Platform.isAndroid ||
-                                              Platform.isIOS ||
-                                              Platform.isWindows ||
-                                              Platform.isLinux)) {
-                                        itemWidget = ValueListenableBuilder(
-                                          valueListenable: page,
-                                          builder: (_, page, _) {
-                                            return VideoViewer(
-                                              item,
-                                              booru: widget.tab.booruHandler.booru,
-                                              isViewed: page == index,
-                                              enableFullscreen: true,
-                                              key: item.key,
-                                            );
-                                          },
-                                        );
-                                      } else {
-                                        itemWidget = VideoViewerPlaceholder(
-                                          item: item,
-                                          booru: widget.tab.booruHandler.booru,
-                                          key: item.key,
-                                        );
-                                      }
-                                    } else if (isNeedToGuess) {
-                                      itemWidget = GuessExtensionViewer(
-                                        item: item,
-                                        booru: widget.tab.booruHandler.booru,
-                                        onMediaTypeGuessed: (MediaType mediaType) {
-                                          item.mediaType.value = mediaType;
-                                          item.possibleMediaType.value = mediaType.isUnknown
-                                              ? item.possibleMediaType.value
-                                              : null;
-                                          setState(() {});
-                                        },
-                                        key: item.key,
-                                      );
-                                    } else if (isNeedToLoadItem) {
-                                      itemWidget = LoadItemViewer(
-                                        item: item,
-                                        handler: widget.tab.booruHandler,
-                                        onItemLoaded: (newItem) {
-                                          widget.tab.booruHandler.filteredFetched[index] = newItem;
-                                          setState(() {});
-                                        },
-                                        key: item.key,
-                                      );
                                     } else {
-                                      itemWidget = GuessExtensionViewer(
+                                      itemWidget = VideoViewerPlaceholder(
                                         item: item,
-                                        booru: widget.tab.booruHandler.booru,
-                                        onMediaTypeGuessed: (MediaType mediaType) {
-                                          item.mediaType.value = mediaType;
-                                          item.possibleMediaType.value = mediaType.isUnknown
-                                              ? item.possibleMediaType.value
-                                              : null;
-                                          setState(() {});
-                                        },
+                                        booru: possibleBooru ?? widget.tab.booruHandler.booru,
                                         key: item.key,
                                       );
-                                      // itemWidget = UnknownViewerPlaceholder(item: item, key: item.key,);
                                     }
-
-                                    final child = ValueListenableBuilder(
-                                      valueListenable: viewerHandler.activeViewers,
-                                      builder: (_, activeViewers, _) {
-                                        return ValueListenableBuilder(
-                                          valueListenable: page,
-                                          builder: (context, page, child) {
-                                            final viewerIndex = widget.key is GlobalKey
-                                                ? viewerHandler.indexOfViewer(widget.key! as GlobalKey)
-                                                : -1;
-                                            final int viewerDepth = viewerIndex == -1
-                                                ? 0
-                                                : (activeViewers.length - 1 - viewerIndex);
-                                            final bool isViewerTooDeep = viewerDepth >= ViewerHandler.maxActiveViewers;
-
-                                            final bool isViewed = index == page;
-                                            final int distanceFromCurrent = (page - index).abs();
-                                            // don't render more than 3 videos at once, chance to crash is too high otherwise
-                                            // disabled video preload for sankaku because their videos cause crashes if loading/rendering(?) more than one at a time
-                                            final bool isNear =
-                                                viewerDepth < ViewerHandler.maxActiveViewers &&
-                                                (distanceFromCurrent <=
-                                                    (isVideo ? (isSankaku ? 0 : min(preloadCount, 1)) : preloadCount));
-
-                                            return AnimatedSwitcher(
-                                              duration: const Duration(milliseconds: 100),
-                                              child: (isViewerTooDeep || (!isViewed && !isNear))
-                                                  ? Center(child: Container(color: Colors.black))
-                                                  : child,
-                                            );
-                                          },
-                                          child: ClipRect(
-                                            // Stack/Buttons Temp fix for desktop pageview only scrollable on like 2px at edges of screen. Think its a windows only bug
-                                            child: GestureDetector(
-                                              onTap: () => viewerHandler.toggleToolbar(false),
-                                              onLongPress: () => viewerHandler.toggleToolbar(true),
-                                              child: AnimatedSwitcher(
-                                                duration: const Duration(milliseconds: 100),
-                                                child: itemWidget,
-                                              ),
-                                            ),
-                                          ),
-                                        );
+                                  } else if (isNeedToGuess) {
+                                    itemWidget = GuessExtensionViewer(
+                                      item: item,
+                                      booru: possibleBooru ?? widget.tab.booruHandler.booru,
+                                      onMediaTypeGuessed: (MediaType newMediaType) {
+                                        item.mediaType.value = newMediaType;
+                                        item.possibleMediaType.value = newMediaType.isUnknown
+                                            ? item.possibleMediaType.value
+                                            : null;
                                       },
+                                      key: item.key,
                                     );
-
-                                    if (settingsHandler.disableCustomPageTransitions) {
-                                      return child;
-                                    }
-
-                                    return AnimatedBuilder(
-                                      animation: controller,
-                                      builder: (context, child) {
-                                        return slidePageTransition(
-                                          context,
-                                          controller,
-                                          settingsHandler.galleryScrollDirection.isVertical
-                                              ? Axis.vertical
-                                              : Axis.horizontal,
-                                          index,
-                                          child,
-                                        );
+                                  } else if (isNeedToLoadItem) {
+                                    itemWidget = LoadItemViewer(
+                                      item: item,
+                                      handler: widget.tab.booruHandler,
+                                      onItemLoaded: (newItem) {
+                                        widget.tab.booruHandler.filteredFetched[index] = newItem;
+                                        // ignore: invalid_use_of_protected_member
+                                        newItem.mediaType.refresh();
                                       },
-                                      child: child,
+                                      key: item.key,
                                     );
-                                  },
-                                  onPageChanged: (int index) {
-                                    page.value = index;
-                                    widget.onPageChanged?.call(index);
-                                    ServiceHandler.disableSleep();
+                                  } else {
+                                    itemWidget = GuessExtensionViewer(
+                                      item: item,
+                                      booru: possibleBooru ?? widget.tab.booruHandler.booru,
+                                      onMediaTypeGuessed: (MediaType newMediaType) {
+                                        item.mediaType.value = newMediaType;
+                                        item.possibleMediaType.value = newMediaType.isUnknown
+                                            ? item.possibleMediaType.value
+                                            : null;
+                                      },
+                                      key: item.key,
+                                    );
+                                  }
 
-                                    kbFocusNode.requestFocus();
+                                  final child = ListenableBuilder(
+                                    listenable: Listenable.merge([viewerHandler.activeViewers, page]),
+                                    builder: (context, child) {
+                                      final activeViewers = viewerHandler.activeViewers.value;
+                                      final pageVal = page.value;
+                                      final viewerIndex = widget.key is GlobalKey
+                                          ? viewerHandler.indexOfViewer(widget.key! as GlobalKey)
+                                          : -1;
+                                      final int viewerDepth = viewerIndex == -1
+                                          ? 0
+                                          : (activeViewers.length - 1 - viewerIndex);
+                                      final bool isViewerTooDeep = viewerDepth >= ViewerHandler.maxActiveViewers;
 
-                                    try {
-                                      final item = widget.tab.booruHandler.filteredFetched[index];
-                                      viewerHandler.setCurrent(item);
-                                    } catch (e) {
-                                      // attempt to recover from broken out of array bounds state (i.e. when adding tag to hated removes all items from the tab)
-                                      if (widget.tab.booruHandler.filteredFetched.isEmpty) {
-                                        page.value = 0;
-                                        controller.jumpToPage(page.value);
-                                      } else if (page.value >= widget.tab.booruHandler.filteredFetched.length - 1) {
-                                        page.value = widget.tab.booruHandler.filteredFetched.length - 1;
-                                        controller.jumpToPage(page.value);
-                                      }
+                                      final bool isViewedVal = index == pageVal;
+                                      final int distanceFromCurrent = (pageVal - index).abs();
+                                      // don't render more than 3 videos at once, chance to crash is too high otherwise
+                                      // disabled video preload for sankaku because their videos cause crashes if loading/rendering(?) more than one at a time
+                                      final bool isNear =
+                                          viewerDepth < ViewerHandler.maxActiveViewers &&
+                                          (distanceFromCurrent <=
+                                              (isVideo ? (isSankaku ? 0 : min(preloadCount, 1)) : preloadCount));
 
-                                      viewerHandler.dropCurrent();
-                                    }
+                                      return AnimatedSwitcher(
+                                        duration: const Duration(milliseconds: 100),
+                                        child: (isViewerTooDeep || (!isViewedVal && !isNear))
+                                            ? Center(child: Container(color: Colors.black))
+                                            : child,
+                                      );
+                                    },
+                                    child: ClipRect(
+                                      // Stack/Buttons Temp fix for desktop pageview only scrollable on like 2px at edges of screen. Think its a windows only bug
+                                      child: GestureDetector(
+                                        onTap: () => viewerHandler.toggleToolbar(false),
+                                        onLongPress: () => viewerHandler.toggleToolbar(true),
+                                        child: AnimatedSwitcher(
+                                          duration: const Duration(milliseconds: 100),
+                                          child: itemWidget,
+                                        ),
+                                      ),
+                                    ),
+                                  );
 
-                                    final bool isVolumeAllowed =
-                                        !settingsHandler.useVolumeButtonsForScroll || viewerHandler.displayAppbar.value;
-                                    ServiceHandler.setVolumeButtons(isVolumeAllowed);
-                                  },
-                                );
-                              },
-                            );
-                          },
-                        ),
+                                  if (settingsHandler.disableCustomPageTransitions) {
+                                    return child;
+                                  }
+
+                                  return AnimatedBuilder(
+                                    animation: controller,
+                                    builder: (context, child) {
+                                      return slidePageTransition(
+                                        context,
+                                        controller,
+                                        settingsHandler.galleryScrollDirection.isVertical
+                                            ? Axis.vertical
+                                            : Axis.horizontal,
+                                        index,
+                                        child,
+                                      );
+                                    },
+                                    child: child,
+                                  );
+                                },
+                              );
+                            },
+                            onPageChanged: (int index) {
+                              page.value = index;
+                              widget.onPageChanged?.call(index);
+                              ServiceHandler.disableSleep();
+
+                              kbFocusNode.requestFocus();
+
+                              try {
+                                final item = widget.tab.booruHandler.filteredFetched[index];
+                                if (mounted) {
+                                  viewerHandler.setCurrent(item);
+                                }
+                              } catch (e) {
+                                // attempt to recover from broken out of array bounds state (i.e. when adding tag to hidden removes all items from the tab)
+                                if (widget.tab.booruHandler.filteredFetched.isEmpty) {
+                                  page.value = 0;
+                                  controller.jumpToPage(page.value);
+                                } else if (page.value >= widget.tab.booruHandler.filteredFetched.length - 1) {
+                                  page.value = widget.tab.booruHandler.filteredFetched.length - 1;
+                                  controller.jumpToPage(page.value);
+                                }
+
+                                viewerHandler.dropCurrent();
+                              }
+
+                              final bool isVolumeAllowed =
+                                  !settingsHandler.useVolumeButtonsForScroll || viewerHandler.displayAppbar.value;
+                              ServiceHandler.setVolumeButtons(isVolumeAllowed);
+                            },
+                          );
+                        },
                       ),
                     ),
                     ValueListenableBuilder(
@@ -592,11 +623,30 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
       endDrawerEnableOpenDragGesture: false,
       onEndDrawerChanged: (isOpened) {
         drawerOpen.value = isOpened;
+        drawerVisibilityChanged(isOpened);
       },
       endDrawer: ItemInfoDrawer(
         tab: widget.tab,
         pageController: controller,
+        onVisibilityChanged: drawerVisibilityChanged,
       ),
+    );
+
+    //
+
+    return ValueListenableBuilder(
+      valueListenable: drawerVisibility,
+      builder: (context, drawerVisibility, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            drawerTheme: Theme.of(context).drawerTheme.copyWith(
+              scrimColor: drawerVisibility ? null : Colors.transparent,
+            ),
+          ),
+          child: child!,
+        );
+      },
+      child: scaffold,
     );
   }
 }
@@ -629,11 +679,13 @@ class ItemInfoDrawer extends StatefulWidget {
   const ItemInfoDrawer({
     required this.tab,
     required this.pageController,
+    required this.onVisibilityChanged,
     super.key,
   });
 
   final SearchTab tab;
   final PreloadPageController pageController;
+  final ValueChanged<bool> onVisibilityChanged;
 
   @override
   State<ItemInfoDrawer> createState() => _ItemInfoDrawerState();
@@ -658,6 +710,11 @@ class _ItemInfoDrawerState extends State<ItemInfoDrawer> {
   void pageListener() {
     page.value = widget.pageController.page?.round() ?? 0;
     print('page: ${page.value}/${widget.pageController.page}');
+  }
+
+  void toggleVisibility() {
+    isVisible.value = !isVisible.value;
+    widget.onVisibilityChanged(isVisible.value);
   }
 
   @override
@@ -695,11 +752,11 @@ class _ItemInfoDrawerState extends State<ItemInfoDrawer> {
           valueListenable: isVisible,
           builder: (context, _, _) {
             return GestureDetector(
-              onLongPressDown: (_) => isVisible.value = !isVisible.value,
-              onLongPressUp: () => isVisible.value = !isVisible.value,
-              onLongPressCancel: () => isVisible.value = !isVisible.value,
+              onLongPressDown: (_) => toggleVisibility(),
+              onLongPressUp: toggleVisibility,
+              onLongPressCancel: toggleVisibility,
               child: OutlinedButton(
-                onPressed: () => isVisible.value = !isVisible.value,
+                onPressed: toggleVisibility,
                 child: isVisible.value ? const Icon(Icons.remove_red_eye) : const Icon(Icons.remove_red_eye_outlined),
               ),
             );
@@ -751,14 +808,42 @@ class _ItemInfoDrawerState extends State<ItemInfoDrawer> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Container(
-                alignment: Alignment.bottomCenter,
-                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-                height: (50 * buttons.length) + (12 * (buttons.length - 1)),
-                width: 50,
-                child: Column(
-                  spacing: 12,
-                  children: buttons,
+              SafeArea(
+                child: Container(
+                  alignment: Alignment.bottomCenter,
+                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+                  height: (50 * buttons.length) + (12 * (buttons.length - 1)),
+                  width: 50,
+                  child: ValueListenableBuilder(
+                    valueListenable: isVisible,
+                    builder: (context, isVisible, child) {
+                      return Theme(
+                        data: Theme.of(context).copyWith(
+                          outlinedButtonTheme: OutlinedButtonThemeData(
+                            style: OutlinedButtonTheme.of(context).style?.copyWith(
+                              backgroundColor: WidgetStatePropertyAll(
+                                Theme.of(context).canvasColor.withValues(alpha: isVisible ? 0.66 : 0.1),
+                              ),
+                              side: WidgetStatePropertyAll(
+                                BorderSide(
+                                  width: isVisible ? 1.5 : 0.5,
+                                  color: Theme.of(context).colorScheme.secondary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        child: Opacity(
+                          opacity: isVisible ? 0.9 : 0.3,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Column(
+                      spacing: 12,
+                      children: buttons,
+                    ),
+                  ),
                 ),
               ),
 

@@ -77,7 +77,7 @@ class SankakuHandler extends BooruHandler {
 
   @override
   BooruItem? parseItemFromResponse(dynamic responseItem, int index) {
-    final dynamic current = responseItem;
+    final current = responseItem as Map<String, dynamic>;
 
     final List<Tag> tags = [];
     final Map<TagType, List<String>> tagMap = {};
@@ -131,6 +131,7 @@ class SankakuHandler extends BooruHandler {
         rating: current['rating'],
         score: current['total_score'].toString(),
         md5String: current['md5'],
+        uploaderName: current['author']['name'].toString(),
         postDate: postDate,
         postDateFormat: postDateFormat,
       );
@@ -360,6 +361,7 @@ class SankakuHandler extends BooruHandler {
   @override
   NoteItem? parseNote(dynamic responseItem, int index) {
     final current = responseItem;
+    if (current['is_active'] == false) return null;
     return NoteItem(
       id: current['id'].toString(),
       postID: current['post_id'].toString(),
@@ -407,7 +409,7 @@ class SankakuHandler extends BooruHandler {
           MetaTagValue(name: 'Unquality', value: 'unquality'),
         ],
       ),
-      StringMetaTag(name: 'User', keyName: 'user'),
+      UserMetaTag(),
       StringMetaTag(name: 'Threshold', keyName: 'threshold'),
       DateMetaTag(
         name: 'Date',

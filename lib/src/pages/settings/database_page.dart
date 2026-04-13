@@ -67,12 +67,7 @@ class _DatabasePageState extends State<DatabasePage> {
     super.dispose();
   }
 
-  //called when page is closed, sets settingshandler variables and then writes settings to disk
-  Future<void> _onPopInvoked(bool didPop, _) async {
-    if (didPop) {
-      return;
-    }
-
+  Future<void> _onPopInvoked(_, _) async {
     if (isUpdating) {
       FlashElements.showSnackbar(
         title: Text(context.loc.settings.database.cantLeavePageNow, style: const TextStyle(fontSize: 20)),
@@ -98,15 +93,11 @@ class _DatabasePageState extends State<DatabasePage> {
       return;
     }
 
-    // Set settingshandler values here
     settingsHandler.dbEnabled = dbEnabled;
     settingsHandler.indexesEnabled = indexesEnabled;
     settingsHandler.searchHistoryEnabled = searchHistoryEnabled;
     settingsHandler.tagTypeFetchEnabled = tagTypeFetchEnabled;
-    final bool result = await settingsHandler.saveSettings(restate: false);
-    if (result) {
-      Navigator.of(context).pop();
-    }
+    await settingsHandler.saveSettings(restate: false);
   }
 
   List<Booru> getSankakuBoorus() {
@@ -295,7 +286,7 @@ class _DatabasePageState extends State<DatabasePage> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
+      canPop: !isUpdating && !changingIndexes,
       onPopInvokedWithResult: _onPopInvoked,
       child: Scaffold(
         resizeToAvoidBottomInset: true,
@@ -477,10 +468,7 @@ class _DatabasePageState extends State<DatabasePage> {
                       context: context,
                       builder: (BuildContext context) {
                         return SettingsDialog(
-                          title: Text(context.loc.areYouSure),
-                          contentItems: [
-                            Text(context.loc.settings.database.deleteDatabaseConfirm),
-                          ],
+                          title: Text(context.loc.settings.database.deleteDatabaseConfirm),
                           actionButtons: [
                             const CancelButton(withIcon: true),
                             ElevatedButton.icon(
@@ -521,10 +509,7 @@ class _DatabasePageState extends State<DatabasePage> {
                       context: context,
                       builder: (BuildContext context) {
                         return SettingsDialog(
-                          title: Text(context.loc.areYouSure),
-                          contentItems: [
-                            Text(context.loc.settings.database.clearAllSnatchedConfirm),
-                          ],
+                          title: Text(context.loc.settings.database.clearAllSnatchedConfirm),
                           actionButtons: [
                             const CancelButton(withIcon: true),
                             ElevatedButton.icon(
@@ -575,10 +560,7 @@ class _DatabasePageState extends State<DatabasePage> {
                       context: context,
                       builder: (BuildContext context) {
                         return SettingsDialog(
-                          title: Text(context.loc.areYouSure),
-                          contentItems: [
-                            Text(context.loc.settings.database.clearAllFavouritedConfirm),
-                          ],
+                          title: Text(context.loc.settings.database.clearAllFavouritedConfirm),
                           actionButtons: [
                             const CancelButton(withIcon: true),
                             ElevatedButton.icon(
@@ -629,10 +611,7 @@ class _DatabasePageState extends State<DatabasePage> {
                       context: context,
                       builder: (BuildContext context) {
                         return SettingsDialog(
-                          title: Text(context.loc.areYouSure),
-                          contentItems: [
-                            Text(context.loc.settings.database.clearSearchHistoryConfirm),
-                          ],
+                          title: Text(context.loc.settings.database.clearSearchHistoryConfirm),
                           actionButtons: [
                             const CancelButton(withIcon: true),
                             ElevatedButton.icon(

@@ -42,6 +42,7 @@ class _GalleryPageState extends State<GalleryPage> {
 
   final TextEditingController preloadAmountController = TextEditingController();
   final TextEditingController preloadSizeController = TextEditingController();
+  final TextEditingController preloadHeightController = TextEditingController();
   final TextEditingController scrollSpeedController = TextEditingController();
   final TextEditingController galleryAutoScrollController = TextEditingController();
 
@@ -70,6 +71,7 @@ class _GalleryPageState extends State<GalleryPage> {
     galleryAutoScrollController.text = settingsHandler.galleryAutoScrollTime.toString();
     preloadAmountController.text = settingsHandler.preloadCount.toString();
     preloadSizeController.text = settingsHandler.preloadSizeLimit.toString();
+    preloadHeightController.text = settingsHandler.preloadHeight.toString();
     loadingGif = settingsHandler.loadingGif;
     wakeLockEnabled = settingsHandler.wakeLockEnabled;
     enableHeroTransitions = settingsHandler.enableHeroTransitions;
@@ -81,16 +83,13 @@ class _GalleryPageState extends State<GalleryPage> {
   void dispose() {
     preloadAmountController.dispose();
     preloadSizeController.dispose();
+    preloadHeightController.dispose();
     scrollSpeedController.dispose();
     galleryAutoScrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _onPopInvoked(bool didPop, _) async {
-    if (didPop) {
-      return;
-    }
-
+  Future<void> _onPopInvoked(_, _) async {
     settingsHandler.autoHideImageBar = autoHideImageBar;
     settingsHandler.galleryMode = galleryMode;
     settingsHandler.galleryBarPosition = galleryBarPosition;
@@ -113,13 +112,11 @@ class _GalleryPageState extends State<GalleryPage> {
     settingsHandler.volumeButtonsScrollSpeed = (int.tryParse(scrollSpeedController.text) ?? 200).clamp(0, 1_000_000);
     settingsHandler.galleryAutoScrollTime = (int.tryParse(galleryAutoScrollController.text) ?? 4000).clamp(100, 10000);
 
-    settingsHandler.preloadCount = (int.tryParse(preloadAmountController.text) ?? 1).clamp(0, 3);
-    settingsHandler.preloadSizeLimit = (double.tryParse(preloadSizeController.text) ?? 0).clamp(0, double.infinity);
+    settingsHandler.preloadCount = (int.tryParse(preloadAmountController.text) ?? 1).clamp(0, 4);
+    settingsHandler.preloadSizeLimit = (double.tryParse(preloadSizeController.text) ?? 0.2).clamp(0, double.infinity);
+    settingsHandler.preloadHeight = (int.tryParse(preloadHeightController.text) ?? (4096 * 4)).clamp(0, 2_000_000_000);
 
-    final bool result = await settingsHandler.saveSettings(restate: false);
-    if (result) {
-      Navigator.of(context).pop();
-    }
+    await settingsHandler.saveSettings(restate: false);
   }
 
   @override
@@ -131,7 +128,6 @@ class _GalleryPageState extends State<GalleryPage> {
     final bool hasHydrus = settingsHandler.hasHydrus;
 
     return PopScope(
-      canPop: false,
       onPopInvokedWithResult: _onPopInvoked,
       child: Scaffold(
         resizeToAvoidBottomInset: true,
@@ -148,18 +144,18 @@ class _GalleryPageState extends State<GalleryPage> {
                 inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
                 resetText: () => settingsHandler.map['preloadCount']!['default']!.toString(),
                 numberButtons: true,
-                numberStep: 1,
-                numberMin: 0,
-                numberMax: 5,
+                numberStep: (settingsHandler.map['preloadCount']!['step']!).toDouble(),
+                numberMin: settingsHandler.map['preloadCount']!['lowerLimit']!.toDouble(),
+                numberMax: settingsHandler.map['preloadCount']!['upperLimit']!.toDouble(),
                 validator: (String? value) {
                   final int? parse = int.tryParse(value ?? '');
                   if (value == null || value.isEmpty) {
                     return context.loc.validationErrors.required;
                   } else if (parse == null) {
                     return context.loc.validationErrors.invalidNumericValue;
-                  } else if (parse < 0) {
+                  } else if (parse < settingsHandler.map['preloadCount']!['lowerLimit']!.toDouble()) {
                     return context.loc.validationErrors.greaterThanOrEqualZero;
-                  } else if (parse > 3) {
+                  } else if (parse > settingsHandler.map['preloadCount']!['upperLimit']!.toDouble()) {
                     return context.loc.validationErrors.lessThan4;
                   } else {
                     return null;
@@ -193,6 +189,34 @@ class _GalleryPageState extends State<GalleryPage> {
                   }
                 },
               ),
+              SettingsTextInput(
+                controller: preloadHeightController,
+                title: context.loc.settings.viewer.preloadHeightLimit,
+                subtitle: Text(context.loc.settings.viewer.preloadHeightLimitSubtitle),
+                inputType: TextInputType.number,
+                inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
+                resetText: () => settingsHandler.map['preloadHeight']!['default']!.toString(),
+                numberButtons: true,
+                numberStep: settingsHandler.map['preloadHeight']!['step']!.toDouble(),
+                numberMin: settingsHandler.map['preloadHeight']!['lowerLimit']!.toDouble(),
+                numberMax: settingsHandler.map['preloadHeight']!['upperLimit']!.toDouble(),
+                validator: (String? value) {
+                  final int? parse = int.tryParse(value ?? '');
+                  if (value == null || value.isEmpty) {
+                    return context.loc.validationErrors.required;
+                  } else if (parse == null) {
+                    return context.loc.validationErrors.invalidNumericValue;
+                  } else if (parse < settingsHandler.map['preloadHeight']!['lowerLimit']!.toDouble() ||
+                      parse > settingsHandler.map['preloadHeight']!['upperLimit']!.toDouble()) {
+                    return context.loc.validationErrors.rangeError(
+                      min: settingsHandler.map['preloadHeight']!['lowerLimit']!.toDouble(),
+                      max: settingsHandler.map['preloadHeight']!['upperLimit']!.toDouble(),
+                    );
+                  } else {
+                    return null;
+                  }
+                },
+              ),
               SettingsOptionsList<ImageQuality>(
                 value: galleryMode,
                 items: ImageQuality.values,
@@ -202,7 +226,7 @@ class _GalleryPageState extends State<GalleryPage> {
                   });
                 },
                 title: context.loc.settings.viewer.imageQuality,
-                itemTitleBuilder: (e) => e?.locName(context) ?? '',
+                itemTitleBuilder: (e) => e?.locName ?? '',
               ),
               SettingsOptionsList<ScrollDirection>(
                 value: galleryScrollDirection,
@@ -213,7 +237,7 @@ class _GalleryPageState extends State<GalleryPage> {
                   });
                 },
                 title: context.loc.settings.viewer.viewerScrollDirection,
-                itemTitleBuilder: (e) => e?.locName(context) ?? '',
+                itemTitleBuilder: (e) => e?.locName ?? '',
               ),
               SettingsOptionsList<VerticalPosition>(
                 value: galleryBarPosition,
@@ -224,7 +248,7 @@ class _GalleryPageState extends State<GalleryPage> {
                   });
                 },
                 title: context.loc.settings.viewer.viewerToolbarPosition,
-                itemTitleBuilder: (e) => e?.locName(context) ?? '',
+                itemTitleBuilder: (e) => e?.locName ?? '',
               ),
               SettingsOptionsList<ButtonPosition>(
                 value: zoomButtonPosition,
@@ -235,7 +259,7 @@ class _GalleryPageState extends State<GalleryPage> {
                   });
                 },
                 title: context.loc.settings.viewer.zoomButtonPosition,
-                itemTitleBuilder: (e) => e?.locName(context) ?? '',
+                itemTitleBuilder: (e) => e?.locName ?? '',
               ),
               SettingsOptionsList<ButtonPosition>(
                 value: changePageButtonsPosition,
@@ -246,7 +270,7 @@ class _GalleryPageState extends State<GalleryPage> {
                   });
                 },
                 title: context.loc.settings.viewer.changePageButtonsPosition,
-                itemTitleBuilder: (e) => e?.locName(context) ?? '',
+                itemTitleBuilder: (e) => e?.locName ?? '',
               ),
               SettingsToggle(
                 value: autoHideImageBar,
@@ -356,7 +380,7 @@ class _GalleryPageState extends State<GalleryPage> {
                             child: Builder(
                               builder: (context) {
                                 final button = buttonOrder[index];
-                                final title = button.locName(context);
+                                final title = button.locName;
 
                                 final bool isInfo = button.isInfo;
 
@@ -454,11 +478,8 @@ class _GalleryPageState extends State<GalleryPage> {
                             ),
                           ),
                       ],
-                      onReorder: (int oldIndex, int newIndex) {
+                      onReorderItem: (int oldIndex, int newIndex) {
                         setState(() {
-                          if (oldIndex < newIndex) {
-                            newIndex -= 1;
-                          }
                           final item = buttonOrder.removeAt(oldIndex);
                           buttonOrder.insert(newIndex, item);
                         });
@@ -478,7 +499,7 @@ class _GalleryPageState extends State<GalleryPage> {
                   });
                 },
                 title: context.loc.settings.viewer.defaultShareAction,
-                itemTitleBuilder: (e) => e?.locName(context) ?? '',
+                itemTitleBuilder: (e) => e?.locName ?? '',
                 trailingIcon: IconButton(
                   icon: const Icon(Icons.help_outline),
                   onPressed: () {
