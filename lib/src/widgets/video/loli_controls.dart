@@ -16,7 +16,6 @@ import 'package:video_player/video_player.dart';
 
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 
@@ -463,7 +462,7 @@ class _LoliControlsState extends State<LoliControls> {
   }
 
   Widget _buildDebugInfo() {
-    if (SettingsHandler.instance.showVideoStats.value) {
+    if (SX.showVideoStats.value) {
       return Positioned(
         left: 8,
         top: MediaQuery.paddingOf(context).top + 32,

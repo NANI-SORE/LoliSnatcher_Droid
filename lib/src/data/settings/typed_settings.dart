@@ -509,17 +509,25 @@ class _IntSettingWidgetState extends State<_IntSettingWidget> {
     super.initState();
     _controller = TextEditingController(text: widget.state.value.toString());
     widget.state.effectiveNotifier.addListener(_onValueChanged);
+    widget.state.overridesNotifier.addListener(_onValueChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _onValueChanged();
   }
 
   @override
   void dispose() {
     widget.state.effectiveNotifier.removeListener(_onValueChanged);
+    widget.state.overridesNotifier.removeListener(_onValueChanged);
     _controller.dispose();
     super.dispose();
   }
 
   void _onValueChanged() {
-    final newText = widget.state.value.toString();
+    final newText = widget.state.scopedValue(context).toString();
     if (_controller.text != newText) {
       _controller.text = newText;
     }
@@ -580,17 +588,25 @@ class _DoubleSettingWidgetState extends State<_DoubleSettingWidget> {
     super.initState();
     _controller = TextEditingController(text: widget.state.value.toString());
     widget.state.effectiveNotifier.addListener(_onValueChanged);
+    widget.state.overridesNotifier.addListener(_onValueChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _onValueChanged();
   }
 
   @override
   void dispose() {
     widget.state.effectiveNotifier.removeListener(_onValueChanged);
+    widget.state.overridesNotifier.removeListener(_onValueChanged);
     _controller.dispose();
     super.dispose();
   }
 
   void _onValueChanged() {
-    final newText = widget.state.value.toString();
+    final newText = widget.state.scopedValue(context).toString();
     if (_controller.text != newText) {
       _controller.text = newText;
     }
@@ -649,17 +665,25 @@ class _StringSettingWidgetState extends State<_StringSettingWidget> {
     super.initState();
     _controller = TextEditingController(text: widget.state.value);
     widget.state.effectiveNotifier.addListener(_onValueChanged);
+    widget.state.overridesNotifier.addListener(_onValueChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _onValueChanged();
   }
 
   @override
   void dispose() {
     widget.state.effectiveNotifier.removeListener(_onValueChanged);
+    widget.state.overridesNotifier.removeListener(_onValueChanged);
     _controller.dispose();
     super.dispose();
   }
 
   void _onValueChanged() {
-    final newText = widget.state.value;
+    final newText = widget.state.scopedValue(context);
     if (_controller.text != newText) {
       _controller.text = newText;
     }

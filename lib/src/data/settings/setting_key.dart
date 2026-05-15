@@ -95,7 +95,6 @@ enum SettingKey {
   snatchCooldown,
   jsonWrite,
   extPathOverride,
-  storageDirectorySlot,
   cacheStatsSlot,
   backupPath,
 
@@ -126,9 +125,7 @@ enum SettingKey {
 
   // Tags
   defTags,
-  hatedTags,
   hiddenTags,
-  lovedTags,
   markedTags,
 
   // Other
@@ -162,10 +159,6 @@ enum SettingKey {
   /// Override in the switch for any keys that differ.
   String get jsonKey {
     switch (this) {
-      case .hatedTags:
-        return SettingKey.hiddenTags.name;
-      case .lovedTags:
-        return SettingKey.markedTags.name;
       default:
         return name;
     }

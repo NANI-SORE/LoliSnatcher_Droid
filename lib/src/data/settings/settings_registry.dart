@@ -179,14 +179,14 @@ class SettingsRegistry {
 
   /// Collect all in-memory overrides for a booru into a JSON-compatible map.
   ///
-  /// Only saves overrides that differ from the global value.
+  /// Saves every explicit override, even if it currently matches the global value.
+  /// Keeping equal overrides explicit prevents future global changes from silently
+  /// changing a booru that the user customized.
   /// Returns null if no meaningful overrides exist (so the field can be omitted from the booru config).
   Map<String, dynamic>? saveOverridesToMap(String booruName) {
     final overrides = <String, dynamic>{};
     for (final state in _states.values) {
       if (state.def.supportsPerBooru && state.hasOverrideFor(booruName)) {
-        // Skip overrides that match the global value
-        if (state.getOverrideFor(booruName) == state.globalValue) continue;
         final json = state.overrideToJson(booruName);
         if (json != null) {
           overrides[state.def.key.jsonKey] = json;

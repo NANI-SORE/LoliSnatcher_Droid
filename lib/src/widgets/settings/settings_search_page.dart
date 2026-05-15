@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lolisnatcher/src/data/settings/setting_state.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
+import 'package:lolisnatcher/src/widgets/settings/auto_settings_page.dart';
 
 /// Global search page for all registered settings.
 ///
@@ -28,7 +29,9 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
   @override
   Widget build(BuildContext context) {
     final registry = SettingsRegistry.instance;
-    final results = _query.isEmpty ? <SettingState<dynamic>>[] : registry.search(_query, context);
+    final results = _query.isEmpty
+        ? <SettingState<dynamic>>[]
+        : registry.search(_query, context).where(_isSearchVisible).toList();
 
     // Group results by their first category
     final grouped = <String, List<SettingState<dynamic>>>{};
@@ -70,6 +73,14 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
     );
   }
 
+  bool _isSearchVisible(SettingState<dynamic> state) {
+    if (state.def.widgetBuilder == null || state.def.isWidgetSlot) return false;
+    if (state.def.categories.isNotEmpty && !state.def.categories.any((c) => c.visibleWhen?.call() ?? true)) {
+      return false;
+    }
+    return state.def.enabledWhen?.call() ?? true;
+  }
+
   int _countItems(Map<String, List<SettingState<dynamic>>> grouped) {
     int count = 0;
     for (final entry in grouped.entries) {
@@ -94,7 +105,7 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
       final renderableStates = entry.value.where((s) => s.def.widgetBuilder != null).toList();
       for (final state in renderableStates) {
         if (current == index) {
-          return state.buildWidget(context);
+          return ReactiveSettingWidget(state: state);
         }
         current++;
       }

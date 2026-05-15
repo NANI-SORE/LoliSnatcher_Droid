@@ -85,18 +85,22 @@ class SettingState<T> {
 
   /// Set an override value for a specific booru.
   void setOverrideFor(String booruName, T val) {
+    final oldEffective = _computeEffective();
     final validated = def.validate?.call(val) ?? val;
     final map = Map<String, T>.from(_booruOverrides.value);
     map[booruName] = validated;
     _booruOverrides.value = map; // Triggers notification
+    _notifyIfEffectiveChanged(oldEffective);
   }
 
   /// Remove the override for a specific booru (will use global value).
   void removeOverrideFor(String booruName) {
     if (!_booruOverrides.value.containsKey(booruName)) return;
+    final oldEffective = _computeEffective();
     final map = Map<String, T>.from(_booruOverrides.value);
     map.remove(booruName);
     _booruOverrides.value = map; // Triggers notification
+    _notifyIfEffectiveChanged(oldEffective);
   }
 
   /// All booru names that have overrides for this setting.
@@ -242,6 +246,13 @@ class SettingState<T> {
       return _booruOverrides.value[currentBooruName] as T;
     }
     return _globalValue.value;
+  }
+
+  void _notifyIfEffectiveChanged(T oldEffective) {
+    final newEffective = _computeEffective();
+    if (oldEffective != newEffective) {
+      def.onChanged?.call(oldEffective, newEffective);
+    }
   }
 
   ValueNotifier<T> _createEffectiveNotifier() {

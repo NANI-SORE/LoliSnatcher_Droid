@@ -211,7 +211,7 @@ class _MainAppState extends State<MainApp> {
               );
 
               return ValueListenableBuilder(
-                valueListenable: settingsHandler.showPerf,
+                valueListenable: SX.showPerf.state.effectiveNotifier,
                 builder: (context, showPerf, _) {
                   return MaterialApp(
                     title: SX.appAlias.value.locName,
@@ -287,8 +287,6 @@ class DebuggingWidgets extends StatefulWidget {
 }
 
 class _DebuggingWidgetsState extends State<DebuggingWidgets> with WidgetsBindingObserver {
-  final settingsHandler = SettingsHandler.instance;
-
   final ValueNotifier<int> maxFps = ValueNotifier(60);
 
   @override
@@ -377,11 +375,11 @@ class _DebuggingWidgetsState extends State<DebuggingWidgets> with WidgetsBinding
       valueListenable: maxFps,
       builder: (context, maxFps, child) {
         return ValueListenableBuilder(
-          valueListenable: settingsHandler.showFps,
+          valueListenable: SX.showFps.state.effectiveNotifier,
           builder: (context, showFps, child) => !showFps
               ? child!
               : FPSMonitor(
-                  showFPSChart: settingsHandler.showFps.value,
+                  showFPSChart: SX.showFps.value,
                   maxFPS: maxFps,
                   onFPSChanged: (_) {},
                   showText: true,
@@ -394,11 +392,11 @@ class _DebuggingWidgetsState extends State<DebuggingWidgets> with WidgetsBinding
         );
       },
       child: ValueListenableBuilder(
-        valueListenable: settingsHandler.showImageStats,
+        valueListenable: SX.showImageStats.state.effectiveNotifier,
         builder: (context, showImageStats, _) => !showImageStats
             ? widget.child
             : ImageStats(
-                isEnabled: settingsHandler.showImageStats.value,
+                isEnabled: SX.showImageStats.value,
                 width: 120,
                 height: 100,
                 align: Alignment.centerLeft,
