@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/boorus/gelbooru_alikes_handler.dart';
@@ -12,10 +11,13 @@ import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
+import 'package:lolisnatcher/src/pages/settings/booru_overrides_page.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -132,8 +134,14 @@ class _BooruEditState extends State<BooruEdit> {
               name: context.loc.settings.booruEditor.saveBooru,
               icon: isTesting ? const CircularProgressIndicator() : const Icon(Icons.save),
               action: onSave,
-              onLongPress: settingsHandler.isDebug.value ? () => onSave(force: true) : null,
+              onLongPress: SX.isDebug.value ? () => onSave(force: true) : null,
             ),
+            if (widget.booru.name != 'New')
+              SettingsButton(
+                name: 'Per-booru Settings'.temploc,
+                icon: const Icon(Icons.tune),
+                page: () => BooruOverridesPage(booru: widget.booru, saveOnPop: false),
+              ),
             const SettingsButton(name: '', enabled: false),
             SettingsTextInput(
               controller: booruNameController,
@@ -141,7 +149,7 @@ class _BooruEditState extends State<BooruEdit> {
               onChanged: (_) => setState(() {}),
               clearable: true,
               pasteable: true,
-              enableIMEPersonalizedLearning: !settingsHandler.incognitoKeyboard,
+              enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
             ),
             SettingsTextInput(
               controller: booruURLController,
@@ -150,7 +158,7 @@ class _BooruEditState extends State<BooruEdit> {
               inputType: TextInputType.url,
               clearable: true,
               pasteable: true,
-              enableIMEPersonalizedLearning: !settingsHandler.incognitoKeyboard,
+              enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
             ),
             //
             if (Tools.isOnPlatformWithWebviewSupport)
@@ -193,7 +201,7 @@ class _BooruEditState extends State<BooruEdit> {
               hintText: context.loc.settings.booruEditor.booruFaviconPlaceholder,
               onChanged: (_) => setState(() {}),
               inputType: TextInputType.url,
-              enableIMEPersonalizedLearning: !settingsHandler.incognitoKeyboard,
+              enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
               trailingIcon: SizedBox(
                 height: 24,
                 width: 24,
@@ -249,7 +257,7 @@ class _BooruEditState extends State<BooruEdit> {
               clearable: true,
               pasteable: true,
               drawTopBorder: true,
-              enableIMEPersonalizedLearning: !settingsHandler.incognitoKeyboard,
+              enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
             ),
             SettingsTextInput(
               controller: booruAPIKeyController,
@@ -259,7 +267,7 @@ class _BooruEditState extends State<BooruEdit> {
               hintText: getApiKeyPlaceholder(),
               clearable: true,
               obscureable: shouldObscureApiKey(),
-              enableIMEPersonalizedLearning: !settingsHandler.incognitoKeyboard,
+              enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
             ),
             SizedBox(height: MediaQuery.sizeOf(context).height * 0.2),
           ],
@@ -435,20 +443,7 @@ class _BooruEditState extends State<BooruEdit> {
           return [
             if (errorString.trim().isNotEmpty)
               ElevatedButton.icon(
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: errorString));
-                  FlashElements.showSnackbar(
-                    context: context,
-                    title: Text(
-                      context.loc.copied,
-                      style: const TextStyle(fontSize: 20),
-                    ),
-                    sideColor: Colors.green,
-                    leadingIcon: Icons.check,
-                    leadingIconColor: Colors.green,
-                    duration: const Duration(seconds: 2),
-                  );
-                },
+                onPressed: () => ClipboardUtils.copyTextToClipboard(errorString),
                 icon: const Icon(Icons.copy),
                 label: Text(context.loc.copyErrorText),
               ),
@@ -634,7 +629,7 @@ class _BooruEditState extends State<BooruEdit> {
       if (searchHandler.tabs.isEmpty) {
         // force first tab creation after creating first booru
         searchHandler.addTabByString(
-          settingsHandler.defTags,
+          SX.defTags.value,
           customBooru: newBooru,
         );
         unawaited(searchHandler.runSearch());

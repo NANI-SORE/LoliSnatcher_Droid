@@ -3,22 +3,22 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:fading_edge_scrollview/fading_edge_scrollview.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:intl/intl.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/widgets/desktop/desktop_scroll.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/meta_tag.dart';
 import 'package:lolisnatcher/src/data/tag_suggestion.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
-import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/kaomoji.dart';
 import 'package:lolisnatcher/src/widgets/common/marquee_text.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -300,17 +300,11 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
               leading: const Icon(Icons.copy),
               onTap: () async {
                 final tagText = tag.tag;
-
-                await Clipboard.setData(ClipboardData(text: tagText));
-                FlashElements.showSnackbar(
-                  context: context,
-                  title: Text(context.loc.copied, style: const TextStyle(fontSize: 20)),
-                  content: Text(context.loc.searchBar.copiedTagToClipboard(tag: tagText)),
-                  sideColor: Colors.green,
-                  leadingIcon: Icons.check,
-                  leadingIconColor: Colors.green,
-                  duration: const Duration(seconds: 2),
+                await ClipboardUtils.copyTextToClipboard(
+                  tagText,
+                  subtitle: context.loc.searchBar.copiedTagToClipboard(tag: tagText),
                 );
+
                 Navigator.of(context).pop();
               },
             ),
@@ -376,7 +370,7 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
                 return Scrollbar(
                   controller: suggestionsScrollController,
                   interactive: true,
-                  scrollbarOrientation: settingsHandler.handSide.value.isLeft
+                  scrollbarOrientation: SX.handSide.value.isLeft
                       ? ScrollbarOrientation.left
                       : ScrollbarOrientation.right,
                   child: RefreshIndicator(
@@ -386,7 +380,7 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
                     onRefresh: queryController.runSearch,
                     child: FadingEdgeScrollView.fromScrollView(
                       child: ListView.builder(
-                        reverse: !settingsHandler.useTopSearchbarInput,
+                        reverse: !SX.useTopSearchbarInput.value,
                         controller: suggestionsScrollController,
                         physics: const AlwaysScrollableScrollPhysics(
                           parent: BouncingScrollPhysics(),
@@ -646,9 +640,9 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
                   onlyInput: true,
                   floatingLabelBehavior: FloatingLabelBehavior.never,
                   textInputAction: TextInputAction.search,
-                  enableIMEPersonalizedLearning: !settingsHandler.incognitoKeyboard,
+                  enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
                   showSubmitButton: (inputText) =>
-                      !settingsHandler.showSearchbarQuickActions &&
+                      !SX.showSearchbarQuickActions.value &&
                       (inputText.isNotEmpty || (widget.allowMultipleTags && tags.isNotEmpty)),
                   submitIcon: widget.allowMultipleTags && tags.isNotEmpty ? Icons.check : null,
                   prefixIcon: IconButton(
@@ -657,9 +651,9 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
                   ),
                 ),
               ),
-              if (settingsHandler.useTopSearchbarInput)
+              if (SX.useTopSearchbarInput.value)
                 const SizedBox(height: 4)
-              else if (settingsHandler.showSearchbarQuickActions && (Platform.isAndroid || Platform.isIOS))
+              else if (SX.showSearchbarQuickActions.value && (Platform.isAndroid || Platform.isIOS))
                 KeyboardVisibilityBuilder(
                   builder: (context, isKbVisible) {
                     return AnimatedSize(
@@ -682,9 +676,9 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
       ),
     ];
 
-    if (settingsHandler.useTopSearchbarInput) {
+    if (SX.useTopSearchbarInput.value) {
       widgets = widgets.reversed.toList();
-      if (settingsHandler.showSearchbarQuickActions) {
+      if (SX.showSearchbarQuickActions.value) {
         widgets.add(
           KeyboardVisibilityBuilder(
             builder: (context, isKbVisible) {
@@ -698,8 +692,8 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: SafeArea(
-        top: settingsHandler.useTopSearchbarInput,
-        bottom: settingsHandler.useTopSearchbarInput,
+        top: SX.useTopSearchbarInput.value,
+        bottom: SX.useTopSearchbarInput.value,
         child: Column(
           children: widgets,
         ),

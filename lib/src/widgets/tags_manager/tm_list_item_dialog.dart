@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
@@ -124,15 +124,8 @@ class _TagsManagerListItemDialogState extends State<TagsManagerListItemDialog> {
             side: BorderSide(color: Theme.of(context).colorScheme.secondary),
           ),
           onTap: () {
-            Clipboard.setData(ClipboardData(text: widget.tag.fullString));
-            FlashElements.showSnackbar(
-              context: context,
-              duration: const Duration(seconds: 2),
-              title: Text(context.loc.copiedToClipboard, style: const TextStyle(fontSize: 20)),
-              content: Text(widget.tag.fullString, style: const TextStyle(fontSize: 16)),
-              leadingIcon: Icons.copy,
-              sideColor: Colors.green,
-            );
+            ClipboardUtils.copyTextToClipboard(widget.tag.fullString);
+
             Navigator.of(context).pop(true);
           },
           leading: const Icon(Icons.copy),

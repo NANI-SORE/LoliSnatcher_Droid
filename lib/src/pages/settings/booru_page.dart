@@ -8,8 +8,10 @@ import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
+import 'package:lolisnatcher/src/pages/settings/booru_overrides_page.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -40,12 +42,12 @@ class _BooruPageState extends State<BooruPage> {
   @override
   void initState() {
     super.initState();
-    defaultTagsController.text = settingsHandler.defTags;
-    limitController.text = settingsHandler.itemLimit.toString();
+    defaultTagsController.text = SX.defTags.value;
+    limitController.text = SX.limit.value.toString();
 
-    if (settingsHandler.prefBooru.isNotEmpty) {
+    if (SX.prefBooru.value.isNotEmpty) {
       selectedBooru = settingsHandler.booruList.firstWhereOrNull(
-        (booru) => booru.type?.isSaveable == true && booru.name == settingsHandler.prefBooru,
+        (booru) => booru.type?.isSaveable == true && booru.name == SX.prefBooru.value,
       );
     } else if (settingsHandler.booruList.isNotEmpty) {
       selectedBooru = settingsHandler.booruList[0];
@@ -82,7 +84,7 @@ class _BooruPageState extends State<BooruPage> {
   }
 
   Future<void> _onPopInvoked(_, _) async {
-    settingsHandler.defTags = defaultTagsController.text;
+    SX.defTags.state.value = defaultTagsController.text;
     if (int.parse(limitController.text) > 100) {
       limitController.text = '100';
     } else if (int.parse(limitController.text) < 10) {
@@ -100,9 +102,9 @@ class _BooruPageState extends State<BooruPage> {
         selectedBooru!,
       );
 
-      settingsHandler.prefBooru = (res == true ? selectedBooru?.name : initPrefBooru?.name) ?? '';
+      SX.prefBooru.state.value = (res == true ? selectedBooru?.name : initPrefBooru?.name) ?? '';
     }
-    settingsHandler.itemLimit = int.parse(limitController.text);
+    SX.limit.state.value = int.parse(limitController.text);
     await settingsHandler.saveSettings(restate: false);
     await settingsHandler.sortBooruList();
   }
@@ -122,7 +124,7 @@ class _BooruPageState extends State<BooruPage> {
         final bool isNewValuePresent = settingsHandler.booruList.contains(newValue);
         setState(() {
           selectedBooru = isNewValuePresent ? newValue : settingsHandler.booruList[0];
-          settingsHandler.prefBooru = selectedBooru?.name ?? '';
+          SX.prefBooru.state.value = selectedBooru?.name ?? '';
           settingsHandler.sortBooruList();
         });
       },
@@ -235,6 +237,18 @@ class _BooruPageState extends State<BooruPage> {
     );
   }
 
+  Widget overridesButton() {
+    if (!BooruType.saveable.contains(selectedBooru?.type)) {
+      return const SizedBox.shrink();
+    }
+
+    return SettingsButton(
+      name: 'Per-booru Settings'.temploc,
+      icon: const Icon(Icons.tune),
+      page: selectedBooru != null ? () => BooruOverridesPage(booru: selectedBooru!) : null,
+    );
+  }
+
   Widget deleteButton() {
     if (!BooruType.saveable.contains(selectedBooru?.type)) {
       return const SizedBox.shrink();
@@ -298,8 +312,8 @@ class _BooruPageState extends State<BooruPage> {
                       selectedBooru = null;
                     }
                     // set new prefbooru if it is a deleted one
-                    if (tempSelected.name == settingsHandler.prefBooru) {
-                      settingsHandler.prefBooru = selectedBooru?.name ?? '';
+                    if (tempSelected.name == SX.prefBooru.value) {
+                      SX.prefBooru.state.value = selectedBooru?.name ?? '';
                     }
                     // restate to avoid an exception due to changed booru list
                     setState(() {});
@@ -318,7 +332,7 @@ class _BooruPageState extends State<BooruPage> {
                     } else {
                       // restore selected and prefbooru if something went wrong
                       selectedBooru = tempSelected;
-                      settingsHandler.prefBooru = tempSelected.name ?? '';
+                      SX.prefBooru.state.value = tempSelected.name ?? '';
                       await settingsHandler.sortBooruList();
 
                       FlashElements.showSnackbar(
@@ -453,7 +467,7 @@ class _BooruPageState extends State<BooruPage> {
                 subtitle: Text(context.loc.settings.booru.itemsPerPageTip),
                 inputType: TextInputType.number,
                 inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
-                resetText: () => settingsHandler.map['limit']!['default']!.toString(),
+                resetText: () => SX.limit.state.defaultValue.toString(),
                 numberButtons: true,
                 numberStep: 10,
                 numberMin: 10,
@@ -480,6 +494,7 @@ class _BooruPageState extends State<BooruPage> {
                 booruSelector(),
                 if (selectedBooru != null) ...[
                   editButton(),
+                  overridesButton(),
                   shareButton(),
                   webviewButton(),
                   deleteButton(),

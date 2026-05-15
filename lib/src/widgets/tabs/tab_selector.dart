@@ -3,17 +3,18 @@ import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:auto_size_text_plus/auto_size_text_plus.dart';
 import 'package:get/get.dart';
 
 import 'package:lolisnatcher/src/boorus/mergebooru_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/delete_button.dart';
@@ -116,9 +117,7 @@ class TabSelector extends StatelessWidget {
           }
 
           return Container(
-            padding: settingsHandler.appMode.value.isDesktop
-                ? const EdgeInsets.all(5)
-                : const EdgeInsets.only(left: 16, right: 16),
+            padding: SX.appMode.value.isDesktop ? const EdgeInsets.all(5) : const EdgeInsets.only(left: 16, right: 16),
             height: 54,
             decoration: isCurrent
                 ? BoxDecoration(
@@ -725,7 +724,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
               margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               // margin: const EdgeInsets.fromLTRB(2, 8, 2, 5),
               onChanged: (_) => getTabs(),
-              enableIMEPersonalizedLearning: !settingsHandler.incognitoKeyboard,
+              enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
             ),
           ),
           const SizedBox(width: 4),
@@ -870,15 +869,8 @@ class _TabManagerPageState extends State<TabManagerPage> {
             side: BorderSide(color: Theme.of(context).colorScheme.secondary),
           ),
           onTap: () async {
-            await Clipboard.setData(ClipboardData(text: tab.tags));
-            FlashElements.showSnackbar(
-              context: context,
-              duration: const Duration(seconds: 2),
-              title: Text(context.loc.copiedToClipboard, style: const TextStyle(fontSize: 20)),
-              content: Text(tab.tags, style: const TextStyle(fontSize: 16)),
-              leadingIcon: Icons.copy,
-              sideColor: Colors.green,
-            );
+            await ClipboardUtils.copyTextToClipboard(tab.tags);
+
             Navigator.of(context).pop();
           },
           leading: const Icon(Icons.copy),
@@ -1319,7 +1311,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
                   controller: scrollController,
                   thickness: 8,
                   interactive: true,
-                  scrollbarOrientation: settingsHandler.handSide.value.isLeft
+                  scrollbarOrientation: SX.handSide.value.isLeft
                       ? ScrollbarOrientation.left
                       : ScrollbarOrientation.right,
                   child: ReorderableListView.builder(
@@ -1460,7 +1452,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
                 width: double.infinity,
                 child: Row(
                   children: [
-                    if (settingsHandler.handSide.value.isLeft) ...[
+                    if (SX.handSide.value.isLeft) ...[
                       if (selectMode) ...[
                         selectAllBtn,
                         const SizedBox(width: 6),
@@ -1491,7 +1483,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
                         ),
                       ),
                     ),
-                    if (settingsHandler.handSide.value.isRight) ...[
+                    if (SX.handSide.value.isRight) ...[
                       if (selectMode) ...[
                         const SizedBox(width: 6),
                         deleteSelectedBtn,

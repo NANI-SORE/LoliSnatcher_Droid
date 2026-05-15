@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 
 class CustomScrollBehavior extends MaterialScrollBehavior {
   const CustomScrollBehavior();
@@ -37,7 +37,7 @@ class CustomScrollBehavior extends MaterialScrollBehavior {
 class CustomWidgetsBinding extends WidgetsFlutterBinding {
   static double get scrollSpeedMultiplier {
     try {
-      return SettingsHandler.instance.mousewheelScrollSpeed / 10;
+      return SX.mousewheelScrollSpeed.value / 10;
     } catch (_) {
       return 1;
     }

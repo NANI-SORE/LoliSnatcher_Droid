@@ -5,35 +5,141 @@
 Create a unified dynamic settings system where all properties and functions of a setting are combined in a single class. This enables:
 - Global search through all settings
 - Auto-rendered settings pages based on setting definitions
-- Type-safe setting management with reactive updates
+- Type-safe setting management with reactive updates (using Flutter's `ValueNotifier`, not GetX)
 - Reduced boilerplate when adding new settings
+- Per-booru setting overrides stored in booru config files
+- Immutable setting definitions with separate mutable state
 
 ## Key Design Decisions
 
 1. **Multiple categories**: A setting can belong to multiple categories (e.g., `enableHeroTransitions` in both `viewer` and `performance`)
-2. **Localized search keywords**: `searchKeywords` is a context-dependent function `(BuildContext) => List<String>` for proper localization
+2. **Localized search keywords**: `searchKeywords` is a context-dependent function `(BuildContext) => List<String>` for proper localization (compatible with slang package)
 3. **Border handling in page builder**: `drawTopBorder`/`drawBottomBorder` removed from `SettingWidgetConfig` - handled by `AutoSettingsPage.settingBuilder`
-4. **Special setting types**: Dedicated classes for `Theme`, `ThemeMode`, `Locale`, `FontFamily` etc.
+4. **Special setting types**: Factory functions for `Theme`, `ThemeMode`, `Locale`, `FontFamily` etc.
 5. **Category visibility**: Categories have optional `visibleWhen` function to hide entire sections (e.g., debug settings hidden in release)
 6. **Dynamic default values**: `defaultValue` is a function `() => T` to support platform-specific defaults (e.g., different column counts for desktop vs mobile)
-7. **Per-booru overrides**: Settings can have per-booru values that override the global value when viewing that booru
+7. **Per-booru overrides**: Settings can have per-booru values stored in booru config files, overriding the global value when viewing that booru
+8. **No GetX**: Use `ValueNotifier<T>` + `ValueListenableBuilder` / `ListenableBuilder` instead of `Rx<T>` / `Obx`
+9. **SettingDef/SettingState split**: Immutable definitions describe what a setting IS; mutable state holds current values
+10. **Side effects via onChanged**: Settings that trigger app-wide effects (theme, locale, DB) use an `onChanged` callback
+11. **No editing mode on singleton**: Per-booru editing context passed through widget tree, not global state
+
+---
+
+## Reactivity: ValueNotifier (not GetX)
+
+The app is moving away from GetX. All reactive state in the settings system uses Flutter built-ins:
+
+### Replacement Mapping
+
+| GetX | Flutter Built-in | Notes |
+|------|-----------------|-------|
+| `Rx<T>` / `RxBool` / `RxString` | `ValueNotifier<T>` | `.value` get/set identical |
+| `RxList<T>` | `ValueNotifier<List<T>>` or custom `ListNotifier<T>` | Need to replace list, not mutate in-place |
+| `RxMap<String, T>` | `ValueNotifier<Map<String, T>>` | Same as above |
+| `Obx(() => ...)` | `ValueListenableBuilder<T>` or `ListenableBuilder` | More verbose but explicit |
+| `.obs` extension | `ValueNotifier(initialValue)` | Direct constructor |
+
+### Single-Setting Reactivity
+
+```dart
+// ValueListenableBuilder (explicit type):
+ValueListenableBuilder<int>(
+  valueListenable: setting.effectiveNotifier,
+  builder: (context, value, _) => Text('Columns: $value'),
+)
+
+// Or with convenience wrapper:
+SettingBuilder<int>(
+  setting: setting,
+  builder: (context, value) => Text('Columns: $value'),
+)
+```
+
+### Multi-Setting Reactivity (no nesting)
+
+```dart
+// Listenable.merge + ListenableBuilder (Flutter built-in, recommended):
+ListenableBuilder(
+  listenable: Listenable.merge([
+    settingA.effectiveNotifier,
+    settingB.effectiveNotifier,
+    settingC.effectiveNotifier,
+  ]),
+  builder: (context, _) {
+    final a = settingA.value;
+    final b = settingB.value;
+    final c = settingC.value;
+    return MyWidget(a: a, b: b, c: c);
+  },
+)
+
+// Or with convenience wrapper:
+MultiSettingBuilder(
+  settings: [columnsSetting, previewModeSetting, filterSetting],
+  builder: (context) => GridView(
+    columns: columnsSetting.value,
+    previewMode: previewModeSetting.value,
+    filtered: filterSetting.value,
+  ),
+)
+```
+
+### Convenience Widgets
+
+```dart
+/// Rebuilds when a single setting's effective value changes
+class SettingBuilder<T> extends StatelessWidget {
+  const SettingBuilder({required this.setting, required this.builder, super.key});
+  final SettingState<T> setting;
+  final Widget Function(BuildContext, T) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<T>(
+      valueListenable: setting.effectiveNotifier,
+      builder: (context, value, _) => builder(context, value),
+    );
+  }
+}
+
+/// Rebuilds when any of the given settings change
+class MultiSettingBuilder extends StatelessWidget {
+  const MultiSettingBuilder({
+    required this.settings,
+    required this.builder,
+    super.key,
+  });
+  final List<SettingState> settings;
+  final Widget Function(BuildContext) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: Listenable.merge(
+        settings.map((s) => s.effectiveNotifier).toList(),
+      ),
+      builder: (context, _) => builder(context),
+    );
+  }
+}
+```
 
 ---
 
 ## Per-Booru Setting Overrides
 
-Settings can have per-booru values that override the global default. This allows users to customize behavior per site (e.g., different column counts, preview quality, or video settings for specific boorus).
+Settings can have per-booru values that override the global default. Overrides are stored in each booru's config file.
 
 ### Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Setting<T>                               │
+│                   SettingState<T>                             │
 ├─────────────────────────────────────────────────────────────┤
-│  _globalValue: Rx<T>           // Global setting value       │
-│  _booruOverrides: Map<String, T>  // Booru ID -> override    │
-│  supportsPerBooru: bool        // Whether this setting       │
-│                                // can be overridden per booru│
+│  _globalValue: ValueNotifier<T>        // Global value       │
+│  _booruOverrides: ValueNotifier<Map>   // Booru -> override  │
+│  def.supportsPerBooru: bool            // Flag from def      │
 ├─────────────────────────────────────────────────────────────┤
 │  value (getter):               // Returns effective value:   │
 │    1. Check if current booru has override                    │
@@ -43,9 +149,39 @@ Settings can have per-booru values that override the global default. This allows
 │  globalValue: T                // Always returns global      │
 │  getOverrideFor(booruId): T?   // Get specific override      │
 │  setOverrideFor(booruId, val)  // Set specific override      │
-│  removeOverrideFor(booruId)    // Remove override (use global)│
+│  removeOverrideFor(booruId)    // Remove (use global)        │
 │  hasOverrideFor(booruId): bool // Check if override exists   │
+│  effectiveNotifier             // Reactive, recomputes on    │
+│                                // booru change or override   │
 └─────────────────────────────────────────────────────────────┘
+```
+
+### Effective Value Reactivity
+
+The `effectiveNotifier` combines three reactive sources: the global value, the override map, and the current booru. When any changes, widgets rebuild automatically.
+
+```dart
+class _EffectiveValueNotifier<T> extends ValueNotifier<T> {
+  _EffectiveValueNotifier(this._state) : super(_state._computeEffective()) {
+    _state._globalValue.addListener(_recompute);
+    _state._booruOverrides.addListener(_recompute);
+    SettingsRegistry.instance.currentBooruNotifier.addListener(_recompute);
+  }
+
+  final SettingState<T> _state;
+
+  void _recompute() {
+    value = _state._computeEffective();
+  }
+
+  @override
+  void dispose() {
+    _state._globalValue.removeListener(_recompute);
+    _state._booruOverrides.removeListener(_recompute);
+    SettingsRegistry.instance.currentBooruNotifier.removeListener(_recompute);
+    super.dispose();
+  }
+}
 ```
 
 ### Data Flow
@@ -53,14 +189,14 @@ Settings can have per-booru values that override the global default. This allows
 ```
 User changes setting for "Danbooru":
   ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-  │ Settings UI  │────►│   Setting    │────►│  JSON Save   │
-  │ (per-booru)  │     │ setOverride  │     │              │
+  │ Settings UI  │────►│ SettingState  │────►│ Booru JSON   │
+  │ (per-booru)  │     │ setOverride   │     │ Save         │
   └──────────────┘     └──────────────┘     └──────────────┘
 
 User views "Danbooru":
   ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-  │ SearchHandler│────►│   Setting    │────►│ Effective    │
-  │ currentBooru │     │   .value     │     │ Value Used   │
+  │ SearchHandler│────►│ SettingState  │────►│ Effective    │
+  │ currentBooru │     │   .value      │     │ Value Used   │
   └──────────────┘     └──────────────┘     └──────────────┘
                               │
                               ▼
@@ -72,400 +208,156 @@ User views "Danbooru":
                        Return global value
 ```
 
-### Setting<T> Updates
+### Storage: Overrides in Booru Config Files
 
-```dart
-abstract class Setting<T> {
-  Setting({
-    required this.key,
-    required this.getDefaultValue,
-    required this.localization,
-    this.categories = const [],
-    this.isDeviceSpecific = false,
-    this.supportsPerBooru = false,    // NEW: Can this setting be overridden per booru?
-    this.widgetConfig,
-    this.dependsOn,
-    this.enabledWhen,
-  }) : _globalValue = getDefaultValue().obs,
-       _booruOverrides = <String, T>{}.obs;
-
-  final SettingKey key;
-  final T Function() getDefaultValue;
-  final SettingLocalization localization;
-  final List<SettingCategory> categories;
-  final bool isDeviceSpecific;
-  final bool supportsPerBooru;              // NEW
-  final SettingWidgetConfig? widgetConfig;
-  final List<SettingKey>? dependsOn;
-  final bool Function()? enabledWhen;
-
-  final Rx<T> _globalValue;
-  final RxMap<String, T> _booruOverrides;   // NEW: Booru ID -> override value
-
-  // ============================================
-  // VALUE ACCESS
-  // ============================================
-
-  /// Get the effective value (considers current booru override)
-  T get value {
-    if (!supportsPerBooru) return _globalValue.value;
-
-    final currentBooruId = _getCurrentBooruId();
-    if (currentBooruId != null && _booruOverrides.containsKey(currentBooruId)) {
-      return _booruOverrides[currentBooruId]!;
-    }
-    return _globalValue.value;
-  }
-
-  /// Set the effective value (sets override if in per-booru context, otherwise global)
-  set value(T newValue) {
-    final validated = validate(newValue);
-
-    // If we're in a per-booru settings context, set the override
-    if (_isEditingBooruOverride && supportsPerBooru) {
-      final booruId = _getEditingBooruId();
-      if (booruId != null) {
-        _booruOverrides[booruId] = validated;
-        return;
-      }
-    }
-
-    _globalValue.value = validated;
-  }
-
-  /// Always get/set the global value (ignoring overrides)
-  T get globalValue => _globalValue.value;
-  set globalValue(T newValue) => _globalValue.value = validate(newValue);
-
-  /// Get the reactive global value
-  Rx<T> get rxGlobal => _globalValue;
-
-  /// Get reactive effective value (rebuilds when booru changes or override changes)
-  T get effectiveValue => value;
-
-  // ============================================
-  // PER-BOORU OVERRIDE MANAGEMENT
-  // ============================================
-
-  /// Check if a booru has an override
-  bool hasOverrideFor(String booruId) => _booruOverrides.containsKey(booruId);
-
-  /// Get override for specific booru (null if none)
-  T? getOverrideFor(String booruId) => _booruOverrides[booruId];
-
-  /// Set override for specific booru
-  void setOverrideFor(String booruId, T value) {
-    _booruOverrides[booruId] = validate(value);
-  }
-
-  /// Remove override for booru (will use global value)
-  void removeOverrideFor(String booruId) {
-    _booruOverrides.remove(booruId);
-  }
-
-  /// Get all booru IDs that have overrides
-  Iterable<String> get boorusWithOverrides => _booruOverrides.keys;
-
-  /// Clear all overrides
-  void clearAllOverrides() {
-    _booruOverrides.clear();
-  }
-
-  // ============================================
-  // CONTEXT HELPERS (implemented by registry)
-  // ============================================
-
-  String? _getCurrentBooruId() {
-    return SettingsRegistry.instance.currentBooruId;
-  }
-
-  bool get _isEditingBooruOverride {
-    return SettingsRegistry.instance.isEditingBooruOverride;
-  }
-
-  String? _getEditingBooruId() {
-    return SettingsRegistry.instance.editingBooruId;
-  }
-
-  // ============================================
-  // SERIALIZATION
-  // ============================================
-
-  /// Serialize to JSON (includes overrides)
-  @override
-  Map<String, dynamic> toFullJson() {
-    return {
-      'value': toJson(),  // Global value
-      if (_booruOverrides.isNotEmpty)
-        'booruOverrides': _booruOverrides.map(
-          (booruId, value) => MapEntry(booruId, _valueToJson(value)),
-        ),
-    };
-  }
-
-  /// Load from JSON (includes overrides)
-  void loadFromFullJson(Map<String, dynamic> json) {
-    if (json.containsKey('value')) {
-      _globalValue.value = fromJson(json['value']);
-    }
-
-    if (json.containsKey('booruOverrides') && supportsPerBooru) {
-      final overrides = json['booruOverrides'] as Map<String, dynamic>;
-      _booruOverrides.clear();
-      for (final entry in overrides.entries) {
-        _booruOverrides[entry.key] = fromJson(entry.value);
-      }
-    }
-  }
-
-  dynamic _valueToJson(T value);  // Implemented by subclasses
-}
-```
-
-### SettingsRegistry Updates
-
-```dart
-class SettingsRegistry {
-  // ... existing code ...
-
-  /// Current booru context (set by SearchHandler when booru changes)
-  String? _currentBooruId;
-  String? get currentBooruId => _currentBooruId;
-
-  void setCurrentBooru(String? booruId) {
-    _currentBooruId = booruId;
-  }
-
-  /// Editing context for per-booru settings pages
-  String? _editingBooruId;
-  bool _isEditingBooruOverride = false;
-
-  String? get editingBooruId => _editingBooruId;
-  bool get isEditingBooruOverride => _isEditingBooruOverride;
-
-  /// Enter per-booru editing mode
-  void beginEditingBooruOverride(String booruId) {
-    _editingBooruId = booruId;
-    _isEditingBooruOverride = true;
-  }
-
-  /// Exit per-booru editing mode
-  void endEditingBooruOverride() {
-    _editingBooruId = null;
-    _isEditingBooruOverride = false;
-  }
-
-  /// Get all settings that support per-booru overrides
-  List<Setting> get perBooruSettings {
-    return _settings.values.where((s) => s.supportsPerBooru).toList();
-  }
-
-  /// Get settings with overrides for a specific booru
-  List<Setting> getOverridesForBooru(String booruId) {
-    return _settings.values
-        .where((s) => s.supportsPerBooru && s.hasOverrideFor(booruId))
-        .toList();
-  }
-
-  /// Copy all overrides from one booru to another
-  void copyOverrides(String fromBooruId, String toBooruId) {
-    for (final setting in perBooruSettings) {
-      final override = setting.getOverrideFor(fromBooruId);
-      if (override != null) {
-        setting.setOverrideFor(toBooruId, override);
-      }
-    }
-  }
-
-  /// Remove all overrides for a booru (e.g., when booru is deleted)
-  void removeAllOverridesForBooru(String booruId) {
-    for (final setting in perBooruSettings) {
-      setting.removeOverrideFor(booruId);
-    }
-  }
-}
-```
-
-### JSON Storage Format
+Overrides live in each booru's JSON config file (`boorus/{name}.json`):
 
 ```json
 {
-  "portraitColumns": {
-    "value": 2,
-    "booruOverrides": {
-      "danbooru_12345": 4,
-      "gelbooru_67890": 3
-    }
-  },
-  "previewMode": {
-    "value": "sample",
-    "booruOverrides": {
-      "danbooru_12345": "thumbnail"
-    }
-  },
-  "autoPlayEnabled": {
-    "value": true
+  "name": "Danbooru",
+  "type": "Danbooru",
+  "faviconURL": "...",
+  "baseURL": "https://danbooru.donmai.us",
+  "defTags": "",
+  "apiKey": "abc123",
+  "userID": "42",
+  "settingOverrides": {
+    "portraitColumns": 4,
+    "previewMode": "thumbnail"
   }
 }
 ```
 
-### Backwards Compatibility
-
-For settings without overrides, support simple format:
+Global settings file stays flat and unchanged:
 ```json
 {
   "portraitColumns": 2,
+  "previewMode": "sample",
   "autoPlayEnabled": true
 }
 ```
 
-Loading logic:
+**Advantages:**
+- Global settings JSON untouched - 100% backwards compatible
+- Overrides naturally travel with the booru config
+- Deleting a booru deletes its overrides automatically (no orphaned data)
+- Old app versions ignore the `settingOverrides` key (graceful degradation)
+- No booru ID system needed - overrides are part of the booru object
+
+### Booru Config Updates
+
 ```dart
-void loadFromJson(dynamic json) {
-  if (json is Map<String, dynamic>) {
-    // New format with potential overrides
-    loadFromFullJson(json);
-  } else {
-    // Legacy format - just the value
-    _globalValue.value = fromJson(json);
+class Booru {
+  // ... existing fields ...
+  Map<String, dynamic>? settingOverrides;  // NEW
+
+  factory Booru.fromJSON(Map<String, dynamic> json) {
+    return Booru(
+      // ... existing fields ...
+      settingOverrides: json['settingOverrides'] as Map<String, dynamic>?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      // ... existing fields ...
+      if (settingOverrides != null && settingOverrides!.isNotEmpty)
+        'settingOverrides': settingOverrides,
+    };
+  }
+
+  // For sharing: exclude overrides (personal preferences, not needed by recipient)
+  Map<String, dynamic> toLinkJson({bool withSensitiveData = false}) {
+    final json = toJson();
+    json.remove('settingOverrides');  // Never share overrides
+    if (!withSensitiveData) {
+      json.remove('apiKey');
+      json.remove('userID');
+    }
+    return json;
   }
 }
 ```
 
-### Per-Booru Settings Page
+### Registry <-> Booru Override Loading/Saving
 
 ```dart
-class BooruSettingsPage extends StatefulWidget {
-  const BooruSettingsPage({
-    required this.booru,
+// In SettingsRegistry:
+
+/// Load overrides from a booru config into in-memory state
+void loadOverridesFromBooru(Booru booru) {
+  final overrides = booru.settingOverrides;
+  if (overrides == null) return;
+
+  for (final entry in overrides.entries) {
+    final state = getByJsonKey(entry.key);
+    if (state != null && state.def.supportsPerBooru) {
+      state.setOverrideFor(booru.name, state.def.valueFromJson(entry.value));
+    }
+  }
+}
+
+/// Save in-memory overrides back to booru config
+void saveOverridesToBooru(Booru booru) {
+  final overrides = <String, dynamic>{};
+  for (final state in _states.values) {
+    if (state.def.supportsPerBooru && state.hasOverrideFor(booru.name)) {
+      overrides[state.def.key.jsonKey] = state.def.valueToJson(state.getOverrideFor(booru.name) as dynamic);
+    }
+  }
+  booru.settingOverrides = overrides.isEmpty ? null : overrides;
+}
+
+/// Clear in-memory overrides when a booru is deleted
+void removeAllOverridesForBooru(String booruName) {
+  for (final state in _states.values) {
+    if (state.def.supportsPerBooru) {
+      state.removeOverrideFor(booruName);
+    }
+  }
+}
+```
+
+### Per-Booru Editing Context (No Global State)
+
+Per-booru editing context is passed via `InheritedWidget`, not stored on the singleton registry. This avoids bugs when multiple settings-related routes are on the navigation stack.
+
+```dart
+class BooruEditingScope extends InheritedWidget {
+  const BooruEditingScope({
+    required this.booruName,
+    required super.child,
     super.key,
   });
 
+  final String booruName;
+
+  static String? of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<BooruEditingScope>()?.booruName;
+  }
+
+  @override
+  bool updateShouldNotify(BooruEditingScope oldWidget) => booruName != oldWidget.booruName;
+}
+```
+
+Usage in the per-booru settings page:
+```dart
+class BooruSettingsPage extends StatelessWidget {
+  const BooruSettingsPage({required this.booru, super.key});
   final Booru booru;
 
   @override
-  State<BooruSettingsPage> createState() => _BooruSettingsPageState();
-}
-
-class _BooruSettingsPageState extends State<BooruSettingsPage> {
-  @override
-  void initState() {
-    super.initState();
-    // Enter per-booru editing mode
-    SettingsRegistry.instance.beginEditingBooruOverride(widget.booru.id);
-  }
-
-  @override
-  void dispose() {
-    // Exit per-booru editing mode
-    SettingsRegistry.instance.endEditingBooruOverride();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final perBooruSettings = SettingsRegistry.instance.perBooruSettings;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('${widget.booru.name} Settings'),
-      ),
-      body: ListView.builder(
-        itemCount: perBooruSettings.length,
-        itemBuilder: (context, index) {
-          final setting = perBooruSettings[index];
-          final hasOverride = setting.hasOverrideFor(widget.booru.id);
-
-          return Column(
-            children: [
-              // Override toggle
-              SwitchListTile(
-                title: Text('Use custom value'),
-                subtitle: Text(hasOverride
-                    ? 'Custom value for ${widget.booru.name}'
-                    : 'Using global value'),
-                value: hasOverride,
-                onChanged: (enabled) {
-                  setState(() {
-                    if (enabled) {
-                      // Copy global value as starting point
-                      setting.setOverrideFor(widget.booru.id, setting.globalValue);
-                    } else {
-                      setting.removeOverrideFor(widget.booru.id);
-                    }
-                  });
-                },
-              ),
-              // Setting widget (only editable if override enabled)
-              if (hasOverride)
-                setting.buildWidget(context),
-              const Divider(),
-            ],
-          );
-        },
+    return BooruEditingScope(
+      booruName: booru.name,
+      child: Scaffold(
+        appBar: AppBar(title: Text('${booru.name} Settings')),
+        body: _BooruSettingsList(booru: booru),
       ),
     );
   }
 }
-```
-
-### Widget Updates for Per-Booru Indicator
-
-```dart
-class SettingsToggle extends StatelessWidget {
-  // ... existing params ...
-  final bool hasOverride;  // NEW: Show indicator if per-booru override active
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      title: Row(
-        children: [
-          Text(title),
-          if (hasOverride) ...[
-            const SizedBox(width: 8),
-            Tooltip(
-              message: 'Custom value for current booru',
-              child: Icon(
-                Icons.tune,
-                size: 16,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ],
-        ],
-      ),
-      // ... rest of widget
-    );
-  }
-}
-```
-
-### Example: Setting with Per-Booru Support
-
-```dart
-registry.register(IntSetting(
-  key: SettingKey.portraitColumns,
-  getDefaultValue: () => SettingsHandler.isDesktopPlatform ? 5 : 2,
-  min: 1, max: 100, step: 1,
-  categories: [SettingCategory.interface],
-  supportsPerBooru: true,  // This setting can be customized per booru!
-  localization: SettingLocalization(
-    title: (ctx) => ctx.loc.settings.interface.previewColumnsPortrait,
-    searchKeywords: (ctx) => [ctx.loc.search.columns, ctx.loc.search.grid],
-  ),
-));
-
-// Settings that should NOT have per-booru overrides:
-registry.register(ThemeModeSetting(
-  key: SettingKey.themeMode,
-  getDefaultValue: () => ThemeMode.system,
-  categories: [SettingCategory.theme],
-  supportsPerBooru: false,  // Theme is global, not per-booru
-  localization: SettingLocalization(
-    title: (ctx) => ctx.loc.settings.theme.themeMode,
-  ),
-));
 ```
 
 ### Settings Likely to Support Per-Booru Overrides
@@ -498,8 +390,8 @@ registry.register(ThemeModeSetting(
 The current system has ~100 settings spread across:
 - **SettingsHandler** (2500 lines): Individual member variables, `map` getter, `getByString`/`setByString` with ~100 switch cases each
 - **15+ settings pages**: Manual ListView construction with hardcoded widgets
-- **settings_widgets.dart**: Reusable widgets (`SettingsToggle`, `SettingsDropdown`, etc.)
-- **SettingsEnum mixin**: Unified serialization for enums
+- **settings_widgets.dart** (1469 lines): Reusable widgets (`SettingsToggle`, `SettingsDropdown`, `SettingsSegmentedButton`, `SettingsOptionsList`, `SettingsTextInput`, etc.)
+- **SettingsEnum mixin + SettingsEnumRegistry**: Unified serialization for enums (15 types registered). Only used in `validateValue()` - will be replaced by `EnumSetting` (see Phase 2)
 
 ---
 
@@ -652,76 +544,55 @@ enum SettingKey {
 
 ---
 
-### Phase 1: Core Setting<T> Class Hierarchy
+### Phase 1: Core SettingDef + SettingState Classes
 
-**New file: `lib/src/data/settings/setting.dart`**
+**New files:**
+- `lib/src/data/settings/setting_def.dart` - Immutable definition
+- `lib/src/data/settings/setting_state.dart` - Mutable state
+
+#### SettingDef<T> - Immutable Definition
 
 ```dart
 import 'package:flutter/widgets.dart';
-import 'package:get/get.dart';
 
 import 'setting_key.dart';
 import 'settings_registry.dart';
 
-/// Base class for all settings
-abstract class Setting<T> {
-  Setting({
+/// Immutable definition describing what a setting IS.
+/// Separate from SettingState which holds current values.
+class SettingDef<T> {
+  const SettingDef({
     required this.key,
-    required this.getDefaultValue,     // Function for dynamic defaults!
+    required this.getDefaultValue,
     required this.localization,
-    this.categories = const [],        // Can belong to MULTIPLE categories
+    required this.valueToJson,
+    required this.valueFromJson,
+    this.categories = const [],
     this.isDeviceSpecific = false,
-    this.widgetConfig,
+    this.supportsPerBooru = false,
+    this.validate,
+    this.widgetBuilder,
     this.dependsOn,
     this.enabledWhen,
-  }) : _value = getDefaultValue().obs;
+    this.onChanged,
+  });
 
-  final SettingKey key;                // Type-safe enum key
-  final T Function() getDefaultValue;  // Dynamic default (e.g., platform-specific)
+  final SettingKey key;                    // Type-safe enum key
+  final T Function() getDefaultValue;      // Dynamic default (platform-specific)
   final SettingLocalization localization;
-  final List<SettingCategory> categories;  // Multiple categories supported
-  final bool isDeviceSpecific;
-  final SettingWidgetConfig? widgetConfig;
-  final List<SettingKey>? dependsOn;   // Other settings this depends on
-  final bool Function()? enabledWhen;  // Dynamic enable condition
-
-  final Rx<T> _value;                  // Reactive value using GetX
+  final dynamic Function(T) valueToJson;   // Serialize any T value
+  final T Function(dynamic) valueFromJson; // Deserialize from JSON
+  final List<SettingCategory> categories;  // Can belong to MULTIPLE categories
+  final bool isDeviceSpecific;             // Not synced across devices
+  final bool supportsPerBooru;             // Can be overridden per booru
+  final T Function(T)? validate;           // Validation/clamping
+  final Widget Function(BuildContext, SettingState<T>)? widgetBuilder;  // Self-rendering
+  final List<SettingKey>? dependsOn;       // Other settings this depends on
+  final bool Function()? enabledWhen;      // Dynamic enable condition
+  final void Function(T oldValue, T newValue)? onChanged;  // Side effects
 
   /// JSON key for serialization (from enum)
   String get jsonKey => key.jsonKey;
-
-  /// Convenience getter for current default
-  T get defaultValue => getDefaultValue();
-
-  T get value => _value.value;
-  set value(T newValue) => _value.value = validate(newValue);
-  Rx<T> get rx => _value;
-
-  /// Type identifier for map (e.g., 'bool', 'int', 'PreviewQuality')
-  String get type;
-
-  /// Validation hook - override to add custom validation
-  T validate(T value) => value;
-
-  /// Serialize for storage
-  dynamic toJson();
-
-  /// Deserialize from storage
-  T fromJson(dynamic json);
-
-  /// Load and set value from JSON
-  void loadFromJson(dynamic json) {
-    value = fromJson(json);
-  }
-
-  /// Reset to default value
-  void reset() => value = getDefaultValue();
-
-  /// Check if value differs from default
-  bool get isModified => value != getDefaultValue();
-
-  /// Self-rendering widget
-  Widget buildWidget(BuildContext context);
 
   /// Get searchable text for global search
   List<String> getSearchableText(BuildContext context) {
@@ -739,30 +610,21 @@ abstract class Setting<T> {
     }
     return result;
   }
-
-  /// Backwards compatibility with existing map structure
-  Map<String, dynamic> toMapEntry();
 }
 
-/// Localization configuration for a setting
+/// Localization configuration for a setting.
+/// All functions take BuildContext for access to slang's context.loc.*
 class SettingLocalization {
   const SettingLocalization({
     required this.title,
     this.subtitle,
     this.helpText,
-    this.searchKeywords,              // Context-dependent for localization
+    this.searchKeywords,
   });
 
-  /// Title shown in settings UI
   final String Function(BuildContext) title;
-
-  /// Optional subtitle/description
   final String Function(BuildContext)? subtitle;
-
-  /// Help text shown in dialogs
   final String Function(BuildContext)? helpText;
-
-  /// Search keywords - context-dependent function for localized search
   final List<String> Function(BuildContext)? searchKeywords;
 }
 
@@ -777,316 +639,429 @@ class SettingWidgetConfig {
   final Widget? leadingIcon;
   final Widget? trailingIcon;
   final Widget Function(BuildContext)? helpDialog;
+}
+```
 
-  // NOTE: drawTopBorder/drawBottomBorder removed - handled by AutoSettingsPage builder
+#### SettingState<T> - Mutable State
+
+```dart
+import 'package:flutter/foundation.dart';
+
+import 'setting_def.dart';
+import 'settings_registry.dart';
+
+/// Mutable state holding a setting's current value(s).
+/// Created by SettingsRegistry when a SettingDef is registered.
+class SettingState<T> {
+  SettingState(this.def)
+    : _globalValue = ValueNotifier<T>(def.getDefaultValue()),
+      _booruOverrides = ValueNotifier<Map<String, T>>({});
+
+  final SettingDef<T> def;
+  final ValueNotifier<T> _globalValue;
+  final ValueNotifier<Map<String, T>> _booruOverrides;
+
+  /// Reactive notifier for the effective value (considers current booru override).
+  /// Widgets should listen to this, not _globalValue directly.
+  late final ValueNotifier<T> effectiveNotifier = _createEffectiveNotifier();
+
+  // ============================================
+  // VALUE ACCESS
+  // ============================================
+
+  /// Get the effective value (considers current booru override)
+  T get value => effectiveNotifier.value;
+
+  /// Set the global value (or override if editing per-booru via InheritedWidget)
+  set value(T newValue) {
+    final validated = def.validate?.call(newValue) ?? newValue;
+    final oldValue = _globalValue.value;
+    _globalValue.value = validated;
+    if (oldValue != validated) {
+      def.onChanged?.call(oldValue, validated);
+    }
+  }
+
+  /// Always get/set the global value (ignoring overrides)
+  T get globalValue => _globalValue.value;
+  set globalValue(T newValue) {
+    _globalValue.value = def.validate?.call(newValue) ?? newValue;
+  }
+
+  /// Convenience getter for current default
+  T get defaultValue => def.getDefaultValue();
+
+  /// Check if value differs from default
+  bool get isModified => globalValue != def.getDefaultValue();
+
+  /// Reset to default value
+  void reset() {
+    value = def.getDefaultValue();
+  }
+
+  // ============================================
+  // PER-BOORU OVERRIDE MANAGEMENT
+  // ============================================
+
+  bool hasOverrideFor(String booruName) => _booruOverrides.value.containsKey(booruName);
+
+  T? getOverrideFor(String booruName) => _booruOverrides.value[booruName];
+
+  void setOverrideFor(String booruName, T val) {
+    final validated = def.validate?.call(val) ?? val;
+    final map = Map<String, T>.from(_booruOverrides.value);
+    map[booruName] = validated;
+    _booruOverrides.value = map;  // Triggers notification
+  }
+
+  void removeOverrideFor(String booruName) {
+    if (!_booruOverrides.value.containsKey(booruName)) return;
+    final map = Map<String, T>.from(_booruOverrides.value);
+    map.remove(booruName);
+    _booruOverrides.value = map;  // Triggers notification
+  }
+
+  Iterable<String> get boorusWithOverrides => _booruOverrides.value.keys;
+
+  void clearAllOverrides() {
+    _booruOverrides.value = {};
+  }
+
+  // ============================================
+  // SERIALIZATION
+  // ============================================
+
+  dynamic toJson() => def.valueToJson(globalValue);
+
+  void loadFromJson(dynamic json) {
+    _globalValue.value = def.valueFromJson(json);
+  }
+
+  // ============================================
+  // WIDGET
+  // ============================================
+
+  Widget buildWidget(BuildContext context) {
+    return def.widgetBuilder?.call(context, this) ?? const SizedBox.shrink();
+  }
+
+  // ============================================
+  // EFFECTIVE VALUE COMPUTATION
+  // ============================================
+
+  T _computeEffective() {
+    if (!def.supportsPerBooru) return _globalValue.value;
+
+    final currentBooruName = SettingsRegistry.instance.currentBooruName;
+    if (currentBooruName != null && _booruOverrides.value.containsKey(currentBooruName)) {
+      return _booruOverrides.value[currentBooruName]!;
+    }
+    return _globalValue.value;
+  }
+
+  ValueNotifier<T> _createEffectiveNotifier() {
+    return _EffectiveValueNotifier<T>(this);
+  }
+}
+
+/// Custom notifier that recomputes when any dependency changes.
+class _EffectiveValueNotifier<T> extends ValueNotifier<T> {
+  _EffectiveValueNotifier(this._state) : super(_state._computeEffective()) {
+    _state._globalValue.addListener(_recompute);
+    _state._booruOverrides.addListener(_recompute);
+    SettingsRegistry.instance.currentBooruNotifier.addListener(_recompute);
+  }
+
+  final SettingState<T> _state;
+
+  void _recompute() {
+    value = _state._computeEffective();
+  }
+
+  @override
+  void dispose() {
+    _state._globalValue.removeListener(_recompute);
+    _state._booruOverrides.removeListener(_recompute);
+    SettingsRegistry.instance.currentBooruNotifier.removeListener(_recompute);
+    super.dispose();
+  }
 }
 ```
 
 ---
 
-### Phase 2: Typed Setting Implementations
+### Phase 2: Typed Setting Factories
 
 **New file: `lib/src/data/settings/typed_settings.dart`**
 
+Instead of subclasses, use factory functions that create `SettingDef<T>` with appropriate serialization and widget builders.
+
 #### Basic Types
 
-| Class | For | Key Features |
-|-------|-----|--------------|
-| `BoolSetting` | Boolean toggles | Renders `SettingsToggle` |
-| `IntSetting` | Integer values | `min`, `max`, `step`; Renders `SettingsTextInput` with number buttons |
-| `DoubleSetting` | Decimal values | `min`, `max`, `step` |
-| `StringSetting` | Text inputs | `obscurable`, `copyable`, `pasteable` |
-| `EnumSetting<T>` | Enum dropdowns | `displayMode` (dropdown/optionsList/segmented) |
-| `ColorSetting` | Color picker | Custom picker widget |
-| `DurationSetting` | Duration selection | Dropdown with predefined options |
-| `StringListSetting` | Tag lists, button order | Custom list editor |
+| Factory | For | Key Features |
+|---------|-----|--------------|
+| `boolSetting()` | Boolean toggles | Renders `SettingsToggle` |
+| `intSetting()` | Integer values | `min`, `max`, `step`; Renders `SettingsTextInput` with number buttons |
+| `doubleSetting()` | Decimal values | `min`, `max`, `step` |
+| `stringSetting()` | Text inputs | `obscurable`, `copyable`, `pasteable` |
+| `enumSetting<T>()` | Enum dropdowns | `displayMode` (dropdown/optionsList/segmented) |
+| `colorSetting()` | Color picker | Custom picker widget |
+| `durationSetting()` | Duration selection | Dropdown with predefined options |
+| `stringListSetting()` | Lists | Custom list editor |
+| `tagListSetting()` | Tag lists | Custom fromJson/toJson with Tag cleansing |
 
-#### Example: BoolSetting
+#### Example: boolSetting
 
 ```dart
-class BoolSetting extends Setting<bool> {
-  BoolSetting({
-    required super.key,
-    required super.getDefaultValue,
-    required super.localization,
-    super.categories,
-    super.isDeviceSpecific,
-    super.widgetConfig,
-    super.dependsOn,
-    super.enabledWhen,
-  });
-
-  @override
-  String get type => 'bool';
-
-  @override
-  dynamic toJson() => value;
-
-  @override
-  bool fromJson(dynamic json) {
-    if (json is bool) return json;
-    if (json is String) {
-      if (json == 'true') return true;
-      if (json == 'false') return false;
-    }
-    return getDefaultValue();
-  }
-
-  @override
-  Widget buildWidget(BuildContext context) {
-    return Obx(() => SettingsToggle(
-      title: localization.title(context),
-      subtitle: localization.subtitle?.call(context),
-      value: value,
-      onChanged: enabledWhen?.call() ?? true
-        ? (newValue) => value = newValue
-        : null,
-      leadingIcon: widgetConfig?.leadingIcon,
-    ));
-  }
-
-  @override
-  Map<String, dynamic> toMapEntry() => {
-    'type': type,
-    'default': getDefaultValue(),
-  };
+SettingDef<bool> boolSetting({
+  required SettingKey key,
+  required bool Function() getDefaultValue,
+  required SettingLocalization localization,
+  List<SettingCategory> categories = const [],
+  bool isDeviceSpecific = false,
+  bool supportsPerBooru = false,
+  SettingWidgetConfig? widgetConfig,
+  List<SettingKey>? dependsOn,
+  bool Function()? enabledWhen,
+  void Function(bool, bool)? onChanged,
+}) {
+  return SettingDef<bool>(
+    key: key,
+    getDefaultValue: getDefaultValue,
+    localization: localization,
+    categories: categories,
+    isDeviceSpecific: isDeviceSpecific,
+    supportsPerBooru: supportsPerBooru,
+    dependsOn: dependsOn,
+    enabledWhen: enabledWhen,
+    onChanged: onChanged,
+    valueToJson: (v) => v,
+    valueFromJson: (json) {
+      if (json is bool) return json;
+      if (json is String) {
+        if (json == 'true') return true;
+        if (json == 'false') return false;
+      }
+      return getDefaultValue();
+    },
+    widgetBuilder: (context, state) => SettingBuilder<bool>(
+      setting: state,
+      builder: (ctx, value) => SettingsToggle(
+        title: localization.title(ctx),
+        subtitle: localization.subtitle?.call(ctx),
+        value: value,
+        onChanged: enabledWhen?.call() ?? true
+          ? (newValue) => state.value = newValue
+          : null,
+        leadingIcon: widgetConfig?.leadingIcon,
+      ),
+    ),
+  );
 }
 ```
 
-#### Example: IntSetting
+#### Example: intSetting
 
 ```dart
-class IntSetting extends Setting<int> {
-  IntSetting({
-    required super.key,
-    required super.getDefaultValue,
-    required super.localization,
-    required this.min,
-    required this.max,
-    this.step = 1,
-    super.categories,
-    super.isDeviceSpecific,
-    super.widgetConfig,
-    super.dependsOn,
-    super.enabledWhen,
-  });
-
-  final int min;
-  final int max;
-  final int step;
-
-  @override
-  String get type => 'int';
-
-  @override
+SettingDef<int> intSetting({
+  required SettingKey key,
+  required int Function() getDefaultValue,
+  required SettingLocalization localization,
+  required int min,
+  required int max,
+  int step = 1,
+  List<SettingCategory> categories = const [],
+  bool isDeviceSpecific = false,
+  bool supportsPerBooru = false,
+  SettingWidgetConfig? widgetConfig,
+  List<SettingKey>? dependsOn,
+  bool Function()? enabledWhen,
+  void Function(int, int)? onChanged,
+}) {
   int validate(int value) {
     if (value < min) return min;
     if (value > max) return max;
     return value;
   }
 
-  @override
-  dynamic toJson() => value;
-
-  @override
-  int fromJson(dynamic json) {
-    final int? parsed = json is String ? int.tryParse(json) : (json is int ? json : null);
-    if (parsed == null) return getDefaultValue();
-    return validate(parsed);
-  }
-
-  @override
-  Widget buildWidget(BuildContext context) {
-    return Obx(() => SettingsTextInput(
-      title: localization.title(context),
-      subtitle: localization.subtitle?.call(context),
-      inputType: TextInputType.number,
-      value: value.toString(),
-      onChanged: (newValue) {
-        final parsed = int.tryParse(newValue);
-        if (parsed != null) value = parsed;
-      },
-      trailingWidgets: [
-        NumberStepper(
-          value: value,
-          min: min,
-          max: max,
-          step: step,
-          onChanged: (newValue) => value = newValue,
-        ),
-      ],
-    ));
-  }
-
-  @override
-  Map<String, dynamic> toMapEntry() => {
-    'type': type,
-    'default': getDefaultValue(),
-    'lowerLimit': min,
-    'upperLimit': max,
-    'step': step,
-  };
+  return SettingDef<int>(
+    key: key,
+    getDefaultValue: getDefaultValue,
+    localization: localization,
+    categories: categories,
+    isDeviceSpecific: isDeviceSpecific,
+    supportsPerBooru: supportsPerBooru,
+    validate: validate,
+    dependsOn: dependsOn,
+    enabledWhen: enabledWhen,
+    onChanged: onChanged,
+    valueToJson: (v) => v,
+    valueFromJson: (json) {
+      final int? parsed = json is String ? int.tryParse(json) : (json is int ? json : null);
+      if (parsed == null) return getDefaultValue();
+      return validate(parsed);
+    },
+    widgetBuilder: (context, state) => SettingBuilder<int>(
+      setting: state,
+      builder: (ctx, value) => SettingsTextInput(
+        title: localization.title(ctx),
+        subtitle: localization.subtitle?.call(ctx),
+        inputType: TextInputType.number,
+        value: value.toString(),
+        onChanged: (newValue) {
+          final parsed = int.tryParse(newValue);
+          if (parsed != null) state.value = parsed;
+        },
+        trailingWidgets: [
+          NumberStepper(
+            value: value,
+            min: min,
+            max: max,
+            step: step,
+            onChanged: (newValue) => state.value = newValue,
+          ),
+        ],
+      ),
+    ),
+  );
 }
 ```
 
-#### Example: EnumSetting
+#### Example: enumSetting
 
 ```dart
 enum EnumDisplayMode { dropdown, optionsList, segmented }
 
-class EnumSetting<T extends Enum> extends Setting<T> {
-  EnumSetting({
-    required super.key,
-    required super.getDefaultValue,
-    required super.localization,
-    required this.values,
-    required this.fromString,
-    required this.enumToJson,
-    required this.enumLocName,
-    required this.typeName,
-    this.displayMode = EnumDisplayMode.dropdown,
-    super.categories,
-    super.isDeviceSpecific,
-    super.widgetConfig,
-    super.dependsOn,
-    super.enabledWhen,
-  });
-
-  final List<T> values;
-  final T Function(String) fromString;
-  final String Function(T) enumToJson;
-  final String Function(BuildContext, T) enumLocName;
-  final String typeName;
-  final EnumDisplayMode displayMode;
-
-  @override
-  String get type => typeName;
-
-  @override
-  dynamic toJson() => enumToJson(value);
-
-  @override
-  T fromJson(dynamic json) {
-    if (json is String) {
-      return fromString(json);
-    }
-    return getDefaultValue();
-  }
-
-  @override
-  Widget buildWidget(BuildContext context) {
-    switch (displayMode) {
-      case EnumDisplayMode.dropdown:
-        return Obx(() => SettingsDropdown<T>(
-          title: localization.title(context),
-          value: value,
-          items: values,
-          itemLabelBuilder: (item) => enumLocName(context, item),
-          onChanged: (newValue) {
-            if (newValue != null) value = newValue;
-          },
-        ));
-      case EnumDisplayMode.optionsList:
-        return Obx(() => SettingsOptionsList<T>(
-          title: localization.title(context),
-          value: value,
-          items: values,
-          itemLabelBuilder: (item) => enumLocName(context, item),
-          onChanged: (newValue) => value = newValue,
-        ));
-      case EnumDisplayMode.segmented:
-        return Obx(() => SettingsSegmented<T>(
-          title: localization.title(context),
-          value: value,
-          items: values,
-          itemLabelBuilder: (item) => enumLocName(context, item),
-          onChanged: (newValue) => value = newValue,
-        ));
-    }
-  }
-
-  @override
-  Map<String, dynamic> toMapEntry() => {
-    'type': type,
-    'default': enumToJson(getDefaultValue()),
-    'options': values.map(enumToJson).toList(),
-  };
+SettingDef<T> enumSetting<T extends Enum>({
+  required SettingKey key,
+  required T Function() getDefaultValue,
+  required SettingLocalization localization,
+  required List<T> values,
+  required T Function(String) fromString,
+  required String Function(T) enumToJson,
+  required String Function(BuildContext, T) enumLocName,
+  EnumDisplayMode displayMode = EnumDisplayMode.dropdown,
+  List<SettingCategory> categories = const [],
+  bool isDeviceSpecific = false,
+  bool supportsPerBooru = false,
+  List<SettingKey>? dependsOn,
+  bool Function()? enabledWhen,
+  void Function(T, T)? onChanged,
+}) {
+  return SettingDef<T>(
+    key: key,
+    getDefaultValue: getDefaultValue,
+    localization: localization,
+    categories: categories,
+    isDeviceSpecific: isDeviceSpecific,
+    supportsPerBooru: supportsPerBooru,
+    dependsOn: dependsOn,
+    enabledWhen: enabledWhen,
+    onChanged: onChanged,
+    valueToJson: (v) => enumToJson(v),
+    valueFromJson: (json) {
+      if (json is String) {
+        try { return fromString(json); } catch (_) {}
+      }
+      return getDefaultValue();
+    },
+    // searchKeywords should also include enum option labels for better search
+    // (override localization.searchKeywords to include them)
+    widgetBuilder: (context, state) {
+      switch (displayMode) {
+        case EnumDisplayMode.dropdown:
+          return SettingBuilder<T>(
+            setting: state,
+            builder: (ctx, value) => SettingsDropdown<T>(
+              title: localization.title(ctx),
+              value: value,
+              items: values,
+              itemLabelBuilder: (item) => enumLocName(ctx, item),
+              onChanged: (newValue) {
+                if (newValue != null) state.value = newValue;
+              },
+            ),
+          );
+        case EnumDisplayMode.optionsList:
+          return SettingBuilder<T>(
+            setting: state,
+            builder: (ctx, value) => SettingsOptionsList<T>(
+              title: localization.title(ctx),
+              value: value,
+              items: values,
+              itemLabelBuilder: (item) => enumLocName(ctx, item),
+              onChanged: (newValue) => state.value = newValue,
+            ),
+          );
+        case EnumDisplayMode.segmented:
+          return SettingBuilder<T>(
+            setting: state,
+            builder: (ctx, value) => SettingsSegmented<T>(
+              title: localization.title(ctx),
+              value: value,
+              items: values,
+              itemLabelBuilder: (item) => enumLocName(ctx, item),
+              onChanged: (newValue) => state.value = newValue,
+            ),
+          );
+      }
+    },
+  );
 }
 ```
 
----
-
-### Special/Complex Types
+#### Special Type Factories
 
 **New file: `lib/src/data/settings/special_settings.dart`**
 
-| Class | For | Key Features |
-|-------|-----|--------------|
-| `ThemeSetting` | Theme selection | Uses `ThemeItem`, custom preview widget, depends on theme list |
-| `ThemeModeSetting` | System/Light/Dark | Uses Flutter's `ThemeMode`, segmented display |
-| `LocaleSetting` | App language | Uses `AppLocale`, shows native language names |
-| `FontFamilySetting` | Font selection | Custom dropdown with font previews |
+| Factory | For | Key Features |
+|---------|-----|--------------|
+| `themeModeSetting()` | System/Light/Dark | Uses Flutter's `ThemeMode`, segmented display |
+| `localeSetting()` | App language | Uses `AppLocale`, shows native language names |
+| `fontFamilySetting()` | Font selection | Custom dropdown with font previews |
+| `tagListSetting()` | Tag lists | Custom fromJson/toJson with Tag object cleansing |
+| `buttonOrderSetting()` | Reorderable button list | Drag-to-reorder UI, flexible parsing (string or array) |
+| `pathPickerSetting()` | Directory pickers | Triggers SAF picker flow on tap |
 
-#### Example: ThemeModeSetting
+#### Example: tagListSetting
 
 ```dart
-class ThemeModeSetting extends Setting<ThemeMode> {
-  ThemeModeSetting({
-    required super.key,
-    required super.getDefaultValue,
-    required super.localization,
-    super.categories,
-    super.isDeviceSpecific,
-    super.widgetConfig,
-    super.dependsOn,
-    super.enabledWhen,
-  });
-
-  @override
-  String get type => 'themeMode';
-
-  @override
-  dynamic toJson() => value.name;
-
-  @override
-  ThemeMode fromJson(dynamic json) {
-    if (json is String) {
-      final match = ThemeMode.values.where((e) => e.name == json);
-      if (match.isNotEmpty) return match.first;
-    }
-    return getDefaultValue();
-  }
-
-  @override
-  Widget buildWidget(BuildContext context) {
-    return Obx(() => SettingsSegmented<ThemeMode>(
-      title: localization.title(context),
-      value: value,
-      items: ThemeMode.values,
-      itemLabelBuilder: (item) => _themeModeName(context, item),
-      onChanged: (newValue) => value = newValue,
-    ));
-  }
-
-  String _themeModeName(BuildContext context, ThemeMode mode) {
-    switch (mode) {
-      case ThemeMode.system:
-        return context.loc.settings.theme.themeModeValues.system;
-      case ThemeMode.light:
-        return context.loc.settings.theme.themeModeValues.light;
-      case ThemeMode.dark:
-        return context.loc.settings.theme.themeModeValues.dark;
-    }
-  }
-
-  @override
-  Map<String, dynamic> toMapEntry() => {
-    'type': type,
-    'default': getDefaultValue().name,
-    'options': ThemeMode.values.map((e) => e.name).toList(),
-  };
+SettingDef<List<Tag>> tagListSetting({
+  required SettingKey key,
+  required SettingLocalization localization,
+  List<SettingCategory> categories = const [],
+  // ...
+}) {
+  return SettingDef<List<Tag>>(
+    key: key,
+    getDefaultValue: () => [],
+    localization: localization,
+    categories: categories,
+    valueToJson: (tags) => tags.map((t) => t.fullString).toList(),
+    valueFromJson: (json) {
+      if (json is List) {
+        return json.map((e) => Tag.fromString(e.toString())).toList();
+      }
+      if (json is String && json.isNotEmpty) {
+        return json.split(' ').map((e) => Tag.fromString(e)).toList();
+      }
+      return [];
+    },
+    widgetBuilder: (context, state) => TagListEditor(
+      tags: state.value,
+      onChanged: (tags) => state.value = tags,
+    ),
+  );
 }
 ```
+
+#### EnumSetting replaces SettingsEnumRegistry
+
+The `SettingsEnumRegistry` is only used in `validateValue()` in `settings_handler.dart`. Once all enums are registered as `enumSetting()` instances, the registry is redundant:
+- `isRegistered(typeName)` → `SettingsRegistry.instance.get(key) != null`
+- `validate(typeName, value, default, toJSON)` → `state.def.valueFromJson(value)` / `state.def.valueToJson(value)`
+
+**Migration:** Remove `SettingsEnumRegistry` and `initSettingsEnumRegistry()` once all enum settings are registered.
 
 ---
 
@@ -1097,36 +1072,41 @@ class ThemeModeSetting extends Setting<ThemeMode> {
 ```dart
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
-import 'setting.dart';
+import 'setting_def.dart';
+import 'setting_state.dart';
 import 'setting_key.dart';
 
 class SettingsRegistry {
   SettingsRegistry._();
   static final SettingsRegistry instance = SettingsRegistry._();
 
-  final Map<SettingKey, Setting> _settings = {};
-  Map<String, List<String>>? _searchIndex;
+  final Map<SettingKey, SettingState> _states = {};
 
-  void register(Setting setting) {
-    _settings[setting.key] = setting;
-    _searchIndex = null; // Invalidate cache
+  /// Current booru context (set by SearchHandler when booru changes)
+  final ValueNotifier<String?> currentBooruNotifier = ValueNotifier(null);
+  String? get currentBooruName => currentBooruNotifier.value;
+  void setCurrentBooru(String? booruName) {
+    currentBooruNotifier.value = booruName;
   }
 
-  /// Get setting by enum key (type-safe)
-  Setting<T>? get<T>(SettingKey key) => _settings[key] as Setting<T>?;
-
-  /// Get setting by string key (for backwards compatibility with JSON)
-  Setting? getByJsonKey(String jsonKey) {
-    return _settings.values.firstWhereOrNull((s) => s.jsonKey == jsonKey);
+  void register<T>(SettingDef<T> def) {
+    _states[def.key] = SettingState<T>(def);
   }
 
-  Iterable<Setting> get all => _settings.values;
+  /// Get state by enum key (type-safe)
+  SettingState<T>? get<T>(SettingKey key) => _states[key] as SettingState<T>?;
 
-  /// Get all settings that belong to this category (supports multi-category)
-  List<Setting> byCategory(SettingCategory category) {
-    return _settings.values.where((s) => s.categories.contains(category)).toList();
+  /// Get state by string key (for backwards compatibility with JSON)
+  SettingState? getByJsonKey(String jsonKey) {
+    return _states.values.firstWhereOrNull((s) => s.def.jsonKey == jsonKey);
+  }
+
+  Iterable<SettingState> get all => _states.values;
+
+  /// Get all states that belong to this category (supports multi-category)
+  List<SettingState> byCategory(SettingCategory category) {
+    return _states.values.where((s) => s.def.categories.contains(category)).toList();
   }
 
   /// Get visible categories (respects visibleWhen condition)
@@ -1135,91 +1115,120 @@ class SettingsRegistry {
   }
 
   /// Get device-specific settings
-  List<Setting> get deviceSpecific {
-    return _settings.values.where((s) => s.isDeviceSpecific).toList();
+  List<SettingState> get deviceSpecific {
+    return _states.values.where((s) => s.def.isDeviceSpecific).toList();
   }
 
   /// Get syncable settings (not device-specific)
-  List<Setting> get syncable {
-    return _settings.values.where((s) => !s.isDeviceSpecific).toList();
+  List<SettingState> get syncable {
+    return _states.values.where((s) => !s.def.isDeviceSpecific).toList();
   }
 
-  /// Build search index (call once after registration or when locale changes)
-  void buildSearchIndex(BuildContext context) {
-    _searchIndex = {};
-    for (final setting in _settings.values) {
-      final searchableText = setting.getSearchableText(context);
-      for (final text in searchableText) {
-        final words = text.toLowerCase().split(RegExp(r'\s+'));
-        for (final word in words) {
-          _searchIndex![word] ??= [];
-          if (!_searchIndex![word]!.contains(setting.jsonKey)) {
-            _searchIndex![word]!.add(setting.jsonKey);
-          }
-        }
-      }
-    }
+  /// Get all settings that support per-booru overrides
+  List<SettingState> get perBooruSettings {
+    return _states.values.where((s) => s.def.supportsPerBooru).toList();
   }
 
-  /// Search settings by query
-  List<Setting> search(String query, BuildContext context) {
-    if (_searchIndex == null) {
-      buildSearchIndex(context);
-    }
+  // ============================================
+  // SEARCH (simple substring matching)
+  // ============================================
+
+  /// Search settings by query. Uses simple substring matching on
+  /// localized titles, subtitles, keywords, and category names.
+  /// No caching needed - fast enough for ~100 settings.
+  /// Locale-safe: always uses current context for localized strings.
+  List<SettingState> search(String query, BuildContext context) {
+    if (query.isEmpty) return [];
 
     final queryLower = query.toLowerCase();
-    final matchingKeys = <String>{};
-
-    for (final entry in _searchIndex!.entries) {
-      if (entry.key.contains(queryLower)) {
-        matchingKeys.addAll(entry.value);
-      }
-    }
-
-    return matchingKeys
-        .map((key) => getByJsonKey(key))
-        .whereType<Setting>()
-        .toList();
+    return _states.values.where((state) {
+      final searchable = state.def.getSearchableText(context);
+      return searchable.any((text) => text.toLowerCase().contains(queryLower));
+    }).toList();
   }
 
-  /// Convert to map for backwards compatibility
-  Map<String, Map<String, dynamic>> toMap() {
-    return Map.fromEntries(
-      _settings.values.map((s) => MapEntry(s.jsonKey, s.toMapEntry())),
-    );
-  }
+  // ============================================
+  // SERIALIZATION
+  // ============================================
 
-  /// Convert to JSON
+  /// Convert to JSON for saving
   Map<String, dynamic> toJson() {
     return Map.fromEntries(
-      _settings.values.map((s) => MapEntry(s.jsonKey, s.toJson())),
+      _states.values.map((s) => MapEntry(s.def.jsonKey, s.toJson())),
     );
   }
 
   /// Load from JSON
   void loadFromJson(Map<String, dynamic> json) {
     for (final entry in json.entries) {
-      final setting = getByJsonKey(entry.key);
-      setting?.loadFromJson(entry.value);
+      final state = getByJsonKey(entry.key);
+      state?.loadFromJson(entry.value);
     }
   }
 
   /// Reset all settings to defaults
   void resetAll() {
-    for (final setting in _settings.values) {
-      setting.reset();
+    for (final state in _states.values) {
+      state.reset();
     }
   }
 
   /// Reset settings in a category
   void resetCategory(SettingCategory category) {
-    for (final setting in byCategory(category)) {
-      setting.reset();
+    for (final state in byCategory(category)) {
+      state.reset();
+    }
+  }
+
+  // ============================================
+  // PER-BOORU OVERRIDE MANAGEMENT
+  // ============================================
+
+  void loadOverridesFromBooru(Booru booru) {
+    final overrides = booru.settingOverrides;
+    if (overrides == null) return;
+
+    for (final entry in overrides.entries) {
+      final state = getByJsonKey(entry.key);
+      if (state != null && state.def.supportsPerBooru) {
+        state.setOverrideFor(booru.name, state.def.valueFromJson(entry.value));
+      }
+    }
+  }
+
+  void saveOverridesToBooru(Booru booru) {
+    final overrides = <String, dynamic>{};
+    for (final state in _states.values) {
+      if (state.def.supportsPerBooru && state.hasOverrideFor(booru.name)) {
+        final overrideValue = state.getOverrideFor(booru.name);
+        if (overrideValue != null) {
+          overrides[state.def.key.jsonKey] = state.def.valueToJson(overrideValue);
+        }
+      }
+    }
+    booru.settingOverrides = overrides.isEmpty ? null : overrides;
+  }
+
+  void removeAllOverridesForBooru(String booruName) {
+    for (final state in _states.values) {
+      if (state.def.supportsPerBooru) {
+        state.removeOverrideFor(booruName);
+      }
+    }
+  }
+
+  void copyOverrides(String fromBooruName, String toBooruName) {
+    for (final state in perBooruSettings) {
+      final override = state.getOverrideFor(fromBooruName);
+      if (override != null) {
+        state.setOverrideFor(toBooruName, override);
+      }
     }
   }
 }
 
-/// Categories for organizing settings
+/// Categories for organizing settings.
+/// Registration order within a category determines display order.
 enum SettingCategory {
   language,
   booru,
@@ -1302,15 +1311,14 @@ enum SettingCategory {
     }
   }
 
-  /// Visibility condition - category hidden if returns false
-  /// Returns null if always visible
+  /// Visibility condition - category hidden if returns false.
+  /// Returns null if always visible.
   bool Function()? get visibleWhen {
     switch (this) {
       case SettingCategory.debug:
-        // Only show debug category in debug mode or when isDebug setting enabled
-        return () => kDebugMode || SettingsRegistry.instance.get<bool>(SettingKey.isDebug)?.value == true;
+        return () => kDebugMode || SettingKey.isDebug.value() == true;
       default:
-        return null; // Always visible
+        return null;
     }
   }
 }
@@ -1322,17 +1330,9 @@ enum SettingCategory {
 
 **New file: `lib/src/data/settings/all_settings.dart`**
 
-Declarative definition of all ~100 settings using `SettingKey` enum:
+Declarative definition of all ~100 settings:
 
 ```dart
-import 'package:flutter/material.dart';
-
-import 'package:lolisnatcher/src/data/settings/setting_key.dart';
-import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
-import 'package:lolisnatcher/src/data/settings/typed_settings.dart';
-import 'package:lolisnatcher/src/data/settings/special_settings.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
-
 void registerAllSettings() {
   final registry = SettingsRegistry.instance;
 
@@ -1340,38 +1340,40 @@ void registerAllSettings() {
   // INTERFACE SETTINGS
   // ============================================
 
-  registry.register(IntSetting(
+  registry.register(intSetting(
     key: SettingKey.portraitColumns,
-    getDefaultValue: () => SettingsHandler.isDesktopPlatform ? 5 : 2,  // Dynamic default!
+    getDefaultValue: () => SettingsHandler.isDesktopPlatform ? 5 : 2,
     min: 1, max: 100, step: 1,
     categories: [SettingCategory.interface],
+    supportsPerBooru: true,  // Per-booru support!
     localization: SettingLocalization(
       title: (ctx) => ctx.loc.settings.interface.previewColumnsPortrait,
       searchKeywords: (ctx) => [ctx.loc.search.columns, ctx.loc.search.grid],
     ),
   ));
 
-  registry.register(IntSetting(
+  registry.register(intSetting(
     key: SettingKey.landscapeColumns,
     getDefaultValue: () => SettingsHandler.isDesktopPlatform ? 7 : 4,
     min: 1, max: 100, step: 1,
     categories: [SettingCategory.interface],
+    supportsPerBooru: true,
     localization: SettingLocalization(
       title: (ctx) => ctx.loc.settings.interface.previewColumnsLandscape,
       searchKeywords: (ctx) => [ctx.loc.search.columns, ctx.loc.search.grid],
     ),
   ));
 
-  registry.register(EnumSetting<PreviewQuality>(
+  registry.register(enumSetting<PreviewQuality>(
     key: SettingKey.previewMode,
     getDefaultValue: () => PreviewQuality.defaultValue,
     values: PreviewQuality.values,
     fromString: PreviewQuality.fromString,
     enumToJson: (v) => v.toJson(),
     enumLocName: (ctx, v) => v.locName(ctx),
-    typeName: 'previewQuality',
     displayMode: EnumDisplayMode.optionsList,
     categories: [SettingCategory.interface],
+    supportsPerBooru: true,
     localization: SettingLocalization(
       title: (ctx) => ctx.loc.settings.interface.previewQuality,
       searchKeywords: (ctx) => [ctx.loc.search.preview, ctx.loc.search.quality],
@@ -1382,7 +1384,7 @@ void registerAllSettings() {
   // VIDEO SETTINGS
   // ============================================
 
-  registry.register(BoolSetting(
+  registry.register(boolSetting(
     key: SettingKey.disableVideo,
     getDefaultValue: () => false,
     categories: [SettingCategory.video],
@@ -1391,28 +1393,27 @@ void registerAllSettings() {
     ),
   ));
 
-  registry.register(BoolSetting(
+  registry.register(boolSetting(
     key: SettingKey.autoPlayEnabled,
     getDefaultValue: () => true,
     categories: [SettingCategory.video],
+    supportsPerBooru: true,
     localization: SettingLocalization(
       title: (ctx) => ctx.loc.settings.video.autoplayVideos,
       searchKeywords: (ctx) => [ctx.loc.search.video, ctx.loc.search.autoplay],
     ),
-    // Only enabled when disableVideo is false
     dependsOn: [SettingKey.disableVideo],
     enabledWhen: () => !SettingsRegistry.instance.get<bool>(SettingKey.disableVideo)!.value,
   ));
 
   // ============================================
-  // VIEWER SETTINGS
+  // VIEWER SETTINGS (multi-category example)
   // ============================================
 
-  // Setting in MULTIPLE categories
-  registry.register(BoolSetting(
+  registry.register(boolSetting(
     key: SettingKey.enableHeroTransitions,
     getDefaultValue: () => true,
-    categories: [SettingCategory.viewer, SettingCategory.performance],  // Shows in both!
+    categories: [SettingCategory.viewer, SettingCategory.performance],
     localization: SettingLocalization(
       title: (ctx) => ctx.loc.settings.viewer.enableHeroTransitions,
       searchKeywords: (ctx) => [ctx.loc.search.animation, ctx.loc.search.transition],
@@ -1420,25 +1421,42 @@ void registerAllSettings() {
   ));
 
   // ============================================
-  // THEME SETTINGS
+  // THEME SETTINGS (with onChanged side effect)
   // ============================================
 
-  registry.register(ThemeModeSetting(
+  registry.register(themeModeSetting(
     key: SettingKey.themeMode,
     getDefaultValue: () => ThemeMode.system,
     categories: [SettingCategory.theme],
     localization: SettingLocalization(
       title: (ctx) => ctx.loc.settings.theme.themeMode,
     ),
+    onChanged: (oldMode, newMode) {
+      // Side effect: trigger app theme rebuild
+      // SettingsHandler or ThemeController handles this
+    },
   ));
 
-  registry.register(BoolSetting(
+  registry.register(boolSetting(
     key: SettingKey.isAmoled,
     getDefaultValue: () => false,
     categories: [SettingCategory.theme],
     localization: SettingLocalization(
       title: (ctx) => ctx.loc.settings.theme.amoled,
     ),
+  ));
+
+  // ============================================
+  // TAGS (custom type with Tag cleansing)
+  // ============================================
+
+  registry.register(tagListSetting(
+    key: SettingKey.hatedTags,
+    localization: SettingLocalization(
+      title: (ctx) => ctx.loc.settings.tags.hatedTags,
+    ),
+    categories: [SettingCategory.tagsFilters],
+    supportsPerBooru: true,
   ));
 
   // ... continue with all other settings
@@ -1452,109 +1470,98 @@ void registerAllSettings() {
 **New file: `lib/src/widgets/settings/auto_settings_page.dart`**
 
 ```dart
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-
-import 'package:lolisnatcher/src/data/settings/setting.dart';
-import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
-
-class AutoSettingsPage extends StatefulWidget {
+class AutoSettingsPage extends StatelessWidget {
   const AutoSettingsPage({
     super.key,
     this.category,
-    this.customSettings,
-    this.header,
-    this.footer,
+    this.items,
     this.settingBuilder,
-  }) : assert(category != null || customSettings != null);
+  }) : assert(category != null || items != null);
 
   final SettingCategory? category;
-  final List<Setting>? customSettings;
-  final Widget? header;
-  final Widget? footer;
-  /// Custom builder for controlling borders, spacing, grouping etc.
-  final Widget Function(BuildContext context, Setting setting, int index, int total)? settingBuilder;
+  /// Mixed list of SettingState and Widget items for flexible page composition.
+  /// Use this for pages with non-setting widgets (action buttons, info text, etc.)
+  final List<dynamic>? items;
+  final Widget Function(BuildContext, SettingState, int, int)? settingBuilder;
 
   @override
-  State<AutoSettingsPage> createState() => _AutoSettingsPageState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(category?.locName(context) ?? 'Settings'),
+      ),
+      body: _SettingsListView(
+        category: category,
+        items: items,
+        settingBuilder: settingBuilder,
+      ),
+    );
+  }
 }
 
-class _AutoSettingsPageState extends State<AutoSettingsPage> {
-  late List<Setting> _settings;
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
+/// Separate widget so filtering can be reactive (rebuilds when dependencies change).
+class _SettingsListView extends StatelessWidget {
+  const _SettingsListView({
+    this.category,
+    this.items,
+    this.settingBuilder,
+  });
 
-  @override
-  void initState() {
-    super.initState();
-    _loadSettings();
-  }
+  final SettingCategory? category;
+  final List<dynamic>? items;
+  final Widget Function(BuildContext, SettingState, int, int)? settingBuilder;
 
-  void _loadSettings() {
-    if (widget.customSettings != null) {
-      _settings = widget.customSettings!;
-    } else {
-      _settings = SettingsRegistry.instance.byCategory(widget.category!);
-    }
-
-    // Filter out disabled settings
-    _settings = _settings.where((s) {
-      final enabledWhen = s.enabledWhen;
-      return enabledWhen == null || enabledWhen();
-    }).toList();
+  List<dynamic> _getItems() {
+    if (items != null) return items!;
+    return SettingsRegistry.instance.byCategory(category!);
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) {
-          settingsHandler.saveSettings();
-        }
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(widget.category?.locName(context) ?? 'Settings'),
-        ),
-        body: ListView.builder(
-          itemCount: _settings.length +
-            (widget.header != null ? 1 : 0) +
-            (widget.footer != null ? 1 : 0),
-          itemBuilder: (context, index) {
-            // Header
-            if (widget.header != null && index == 0) {
-              return widget.header!;
-            }
+    final allItems = _getItems();
 
-            // Adjust index for header
-            final settingIndex = index - (widget.header != null ? 1 : 0);
-
-            // Footer
-            if (widget.footer != null && settingIndex >= _settings.length) {
-              return widget.footer!;
-            }
-
-            final setting = _settings[settingIndex];
-
-            // Use custom builder or default
-            if (widget.settingBuilder != null) {
-              return widget.settingBuilder!(
-                context,
-                setting,
-                settingIndex,
-                _settings.length,
-              );
-            }
-
-            // Default: add borders based on position
-            return _defaultSettingBuilder(context, setting, settingIndex);
-          },
-        ),
+    // For reactive filtering: wrap in ListenableBuilder listening to
+    // all dependency settings so enabledWhen re-evaluates on change
+    return ListenableBuilder(
+      listenable: Listenable.merge(
+        allItems
+          .whereType<SettingState>()
+          .expand((s) => (s.def.dependsOn ?? [])
+            .map((key) => SettingsRegistry.instance.get(key)?.effectiveNotifier)
+            .whereType<Listenable>())
+          .toSet()
+          .toList(),
       ),
+      builder: (context, _) {
+        // Filter: only show enabled settings (dynamic, re-evaluated on rebuild)
+        final visibleItems = allItems.where((item) {
+          if (item is SettingState) {
+            return item.def.enabledWhen?.call() ?? true;
+          }
+          return true; // Non-setting widgets always shown
+        }).toList();
+
+        return ListView.builder(
+          itemCount: visibleItems.length,
+          itemBuilder: (context, index) {
+            final item = visibleItems[index];
+
+            // Non-setting widget: render directly
+            if (item is Widget) return item;
+
+            // Setting: use custom builder or default
+            final setting = item as SettingState;
+            if (settingBuilder != null) {
+              return settingBuilder!(context, setting, index, visibleItems.length);
+            }
+            return _defaultSettingBuilder(context, setting, index);
+          },
+        );
+      },
     );
   }
 
-  Widget _defaultSettingBuilder(BuildContext context, Setting setting, int index) {
+  Widget _defaultSettingBuilder(BuildContext context, SettingState setting, int index) {
     return Column(
       children: [
         if (index == 0) const Divider(height: 1),
@@ -1573,13 +1580,6 @@ class _AutoSettingsPageState extends State<AutoSettingsPage> {
 **New file: `lib/src/widgets/settings/settings_search_page.dart`**
 
 ```dart
-import 'dart:async';
-
-import 'package:flutter/material.dart';
-
-import 'package:lolisnatcher/src/data/settings/setting.dart';
-import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
-
 class SettingsSearchPage extends StatefulWidget {
   const SettingsSearchPage({super.key});
 
@@ -1589,7 +1589,7 @@ class SettingsSearchPage extends StatefulWidget {
 
 class _SettingsSearchPageState extends State<SettingsSearchPage> {
   final TextEditingController _searchController = TextEditingController();
-  List<Setting> _results = [];
+  List<SettingState> _results = [];
   Timer? _debounce;
 
   @override
@@ -1617,7 +1617,8 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
       setState(() => _results = []);
       return;
     }
-
+    // No index caching - simple substring search is fast for ~100 settings
+    // and automatically uses current locale (no invalidation needed)
     setState(() {
       _results = SettingsRegistry.instance.search(query, context);
     });
@@ -1657,7 +1658,7 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
           : ListView.builder(
               itemCount: _results.length,
               itemBuilder: (context, index) {
-                final setting = _results[index];
+                final state = _results[index];
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1666,7 +1667,7 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
                       padding: const EdgeInsets.only(left: 16, top: 8),
                       child: Wrap(
                         spacing: 4,
-                        children: setting.categories.map((cat) {
+                        children: state.def.categories.map((cat) {
                           return Chip(
                             label: Text(
                               cat.locName(context),
@@ -1678,8 +1679,26 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
                         }).toList(),
                       ),
                     ),
+                    // Per-booru override indicator
+                    if (state.def.supportsPerBooru &&
+                        SettingsRegistry.instance.currentBooruName != null &&
+                        state.hasOverrideFor(SettingsRegistry.instance.currentBooruName!))
+                      Padding(
+                        padding: const EdgeInsets.only(left: 16),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.tune, size: 14, color: Theme.of(context).colorScheme.primary),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Custom value for current booru',
+                              style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.primary),
+                            ),
+                          ],
+                        ),
+                      ),
                     // Setting widget
-                    setting.buildWidget(context),
+                    state.buildWidget(context),
                     const Divider(),
                   ],
                 );
@@ -1690,9 +1709,93 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
 }
 ```
 
+### Search: Enum Option Names
+
+For enum settings, `getSearchableText` should also include the localized names of all enum options. This way searching "dark" finds `themeMode`. This is handled in the `enumSetting()` factory by overriding `searchKeywords` to include option labels:
+
+```dart
+// In enumSetting() factory, augment searchKeywords:
+localization: SettingLocalization(
+  title: localization.title,
+  subtitle: localization.subtitle,
+  helpText: localization.helpText,
+  searchKeywords: (ctx) {
+    final base = localization.searchKeywords?.call(ctx) ?? [];
+    final optionNames = values.map((v) => enumLocName(ctx, v)).toList();
+    return [...base, ...optionNames];
+  },
+),
+```
+
 ---
 
-### Phase 7: Bridge with Existing System
+### Phase 7: Per-Booru Settings Page
+
+```dart
+class BooruSettingsPage extends StatelessWidget {
+  const BooruSettingsPage({required this.booru, super.key});
+  final Booru booru;
+
+  @override
+  Widget build(BuildContext context) {
+    return BooruEditingScope(
+      booruName: booru.name,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('${booru.name} Settings'),
+        ),
+        body: _BooruSettingsList(booru: booru),
+      ),
+    );
+  }
+}
+
+class _BooruSettingsList extends StatelessWidget {
+  const _BooruSettingsList({required this.booru});
+  final Booru booru;
+
+  @override
+  Widget build(BuildContext context) {
+    final perBooruSettings = SettingsRegistry.instance.perBooruSettings;
+
+    return ListView.builder(
+      itemCount: perBooruSettings.length,
+      itemBuilder: (context, index) {
+        final state = perBooruSettings[index];
+        final hasOverride = state.hasOverrideFor(booru.name);
+
+        return Column(
+          children: [
+            // Override toggle
+            SwitchListTile(
+              title: Text(state.def.localization.title(context)),
+              subtitle: Text(hasOverride
+                  ? 'Custom value for ${booru.name}'
+                  : 'Using global value'),
+              value: hasOverride,
+              onChanged: (enabled) {
+                if (enabled) {
+                  state.setOverrideFor(booru.name, state.globalValue);
+                } else {
+                  state.removeOverrideFor(booru.name);
+                }
+              },
+            ),
+            // Setting widget (only editable if override enabled)
+            if (hasOverride)
+              state.buildWidget(context),
+            const Divider(),
+          ],
+        );
+      },
+    );
+  }
+}
+```
+
+---
+
+### Phase 8: Bridge with Existing System
 
 Modify `lib/src/handlers/settings_handler.dart` for gradual migration:
 
@@ -1705,36 +1808,61 @@ class SettingsHandler extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    registerAllSettings();  // Register all settings
+    registerAllSettings();
     // ... existing init code ...
   }
 
   // Bridge methods - delegate to registry
-  Map<String, Map<String, dynamic>> get map => _registry.toMap();
-
   dynamic getByString(String varName) {
-    final setting = _registry.getByJsonKey(varName);
-    if (setting != null) return setting.value;
+    final state = _registry.getByJsonKey(varName);
+    if (state != null) return state.value;
     return _legacyGetByString(varName);  // Fallback
   }
 
   void setByString(String varName, dynamic value) {
-    final setting = _registry.getByJsonKey(varName);
-    if (setting != null) {
-      setting.loadFromJson(value);
+    final state = _registry.getByJsonKey(varName);
+    if (state != null) {
+      state.loadFromJson(value);
       return;
     }
     _legacySetByString(varName, value);  // Fallback
   }
 
-  // Keep legacy methods during migration
-  dynamic _legacyGetByString(String varName) {
-    // ... existing switch statement ...
+  // Validation now delegates to setting's own validation
+  dynamic validateValue(String varName, dynamic value, {bool toJSON = false}) {
+    final state = _registry.getByJsonKey(varName);
+    if (state != null) {
+      if (toJSON) return state.def.valueToJson(value);
+      return state.def.valueFromJson(value);
+    }
+    return _legacyValidateValue(varName, value, toJSON: toJSON);
   }
 
-  void _legacySetByString(String varName, dynamic value) {
-    // ... existing switch statement ...
+  // Override loading to also load per-booru overrides
+  Future<void> loadBoorus() async {
+    // ... existing booru loading logic ...
+    // After loading all boorus:
+    for (final booru in booruList) {
+      _registry.loadOverridesFromBooru(booru);
+    }
   }
+
+  // Override saving to also save per-booru overrides
+  Future<void> saveBooru(Booru booru) async {
+    _registry.saveOverridesToBooru(booru);
+    // ... existing save logic ...
+  }
+
+  // Override deletion to clear overrides
+  Future<void> deleteBooru(Booru booru) async {
+    _registry.removeAllOverridesForBooru(booru.name);
+    // ... existing delete logic ...
+  }
+
+  // Keep legacy methods during migration
+  dynamic _legacyGetByString(String varName) { /* ... */ }
+  void _legacySetByString(String varName, dynamic value) { /* ... */ }
+  dynamic _legacyValidateValue(String varName, dynamic value, {bool toJSON = false}) { /* ... */ }
 }
 ```
 
@@ -1745,20 +1873,24 @@ class SettingsHandler extends GetxController {
 ```
 lib/src/data/settings/
   setting_key.dart              # Centralized enum for all setting keys
-  setting.dart                  # Base Setting<T> class
-  typed_settings.dart           # BoolSetting, IntSetting, EnumSetting, etc.
-  special_settings.dart         # ThemeSetting, ThemeModeSetting, LocaleSetting, etc.
+  setting_def.dart              # SettingDef<T> - immutable definition
+  setting_state.dart            # SettingState<T> - mutable state
+  typed_settings.dart           # boolSetting(), intSetting(), enumSetting(), etc.
+  special_settings.dart         # themeModeSetting(), tagListSetting(), pathPickerSetting(), etc.
   settings_registry.dart        # SettingsRegistry + SettingCategory
   all_settings.dart             # All setting definitions
 
-  # Keep existing:
-  settings_enum.dart            # SettingsEnum mixin (for enum values)
-  preview_quality.dart          # Enum definition
+  # Keep existing (until migration complete):
+  settings_enum.dart            # SettingsEnum mixin (remove after migration)
+  preview_quality.dart          # Enum definition (keep)
   ... (other enum files)
 
 lib/src/widgets/settings/
-  auto_settings_page.dart       # Auto-rendering page
+  auto_settings_page.dart       # Auto-rendering page (supports mixed Setting/Widget items)
   settings_search_page.dart     # Global search
+  setting_builder.dart          # SettingBuilder<T> + MultiSettingBuilder convenience widgets
+  booru_editing_scope.dart      # BooruEditingScope InheritedWidget
+  booru_settings_page.dart      # Per-booru settings page
 ```
 
 ---
@@ -1767,10 +1899,13 @@ lib/src/widgets/settings/
 
 ### Step 1: Create Infrastructure (Non-Breaking)
 1. Create `setting_key.dart` with all setting keys
-2. Create `Setting<T>` base class and typed implementations
-3. Create `SettingsRegistry`
-4. Create `AutoSettingsPage` and `SettingsSearchPage`
-5. Call `registerAllSettings()` at app startup
+2. Create `SettingDef<T>` and `SettingState<T>`
+3. Create typed setting factories
+4. Create `SettingsRegistry`
+5. Create `SettingBuilder`, `MultiSettingBuilder`, `BooruEditingScope`
+6. Create `AutoSettingsPage` and `SettingsSearchPage`
+7. Call `registerAllSettings()` at app startup
+8. Add `settingOverrides` field to `Booru` class
 
 ### Step 2: Add Search Feature
 1. Add search button to main settings page
@@ -1788,6 +1923,26 @@ class GalleryPage extends StatelessWidget {
     return AutoSettingsPage(category: SettingCategory.viewer);
   }
 }
+
+// For pages with non-setting widgets (action buttons, info text):
+class SaveCachePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return AutoSettingsPage(
+      category: SettingCategory.cache,
+      items: [
+        ...SettingsRegistry.instance.byCategory(SettingCategory.cache),
+        // Action buttons mixed in with settings
+        SettingsButton(
+          title: context.loc.settings.cache.clearCache,
+          icon: Icons.delete,
+          onTap: () => _clearCache(context),
+        ),
+        CacheInfoWidget(),  // Custom info display
+      ],
+    );
+  }
+}
 ```
 
 ### Step 4: Remove Legacy Code (Final)
@@ -1795,46 +1950,48 @@ Once all pages migrated:
 - Remove individual member variables from SettingsHandler
 - Remove `getByString`/`setByString` switch statements
 - Remove `deviceSpecificSettings` list (use `isDeviceSpecific` flag)
+- Remove `SettingsEnumRegistry` and `initSettingsEnumRegistry()`
+- Remove `validateValue` method (each setting validates itself)
 
 ---
 
-## Critical Files to Modify
+## Localization Notes
 
-| File | Changes |
-|------|---------|
-| `lib/src/handlers/settings_handler.dart` | Add registry bridge, initialize at startup |
-| `lib/src/pages/settings_page.dart` | Add search button |
-| `lib/src/pages/settings/gallery_page.dart` | First page to migrate (demo) |
-| `lib/main.dart` | Call `registerAllSettings()` |
+- The app uses **slang** package with `context.loc.settings.*` access pattern
+- `SettingLocalization` uses `(BuildContext) => String` functions - fully compatible with slang
+- Locale changes trigger a full app rebuild via `TranslationProvider`, so all setting strings re-evaluate automatically
+- Search uses no cached index - simple substring matching re-evaluates with current locale on every search
+- **New i18n keys needed** in `assets/i18n/*.json`:
+  - `settings.search.hint` - Search field placeholder
+  - `settings.search.startTyping` - Empty state message
+  - `settings.search.noResults` - No results message
+  - Various `search.*` keywords for setting searchability
 
 ---
 
 ## Backwards Compatibility
 
-- **JSON format**: Same keys and values - no migration needed
-- **API**: `settingsHandler.autoHideImageBar` works via bridge
+- **JSON format**: Global settings use same flat keys and values - no migration needed
+- **Per-booru overrides**: Stored in booru config files, old versions ignore the new `settingOverrides` key
+- **API**: `settingsHandler.autoHideImageBar` works via bridge during migration
 - **Sync**: `isDeviceSpecific` flag replaces `deviceSpecificSettings` list
+- **Sharing**: `toLinkJson()` excludes `settingOverrides` - recipients use their own global defaults
 
 ---
 
 ## Verification
 
 1. `flutter analyze` - no errors
-2. App loads existing settings.json correctly
+2. App loads existing settings.json correctly (flat format unchanged)
 3. Changing a setting persists correctly
-4. Fresh install uses correct defaults
-5. Search finds settings by title/keyword
-6. AutoSettingsPage renders all settings in category
-7. Conditional settings show/hide correctly
-
----
-
-## Notes
-
-- The `SettingKey` enum provides type-safe access to settings and prevents typos
-- Settings can belong to multiple categories (useful for settings like `enableHeroTransitions` that fit both `viewer` and `performance`)
-- `searchKeywords` is a function `(BuildContext) => List<String>` to support localized search
-- `getDefaultValue` is a function to support platform-specific defaults (desktop vs mobile)
-- `visibleWhen` on categories allows hiding entire sections conditionally (e.g., debug settings)
-- Border handling moved to `AutoSettingsPage.settingBuilder` for flexibility
-- **Per-booru overrides**: Settings with `supportsPerBooru: true` can have custom values per booru that override the global value. The effective value is determined by checking if the current booru has an override, falling back to global. This enables site-specific customization (e.g., different column counts, preview quality, or filters for different boorus).
+4. Fresh install uses correct defaults (including platform-specific dynamic defaults)
+5. Search finds settings by title, keyword, category name, and enum option names
+6. Search works correctly after switching locale
+7. AutoSettingsPage renders all settings in category
+8. Conditional settings show/hide dynamically when dependencies change
+9. Per-booru overrides save to booru config files
+10. Per-booru overrides load correctly from booru config files
+11. Sharing a booru config does NOT include setting overrides
+12. Deleting a booru clears its in-memory overrides
+13. `onChanged` callbacks fire for theme/locale/DB settings
+14. Multiple settings pages on nav stack don't conflict (no global editing state)

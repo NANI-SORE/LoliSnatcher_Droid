@@ -109,9 +109,9 @@ void initSettingsEnumRegistry() {
     typeName: 'imageQuality',
     fromString: ImageQuality.fromString,
   );
-  SettingsEnumRegistry.register<ScrollDirection>(
+  SettingsEnumRegistry.register<UiScrollDirection>(
     typeName: 'scrollDirection',
-    fromString: ScrollDirection.fromString,
+    fromString: UiScrollDirection.fromString,
   );
   SettingsEnumRegistry.register<VerticalPosition>(
     typeName: 'verticalPosition',

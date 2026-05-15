@@ -1,0 +1,236 @@
+import 'dart:async';
+
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart' show timeDilation;
+
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/handlers/search_handler.dart';
+import 'package:lolisnatcher/src/handlers/secure_storage_handler.dart';
+import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
+import 'package:lolisnatcher/src/pages/settings/logger_page.dart';
+import 'package:lolisnatcher/src/pages/settings/text_parser_test_page.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
+import 'package:lolisnatcher/src/utils/logger.dart';
+import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
+import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
+import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
+import 'package:lolisnatcher/src/widgets/tags_manager/tm_dialog.dart';
+import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
+
+/// Action buttons and dev-only toggles for the debug settings page.
+///
+/// These are non-setting widgets that appear after the auto-rendered
+/// debug toggles (showPerf, showFps, etc.).
+class DebugActionsWidget extends StatefulWidget {
+  const DebugActionsWidget({super.key});
+
+  @override
+  State<DebugActionsWidget> createState() => _DebugActionsWidgetState();
+}
+
+class _DebugActionsWidgetState extends State<DebugActionsWidget> {
+  final SettingsHandler settingsHandler = SettingsHandler.instance;
+  final TextEditingController sessionStrController = TextEditingController();
+
+  @override
+  void dispose() {
+    sessionStrController.dispose();
+    super.dispose();
+  }
+
+  Future<dynamic> showTagsManager(BuildContext context) async {
+    return SettingsPageOpen(
+      context: context,
+      page: (_) => const TagsManagerDialog(),
+    ).open();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (kDebugMode)
+          SettingsToggle(
+            value: settingsHandler.blurImages,
+            onChanged: (newValue) {
+              setState(() {
+                settingsHandler.blurImages = newValue;
+                ViewerHandler.instance.videoAutoMute = newValue;
+              });
+            },
+            title: context.loc.settings.debug.blurImagesAndMuteVideosDevOnly,
+          ),
+        if (SettingsHandler.isDesktopPlatform)
+          SettingsToggle(
+            value: SX.desktopListsDrag.value,
+            onChanged: (newValue) {
+              setState(() {
+                SX.desktopListsDrag.state.value = newValue;
+              });
+            },
+            title: context.loc.settings.debug.enableDragScrollOnListsDesktopOnly,
+          ),
+
+        SettingsButton(
+          name: context.loc.settings.debug.animationSpeed(speed: timeDilation),
+          icon: const Icon(Icons.timelapse),
+          action: () {
+            const List<double> speeds = [0.25, 0.5, 0.75, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20];
+            final int currentIndex = speeds.indexOf(timeDilation);
+            int newIndex = 0;
+            if ((currentIndex + 1) <= (speeds.length - 1)) {
+              newIndex = currentIndex + 1;
+            }
+            timeDilation = speeds[newIndex];
+            setState(() {});
+          },
+        ),
+
+        SettingsButton(
+          name: context.loc.settings.debug.tagsManager,
+          icon: const Icon(CupertinoIcons.tag),
+          action: () {
+            showTagsManager(context);
+          },
+        ),
+
+        SettingsButton(
+          name: 'Text Parser Test',
+          icon: const Icon(Icons.text_fields),
+          page: () => const TextParserTestPage(),
+        ),
+
+        SettingsButton(
+          name: context.loc.settings.debug.resolution(
+            width: MediaQuery.sizeOf(context).width.toPrecision(4).toString(),
+            height: MediaQuery.sizeOf(context).height.toPrecision(4).toString(),
+          ),
+        ),
+        SettingsButton(
+          name: context.loc.settings.debug.pixelRatio(
+            ratio: MediaQuery.devicePixelRatioOf(context).toPrecision(4).toString(),
+          ),
+        ),
+
+        const SettingsButton(name: '', enabled: false),
+
+        SettingsButton(
+          name: context.loc.settings.debug.logger,
+          action: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => LoggerViewPage(talker: Logger.talker),
+              ),
+            );
+          },
+          trailingIcon: const Icon(Icons.print),
+        ),
+
+        SettingsButton(
+          name: context.loc.settings.debug.webview,
+          icon: const Icon(Icons.public),
+          page: () => const InAppWebviewView(initialUrl: 'gelbooru.com'),
+        ),
+        SettingsButton(
+          name: context.loc.settings.debug.deleteAllCookies,
+          icon: const Icon(Icons.cookie_outlined),
+          action: () async {
+            await CookieManager.instance(webViewEnvironment: webViewEnvironment).deleteAllCookies();
+            globalWindowsCookies.clear();
+          },
+        ),
+
+        if (kDebugMode)
+          SettingsButton(
+            name: context.loc.settings.debug.clearSecureStorage,
+            action: () {
+              SecureStorageHandler.instance.deleteAll();
+            },
+          ),
+
+        const SettingsButton(name: '', enabled: false),
+
+        SettingsButton(
+          name: context.loc.settings.debug.getSessionString,
+          icon: const Icon(Icons.copy),
+          action: () async {
+            final str = SearchHandler.instance.generateBackupJson() ?? '';
+            await ClipboardUtils.copyTextToClipboard(str);
+          },
+        ),
+        SettingsButton(
+          name: context.loc.settings.debug.setSessionString,
+          icon: const Icon(Icons.restore),
+          action: () async {
+            await showDialog(
+              context: context,
+              builder: (_) {
+                return AlertDialog(
+                  content: Column(
+                    children: [
+                      SettingsTextInput(
+                        controller: sessionStrController,
+                        title: context.loc.settings.debug.sessionString,
+                        onlyInput: true,
+                        pasteable: true,
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    const CancelButton(),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (sessionStrController.text.isNotEmpty) {
+                          SearchHandler.instance.replaceTabs(sessionStrController.text);
+
+                          FlashElements.showSnackbar(
+                            context: context,
+                            duration: const Duration(seconds: 2),
+                            title: Text(
+                              context.loc.settings.debug.restoredSessionFromString,
+                              style: const TextStyle(fontSize: 20),
+                            ),
+                            content: Text(
+                              sessionStrController.text,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                            leadingIcon: Icons.copy,
+                            sideColor: Colors.green,
+                          );
+                        }
+                      },
+                      child: Text(context.loc.ok),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        ),
+
+        // dummy button to use at least one icon from fontawesome regular and solid packs (brands pack is used in discord button)
+        // this is required because flutter doesn't tree-shake resources correctly if they are not used at all
+        // more on that here: https://pub.dev/packages/font_awesome_flutter#faq
+        const Opacity(
+          opacity: 0,
+          child: SettingsButton(
+            name: '',
+            enabled: false,
+            icon: FaIcon(FontAwesomeIcons.addressBook),
+            trailingIcon: FaIcon(FontAwesomeIcons.solidAddressBook),
+            drawTopBorder: false,
+            drawBottomBorder: false,
+          ),
+        ),
+      ],
+    );
+  }
+}

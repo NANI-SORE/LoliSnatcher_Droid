@@ -16,8 +16,8 @@ import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/image/abstract_custom_network_image.dart' as custom_network_image;
 
 /// Shared logic for downloading, caching, and atomic writing of images.
-mixin _NetworkImageLoaderMixin {
-  Future<void> _commitCacheFile(File tempFile, String destPath) async {
+class NetworkImageLoader {
+  static Future<void> _commitCacheFile(File tempFile, String destPath) async {
     final dest = File(destPath);
     try {
       await tempFile.rename(destPath);
@@ -60,7 +60,7 @@ mixin _NetworkImageLoaderMixin {
     throw FileSystemException('Failed to commit cache file after retries', destPath);
   }
 
-  Future<Uint8List> downloadAndCache({
+  static Future<Uint8List> downloadAndCache({
     required String url,
     required String? cacheFolder,
     required String fileNameExtras,
@@ -70,8 +70,9 @@ mixin _NetworkImageLoaderMixin {
     required Duration? receiveTimeout,
     required CancelToken? cancelToken,
     required bool withCaptchaCheck,
-    required StreamController<ImageChunkEvent> chunkEvents,
+    required StreamController<ImageChunkEvent>? chunkEvents,
     required void Function(bool)? onCacheDetected,
+    void Function(int, int?)? onReceiveProgress,
   }) async {
     final Uri resolved = Uri.base.resolve(url);
     final String cacheFilePath = await ImageWriter().getCachePathString(
@@ -96,12 +97,13 @@ mixin _NetworkImageLoaderMixin {
           } catch (_) {}
           cacheFile = null;
         } else {
-          chunkEvents.add(
+          chunkEvents?.add(
             ImageChunkEvent(
               cumulativeBytesLoaded: fileSize,
               expectedTotalBytes: fileSize,
             ),
           );
+          onReceiveProgress?.call(fileSize, fileSize);
         }
       } else {
         cacheFile = null;
@@ -142,12 +144,13 @@ mixin _NetworkImageLoaderMixin {
                 followRedirects: headers?.containsKey('LS-IGNORE-REDIRECT') == true ? false : true,
               ),
               onReceiveProgress: (int count, int total) {
-                chunkEvents.add(
+                chunkEvents?.add(
                   ImageChunkEvent(
                     cumulativeBytesLoaded: count,
                     expectedTotalBytes: total <= 0 ? null : total,
                   ),
                 );
+                onReceiveProgress?.call(count, total <= 0 ? null : total);
               },
               cancelToken: cancelToken,
             )
@@ -161,12 +164,13 @@ mixin _NetworkImageLoaderMixin {
                 followRedirects: headers?.containsKey('LS-IGNORE-REDIRECT') == true ? false : true,
               ),
               onReceiveProgress: (int count, int total) {
-                chunkEvents.add(
+                chunkEvents?.add(
                   ImageChunkEvent(
                     cumulativeBytesLoaded: count,
                     expectedTotalBytes: total <= 0 ? null : total,
                   ),
                 );
+                onReceiveProgress?.call(count, total <= 0 ? null : total);
               },
               cancelToken: cancelToken,
             );
@@ -238,7 +242,10 @@ mixin _NetworkImageLoaderMixin {
     return response.data as Uint8List;
   }
 
-  Future<Uint8List> tryFixGifSpeed(String url, Uint8List image) async {
+  static Future<Uint8List> tryFixGifSpeed(
+    String url,
+    Uint8List image,
+  ) async {
     if (!url.toLowerCase().endsWith('.gif') && !url.toLowerCase().contains('.gif')) {
       return image;
     }
@@ -258,7 +265,11 @@ mixin _NetworkImageLoaderMixin {
     return image;
   }
 
-  Future<void> deleteCache(String url, String? cacheFolder, String fileNameExtras) async {
+  static Future<void> deleteCache(
+    String url,
+    String? cacheFolder,
+    String fileNameExtras,
+  ) async {
     final Uri resolved = Uri.base.resolve(url);
     final String cacheFilePath = await ImageWriter().getCachePathString(
       resolved.toString(),
@@ -286,7 +297,6 @@ mixin _NetworkImageLoaderMixin {
 
 @immutable
 class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetworkImage>
-    with _NetworkImageLoaderMixin
     implements custom_network_image.CustomNetworkImage {
   const CustomNetworkImage(
     this.url, {
@@ -344,7 +354,7 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
   }
 
   Future<bool> deleteCacheFile() async {
-    await deleteCache(url, cacheFolder, fileNameExtras);
+    await NetworkImageLoader.deleteCache(url, cacheFolder, fileNameExtras);
     return true;
   }
 
@@ -356,7 +366,7 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
     try {
       assert(key == this, 'The $runtimeType cannot be reused after disposing.');
 
-      final Uint8List bytes = await downloadAndCache(
+      final Uint8List bytes = await NetworkImageLoader.downloadAndCache(
         url: key.url,
         cacheFolder: cacheFolder,
         fileNameExtras: fileNameExtras,
@@ -375,7 +385,7 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
         throw Exception('CustomNetworkImage is an empty file: ${key.url}');
       }
 
-      final fixedBytes = await tryFixGifSpeed(key.url, bytes);
+      final fixedBytes = await NetworkImageLoader.tryFixGifSpeed(key.url, bytes);
 
       final ui.ImmutableBuffer buffer = await ui.ImmutableBuffer.fromUint8List(fixedBytes);
       return decode(buffer);
@@ -426,7 +436,6 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
 
 @immutable
 class CustomNetworkAvifImage extends ImageProvider<custom_network_image.CustomNetworkImage>
-    with _NetworkImageLoaderMixin
     implements custom_network_image.CustomNetworkImage {
   const CustomNetworkAvifImage(
     this.url, {
@@ -484,7 +493,7 @@ class CustomNetworkAvifImage extends ImageProvider<custom_network_image.CustomNe
   }
 
   Future<bool> deleteCacheFile() async {
-    await deleteCache(url, cacheFolder, fileNameExtras);
+    await NetworkImageLoader.deleteCache(url, cacheFolder, fileNameExtras);
     return true;
   }
 
@@ -496,7 +505,7 @@ class CustomNetworkAvifImage extends ImageProvider<custom_network_image.CustomNe
     try {
       assert(key == this, 'The $runtimeType cannot be reused after disposing.');
 
-      final Uint8List bytes = await downloadAndCache(
+      final Uint8List bytes = await NetworkImageLoader.downloadAndCache(
         url: key.url,
         cacheFolder: cacheFolder,
         fileNameExtras: fileNameExtras,

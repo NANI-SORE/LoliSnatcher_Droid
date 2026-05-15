@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:auto_size_text_plus/auto_size_text_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:collection/collection.dart';
 import 'package:dio/dio.dart';
@@ -16,6 +15,7 @@ import 'package:intl/intl.dart';
 import 'package:lolisnatcher/src/boorus/danbooru_handler.dart';
 import 'package:lolisnatcher/src/data/meta_tag.dart';
 import 'package:lolisnatcher/src/data/pinned_tag.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_query_editor_page.dart';
 import 'package:lolisnatcher/src/widgets/tabs/tab_selector.dart';
@@ -33,6 +33,7 @@ import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
@@ -654,23 +655,10 @@ class _TagViewState extends State<TagView> {
         onTap:
             onTap ??
             (canCopy
-                ? () {
-                    Clipboard.setData(ClipboardData(text: data));
-                    FlashElements.showSnackbar(
-                      context: context,
-                      duration: const Duration(seconds: 2),
-                      title: Text(
-                        context.loc.copiedToClipboard,
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                      content: Text(
-                        '$title: $data',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                      leadingIcon: Icons.copy,
-                      sideColor: Colors.green,
-                    );
-                  }
+                ? () => ClipboardUtils.copyTextToClipboard(
+                    data,
+                    subtitle: '$title: $data',
+                  )
                 : null),
         onLongPress: onLongPress,
         title: Row(
@@ -932,7 +920,7 @@ class _TagViewState extends State<TagView> {
                               IconButton(
                                 onPressed: () {
                                   ServiceHandler.vibrate();
-                                  if (settingsHandler.appMode.value.isMobile) {
+                                  if (SX.appMode.value.isMobile) {
                                     Navigator.of(context).popUntil((route) => route.isFirst); // exit viewer
                                   }
                                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -957,7 +945,7 @@ class _TagViewState extends State<TagView> {
                     },
                     onLongPress: () async {
                       await ServiceHandler.vibrate();
-                      if (settingsHandler.appMode.value.isMobile) {
+                      if (SX.appMode.value.isMobile) {
                         Navigator.of(context).popUntil((route) => route.isFirst); // exit viewer
                       }
                       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1075,19 +1063,7 @@ class _TagViewState extends State<TagView> {
                                 );
                               }
                             : null,
-                        onLongPress: hasUploaderName
-                            ? () {
-                                Clipboard.setData(ClipboardData(text: text));
-                                FlashElements.showSnackbar(
-                                  context: context,
-                                  duration: const Duration(seconds: 2),
-                                  title: Text(context.loc.copiedToClipboard, style: const TextStyle(fontSize: 20)),
-                                  content: Text(text, style: const TextStyle(fontSize: 16)),
-                                  leadingIcon: Icons.copy,
-                                  sideColor: Colors.green,
-                                );
-                              }
-                            : null,
+                        onLongPress: hasUploaderName ? () => ClipboardUtils.copyTextToClipboard(text) : null,
                       );
                     },
                   ),
@@ -1102,7 +1078,7 @@ class _TagViewState extends State<TagView> {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  initiallyExpanded: detailsExpanded ?? settingsHandler.expandDetails,
+                  initiallyExpanded: detailsExpanded ?? SX.expandDetails.value,
                   onExpansionChanged: (expanded) {
                     setState(() {
                       detailsExpanded = expanded;
@@ -1113,7 +1089,7 @@ class _TagViewState extends State<TagView> {
                   shape: const Border(),
                   collapsedShape: const Border(),
                   children: [
-                    if (settingsHandler.isDebug.value) infoText(context.loc.tagView.filename, fileName),
+                    if (SX.isDebug.value) infoText(context.loc.tagView.filename, fileName),
                     infoText(context.loc.tagView.url, fileUrl, isLink: true),
                     infoText(context.loc.tagView.extension, fileExt),
                     infoText(context.loc.tagView.resolution, fileRes),
@@ -1165,7 +1141,7 @@ class _TagViewState extends State<TagView> {
                         onChanged: (_) {
                           parseSortGroupTagsWithoutCache();
                         },
-                        enableIMEPersonalizedLearning: !settingsHandler.incognitoKeyboard,
+                        enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
                       ),
                     ),
                   ),
@@ -1346,21 +1322,8 @@ Future<void> showTagDialog({
             ),
             title: Text(context.loc.tagView.copy),
             onTap: () {
-              Clipboard.setData(ClipboardData(text: tag));
-              FlashElements.showSnackbar(
-                context: context,
-                duration: const Duration(seconds: 2),
-                title: Text(
-                  context.loc.copiedToClipboard,
-                  style: const TextStyle(fontSize: 20),
-                ),
-                content: Text(
-                  tag,
-                  style: const TextStyle(fontSize: 16),
-                ),
-                leadingIcon: Icons.copy,
-                sideColor: Colors.green,
-              );
+              ClipboardUtils.copyTextToClipboard(tag);
+
               Navigator.of(context).pop();
             },
           ),
@@ -1568,7 +1531,7 @@ Future<void> showTagDialog({
                   onChangedType: (TagType? newValue) {
                     if (newValue != null && item.tagType != newValue) {
                       item.tagType = newValue;
-                      tagHandler.putTag(item, dbEnabled: settingsHandler.dbEnabled);
+                      tagHandler.putTag(item, dbEnabled: SX.dbEnabled.value);
                       onUpdate();
                     }
                   },
@@ -1706,7 +1669,7 @@ class _RelatedTabsDialogState extends State<_RelatedTabsDialog> {
                   originalIndex: tabIndex,
                   onTap: () async {
                     await ServiceHandler.vibrate();
-                    if (SettingsHandler.instance.appMode.value.isMobile) {
+                    if (SX.appMode.value.isMobile) {
                       Navigator.of(context).popUntil((r) => r.isFirst); // exit viewer
                     }
                     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1739,18 +1702,7 @@ class SourceLinkErrorDialog extends StatelessWidget {
       .toList();
 
   Future<void> copy(BuildContext context) async {
-    await Clipboard.setData(ClipboardData(text: link));
-    FlashElements.showSnackbar(
-      context: context,
-      duration: const Duration(seconds: 2),
-      title: Text(
-        context.loc.copiedToClipboard,
-        style: const TextStyle(fontSize: 20),
-      ),
-      content: Text(link, style: const TextStyle(fontSize: 16)),
-      leadingIcon: Icons.copy,
-      sideColor: Colors.green,
-    );
+    await ClipboardUtils.copyTextToClipboard(link);
   }
 
   @override
@@ -1988,14 +1940,7 @@ class _TagContentPreviewState extends State<TagContentPreview> {
     }
 
     final BooruItem item = tab!.booruHandler.filteredFetched[index];
-    await Clipboard.setData(ClipboardData(text: Uri.encodeFull(item.fileURL)));
-    FlashElements.showSnackbar(
-      duration: const Duration(seconds: 2),
-      title: Text(context.loc.tagView.copiedFileURL, style: const TextStyle(fontSize: 20)),
-      content: Text(Uri.encodeFull(item.fileURL), style: const TextStyle(fontSize: 16)),
-      leadingIcon: Icons.copy,
-      sideColor: Colors.green,
-    );
+    await ClipboardUtils.copyTextToClipboard(Uri.encodeFull(item.fileURL));
   }
 
   Future<void> showTagPreviewsListDialog() async {
@@ -2173,7 +2118,7 @@ class _TagContentPreviewState extends State<TagContentPreview> {
                                             IconButton(
                                               onPressed: () {
                                                 ServiceHandler.vibrate();
-                                                if (settingsHandler.appMode.value.isMobile) {
+                                                if (SX.appMode.value.isMobile) {
                                                   Navigator.of(context).popUntil((r) => r.isFirst); // exit viewer
                                                 }
                                                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2200,7 +2145,7 @@ class _TagContentPreviewState extends State<TagContentPreview> {
                                   },
                                   onLongPress: () async {
                                     await ServiceHandler.vibrate();
-                                    if (settingsHandler.appMode.value.isMobile) {
+                                    if (SX.appMode.value.isMobile) {
                                       Navigator.of(context).popUntil((route) => route.isFirst); // exit viewer
                                     }
                                     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2387,7 +2332,6 @@ class _TagPreviewsListDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewerHandler = ViewerHandler.instance;
     final searchHandler = SearchHandler.instance;
-    final settingsHandler = SettingsHandler.instance;
 
     final list = viewerHandler.tagPreviewsHistory[tabId] ?? [];
     final controllers = List.generate(list.length, (_) => ScrollController());
@@ -2480,8 +2424,8 @@ class _TagPreviewsListDialog extends StatelessWidget {
                                               context: context,
                                               tag: tag,
                                               handler: searchHandler.currentBooruHandler,
-                                              isHidden: settingsHandler.hiddenTags.contains(tag),
-                                              isMarked: settingsHandler.markedTags.contains(tag),
+                                              isHidden: SX.hiddenTags.value.contains(tag),
+                                              isMarked: SX.markedTags.value.contains(tag),
                                               isInSearch:
                                                   searchHandler.searchTextController.text
                                                       .toLowerCase()
@@ -2543,8 +2487,8 @@ class _TagPreviewsListDialog extends StatelessWidget {
                                                       context: context,
                                                       tag: tag,
                                                       handler: searchHandler.currentBooruHandler,
-                                                      isHidden: settingsHandler.hiddenTags.contains(tag),
-                                                      isMarked: settingsHandler.markedTags.contains(tag),
+                                                      isHidden: SX.hiddenTags.value.contains(tag),
+                                                      isMarked: SX.markedTags.value.contains(tag),
                                                       isInSearch:
                                                           searchHandler.searchTextController.text
                                                               .toLowerCase()

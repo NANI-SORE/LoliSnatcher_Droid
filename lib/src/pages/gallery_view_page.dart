@@ -10,6 +10,7 @@ import 'package:photo_view/photo_view.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
 import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
@@ -55,7 +56,6 @@ class GalleryViewPage extends StatefulWidget {
 }
 
 class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
   final SearchHandler searchHandler = SearchHandler.instance;
   final SnatchHandler snatchHandler = SnatchHandler.instance;
   final ViewerHandler viewerHandler = ViewerHandler.instance;
@@ -88,7 +88,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
     ServiceHandler.disableSleep();
     kbFocusNode.requestFocus();
 
-    final bool isVolumeAllowed = !settingsHandler.useVolumeButtonsForScroll || viewerHandler.displayAppbar.value;
+    final bool isVolumeAllowed = !SX.useVolumeButtonsForScroll.value || viewerHandler.displayAppbar.value;
     ServiceHandler.setVolumeButtons(isVolumeAllowed);
     volumeListener = searchHandler.volumeStream?.listen(volumeCallback);
 
@@ -160,7 +160,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
     }
     NavigationHandler.instance.routeObserver.unsubscribe(this);
     volumeListener?.cancel();
-    ServiceHandler.setVolumeButtons(!settingsHandler.useVolumeButtonsForScroll);
+    ServiceHandler.setVolumeButtons(!SX.useVolumeButtonsForScroll.value);
     kbFocusNode.dispose();
     ServiceHandler.enableSleep();
     super.dispose();
@@ -205,15 +205,15 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
       extendBodyBehindAppBar: true,
       extendBody: true,
       resizeToAvoidBottomInset: false,
-      appBar: settingsHandler.galleryBarPosition.isTop ? appBar : null,
-      bottomNavigationBar: settingsHandler.galleryBarPosition.isBottom ? appBar : null,
+      appBar: SX.galleryBarPosition.value.isTop ? appBar : null,
+      bottomNavigationBar: SX.galleryBarPosition.value.isBottom ? appBar : null,
       backgroundColor: Colors.transparent,
       body: PhotoViewGestureDetectorScope(
         // vertical to prevent swipe-to-dismiss when zoomed
         // axis: Axis.vertical, // photo_view doesn't support locking both axises, so we use custom fork to fix this
         axis: Axis.values,
         child: Dismissible(
-          direction: settingsHandler.galleryScrollDirection.isVertical
+          direction: SX.galleryScrollDirection.value.isVertical
               ? DismissDirection.horizontal
               : DismissDirection.vertical,
           // background: Container(color: Colors.black.withValues(alpha: 0.3)),
@@ -228,8 +228,10 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
           onUpdate: (dismissUpdateDetails) {
             final prevValue = dismissProgress.value;
             dismissProgress.value =
-                (dismissUpdateDetails.progress * (1 / (settingsHandler.galleryScrollDirection.isVertical ? 0.3 : 0.2)))
-                    .clamp(0, 1);
+                (dismissUpdateDetails.progress * (1 / (SX.galleryScrollDirection.value.isVertical ? 0.3 : 0.2))).clamp(
+                  0,
+                  1,
+                );
 
             if (prevValue != dismissProgress.value && dismissProgress.value == 1) {
               ServiceHandler.vibrate();
@@ -256,14 +258,14 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                 child: AnimatedContainer(
                   duration: Duration(milliseconds: isOpeningAnimation ? 400 : 10),
                   decoration: BoxDecoration(
-                    color: settingsHandler.shitDevice
+                    color: SX.shitDevice.value
                         ? Colors.black
                         : Color.lerp(
                             Colors.black,
                             Colors.transparent,
                             dismissProgress,
                           ),
-                    borderRadius: (settingsHandler.shitDevice || isOpeningAnimation)
+                    borderRadius: (SX.shitDevice.value || isOpeningAnimation)
                         ? null
                         : BorderRadius.lerp(
                             BorderRadius.zero,
@@ -301,10 +303,10 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                       snatchHandler.queue(
                         [widget.tab.booruHandler.filteredFetched[page.value]],
                         widget.tab.booruHandler.booru,
-                        settingsHandler.snatchCooldown,
+                        SX.snatchCooldown.value,
                         false,
                       );
-                      if (settingsHandler.favouriteOnSnatch) {
+                      if (SX.favouriteOnSnatch.value) {
                         await widget.tab.toggleItemFavourite(
                           page.value,
                           forcedValue: true,
@@ -315,7 +317,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                       if (widget.readOnly) return;
 
                       // favorite on F
-                      if (settingsHandler.dbEnabled) {
+                      if (SX.dbEnabled.value) {
                         await widget.tab.toggleItemFavourite(
                           page.value,
                         );
@@ -323,6 +325,13 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                     } else if (event.physicalKey == PhysicalKeyboardKey.keyR) {
                       // force load on R
                       viewerHandler.forceLoadCurrentItem();
+                    } else if (event.physicalKey == PhysicalKeyboardKey.keyI) {
+                      // open info drawer on I
+                      if (drawerOpen.value) {
+                        viewerScaffoldKey.currentState?.closeEndDrawer();
+                      } else {
+                        viewerScaffoldKey.currentState?.openEndDrawer();
+                      }
                     } else if (event.physicalKey == PhysicalKeyboardKey.escape) {
                       // exit on escape if in focus
                       if (kbFocusNode.hasFocus) {
@@ -344,7 +353,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                             );
                           }
 
-                          final int preloadCount = settingsHandler.preloadCount;
+                          final int preloadCount = SX.preloadCount.value;
                           final bool isSankaku = [
                             BooruType.Sankaku,
                             BooruType.IdolSankaku,
@@ -354,7 +363,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                             controller: controller,
                             preloadPagesCount: preloadCount,
                             // allowImplicitScrolling: true,
-                            scrollDirection: settingsHandler.galleryScrollDirection.isVertical
+                            scrollDirection: SX.galleryScrollDirection.value.isVertical
                                 ? Axis.vertical
                                 : Axis.horizontal,
                             physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
@@ -415,7 +424,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                       },
                                     );
                                   } else if (isVideo) {
-                                    if (!settingsHandler.disableVideo &&
+                                    if (!SX.disableVideo.value &&
                                         (Platform.isAndroid ||
                                             Platform.isIOS ||
                                             Platform.isWindows ||
@@ -518,7 +527,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                     ),
                                   );
 
-                                  if (settingsHandler.disableCustomPageTransitions) {
+                                  if (SX.disableCustomPageTransitions.value) {
                                     return child;
                                   }
 
@@ -528,9 +537,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                       return slidePageTransition(
                                         context,
                                         controller,
-                                        settingsHandler.galleryScrollDirection.isVertical
-                                            ? Axis.vertical
-                                            : Axis.horizontal,
+                                        SX.galleryScrollDirection.value.isVertical ? Axis.vertical : Axis.horizontal,
                                         index,
                                         child,
                                       );
@@ -566,7 +573,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                               }
 
                               final bool isVolumeAllowed =
-                                  !settingsHandler.useVolumeButtonsForScroll || viewerHandler.displayAppbar.value;
+                                  !SX.useVolumeButtonsForScroll.value || viewerHandler.displayAppbar.value;
                               ServiceHandler.setVolumeButtons(isVolumeAllowed);
                             },
                           );
@@ -692,7 +699,6 @@ class ItemInfoDrawer extends StatefulWidget {
 }
 
 class _ItemInfoDrawerState extends State<ItemInfoDrawer> {
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
   final ViewerHandler viewerHandler = ViewerHandler.instance;
 
   final ValueNotifier<bool> isVisible = ValueNotifier(true);
@@ -772,7 +778,7 @@ class _ItemInfoDrawerState extends State<ItemInfoDrawer> {
           fasterAfter: 20,
           child: OutlinedButton(
             onPressed: () => widget.pageController.jumpToPage(page.value - 1),
-            child: settingsHandler.galleryScrollDirection.isVertical
+            child: SX.galleryScrollDirection.value.isVertical
                 ? const Icon(Icons.arrow_upward)
                 : const Icon(Icons.arrow_back),
           ),
@@ -787,7 +793,7 @@ class _ItemInfoDrawerState extends State<ItemInfoDrawer> {
           fasterAfter: 20,
           child: OutlinedButton(
             onPressed: () => widget.pageController.jumpToPage(page.value + 1),
-            child: settingsHandler.galleryScrollDirection.isVertical
+            child: SX.galleryScrollDirection.value.isVertical
                 ? const Icon(Icons.arrow_downward)
                 : const Icon(Icons.arrow_forward),
           ),

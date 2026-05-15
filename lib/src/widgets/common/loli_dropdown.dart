@@ -1,8 +1,9 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:lolisnatcher/gen/strings.g.dart';
 
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/widgets/common/clear_button.dart';
 import 'package:lolisnatcher/src/widgets/common/ok_button.dart';
 import 'package:lolisnatcher/src/widgets/common/return_button.dart';
@@ -105,12 +106,10 @@ class LoliDropdown<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
-
     final theme = Theme.of(context);
     final inputDecoration = theme.inputDecorationTheme;
 
-    final bool isDesktop = settingsHandler.appMode.value.isDesktop;
+    final bool isDesktop = SX.appMode.value.isDesktop;
     final EdgeInsetsGeometry contentPadding = EdgeInsets.symmetric(horizontal: 12, vertical: isDesktop ? 2 : 12);
 
     const double radius = 10;
@@ -244,6 +243,7 @@ class _LoliDropdownBottomSheet<T> extends State<LoliDropdownBottomSheet<T>> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.value != null) {
         final index = filteredItems.indexOf(widget.value as T);
+        if (index < 0 || index >= _keys.length) return;
         if (_keys[index].currentContext != null) {
           Scrollable.ensureVisible(
             _keys[index].currentContext!,
@@ -326,7 +326,7 @@ class _LoliDropdownBottomSheet<T> extends State<LoliDropdownBottomSheet<T>> {
             ),
     );
 
-    final bool isLeftHanded = SettingsHandler.instance.handSide.value.isLeft;
+    final bool isLeftHanded = SX.handSide.value.isLeft;
 
     List<Widget> actions = [
       const ReturnButton(
@@ -514,12 +514,10 @@ class LoliMultiselectDropdown<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
-
     final theme = Theme.of(context);
     final inputDecoration = theme.inputDecorationTheme;
 
-    final bool isDesktop = settingsHandler.appMode.value.isDesktop;
+    final bool isDesktop = SX.appMode.value.isDesktop;
     final EdgeInsetsGeometry contentPadding = EdgeInsets.symmetric(horizontal: 12, vertical: isDesktop ? 2 : 12);
 
     const double radius = 10;
@@ -686,7 +684,7 @@ class _LoliMultiselectDropdownBottomSheetState<T> extends State<LoliMultiselectD
       ),
     ];
 
-    final bool isLeftHanded = SettingsHandler.instance.handSide.value.isLeft;
+    final bool isLeftHanded = SX.handSide.value.isLeft;
     if (isLeftHanded) {
       actions = actions.reversed.toList();
     }

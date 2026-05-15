@@ -5,14 +5,13 @@ import 'package:flutter_socks_proxy/socks_proxy.dart';
 import 'package:http_proxy/http_proxy.dart';
 
 import 'package:lolisnatcher/src/data/settings/proxy_type.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 
 String systemProxyAddress = '';
 bool addedRootCert = false;
 
 Future<void> initProxy() async {
-  final settingsHandler = SettingsHandler.instance;
-  final proxyType = settingsHandler.proxyType;
+  final proxyType = SX.proxyType.value;
 
   if (proxyType.isSystem && (Platform.isAndroid || Platform.isIOS)) {
     final HttpProxy httpProxy = await HttpProxy.createHttpProxy();
@@ -31,7 +30,7 @@ Future<void> initProxy() async {
 
   SocksProxy.initProxy(
     onCreate: (client) => client.badCertificateCallback = (_, _, _) {
-      return settingsHandler.allowSelfSignedCerts;
+      return SX.allowSelfSignedCerts.value;
     },
     findProxy: (_) {
       final configAddress = getProxyConfigAddress();
@@ -53,12 +52,14 @@ Future<void> initProxy() async {
 }
 
 String getProxyConfigAddress() {
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
-  if (settingsHandler.proxyAddress.isNotEmpty) {
-    if (settingsHandler.proxyUsername.isEmpty && settingsHandler.proxyPassword.isEmpty) {
-      return settingsHandler.proxyAddress;
+  final proxyAddress = SX.proxyAddress.value;
+  if (proxyAddress.isNotEmpty) {
+    final proxyUsername = SX.proxyUsername.value;
+    final proxyPassword = SX.proxyPassword.value;
+    if (proxyUsername.isEmpty && proxyPassword.isEmpty) {
+      return proxyAddress;
     } else {
-      return '${settingsHandler.proxyUsername}:${settingsHandler.proxyPassword}@${settingsHandler.proxyAddress}';
+      return '$proxyUsername:$proxyPassword@$proxyAddress';
     }
   } else {
     return '';

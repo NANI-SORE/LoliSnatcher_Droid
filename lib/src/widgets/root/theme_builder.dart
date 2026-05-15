@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:get/get.dart';
-
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/theme_item.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/theme_handler.dart';
 
 class ThemeBuilder extends StatelessWidget {
@@ -16,29 +14,38 @@ class ThemeBuilder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        SX.theme.state.effectiveNotifier,
+        SX.themeMode.state.effectiveNotifier,
+        SX.isAmoled.state.effectiveNotifier,
+        SX.useDynamicColor.state.effectiveNotifier,
+        SX.customPrimaryColor.state.effectiveNotifier,
+        SX.customAccentColor.state.effectiveNotifier,
+        SX.fontFamily.state.effectiveNotifier,
+      ]),
+      builder: (context, _) {
+        final ThemeItem theme = SX.theme.value.name == 'Custom'
+            ? ThemeItem(
+                name: 'Custom',
+                primary: SX.customPrimaryColor.value,
+                accent: SX.customAccentColor.value,
+              )
+            : SX.theme.value;
 
-    return Obx(() {
-      final ThemeItem theme = settingsHandler.theme.value.name == 'Custom'
-          ? ThemeItem(
-              name: 'Custom',
-              primary: settingsHandler.customPrimaryColor.value,
-              accent: settingsHandler.customAccentColor.value,
-            )
-          : settingsHandler.theme.value;
+        final ThemeHandler themeHandler = ThemeHandler(
+          theme: theme,
+          themeMode: SX.themeMode.value,
+          isAmoled: SX.isAmoled.value,
+          fontFamily: SX.fontFamily.value,
+          context: context,
+        );
 
-      final ThemeHandler themeHandler = ThemeHandler(
-        theme: theme,
-        themeMode: settingsHandler.themeMode.value,
-        isAmoled: settingsHandler.isAmoled.value,
-        fontFamily: settingsHandler.fontFamily.value,
-        context: context,
-      );
-
-      return Theme(
-        data: themeHandler.isDark ? themeHandler.darkTheme() : themeHandler.lightTheme(),
-        child: child,
-      );
-    });
+        return Theme(
+          data: themeHandler.isDark ? themeHandler.darkTheme() : themeHandler.lightTheme(),
+          child: child,
+        );
+      },
+    );
   }
 }

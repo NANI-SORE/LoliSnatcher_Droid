@@ -9,6 +9,7 @@ import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/handlers/local_auth_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/pages/settings_page.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -99,11 +100,11 @@ class MainDrawer extends StatelessWidget {
                   ListenableBuilder(
                     listenable: Listenable.merge([
                       LocalAuthHandler.instance.deviceSupportsBiometrics,
-                      SettingsHandler.instance.useLockscreen,
+                      SX.useLockscreen.state.effectiveNotifier,
                     ]),
                     builder: (_, child) {
                       final deviceSupportsBiometrics = LocalAuthHandler.instance.deviceSupportsBiometrics.value;
-                      final useLockscreen = SettingsHandler.instance.useLockscreen.value;
+                      final useLockscreen = SX.useLockscreen.value;
 
                       if (deviceSupportsBiometrics && useLockscreen) {
                         return child!;
@@ -211,7 +212,7 @@ class MainDrawer extends StatelessWidget {
                       },
                     ),
                   //
-                  if (settingsHandler.enableDrawerMascot) const MascotImage(),
+                  if (SX.enableDrawerMascot.value) const MascotImage(),
                 ],
               ),
             ),

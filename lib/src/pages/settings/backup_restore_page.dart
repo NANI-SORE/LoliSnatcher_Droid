@@ -10,6 +10,7 @@ import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
@@ -37,7 +38,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
   @override
   void initState() {
     super.initState();
-    backupPath = settingsHandler.backupPath;
+    backupPath = SX.backupPath.value;
     validateBackupPathAccess();
   }
 
@@ -57,7 +58,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
         );
         setState(() {
           backupPath = '';
-          settingsHandler.backupPath = '';
+          SX.backupPath.state.value = '';
         });
         await settingsHandler.saveSettings(restate: false);
       }
@@ -189,7 +190,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                       if (path.isNotEmpty) {
                         setState(() {
                           backupPath = path;
-                          settingsHandler.backupPath = path;
+                          SX.backupPath.state.value = path;
                           settingsHandler.saveSettings(restate: false);
                         });
                       } else {
@@ -219,7 +220,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                       action: () async {
                         setState(() {
                           backupPath = '';
-                          settingsHandler.backupPath = '';
+                          SX.backupPath.state.value = '';
                           settingsHandler.saveSettings(restate: false);
                         });
                       },
@@ -389,7 +390,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                         setState(() {});
                       },
                     ),
-                    if (settingsHandler.isDebug.value)
+                    if (SX.isDebug.value)
                       SettingsButton(
                         name: context.loc.settings.backupAndRestore.backupTags,
                         icon: const Icon(CupertinoIcons.tag),
@@ -663,7 +664,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                         setState(() {});
                       },
                     ),
-                    if (settingsHandler.isDebug.value)
+                    if (SX.isDebug.value)
                       SettingsButton(
                         name: context.loc.settings.backupAndRestore.restoreTags,
                         icon: const Icon(CupertinoIcons.tag),

@@ -15,6 +15,7 @@ import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:video_player/video_player.dart';
 
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -408,7 +409,7 @@ class _LoliControlsState extends State<LoliControls> {
         valueListenable: viewerHandler.displayAppbar,
         builder: (context, displayAppbar, child) {
           final bool isFullScreen = chewieController.isFullScreen || !displayAppbar;
-          final bool isTopAppbar = SettingsHandler.instance.galleryBarPosition.isTop;
+          final bool isTopAppbar = SX.galleryBarPosition.value.isTop;
 
           return Container(
             // color: Colors.yellow.withValues(alpha: 0.66),
@@ -755,7 +756,7 @@ class _LoliControlsState extends State<LoliControls> {
         ServiceHandler.disableSleep(force: true);
       } else {
         // re-enable sleep only if related setting is disabled
-        if (!SettingsHandler.instance.wakeLockEnabled) {
+        if (!SX.wakeLockEnabled.value) {
           ServiceHandler.enableSleep();
         }
         // resotre system ui visibility state

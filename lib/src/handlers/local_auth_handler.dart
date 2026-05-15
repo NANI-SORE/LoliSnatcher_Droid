@@ -8,8 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:local_auth/local_auth.dart';
 
+import 'package:lolisnatcher/gen/strings.g.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 
@@ -139,7 +140,7 @@ class LocalAuthHandler {
     bool manually = false,
   }) async {
     await canCheckBiometrics();
-    final bool shouldLock = deviceSupportsBiometrics.value && SettingsHandler.instance.useLockscreen.value;
+    final bool shouldLock = deviceSupportsBiometrics.value && SX.useLockscreen.value;
 
     if (!shouldLock) {
       lastUnlockTime = DateTime.now().millisecondsSinceEpoch;
@@ -160,7 +161,7 @@ class LocalAuthHandler {
       return;
     }
     await Future.delayed(const Duration(milliseconds: 10));
-    final int leaveTimeoutMs = 1000 * SettingsHandler.instance.autoLockTimeout;
+    final int leaveTimeoutMs = 1000 * SX.autoLockTimeout.value;
     final int timeSinceLastLeave = DateTime.now().millisecondsSinceEpoch - (lastLeaveTime ?? 0);
 
     const int unlockDelayMs = 1000;

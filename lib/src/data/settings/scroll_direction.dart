@@ -1,7 +1,7 @@
 import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/data/settings/settings_enum.dart';
 
-enum ScrollDirection with SettingsEnum<ScrollDirection> {
+enum UiScrollDirection with SettingsEnum<UiScrollDirection> {
   horizontal,
   vertical,
   ;
@@ -11,36 +11,36 @@ enum ScrollDirection with SettingsEnum<ScrollDirection> {
   @override
   String toJson() {
     switch (this) {
-      case ScrollDirection.horizontal:
+      case UiScrollDirection.horizontal:
         return 'Horizontal';
-      case ScrollDirection.vertical:
+      case UiScrollDirection.vertical:
         return 'Vertical';
     }
   }
 
-  static ScrollDirection fromString(String name) {
+  static UiScrollDirection fromString(String name) {
     switch (name) {
       case 'Horizontal':
       case 'horizontal':
-        return ScrollDirection.horizontal;
+        return UiScrollDirection.horizontal;
       case 'Vertical':
       case 'vertical':
-        return ScrollDirection.vertical;
+        return UiScrollDirection.vertical;
     }
     return defaultValue;
   }
 
-  static ScrollDirection get defaultValue => ScrollDirection.horizontal;
+  static UiScrollDirection get defaultValue => UiScrollDirection.horizontal;
 
-  bool get isHorizontal => this == ScrollDirection.horizontal;
-  bool get isVertical => this == ScrollDirection.vertical;
+  bool get isHorizontal => this == UiScrollDirection.horizontal;
+  bool get isVertical => this == UiScrollDirection.vertical;
 
   @override
   String get locName {
     switch (this) {
-      case ScrollDirection.horizontal:
+      case UiScrollDirection.horizontal:
         return loc.settings.viewer.scrollDirectionValues.horizontal;
-      case ScrollDirection.vertical:
+      case UiScrollDirection.vertical:
         return loc.settings.viewer.scrollDirectionValues.vertical;
     }
   }

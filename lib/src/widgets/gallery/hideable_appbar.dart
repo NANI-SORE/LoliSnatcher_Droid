@@ -5,16 +5,17 @@ import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:dio/dio.dart';
 import 'package:external_video_player_launcher/external_video_player_launcher.dart';
 import 'package:get/get.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import 'package:lolisnatcher/src/boorus/hydrus_handler.dart';
 import 'package:lolisnatcher/src/data/settings/gallery_button.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
@@ -94,7 +95,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
 
   void setScrollTimer() {
     autoScrollProgressController?.restart();
-    autoScrollTimer = Timer.periodic(Duration(milliseconds: settingsHandler.galleryAutoScrollTime), (timer) {
+    autoScrollTimer = Timer.periodic(Duration(milliseconds: SX.galleryAutoScrollTime.value), (timer) {
       scrollToNextPage();
       autoScrollProgressController?.restart();
     });
@@ -166,8 +167,10 @@ class _HideableAppBarState extends State<HideableAppBar> {
   ////////// Toolbar Stuff ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   List<Widget> getActions() {
-    final disabled = [...settingsHandler.disabledButtons];
-    final filteredButtonOrder = settingsHandler.buttonOrder.where((button) {
+    final disabled = SX.disabledButtons.value.map(GalleryButton.fromString).whereType<GalleryButton>().toList();
+    final filteredButtonOrder = SX.buttonOrder.value.map(GalleryButton.fromString).whereType<GalleryButton>().where((
+      button,
+    ) {
       if (page.value == -1 || widget.tab.booruHandler.filteredFetched.isEmpty) {
         return false;
       }
@@ -189,9 +192,9 @@ class _HideableAppBarState extends State<HideableAppBar> {
         case .snatch:
           return !widget.readOnly;
         case .favourite:
-          return settingsHandler.dbEnabled && !widget.readOnly;
+          return SX.dbEnabled.value && !widget.readOnly;
         case .reloadnoscale:
-          return isImage && !settingsHandler.disableImageScaling;
+          return isImage && !SX.disableImageScaling.value;
         case .toggleQuality:
           return isImage && item.sampleURL != item.fileURL;
         case .select:
@@ -408,7 +411,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
         icon = Icons.refresh;
         break;
       case .toggleQuality:
-        final bool isHq = settingsHandler.galleryMode.isFullRes ? !item.toggleQuality.value : item.toggleQuality.value;
+        final bool isHq = SX.galleryMode.value.isFullRes ? !item.toggleQuality.value : item.toggleQuality.value;
         icon = isHq ? Icons.high_quality : Icons.high_quality_outlined;
       case .externalPlayer:
         icon = Icons.exit_to_app;
@@ -538,7 +541,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
         label = item.isNoScale.value ? context.loc.viewer.appBar.reloadWithScaling : defaultLabel;
         break;
       case .toggleQuality:
-        final bool isHq = settingsHandler.galleryMode.isFullRes ? !item.toggleQuality.value : item.toggleQuality.value;
+        final bool isHq = SX.galleryMode.value.isFullRes ? !item.toggleQuality.value : item.toggleQuality.value;
         label = isHq ? context.loc.viewer.appBar.loadSampleQuality : context.loc.viewer.appBar.loadHighQuality;
         break;
       default:
@@ -576,10 +579,10 @@ class _HideableAppBarState extends State<HideableAppBar> {
           snatchHandler.queue(
             [item],
             widget.tab.booruHandler.booru,
-            settingsHandler.snatchCooldown,
+            SX.snatchCooldown.value,
             false,
           );
-          if (settingsHandler.favouriteOnSnatch) {
+          if (SX.favouriteOnSnatch.value) {
             await widget.tab.toggleItemFavourite(
               page.value,
               forcedValue: true,
@@ -689,10 +692,10 @@ class _HideableAppBarState extends State<HideableAppBar> {
                         snatchHandler.queue(
                           [item],
                           widget.tab.booruHandler.booru,
-                          settingsHandler.snatchCooldown,
+                          SX.snatchCooldown.value,
                           true,
                         );
-                        if (settingsHandler.favouriteOnSnatch) {
+                        if (SX.favouriteOnSnatch.value) {
                           await widget.tab.toggleItemFavourite(
                             page.value,
                             forcedValue: true,
@@ -730,7 +733,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
   }
 
   Future<void> onShareClick() async {
-    final shareSetting = settingsHandler.shareAction;
+    final shareSetting = SX.shareAction.value;
     final item = widget.tab.booruHandler.filteredFetched[page.value];
 
     switch (shareSetting) {
@@ -800,15 +803,8 @@ class _HideableAppBarState extends State<HideableAppBar> {
 
   void shareTextAction(String text) {
     if (SettingsHandler.isDesktopPlatform) {
-      Clipboard.setData(ClipboardData(text: Uri.encodeFull(text)));
-      FlashElements.showSnackbar(
-        context: context,
-        duration: const Duration(seconds: 2),
-        title: Text(context.loc.copiedToClipboard, style: const TextStyle(fontSize: 20)),
-        content: Text(Uri.encodeFull(text), style: const TextStyle(fontSize: 16)),
-        leadingIcon: Icons.copy,
-        sideColor: Colors.green,
-      );
+      final txt = Uri.encodeFull(text);
+      ClipboardUtils.copyTextToClipboard(txt, subtitle: txt);
     } else if (Platform.isAndroid) {
       ServiceHandler.loadShareTextIntent(text);
     }
@@ -972,58 +968,19 @@ class _HideableAppBarState extends State<HideableAppBar> {
       }
     }
 
-    String? path = await imageWriter.getCachePath(item.fileURL, 'media', fileNameExtras: item.fileNameExtras);
+    //
 
-    // TODO delete from cache after share window closes
-
-    if (path != null) {
-      if (Platform.isAndroid) {
-        // File is already in cache - share from there
-        await ServiceHandler.loadShareFileIntent(
-          path,
-          '${item.mediaType.value.isVideo ? 'video' : 'image'}/${item.fileExt!}',
-          text: text,
-        );
-      }
-    } else {
-      // File not in cache - load from network, share, delete from cache afterwards
-      FlashElements.showSnackbar(
-        context: context,
-        title: Text(context.loc.gallery.loadingFile, style: const TextStyle(fontSize: 20)),
-        content: Text(context.loc.gallery.loadingFileMessage, style: const TextStyle(fontSize: 16)),
-        overrideLeadingIconWidget: const SizedBox(
-          width: 50,
-          height: 50,
-          child: Padding(
-            padding: EdgeInsets.all(12),
-            child: CircularProgressIndicator(),
-          ),
-        ),
-        sideColor: Colors.yellow,
-      );
-
+    if (SettingsHandler.isDesktopPlatform) {
       shareCancelToken?.cancel();
       shareCancelToken = CancelToken();
       shareProgress = 0;
       sharedItem = item;
 
-      final String cacheFilePath = await imageWriter.getCachePathString(
-        item.fileURL,
-        'media',
-        clearName: true,
-        fileNameExtras: item.fileNameExtras,
-      );
-      await DioNetwork.download(
-        item.fileURL,
-        cacheFilePath,
+      await ClipboardUtils.copyImageToClipboard(
+        item,
         cancelToken: shareCancelToken,
-        headers: await Tools.getFileCustomHeaders(
-          widget.tab.booruHandler.booru,
-          item: item,
-          checkForReferer: true,
-        ),
-        onReceiveProgress: (int received, int total) {
-          if (total != -1) {
+        onReceiveProgress: (int received, int? total) {
+          if (total != null && total > 0) {
             shareProgress = received / total;
             if ((DateTime.now().millisecondsSinceEpoch - shareProgressLastTick) > 100) {
               setState(() {});
@@ -1033,12 +990,18 @@ class _HideableAppBarState extends State<HideableAppBar> {
         },
       );
 
-      final File cacheFile = File(
-        await imageWriter.getCachePath(item.fileURL, 'media', fileNameExtras: item.fileNameExtras) ?? '',
-      );
-      if (await cacheFile.exists()) {
-        path = cacheFile.path;
+      shareProgress = 0;
+      shareCancelToken = null;
+      sharedItem = null;
+      setState(() {});
+    } else {
+      String? path = await imageWriter.getCachePath(item.fileURL, 'media', fileNameExtras: item.fileNameExtras);
+
+      // TODO delete from cache after share window closes
+
+      if (path != null) {
         if (Platform.isAndroid) {
+          // File is already in cache - share from there
           await ServiceHandler.loadShareFileIntent(
             path,
             '${item.mediaType.value.isVideo ? 'video' : 'image'}/${item.fileExt!}',
@@ -1046,26 +1009,87 @@ class _HideableAppBarState extends State<HideableAppBar> {
           );
         }
       } else {
+        // File not in cache - load from network, share, delete from cache afterwards
         FlashElements.showSnackbar(
           context: context,
-          title: Text(context.loc.viewer.appBar.error, style: const TextStyle(fontSize: 20)),
-          content: Text(
-            context.loc.viewer.appBar.savingFileError,
-            style: const TextStyle(fontSize: 16),
+          title: Text(context.loc.gallery.loadingFile, style: const TextStyle(fontSize: 20)),
+          content: Text(context.loc.gallery.loadingFileMessage, style: const TextStyle(fontSize: 16)),
+          overrideLeadingIconWidget: const SizedBox(
+            width: 50,
+            height: 50,
+            child: Padding(
+              padding: EdgeInsets.all(12),
+              child: CircularProgressIndicator(),
+            ),
           ),
-          leadingIcon: Icons.warning_amber,
-          leadingIconColor: Colors.red,
-          sideColor: Colors.red,
+          sideColor: Colors.yellow,
         );
+
+        shareCancelToken?.cancel();
+        shareCancelToken = CancelToken();
+        shareProgress = 0;
+        sharedItem = item;
+
+        final String cacheFilePath = await imageWriter.getCachePathString(
+          item.fileURL,
+          'media',
+          clearName: true,
+          fileNameExtras: item.fileNameExtras,
+        );
+        await DioNetwork.download(
+          item.fileURL,
+          cacheFilePath,
+          cancelToken: shareCancelToken,
+          headers: await Tools.getFileCustomHeaders(
+            widget.tab.booruHandler.booru,
+            item: item,
+            checkForReferer: true,
+          ),
+          onReceiveProgress: (int received, int total) {
+            if (total > 0) {
+              shareProgress = received / total;
+              if ((DateTime.now().millisecondsSinceEpoch - shareProgressLastTick) > 100) {
+                setState(() {});
+                shareProgressLastTick = DateTime.now().millisecondsSinceEpoch;
+              }
+            }
+          },
+        );
+
+        final File cacheFile = File(
+          await imageWriter.getCachePath(item.fileURL, 'media', fileNameExtras: item.fileNameExtras) ?? '',
+        );
+        if (await cacheFile.exists()) {
+          path = cacheFile.path;
+          if (Platform.isAndroid) {
+            await ServiceHandler.loadShareFileIntent(
+              path,
+              '${item.mediaType.value.isVideo ? 'video' : 'image'}/${item.fileExt!}',
+              text: text,
+            );
+          }
+        } else {
+          FlashElements.showSnackbar(
+            context: context,
+            title: Text(context.loc.viewer.appBar.error, style: const TextStyle(fontSize: 20)),
+            content: Text(
+              context.loc.viewer.appBar.savingFileError,
+              style: const TextStyle(fontSize: 16),
+            ),
+            leadingIcon: Icons.warning_amber,
+            leadingIconColor: Colors.red,
+            sideColor: Colors.red,
+          );
+        }
+
+        shareProgress = 0;
+        shareCancelToken = null;
+        sharedItem = null;
+        setState(() {});
+
+        // TODO: find a way to detect when share menu was closed, orherwise this is triggered immediately and file is deleted before sending to another app
+        // imageWriter.deleteFileFromCache(path, 'media');
       }
-
-      shareProgress = 0;
-      shareCancelToken = null;
-      sharedItem = null;
-      setState(() {});
-
-      // TODO: find a way to detect when share menu was closed, orherwise this is triggered immediately and file is deleted before sending to another app
-      // imageWriter.deleteFileFromCache(path, 'media');
     }
   }
 
@@ -1088,7 +1112,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
                       borderRadius: BorderRadius.circular(10),
                       side: BorderSide(
                         color: Theme.of(context).colorScheme.secondary,
-                        width: settingsHandler.shareAction.isPostUrl ? 3 : 1,
+                        width: SX.shareAction.value.isPostUrl ? 3 : 1,
                       ),
                     ),
                     onTap: () {
@@ -1105,7 +1129,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
                       borderRadius: BorderRadius.circular(10),
                       side: BorderSide(
                         color: Theme.of(context).colorScheme.secondary,
-                        width: settingsHandler.shareAction.isPostUrlWithTags ? 3 : 1,
+                        width: SX.shareAction.value.isPostUrlWithTags ? 3 : 1,
                       ),
                     ),
                     onTap: () async {
@@ -1137,7 +1161,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
                     borderRadius: BorderRadius.circular(10),
                     side: BorderSide(
                       color: Theme.of(context).colorScheme.secondary,
-                      width: settingsHandler.shareAction.isFileUrl ? 3 : 1,
+                      width: SX.shareAction.value.isFileUrl ? 3 : 1,
                     ),
                   ),
                   onTap: () {
@@ -1153,7 +1177,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
                     borderRadius: BorderRadius.circular(10),
                     side: BorderSide(
                       color: Theme.of(context).colorScheme.secondary,
-                      width: settingsHandler.shareAction.isFileUrlWithTags ? 3 : 1,
+                      width: SX.shareAction.value.isFileUrlWithTags ? 3 : 1,
                     ),
                   ),
                   onTap: () async {
@@ -1184,7 +1208,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
                     borderRadius: BorderRadius.circular(10),
                     side: BorderSide(
                       color: Theme.of(context).colorScheme.secondary,
-                      width: settingsHandler.shareAction.isFile ? 3 : 1,
+                      width: SX.shareAction.value.isFile ? 3 : 1,
                     ),
                   ),
                   onTap: () {
@@ -1200,7 +1224,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
                     borderRadius: BorderRadius.circular(10),
                     side: BorderSide(
                       color: Theme.of(context).colorScheme.secondary,
-                      width: settingsHandler.shareAction.isFileWithTags ? 3 : 1,
+                      width: SX.shareAction.value.isFileWithTags ? 3 : 1,
                     ),
                   ),
                   onTap: () async {
@@ -1232,7 +1256,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
                       borderRadius: BorderRadius.circular(10),
                       side: BorderSide(
                         color: Theme.of(context).colorScheme.secondary,
-                        width: settingsHandler.shareAction.isHydrus ? 3 : 1,
+                        width: SX.shareAction.value.isHydrus ? 3 : 1,
                       ),
                     ),
                     onTap: () async {
@@ -1261,10 +1285,10 @@ class _HideableAppBarState extends State<HideableAppBar> {
   void initState() {
     super.initState();
 
-    isOnTop = settingsHandler.galleryBarPosition.isTop;
+    isOnTop = SX.galleryBarPosition.value.isTop;
 
-    ServiceHandler.setSystemUiVisibility(!settingsHandler.autoHideImageBar);
-    viewerHandler.displayAppbar.value = !settingsHandler.autoHideImageBar;
+    ServiceHandler.setSystemUiVisibility(!SX.autoHideImageBar.value);
+    viewerHandler.displayAppbar.value = !SX.autoHideImageBar.value;
 
     viewerHandler.displayAppbar.addListener(appbarListener);
 
@@ -1274,7 +1298,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
     widget.pageController.addListener(pageListener);
 
     autoScrollProgressController = TimedProgressController(
-      duration: Duration(milliseconds: settingsHandler.galleryAutoScrollTime),
+      duration: Duration(milliseconds: SX.galleryAutoScrollTime.value),
     );
   }
 

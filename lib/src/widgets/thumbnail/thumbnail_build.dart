@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
@@ -12,11 +11,12 @@ import 'package:lolisnatcher/src/boorus/mergebooru_handler.dart';
 import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
-import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/pulse_widget.dart';
 import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
@@ -25,7 +25,7 @@ import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
 class ThumbnailBuild extends StatelessWidget {
   const ThumbnailBuild({
     required this.item,
-    required this.handler,
+    this.handler,
     this.selectedIndex,
     this.selectable = true,
     this.onSelected,
@@ -34,7 +34,7 @@ class ThumbnailBuild extends StatelessWidget {
   });
 
   final BooruItem item;
-  final BooruHandler handler;
+  final BooruHandler? handler;
   final int? selectedIndex;
   final bool selectable;
   final void Function()? onSelected;
@@ -42,12 +42,10 @@ class ThumbnailBuild extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
-
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: Stack(
-        alignment: settingsHandler.previewDisplay.isSquare ? .center : .bottomCenter,
+        alignment: SX.previewDisplay.value.isSquare ? .center : .bottomCenter,
         children: [
           RepaintBoundary(
             child: Builder(
@@ -79,7 +77,7 @@ class ThumbnailBuild extends StatelessWidget {
 
                 return Thumbnail(
                   item: item,
-                  booru: possibleBooru ?? handler.booru,
+                  booru: possibleBooru ?? handler?.booru,
                   isStandalone: true,
                   useHero: selectable,
                 );
@@ -104,18 +102,12 @@ class ThumbnailBuild extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (settingsHandler.isDebug.value == true)
+                  if (SX.isDebug.value == true)
                     InkWell(
                       onTap: () {
-                        Clipboard.setData(ClipboardData(text: item.toString()));
-                        FlashElements.showSnackbar(
-                          context: context,
-                          title: Text(context.loc.copied, style: const TextStyle(fontSize: 20)),
-                          content: Text(context.loc.common.booruItemCopiedToClipboard),
-                          sideColor: Colors.green,
-                          leadingIcon: Icons.copy,
-                          leadingIconColor: Colors.white,
-                          duration: const Duration(seconds: 2),
+                        ClipboardUtils.copyTextToClipboard(
+                          item.toString(),
+                          subtitle: context.loc.common.booruItemCopiedToClipboard,
                         );
                       },
                       child: Container(
@@ -141,7 +133,7 @@ class ThumbnailBuild extends StatelessWidget {
                       final List<Widget> widgets = [];
                       // Merge booru
                       if (handler is MergebooruHandler) {
-                        final fetchedMap = (handler as MergebooruHandler).fetchedMap;
+                        final fetchedMap = (handler! as MergebooruHandler).fetchedMap;
 
                         Booru? booru;
                         int? booruIndex;
@@ -180,7 +172,7 @@ class ThumbnailBuild extends StatelessWidget {
                       Booru? getMergeBooruEntry() {
                         if (handler is! MergebooruHandler) return null;
 
-                        final fetchedMap = (handler as MergebooruHandler).fetchedMap;
+                        final fetchedMap = (handler! as MergebooruHandler).fetchedMap;
                         for (int i = 0; i < fetchedMap.entries.length; i++) {
                           final entry = fetchedMap.entries.elementAt(i);
                           if (entry.value.items.contains(item)) {
@@ -443,7 +435,7 @@ class _ThumbnailBottomRightIcons extends StatelessWidget {
                 crossFadeState: isFavOrMarked ? CrossFadeState.showFirst : CrossFadeState.showSecond,
                 firstChild: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
-                  child: (settingsHandler.dbEnabled && isFav == null)
+                  child: (SX.dbEnabled.value && isFav == null)
                       ? const SizedBox(
                           height: 14,
                           width: 14,

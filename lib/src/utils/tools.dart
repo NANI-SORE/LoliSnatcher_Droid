@@ -13,6 +13,7 @@ import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
@@ -209,9 +210,9 @@ class Tools {
 
   static final String appUserAgent = 'LoliSnatcher_Droid/${Constants.updateInfo.versionName}';
   static String get browserUserAgent {
-    return (isTestMode || SettingsHandler.instance.customUserAgent.isEmpty)
+    return (isTestMode || SX.customUserAgent.value.isEmpty)
         ? appUserAgent
-        : SettingsHandler.instance.customUserAgent;
+        : SX.customUserAgent.value;
   }
 
   static bool get isTestMode => Platform.environment.containsKey('FLUTTER_TEST');

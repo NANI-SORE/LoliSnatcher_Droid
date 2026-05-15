@@ -13,6 +13,7 @@ import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
 import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -27,14 +28,14 @@ import 'package:lolisnatcher/src/widgets/preview/shimmer_builder.dart';
 class Thumbnail extends StatefulWidget {
   const Thumbnail({
     required this.item,
-    required this.booru,
+    this.booru,
     this.isStandalone = false,
     this.useHero = true,
     super.key,
   });
 
   final BooruItem item;
-  final Booru booru;
+  final Booru? booru;
 
   /// set to true when used in a list
   final bool isStandalone;
@@ -45,8 +46,6 @@ class Thumbnail extends StatefulWidget {
 }
 
 class _ThumbnailState extends State<Thumbnail> {
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
-
   final ValueNotifier<int> total = ValueNotifier(0), received = ValueNotifier(0), startedAt = ValueNotifier(0);
   int restartedCount = 0;
   final ValueNotifier<bool?> isFromCache = ValueNotifier(null);
@@ -111,7 +110,7 @@ class _ThumbnailState extends State<Thumbnail> {
               item: widget.item,
               checkForReferer: true,
             ),
-            withCache: settingsHandler.thumbnailCache,
+            withCache: SX.thumbnailCache.value,
             cacheFolder: isMain ? thumbFolder : 'thumbnails',
             fileNameExtras: widget.item.fileNameExtras,
             sendTimeout: widget.isStandalone ? const Duration(seconds: 20) : null,
@@ -132,7 +131,7 @@ class _ThumbnailState extends State<Thumbnail> {
               item: widget.item,
               checkForReferer: true,
             ),
-            withCache: settingsHandler.thumbnailCache,
+            withCache: SX.thumbnailCache.value,
             cacheFolder: isMain ? thumbFolder : 'thumbnails',
             fileNameExtras: widget.item.fileNameExtras,
             sendTimeout: widget.isStandalone ? const Duration(seconds: 20) : null,
@@ -148,7 +147,7 @@ class _ThumbnailState extends State<Thumbnail> {
 
     // on desktop devicePixelRatio is not working?
     final bool shouldResize = (thumbWidth != null || thumbHeight != null) && !SettingsHandler.isDesktopPlatform;
-    final bool shouldPixelate = widget.item.isHidden && settingsHandler.shitDevice;
+    final bool shouldPixelate = widget.item.isHidden && SX.shitDevice.value;
 
     if (shouldResize || shouldPixelate) {
       return ResizeImage(
@@ -178,7 +177,7 @@ class _ThumbnailState extends State<Thumbnail> {
       return;
     }
 
-    switch (settingsHandler.previewDisplay) {
+    switch (SX.previewDisplay.value) {
       case .rectangle:
         thumbRatio = 16 / 9;
         thumbWidth = widthLimit;
@@ -218,7 +217,7 @@ class _ThumbnailState extends State<Thumbnail> {
     if (error is DioException && CancelToken.isCancel(error)) {
       //
     } else {
-      final int retryLimit = (kDebugMode || settingsHandler.shitDevice) ? 4 : 8;
+      final int retryLimit = (kDebugMode || SX.shitDevice.value) ? 4 : 8;
 
       if (restartedCount < retryLimit) {
         // attempt to reload N times with a 1s delay
@@ -228,7 +227,7 @@ class _ThumbnailState extends State<Thumbnail> {
             await restartLoading();
             restartedCount++;
           },
-          duration: Duration(milliseconds: settingsHandler.shitDevice ? 1000 : 500),
+          duration: Duration(milliseconds: SX.shitDevice.value ? 1000 : 500),
         );
       } else {
         isFailed.value = true;
@@ -250,10 +249,10 @@ class _ThumbnailState extends State<Thumbnail> {
     final bool isSampleGif = widget.item.sampleURL.contains('.gif');
     final bool isGifSampleNotAllowed =
         widget.item.mediaType.value.isAnimation &&
-        ((settingsHandler.disableImageScaling && settingsHandler.gifsAsThumbnails) ? widget.item.isHidden : true);
+        ((SX.disableImageScaling.value && SX.gifsAsThumbnails.value) ? widget.item.isHidden : true);
 
     isThumbQuality =
-        settingsHandler.previewMode.isThumbnail ||
+        SX.previewMode.value.isThumbnail ||
         (isGifSampleNotAllowed ||
             widget.item.mediaType.value.isVideo ||
             widget.item.mediaType.value.isNeedToGuess ||
@@ -275,7 +274,7 @@ class _ThumbnailState extends State<Thumbnail> {
   Future<void> startDownloading({
     bool withCaptchaCheck = false,
   }) async {
-    final bool useExtra = isThumbQuality == false && !widget.item.isHidden && !settingsHandler.shitDevice;
+    final bool useExtra = isThumbQuality == false && !widget.item.isHidden && !SX.shitDevice.value;
 
     mainProvider.value = await getImageProvider(
       true,
@@ -451,9 +450,9 @@ class _ThumbnailState extends State<Thumbnail> {
         final double iconSize =
             (constraints.maxHeight < constraints.maxWidth ? constraints.maxHeight : constraints.maxWidth) * 0.75;
 
-        final bool useExtra = isThumbQuality == false && !widget.item.isHidden && !settingsHandler.shitDevice;
+        final bool useExtra = isThumbQuality == false && !widget.item.isHidden && !SX.shitDevice.value;
 
-        final double blurAmount = (settingsHandler.blurImages && !widget.isStandalone)
+        final double blurAmount = (SettingsHandler.instance.blurImages && !widget.isStandalone)
             ? 40
             : max(constraints.maxWidth * (widget.isStandalone ? 0.1 : 0.06), 10);
 
@@ -483,7 +482,7 @@ class _ThumbnailState extends State<Thumbnail> {
                   );
                 },
                 child: ImageFiltered(
-                  enabled: settingsHandler.blurImages || widget.item.isHidden,
+                  enabled: SettingsHandler.instance.blurImages || widget.item.isHidden,
                   imageFilter: ImageFilter.blur(
                     sigmaX: blurAmount,
                     sigmaY: blurAmount,
@@ -530,7 +529,7 @@ class _ThumbnailState extends State<Thumbnail> {
               builder: (context, isLoaded, child) {
                 return AnimatedOpacity(
                   // fade in image
-                  opacity: (settingsHandler.shitDevice || !widget.isStandalone || isLoaded) ? 1 : 0,
+                  opacity: (SX.shitDevice.value || !widget.isStandalone || isLoaded) ? 1 : 0,
                   duration: const Duration(milliseconds: 300),
                   child: child,
                 );
@@ -538,14 +537,14 @@ class _ThumbnailState extends State<Thumbnail> {
               child: GestureDetector(
                 // TODO reenable after filters rework (when blur/hide will be separate for each filter)
                 // ignore: dead_code
-                onTap: false && (widget.item.isHidden && !settingsHandler.shitDevice && widget.isStandalone)
+                onTap: false && (widget.item.isHidden && !SX.shitDevice.value && widget.isStandalone)
                     // ignore: dead_code
                     ? () => setState(() => isBlurred = !isBlurred)
                     : null,
                 child: ImageFiltered(
                   enabled:
                       isBlurred &&
-                      (settingsHandler.blurImages || (widget.item.isHidden && !settingsHandler.shitDevice)),
+                      (SettingsHandler.instance.blurImages || (widget.item.isHidden && !SX.shitDevice.value)),
                   imageFilter: ImageFilter.blur(
                     sigmaX: blurAmount,
                     sigmaY: blurAmount,
@@ -588,7 +587,7 @@ class _ThumbnailState extends State<Thumbnail> {
               ),
             ),
             //
-            if (widget.isStandalone && !settingsHandler.shitDevice)
+            if (widget.isStandalone && !SX.shitDevice.value)
               ListenableBuilder(
                 listenable: Listenable.merge([isLoaded, isLoadedExtra, isFailed]),
                 builder: (context, _) {
@@ -628,9 +627,11 @@ class _ThumbnailState extends State<Thumbnail> {
                 child: ListenableBuilder(
                   listenable: Listenable.merge([isLoaded, isFromCache, isFailed, errorCode]),
                   builder: (context, child) {
+                    if (widget.booru == null) return const SizedBox.shrink();
+
                     final bool isFavOrDlsOrHasLoad =
-                        widget.booru.type?.isFavouritesOrDownloads == true ||
-                        BooruHandlerFactory().getBooruHandler([widget.booru], null).booruHandler.hasLoadItemSupport;
+                        widget.booru?.type?.isFavouritesOrDownloads == true ||
+                        BooruHandlerFactory().getBooruHandler([widget.booru!], null).booruHandler.hasLoadItemSupport;
 
                     return ThumbnailLoading(
                       item: widget.item,
@@ -679,7 +680,7 @@ class _ThumbnailState extends State<Thumbnail> {
 
     if (widget.isStandalone && widget.useHero) {
       return HeroMode(
-        enabled: settingsHandler.enableHeroTransitions && !settingsHandler.shitDevice,
+        enabled: SX.enableHeroTransitions.value && !SX.shitDevice.value,
         child: Hero(
           tag: 'imageHero${widget.item.hashCode}',
           placeholderBuilder: (BuildContext context, Size heroSize, Widget child) {

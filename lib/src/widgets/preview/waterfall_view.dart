@@ -2,19 +2,18 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:get/get.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/pages/gallery_view_page.dart';
-import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/long_press_repeater.dart';
 import 'package:lolisnatcher/src/widgets/preview/grid_builder.dart';
 import 'package:lolisnatcher/src/widgets/preview/shimmer_builder.dart';
@@ -30,7 +29,6 @@ class WaterfallView extends StatefulWidget {
 }
 
 class _WaterfallViewState extends State<WaterfallView> with RouteAware {
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
   final SearchHandler searchHandler = SearchHandler.instance;
   final ViewerHandler viewerHandler = ViewerHandler.instance;
   final NavigationHandler navigationHandler = NavigationHandler.instance;
@@ -42,7 +40,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
 
   bool isStaggered = false;
 
-  bool get isMobile => settingsHandler.appMode.value.isMobile;
+  bool get isMobile => SX.appMode.value.isMobile;
 
   final ValueNotifier<bool> isActive = ValueNotifier(true);
 
@@ -63,7 +61,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
 
     setVolumeListener();
     // reset the volume butons state
-    ServiceHandler.setVolumeButtons(!settingsHandler.useVolumeButtonsForScroll);
+    ServiceHandler.setVolumeButtons(!SX.useVolumeButtonsForScroll.value);
     // tabChanged(0);
     // TODO reset the controller when appMode changes
     searchHandler.gridScrollController = AutoScrollController(
@@ -76,7 +74,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
       ),
     );
 
-    isStaggered = settingsHandler.previewDisplay.isStaggered && searchHandler.currentBooruHandler.hasSizeData;
+    isStaggered = SX.previewDisplay.value.isStaggered && searchHandler.currentBooruHandler.hasSizeData;
   }
 
   @override
@@ -133,8 +131,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
     });
 
     // check if grid type changed when changing tab
-    final bool newIsStaggered =
-        settingsHandler.previewDisplay.isStaggered && searchHandler.currentBooruHandler.hasSizeData;
+    final bool newIsStaggered = SX.previewDisplay.value.isStaggered && searchHandler.currentBooruHandler.hasSizeData;
     if (isStaggered != newIsStaggered) {
       isStaggered = newIsStaggered;
       setState(() {});
@@ -164,7 +161,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
       if (dir != 0 && scrollDone == true) {
         scrollDone = false;
         final double offset = max(
-          searchHandler.gridScrollController.offset + (settingsHandler.volumeButtonsScrollSpeed * dir),
+          searchHandler.gridScrollController.offset + (SX.volumeButtonsScrollSpeed.value * dir),
           -20,
         );
         await searchHandler.gridScrollController.animateTo(
@@ -214,7 +211,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
 
     if (viewerHandler.current.value == null &&
         searchHandler.currentFetched.isNotEmpty &&
-        searchHandler.currentFetched.length < (settingsHandler.itemLimit + 1)) {
+        searchHandler.currentFetched.length < (SX.limit.value + 1)) {
       viewerHandler.setCurrent(searchHandler.currentFetched.first);
     }
   }
@@ -252,7 +249,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
       viewerHandler.setCurrent(searchHandler.currentFetched[index]);
 
       isActive.value = false;
-      viewerHandler.showNotes.value = !settingsHandler.hideNotes;
+      viewerHandler.showNotes.value = !SX.hideNotes.value;
 
       final viewerKey = GlobalKey(debugLabel: 'viewer-main');
       ViewerHandler.instance.addViewer(viewerKey);
@@ -303,7 +300,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
       isActive.value = true;
 
       // reset notes to default state, defined in settings
-      viewerHandler.showNotes.value = !settingsHandler.hideNotes;
+      viewerHandler.showNotes.value = !SX.hideNotes.value;
 
       viewerCallback();
 
@@ -333,21 +330,13 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
 
   Future<void> onSecondaryTap(int index, BuildContext context) async {
     final BooruItem item = searchHandler.currentFetched[index];
-    await Clipboard.setData(ClipboardData(text: Uri.encodeFull(item.fileURL)));
-    FlashElements.showSnackbar(
-      duration: const Duration(seconds: 2),
-      title: Text(context.loc.mediaPreviews.copiedFileURL, style: const TextStyle(fontSize: 20)),
-      content: Text(Uri.encodeFull(item.fileURL), style: const TextStyle(fontSize: 16)),
-      leadingIcon: Icons.copy,
-      sideColor: Colors.green,
-    );
+    await ClipboardUtils.copyImageToClipboard(item);
   }
 
   @override
   Widget build(BuildContext context) {
     // check if grid type changed when rebuilding the widget (must happen only on start and when saving settings)
-    final bool newIsStaggered =
-        settingsHandler.previewDisplay.isStaggered && searchHandler.currentBooruHandler.hasSizeData;
+    final bool newIsStaggered = SX.previewDisplay.value.isStaggered && searchHandler.currentBooruHandler.hasSizeData;
     if (isStaggered != newIsStaggered) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         isStaggered = newIsStaggered;
@@ -378,61 +367,61 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
       alignment: Alignment.bottomCenter,
       children: [
         NotificationListener<ScrollNotification>(
-          child: Scrollbar(
-            controller: searchHandler.gridScrollController,
-            interactive: true,
-            thickness: 8,
-            thumbVisibility: true,
-            scrollbarOrientation: settingsHandler.handSide.value.isLeft
-                ? ScrollbarOrientation.left
-                : ScrollbarOrientation.right,
-            child: RefreshIndicator(
-              triggerMode: RefreshIndicatorTriggerMode.anywhere,
-              displacement: 40,
-              edgeOffset: MediaQuery.paddingOf(context).top + MainAppBar.height,
-              strokeWidth: 4,
-              color: Theme.of(context).colorScheme.secondary,
-              onRefresh: () => searchHandler.searchAction(
-                searchHandler.currentTab.tags,
-                null,
-              ),
-              child: Stack(
-                children: [
-                  ValueListenableBuilder(
-                    valueListenable: isActive,
-                    builder: (context, isActive, child) {
-                      return ShimmerWrap(
-                        enabled: isActive && !SettingsHandler.instance.shitDevice,
-                        child: child ?? const SizedBox.shrink(),
-                      );
-                    },
-                    child: Obx(() {
-                      final bool isLoadingAndNoItems =
-                          searchHandler.isLoading.value && searchHandler.currentFetched.isEmpty;
+          child: RefreshIndicator(
+            triggerMode: RefreshIndicatorTriggerMode.anywhere,
+            displacement: 40,
+            edgeOffset: MediaQuery.paddingOf(context).top + MainAppBar.height,
+            strokeWidth: 4,
+            color: Theme.of(context).colorScheme.secondary,
+            onRefresh: () => searchHandler.searchAction(
+              searchHandler.currentTab.tags,
+              null,
+            ),
+            child: Stack(
+              children: [
+                ValueListenableBuilder(
+                  valueListenable: isActive,
+                  builder: (context, isActive, child) {
+                    return ShimmerWrap(
+                      enabled: isActive && !SX.shitDevice.value,
+                      child: child ?? const SizedBox.shrink(),
+                    );
+                  },
+                  child: Obx(() {
+                    final bool isLoadingAndNoItems =
+                        searchHandler.isLoading.value && searchHandler.currentFetched.isEmpty;
 
-                      if (isLoadingAndNoItems) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          // reset scroll position if in loading state
-                          searchHandler.gridScrollController.jumpTo(0);
-                        });
-                      }
+                    if (isLoadingAndNoItems) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        // reset scroll position if in loading state
+                        searchHandler.gridScrollController.jumpTo(0);
+                      });
+                    }
 
-                      // If loading just finished but content doesn't fill the viewport,
-                      // the NotificationListener won't fire (no scroll possible), so trigger next page here with a small delay.
-                      if (!searchHandler.isLoading.value && searchHandler.currentFetched.isNotEmpty) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) async {
-                          if (searchHandler.gridScrollController.hasClients && !searchHandler.isLoading.value) {
-                            final pos = searchHandler.gridScrollController.position;
-                            final bool screenNotFilled = pos.extentBefore == 0 && pos.extentAfter == 0;
-                            if (screenNotFilled) {
-                              await Future.delayed(const Duration(milliseconds: 500));
-                              unawaited(searchHandler.runSearch());
-                            }
+                    // If loading just finished but content doesn't fill the viewport,
+                    // the NotificationListener won't fire (no scroll possible), so trigger next page here with a small delay.
+                    if (!searchHandler.isLoading.value && searchHandler.currentFetched.isNotEmpty) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) async {
+                        if (searchHandler.gridScrollController.hasClients && !searchHandler.isLoading.value) {
+                          final pos = searchHandler.gridScrollController.position;
+                          final bool screenNotFilled = pos.extentBefore == 0 && pos.extentAfter == 0;
+                          if (screenNotFilled) {
+                            await Future.delayed(const Duration(milliseconds: 500));
+                            unawaited(searchHandler.runSearch());
                           }
-                        });
-                      }
+                        }
+                      });
+                    }
 
-                      return CustomScrollView(
+                    return Scrollbar(
+                      controller: searchHandler.gridScrollController,
+                      interactive: true,
+                      thickness: 8,
+                      thumbVisibility: true,
+                      scrollbarOrientation: SX.handSide.value.isLeft
+                          ? ScrollbarOrientation.left
+                          : ScrollbarOrientation.right,
+                      child: CustomScrollView(
                         key: ValueKey('CustomScrollView-${searchHandler.currentTabId}'),
                         controller: searchHandler.gridScrollController,
                         physics: isLoadingAndNoItems
@@ -449,7 +438,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
                             sliver: Builder(
                               builder: (context) {
                                 if (isLoadingAndNoItems) {
-                                  if (settingsHandler.shitDevice) {
+                                  if (SX.shitDevice.value) {
                                     return const SliverToBoxAdapter(
                                       child: Center(
                                         child: CircularProgressIndicator(),
@@ -491,45 +480,41 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
                             ),
                           ),
                         ],
-                      );
-                    }),
-                  ),
-                  Positioned(
-                    bottom: MediaQuery.viewPaddingOf(context).bottom + 120,
-                    right: settingsHandler.scrollGridButtonsPosition.isRight
-                        ? MediaQuery.sizeOf(context).width * 0.07
-                        : null,
-                    left: settingsHandler.scrollGridButtonsPosition.isLeft
-                        ? MediaQuery.sizeOf(context).width * 0.07
-                        : null,
-                    child: Obx(() {
-                      final bool isLoadingAndNoItems =
-                          searchHandler.isLoading.value && searchHandler.currentFetched.isEmpty;
+                      ),
+                    );
+                  }),
+                ),
+                Positioned(
+                  bottom: MediaQuery.viewPaddingOf(context).bottom + 120,
+                  right: SX.scrollGridButtonsPosition.value.isRight ? MediaQuery.sizeOf(context).width * 0.07 : null,
+                  left: SX.scrollGridButtonsPosition.value.isLeft ? MediaQuery.sizeOf(context).width * 0.07 : null,
+                  child: Obx(() {
+                    final bool isLoadingAndNoItems =
+                        searchHandler.isLoading.value && searchHandler.currentFetched.isEmpty;
 
-                      return AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        child:
-                            (isLoadingAndNoItems ||
-                                settingsHandler.scrollGridButtonsPosition.isDisabled ||
-                                settingsHandler.appMode.value.isDesktop == true)
-                            ? const SizedBox.shrink()
-                            : WaterfallScrollButtons(
-                                onTap: (bool forward) {
-                                  if (forward) {
-                                    navigationHandler.floatingHeaderKey.currentState?.hide();
-                                    navigationHandler.bottomBarKey.currentState?.hide();
-                                  } else {
-                                    navigationHandler.floatingHeaderKey.currentState?.show();
-                                    navigationHandler.bottomBarKey.currentState?.show();
-                                  }
-                                  // TODO increase cacheExtent (to load future thumbnails faster) for duration of scrolling + few seconds after + keep resetting timer if didn't exceed debounce between presses?
-                                },
-                              ),
-                      );
-                    }),
-                  ),
-                ],
-              ),
+                    return AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child:
+                          (isLoadingAndNoItems ||
+                              SX.scrollGridButtonsPosition.value.isDisabled ||
+                              SX.appMode.value.isDesktop == true)
+                          ? const SizedBox.shrink()
+                          : WaterfallScrollButtons(
+                              onTap: (bool forward) {
+                                if (forward) {
+                                  navigationHandler.floatingHeaderKey.currentState?.hide();
+                                  navigationHandler.bottomBarKey.currentState?.hide();
+                                } else {
+                                  navigationHandler.floatingHeaderKey.currentState?.show();
+                                  navigationHandler.bottomBarKey.currentState?.show();
+                                }
+                                // TODO increase cacheExtent (to load future thumbnails faster) for duration of scrolling + few seconds after + keep resetting timer if didn't exceed debounce between presses?
+                              },
+                            ),
+                    );
+                  }),
+                ),
+              ],
             ),
           ),
           onNotification: (notif) {
