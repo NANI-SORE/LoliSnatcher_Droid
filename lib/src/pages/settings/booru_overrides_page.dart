@@ -5,6 +5,7 @@ import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/settings/setting_def.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/settings/auto_settings_page.dart';
 import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
@@ -80,25 +81,24 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
     final registry = SettingsRegistry.instance;
     final perBooruSettings = registry.perBooruSettings.where((s) => s.def.widgetBuilder != null).toList();
 
-    // TODO localize these strings (add booruOverrides section to i18n)
     final Widget body = Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: Text('${widget.booru.name} — Overrides'),
+        title: Text('${widget.booru.name} — Overrides'.temploc),
         actions: [
           if (perBooruSettings.any((s) => s.hasOverrideFor(booruName)))
             IconButton(
               icon: const Icon(Icons.restart_alt),
-              tooltip: 'Reset all overrides',
+              tooltip: 'Reset all overrides'.temploc,
               onPressed: () async {
                 final confirmed = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => SettingsDialog(
-                    title: const Text('Reset all overrides?'),
+                    title: Text('Reset all overrides?'.temploc),
                     contentItems: [
                       Text(
-                        'All custom settings for "${widget.booru.name}" will be '
-                        'removed. Global defaults will be used instead.',
+                        'All custom settings for "${widget.booru.name}" will be removed. Global defaults will be used instead.'
+                            .temploc,
                       ),
                     ],
                     actionButtons: [
@@ -108,7 +108,7 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
                       ),
                       TextButton(
                         onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text('Reset'),
+                        child: Text(context.loc.reset),
                       ),
                     ],
                   ),
@@ -146,7 +146,7 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
       ),
       body: perBooruSettings.isEmpty
           ? const Center(
-              child: Text('No settings support per-booru overrides yet.'),
+              child: CircularProgressIndicator(),
             )
           : categories.length == 1
           ? _buildCategoryList(categories.first)

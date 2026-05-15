@@ -5,6 +5,7 @@ import 'package:lolisnatcher/src/data/settings/setting_def.dart';
 import 'package:lolisnatcher/src/data/settings/setting_state.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
 
@@ -139,8 +140,7 @@ class AutoSettingsPage extends StatelessWidget {
         title: Text(context.loc.reset),
         contentItems: [
           Text(
-            // TODO localize
-            'Reset all ${category.locName(context)} settings to their defaults?',
+            'Reset all ${category.locName(context)} settings to their defaults?'.temploc,
           ),
         ],
         actionButtons: [
