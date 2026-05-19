@@ -208,25 +208,6 @@ class NetworkImageLoader {
           throw Exception('Download incomplete: Expected $headerLen bytes, got $actualLen');
         }
 
-        // Validate JPEG EOI (End of Image)
-        if (actualLen > 2 && (url.toLowerCase().endsWith('.jpg') || url.toLowerCase().endsWith('.jpeg'))) {
-          final handle = await tempFile.open();
-          try {
-            await handle.setPosition(actualLen - 2);
-            final endBytes = await handle.read(2);
-            if (endBytes.length == 2 && (endBytes[0] != 0xFF || endBytes[1] != 0xD9)) {
-              throw Exception('Image file is truncated (missing JPEG EOI marker)');
-            }
-          } catch (e) {
-            try {
-              await tempFile.delete();
-            } catch (_) {}
-            rethrow;
-          } finally {
-            await handle.close();
-          }
-        }
-
         try {
           await _commitCacheFile(tempFile, cacheFilePath);
           return File(cacheFilePath).readAsBytes();

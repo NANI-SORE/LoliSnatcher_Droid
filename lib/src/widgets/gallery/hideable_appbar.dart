@@ -9,15 +9,14 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:external_video_player_launcher/external_video_player_launcher.dart';
 import 'package:get/get.dart';
-import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import 'package:lolisnatcher/src/boorus/hydrus_handler.dart';
-import 'package:lolisnatcher/src/data/settings/gallery_button.dart';
-import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/settings/gallery_button.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
@@ -29,6 +28,7 @@ import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/timed_progress_controller.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -333,7 +333,6 @@ class _HideableAppBarState extends State<HideableAppBar> {
         icon = Icons.save;
         break;
       case .favourite:
-        // icon = isFav == true ? Icons.favorite : Icons.favorite_border;
         // early return to override with animated icon
         return Obx(() {
           if (page.value == -1 || widget.tab.booruHandler.filteredFetched.isEmpty) {

@@ -1,20 +1,36 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Flutter needs it to communicate with the running application
-         to allow setting breakpoints, to provide hot reload, etc.
-    -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Flutter needs INTERNET for profile attach and tooling services. -->
     <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <application
-        android:name="${applicationName}"
-        android:label="LoliSnatcher"
-        android:icon="@mipmap/ic_launcher"
-        android:requestLegacyExternalStorage="true"
-        android:usesCleartextTraffic="true">
-        <activity
-            android:name=".MainActivity"
-            android:windowSoftInputMode="stateVisible">
-        </activity>
-    </application>
 
+    <application>
+        <activity android:name=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <activity-alias
+            android:name=".MainActivityAlias_LoliSnatcher"
+            tools:node="remove"/>
+        <activity-alias
+            android:name=".MainActivityAlias_LoliSnatcherSpaced"
+            tools:node="remove"/>
+        <activity-alias
+            android:name=".MainActivityAlias_LoSn"
+            tools:node="remove"/>
+        <activity-alias
+            android:name=".MainActivityAlias_LS"
+            tools:node="remove"/>
+        <activity-alias
+            android:name=".MainActivityAlias_BooruSnatcher"
+            tools:node="remove"/>
+        <activity-alias
+            android:name=".MainActivityAlias_BooruSnatcherSpaced"
+            tools:node="remove"/>
+        <activity-alias
+            android:name=".MainActivityAlias_Booru"
+            tools:node="remove"/>
+    </application>
 </manifest>

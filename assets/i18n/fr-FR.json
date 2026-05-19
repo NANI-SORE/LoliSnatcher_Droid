@@ -1,0 +1,232 @@
+{
+    "locale": "fr-FR",
+    "localeName": "Français",
+    "appName": "LoliSnatcher",
+    "error": "Erreur",
+    "errorExclamation": "Erreur !",
+    "success": "Succès",
+    "successExclamation": "Succès !",
+    "cancel": "Annuler",
+    "return": "Retour",
+    "later": "Plus tard",
+    "close": "Fermer",
+    "ok": "OK",
+    "yes": "Oui",
+    "no": "Non",
+    "pleaseWait": "Veuillez patienter...",
+    "show": "Montrer",
+    "hide": "Cacher",
+    "enable": "Activer",
+    "disable": "Désactiver",
+    "add": "Ajouter",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "confirm": "Confirmer",
+    "copied": "Copié",
+    "copiedToClipboard": "Copié dans le presse-papiers",
+    "booru": "Booru",
+    "goToSettings": "Allez dans les paramètres",
+    "exitTheAppQuestion": "Quitter l'application ?",
+    "invalidUrl": "URL invalide !",
+    "clipboardIsEmpty": "Le presse-papiers est vide !",
+    "apiKey": "Clé API",
+    "password": "Mot de passe",
+    "pause": "Pause",
+    "resume": "Reprendre",
+    "discord": "Discord",
+    "visitOurDiscord": "Visitez notre serveur Discord",
+    "item": "Objet",
+    "select": "Sélectionner",
+    "selectAll": "Tout sélectionner",
+    "reset": "Réinitialiser",
+    "open": "Ouvrir",
+    "openInNewTab": "Ouvrir dans un nouvel onglet",
+    "move": "Déplacer",
+    "shuffle": "Mélanger",
+    "sort": "Trier",
+    "search": "Rechercher",
+    "filter": "Filtre",
+    "page": "Page",
+    "pageNumber": "Page n°",
+    "tags": "Tags",
+    "type": "Type",
+    "name": "Nom",
+    "address": "Adresse",
+    "username": "Nom d'utilisateur",
+    "favourites": "Favoris",
+    "downloads": "Téléchargements",
+    "validationErrors": {
+        "required": "Veuillez saisir une valeur",
+        "invalid": "Veuillez saisir une valeur valide",
+        "invalidNumber": "Veuillez saisir un nombre",
+        "invalidNumericValue": "Veuillez saisir une valeur numérique valide",
+        "greaterThanOrEqualZero": "Veuillez saisir une valeur égale ou supérieure à 0",
+        "lessThan4": "Veuillez saisir une valeur inférieure à 4",
+        "biggerThan100": "Veuillez saisir une valeur supérieure à 100",
+        "moreThan4ColumnsWarning": "Utiliser plus de 4 colonnes peut affecter les performances",
+        "moreThan8ColumnsWarning": "Utiliser plus de 8 colonnes peut affecter les performances"
+    },
+    "init": {
+        "initError": "Erreur d'initialisation !",
+        "settingUpProxy": "Configuration du proxy…",
+        "loadingDatabase": "Chargement de la base de données…",
+        "restoringTabs": "Restauration des onglets…"
+    },
+    "permissions": {
+        "noAccessToCustomStorageDirectory": "Aucun accès au répertoire de stockage personnalisé",
+        "pleaseSetStorageDirectoryAgain": "Veuillez redéfinir le répertoire de stockage pour autoriser l'application à y accéder",
+        "setDirectory": "Définir le répertoire",
+        "currentlyNotAvailableForThisPlatform": "Non disponible sur cette plateforme",
+        "resetDirectory": "Réinitialiser le répertoire",
+        "afterResetFilesWillBeSavedToDefaultDirectory": "Les fichiers seront enregistrés dans le répertoire par défaut après la réinitialisation"
+    },
+    "authentication": {
+        "pleaseAuthenticateToUseTheApp": "Veuillez vous authentifier pour utiliser l'application",
+        "noBiometricHardwareAvailable": "Aucun matériel biométrique disponible",
+        "temporaryLockout": "Verrouillage temporaire"
+    },
+    "searchHandler": {
+        "removedLastTab": "Onglet précédent supprimé",
+        "uoh": "UOOOOOOOHHH",
+        "tabsRestored": "Onglets restaurés",
+        "someRestoredTabsHadIssues": "Certains onglets restaurés contenaient des boorus inconnus ou des caractères cassés.",
+        "tabsMerged": "Onglets fusionnés",
+        "tabsReplaced": "Onglets remplacés"
+    },
+    "snatcher": {
+        "delayInMs": "Délai (en ms)",
+        "delayBetweenEachDownload": "Délai entre chaque téléchargement",
+        "doNotCloseApp": "Ne fermez pas l'application !"
+    },
+    "multibooru": {
+        "title": "Multibooru",
+        "multibooruMode": "Mode multibooru",
+        "multibooruRequiresAtLeastTwoBoorus": "Nécessite au moins 2 boorus configurés"
+    },
+    "hydrus": {
+        "addUrls": "Ajouter des URL"
+    },
+    "tabs": {
+        "tab": "Onglet",
+        "selectABooru": "Sélectionnez un Booru",
+        "secondaryBoorus": "Booru secondaire",
+        "addNewTab": "Ajouter un nouvel onglet",
+        "selectABooruOrLeaveEmpty": "Sélectionnez un booru ou laissez vide",
+        "addModePrevTab": "Onglet précédent",
+        "addModeNextTab": "Onglet suivant",
+        "queryModeDefault": "Défaut",
+        "customQuery": "Requête personnalisée",
+        "empty": "[vide]",
+        "switchToNewTab": "Passer à un nouvel onglet",
+        "add": "Ajouter",
+        "tabsManager": "Gestionnaire d'onglets",
+        "sortMode": "Trier les onglets",
+        "help": "Aide",
+        "deleteTabs": "Supprimer les onglets",
+        "shuffleTabs": "Mélanger les onglets",
+        "tabRandomlyShuffled": "Onglet mélangé aléatoirement",
+        "scrollToCurrent": "Défilez jusqu'à l'onglet actuel",
+        "sortAlphabetically": "Trier par ordre alphabétique",
+        "sortAlphabeticallyReversed": "Trier par ordre alphabétique (inversé)",
+        "longPressSortToSave": "Appuyez longuement sur le bouton de tri pour enregistrer l'ordre actuel",
+        "deleteSelectedTabs": "Supprimer les onglets sélectionnés",
+        "longPressToMove": "Appuyez longuement sur un onglet pour le déplacer",
+        "noTabsFound": "Aucun onglet trouvé",
+        "filters": {
+            "title": "Filtres d'onglets"
+        }
+    },
+    "history": {
+        "unknownBooruType": "Type de Booru inconnu !"
+    },
+    "settings": {
+        "title": "Paramètres",
+        "language": {
+            "title": "Langue",
+            "helpUsTranslate": "Aidez-nous à traduire",
+            "visitForDetails": "Visitez <a href='https://github.com/NO-ob/LoliSnatcher_Droid/blob/master/CONTRIBUTING.md#localization--translations'>github</a> pour plus de détails ou appuyez sur l'image ci-dessous pour accéder à POEditor"
+        },
+        "booru": {
+            "title": "Boorus et Recherche"
+        },
+        "interface": {
+            "title": "Interface"
+        },
+        "theme": {
+            "title": "Thèmes",
+            "themeMode": "Mode du thème",
+            "theme": "Thème",
+            "viewMoreFonts": "Afficher plus de polices"
+        },
+        "viewer": {
+            "zoomButtonPosition": "Position du bouton de zoom",
+            "toolbarButtonsOrder": "Ordre des boutons de la barre d'outils",
+            "thisButtonCannotBeDisabled": "Ce bouton ne peut pas être désactivé",
+            "useVolumeButtonsForScrolling": "Utilisez les boutons de volume pour faire défiler",
+            "volumeButtonsScrollSpeed": "Vitesse de défilement des boutons de volume",
+            "usingDefaultAnimation": "Utilisation de l'animation par défaut",
+            "usingCustomAnimation": "Utilisation de l'animation personnalisée",
+            "scrollDirectionValues": {
+                "vertical": "Vertical"
+            }
+        },
+        "video": {
+            "title": "Vidéo"
+        },
+        "backupAndRestore": {
+            "title": "Sauvegarde et Restauration"
+        },
+        "network": {
+            "title": "Réseau"
+        },
+        "privacy": {
+            "title": "Confidentialité"
+        },
+        "performance": {
+            "title": "Performance"
+        },
+        "itemFilters": {
+            "title": "Filtres"
+        },
+        "sync": {
+            "testConnection": "Test de connexion"
+        },
+        "checkForUpdates": {
+            "updateAvailable": "Mise à jour disponible !",
+            "youHaveLatestVersion": "Vous disposez de la dernière version"
+        },
+        "help": {
+            "title": "Aide"
+        },
+        "dirPicker": {
+            "yes": "Oui"
+        },
+        "version": "Version"
+    },
+    "lockscreen": {
+        "tapToAuthenticate": "Appuyez pour vous authentifier"
+    },
+    "loliSync": {
+        "waitingForConnection": "En attente de connexion…"
+    },
+    "tagView": {
+        "tapToTryAgain": "Appuyez pour réessayer"
+    },
+    "media": {
+        "loading": {
+            "stopReasons": {
+                "videoError": "Erreur vidéo"
+            }
+        },
+        "video": {
+            "videosDisabledOrNotSupported": "Vidéos désactivées ou non prises en charge"
+        }
+    },
+    "preview": {
+        "error": {
+            "tapToRetryIfStuck": "Appuyez pour réessayer si la requête semble bloquée ou prend trop de temps",
+            "errorWithMessage": "Appuyez ici pour réessayer",
+            "tapToRetry": "Appuyez ici pour réessayer"
+        }
+    }
+}

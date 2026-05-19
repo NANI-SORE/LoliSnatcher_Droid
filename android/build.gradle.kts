@@ -1,3 +1,5 @@
+import com.android.build.api.dsl.LibraryExtension
+
 allprojects {
     repositories {
         google()
@@ -17,6 +19,19 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+}
+
+subprojects {
+    // Fix for build error after f3.44
+    if (name == "flutter_avif_android") {
+        plugins.withId("com.android.library") {
+            extensions.configure<LibraryExtension>("android") {
+                sourceSets.getByName("main") {
+                    java.setSrcDirs(listOf("src/main/kotlin"))
+                }
+            }
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {

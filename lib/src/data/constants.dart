@@ -43,9 +43,9 @@ class Constants {
 
   // TODO don't forget to update on every new release
   static const UpdateInfo updateInfo = UpdateInfo(
-    versionName: '2.5.0',
-    buildNumber: 5210,
-    title: '2.5.0 - Localization, fonts, optimization, pinned tags and more',
+    versionName: '2.5.1',
+    buildNumber: 5211,
+    title: '2.5.1 - Chinese and German localization, fixes',
     isInStore: true,
     isImportant: false,
     storePackage: 'com.noaisu.play.loliSnatcher',
@@ -55,6 +55,18 @@ If you encounter any issues or have suggestions, please post them in GitHub issu
 
 
 [WE NEED YOUR HELP]: We are looking for volunteers to help us translate the app into other languages. For details, visit our GitHub page or Discord server.
+
+
+-------------------
+
+Release - 2.5.1+5211:
+
+- Added Chinese (Simplified) and German localization
+- Possible fix of broken screen orientation after leaving fullscreen video
+- Fixed some layout issues
+- Fixed auto leave dialog on captcha completion appearing again on new page load after you decided to stay
+- Fixed some jpeg images failing to load
+- Fixed duplicates and random sorting of tags on r34xxx
 
 -------------------
 
@@ -160,11 +172,6 @@ Fixes:
 
 
 and other small fixes and changes...
-
--------------------
-
-Known issues:
-- Rendering may break after changing screen orientation (i.e. by opening video in fullscreen), can be fixed by changing screen orientation back and forth/reentering video fullscreen
 ''',
   );
 }

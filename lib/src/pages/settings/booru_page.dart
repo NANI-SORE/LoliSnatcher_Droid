@@ -5,13 +5,14 @@ import 'package:flutter/services.dart';
 
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
-import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
 import 'package:lolisnatcher/src/pages/settings/booru_overrides_page.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -67,17 +68,7 @@ class _BooruPageState extends State<BooruPage> {
     Navigator.of(context).pop(true); // remove dialog
     final String link = selectedBooru?.toLink(withSensitiveData) ?? '';
     if (SettingsHandler.isDesktopPlatform) {
-      Clipboard.setData(ClipboardData(text: link));
-      FlashElements.showSnackbar(
-        context: context,
-        title: Text(
-          context.loc.settings.booru.booruConfigLinkCopied,
-          style: const TextStyle(fontSize: 20),
-        ),
-        leadingIcon: Icons.share,
-        leadingIconColor: Colors.green,
-        sideColor: Colors.green,
-      );
+      ClipboardUtils.copyTextToClipboard(link, subtitle: '');
     } else if (Platform.isAndroid) {
       ServiceHandler.loadShareTextIntent(link);
     }

@@ -3842,27 +3842,27 @@ class TranslationsSettingsSyncEn {
   /// en: 'Send favourites (Legacy)'
   String get sendFavouritesLegacy => TranslationOverrides.string(_root.$meta, 'settings.sync.sendFavouritesLegacy', {}) ?? 'Send favourites (Legacy)';
 
-  /// en: 'Sync favs from #…'
-  String get syncFavsFrom => TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFrom', {}) ?? 'Sync favs from #…';
+  /// en: 'Sync favourites from #…'
+  String get syncFavsFrom => TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFrom', {}) ?? 'Sync favourites from #…';
 
-  /// en: 'Allows to set from where the sync should start from, useful if you already synced all your favs before and want to sync only the newest items'
+  /// en: 'Allows to set from where the sync should start from, useful if you already synced all your favourites before and want to sync only the newest items'
   String get syncFavsFromHelpText1 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText1', {}) ??
-      'Allows to set from where the sync should start from, useful if you already synced all your favs before and want to sync only the newest items';
+      'Allows to set from where the sync should start from, useful if you already synced all your favourites before and want to sync only the newest items';
 
   /// en: 'If you want to sync from the beginning leave this field blank'
   String get syncFavsFromHelpText2 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText2', {}) ??
       'If you want to sync from the beginning leave this field blank';
 
-  /// en: 'Example: You have X amount of favs, set this field to 100, sync will start from item #100 and go until it reaches X'
+  /// en: 'Example: You have X amount of favourites, set this field to 100, sync will start from item #100 and go until it reaches X'
   String get syncFavsFromHelpText3 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText3', {}) ??
-      'Example: You have X amount of favs, set this field to 100, sync will start from item #100 and go until it reaches X';
+      'Example: You have X amount of favourites, set this field to 100, sync will start from item #100 and go until it reaches X';
 
-  /// en: 'Order of favs: From oldest (0) to newest (X)'
+  /// en: 'Order of snatched: From oldest (0) to newest (X)'
   String get syncFavsFromHelpText4 =>
-      TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText4', {}) ?? 'Order of favs: From oldest (0) to newest (X)';
+      TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText4', {}) ?? 'Order of snatched: From oldest (0) to newest (X)';
 
   /// en: 'Send snatched history'
   String get sendSnatchedHistory => TranslationOverrides.string(_root.$meta, 'settings.sync.sendSnatchedHistory', {}) ?? 'Send snatched history';
@@ -3884,14 +3884,14 @@ class TranslationsSettingsSyncEn {
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText2', {}) ??
       'If you want to sync from the beginning leave this field blank';
 
-  /// en: 'Example: You have X amount of favs, set this field to 100, sync will start from item #100 and go until it reaches X'
+  /// en: 'Example: You have X amount of snatched, set this field to 100, sync will start from item #100 and go until it reaches X'
   String get syncSnatchedFromHelpText3 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText3', {}) ??
-      'Example: You have X amount of favs, set this field to 100, sync will start from item #100 and go until it reaches X';
+      'Example: You have X amount of snatched, set this field to 100, sync will start from item #100 and go until it reaches X';
 
-  /// en: 'Order of favs: From oldest (0) to newest (X)'
+  /// en: 'Order of snatched: From oldest (0) to newest (X)'
   String get syncSnatchedFromHelpText4 =>
-      TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText4', {}) ?? 'Order of favs: From oldest (0) to newest (X)';
+      TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText4', {}) ?? 'Order of snatched: From oldest (0) to newest (X)';
 
   /// en: 'Send settings'
   String get sendSettings => TranslationOverrides.string(_root.$meta, 'settings.sync.sendSettings', {}) ?? 'Send settings';
@@ -6252,18 +6252,18 @@ extension on Translations {
                 TranslationOverrides.string(_root.$meta, 'settings.sync.favouritesCount', {'count': count}) ?? 'Favorites: ${count}',
           'settings.sync.sendFavouritesLegacy' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.sendFavouritesLegacy', {}) ?? 'Send favourites (Legacy)',
-          'settings.sync.syncFavsFrom' => TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFrom', {}) ?? 'Sync favs from #…',
+          'settings.sync.syncFavsFrom' => TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFrom', {}) ?? 'Sync favourites from #…',
           'settings.sync.syncFavsFromHelpText1' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText1', {}) ??
-                'Allows to set from where the sync should start from, useful if you already synced all your favs before and want to sync only the newest items',
+                'Allows to set from where the sync should start from, useful if you already synced all your favourites before and want to sync only the newest items',
           'settings.sync.syncFavsFromHelpText2' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText2', {}) ??
                 'If you want to sync from the beginning leave this field blank',
           'settings.sync.syncFavsFromHelpText3' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText3', {}) ??
-                'Example: You have X amount of favs, set this field to 100, sync will start from item #100 and go until it reaches X',
+                'Example: You have X amount of favourites, set this field to 100, sync will start from item #100 and go until it reaches X',
           'settings.sync.syncFavsFromHelpText4' =>
-            TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText4', {}) ?? 'Order of favs: From oldest (0) to newest (X)',
+            TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText4', {}) ?? 'Order of snatched: From oldest (0) to newest (X)',
           'settings.sync.sendSnatchedHistory' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.sendSnatchedHistory', {}) ?? 'Send snatched history',
           'settings.sync.snatchedCount' =>
@@ -6279,9 +6279,10 @@ extension on Translations {
                 'If you want to sync from the beginning leave this field blank',
           'settings.sync.syncSnatchedFromHelpText3' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText3', {}) ??
-                'Example: You have X amount of favs, set this field to 100, sync will start from item #100 and go until it reaches X',
+                'Example: You have X amount of snatched, set this field to 100, sync will start from item #100 and go until it reaches X',
           'settings.sync.syncSnatchedFromHelpText4' =>
-            TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText4', {}) ?? 'Order of favs: From oldest (0) to newest (X)',
+            TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText4', {}) ??
+                'Order of snatched: From oldest (0) to newest (X)',
           'settings.sync.sendSettings' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendSettings', {}) ?? 'Send settings',
           'settings.sync.sendBooruConfigs' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendBooruConfigs', {}) ?? 'Send booru configs',
           'settings.sync.configsCount' =>

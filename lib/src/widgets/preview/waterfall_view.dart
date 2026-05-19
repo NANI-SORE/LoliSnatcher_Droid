@@ -430,7 +430,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
                                 parent: ScrollConfiguration.of(context).getScrollPhysics(context),
                               ),
                         shrinkWrap: false,
-                        cacheExtent: 300 * MediaQuery.devicePixelRatioOf(context),
+                        scrollCacheExtent: SX.shitDevice.value ? const .viewport(0.5) : const .viewport(1),
                         slivers: [
                           const MainAppBar(),
                           SliverPadding(

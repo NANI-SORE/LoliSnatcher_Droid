@@ -69,20 +69,20 @@
     "address": "Endereço",
     "username": "Nome de Usuário",
     "favourites": "Favoritos",
-    "downloads": "Baixados",
+    "downloads": "Downloads",
     "validationErrors": {
         "required": "Por favor, insira um valor",
         "invalid": "Por favor, insira um valor válido",
         "invalidNumber": "Por favor, insira um número",
         "invalidNumericValue": "Por favor, insira um valor numérico válido",
-        "tooSmall(param=min)": "Por favor, insira um valor maior do que ${min: double}",
-        "tooBig(param=max)": "Por favor, insira um valor menor do que ${max: double}",
+        "tooSmall(param=min)": "Por favor, insira um valor maior que ${min: double}",
+        "tooBig(param=max)": "Por favor, insira um valor menor que ${max: double}",
         "rangeError(param=min, param=max)": "Por favor, insira um valor entre ${min: double} e ${max: double}",
         "greaterThanOrEqualZero": "Por favor, insira um valor maior ou igual a 0",
         "lessThan4": "Por favor, insira um valor menor do que 4",
         "biggerThan100": "Por favor, insira um valor maior do que 100",
-        "moreThan4ColumnsWarning": "Usar mais de 4 colunas pode afetar o desempenho",
-        "moreThan8ColumnsWarning": "Usar mais de 8 colunas pode afetar o desempenho"
+        "moreThan4ColumnsWarning": "Usar mais de 4 colunas pode afetar o desempenho do app",
+        "moreThan8ColumnsWarning": "Usar mais de 8 colunas pode afetar o desempenho do app"
     },
     "init": {
         "initError": "Erro de inicialização!",
@@ -221,6 +221,298 @@
         "addSecondaryBoorus": "Adicionar boorus secundários",
         "keepSecondaryBoorus": "Manter boorus secundários",
         "startFromCustomPageNumber": "Página inicial personalizada",
-        "switchToNewTab": "Mudar para uma nova aba"
+        "switchToNewTab": "Mudar para uma nova aba",
+        "add": "adicionar",
+        "tabsManager": "Gerenciador de abas",
+        "selectMode": "Modo de seleção",
+        "sortMode": "Ordenar abas",
+        "help": "Ajuda",
+        "deleteTabs": "Apagar abas",
+        "shuffleTabs": "Embaralhar abas",
+        "tabRandomlyShuffled": "Abas embaralhadas aleatoriamente",
+        "tabOrderSaved": "Ordem das abas salva",
+        "scrollToCurrent": "Rolar para a aba atual",
+        "scrollToTop": "Rolar para o topo",
+        "scrollToBottom": "Rolar para o fim",
+        "filterTabsByBooru": "Filtrar por booru, estado, duplicadas...",
+        "scrolling": "Rolagem:",
+        "sorting": "Ordenação:",
+        "defaultTabsOrder": "Ordem padrão das abas",
+        "sortAlphabetically": "Ordem alfabetica",
+        "sortAlphabeticallyReversed": "Ordem alfabética (inversa)\"",
+        "sortByBooruName": "Ordem alfabética por booru",
+        "sortByBooruNameReversed": "Ordem alfabética por booru (inversa)",
+        "longPressSortToSave": "Segure o botão de ordenação para salvar a ordem atual",
+        "select": "Selecionar:",
+        "toggleSelectMode": "Alternar modo de seleção",
+        "onTheBottomOfPage": "No fim da pagina:",
+        "selectDeselectAll": "Selecionar/desmarcar todas as abas",
+        "deleteSelectedTabs": "Apagar abas selecionadas",
+        "longPressToMove": "Segure uma aba para movê-la",
+        "numbersInBottomRight": "Números no canto inferior direito da aba:",
+        "firstNumberTabIndex": "Primeiro número — índice da aba na ordem padrão da lista",
+        "secondNumberTabIndex": "Second number - tab index in current list order, appears when filtering/sorting is active",
+        "specialFilters": "Filtros especiais:",
+        "loadedFilter": "​«Carregadas» — mostrar abas que possuem itens carregados",
+        "notLoadedFilter": "​«Não carregadas» — mostrar abas que não estão carregadas e/ou possuem zero itens",
+        "notLoadedItalic": "Abas não carregadas possuem texto em itálico",
+        "noTabsFound": "Nenhuma aba encontrada",
+        "copy": "Copiar",
+        "moveAction": "Mover",
+        "remove": "Remover",
+        "shuffle": "Embaralhar",
+        "sort": "Ordenar",
+        "shuffleTabsQuestion": "Embaralhar a ordem das abas aleatoriamente?",
+        "saveTabsInCurrentOrder": "Salvar abas na ordem de classificação atual?",
+        "byBooru": "Por Booru",
+        "alphabetically": "Alfabeticamente",
+        "reversed": "(invertida)",
+        "areYouSureDeleteTabs(param=count)": {
+            "one": "Você tem certeza de que quer deletar ${count} aba?",
+            "few": "Você tem certeza de que quer deletar ${count} abas?",
+            "many": "Você tem certeza de que quer deletar ${count} abas?",
+            "other": "Você tem certeza de que quer deletar ${count} abas?"
+        },
+        "filters": {
+            "loaded": "Carregada",
+            "tagType": "Tipo de tag",
+            "multibooru": "Multibooru",
+            "duplicates": "Duplicadas",
+            "checkDuplicatesOnSameBooru": "Verificar duplicadas no mesmo Booru",
+            "emptySearchQuery": "Consulta de busca vazia",
+            "title": "Filtros de abas",
+            "all": "Todas",
+            "notLoaded": "Não caregada",
+            "enabled": "Ativado",
+            "disabled": "Desativado",
+            "willAlsoEnableSorting": "Também ativará a ordenação",
+            "tagTypeFilterHelp": "Filtrar abas que contêm ao menos uma tag do tipo selecionado",
+            "any": "Qualquer",
+            "apply": "Aplicar"
+        },
+        "move": {
+            "moveToTop": "Mover para o início",
+            "moveToBottom": "Mover para o fim",
+            "tabNumber": "Número da tab",
+            "invalidTabNumber": "Número da aba inválido.",
+            "invalidInput": "Entrada inválida",
+            "outOfRange": "Fora do intervalo",
+            "pleaseEnterValidTabNumber": "Por favor, digite um número de aba válido",
+            "moveTo(param=formattedNumber)": "Mover para #${formattedNumber: String}",
+            "preview": "Prévia:"
+        }
+    },
+    "history": {
+        "searchHistory": "Search history",
+        "searchHistoryIsEmpty": "O histórico de busca está vazio",
+        "searchHistoryIsDisabled": "Histórico de busca desativado",
+        "searchHistoryRequiresDatabase": "Ative o banco de dados nas configurações para o histórico de busca",
+        "lastSearch(param=search)": "Última busca: ${search: String}",
+        "lastSearchWithDate(param=date)": "Última busca em: ${date: String}",
+        "unknownBooruType": "Tipo de Booru desconhecido!",
+        "unknownBooru(param=name, param=type)": "Booru desconhecido (${name: String}-${type: String})",
+        "open": "Abrir",
+        "openInNewTab": "Abrir em uma nova aba",
+        "removeFromFavourites": "Remover dos favoritos",
+        "setAsFavourite": "Definir como Favorito",
+        "copy": "Copiar"
+    },
+    "webview": {
+        "navigation": {
+            "enterUrlLabel": "Digite uma URL",
+            "enterCustomUrl": "Digite uma URL personalizada",
+            "navigateTo(param=url)": "Navegar para ${url: String}",
+            "listCookies": "Listar cookies",
+            "clearCookies": "Limpar cookies",
+            "cookiesGone": "Cookies limpos",
+            "getFavicon": "Obter favicon",
+            "noFaviconFound": "Nenhum favicon encontrado",
+            "host": "Host:",
+            "textAboveSelectable": "(o texto acima é selecionável)",
+            "copyUrl": "Copiar URL",
+            "copiedUrlToClipboard": "URL copiado para a area de transferência",
+            "cookies": "Cookies",
+            "favicon": "Favicon",
+            "history": "Histórico",
+            "noBackHistoryItem": "Nenhum item no histórico para voltar",
+            "noForwardHistoryItem": "Nenhum item no histórico para avançar"
+        }
+    },
+    "settings": {
+        "title": "Configurações",
+        "language": {
+            "title": "Idioma",
+            "system": "Sistema"
+        },
+        "booru": {
+            "addBooru": "Adicionar configuração de Booru",
+            "addedBoorus": "Boorus adicionados",
+            "importBooru": "Importar configuração de Booru da área de transferência",
+            "onlyLSURLsSupported": "Apenas URLs do loli.snatcher são suportadas",
+            "deleteBooru": "Apagar configuração de Booru",
+            "deleteBooruError": "Ocorreu um erro ao apagar a configuração do Booru!",
+            "booruDeleted": "Configuração do Booru apagada",
+            "booruDropdownInfo": "​O Booru selecionado se torna o padrão após salvar.\n\n​O Booru padrão aparece primeiro nos menus suspensos",
+            "changeDefaultBooru": "Alterar Booru padrão?",
+            "changeTo": "Alterar para: ",
+            "keepCurrentBooru": "Clique em [Não] para manter o atual: ",
+            "changeToNewBooru": "Clique em [Sim] para alterar para: ",
+            "booruConfigLinkCopied": "Link de configuração do Booru copiado para a área de transferência",
+            "noBooruSelected": "Nenhum Booru selecionado!",
+            "cantDeleteThisBooru": "Não é possível apagar este Booru!",
+            "removeRelatedTabsFirst": "Remova as abas relacionadas primeiro"
+        },
+        "booruEditor": {
+            "title": "Booru Editor",
+            "testBooruFailedTitle": "O teste do Booru falhou",
+            "testBooruFailedMsg": "Os parâmetros de configuração podem estar incorretos, o Booru não permite acesso por API, a solicitação não retornou dados ou houve um erro de rede.",
+            "saveBooru": "Salvar Booru",
+            "runningTest": "Executando teste...",
+            "booruConfigExistsError": "Esta configuração de Booru ja existe",
+            "booruSameNameExistsError": "Ja existe uma Configuração de Booru com o mesmo nome",
+            "booruSameUrlExistsError": "Já existe uma configuração de Booru com a mesma URL",
+            "thisBooruConfigWontBeAdded": "Essa configuração de Booru não será adicionada",
+            "booruConfigSaved": "Configuração de Booru salva",
+            "existingTabsNeedReload": "As abas existentes com este Booru precisam ser recarregadas para aplicar as alterações!",
+            "failedVerifyApiHydrus": "Falha ao verificar acesso API ao Hydrus",
+            "accessKeyRequestedTitle": "Chave de acesso solicitada",
+            "accessKeyRequestedMsg": "Toque em 'OK' no Hydrus e depois em 'Aplicar'. Em seguida, você pode tocar em 'Testar Booru'",
+            "accessKeyFailedTitle": "Falha ao obter a chave de acesso",
+            "accessKeyFailedMsg": "Você tem a janela de solicitação aberta no Hydrus?",
+            "hydrusInstructions": "Para obter a chave Hydrus, você precisa abrir a caixa de diálogo de solicitação no cliente Hydrus: Serviços > Revisar serviços > API do cliente > Adicionar > Da solicitação de API",
+            "getHydrusApiKey": "Obter chave de API do Hydrus",
+            "booruName": "Nome do Booru",
+            "booruNameRequired": "O nome do Booru é obrigatório!",
+            "booruUrl": "URL do Booru",
+            "booruUrlRequired": "A URL do Booru é obrigatória!",
+            "booruType": "Tipo de Booru",
+            "booruFavicon": "URL do Favicon",
+            "booruFaviconPlaceholder": "(Preenchido automaticamente se vazio)",
+            "booruDefTags": "Tags padrão",
+            "booruDefTagsPlaceholder": "Busca padrão para o booru",
+            "booruDefaultInstructions": "Os campos abaixo podem ser obrigatórios para alguns boorus",
+            "booruConfigShouldSave": "Confirmar o salvamento desta configuração de Booru",
+            "booruConfigSelectedType(param=booruType)": "Tipo de Booru selecionado/detectado: ${booruType: String}"
+        },
+        "interface": {
+            "appUIMode": "Modo de interface do usuário do app",
+            "appUIModeWarningTitle": "Modo de interface do usuário do app",
+            "appUIModeWarning": "Usar o modo Desktop? Pode causar problemas em dispositivos móveis. [INTERFACE DESCONTINUADA]",
+            "appUIModeHelpMobile": "- Mobile - Interface dispositivos móveis",
+            "appUIModeHelpWarning": "[Aviso]: Não defina o Modo de Interface para Desktop em um celular, pois isso pode danificar o aplicativo e você poderá ter que apagar todas as suas configurações, incluindo as configurações do Booru.",
+            "previewDisplayFallbackHelp": "Isso será usado quando a opção Mosaico não for possível",
+            "dontScaleImages": "Não redimensionar imagens",
+            "dontScaleImagesSubtitle": "Pode reduzir o desempenho",
+            "dontScaleImagesWarningTitle": "Aviso",
+            "dontScaleImagesWarning": "Tem certeza de que deseja desativar o redimensionamento de imagens?",
+            "dontScaleImagesWarningMsg": "Isso pode afetar negativamente o desempenho, especialmente em dispositivos mais antigos",
+            "gifThumbnails": "Miniaturas em GIF",
+            "gifThumbnailsRequires": "Requer «Não redimensionar imagens»",
+            "scrollPreviewsButtonsPosition": "Posição dos botões de rolagem das prévias",
+            "mouseWheelScrollModifier": "Modificador de rolagem da roda do mouse",
+            "scrollModifier": "Modificador de rolagem",
+            "previewQualityValues": {
+                "thumbnail": "Miniatura",
+                "sample": "Amostra"
+            },
+            "previewDisplayModeValues": {
+                "square": "Quadrado",
+                "rectangle": "Retângulo",
+                "staggered": "Mosaico"
+            },
+            "appModeValues": {
+                "desktop": "Desktop",
+                "mobile": "Mobile"
+            },
+            "handSideValues": {
+                "left": "Esquerda",
+                "right": "Direita"
+            }
+        },
+        "theme": {
+            "title": "Temas",
+            "themeMode": "Modo do tema",
+            "blackBg": "Fundo preto",
+            "useDynamicColor": "Usar cores dinâmicas",
+            "android12PlusOnly": "Apenas Android 12+",
+            "theme": "Tema",
+            "primaryColor": "Cor primária",
+            "secondaryColor": "Cor secundária",
+            "enableDrawerMascot": "Ativar mascote do menu lateral",
+            "fontPreviewText": "A rápida raposa marrom salta sobre o cão preguiçoso",
+            "customFont": "Fonte personalizada",
+            "customFontSubtitle": "Insira o nome de qualquer Google Font",
+            "fontName": "Nome da fonte",
+            "customFontHint": "Navegue pelas fontes em fonts.google.com",
+            "fontNotFound": "Fonte não encontrada"
+        },
+        "viewer": {
+            "title": "Visualizador",
+            "preloadAmount": "Quantidade de pré-carregamento",
+            "preloadSizeLimit": "Limite de tamanho do pré-carregamento",
+            "preloadSizeLimitSubtitle": "em GB, 0 para sem limite",
+            "preloadHeightLimit": "Limite de altura do pré-carregamento",
+            "preloadHeightLimitSubtitle": "em pixels, 0 para sem limite",
+            "imageQuality": "Qualidade da imagem",
+            "viewerScrollDirection": "Direção de rolagem do visualizador",
+            "viewerToolbarPosition": "Posição da barra de ferramentas do visualizador",
+            "zoomButtonPosition": "Posição do botão de zoom",
+            "changePageButtonsPosition": "Posição dos botões de mudar de página",
+            "hideToolbarWhenOpeningViewer": "Ocultar barra de ferramentas ao abrir o visualizador",
+            "expandDetailsByDefault": "Expandir detalhes por padrão",
+            "hideTranslationNotesByDefault": "Ocultar notas de tradução por padrão",
+            "atLeast4ButtonsVisibleOnToolbar": "Pelo menos 4 botões desta lista estarão sempre visíveis na barra de ferramentas.",
+            "shareActionValues": {
+                "ask": "Perguntar"
+            }
+        },
+        "database": {
+            "appRestartRequired": "É necessário reiniciar o aplicativo!",
+            "appRestartMayBeRequired": "Pode ser necessário reiniciar o app!"
+        },
+        "privacy": {
+            "appLock": "Proteger app",
+            "appLockMsg": "Proteger app manualmente ou depois de um tempo inativo. Requer PIN ou biometria",
+            "appDisplayName": "Nome de exibição do aplicativo",
+            "appDisplayNameDescription": "Mude como o nome do app aparece nos seus apps"
+        },
+        "cache": {
+            "appRestartRequired": "Pode ser necessário reiniciar o app!"
+        },
+        "about": {
+            "appDescription": "LoliSnatcher é de código aberto e licenciado com GPLv3. O código-fonte está disponível no GitHub. Por favor, reporte qualquer problema ou pedido de funcionalidade na seção \"issues\" no repositório.",
+            "appOnGitHub": "LoliSnatcher no Github"
+        }
+    },
+    "tagsFiltersDialogs": {
+        "addNewFilter(param=type)": "[Adicionar novo filtro de ${type: String}]"
+    },
+    "tagsManager": {
+        "addTag": "Adicionar tag",
+        "add": "adicionar",
+        "addedATab": "Uma aba adicionada",
+        "addATab": "Adicionar aba"
+    },
+    "tagView": {
+        "addedToCurrentSearch": "Adicionada à atual lista de pesquisa",
+        "addedNewTab": "Nova aba adicionada",
+        "addedToSearchBar": "Adicionada a barra de pesquisa"
+    },
+    "pinnedTags": {
+        "addPinnedTag": "Adicionar tag fixada"
+    },
+    "desktopHome": {
+        "addBoorusInSettings": "Adicionar outros boorus"
+    },
+    "mediaPreviews": {
+        "addNewBooru": "Adicionar novo Booru"
+    },
+    "viewer": {
+        "appBar": {
+            "abort": "Abortar"
+        }
+    },
+    "tagType": {
+        "artist": "Artista"
     }
 }

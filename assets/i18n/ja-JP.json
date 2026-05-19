@@ -201,8 +201,8 @@
         "multibooruMode": "Multibooruモード",
         "multibooruRequiresAtLeastTwoBoorus": "少なくとも2つのBooruが設定されている必要があります",
         "selectSecondaryBoorus": "追加するbooruを選択:",
-        "akaMultibooruMode": "別名をMultibooruモード",
-        "labelSecondaryBoorusToInclude": "追加のBooruを含める"
+        "akaMultibooruMode": "Multibooruモード",
+        "labelSecondaryBoorusToInclude": "追加するBooru"
     },
     "hydrus": {
         "importError": "Hydrusのインポート中に問題が発生しました",
@@ -216,8 +216,8 @@
         "selectABooru": "Booruを選択",
         "secondaryBoorus": "追加のBooru",
         "addNewTab": "新しいタブを追加",
-        "selectABooruOrLeaveEmpty": "Booruを選択するか空のままにしておく",
-        "addPosition": "ポジションを追加",
+        "selectABooruOrLeaveEmpty": "Booruを選択するか空のままにする",
+        "addPosition": "追加する位置",
         "addModePrevTab": "以前のタブ",
         "addModeNextTab": "次のタブ",
         "addModeListEnd": "リストの最後",
@@ -227,7 +227,7 @@
         "queryModeCustom": "カスタム",
         "customQuery": "カスタムクエリ",
         "empty": "[未指定]",
-        "addSecondaryBoorus": "追加のBooruを追加",
+        "addSecondaryBoorus": "追加のBooruを使用",
         "keepSecondaryBoorus": "追加のBooruを保持",
         "startFromCustomPageNumber": "特定のページ番号から開始",
         "switchToNewTab": "新しいタブに移動",
@@ -342,7 +342,7 @@
         }
     },
     "webview": {
-        "title": "Webview",
+        "title": "ウェブモード",
         "notSupportedOnDevice": "このデバイスではサポートされていません",
         "captcha": "キャプチャ",
         "captchaCheckDescription": "キャプチャが検出されました。完了してから戻って続行できます",
@@ -353,15 +353,15 @@
             "navigateTo(param=url)": "${url: String} へ移動",
             "listCookies": "Cookieのリスト",
             "clearCookies": "Cookieをクリア",
-            "cookiesGone": "Cookieがありましたが、今はもうありません",
-            "getFavicon": "Faviconを取得",
-            "noFaviconFound": "Faviconが見つかりませんでした",
+            "cookiesGone": "クッキーがありましたが、なくなりました。",
+            "getFavicon": "アイコンを取得",
+            "noFaviconFound": "アイコンが見つかりませんでした",
             "host": "ホスト:",
             "textAboveSelectable": "(上のテキストは選択可能です)",
             "copyUrl": "URLをコピー",
             "copiedUrlToClipboard": "URLをクリップボードにコピーしました",
             "cookies": "Cookies",
-            "favicon": "Favicon",
+            "favicon": "サイトアイコン",
             "history": "履歴",
             "noBackHistoryItem": "戻る履歴はありません",
             "noForwardHistoryItem": "進む履歴はありません"
@@ -370,16 +370,16 @@
     "settings": {
         "title": "設定",
         "language": {
-            "title": "言語 - Language",
+            "title": "言語",
             "system": "システム",
-            "helpUsTranslate": "翻訳に貢献する",
+            "helpUsTranslate": "翻訳に協力する",
             "visitForDetails": "詳細については、 <a href='https://github.com/NO-ob/LoliSnatcher_Droid/blob/master/CONTRIBUTING.md#localization--translations'>GitHub</a> を確認するか、下の画像をタップしてPOEditorにアクセスできます"
         },
         "booru": {
             "title": "Booru & 検索",
             "defaultTags": "デフォルトのタグ",
             "itemsPerPage": "ページごとに取得される項目数",
-            "itemsPerPageTip": "いくつかのbooruでは設定が無視される場合があります",
+            "itemsPerPageTip": "いくつかのBooruでは設定が無視される場合があります",
             "itemsPerPagePlaceholder": "10-100",
             "addBooru": "Booruを追加",
             "shareBooru": "Booruとその設定を共有",
@@ -428,7 +428,7 @@
             "booruUrl": "BooruのURL",
             "booruUrlRequired": "BooruのURLの設定が必要です！",
             "booruType": "Booruのタイプ",
-            "booruFavicon": "FaviconのURL",
+            "booruFavicon": "アイコンのURL",
             "booruFaviconPlaceholder": "(空白の場合は自動で入力されます)",
             "booruDefTags": "デフォルトのタグ",
             "booruDefTagsPlaceholder": "Booruを開いたときのデフォルトのタグ",
@@ -773,7 +773,7 @@
             "customUserAgentTitle": "カスタム User-Agent",
             "keepEmptyForDefault": "空でデフォルトを使用",
             "defaultUserAgent(param=agent)": "デフォルト: ${agent: String}",
-            "userAgentUsedOnRequests": "ほとんどのBooruリクエストとWebviewに使用されます",
+            "userAgentUsedOnRequests": "ほとんどのBooruリクエストとアプリ内ブラウザに使用されます",
             "valueSavedAfterLeaving": "ページを閉じて保存",
             "setBrowserUserAgent": "Chromeブラウザの User-Agent を使用 (サイトでブラウザ以外のユーザーエージェントが禁止されている場合にのみ推奨されます)",
             "cookieCleaner": "Cookie クリーナー",
@@ -805,7 +805,7 @@
         "performance": {
             "title": "パフォーマンス",
             "lowPerformanceMode": "低パフォーマンスモード",
-            "lowPerformanceModeSubtitle": "古いデバイスやRAMの少ないデバイスに推奨",
+            "lowPerformanceModeSubtitle": "古いデバイスやメモリの少ないデバイスに推奨",
             "lowPerformanceModeDialogTitle": "低パフォーマンスモード",
             "lowPerformanceModeDialogDisablesDetailed": "- 読み込み中の詳細情報を無効にします",
             "lowPerformanceModeDialogDisablesResourceIntensive": "- リソースを大量に消費する要素を無効にします (ぼかし、アニメーション化された不透明度、一部アニメーションなど...)",
@@ -846,11 +846,11 @@
             "inFilesPlural(param=size, param=count)": "${size: String}, ${count: int} ファイル",
             "inFileSingular(param=size)": "${size: String}, 1 ファイル",
             "cacheTypeTotal": "合計",
-            "cacheTypeFavicons": "Favicon",
+            "cacheTypeFavicons": "サイトアイコン",
             "cacheTypeThumbnails": "サムネイル",
             "cacheTypeSamples": "サンプル",
             "cacheTypeMedia": "メディア",
-            "cacheTypeWebView": "Webview",
+            "cacheTypeWebView": "ウェブページ",
             "cacheCleared": "キャッシュがクリアされました",
             "clearedCacheType(param=type)": "${type: String} キャッシュをクリアしました",
             "clearAllCache": "すべてのキャッシュをクリア",
@@ -934,7 +934,7 @@
         },
         "about": {
             "title": "このアプリについて",
-            "appDescription": "LoliSnatcherはGPLv3ライセンスのオープンソースソフトウェアで、ソースコードはGitHubで公開されています。問題や機能リクエストがありましたら、リポジトリの Issues セクションにご報告ください。",
+            "appDescription": "LoliSnatcher はGPLv3ライセンスのオープンソースソフトウェアで、ソースコードはGitHubで公開されています。問題や機能リクエストがありましたら、リポジトリの Issues セクションにご報告ください。",
             "appOnGitHub": "LoliSnatcher (GitHub)",
             "contact": "お問い合わせ",
             "emailCopied": "Eメールがクリップボードにコピーされました",
@@ -995,7 +995,7 @@
             "logger": "Logger"
         },
         "webview": {
-            "openWebview": "Webviewを開く",
+            "openWebview": "アプリ内ブラウザを開く",
             "openWebviewTip": "ログインまたはCookieの取得用"
         },
         "dirPicker": {
@@ -1030,7 +1030,7 @@
         "stopSearching": "検索の停止"
     },
     "tagsFiltersDialogs": {
-        "emptyInput": "空の入力！",
+        "emptyInput": "入力が空です！",
         "addNewFilter(param=type)": "[${type: String} フィルターに新規追加]",
         "newTagFilter(param=type)": "新規 ${type: String} タグフィルター",
         "newFilter": "追加するフィルター",
@@ -1042,13 +1042,13 @@
         "name": "名前",
         "type": "タイプ",
         "add": "追加",
-        "staleAfter(param=staleText)": "${staleText: String} にレガシー化",
+        "staleAfter(param=staleText)": "期限切れ: ${staleText: String}",
         "addedATab": "タブを追加しました",
         "addATab": "タブに追加",
         "copy": "コピー",
-        "setStale": "レガシー状態にする",
+        "setStale": "期限切れ状態にする",
         "resetStale": "期限をリセット",
-        "makeUnstaleable": "レガシー化を無効にする",
+        "makeUnstaleable": "期限切れにならないようにする",
         "deleteTags(param=count)": {
             "one": "${count} 個のタグを削除",
             "few": "${count} 個のタグを削除",
@@ -1184,7 +1184,7 @@
         "more": "…"
     },
     "mobileHome": {
-        "selectBooruForWebview": "WebviewでBooruを選択",
+        "selectBooruForWebview": "アプリ内ブラウザで開くBooruを選択",
         "lockApp": "アプリをロック",
         "fileAlreadyExists": "ファイルはすでに存在します",
         "failedToDownload": "ダウンロード失敗",

@@ -270,6 +270,8 @@ class Tools {
       }
 
       captchaScreenActive = true;
+
+      bool userDecidedToStay = false;
       await Navigator.push(
         NavigationHandler.instance.navContext,
         MaterialPageRoute(
@@ -302,7 +304,11 @@ class Tools {
                   htmlContent.contains('id="cf-challenge-') ||
                   htmlContent.contains('cf-browser-verification');
               final bool isKnownCaptchaRunning = hasCaptchaStrings(url.host, htmlContent);
-              if (context.mounted && hasClearanceCookie && !isCloudflareChallengeActive && !isKnownCaptchaRunning) {
+              if (context.mounted &&
+                  hasClearanceCookie &&
+                  !isCloudflareChallengeActive &&
+                  !isKnownCaptchaRunning &&
+                  !userDecidedToStay) {
                 // allow user to stay in webview through a dialog, in case of false positives, otherwise leave after a few seconds
                 final bool res = await showTimedLeaveDialog(
                   context,
@@ -310,7 +316,12 @@ class Tools {
                   icon: const Icon(Icons.thumb_up_alt_rounded),
                   duration: const Duration(seconds: 4),
                 );
-                if (res) Navigator.of(context).pop();
+
+                if (res) {
+                  Navigator.of(context).pop();
+                } else {
+                  userDecidedToStay = true;
+                }
               }
             },
           ),

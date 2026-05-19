@@ -192,6 +192,23 @@ class TranslationsTrTr extends Translations with BaseTranslations<AppLocale, Tra
   @override
   String get downloads => TranslationOverrides.string(_root.$meta, 'downloads', {}) ?? 'İndirilen';
   @override
+  String get secondsShort => TranslationOverrides.string(_root.$meta, 'secondsShort', {}) ?? 's';
+  @override
+  String get minutesShort => TranslationOverrides.string(_root.$meta, 'minutesShort', {}) ?? 'd';
+  @override
+  String get hoursShort => TranslationOverrides.string(_root.$meta, 'hoursShort', {}) ?? 's';
+  @override
+  String get daysShort => TranslationOverrides.string(_root.$meta, 'daysShort', {}) ?? 'g';
+  @override
+  String get leaveThisPageQuestion => TranslationOverrides.string(_root.$meta, 'leaveThisPageQuestion', {}) ?? 'Bu sayfadan ayrıl?';
+  @override
+  String get pageWillCloseAutomatically =>
+      TranslationOverrides.string(_root.$meta, 'pageWillCloseAutomatically', {}) ?? 'Bu sayfa otomatikman kapanacak';
+  @override
+  String get stay => TranslationOverrides.string(_root.$meta, 'stay', {}) ?? 'Kal';
+  @override
+  String get leaveNow => TranslationOverrides.string(_root.$meta, 'leaveNow', {}) ?? 'Hemen çık';
+  @override
   late final _TranslationsValidationErrorsTrTr validationErrors = _TranslationsValidationErrorsTrTr._(_root);
   @override
   late final _TranslationsInitTrTr init = _TranslationsInitTrTr._(_root);
@@ -832,6 +849,8 @@ class _TranslationsWebviewTrTr extends TranslationsWebviewEn {
       TranslationOverrides.string(_root.$meta, 'webview.captchaCheckDescription', {}) ??
       'Olası bir captcha algılandı, lütfen bunu çöz ve bitirdikten sonra geri dön';
   @override
+  String get captchaCompleted => TranslationOverrides.string(_root.$meta, 'webview.captchaCompleted', {}) ?? 'Captcha tamamlandı';
+  @override
   late final _TranslationsWebviewNavigationTrTr navigation = _TranslationsWebviewNavigationTrTr._(_root);
 }
 
@@ -1112,6 +1131,8 @@ class _TranslationsTagViewTrTr extends TranslationsTagViewEn {
   String get id => TranslationOverrides.string(_root.$meta, 'tagView.id', {}) ?? 'ID';
   @override
   String get postURL => TranslationOverrides.string(_root.$meta, 'tagView.postURL', {}) ?? 'Gönderi URL\'si';
+  @override
+  String get uploader => TranslationOverrides.string(_root.$meta, 'tagView.uploader', {}) ?? 'Yükleyen';
   @override
   String get posted => TranslationOverrides.string(_root.$meta, 'tagView.posted', {}) ?? 'Paylaşılma';
   @override
@@ -3920,6 +3941,15 @@ extension on TranslationsTrTr {
           'username' => TranslationOverrides.string(_root.$meta, 'username', {}) ?? 'Kullanıcı adı',
           'favourites' => TranslationOverrides.string(_root.$meta, 'favourites', {}) ?? 'Favoriler',
           'downloads' => TranslationOverrides.string(_root.$meta, 'downloads', {}) ?? 'İndirilen',
+          'secondsShort' => TranslationOverrides.string(_root.$meta, 'secondsShort', {}) ?? 's',
+          'minutesShort' => TranslationOverrides.string(_root.$meta, 'minutesShort', {}) ?? 'd',
+          'hoursShort' => TranslationOverrides.string(_root.$meta, 'hoursShort', {}) ?? 's',
+          'daysShort' => TranslationOverrides.string(_root.$meta, 'daysShort', {}) ?? 'g',
+          'leaveThisPageQuestion' => TranslationOverrides.string(_root.$meta, 'leaveThisPageQuestion', {}) ?? 'Bu sayfadan ayrıl?',
+          'pageWillCloseAutomatically' =>
+            TranslationOverrides.string(_root.$meta, 'pageWillCloseAutomatically', {}) ?? 'Bu sayfa otomatikman kapanacak',
+          'stay' => TranslationOverrides.string(_root.$meta, 'stay', {}) ?? 'Kal',
+          'leaveNow' => TranslationOverrides.string(_root.$meta, 'leaveNow', {}) ?? 'Hemen çık',
           'validationErrors.required' => TranslationOverrides.string(_root.$meta, 'validationErrors.required', {}) ?? 'Lütfen bir değer gir',
           'validationErrors.invalid' => TranslationOverrides.string(_root.$meta, 'validationErrors.invalid', {}) ?? 'Lütfen geçerli bir değer gir',
           'validationErrors.invalidNumber' => TranslationOverrides.string(_root.$meta, 'validationErrors.invalidNumber', {}) ?? 'Lütfen bir sayı gir',
@@ -4298,6 +4328,7 @@ extension on TranslationsTrTr {
           'webview.captchaCheckDescription' =>
             TranslationOverrides.string(_root.$meta, 'webview.captchaCheckDescription', {}) ??
                 'Olası bir captcha algılandı, lütfen bunu çöz ve bitirdikten sonra geri dön',
+          'webview.captchaCompleted' => TranslationOverrides.string(_root.$meta, 'webview.captchaCompleted', {}) ?? 'Captcha tamamlandı',
           'webview.navigation.enterUrlLabel' => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterUrlLabel', {}) ?? 'Bir URL gir',
           'webview.navigation.enterCustomUrl' => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterCustomUrl', {}) ?? 'Özel URL gir',
           'webview.navigation.navigateTo' =>
@@ -4767,6 +4798,9 @@ extension on TranslationsTrTr {
           'settings.video.mpvUseHardwareAcceleration' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.mpvUseHardwareAcceleration', {}) ?? 'MPV: Donanım hızlandırmayı kullan',
           'settings.video.mpvVO' => TranslationOverrides.string(_root.$meta, 'settings.video.mpvVO', {}) ?? 'MPV: VO',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.video.mpvHWDEC' => TranslationOverrides.string(_root.$meta, 'settings.video.mpvHWDEC', {}) ?? 'MPV: HWDEC',
           'settings.video.videoCacheMode' => TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheMode', {}) ?? 'Video önbellek modu',
           'settings.video.cacheModes.title' =>
@@ -4787,9 +4821,6 @@ extension on TranslationsTrTr {
             TranslationOverrides.string(_root.$meta, 'settings.video.cacheModes.desktopWarning', {}) ??
                 '[Uyarı]: Masaüstünde Akış modu bazı Booru\'lar için hatalı çalışabilir.',
           'settings.video.cacheModeValues.stream' => TranslationOverrides.string(_root.$meta, 'settings.video.cacheModeValues.stream', {}) ?? 'Akış',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.video.cacheModeValues.cache' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.cacheModeValues.cache', {}) ?? 'Önbellek',
           'settings.video.cacheModeValues.streamCache' =>
@@ -5580,6 +5611,7 @@ extension on TranslationsTrTr {
           'tagView.addedNewTab' => TranslationOverrides.string(_root.$meta, 'tagView.addedNewTab', {}) ?? 'Yeni sekme eklendi:',
           'tagView.id' => TranslationOverrides.string(_root.$meta, 'tagView.id', {}) ?? 'ID',
           'tagView.postURL' => TranslationOverrides.string(_root.$meta, 'tagView.postURL', {}) ?? 'Gönderi URL\'si',
+          'tagView.uploader' => TranslationOverrides.string(_root.$meta, 'tagView.uploader', {}) ?? 'Yükleyen',
           'tagView.posted' => TranslationOverrides.string(_root.$meta, 'tagView.posted', {}) ?? 'Paylaşılma',
           'tagView.details' => TranslationOverrides.string(_root.$meta, 'tagView.details', {}) ?? 'Detaylar',
           'tagView.filename' => TranslationOverrides.string(_root.$meta, 'tagView.filename', {}) ?? 'Dosya adı',
@@ -5726,6 +5758,9 @@ extension on TranslationsTrTr {
           'mediaPreviews.addNewBooru' => TranslationOverrides.string(_root.$meta, 'mediaPreviews.addNewBooru', {}) ?? 'Yeni Booru ekle',
           'mediaPreviews.help' => TranslationOverrides.string(_root.$meta, 'mediaPreviews.help', {}) ?? 'Yardım',
           'mediaPreviews.settings' => TranslationOverrides.string(_root.$meta, 'mediaPreviews.settings', {}) ?? 'Ayarlar',
+          _ => null,
+        } ??
+        switch (path) {
           'mediaPreviews.restoringPreviousSession' =>
             TranslationOverrides.string(_root.$meta, 'mediaPreviews.restoringPreviousSession', {}) ?? 'Önceki oturum geri yükleniyor…',
           'mediaPreviews.copiedFileURL' =>
@@ -5744,9 +5779,6 @@ extension on TranslationsTrTr {
           'viewer.appBar.pause' => TranslationOverrides.string(_root.$meta, 'viewer.appBar.pause', {}) ?? 'Duraklat',
           'viewer.appBar.start' => TranslationOverrides.string(_root.$meta, 'viewer.appBar.start', {}) ?? 'Başlat',
           'viewer.appBar.unfavourite' => TranslationOverrides.string(_root.$meta, 'viewer.appBar.unfavourite', {}) ?? 'Favorilerden çıkar',
-          _ => null,
-        } ??
-        switch (path) {
           'viewer.appBar.deselect' => TranslationOverrides.string(_root.$meta, 'viewer.appBar.deselect', {}) ?? 'Seçimi kaldır',
           'viewer.appBar.reloadWithScaling' =>
             TranslationOverrides.string(_root.$meta, 'viewer.appBar.reloadWithScaling', {}) ?? 'Ölçeklendirme ile yeniden yükle',

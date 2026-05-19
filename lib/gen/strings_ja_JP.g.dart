@@ -562,10 +562,9 @@ class _TranslationsMultibooruJaJp extends TranslationsMultibooruEn {
   @override
   String get selectSecondaryBoorus => TranslationOverrides.string(_root.$meta, 'multibooru.selectSecondaryBoorus', {}) ?? '追加するbooruを選択:';
   @override
-  String get akaMultibooruMode => TranslationOverrides.string(_root.$meta, 'multibooru.akaMultibooruMode', {}) ?? '別名をMultibooruモード';
+  String get akaMultibooruMode => TranslationOverrides.string(_root.$meta, 'multibooru.akaMultibooruMode', {}) ?? 'Multibooruモード';
   @override
-  String get labelSecondaryBoorusToInclude =>
-      TranslationOverrides.string(_root.$meta, 'multibooru.labelSecondaryBoorusToInclude', {}) ?? '追加のBooruを含める';
+  String get labelSecondaryBoorusToInclude => TranslationOverrides.string(_root.$meta, 'multibooru.labelSecondaryBoorusToInclude', {}) ?? '追加するBooru';
 }
 
 // Path: hydrus
@@ -605,9 +604,9 @@ class _TranslationsTabsJaJp extends TranslationsTabsEn {
   @override
   String get addNewTab => TranslationOverrides.string(_root.$meta, 'tabs.addNewTab', {}) ?? '新しいタブを追加';
   @override
-  String get selectABooruOrLeaveEmpty => TranslationOverrides.string(_root.$meta, 'tabs.selectABooruOrLeaveEmpty', {}) ?? 'Booruを選択するか空のままにしておく';
+  String get selectABooruOrLeaveEmpty => TranslationOverrides.string(_root.$meta, 'tabs.selectABooruOrLeaveEmpty', {}) ?? 'Booruを選択するか空のままにする';
   @override
-  String get addPosition => TranslationOverrides.string(_root.$meta, 'tabs.addPosition', {}) ?? 'ポジションを追加';
+  String get addPosition => TranslationOverrides.string(_root.$meta, 'tabs.addPosition', {}) ?? '追加する位置';
   @override
   String get addModePrevTab => TranslationOverrides.string(_root.$meta, 'tabs.addModePrevTab', {}) ?? '以前のタブ';
   @override
@@ -627,7 +626,7 @@ class _TranslationsTabsJaJp extends TranslationsTabsEn {
   @override
   String get empty => TranslationOverrides.string(_root.$meta, 'tabs.empty', {}) ?? '[未指定]';
   @override
-  String get addSecondaryBoorus => TranslationOverrides.string(_root.$meta, 'tabs.addSecondaryBoorus', {}) ?? '追加のBooruを追加';
+  String get addSecondaryBoorus => TranslationOverrides.string(_root.$meta, 'tabs.addSecondaryBoorus', {}) ?? '追加のBooruを使用';
   @override
   String get keepSecondaryBoorus => TranslationOverrides.string(_root.$meta, 'tabs.keepSecondaryBoorus', {}) ?? '追加のBooruを保持';
   @override
@@ -814,7 +813,7 @@ class _TranslationsWebviewJaJp extends TranslationsWebviewEn {
 
   // Translations
   @override
-  String get title => TranslationOverrides.string(_root.$meta, 'webview.title', {}) ?? 'Webview';
+  String get title => TranslationOverrides.string(_root.$meta, 'webview.title', {}) ?? 'ウェブモード';
   @override
   String get notSupportedOnDevice => TranslationOverrides.string(_root.$meta, 'webview.notSupportedOnDevice', {}) ?? 'このデバイスではサポートされていません';
   @override
@@ -944,7 +943,7 @@ class _TranslationsTagsFiltersDialogsJaJp extends TranslationsTagsFiltersDialogs
 
   // Translations
   @override
-  String get emptyInput => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.emptyInput', {}) ?? '空の入力！';
+  String get emptyInput => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.emptyInput', {}) ?? '入力が空です！';
   @override
   String addNewFilter({required String type}) =>
       TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.addNewFilter', {'type': type}) ?? '[${type} フィルターに新規追加]';
@@ -976,7 +975,7 @@ class _TranslationsTagsManagerJaJp extends TranslationsTagsManagerEn {
   String get add => TranslationOverrides.string(_root.$meta, 'tagsManager.add', {}) ?? '追加';
   @override
   String staleAfter({required String staleText}) =>
-      TranslationOverrides.string(_root.$meta, 'tagsManager.staleAfter', {'staleText': staleText}) ?? '${staleText} にレガシー化';
+      TranslationOverrides.string(_root.$meta, 'tagsManager.staleAfter', {'staleText': staleText}) ?? '期限切れ: ${staleText}';
   @override
   String get addedATab => TranslationOverrides.string(_root.$meta, 'tagsManager.addedATab', {}) ?? 'タブを追加しました';
   @override
@@ -984,11 +983,11 @@ class _TranslationsTagsManagerJaJp extends TranslationsTagsManagerEn {
   @override
   String get copy => TranslationOverrides.string(_root.$meta, 'tagsManager.copy', {}) ?? 'コピー';
   @override
-  String get setStale => TranslationOverrides.string(_root.$meta, 'tagsManager.setStale', {}) ?? 'レガシー状態にする';
+  String get setStale => TranslationOverrides.string(_root.$meta, 'tagsManager.setStale', {}) ?? '期限切れ状態にする';
   @override
   String get resetStale => TranslationOverrides.string(_root.$meta, 'tagsManager.resetStale', {}) ?? '期限をリセット';
   @override
-  String get makeUnstaleable => TranslationOverrides.string(_root.$meta, 'tagsManager.makeUnstaleable', {}) ?? 'レガシー化を無効にする';
+  String get makeUnstaleable => TranslationOverrides.string(_root.$meta, 'tagsManager.makeUnstaleable', {}) ?? '期限切れにならないようにする';
   @override
   String deleteTags({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'tagsManager.deleteTags', {'count': count}) ??
@@ -1308,7 +1307,7 @@ class _TranslationsMobileHomeJaJp extends TranslationsMobileHomeEn {
 
   // Translations
   @override
-  String get selectBooruForWebview => TranslationOverrides.string(_root.$meta, 'mobileHome.selectBooruForWebview', {}) ?? 'WebviewでBooruを選択';
+  String get selectBooruForWebview => TranslationOverrides.string(_root.$meta, 'mobileHome.selectBooruForWebview', {}) ?? 'アプリ内ブラウザで開くBooruを選択';
   @override
   String get lockApp => TranslationOverrides.string(_root.$meta, 'mobileHome.lockApp', {}) ?? 'アプリをロック';
   @override
@@ -1622,11 +1621,11 @@ class _TranslationsWebviewNavigationJaJp extends TranslationsWebviewNavigationEn
   @override
   String get clearCookies => TranslationOverrides.string(_root.$meta, 'webview.navigation.clearCookies', {}) ?? 'Cookieをクリア';
   @override
-  String get cookiesGone => TranslationOverrides.string(_root.$meta, 'webview.navigation.cookiesGone', {}) ?? 'Cookieがありましたが、今はもうありません';
+  String get cookiesGone => TranslationOverrides.string(_root.$meta, 'webview.navigation.cookiesGone', {}) ?? 'クッキーがありましたが、なくなりました。';
   @override
-  String get getFavicon => TranslationOverrides.string(_root.$meta, 'webview.navigation.getFavicon', {}) ?? 'Faviconを取得';
+  String get getFavicon => TranslationOverrides.string(_root.$meta, 'webview.navigation.getFavicon', {}) ?? 'アイコンを取得';
   @override
-  String get noFaviconFound => TranslationOverrides.string(_root.$meta, 'webview.navigation.noFaviconFound', {}) ?? 'Faviconが見つかりませんでした';
+  String get noFaviconFound => TranslationOverrides.string(_root.$meta, 'webview.navigation.noFaviconFound', {}) ?? 'アイコンが見つかりませんでした';
   @override
   String get host => TranslationOverrides.string(_root.$meta, 'webview.navigation.host', {}) ?? 'ホスト:';
   @override
@@ -1638,7 +1637,7 @@ class _TranslationsWebviewNavigationJaJp extends TranslationsWebviewNavigationEn
   @override
   String get cookies => TranslationOverrides.string(_root.$meta, 'webview.navigation.cookies', {}) ?? 'Cookies';
   @override
-  String get favicon => TranslationOverrides.string(_root.$meta, 'webview.navigation.favicon', {}) ?? 'Favicon';
+  String get favicon => TranslationOverrides.string(_root.$meta, 'webview.navigation.favicon', {}) ?? 'サイトアイコン';
   @override
   String get history => TranslationOverrides.string(_root.$meta, 'webview.navigation.history', {}) ?? '履歴';
   @override
@@ -1655,11 +1654,11 @@ class _TranslationsSettingsLanguageJaJp extends TranslationsSettingsLanguageEn {
 
   // Translations
   @override
-  String get title => TranslationOverrides.string(_root.$meta, 'settings.language.title', {}) ?? '言語 - Language';
+  String get title => TranslationOverrides.string(_root.$meta, 'settings.language.title', {}) ?? '言語';
   @override
   String get system => TranslationOverrides.string(_root.$meta, 'settings.language.system', {}) ?? 'システム';
   @override
-  String get helpUsTranslate => TranslationOverrides.string(_root.$meta, 'settings.language.helpUsTranslate', {}) ?? '翻訳に貢献する';
+  String get helpUsTranslate => TranslationOverrides.string(_root.$meta, 'settings.language.helpUsTranslate', {}) ?? '翻訳に協力する';
   @override
   String get visitForDetails =>
       TranslationOverrides.string(_root.$meta, 'settings.language.visitForDetails', {}) ??
@@ -1680,7 +1679,7 @@ class _TranslationsSettingsBooruJaJp extends TranslationsSettingsBooruEn {
   @override
   String get itemsPerPage => TranslationOverrides.string(_root.$meta, 'settings.booru.itemsPerPage', {}) ?? 'ページごとに取得される項目数';
   @override
-  String get itemsPerPageTip => TranslationOverrides.string(_root.$meta, 'settings.booru.itemsPerPageTip', {}) ?? 'いくつかのbooruでは設定が無視される場合があります';
+  String get itemsPerPageTip => TranslationOverrides.string(_root.$meta, 'settings.booru.itemsPerPageTip', {}) ?? 'いくつかのBooruでは設定が無視される場合があります';
   @override
   String get itemsPerPagePlaceholder => TranslationOverrides.string(_root.$meta, 'settings.booru.itemsPerPagePlaceholder', {}) ?? '10-100';
   @override
@@ -1806,7 +1805,7 @@ class _TranslationsSettingsBooruEditorJaJp extends TranslationsSettingsBooruEdit
   @override
   String get booruType => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruType', {}) ?? 'Booruのタイプ';
   @override
-  String get booruFavicon => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruFavicon', {}) ?? 'FaviconのURL';
+  String get booruFavicon => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruFavicon', {}) ?? 'アイコンのURL';
   @override
   String get booruFaviconPlaceholder =>
       TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruFaviconPlaceholder', {}) ?? '(空白の場合は自動で入力されます)';
@@ -2566,7 +2565,7 @@ class _TranslationsSettingsNetworkJaJp extends TranslationsSettingsNetworkEn {
       TranslationOverrides.string(_root.$meta, 'settings.network.defaultUserAgent', {'agent': agent}) ?? 'デフォルト: ${agent}';
   @override
   String get userAgentUsedOnRequests =>
-      TranslationOverrides.string(_root.$meta, 'settings.network.userAgentUsedOnRequests', {}) ?? 'ほとんどのBooruリクエストとWebviewに使用されます';
+      TranslationOverrides.string(_root.$meta, 'settings.network.userAgentUsedOnRequests', {}) ?? 'ほとんどのBooruリクエストとアプリ内ブラウザに使用されます';
   @override
   String get valueSavedAfterLeaving => TranslationOverrides.string(_root.$meta, 'settings.network.valueSavedAfterLeaving', {}) ?? 'ページを閉じて保存';
   @override
@@ -2653,7 +2652,7 @@ class _TranslationsSettingsPerformanceJaJp extends TranslationsSettingsPerforman
   String get lowPerformanceMode => TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceMode', {}) ?? '低パフォーマンスモード';
   @override
   String get lowPerformanceModeSubtitle =>
-      TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeSubtitle', {}) ?? '古いデバイスやRAMの少ないデバイスに推奨';
+      TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeSubtitle', {}) ?? '古いデバイスやメモリの少ないデバイスに推奨';
   @override
   String get lowPerformanceModeDialogTitle =>
       TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeDialogTitle', {}) ?? '低パフォーマンスモード';
@@ -2761,7 +2760,7 @@ class _TranslationsSettingsCacheJaJp extends TranslationsSettingsCacheEn {
   @override
   String get cacheTypeTotal => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeTotal', {}) ?? '合計';
   @override
-  String get cacheTypeFavicons => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeFavicons', {}) ?? 'Favicon';
+  String get cacheTypeFavicons => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeFavicons', {}) ?? 'サイトアイコン';
   @override
   String get cacheTypeThumbnails => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeThumbnails', {}) ?? 'サムネイル';
   @override
@@ -2769,7 +2768,7 @@ class _TranslationsSettingsCacheJaJp extends TranslationsSettingsCacheEn {
   @override
   String get cacheTypeMedia => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeMedia', {}) ?? 'メディア';
   @override
-  String get cacheTypeWebView => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeWebView', {}) ?? 'Webview';
+  String get cacheTypeWebView => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeWebView', {}) ?? 'ウェブページ';
   @override
   String get cacheCleared => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheCleared', {}) ?? 'キャッシュがクリアされました';
   @override
@@ -2987,7 +2986,7 @@ class _TranslationsSettingsAboutJaJp extends TranslationsSettingsAboutEn {
   @override
   String get appDescription =>
       TranslationOverrides.string(_root.$meta, 'settings.about.appDescription', {}) ??
-      'LoliSnatcherはGPLv3ライセンスのオープンソースソフトウェアで、ソースコードはGitHubで公開されています。問題や機能リクエストがありましたら、リポジトリの Issues セクションにご報告ください。';
+      'LoliSnatcher はGPLv3ライセンスのオープンソースソフトウェアで、ソースコードはGitHubで公開されています。問題や機能リクエストがありましたら、リポジトリの Issues セクションにご報告ください。';
   @override
   String get appOnGitHub => TranslationOverrides.string(_root.$meta, 'settings.about.appOnGitHub', {}) ?? 'LoliSnatcher (GitHub)';
   @override
@@ -3150,7 +3149,7 @@ class _TranslationsSettingsWebviewJaJp extends TranslationsSettingsWebviewEn {
 
   // Translations
   @override
-  String get openWebview => TranslationOverrides.string(_root.$meta, 'settings.webview.openWebview', {}) ?? 'Webviewを開く';
+  String get openWebview => TranslationOverrides.string(_root.$meta, 'settings.webview.openWebview', {}) ?? 'アプリ内ブラウザを開く';
   @override
   String get openWebviewTip => TranslationOverrides.string(_root.$meta, 'settings.webview.openWebviewTip', {}) ?? 'ログインまたはCookieの取得用';
 }
@@ -3882,9 +3881,9 @@ extension on TranslationsJaJp {
           'multibooru.multibooruRequiresAtLeastTwoBoorus' =>
             TranslationOverrides.string(_root.$meta, 'multibooru.multibooruRequiresAtLeastTwoBoorus', {}) ?? '少なくとも2つのBooruが設定されている必要があります',
           'multibooru.selectSecondaryBoorus' => TranslationOverrides.string(_root.$meta, 'multibooru.selectSecondaryBoorus', {}) ?? '追加するbooruを選択:',
-          'multibooru.akaMultibooruMode' => TranslationOverrides.string(_root.$meta, 'multibooru.akaMultibooruMode', {}) ?? '別名をMultibooruモード',
+          'multibooru.akaMultibooruMode' => TranslationOverrides.string(_root.$meta, 'multibooru.akaMultibooruMode', {}) ?? 'Multibooruモード',
           'multibooru.labelSecondaryBoorusToInclude' =>
-            TranslationOverrides.string(_root.$meta, 'multibooru.labelSecondaryBoorusToInclude', {}) ?? '追加のBooruを含める',
+            TranslationOverrides.string(_root.$meta, 'multibooru.labelSecondaryBoorusToInclude', {}) ?? '追加するBooru',
           'hydrus.importError' => TranslationOverrides.string(_root.$meta, 'hydrus.importError', {}) ?? 'Hydrusのインポート中に問題が発生しました',
           'hydrus.apiPermissionsRequired' =>
             TranslationOverrides.string(_root.$meta, 'hydrus.apiPermissionsRequired', {}) ??
@@ -3896,8 +3895,8 @@ extension on TranslationsJaJp {
           'tabs.selectABooru' => TranslationOverrides.string(_root.$meta, 'tabs.selectABooru', {}) ?? 'Booruを選択',
           'tabs.secondaryBoorus' => TranslationOverrides.string(_root.$meta, 'tabs.secondaryBoorus', {}) ?? '追加のBooru',
           'tabs.addNewTab' => TranslationOverrides.string(_root.$meta, 'tabs.addNewTab', {}) ?? '新しいタブを追加',
-          'tabs.selectABooruOrLeaveEmpty' => TranslationOverrides.string(_root.$meta, 'tabs.selectABooruOrLeaveEmpty', {}) ?? 'Booruを選択するか空のままにしておく',
-          'tabs.addPosition' => TranslationOverrides.string(_root.$meta, 'tabs.addPosition', {}) ?? 'ポジションを追加',
+          'tabs.selectABooruOrLeaveEmpty' => TranslationOverrides.string(_root.$meta, 'tabs.selectABooruOrLeaveEmpty', {}) ?? 'Booruを選択するか空のままにする',
+          'tabs.addPosition' => TranslationOverrides.string(_root.$meta, 'tabs.addPosition', {}) ?? '追加する位置',
           'tabs.addModePrevTab' => TranslationOverrides.string(_root.$meta, 'tabs.addModePrevTab', {}) ?? '以前のタブ',
           'tabs.addModeNextTab' => TranslationOverrides.string(_root.$meta, 'tabs.addModeNextTab', {}) ?? '次のタブ',
           'tabs.addModeListEnd' => TranslationOverrides.string(_root.$meta, 'tabs.addModeListEnd', {}) ?? 'リストの最後',
@@ -3907,7 +3906,7 @@ extension on TranslationsJaJp {
           'tabs.queryModeCustom' => TranslationOverrides.string(_root.$meta, 'tabs.queryModeCustom', {}) ?? 'カスタム',
           'tabs.customQuery' => TranslationOverrides.string(_root.$meta, 'tabs.customQuery', {}) ?? 'カスタムクエリ',
           'tabs.empty' => TranslationOverrides.string(_root.$meta, 'tabs.empty', {}) ?? '[未指定]',
-          'tabs.addSecondaryBoorus' => TranslationOverrides.string(_root.$meta, 'tabs.addSecondaryBoorus', {}) ?? '追加のBooruを追加',
+          'tabs.addSecondaryBoorus' => TranslationOverrides.string(_root.$meta, 'tabs.addSecondaryBoorus', {}) ?? '追加のBooruを使用',
           'tabs.keepSecondaryBoorus' => TranslationOverrides.string(_root.$meta, 'tabs.keepSecondaryBoorus', {}) ?? '追加のBooruを保持',
           'tabs.startFromCustomPageNumber' => TranslationOverrides.string(_root.$meta, 'tabs.startFromCustomPageNumber', {}) ?? '特定のページ番号から開始',
           'tabs.switchToNewTab' => TranslationOverrides.string(_root.$meta, 'tabs.switchToNewTab', {}) ?? '新しいタブに移動',
@@ -4038,7 +4037,7 @@ extension on TranslationsJaJp {
                   many: '${count} 個のアイテムを削除',
                   other: '${count} 個のアイテムを削除',
                 ),
-          'webview.title' => TranslationOverrides.string(_root.$meta, 'webview.title', {}) ?? 'Webview',
+          'webview.title' => TranslationOverrides.string(_root.$meta, 'webview.title', {}) ?? 'ウェブモード',
           'webview.notSupportedOnDevice' => TranslationOverrides.string(_root.$meta, 'webview.notSupportedOnDevice', {}) ?? 'このデバイスではサポートされていません',
           'webview.captcha' => TranslationOverrides.string(_root.$meta, 'webview.captcha', {}) ?? 'キャプチャ',
           'webview.captchaCheckDescription' =>
@@ -4051,10 +4050,10 @@ extension on TranslationsJaJp {
           'webview.navigation.listCookies' => TranslationOverrides.string(_root.$meta, 'webview.navigation.listCookies', {}) ?? 'Cookieのリスト',
           'webview.navigation.clearCookies' => TranslationOverrides.string(_root.$meta, 'webview.navigation.clearCookies', {}) ?? 'Cookieをクリア',
           'webview.navigation.cookiesGone' =>
-            TranslationOverrides.string(_root.$meta, 'webview.navigation.cookiesGone', {}) ?? 'Cookieがありましたが、今はもうありません',
-          'webview.navigation.getFavicon' => TranslationOverrides.string(_root.$meta, 'webview.navigation.getFavicon', {}) ?? 'Faviconを取得',
+            TranslationOverrides.string(_root.$meta, 'webview.navigation.cookiesGone', {}) ?? 'クッキーがありましたが、なくなりました。',
+          'webview.navigation.getFavicon' => TranslationOverrides.string(_root.$meta, 'webview.navigation.getFavicon', {}) ?? 'アイコンを取得',
           'webview.navigation.noFaviconFound' =>
-            TranslationOverrides.string(_root.$meta, 'webview.navigation.noFaviconFound', {}) ?? 'Faviconが見つかりませんでした',
+            TranslationOverrides.string(_root.$meta, 'webview.navigation.noFaviconFound', {}) ?? 'アイコンが見つかりませんでした',
           'webview.navigation.host' => TranslationOverrides.string(_root.$meta, 'webview.navigation.host', {}) ?? 'ホスト:',
           'webview.navigation.textAboveSelectable' =>
             TranslationOverrides.string(_root.$meta, 'webview.navigation.textAboveSelectable', {}) ?? '(上のテキストは選択可能です)',
@@ -4062,16 +4061,16 @@ extension on TranslationsJaJp {
           'webview.navigation.copiedUrlToClipboard' =>
             TranslationOverrides.string(_root.$meta, 'webview.navigation.copiedUrlToClipboard', {}) ?? 'URLをクリップボードにコピーしました',
           'webview.navigation.cookies' => TranslationOverrides.string(_root.$meta, 'webview.navigation.cookies', {}) ?? 'Cookies',
-          'webview.navigation.favicon' => TranslationOverrides.string(_root.$meta, 'webview.navigation.favicon', {}) ?? 'Favicon',
+          'webview.navigation.favicon' => TranslationOverrides.string(_root.$meta, 'webview.navigation.favicon', {}) ?? 'サイトアイコン',
           'webview.navigation.history' => TranslationOverrides.string(_root.$meta, 'webview.navigation.history', {}) ?? '履歴',
           'webview.navigation.noBackHistoryItem' =>
             TranslationOverrides.string(_root.$meta, 'webview.navigation.noBackHistoryItem', {}) ?? '戻る履歴はありません',
           'webview.navigation.noForwardHistoryItem' =>
             TranslationOverrides.string(_root.$meta, 'webview.navigation.noForwardHistoryItem', {}) ?? '進む履歴はありません',
           'settings.title' => TranslationOverrides.string(_root.$meta, 'settings.title', {}) ?? '設定',
-          'settings.language.title' => TranslationOverrides.string(_root.$meta, 'settings.language.title', {}) ?? '言語 - Language',
+          'settings.language.title' => TranslationOverrides.string(_root.$meta, 'settings.language.title', {}) ?? '言語',
           'settings.language.system' => TranslationOverrides.string(_root.$meta, 'settings.language.system', {}) ?? 'システム',
-          'settings.language.helpUsTranslate' => TranslationOverrides.string(_root.$meta, 'settings.language.helpUsTranslate', {}) ?? '翻訳に貢献する',
+          'settings.language.helpUsTranslate' => TranslationOverrides.string(_root.$meta, 'settings.language.helpUsTranslate', {}) ?? '翻訳に協力する',
           'settings.language.visitForDetails' =>
             TranslationOverrides.string(_root.$meta, 'settings.language.visitForDetails', {}) ??
                 '詳細については、 <a href=\'https://github.com/NO-ob/LoliSnatcher_Droid/blob/master/CONTRIBUTING.md#localization--translations\'>GitHub</a> を確認するか、下の画像をタップしてPOEditorにアクセスできます',
@@ -4079,7 +4078,7 @@ extension on TranslationsJaJp {
           'settings.booru.defaultTags' => TranslationOverrides.string(_root.$meta, 'settings.booru.defaultTags', {}) ?? 'デフォルトのタグ',
           'settings.booru.itemsPerPage' => TranslationOverrides.string(_root.$meta, 'settings.booru.itemsPerPage', {}) ?? 'ページごとに取得される項目数',
           'settings.booru.itemsPerPageTip' =>
-            TranslationOverrides.string(_root.$meta, 'settings.booru.itemsPerPageTip', {}) ?? 'いくつかのbooruでは設定が無視される場合があります',
+            TranslationOverrides.string(_root.$meta, 'settings.booru.itemsPerPageTip', {}) ?? 'いくつかのBooruでは設定が無視される場合があります',
           'settings.booru.itemsPerPagePlaceholder' =>
             TranslationOverrides.string(_root.$meta, 'settings.booru.itemsPerPagePlaceholder', {}) ?? '10-100',
           'settings.booru.addBooru' => TranslationOverrides.string(_root.$meta, 'settings.booru.addBooru', {}) ?? 'Booruを追加',
@@ -4164,7 +4163,7 @@ extension on TranslationsJaJp {
           'settings.booruEditor.booruUrlRequired' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruUrlRequired', {}) ?? 'BooruのURLの設定が必要です！',
           'settings.booruEditor.booruType' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruType', {}) ?? 'Booruのタイプ',
-          'settings.booruEditor.booruFavicon' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruFavicon', {}) ?? 'FaviconのURL',
+          'settings.booruEditor.booruFavicon' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruFavicon', {}) ?? 'アイコンのURL',
           'settings.booruEditor.booruFaviconPlaceholder' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruFaviconPlaceholder', {}) ?? '(空白の場合は自動で入力されます)',
           'settings.booruEditor.booruDefTags' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruDefTags', {}) ?? 'デフォルトのタグ',
@@ -4720,7 +4719,7 @@ extension on TranslationsJaJp {
             ({required String agent}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.network.defaultUserAgent', {'agent': agent}) ?? 'デフォルト: ${agent}',
           'settings.network.userAgentUsedOnRequests' =>
-            TranslationOverrides.string(_root.$meta, 'settings.network.userAgentUsedOnRequests', {}) ?? 'ほとんどのBooruリクエストとWebviewに使用されます',
+            TranslationOverrides.string(_root.$meta, 'settings.network.userAgentUsedOnRequests', {}) ?? 'ほとんどのBooruリクエストとアプリ内ブラウザに使用されます',
           'settings.network.valueSavedAfterLeaving' =>
             TranslationOverrides.string(_root.$meta, 'settings.network.valueSavedAfterLeaving', {}) ?? 'ページを閉じて保存',
           'settings.network.setBrowserUserAgent' =>
@@ -4773,7 +4772,7 @@ extension on TranslationsJaJp {
           'settings.performance.lowPerformanceMode' =>
             TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceMode', {}) ?? '低パフォーマンスモード',
           'settings.performance.lowPerformanceModeSubtitle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeSubtitle', {}) ?? '古いデバイスやRAMの少ないデバイスに推奨',
+            TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeSubtitle', {}) ?? '古いデバイスやメモリの少ないデバイスに推奨',
           'settings.performance.lowPerformanceModeDialogTitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceModeDialogTitle', {}) ?? '低パフォーマンスモード',
           'settings.performance.lowPerformanceModeDialogDisablesDetailed' =>
@@ -4841,11 +4840,11 @@ extension on TranslationsJaJp {
             ({required String size}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.cache.inFileSingular', {'size': size}) ?? '${size}, 1 ファイル',
           'settings.cache.cacheTypeTotal' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeTotal', {}) ?? '合計',
-          'settings.cache.cacheTypeFavicons' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeFavicons', {}) ?? 'Favicon',
+          'settings.cache.cacheTypeFavicons' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeFavicons', {}) ?? 'サイトアイコン',
           'settings.cache.cacheTypeThumbnails' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeThumbnails', {}) ?? 'サムネイル',
           'settings.cache.cacheTypeSamples' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeSamples', {}) ?? 'サンプル',
           'settings.cache.cacheTypeMedia' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeMedia', {}) ?? 'メディア',
-          'settings.cache.cacheTypeWebView' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeWebView', {}) ?? 'Webview',
+          'settings.cache.cacheTypeWebView' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeWebView', {}) ?? 'ウェブページ',
           'settings.cache.cacheCleared' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheCleared', {}) ?? 'キャッシュがクリアされました',
           'settings.cache.clearedCacheType' =>
             ({required String type}) =>
@@ -4979,7 +4978,7 @@ extension on TranslationsJaJp {
           'settings.about.title' => TranslationOverrides.string(_root.$meta, 'settings.about.title', {}) ?? 'このアプリについて',
           'settings.about.appDescription' =>
             TranslationOverrides.string(_root.$meta, 'settings.about.appDescription', {}) ??
-                'LoliSnatcherはGPLv3ライセンスのオープンソースソフトウェアで、ソースコードはGitHubで公開されています。問題や機能リクエストがありましたら、リポジトリの Issues セクションにご報告ください。',
+                'LoliSnatcher はGPLv3ライセンスのオープンソースソフトウェアで、ソースコードはGitHubで公開されています。問題や機能リクエストがありましたら、リポジトリの Issues セクションにご報告ください。',
           'settings.about.appOnGitHub' => TranslationOverrides.string(_root.$meta, 'settings.about.appOnGitHub', {}) ?? 'LoliSnatcher (GitHub)',
           'settings.about.contact' => TranslationOverrides.string(_root.$meta, 'settings.about.contact', {}) ?? 'お問い合わせ',
           'settings.about.emailCopied' => TranslationOverrides.string(_root.$meta, 'settings.about.emailCopied', {}) ?? 'Eメールがクリップボードにコピーされました',
@@ -5054,7 +5053,7 @@ extension on TranslationsJaJp {
           'settings.debug.restoredSessionFromString' =>
             TranslationOverrides.string(_root.$meta, 'settings.debug.restoredSessionFromString', {}) ?? 'セッションを文字列から復元しました',
           'settings.logging.logger' => TranslationOverrides.string(_root.$meta, 'settings.logging.logger', {}) ?? 'Logger',
-          'settings.webview.openWebview' => TranslationOverrides.string(_root.$meta, 'settings.webview.openWebview', {}) ?? 'Webviewを開く',
+          'settings.webview.openWebview' => TranslationOverrides.string(_root.$meta, 'settings.webview.openWebview', {}) ?? 'アプリ内ブラウザを開く',
           'settings.webview.openWebviewTip' => TranslationOverrides.string(_root.$meta, 'settings.webview.openWebviewTip', {}) ?? 'ログインまたはCookieの取得用',
           'settings.dirPicker.directoryName' => TranslationOverrides.string(_root.$meta, 'settings.dirPicker.directoryName', {}) ?? 'ディレクトリ名',
           'settings.dirPicker.selectADirectory' => TranslationOverrides.string(_root.$meta, 'settings.dirPicker.selectADirectory', {}) ?? 'ディレクトリを選択',
@@ -5088,7 +5087,7 @@ extension on TranslationsJaJp {
           'pageChanger.jumpToPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.jumpToPage', {}) ?? '指定ページへジャンプ',
           'pageChanger.searchUntilPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.searchUntilPage', {}) ?? '指定ページまで読み込み',
           'pageChanger.stopSearching' => TranslationOverrides.string(_root.$meta, 'pageChanger.stopSearching', {}) ?? '検索の停止',
-          'tagsFiltersDialogs.emptyInput' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.emptyInput', {}) ?? '空の入力！',
+          'tagsFiltersDialogs.emptyInput' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.emptyInput', {}) ?? '入力が空です！',
           'tagsFiltersDialogs.addNewFilter' =>
             ({required String type}) =>
                 TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.addNewFilter', {'type': type}) ?? '[${type} フィルターに新規追加]',
@@ -5104,13 +5103,13 @@ extension on TranslationsJaJp {
           'tagsManager.add' => TranslationOverrides.string(_root.$meta, 'tagsManager.add', {}) ?? '追加',
           'tagsManager.staleAfter' =>
             ({required String staleText}) =>
-                TranslationOverrides.string(_root.$meta, 'tagsManager.staleAfter', {'staleText': staleText}) ?? '${staleText} にレガシー化',
+                TranslationOverrides.string(_root.$meta, 'tagsManager.staleAfter', {'staleText': staleText}) ?? '期限切れ: ${staleText}',
           'tagsManager.addedATab' => TranslationOverrides.string(_root.$meta, 'tagsManager.addedATab', {}) ?? 'タブを追加しました',
           'tagsManager.addATab' => TranslationOverrides.string(_root.$meta, 'tagsManager.addATab', {}) ?? 'タブに追加',
           'tagsManager.copy' => TranslationOverrides.string(_root.$meta, 'tagsManager.copy', {}) ?? 'コピー',
-          'tagsManager.setStale' => TranslationOverrides.string(_root.$meta, 'tagsManager.setStale', {}) ?? 'レガシー状態にする',
+          'tagsManager.setStale' => TranslationOverrides.string(_root.$meta, 'tagsManager.setStale', {}) ?? '期限切れ状態にする',
           'tagsManager.resetStale' => TranslationOverrides.string(_root.$meta, 'tagsManager.resetStale', {}) ?? '期限をリセット',
-          'tagsManager.makeUnstaleable' => TranslationOverrides.string(_root.$meta, 'tagsManager.makeUnstaleable', {}) ?? 'レガシー化を無効にする',
+          'tagsManager.makeUnstaleable' => TranslationOverrides.string(_root.$meta, 'tagsManager.makeUnstaleable', {}) ?? '期限切れにならないようにする',
           'tagsManager.deleteTags' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'tagsManager.deleteTags', {'count': count}) ??
@@ -5265,7 +5264,7 @@ extension on TranslationsJaJp {
           'searchBar.history' => TranslationOverrides.string(_root.$meta, 'searchBar.history', {}) ?? '履歴',
           'searchBar.more' => TranslationOverrides.string(_root.$meta, 'searchBar.more', {}) ?? '…',
           'mobileHome.selectBooruForWebview' =>
-            TranslationOverrides.string(_root.$meta, 'mobileHome.selectBooruForWebview', {}) ?? 'WebviewでBooruを選択',
+            TranslationOverrides.string(_root.$meta, 'mobileHome.selectBooruForWebview', {}) ?? 'アプリ内ブラウザで開くBooruを選択',
           'mobileHome.lockApp' => TranslationOverrides.string(_root.$meta, 'mobileHome.lockApp', {}) ?? 'アプリをロック',
           'mobileHome.fileAlreadyExists' => TranslationOverrides.string(_root.$meta, 'mobileHome.fileAlreadyExists', {}) ?? 'ファイルはすでに存在します',
           'mobileHome.failedToDownload' => TranslationOverrides.string(_root.$meta, 'mobileHome.failedToDownload', {}) ?? 'ダウンロード失敗',

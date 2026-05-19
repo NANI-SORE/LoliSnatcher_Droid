@@ -188,7 +188,7 @@ class TranslationsPtBr extends Translations with BaseTranslations<AppLocale, Tra
   @override
   String get favourites => TranslationOverrides.string(_root.$meta, 'favourites', {}) ?? 'Favoritos';
   @override
-  String get downloads => TranslationOverrides.string(_root.$meta, 'downloads', {}) ?? 'Baixados';
+  String get downloads => TranslationOverrides.string(_root.$meta, 'downloads', {}) ?? 'Downloads';
   @override
   late final _TranslationsValidationErrorsPtBr validationErrors = _TranslationsValidationErrorsPtBr._(_root);
   @override
@@ -207,6 +207,28 @@ class TranslationsPtBr extends Translations with BaseTranslations<AppLocale, Tra
   late final _TranslationsHydrusPtBr hydrus = _TranslationsHydrusPtBr._(_root);
   @override
   late final _TranslationsTabsPtBr tabs = _TranslationsTabsPtBr._(_root);
+  @override
+  late final _TranslationsHistoryPtBr history = _TranslationsHistoryPtBr._(_root);
+  @override
+  late final _TranslationsWebviewPtBr webview = _TranslationsWebviewPtBr._(_root);
+  @override
+  late final _TranslationsSettingsPtBr settings = _TranslationsSettingsPtBr._(_root);
+  @override
+  late final _TranslationsTagsFiltersDialogsPtBr tagsFiltersDialogs = _TranslationsTagsFiltersDialogsPtBr._(_root);
+  @override
+  late final _TranslationsTagsManagerPtBr tagsManager = _TranslationsTagsManagerPtBr._(_root);
+  @override
+  late final _TranslationsTagViewPtBr tagView = _TranslationsTagViewPtBr._(_root);
+  @override
+  late final _TranslationsPinnedTagsPtBr pinnedTags = _TranslationsPinnedTagsPtBr._(_root);
+  @override
+  late final _TranslationsDesktopHomePtBr desktopHome = _TranslationsDesktopHomePtBr._(_root);
+  @override
+  late final _TranslationsMediaPreviewsPtBr mediaPreviews = _TranslationsMediaPreviewsPtBr._(_root);
+  @override
+  late final _TranslationsViewerPtBr viewer = _TranslationsViewerPtBr._(_root);
+  @override
+  late final _TranslationsTagTypePtBr tagType = _TranslationsTagTypePtBr._(_root);
 }
 
 // Path: validationErrors
@@ -227,10 +249,10 @@ class _TranslationsValidationErrorsPtBr extends TranslationsValidationErrorsEn {
       TranslationOverrides.string(_root.$meta, 'validationErrors.invalidNumericValue', {}) ?? 'Por favor, insira um valor numérico válido';
   @override
   String tooSmall({required double min}) =>
-      TranslationOverrides.string(_root.$meta, 'validationErrors.tooSmall', {'min': min}) ?? 'Por favor, insira um valor maior do que ${min}';
+      TranslationOverrides.string(_root.$meta, 'validationErrors.tooSmall', {'min': min}) ?? 'Por favor, insira um valor maior que ${min}';
   @override
   String tooBig({required double max}) =>
-      TranslationOverrides.string(_root.$meta, 'validationErrors.tooBig', {'max': max}) ?? 'Por favor, insira um valor menor do que ${max}';
+      TranslationOverrides.string(_root.$meta, 'validationErrors.tooBig', {'max': max}) ?? 'Por favor, insira um valor menor que ${max}';
   @override
   String rangeError({required double min, required double max}) =>
       TranslationOverrides.string(_root.$meta, 'validationErrors.rangeError', {'min': min, 'max': max}) ??
@@ -245,10 +267,12 @@ class _TranslationsValidationErrorsPtBr extends TranslationsValidationErrorsEn {
       TranslationOverrides.string(_root.$meta, 'validationErrors.biggerThan100', {}) ?? 'Por favor, insira um valor maior do que 100';
   @override
   String get moreThan4ColumnsWarning =>
-      TranslationOverrides.string(_root.$meta, 'validationErrors.moreThan4ColumnsWarning', {}) ?? 'Usar mais de 4 colunas pode afetar o desempenho';
+      TranslationOverrides.string(_root.$meta, 'validationErrors.moreThan4ColumnsWarning', {}) ??
+      'Usar mais de 4 colunas pode afetar o desempenho do app';
   @override
   String get moreThan8ColumnsWarning =>
-      TranslationOverrides.string(_root.$meta, 'validationErrors.moreThan8ColumnsWarning', {}) ?? 'Usar mais de 8 colunas pode afetar o desempenho';
+      TranslationOverrides.string(_root.$meta, 'validationErrors.moreThan8ColumnsWarning', {}) ??
+      'Usar mais de 8 colunas pode afetar o desempenho do app';
 }
 
 // Path: init
@@ -583,6 +607,897 @@ class _TranslationsTabsPtBr extends TranslationsTabsEn {
       TranslationOverrides.string(_root.$meta, 'tabs.startFromCustomPageNumber', {}) ?? 'Página inicial personalizada';
   @override
   String get switchToNewTab => TranslationOverrides.string(_root.$meta, 'tabs.switchToNewTab', {}) ?? 'Mudar para uma nova aba';
+  @override
+  String get add => TranslationOverrides.string(_root.$meta, 'tabs.add', {}) ?? 'adicionar';
+  @override
+  String get tabsManager => TranslationOverrides.string(_root.$meta, 'tabs.tabsManager', {}) ?? 'Gerenciador de abas';
+  @override
+  String get selectMode => TranslationOverrides.string(_root.$meta, 'tabs.selectMode', {}) ?? 'Modo de seleção';
+  @override
+  String get sortMode => TranslationOverrides.string(_root.$meta, 'tabs.sortMode', {}) ?? 'Ordenar abas';
+  @override
+  String get help => TranslationOverrides.string(_root.$meta, 'tabs.help', {}) ?? 'Ajuda';
+  @override
+  String get deleteTabs => TranslationOverrides.string(_root.$meta, 'tabs.deleteTabs', {}) ?? 'Apagar abas';
+  @override
+  String get shuffleTabs => TranslationOverrides.string(_root.$meta, 'tabs.shuffleTabs', {}) ?? 'Embaralhar abas';
+  @override
+  String get tabRandomlyShuffled => TranslationOverrides.string(_root.$meta, 'tabs.tabRandomlyShuffled', {}) ?? 'Abas embaralhadas aleatoriamente';
+  @override
+  String get tabOrderSaved => TranslationOverrides.string(_root.$meta, 'tabs.tabOrderSaved', {}) ?? 'Ordem das abas salva';
+  @override
+  String get scrollToCurrent => TranslationOverrides.string(_root.$meta, 'tabs.scrollToCurrent', {}) ?? 'Rolar para a aba atual';
+  @override
+  String get scrollToTop => TranslationOverrides.string(_root.$meta, 'tabs.scrollToTop', {}) ?? 'Rolar para o topo';
+  @override
+  String get scrollToBottom => TranslationOverrides.string(_root.$meta, 'tabs.scrollToBottom', {}) ?? 'Rolar para o fim';
+  @override
+  String get filterTabsByBooru =>
+      TranslationOverrides.string(_root.$meta, 'tabs.filterTabsByBooru', {}) ?? 'Filtrar por booru, estado, duplicadas...';
+  @override
+  String get scrolling => TranslationOverrides.string(_root.$meta, 'tabs.scrolling', {}) ?? 'Rolagem:';
+  @override
+  String get sorting => TranslationOverrides.string(_root.$meta, 'tabs.sorting', {}) ?? 'Ordenação:';
+  @override
+  String get defaultTabsOrder => TranslationOverrides.string(_root.$meta, 'tabs.defaultTabsOrder', {}) ?? 'Ordem padrão das abas';
+  @override
+  String get sortAlphabetically => TranslationOverrides.string(_root.$meta, 'tabs.sortAlphabetically', {}) ?? 'Ordem alfabetica';
+  @override
+  String get sortAlphabeticallyReversed =>
+      TranslationOverrides.string(_root.$meta, 'tabs.sortAlphabeticallyReversed', {}) ?? 'Ordem alfabética (inversa)"';
+  @override
+  String get sortByBooruName => TranslationOverrides.string(_root.$meta, 'tabs.sortByBooruName', {}) ?? 'Ordem alfabética por booru';
+  @override
+  String get sortByBooruNameReversed =>
+      TranslationOverrides.string(_root.$meta, 'tabs.sortByBooruNameReversed', {}) ?? 'Ordem alfabética por booru (inversa)';
+  @override
+  String get longPressSortToSave =>
+      TranslationOverrides.string(_root.$meta, 'tabs.longPressSortToSave', {}) ?? 'Segure o botão de ordenação para salvar a ordem atual';
+  @override
+  String get select => TranslationOverrides.string(_root.$meta, 'tabs.select', {}) ?? 'Selecionar:';
+  @override
+  String get toggleSelectMode => TranslationOverrides.string(_root.$meta, 'tabs.toggleSelectMode', {}) ?? 'Alternar modo de seleção';
+  @override
+  String get onTheBottomOfPage => TranslationOverrides.string(_root.$meta, 'tabs.onTheBottomOfPage', {}) ?? 'No fim da pagina:';
+  @override
+  String get selectDeselectAll => TranslationOverrides.string(_root.$meta, 'tabs.selectDeselectAll', {}) ?? 'Selecionar/desmarcar todas as abas';
+  @override
+  String get deleteSelectedTabs => TranslationOverrides.string(_root.$meta, 'tabs.deleteSelectedTabs', {}) ?? 'Apagar abas selecionadas';
+  @override
+  String get longPressToMove => TranslationOverrides.string(_root.$meta, 'tabs.longPressToMove', {}) ?? 'Segure uma aba para movê-la';
+  @override
+  String get numbersInBottomRight =>
+      TranslationOverrides.string(_root.$meta, 'tabs.numbersInBottomRight', {}) ?? 'Números no canto inferior direito da aba:';
+  @override
+  String get firstNumberTabIndex =>
+      TranslationOverrides.string(_root.$meta, 'tabs.firstNumberTabIndex', {}) ?? 'Primeiro número — índice da aba na ordem padrão da lista';
+  @override
+  String get secondNumberTabIndex =>
+      TranslationOverrides.string(_root.$meta, 'tabs.secondNumberTabIndex', {}) ??
+      'Second number - tab index in current list order, appears when filtering/sorting is active';
+  @override
+  String get specialFilters => TranslationOverrides.string(_root.$meta, 'tabs.specialFilters', {}) ?? 'Filtros especiais:';
+  @override
+  String get loadedFilter =>
+      TranslationOverrides.string(_root.$meta, 'tabs.loadedFilter', {}) ?? '​«Carregadas» — mostrar abas que possuem itens carregados';
+  @override
+  String get notLoadedFilter =>
+      TranslationOverrides.string(_root.$meta, 'tabs.notLoadedFilter', {}) ??
+      '​«Não carregadas» — mostrar abas que não estão carregadas e/ou possuem zero itens';
+  @override
+  String get notLoadedItalic =>
+      TranslationOverrides.string(_root.$meta, 'tabs.notLoadedItalic', {}) ?? 'Abas não carregadas possuem texto em itálico';
+  @override
+  String get noTabsFound => TranslationOverrides.string(_root.$meta, 'tabs.noTabsFound', {}) ?? 'Nenhuma aba encontrada';
+  @override
+  String get copy => TranslationOverrides.string(_root.$meta, 'tabs.copy', {}) ?? 'Copiar';
+  @override
+  String get moveAction => TranslationOverrides.string(_root.$meta, 'tabs.moveAction', {}) ?? 'Mover';
+  @override
+  String get remove => TranslationOverrides.string(_root.$meta, 'tabs.remove', {}) ?? 'Remover';
+  @override
+  String get shuffle => TranslationOverrides.string(_root.$meta, 'tabs.shuffle', {}) ?? 'Embaralhar';
+  @override
+  String get sort => TranslationOverrides.string(_root.$meta, 'tabs.sort', {}) ?? 'Ordenar';
+  @override
+  String get shuffleTabsQuestion =>
+      TranslationOverrides.string(_root.$meta, 'tabs.shuffleTabsQuestion', {}) ?? 'Embaralhar a ordem das abas aleatoriamente?';
+  @override
+  String get saveTabsInCurrentOrder =>
+      TranslationOverrides.string(_root.$meta, 'tabs.saveTabsInCurrentOrder', {}) ?? 'Salvar abas na ordem de classificação atual?';
+  @override
+  String get byBooru => TranslationOverrides.string(_root.$meta, 'tabs.byBooru', {}) ?? 'Por Booru';
+  @override
+  String get alphabetically => TranslationOverrides.string(_root.$meta, 'tabs.alphabetically', {}) ?? 'Alfabeticamente';
+  @override
+  String get reversed => TranslationOverrides.string(_root.$meta, 'tabs.reversed', {}) ?? '(invertida)';
+  @override
+  String areYouSureDeleteTabs({required num count}) =>
+      TranslationOverrides.plural(_root.$meta, 'tabs.areYouSureDeleteTabs', {'count': count}) ??
+      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('pt'))(
+        count,
+        one: 'Você tem certeza de que quer deletar ${count} aba?',
+        few: 'Você tem certeza de que quer deletar ${count} abas?',
+        many: 'Você tem certeza de que quer deletar ${count} abas?',
+        other: 'Você tem certeza de que quer deletar ${count} abas?',
+      );
+  @override
+  late final _TranslationsTabsFiltersPtBr filters = _TranslationsTabsFiltersPtBr._(_root);
+  @override
+  late final _TranslationsTabsMovePtBr move = _TranslationsTabsMovePtBr._(_root);
+}
+
+// Path: history
+class _TranslationsHistoryPtBr extends TranslationsHistoryEn {
+  _TranslationsHistoryPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get searchHistory => TranslationOverrides.string(_root.$meta, 'history.searchHistory', {}) ?? 'Search history';
+  @override
+  String get searchHistoryIsEmpty =>
+      TranslationOverrides.string(_root.$meta, 'history.searchHistoryIsEmpty', {}) ?? 'O histórico de busca está vazio';
+  @override
+  String get searchHistoryIsDisabled =>
+      TranslationOverrides.string(_root.$meta, 'history.searchHistoryIsDisabled', {}) ?? 'Histórico de busca desativado';
+  @override
+  String get searchHistoryRequiresDatabase =>
+      TranslationOverrides.string(_root.$meta, 'history.searchHistoryRequiresDatabase', {}) ??
+      'Ative o banco de dados nas configurações para o histórico de busca';
+  @override
+  String lastSearch({required String search}) =>
+      TranslationOverrides.string(_root.$meta, 'history.lastSearch', {'search': search}) ?? 'Última busca: ${search}';
+  @override
+  String lastSearchWithDate({required String date}) =>
+      TranslationOverrides.string(_root.$meta, 'history.lastSearchWithDate', {'date': date}) ?? 'Última busca em: ${date}';
+  @override
+  String get unknownBooruType => TranslationOverrides.string(_root.$meta, 'history.unknownBooruType', {}) ?? 'Tipo de Booru desconhecido!';
+  @override
+  String unknownBooru({required String name, required String type}) =>
+      TranslationOverrides.string(_root.$meta, 'history.unknownBooru', {'name': name, 'type': type}) ?? 'Booru desconhecido (${name}-${type})';
+  @override
+  String get open => TranslationOverrides.string(_root.$meta, 'history.open', {}) ?? 'Abrir';
+  @override
+  String get openInNewTab => TranslationOverrides.string(_root.$meta, 'history.openInNewTab', {}) ?? 'Abrir em uma nova aba';
+  @override
+  String get removeFromFavourites => TranslationOverrides.string(_root.$meta, 'history.removeFromFavourites', {}) ?? 'Remover dos favoritos';
+  @override
+  String get setAsFavourite => TranslationOverrides.string(_root.$meta, 'history.setAsFavourite', {}) ?? 'Definir como Favorito';
+  @override
+  String get copy => TranslationOverrides.string(_root.$meta, 'history.copy', {}) ?? 'Copiar';
+}
+
+// Path: webview
+class _TranslationsWebviewPtBr extends TranslationsWebviewEn {
+  _TranslationsWebviewPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  late final _TranslationsWebviewNavigationPtBr navigation = _TranslationsWebviewNavigationPtBr._(_root);
+}
+
+// Path: settings
+class _TranslationsSettingsPtBr extends TranslationsSettingsEn {
+  _TranslationsSettingsPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get title => TranslationOverrides.string(_root.$meta, 'settings.title', {}) ?? 'Configurações';
+  @override
+  late final _TranslationsSettingsLanguagePtBr language = _TranslationsSettingsLanguagePtBr._(_root);
+  @override
+  late final _TranslationsSettingsBooruPtBr booru = _TranslationsSettingsBooruPtBr._(_root);
+  @override
+  late final _TranslationsSettingsBooruEditorPtBr booruEditor = _TranslationsSettingsBooruEditorPtBr._(_root);
+  @override
+  late final _TranslationsSettingsInterfacePtBr interface = _TranslationsSettingsInterfacePtBr._(_root);
+  @override
+  late final _TranslationsSettingsThemePtBr theme = _TranslationsSettingsThemePtBr._(_root);
+  @override
+  late final _TranslationsSettingsViewerPtBr viewer = _TranslationsSettingsViewerPtBr._(_root);
+  @override
+  late final _TranslationsSettingsDatabasePtBr database = _TranslationsSettingsDatabasePtBr._(_root);
+  @override
+  late final _TranslationsSettingsPrivacyPtBr privacy = _TranslationsSettingsPrivacyPtBr._(_root);
+  @override
+  late final _TranslationsSettingsCachePtBr cache = _TranslationsSettingsCachePtBr._(_root);
+  @override
+  late final _TranslationsSettingsAboutPtBr about = _TranslationsSettingsAboutPtBr._(_root);
+}
+
+// Path: tagsFiltersDialogs
+class _TranslationsTagsFiltersDialogsPtBr extends TranslationsTagsFiltersDialogsEn {
+  _TranslationsTagsFiltersDialogsPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String addNewFilter({required String type}) =>
+      TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.addNewFilter', {'type': type}) ?? '[Adicionar novo filtro de ${type}]';
+}
+
+// Path: tagsManager
+class _TranslationsTagsManagerPtBr extends TranslationsTagsManagerEn {
+  _TranslationsTagsManagerPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get addTag => TranslationOverrides.string(_root.$meta, 'tagsManager.addTag', {}) ?? 'Adicionar tag';
+  @override
+  String get add => TranslationOverrides.string(_root.$meta, 'tagsManager.add', {}) ?? 'adicionar';
+  @override
+  String get addedATab => TranslationOverrides.string(_root.$meta, 'tagsManager.addedATab', {}) ?? 'Uma aba adicionada';
+  @override
+  String get addATab => TranslationOverrides.string(_root.$meta, 'tagsManager.addATab', {}) ?? 'Adicionar aba';
+}
+
+// Path: tagView
+class _TranslationsTagViewPtBr extends TranslationsTagViewEn {
+  _TranslationsTagViewPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get addedToCurrentSearch =>
+      TranslationOverrides.string(_root.$meta, 'tagView.addedToCurrentSearch', {}) ?? 'Adicionada à atual lista de pesquisa';
+  @override
+  String get addedNewTab => TranslationOverrides.string(_root.$meta, 'tagView.addedNewTab', {}) ?? 'Nova aba adicionada';
+  @override
+  String get addedToSearchBar => TranslationOverrides.string(_root.$meta, 'tagView.addedToSearchBar', {}) ?? 'Adicionada a barra de pesquisa';
+}
+
+// Path: pinnedTags
+class _TranslationsPinnedTagsPtBr extends TranslationsPinnedTagsEn {
+  _TranslationsPinnedTagsPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get addPinnedTag => TranslationOverrides.string(_root.$meta, 'pinnedTags.addPinnedTag', {}) ?? 'Adicionar tag fixada';
+}
+
+// Path: desktopHome
+class _TranslationsDesktopHomePtBr extends TranslationsDesktopHomeEn {
+  _TranslationsDesktopHomePtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get addBoorusInSettings => TranslationOverrides.string(_root.$meta, 'desktopHome.addBoorusInSettings', {}) ?? 'Adicionar outros boorus';
+}
+
+// Path: mediaPreviews
+class _TranslationsMediaPreviewsPtBr extends TranslationsMediaPreviewsEn {
+  _TranslationsMediaPreviewsPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get addNewBooru => TranslationOverrides.string(_root.$meta, 'mediaPreviews.addNewBooru', {}) ?? 'Adicionar novo Booru';
+}
+
+// Path: viewer
+class _TranslationsViewerPtBr extends TranslationsViewerEn {
+  _TranslationsViewerPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  late final _TranslationsViewerAppBarPtBr appBar = _TranslationsViewerAppBarPtBr._(_root);
+}
+
+// Path: tagType
+class _TranslationsTagTypePtBr extends TranslationsTagTypeEn {
+  _TranslationsTagTypePtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get artist => TranslationOverrides.string(_root.$meta, 'tagType.artist', {}) ?? 'Artista';
+}
+
+// Path: tabs.filters
+class _TranslationsTabsFiltersPtBr extends TranslationsTabsFiltersEn {
+  _TranslationsTabsFiltersPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get loaded => TranslationOverrides.string(_root.$meta, 'tabs.filters.loaded', {}) ?? 'Carregada';
+  @override
+  String get tagType => TranslationOverrides.string(_root.$meta, 'tabs.filters.tagType', {}) ?? 'Tipo de tag';
+  @override
+  String get multibooru => TranslationOverrides.string(_root.$meta, 'tabs.filters.multibooru', {}) ?? 'Multibooru';
+  @override
+  String get duplicates => TranslationOverrides.string(_root.$meta, 'tabs.filters.duplicates', {}) ?? 'Duplicadas';
+  @override
+  String get checkDuplicatesOnSameBooru =>
+      TranslationOverrides.string(_root.$meta, 'tabs.filters.checkDuplicatesOnSameBooru', {}) ?? 'Verificar duplicadas no mesmo Booru';
+  @override
+  String get emptySearchQuery => TranslationOverrides.string(_root.$meta, 'tabs.filters.emptySearchQuery', {}) ?? 'Consulta de busca vazia';
+  @override
+  String get title => TranslationOverrides.string(_root.$meta, 'tabs.filters.title', {}) ?? 'Filtros de abas';
+  @override
+  String get all => TranslationOverrides.string(_root.$meta, 'tabs.filters.all', {}) ?? 'Todas';
+  @override
+  String get notLoaded => TranslationOverrides.string(_root.$meta, 'tabs.filters.notLoaded', {}) ?? 'Não caregada';
+  @override
+  String get enabled => TranslationOverrides.string(_root.$meta, 'tabs.filters.enabled', {}) ?? 'Ativado';
+  @override
+  String get disabled => TranslationOverrides.string(_root.$meta, 'tabs.filters.disabled', {}) ?? 'Desativado';
+  @override
+  String get willAlsoEnableSorting =>
+      TranslationOverrides.string(_root.$meta, 'tabs.filters.willAlsoEnableSorting', {}) ?? 'Também ativará a ordenação';
+  @override
+  String get tagTypeFilterHelp =>
+      TranslationOverrides.string(_root.$meta, 'tabs.filters.tagTypeFilterHelp', {}) ??
+      'Filtrar abas que contêm ao menos uma tag do tipo selecionado';
+  @override
+  String get any => TranslationOverrides.string(_root.$meta, 'tabs.filters.any', {}) ?? 'Qualquer';
+  @override
+  String get apply => TranslationOverrides.string(_root.$meta, 'tabs.filters.apply', {}) ?? 'Aplicar';
+}
+
+// Path: tabs.move
+class _TranslationsTabsMovePtBr extends TranslationsTabsMoveEn {
+  _TranslationsTabsMovePtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get moveToTop => TranslationOverrides.string(_root.$meta, 'tabs.move.moveToTop', {}) ?? 'Mover para o início';
+  @override
+  String get moveToBottom => TranslationOverrides.string(_root.$meta, 'tabs.move.moveToBottom', {}) ?? 'Mover para o fim';
+  @override
+  String get tabNumber => TranslationOverrides.string(_root.$meta, 'tabs.move.tabNumber', {}) ?? 'Número da tab';
+  @override
+  String get invalidTabNumber => TranslationOverrides.string(_root.$meta, 'tabs.move.invalidTabNumber', {}) ?? 'Número da aba inválido.';
+  @override
+  String get invalidInput => TranslationOverrides.string(_root.$meta, 'tabs.move.invalidInput', {}) ?? 'Entrada inválida';
+  @override
+  String get outOfRange => TranslationOverrides.string(_root.$meta, 'tabs.move.outOfRange', {}) ?? 'Fora do intervalo';
+  @override
+  String get pleaseEnterValidTabNumber =>
+      TranslationOverrides.string(_root.$meta, 'tabs.move.pleaseEnterValidTabNumber', {}) ?? 'Por favor, digite um número de aba válido';
+  @override
+  String moveTo({required String formattedNumber}) =>
+      TranslationOverrides.string(_root.$meta, 'tabs.move.moveTo', {'formattedNumber': formattedNumber}) ?? 'Mover para #${formattedNumber}';
+  @override
+  String get preview => TranslationOverrides.string(_root.$meta, 'tabs.move.preview', {}) ?? 'Prévia:';
+}
+
+// Path: webview.navigation
+class _TranslationsWebviewNavigationPtBr extends TranslationsWebviewNavigationEn {
+  _TranslationsWebviewNavigationPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get enterUrlLabel => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterUrlLabel', {}) ?? 'Digite uma URL';
+  @override
+  String get enterCustomUrl => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterCustomUrl', {}) ?? 'Digite uma URL personalizada';
+  @override
+  String navigateTo({required String url}) =>
+      TranslationOverrides.string(_root.$meta, 'webview.navigation.navigateTo', {'url': url}) ?? 'Navegar para ${url}';
+  @override
+  String get listCookies => TranslationOverrides.string(_root.$meta, 'webview.navigation.listCookies', {}) ?? 'Listar cookies';
+  @override
+  String get clearCookies => TranslationOverrides.string(_root.$meta, 'webview.navigation.clearCookies', {}) ?? 'Limpar cookies';
+  @override
+  String get cookiesGone => TranslationOverrides.string(_root.$meta, 'webview.navigation.cookiesGone', {}) ?? 'Cookies limpos';
+  @override
+  String get getFavicon => TranslationOverrides.string(_root.$meta, 'webview.navigation.getFavicon', {}) ?? 'Obter favicon';
+  @override
+  String get noFaviconFound => TranslationOverrides.string(_root.$meta, 'webview.navigation.noFaviconFound', {}) ?? 'Nenhum favicon encontrado';
+  @override
+  String get host => TranslationOverrides.string(_root.$meta, 'webview.navigation.host', {}) ?? 'Host:';
+  @override
+  String get textAboveSelectable =>
+      TranslationOverrides.string(_root.$meta, 'webview.navigation.textAboveSelectable', {}) ?? '(o texto acima é selecionável)';
+  @override
+  String get copyUrl => TranslationOverrides.string(_root.$meta, 'webview.navigation.copyUrl', {}) ?? 'Copiar URL';
+  @override
+  String get copiedUrlToClipboard =>
+      TranslationOverrides.string(_root.$meta, 'webview.navigation.copiedUrlToClipboard', {}) ?? 'URL copiado para a area de transferência';
+  @override
+  String get cookies => TranslationOverrides.string(_root.$meta, 'webview.navigation.cookies', {}) ?? 'Cookies';
+  @override
+  String get favicon => TranslationOverrides.string(_root.$meta, 'webview.navigation.favicon', {}) ?? 'Favicon';
+  @override
+  String get history => TranslationOverrides.string(_root.$meta, 'webview.navigation.history', {}) ?? 'Histórico';
+  @override
+  String get noBackHistoryItem =>
+      TranslationOverrides.string(_root.$meta, 'webview.navigation.noBackHistoryItem', {}) ?? 'Nenhum item no histórico para voltar';
+  @override
+  String get noForwardHistoryItem =>
+      TranslationOverrides.string(_root.$meta, 'webview.navigation.noForwardHistoryItem', {}) ?? 'Nenhum item no histórico para avançar';
+}
+
+// Path: settings.language
+class _TranslationsSettingsLanguagePtBr extends TranslationsSettingsLanguageEn {
+  _TranslationsSettingsLanguagePtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get title => TranslationOverrides.string(_root.$meta, 'settings.language.title', {}) ?? 'Idioma';
+  @override
+  String get system => TranslationOverrides.string(_root.$meta, 'settings.language.system', {}) ?? 'Sistema';
+}
+
+// Path: settings.booru
+class _TranslationsSettingsBooruPtBr extends TranslationsSettingsBooruEn {
+  _TranslationsSettingsBooruPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get addBooru => TranslationOverrides.string(_root.$meta, 'settings.booru.addBooru', {}) ?? 'Adicionar configuração de Booru';
+  @override
+  String get addedBoorus => TranslationOverrides.string(_root.$meta, 'settings.booru.addedBoorus', {}) ?? 'Boorus adicionados';
+  @override
+  String get importBooru =>
+      TranslationOverrides.string(_root.$meta, 'settings.booru.importBooru', {}) ?? 'Importar configuração de Booru da área de transferência';
+  @override
+  String get onlyLSURLsSupported =>
+      TranslationOverrides.string(_root.$meta, 'settings.booru.onlyLSURLsSupported', {}) ?? 'Apenas URLs do loli.snatcher são suportadas';
+  @override
+  String get deleteBooru => TranslationOverrides.string(_root.$meta, 'settings.booru.deleteBooru', {}) ?? 'Apagar configuração de Booru';
+  @override
+  String get deleteBooruError =>
+      TranslationOverrides.string(_root.$meta, 'settings.booru.deleteBooruError', {}) ?? 'Ocorreu um erro ao apagar a configuração do Booru!';
+  @override
+  String get booruDeleted => TranslationOverrides.string(_root.$meta, 'settings.booru.booruDeleted', {}) ?? 'Configuração do Booru apagada';
+  @override
+  String get booruDropdownInfo =>
+      TranslationOverrides.string(_root.$meta, 'settings.booru.booruDropdownInfo', {}) ??
+      '​O Booru selecionado se torna o padrão após salvar.\n\n​O Booru padrão aparece primeiro nos menus suspensos';
+  @override
+  String get changeDefaultBooru => TranslationOverrides.string(_root.$meta, 'settings.booru.changeDefaultBooru', {}) ?? 'Alterar Booru padrão?';
+  @override
+  String get changeTo => TranslationOverrides.string(_root.$meta, 'settings.booru.changeTo', {}) ?? 'Alterar para: ';
+  @override
+  String get keepCurrentBooru =>
+      TranslationOverrides.string(_root.$meta, 'settings.booru.keepCurrentBooru', {}) ?? 'Clique em [Não] para manter o atual: ';
+  @override
+  String get changeToNewBooru =>
+      TranslationOverrides.string(_root.$meta, 'settings.booru.changeToNewBooru', {}) ?? 'Clique em [Sim] para alterar para: ';
+  @override
+  String get booruConfigLinkCopied =>
+      TranslationOverrides.string(_root.$meta, 'settings.booru.booruConfigLinkCopied', {}) ??
+      'Link de configuração do Booru copiado para a área de transferência';
+  @override
+  String get noBooruSelected => TranslationOverrides.string(_root.$meta, 'settings.booru.noBooruSelected', {}) ?? 'Nenhum Booru selecionado!';
+  @override
+  String get cantDeleteThisBooru =>
+      TranslationOverrides.string(_root.$meta, 'settings.booru.cantDeleteThisBooru', {}) ?? 'Não é possível apagar este Booru!';
+  @override
+  String get removeRelatedTabsFirst =>
+      TranslationOverrides.string(_root.$meta, 'settings.booru.removeRelatedTabsFirst', {}) ?? 'Remova as abas relacionadas primeiro';
+}
+
+// Path: settings.booruEditor
+class _TranslationsSettingsBooruEditorPtBr extends TranslationsSettingsBooruEditorEn {
+  _TranslationsSettingsBooruEditorPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get title => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.title', {}) ?? 'Booru Editor';
+  @override
+  String get testBooruFailedTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.testBooruFailedTitle', {}) ?? 'O teste do Booru falhou';
+  @override
+  String get testBooruFailedMsg =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.testBooruFailedMsg', {}) ??
+      'Os parâmetros de configuração podem estar incorretos, o Booru não permite acesso por API, a solicitação não retornou dados ou houve um erro de rede.';
+  @override
+  String get saveBooru => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveBooru', {}) ?? 'Salvar Booru';
+  @override
+  String get runningTest => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.runningTest', {}) ?? 'Executando teste...';
+  @override
+  String get booruConfigExistsError =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigExistsError', {}) ?? 'Esta configuração de Booru ja existe';
+  @override
+  String get booruSameNameExistsError =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruSameNameExistsError', {}) ??
+      'Ja existe uma Configuração de Booru com o mesmo nome';
+  @override
+  String get booruSameUrlExistsError =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruSameUrlExistsError', {}) ??
+      'Já existe uma configuração de Booru com a mesma URL';
+  @override
+  String get thisBooruConfigWontBeAdded =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.thisBooruConfigWontBeAdded', {}) ??
+      'Essa configuração de Booru não será adicionada';
+  @override
+  String get booruConfigSaved =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigSaved', {}) ?? 'Configuração de Booru salva';
+  @override
+  String get existingTabsNeedReload =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.existingTabsNeedReload', {}) ??
+      'As abas existentes com este Booru precisam ser recarregadas para aplicar as alterações!';
+  @override
+  String get failedVerifyApiHydrus =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.failedVerifyApiHydrus', {}) ?? 'Falha ao verificar acesso API ao Hydrus';
+  @override
+  String get accessKeyRequestedTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.accessKeyRequestedTitle', {}) ?? 'Chave de acesso solicitada';
+  @override
+  String get accessKeyRequestedMsg =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.accessKeyRequestedMsg', {}) ??
+      'Toque em \'OK\' no Hydrus e depois em \'Aplicar\'. Em seguida, você pode tocar em \'Testar Booru\'';
+  @override
+  String get accessKeyFailedTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.accessKeyFailedTitle', {}) ?? 'Falha ao obter a chave de acesso';
+  @override
+  String get accessKeyFailedMsg =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.accessKeyFailedMsg', {}) ?? 'Você tem a janela de solicitação aberta no Hydrus?';
+  @override
+  String get hydrusInstructions =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.hydrusInstructions', {}) ??
+      'Para obter a chave Hydrus, você precisa abrir a caixa de diálogo de solicitação no cliente Hydrus: Serviços > Revisar serviços > API do cliente > Adicionar > Da solicitação de API';
+  @override
+  String get getHydrusApiKey =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.getHydrusApiKey', {}) ?? 'Obter chave de API do Hydrus';
+  @override
+  String get booruName => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruName', {}) ?? 'Nome do Booru';
+  @override
+  String get booruNameRequired =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruNameRequired', {}) ?? 'O nome do Booru é obrigatório!';
+  @override
+  String get booruUrl => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruUrl', {}) ?? 'URL do Booru';
+  @override
+  String get booruUrlRequired =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruUrlRequired', {}) ?? 'A URL do Booru é obrigatória!';
+  @override
+  String get booruType => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruType', {}) ?? 'Tipo de Booru';
+  @override
+  String get booruFavicon => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruFavicon', {}) ?? 'URL do Favicon';
+  @override
+  String get booruFaviconPlaceholder =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruFaviconPlaceholder', {}) ?? '(Preenchido automaticamente se vazio)';
+  @override
+  String get booruDefTags => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruDefTags', {}) ?? 'Tags padrão';
+  @override
+  String get booruDefTagsPlaceholder =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruDefTagsPlaceholder', {}) ?? 'Busca padrão para o booru';
+  @override
+  String get booruDefaultInstructions =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruDefaultInstructions', {}) ??
+      'Os campos abaixo podem ser obrigatórios para alguns boorus';
+  @override
+  String get booruConfigShouldSave =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigShouldSave', {}) ??
+      'Confirmar o salvamento desta configuração de Booru';
+  @override
+  String booruConfigSelectedType({required String booruType}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigSelectedType', {'booruType': booruType}) ??
+      'Tipo de Booru selecionado/detectado: ${booruType}';
+}
+
+// Path: settings.interface
+class _TranslationsSettingsInterfacePtBr extends TranslationsSettingsInterfaceEn {
+  _TranslationsSettingsInterfacePtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get appUIMode => TranslationOverrides.string(_root.$meta, 'settings.interface.appUIMode', {}) ?? 'Modo de interface do usuário do app';
+  @override
+  String get appUIModeWarningTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.appUIModeWarningTitle', {}) ?? 'Modo de interface do usuário do app';
+  @override
+  String get appUIModeWarning =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.appUIModeWarning', {}) ??
+      'Usar o modo Desktop? Pode causar problemas em dispositivos móveis. [INTERFACE DESCONTINUADA]';
+  @override
+  String get appUIModeHelpMobile =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.appUIModeHelpMobile', {}) ?? '- Mobile - Interface dispositivos móveis';
+  @override
+  String get appUIModeHelpWarning =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.appUIModeHelpWarning', {}) ??
+      '[Aviso]: Não defina o Modo de Interface para Desktop em um celular, pois isso pode danificar o aplicativo e você poderá ter que apagar todas as suas configurações, incluindo as configurações do Booru.';
+  @override
+  String get previewDisplayFallbackHelp =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayFallbackHelp', {}) ??
+      'Isso será usado quando a opção Mosaico não for possível';
+  @override
+  String get dontScaleImages => TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImages', {}) ?? 'Não redimensionar imagens';
+  @override
+  String get dontScaleImagesSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImagesSubtitle', {}) ?? 'Pode reduzir o desempenho';
+  @override
+  String get dontScaleImagesWarningTitle => TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImagesWarningTitle', {}) ?? 'Aviso';
+  @override
+  String get dontScaleImagesWarning =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImagesWarning', {}) ??
+      'Tem certeza de que deseja desativar o redimensionamento de imagens?';
+  @override
+  String get dontScaleImagesWarningMsg =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImagesWarningMsg', {}) ??
+      'Isso pode afetar negativamente o desempenho, especialmente em dispositivos mais antigos';
+  @override
+  String get gifThumbnails => TranslationOverrides.string(_root.$meta, 'settings.interface.gifThumbnails', {}) ?? 'Miniaturas em GIF';
+  @override
+  String get gifThumbnailsRequires =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.gifThumbnailsRequires', {}) ?? 'Requer «Não redimensionar imagens»';
+  @override
+  String get scrollPreviewsButtonsPosition =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.scrollPreviewsButtonsPosition', {}) ?? 'Posição dos botões de rolagem das prévias';
+  @override
+  String get mouseWheelScrollModifier =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.mouseWheelScrollModifier', {}) ?? 'Modificador de rolagem da roda do mouse';
+  @override
+  String get scrollModifier => TranslationOverrides.string(_root.$meta, 'settings.interface.scrollModifier', {}) ?? 'Modificador de rolagem';
+  @override
+  late final _TranslationsSettingsInterfacePreviewQualityValuesPtBr previewQualityValues = _TranslationsSettingsInterfacePreviewQualityValuesPtBr._(
+    _root,
+  );
+  @override
+  late final _TranslationsSettingsInterfacePreviewDisplayModeValuesPtBr previewDisplayModeValues =
+      _TranslationsSettingsInterfacePreviewDisplayModeValuesPtBr._(_root);
+  @override
+  late final _TranslationsSettingsInterfaceAppModeValuesPtBr appModeValues = _TranslationsSettingsInterfaceAppModeValuesPtBr._(_root);
+  @override
+  late final _TranslationsSettingsInterfaceHandSideValuesPtBr handSideValues = _TranslationsSettingsInterfaceHandSideValuesPtBr._(_root);
+}
+
+// Path: settings.theme
+class _TranslationsSettingsThemePtBr extends TranslationsSettingsThemeEn {
+  _TranslationsSettingsThemePtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get title => TranslationOverrides.string(_root.$meta, 'settings.theme.title', {}) ?? 'Temas';
+  @override
+  String get themeMode => TranslationOverrides.string(_root.$meta, 'settings.theme.themeMode', {}) ?? 'Modo do tema';
+  @override
+  String get blackBg => TranslationOverrides.string(_root.$meta, 'settings.theme.blackBg', {}) ?? 'Fundo preto';
+  @override
+  String get useDynamicColor => TranslationOverrides.string(_root.$meta, 'settings.theme.useDynamicColor', {}) ?? 'Usar cores dinâmicas';
+  @override
+  String get android12PlusOnly => TranslationOverrides.string(_root.$meta, 'settings.theme.android12PlusOnly', {}) ?? 'Apenas Android 12+';
+  @override
+  String get theme => TranslationOverrides.string(_root.$meta, 'settings.theme.theme', {}) ?? 'Tema';
+  @override
+  String get primaryColor => TranslationOverrides.string(_root.$meta, 'settings.theme.primaryColor', {}) ?? 'Cor primária';
+  @override
+  String get secondaryColor => TranslationOverrides.string(_root.$meta, 'settings.theme.secondaryColor', {}) ?? 'Cor secundária';
+  @override
+  String get enableDrawerMascot =>
+      TranslationOverrides.string(_root.$meta, 'settings.theme.enableDrawerMascot', {}) ?? 'Ativar mascote do menu lateral';
+  @override
+  String get fontPreviewText =>
+      TranslationOverrides.string(_root.$meta, 'settings.theme.fontPreviewText', {}) ?? 'A rápida raposa marrom salta sobre o cão preguiçoso';
+  @override
+  String get customFont => TranslationOverrides.string(_root.$meta, 'settings.theme.customFont', {}) ?? 'Fonte personalizada';
+  @override
+  String get customFontSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.theme.customFontSubtitle', {}) ?? 'Insira o nome de qualquer Google Font';
+  @override
+  String get fontName => TranslationOverrides.string(_root.$meta, 'settings.theme.fontName', {}) ?? 'Nome da fonte';
+  @override
+  String get customFontHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.theme.customFontHint', {}) ?? 'Navegue pelas fontes em fonts.google.com';
+  @override
+  String get fontNotFound => TranslationOverrides.string(_root.$meta, 'settings.theme.fontNotFound', {}) ?? 'Fonte não encontrada';
+}
+
+// Path: settings.viewer
+class _TranslationsSettingsViewerPtBr extends TranslationsSettingsViewerEn {
+  _TranslationsSettingsViewerPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get title => TranslationOverrides.string(_root.$meta, 'settings.viewer.title', {}) ?? 'Visualizador';
+  @override
+  String get preloadAmount => TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadAmount', {}) ?? 'Quantidade de pré-carregamento';
+  @override
+  String get preloadSizeLimit =>
+      TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadSizeLimit', {}) ?? 'Limite de tamanho do pré-carregamento';
+  @override
+  String get preloadSizeLimitSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadSizeLimitSubtitle', {}) ?? 'em GB, 0 para sem limite';
+  @override
+  String get preloadHeightLimit =>
+      TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadHeightLimit', {}) ?? 'Limite de altura do pré-carregamento';
+  @override
+  String get preloadHeightLimitSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadHeightLimitSubtitle', {}) ?? 'em pixels, 0 para sem limite';
+  @override
+  String get imageQuality => TranslationOverrides.string(_root.$meta, 'settings.viewer.imageQuality', {}) ?? 'Qualidade da imagem';
+  @override
+  String get viewerScrollDirection =>
+      TranslationOverrides.string(_root.$meta, 'settings.viewer.viewerScrollDirection', {}) ?? 'Direção de rolagem do visualizador';
+  @override
+  String get viewerToolbarPosition =>
+      TranslationOverrides.string(_root.$meta, 'settings.viewer.viewerToolbarPosition', {}) ?? 'Posição da barra de ferramentas do visualizador';
+  @override
+  String get zoomButtonPosition => TranslationOverrides.string(_root.$meta, 'settings.viewer.zoomButtonPosition', {}) ?? 'Posição do botão de zoom';
+  @override
+  String get changePageButtonsPosition =>
+      TranslationOverrides.string(_root.$meta, 'settings.viewer.changePageButtonsPosition', {}) ?? 'Posição dos botões de mudar de página';
+  @override
+  String get hideToolbarWhenOpeningViewer =>
+      TranslationOverrides.string(_root.$meta, 'settings.viewer.hideToolbarWhenOpeningViewer', {}) ??
+      'Ocultar barra de ferramentas ao abrir o visualizador';
+  @override
+  String get expandDetailsByDefault =>
+      TranslationOverrides.string(_root.$meta, 'settings.viewer.expandDetailsByDefault', {}) ?? 'Expandir detalhes por padrão';
+  @override
+  String get hideTranslationNotesByDefault =>
+      TranslationOverrides.string(_root.$meta, 'settings.viewer.hideTranslationNotesByDefault', {}) ?? 'Ocultar notas de tradução por padrão';
+  @override
+  String get atLeast4ButtonsVisibleOnToolbar =>
+      TranslationOverrides.string(_root.$meta, 'settings.viewer.atLeast4ButtonsVisibleOnToolbar', {}) ??
+      'Pelo menos 4 botões desta lista estarão sempre visíveis na barra de ferramentas.';
+  @override
+  late final _TranslationsSettingsViewerShareActionValuesPtBr shareActionValues = _TranslationsSettingsViewerShareActionValuesPtBr._(_root);
+}
+
+// Path: settings.database
+class _TranslationsSettingsDatabasePtBr extends TranslationsSettingsDatabaseEn {
+  _TranslationsSettingsDatabasePtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get appRestartRequired =>
+      TranslationOverrides.string(_root.$meta, 'settings.database.appRestartRequired', {}) ?? 'É necessário reiniciar o aplicativo!';
+  @override
+  String get appRestartMayBeRequired =>
+      TranslationOverrides.string(_root.$meta, 'settings.database.appRestartMayBeRequired', {}) ?? 'Pode ser necessário reiniciar o app!';
+}
+
+// Path: settings.privacy
+class _TranslationsSettingsPrivacyPtBr extends TranslationsSettingsPrivacyEn {
+  _TranslationsSettingsPrivacyPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get appLock => TranslationOverrides.string(_root.$meta, 'settings.privacy.appLock', {}) ?? 'Proteger app';
+  @override
+  String get appLockMsg =>
+      TranslationOverrides.string(_root.$meta, 'settings.privacy.appLockMsg', {}) ??
+      'Proteger app manualmente ou depois de um tempo inativo. Requer PIN ou biometria';
+  @override
+  String get appDisplayName => TranslationOverrides.string(_root.$meta, 'settings.privacy.appDisplayName', {}) ?? 'Nome de exibição do aplicativo';
+  @override
+  String get appDisplayNameDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.privacy.appDisplayNameDescription', {}) ?? 'Mude como o nome do app aparece nos seus apps';
+}
+
+// Path: settings.cache
+class _TranslationsSettingsCachePtBr extends TranslationsSettingsCacheEn {
+  _TranslationsSettingsCachePtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get appRestartRequired =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.appRestartRequired', {}) ?? 'Pode ser necessário reiniciar o app!';
+}
+
+// Path: settings.about
+class _TranslationsSettingsAboutPtBr extends TranslationsSettingsAboutEn {
+  _TranslationsSettingsAboutPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get appDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.about.appDescription', {}) ??
+      'LoliSnatcher é de código aberto e licenciado com GPLv3. O código-fonte está disponível no GitHub. Por favor, reporte qualquer problema ou pedido de funcionalidade na seção "issues" no repositório.';
+  @override
+  String get appOnGitHub => TranslationOverrides.string(_root.$meta, 'settings.about.appOnGitHub', {}) ?? 'LoliSnatcher no Github';
+}
+
+// Path: viewer.appBar
+class _TranslationsViewerAppBarPtBr extends TranslationsViewerAppBarEn {
+  _TranslationsViewerAppBarPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get abort => TranslationOverrides.string(_root.$meta, 'viewer.appBar.abort', {}) ?? 'Abortar';
+}
+
+// Path: settings.interface.previewQualityValues
+class _TranslationsSettingsInterfacePreviewQualityValuesPtBr extends TranslationsSettingsInterfacePreviewQualityValuesEn {
+  _TranslationsSettingsInterfacePreviewQualityValuesPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get thumbnail => TranslationOverrides.string(_root.$meta, 'settings.interface.previewQualityValues.thumbnail', {}) ?? 'Miniatura';
+  @override
+  String get sample => TranslationOverrides.string(_root.$meta, 'settings.interface.previewQualityValues.sample', {}) ?? 'Amostra';
+}
+
+// Path: settings.interface.previewDisplayModeValues
+class _TranslationsSettingsInterfacePreviewDisplayModeValuesPtBr extends TranslationsSettingsInterfacePreviewDisplayModeValuesEn {
+  _TranslationsSettingsInterfacePreviewDisplayModeValuesPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get square => TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayModeValues.square', {}) ?? 'Quadrado';
+  @override
+  String get rectangle => TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayModeValues.rectangle', {}) ?? 'Retângulo';
+  @override
+  String get staggered => TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayModeValues.staggered', {}) ?? 'Mosaico';
+}
+
+// Path: settings.interface.appModeValues
+class _TranslationsSettingsInterfaceAppModeValuesPtBr extends TranslationsSettingsInterfaceAppModeValuesEn {
+  _TranslationsSettingsInterfaceAppModeValuesPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get desktop => TranslationOverrides.string(_root.$meta, 'settings.interface.appModeValues.desktop', {}) ?? 'Desktop';
+  @override
+  String get mobile => TranslationOverrides.string(_root.$meta, 'settings.interface.appModeValues.mobile', {}) ?? 'Mobile';
+}
+
+// Path: settings.interface.handSideValues
+class _TranslationsSettingsInterfaceHandSideValuesPtBr extends TranslationsSettingsInterfaceHandSideValuesEn {
+  _TranslationsSettingsInterfaceHandSideValuesPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get left => TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.left', {}) ?? 'Esquerda';
+  @override
+  String get right => TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.right', {}) ?? 'Direita';
+}
+
+// Path: settings.viewer.shareActionValues
+class _TranslationsSettingsViewerShareActionValuesPtBr extends TranslationsSettingsViewerShareActionValuesEn {
+  _TranslationsSettingsViewerShareActionValuesPtBr._(TranslationsPtBr root) : this._root = root, super.internal(root);
+
+  final TranslationsPtBr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get ask => TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionValues.ask', {}) ?? 'Perguntar';
 }
 
 /// The flat map containing all translations for locale <pt-BR>.
@@ -663,7 +1578,7 @@ extension on TranslationsPtBr {
       'address' => TranslationOverrides.string(_root.$meta, 'address', {}) ?? 'Endereço',
       'username' => TranslationOverrides.string(_root.$meta, 'username', {}) ?? 'Nome de Usuário',
       'favourites' => TranslationOverrides.string(_root.$meta, 'favourites', {}) ?? 'Favoritos',
-      'downloads' => TranslationOverrides.string(_root.$meta, 'downloads', {}) ?? 'Baixados',
+      'downloads' => TranslationOverrides.string(_root.$meta, 'downloads', {}) ?? 'Downloads',
       'validationErrors.required' => TranslationOverrides.string(_root.$meta, 'validationErrors.required', {}) ?? 'Por favor, insira um valor',
       'validationErrors.invalid' => TranslationOverrides.string(_root.$meta, 'validationErrors.invalid', {}) ?? 'Por favor, insira um valor válido',
       'validationErrors.invalidNumber' =>
@@ -672,10 +1587,10 @@ extension on TranslationsPtBr {
         TranslationOverrides.string(_root.$meta, 'validationErrors.invalidNumericValue', {}) ?? 'Por favor, insira um valor numérico válido',
       'validationErrors.tooSmall' =>
         ({required double min}) =>
-            TranslationOverrides.string(_root.$meta, 'validationErrors.tooSmall', {'min': min}) ?? 'Por favor, insira um valor maior do que ${min}',
+            TranslationOverrides.string(_root.$meta, 'validationErrors.tooSmall', {'min': min}) ?? 'Por favor, insira um valor maior que ${min}',
       'validationErrors.tooBig' =>
         ({required double max}) =>
-            TranslationOverrides.string(_root.$meta, 'validationErrors.tooBig', {'max': max}) ?? 'Por favor, insira um valor menor do que ${max}',
+            TranslationOverrides.string(_root.$meta, 'validationErrors.tooBig', {'max': max}) ?? 'Por favor, insira um valor menor que ${max}',
       'validationErrors.rangeError' =>
         ({required double min, required double max}) =>
             TranslationOverrides.string(_root.$meta, 'validationErrors.rangeError', {'min': min, 'max': max}) ??
@@ -687,9 +1602,11 @@ extension on TranslationsPtBr {
       'validationErrors.biggerThan100' =>
         TranslationOverrides.string(_root.$meta, 'validationErrors.biggerThan100', {}) ?? 'Por favor, insira um valor maior do que 100',
       'validationErrors.moreThan4ColumnsWarning' =>
-        TranslationOverrides.string(_root.$meta, 'validationErrors.moreThan4ColumnsWarning', {}) ?? 'Usar mais de 4 colunas pode afetar o desempenho',
+        TranslationOverrides.string(_root.$meta, 'validationErrors.moreThan4ColumnsWarning', {}) ??
+            'Usar mais de 4 colunas pode afetar o desempenho do app',
       'validationErrors.moreThan8ColumnsWarning' =>
-        TranslationOverrides.string(_root.$meta, 'validationErrors.moreThan8ColumnsWarning', {}) ?? 'Usar mais de 8 colunas pode afetar o desempenho',
+        TranslationOverrides.string(_root.$meta, 'validationErrors.moreThan8ColumnsWarning', {}) ??
+            'Usar mais de 8 colunas pode afetar o desempenho do app',
       'init.initError' => TranslationOverrides.string(_root.$meta, 'init.initError', {}) ?? 'Erro de inicialização!',
       'init.settingUpProxy' => TranslationOverrides.string(_root.$meta, 'init.settingUpProxy', {}) ?? 'Configurando proxy…',
       'init.loadingDatabase' => TranslationOverrides.string(_root.$meta, 'init.loadingDatabase', {}) ?? 'Carregando banco de dados…',
@@ -882,6 +1799,388 @@ extension on TranslationsPtBr {
       'tabs.startFromCustomPageNumber' =>
         TranslationOverrides.string(_root.$meta, 'tabs.startFromCustomPageNumber', {}) ?? 'Página inicial personalizada',
       'tabs.switchToNewTab' => TranslationOverrides.string(_root.$meta, 'tabs.switchToNewTab', {}) ?? 'Mudar para uma nova aba',
+      'tabs.add' => TranslationOverrides.string(_root.$meta, 'tabs.add', {}) ?? 'adicionar',
+      'tabs.tabsManager' => TranslationOverrides.string(_root.$meta, 'tabs.tabsManager', {}) ?? 'Gerenciador de abas',
+      'tabs.selectMode' => TranslationOverrides.string(_root.$meta, 'tabs.selectMode', {}) ?? 'Modo de seleção',
+      'tabs.sortMode' => TranslationOverrides.string(_root.$meta, 'tabs.sortMode', {}) ?? 'Ordenar abas',
+      'tabs.help' => TranslationOverrides.string(_root.$meta, 'tabs.help', {}) ?? 'Ajuda',
+      'tabs.deleteTabs' => TranslationOverrides.string(_root.$meta, 'tabs.deleteTabs', {}) ?? 'Apagar abas',
+      'tabs.shuffleTabs' => TranslationOverrides.string(_root.$meta, 'tabs.shuffleTabs', {}) ?? 'Embaralhar abas',
+      'tabs.tabRandomlyShuffled' => TranslationOverrides.string(_root.$meta, 'tabs.tabRandomlyShuffled', {}) ?? 'Abas embaralhadas aleatoriamente',
+      'tabs.tabOrderSaved' => TranslationOverrides.string(_root.$meta, 'tabs.tabOrderSaved', {}) ?? 'Ordem das abas salva',
+      'tabs.scrollToCurrent' => TranslationOverrides.string(_root.$meta, 'tabs.scrollToCurrent', {}) ?? 'Rolar para a aba atual',
+      'tabs.scrollToTop' => TranslationOverrides.string(_root.$meta, 'tabs.scrollToTop', {}) ?? 'Rolar para o topo',
+      'tabs.scrollToBottom' => TranslationOverrides.string(_root.$meta, 'tabs.scrollToBottom', {}) ?? 'Rolar para o fim',
+      'tabs.filterTabsByBooru' =>
+        TranslationOverrides.string(_root.$meta, 'tabs.filterTabsByBooru', {}) ?? 'Filtrar por booru, estado, duplicadas...',
+      'tabs.scrolling' => TranslationOverrides.string(_root.$meta, 'tabs.scrolling', {}) ?? 'Rolagem:',
+      'tabs.sorting' => TranslationOverrides.string(_root.$meta, 'tabs.sorting', {}) ?? 'Ordenação:',
+      'tabs.defaultTabsOrder' => TranslationOverrides.string(_root.$meta, 'tabs.defaultTabsOrder', {}) ?? 'Ordem padrão das abas',
+      'tabs.sortAlphabetically' => TranslationOverrides.string(_root.$meta, 'tabs.sortAlphabetically', {}) ?? 'Ordem alfabetica',
+      'tabs.sortAlphabeticallyReversed' =>
+        TranslationOverrides.string(_root.$meta, 'tabs.sortAlphabeticallyReversed', {}) ?? 'Ordem alfabética (inversa)"',
+      'tabs.sortByBooruName' => TranslationOverrides.string(_root.$meta, 'tabs.sortByBooruName', {}) ?? 'Ordem alfabética por booru',
+      'tabs.sortByBooruNameReversed' =>
+        TranslationOverrides.string(_root.$meta, 'tabs.sortByBooruNameReversed', {}) ?? 'Ordem alfabética por booru (inversa)',
+      'tabs.longPressSortToSave' =>
+        TranslationOverrides.string(_root.$meta, 'tabs.longPressSortToSave', {}) ?? 'Segure o botão de ordenação para salvar a ordem atual',
+      'tabs.select' => TranslationOverrides.string(_root.$meta, 'tabs.select', {}) ?? 'Selecionar:',
+      'tabs.toggleSelectMode' => TranslationOverrides.string(_root.$meta, 'tabs.toggleSelectMode', {}) ?? 'Alternar modo de seleção',
+      'tabs.onTheBottomOfPage' => TranslationOverrides.string(_root.$meta, 'tabs.onTheBottomOfPage', {}) ?? 'No fim da pagina:',
+      'tabs.selectDeselectAll' => TranslationOverrides.string(_root.$meta, 'tabs.selectDeselectAll', {}) ?? 'Selecionar/desmarcar todas as abas',
+      'tabs.deleteSelectedTabs' => TranslationOverrides.string(_root.$meta, 'tabs.deleteSelectedTabs', {}) ?? 'Apagar abas selecionadas',
+      'tabs.longPressToMove' => TranslationOverrides.string(_root.$meta, 'tabs.longPressToMove', {}) ?? 'Segure uma aba para movê-la',
+      'tabs.numbersInBottomRight' =>
+        TranslationOverrides.string(_root.$meta, 'tabs.numbersInBottomRight', {}) ?? 'Números no canto inferior direito da aba:',
+      'tabs.firstNumberTabIndex' =>
+        TranslationOverrides.string(_root.$meta, 'tabs.firstNumberTabIndex', {}) ?? 'Primeiro número — índice da aba na ordem padrão da lista',
+      'tabs.secondNumberTabIndex' =>
+        TranslationOverrides.string(_root.$meta, 'tabs.secondNumberTabIndex', {}) ??
+            'Second number - tab index in current list order, appears when filtering/sorting is active',
+      'tabs.specialFilters' => TranslationOverrides.string(_root.$meta, 'tabs.specialFilters', {}) ?? 'Filtros especiais:',
+      'tabs.loadedFilter' =>
+        TranslationOverrides.string(_root.$meta, 'tabs.loadedFilter', {}) ?? '​«Carregadas» — mostrar abas que possuem itens carregados',
+      'tabs.notLoadedFilter' =>
+        TranslationOverrides.string(_root.$meta, 'tabs.notLoadedFilter', {}) ??
+            '​«Não carregadas» — mostrar abas que não estão carregadas e/ou possuem zero itens',
+      'tabs.notLoadedItalic' =>
+        TranslationOverrides.string(_root.$meta, 'tabs.notLoadedItalic', {}) ?? 'Abas não carregadas possuem texto em itálico',
+      'tabs.noTabsFound' => TranslationOverrides.string(_root.$meta, 'tabs.noTabsFound', {}) ?? 'Nenhuma aba encontrada',
+      'tabs.copy' => TranslationOverrides.string(_root.$meta, 'tabs.copy', {}) ?? 'Copiar',
+      'tabs.moveAction' => TranslationOverrides.string(_root.$meta, 'tabs.moveAction', {}) ?? 'Mover',
+      'tabs.remove' => TranslationOverrides.string(_root.$meta, 'tabs.remove', {}) ?? 'Remover',
+      'tabs.shuffle' => TranslationOverrides.string(_root.$meta, 'tabs.shuffle', {}) ?? 'Embaralhar',
+      'tabs.sort' => TranslationOverrides.string(_root.$meta, 'tabs.sort', {}) ?? 'Ordenar',
+      'tabs.shuffleTabsQuestion' =>
+        TranslationOverrides.string(_root.$meta, 'tabs.shuffleTabsQuestion', {}) ?? 'Embaralhar a ordem das abas aleatoriamente?',
+      'tabs.saveTabsInCurrentOrder' =>
+        TranslationOverrides.string(_root.$meta, 'tabs.saveTabsInCurrentOrder', {}) ?? 'Salvar abas na ordem de classificação atual?',
+      'tabs.byBooru' => TranslationOverrides.string(_root.$meta, 'tabs.byBooru', {}) ?? 'Por Booru',
+      'tabs.alphabetically' => TranslationOverrides.string(_root.$meta, 'tabs.alphabetically', {}) ?? 'Alfabeticamente',
+      'tabs.reversed' => TranslationOverrides.string(_root.$meta, 'tabs.reversed', {}) ?? '(invertida)',
+      'tabs.areYouSureDeleteTabs' =>
+        ({required num count}) =>
+            TranslationOverrides.plural(_root.$meta, 'tabs.areYouSureDeleteTabs', {'count': count}) ??
+            (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('pt'))(
+              count,
+              one: 'Você tem certeza de que quer deletar ${count} aba?',
+              few: 'Você tem certeza de que quer deletar ${count} abas?',
+              many: 'Você tem certeza de que quer deletar ${count} abas?',
+              other: 'Você tem certeza de que quer deletar ${count} abas?',
+            ),
+      'tabs.filters.loaded' => TranslationOverrides.string(_root.$meta, 'tabs.filters.loaded', {}) ?? 'Carregada',
+      'tabs.filters.tagType' => TranslationOverrides.string(_root.$meta, 'tabs.filters.tagType', {}) ?? 'Tipo de tag',
+      'tabs.filters.multibooru' => TranslationOverrides.string(_root.$meta, 'tabs.filters.multibooru', {}) ?? 'Multibooru',
+      'tabs.filters.duplicates' => TranslationOverrides.string(_root.$meta, 'tabs.filters.duplicates', {}) ?? 'Duplicadas',
+      'tabs.filters.checkDuplicatesOnSameBooru' =>
+        TranslationOverrides.string(_root.$meta, 'tabs.filters.checkDuplicatesOnSameBooru', {}) ?? 'Verificar duplicadas no mesmo Booru',
+      'tabs.filters.emptySearchQuery' => TranslationOverrides.string(_root.$meta, 'tabs.filters.emptySearchQuery', {}) ?? 'Consulta de busca vazia',
+      'tabs.filters.title' => TranslationOverrides.string(_root.$meta, 'tabs.filters.title', {}) ?? 'Filtros de abas',
+      'tabs.filters.all' => TranslationOverrides.string(_root.$meta, 'tabs.filters.all', {}) ?? 'Todas',
+      'tabs.filters.notLoaded' => TranslationOverrides.string(_root.$meta, 'tabs.filters.notLoaded', {}) ?? 'Não caregada',
+      'tabs.filters.enabled' => TranslationOverrides.string(_root.$meta, 'tabs.filters.enabled', {}) ?? 'Ativado',
+      'tabs.filters.disabled' => TranslationOverrides.string(_root.$meta, 'tabs.filters.disabled', {}) ?? 'Desativado',
+      'tabs.filters.willAlsoEnableSorting' =>
+        TranslationOverrides.string(_root.$meta, 'tabs.filters.willAlsoEnableSorting', {}) ?? 'Também ativará a ordenação',
+      'tabs.filters.tagTypeFilterHelp' =>
+        TranslationOverrides.string(_root.$meta, 'tabs.filters.tagTypeFilterHelp', {}) ??
+            'Filtrar abas que contêm ao menos uma tag do tipo selecionado',
+      'tabs.filters.any' => TranslationOverrides.string(_root.$meta, 'tabs.filters.any', {}) ?? 'Qualquer',
+      'tabs.filters.apply' => TranslationOverrides.string(_root.$meta, 'tabs.filters.apply', {}) ?? 'Aplicar',
+      'tabs.move.moveToTop' => TranslationOverrides.string(_root.$meta, 'tabs.move.moveToTop', {}) ?? 'Mover para o início',
+      'tabs.move.moveToBottom' => TranslationOverrides.string(_root.$meta, 'tabs.move.moveToBottom', {}) ?? 'Mover para o fim',
+      'tabs.move.tabNumber' => TranslationOverrides.string(_root.$meta, 'tabs.move.tabNumber', {}) ?? 'Número da tab',
+      'tabs.move.invalidTabNumber' => TranslationOverrides.string(_root.$meta, 'tabs.move.invalidTabNumber', {}) ?? 'Número da aba inválido.',
+      'tabs.move.invalidInput' => TranslationOverrides.string(_root.$meta, 'tabs.move.invalidInput', {}) ?? 'Entrada inválida',
+      'tabs.move.outOfRange' => TranslationOverrides.string(_root.$meta, 'tabs.move.outOfRange', {}) ?? 'Fora do intervalo',
+      'tabs.move.pleaseEnterValidTabNumber' =>
+        TranslationOverrides.string(_root.$meta, 'tabs.move.pleaseEnterValidTabNumber', {}) ?? 'Por favor, digite um número de aba válido',
+      'tabs.move.moveTo' =>
+        ({required String formattedNumber}) =>
+            TranslationOverrides.string(_root.$meta, 'tabs.move.moveTo', {'formattedNumber': formattedNumber}) ?? 'Mover para #${formattedNumber}',
+      'tabs.move.preview' => TranslationOverrides.string(_root.$meta, 'tabs.move.preview', {}) ?? 'Prévia:',
+      'history.searchHistory' => TranslationOverrides.string(_root.$meta, 'history.searchHistory', {}) ?? 'Search history',
+      'history.searchHistoryIsEmpty' =>
+        TranslationOverrides.string(_root.$meta, 'history.searchHistoryIsEmpty', {}) ?? 'O histórico de busca está vazio',
+      'history.searchHistoryIsDisabled' =>
+        TranslationOverrides.string(_root.$meta, 'history.searchHistoryIsDisabled', {}) ?? 'Histórico de busca desativado',
+      'history.searchHistoryRequiresDatabase' =>
+        TranslationOverrides.string(_root.$meta, 'history.searchHistoryRequiresDatabase', {}) ??
+            'Ative o banco de dados nas configurações para o histórico de busca',
+      'history.lastSearch' =>
+        ({required String search}) => TranslationOverrides.string(_root.$meta, 'history.lastSearch', {'search': search}) ?? 'Última busca: ${search}',
+      'history.lastSearchWithDate' =>
+        ({required String date}) =>
+            TranslationOverrides.string(_root.$meta, 'history.lastSearchWithDate', {'date': date}) ?? 'Última busca em: ${date}',
+      'history.unknownBooruType' => TranslationOverrides.string(_root.$meta, 'history.unknownBooruType', {}) ?? 'Tipo de Booru desconhecido!',
+      'history.unknownBooru' =>
+        ({required String name, required String type}) =>
+            TranslationOverrides.string(_root.$meta, 'history.unknownBooru', {'name': name, 'type': type}) ?? 'Booru desconhecido (${name}-${type})',
+      'history.open' => TranslationOverrides.string(_root.$meta, 'history.open', {}) ?? 'Abrir',
+      'history.openInNewTab' => TranslationOverrides.string(_root.$meta, 'history.openInNewTab', {}) ?? 'Abrir em uma nova aba',
+      'history.removeFromFavourites' => TranslationOverrides.string(_root.$meta, 'history.removeFromFavourites', {}) ?? 'Remover dos favoritos',
+      'history.setAsFavourite' => TranslationOverrides.string(_root.$meta, 'history.setAsFavourite', {}) ?? 'Definir como Favorito',
+      'history.copy' => TranslationOverrides.string(_root.$meta, 'history.copy', {}) ?? 'Copiar',
+      'webview.navigation.enterUrlLabel' => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterUrlLabel', {}) ?? 'Digite uma URL',
+      'webview.navigation.enterCustomUrl' =>
+        TranslationOverrides.string(_root.$meta, 'webview.navigation.enterCustomUrl', {}) ?? 'Digite uma URL personalizada',
+      'webview.navigation.navigateTo' =>
+        ({required String url}) => TranslationOverrides.string(_root.$meta, 'webview.navigation.navigateTo', {'url': url}) ?? 'Navegar para ${url}',
+      'webview.navigation.listCookies' => TranslationOverrides.string(_root.$meta, 'webview.navigation.listCookies', {}) ?? 'Listar cookies',
+      'webview.navigation.clearCookies' => TranslationOverrides.string(_root.$meta, 'webview.navigation.clearCookies', {}) ?? 'Limpar cookies',
+      'webview.navigation.cookiesGone' => TranslationOverrides.string(_root.$meta, 'webview.navigation.cookiesGone', {}) ?? 'Cookies limpos',
+      'webview.navigation.getFavicon' => TranslationOverrides.string(_root.$meta, 'webview.navigation.getFavicon', {}) ?? 'Obter favicon',
+      'webview.navigation.noFaviconFound' =>
+        TranslationOverrides.string(_root.$meta, 'webview.navigation.noFaviconFound', {}) ?? 'Nenhum favicon encontrado',
+      'webview.navigation.host' => TranslationOverrides.string(_root.$meta, 'webview.navigation.host', {}) ?? 'Host:',
+      'webview.navigation.textAboveSelectable' =>
+        TranslationOverrides.string(_root.$meta, 'webview.navigation.textAboveSelectable', {}) ?? '(o texto acima é selecionável)',
+      'webview.navigation.copyUrl' => TranslationOverrides.string(_root.$meta, 'webview.navigation.copyUrl', {}) ?? 'Copiar URL',
+      'webview.navigation.copiedUrlToClipboard' =>
+        TranslationOverrides.string(_root.$meta, 'webview.navigation.copiedUrlToClipboard', {}) ?? 'URL copiado para a area de transferência',
+      'webview.navigation.cookies' => TranslationOverrides.string(_root.$meta, 'webview.navigation.cookies', {}) ?? 'Cookies',
+      'webview.navigation.favicon' => TranslationOverrides.string(_root.$meta, 'webview.navigation.favicon', {}) ?? 'Favicon',
+      'webview.navigation.history' => TranslationOverrides.string(_root.$meta, 'webview.navigation.history', {}) ?? 'Histórico',
+      'webview.navigation.noBackHistoryItem' =>
+        TranslationOverrides.string(_root.$meta, 'webview.navigation.noBackHistoryItem', {}) ?? 'Nenhum item no histórico para voltar',
+      'webview.navigation.noForwardHistoryItem' =>
+        TranslationOverrides.string(_root.$meta, 'webview.navigation.noForwardHistoryItem', {}) ?? 'Nenhum item no histórico para avançar',
+      'settings.title' => TranslationOverrides.string(_root.$meta, 'settings.title', {}) ?? 'Configurações',
+      'settings.language.title' => TranslationOverrides.string(_root.$meta, 'settings.language.title', {}) ?? 'Idioma',
+      'settings.language.system' => TranslationOverrides.string(_root.$meta, 'settings.language.system', {}) ?? 'Sistema',
+      'settings.booru.addBooru' => TranslationOverrides.string(_root.$meta, 'settings.booru.addBooru', {}) ?? 'Adicionar configuração de Booru',
+      'settings.booru.addedBoorus' => TranslationOverrides.string(_root.$meta, 'settings.booru.addedBoorus', {}) ?? 'Boorus adicionados',
+      'settings.booru.importBooru' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booru.importBooru', {}) ?? 'Importar configuração de Booru da área de transferência',
+      'settings.booru.onlyLSURLsSupported' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booru.onlyLSURLsSupported', {}) ?? 'Apenas URLs do loli.snatcher são suportadas',
+      'settings.booru.deleteBooru' => TranslationOverrides.string(_root.$meta, 'settings.booru.deleteBooru', {}) ?? 'Apagar configuração de Booru',
+      'settings.booru.deleteBooruError' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booru.deleteBooruError', {}) ?? 'Ocorreu um erro ao apagar a configuração do Booru!',
+      'settings.booru.booruDeleted' => TranslationOverrides.string(_root.$meta, 'settings.booru.booruDeleted', {}) ?? 'Configuração do Booru apagada',
+      'settings.booru.booruDropdownInfo' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booru.booruDropdownInfo', {}) ??
+            '​O Booru selecionado se torna o padrão após salvar.\n\n​O Booru padrão aparece primeiro nos menus suspensos',
+      'settings.booru.changeDefaultBooru' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booru.changeDefaultBooru', {}) ?? 'Alterar Booru padrão?',
+      'settings.booru.changeTo' => TranslationOverrides.string(_root.$meta, 'settings.booru.changeTo', {}) ?? 'Alterar para: ',
+      'settings.booru.keepCurrentBooru' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booru.keepCurrentBooru', {}) ?? 'Clique em [Não] para manter o atual: ',
+      'settings.booru.changeToNewBooru' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booru.changeToNewBooru', {}) ?? 'Clique em [Sim] para alterar para: ',
+      'settings.booru.booruConfigLinkCopied' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booru.booruConfigLinkCopied', {}) ??
+            'Link de configuração do Booru copiado para a área de transferência',
+      'settings.booru.noBooruSelected' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booru.noBooruSelected', {}) ?? 'Nenhum Booru selecionado!',
+      'settings.booru.cantDeleteThisBooru' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booru.cantDeleteThisBooru', {}) ?? 'Não é possível apagar este Booru!',
+      'settings.booru.removeRelatedTabsFirst' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booru.removeRelatedTabsFirst', {}) ?? 'Remova as abas relacionadas primeiro',
+      'settings.booruEditor.title' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.title', {}) ?? 'Booru Editor',
+      'settings.booruEditor.testBooruFailedTitle' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.testBooruFailedTitle', {}) ?? 'O teste do Booru falhou',
+      'settings.booruEditor.testBooruFailedMsg' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.testBooruFailedMsg', {}) ??
+            'Os parâmetros de configuração podem estar incorretos, o Booru não permite acesso por API, a solicitação não retornou dados ou houve um erro de rede.',
+      'settings.booruEditor.saveBooru' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveBooru', {}) ?? 'Salvar Booru',
+      'settings.booruEditor.runningTest' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.runningTest', {}) ?? 'Executando teste...',
+      'settings.booruEditor.booruConfigExistsError' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigExistsError', {}) ?? 'Esta configuração de Booru ja existe',
+      'settings.booruEditor.booruSameNameExistsError' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruSameNameExistsError', {}) ??
+            'Ja existe uma Configuração de Booru com o mesmo nome',
+      'settings.booruEditor.booruSameUrlExistsError' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruSameUrlExistsError', {}) ??
+            'Já existe uma configuração de Booru com a mesma URL',
+      'settings.booruEditor.thisBooruConfigWontBeAdded' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.thisBooruConfigWontBeAdded', {}) ??
+            'Essa configuração de Booru não será adicionada',
+      'settings.booruEditor.booruConfigSaved' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigSaved', {}) ?? 'Configuração de Booru salva',
+      'settings.booruEditor.existingTabsNeedReload' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.existingTabsNeedReload', {}) ??
+            'As abas existentes com este Booru precisam ser recarregadas para aplicar as alterações!',
+      'settings.booruEditor.failedVerifyApiHydrus' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.failedVerifyApiHydrus', {}) ?? 'Falha ao verificar acesso API ao Hydrus',
+      'settings.booruEditor.accessKeyRequestedTitle' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.accessKeyRequestedTitle', {}) ?? 'Chave de acesso solicitada',
+      'settings.booruEditor.accessKeyRequestedMsg' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.accessKeyRequestedMsg', {}) ??
+            'Toque em \'OK\' no Hydrus e depois em \'Aplicar\'. Em seguida, você pode tocar em \'Testar Booru\'',
+      'settings.booruEditor.accessKeyFailedTitle' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.accessKeyFailedTitle', {}) ?? 'Falha ao obter a chave de acesso',
+      'settings.booruEditor.accessKeyFailedMsg' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.accessKeyFailedMsg', {}) ??
+            'Você tem a janela de solicitação aberta no Hydrus?',
+      'settings.booruEditor.hydrusInstructions' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.hydrusInstructions', {}) ??
+            'Para obter a chave Hydrus, você precisa abrir a caixa de diálogo de solicitação no cliente Hydrus: Serviços > Revisar serviços > API do cliente > Adicionar > Da solicitação de API',
+      'settings.booruEditor.getHydrusApiKey' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.getHydrusApiKey', {}) ?? 'Obter chave de API do Hydrus',
+      'settings.booruEditor.booruName' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruName', {}) ?? 'Nome do Booru',
+      'settings.booruEditor.booruNameRequired' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruNameRequired', {}) ?? 'O nome do Booru é obrigatório!',
+      'settings.booruEditor.booruUrl' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruUrl', {}) ?? 'URL do Booru',
+      'settings.booruEditor.booruUrlRequired' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruUrlRequired', {}) ?? 'A URL do Booru é obrigatória!',
+      'settings.booruEditor.booruType' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruType', {}) ?? 'Tipo de Booru',
+      'settings.booruEditor.booruFavicon' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruFavicon', {}) ?? 'URL do Favicon',
+      'settings.booruEditor.booruFaviconPlaceholder' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruFaviconPlaceholder', {}) ?? '(Preenchido automaticamente se vazio)',
+      'settings.booruEditor.booruDefTags' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruDefTags', {}) ?? 'Tags padrão',
+      'settings.booruEditor.booruDefTagsPlaceholder' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruDefTagsPlaceholder', {}) ?? 'Busca padrão para o booru',
+      'settings.booruEditor.booruDefaultInstructions' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruDefaultInstructions', {}) ??
+            'Os campos abaixo podem ser obrigatórios para alguns boorus',
+      'settings.booruEditor.booruConfigShouldSave' =>
+        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigShouldSave', {}) ??
+            'Confirmar o salvamento desta configuração de Booru',
+      'settings.booruEditor.booruConfigSelectedType' =>
+        ({required String booruType}) =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigSelectedType', {'booruType': booruType}) ??
+            'Tipo de Booru selecionado/detectado: ${booruType}',
+      'settings.interface.appUIMode' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.appUIMode', {}) ?? 'Modo de interface do usuário do app',
+      'settings.interface.appUIModeWarningTitle' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.appUIModeWarningTitle', {}) ?? 'Modo de interface do usuário do app',
+      'settings.interface.appUIModeWarning' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.appUIModeWarning', {}) ??
+            'Usar o modo Desktop? Pode causar problemas em dispositivos móveis. [INTERFACE DESCONTINUADA]',
+      'settings.interface.appUIModeHelpMobile' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.appUIModeHelpMobile', {}) ?? '- Mobile - Interface dispositivos móveis',
+      'settings.interface.appUIModeHelpWarning' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.appUIModeHelpWarning', {}) ??
+            '[Aviso]: Não defina o Modo de Interface para Desktop em um celular, pois isso pode danificar o aplicativo e você poderá ter que apagar todas as suas configurações, incluindo as configurações do Booru.',
+      'settings.interface.previewDisplayFallbackHelp' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayFallbackHelp', {}) ??
+            'Isso será usado quando a opção Mosaico não for possível',
+      'settings.interface.dontScaleImages' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImages', {}) ?? 'Não redimensionar imagens',
+      'settings.interface.dontScaleImagesSubtitle' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImagesSubtitle', {}) ?? 'Pode reduzir o desempenho',
+      'settings.interface.dontScaleImagesWarningTitle' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImagesWarningTitle', {}) ?? 'Aviso',
+      'settings.interface.dontScaleImagesWarning' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImagesWarning', {}) ??
+            'Tem certeza de que deseja desativar o redimensionamento de imagens?',
+      'settings.interface.dontScaleImagesWarningMsg' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImagesWarningMsg', {}) ??
+            'Isso pode afetar negativamente o desempenho, especialmente em dispositivos mais antigos',
+      'settings.interface.gifThumbnails' => TranslationOverrides.string(_root.$meta, 'settings.interface.gifThumbnails', {}) ?? 'Miniaturas em GIF',
+      'settings.interface.gifThumbnailsRequires' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.gifThumbnailsRequires', {}) ?? 'Requer «Não redimensionar imagens»',
+      'settings.interface.scrollPreviewsButtonsPosition' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.scrollPreviewsButtonsPosition', {}) ??
+            'Posição dos botões de rolagem das prévias',
+      'settings.interface.mouseWheelScrollModifier' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.mouseWheelScrollModifier', {}) ?? 'Modificador de rolagem da roda do mouse',
+      'settings.interface.scrollModifier' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.scrollModifier', {}) ?? 'Modificador de rolagem',
+      'settings.interface.previewQualityValues.thumbnail' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.previewQualityValues.thumbnail', {}) ?? 'Miniatura',
+      'settings.interface.previewQualityValues.sample' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.previewQualityValues.sample', {}) ?? 'Amostra',
+      'settings.interface.previewDisplayModeValues.square' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayModeValues.square', {}) ?? 'Quadrado',
+      'settings.interface.previewDisplayModeValues.rectangle' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayModeValues.rectangle', {}) ?? 'Retângulo',
+      'settings.interface.previewDisplayModeValues.staggered' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayModeValues.staggered', {}) ?? 'Mosaico',
+      'settings.interface.appModeValues.desktop' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.appModeValues.desktop', {}) ?? 'Desktop',
+      'settings.interface.appModeValues.mobile' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.appModeValues.mobile', {}) ?? 'Mobile',
+      'settings.interface.handSideValues.left' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.left', {}) ?? 'Esquerda',
+      'settings.interface.handSideValues.right' =>
+        TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.right', {}) ?? 'Direita',
+      'settings.theme.title' => TranslationOverrides.string(_root.$meta, 'settings.theme.title', {}) ?? 'Temas',
+      'settings.theme.themeMode' => TranslationOverrides.string(_root.$meta, 'settings.theme.themeMode', {}) ?? 'Modo do tema',
+      'settings.theme.blackBg' => TranslationOverrides.string(_root.$meta, 'settings.theme.blackBg', {}) ?? 'Fundo preto',
+      'settings.theme.useDynamicColor' => TranslationOverrides.string(_root.$meta, 'settings.theme.useDynamicColor', {}) ?? 'Usar cores dinâmicas',
+      'settings.theme.android12PlusOnly' => TranslationOverrides.string(_root.$meta, 'settings.theme.android12PlusOnly', {}) ?? 'Apenas Android 12+',
+      'settings.theme.theme' => TranslationOverrides.string(_root.$meta, 'settings.theme.theme', {}) ?? 'Tema',
+      'settings.theme.primaryColor' => TranslationOverrides.string(_root.$meta, 'settings.theme.primaryColor', {}) ?? 'Cor primária',
+      'settings.theme.secondaryColor' => TranslationOverrides.string(_root.$meta, 'settings.theme.secondaryColor', {}) ?? 'Cor secundária',
+      'settings.theme.enableDrawerMascot' =>
+        TranslationOverrides.string(_root.$meta, 'settings.theme.enableDrawerMascot', {}) ?? 'Ativar mascote do menu lateral',
+      'settings.theme.fontPreviewText' =>
+        TranslationOverrides.string(_root.$meta, 'settings.theme.fontPreviewText', {}) ?? 'A rápida raposa marrom salta sobre o cão preguiçoso',
+      'settings.theme.customFont' => TranslationOverrides.string(_root.$meta, 'settings.theme.customFont', {}) ?? 'Fonte personalizada',
+      'settings.theme.customFontSubtitle' =>
+        TranslationOverrides.string(_root.$meta, 'settings.theme.customFontSubtitle', {}) ?? 'Insira o nome de qualquer Google Font',
+      'settings.theme.fontName' => TranslationOverrides.string(_root.$meta, 'settings.theme.fontName', {}) ?? 'Nome da fonte',
+      'settings.theme.customFontHint' =>
+        TranslationOverrides.string(_root.$meta, 'settings.theme.customFontHint', {}) ?? 'Navegue pelas fontes em fonts.google.com',
+      'settings.theme.fontNotFound' => TranslationOverrides.string(_root.$meta, 'settings.theme.fontNotFound', {}) ?? 'Fonte não encontrada',
+      'settings.viewer.title' => TranslationOverrides.string(_root.$meta, 'settings.viewer.title', {}) ?? 'Visualizador',
+      'settings.viewer.preloadAmount' =>
+        TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadAmount', {}) ?? 'Quantidade de pré-carregamento',
+      'settings.viewer.preloadSizeLimit' =>
+        TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadSizeLimit', {}) ?? 'Limite de tamanho do pré-carregamento',
+      'settings.viewer.preloadSizeLimitSubtitle' =>
+        TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadSizeLimitSubtitle', {}) ?? 'em GB, 0 para sem limite',
+      'settings.viewer.preloadHeightLimit' =>
+        TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadHeightLimit', {}) ?? 'Limite de altura do pré-carregamento',
+      'settings.viewer.preloadHeightLimitSubtitle' =>
+        TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadHeightLimitSubtitle', {}) ?? 'em pixels, 0 para sem limite',
+      'settings.viewer.imageQuality' => TranslationOverrides.string(_root.$meta, 'settings.viewer.imageQuality', {}) ?? 'Qualidade da imagem',
+      'settings.viewer.viewerScrollDirection' =>
+        TranslationOverrides.string(_root.$meta, 'settings.viewer.viewerScrollDirection', {}) ?? 'Direção de rolagem do visualizador',
+      'settings.viewer.viewerToolbarPosition' =>
+        TranslationOverrides.string(_root.$meta, 'settings.viewer.viewerToolbarPosition', {}) ?? 'Posição da barra de ferramentas do visualizador',
+      'settings.viewer.zoomButtonPosition' =>
+        TranslationOverrides.string(_root.$meta, 'settings.viewer.zoomButtonPosition', {}) ?? 'Posição do botão de zoom',
+      'settings.viewer.changePageButtonsPosition' =>
+        TranslationOverrides.string(_root.$meta, 'settings.viewer.changePageButtonsPosition', {}) ?? 'Posição dos botões de mudar de página',
+      'settings.viewer.hideToolbarWhenOpeningViewer' =>
+        TranslationOverrides.string(_root.$meta, 'settings.viewer.hideToolbarWhenOpeningViewer', {}) ??
+            'Ocultar barra de ferramentas ao abrir o visualizador',
+      'settings.viewer.expandDetailsByDefault' =>
+        TranslationOverrides.string(_root.$meta, 'settings.viewer.expandDetailsByDefault', {}) ?? 'Expandir detalhes por padrão',
+      'settings.viewer.hideTranslationNotesByDefault' =>
+        TranslationOverrides.string(_root.$meta, 'settings.viewer.hideTranslationNotesByDefault', {}) ?? 'Ocultar notas de tradução por padrão',
+      'settings.viewer.atLeast4ButtonsVisibleOnToolbar' =>
+        TranslationOverrides.string(_root.$meta, 'settings.viewer.atLeast4ButtonsVisibleOnToolbar', {}) ??
+            'Pelo menos 4 botões desta lista estarão sempre visíveis na barra de ferramentas.',
+      'settings.viewer.shareActionValues.ask' => TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionValues.ask', {}) ?? 'Perguntar',
+      'settings.database.appRestartRequired' =>
+        TranslationOverrides.string(_root.$meta, 'settings.database.appRestartRequired', {}) ?? 'É necessário reiniciar o aplicativo!',
+      'settings.database.appRestartMayBeRequired' =>
+        TranslationOverrides.string(_root.$meta, 'settings.database.appRestartMayBeRequired', {}) ?? 'Pode ser necessário reiniciar o app!',
+      'settings.privacy.appLock' => TranslationOverrides.string(_root.$meta, 'settings.privacy.appLock', {}) ?? 'Proteger app',
+      'settings.privacy.appLockMsg' =>
+        TranslationOverrides.string(_root.$meta, 'settings.privacy.appLockMsg', {}) ??
+            'Proteger app manualmente ou depois de um tempo inativo. Requer PIN ou biometria',
+      'settings.privacy.appDisplayName' =>
+        TranslationOverrides.string(_root.$meta, 'settings.privacy.appDisplayName', {}) ?? 'Nome de exibição do aplicativo',
+      'settings.privacy.appDisplayNameDescription' =>
+        TranslationOverrides.string(_root.$meta, 'settings.privacy.appDisplayNameDescription', {}) ?? 'Mude como o nome do app aparece nos seus apps',
+      'settings.cache.appRestartRequired' =>
+        TranslationOverrides.string(_root.$meta, 'settings.cache.appRestartRequired', {}) ?? 'Pode ser necessário reiniciar o app!',
+      'settings.about.appDescription' =>
+        TranslationOverrides.string(_root.$meta, 'settings.about.appDescription', {}) ??
+            'LoliSnatcher é de código aberto e licenciado com GPLv3. O código-fonte está disponível no GitHub. Por favor, reporte qualquer problema ou pedido de funcionalidade na seção "issues" no repositório.',
+      'settings.about.appOnGitHub' => TranslationOverrides.string(_root.$meta, 'settings.about.appOnGitHub', {}) ?? 'LoliSnatcher no Github',
+      'tagsFiltersDialogs.addNewFilter' =>
+        ({required String type}) =>
+            TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.addNewFilter', {'type': type}) ?? '[Adicionar novo filtro de ${type}]',
+      'tagsManager.addTag' => TranslationOverrides.string(_root.$meta, 'tagsManager.addTag', {}) ?? 'Adicionar tag',
+      'tagsManager.add' => TranslationOverrides.string(_root.$meta, 'tagsManager.add', {}) ?? 'adicionar',
+      'tagsManager.addedATab' => TranslationOverrides.string(_root.$meta, 'tagsManager.addedATab', {}) ?? 'Uma aba adicionada',
+      'tagsManager.addATab' => TranslationOverrides.string(_root.$meta, 'tagsManager.addATab', {}) ?? 'Adicionar aba',
+      'tagView.addedToCurrentSearch' =>
+        TranslationOverrides.string(_root.$meta, 'tagView.addedToCurrentSearch', {}) ?? 'Adicionada à atual lista de pesquisa',
+      'tagView.addedNewTab' => TranslationOverrides.string(_root.$meta, 'tagView.addedNewTab', {}) ?? 'Nova aba adicionada',
+      'tagView.addedToSearchBar' => TranslationOverrides.string(_root.$meta, 'tagView.addedToSearchBar', {}) ?? 'Adicionada a barra de pesquisa',
+      'pinnedTags.addPinnedTag' => TranslationOverrides.string(_root.$meta, 'pinnedTags.addPinnedTag', {}) ?? 'Adicionar tag fixada',
+      'desktopHome.addBoorusInSettings' =>
+        TranslationOverrides.string(_root.$meta, 'desktopHome.addBoorusInSettings', {}) ?? 'Adicionar outros boorus',
+      'mediaPreviews.addNewBooru' => TranslationOverrides.string(_root.$meta, 'mediaPreviews.addNewBooru', {}) ?? 'Adicionar novo Booru',
+      'viewer.appBar.abort' => TranslationOverrides.string(_root.$meta, 'viewer.appBar.abort', {}) ?? 'Abortar',
+      'tagType.artist' => TranslationOverrides.string(_root.$meta, 'tagType.artist', {}) ?? 'Artista',
       _ => null,
     };
   }

@@ -80,10 +80,10 @@ class _DebugActionsWidgetState extends State<DebugActionsWidget> {
           ),
 
         SettingsButton(
-          name: context.loc.settings.debug.animationSpeed(speed: timeDilation),
+          name: context.loc.settings.debug.animationSpeed(speed: (1 / timeDilation).toPrecision(3)),
           icon: const Icon(Icons.timelapse),
           action: () {
-            const List<double> speeds = [0.25, 0.5, 0.75, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20];
+            const List<double> speeds = [0.25, 0.5, 0.75, 1, 2, 3, 4, 5, 10, 20];
             final int currentIndex = speeds.indexOf(timeDilation);
             int newIndex = 0;
             if ((currentIndex + 1) <= (speeds.length - 1)) {

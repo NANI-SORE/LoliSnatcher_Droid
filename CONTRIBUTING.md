@@ -77,7 +77,8 @@ Translation files are located in `assets/i18n/`:
 1. Create a new file `assets/i18n/xx-XX.json` (where xx-XX is the language code)
 2. Copy the structure from `en.json` and translate all strings
 3. Register the locale in the app configuration
-4. Run `sh loc_build.sh` to regenerate types
+4. Run `dart run ./loc_build.dart` to regenerate types
+5. Add your language it in `AppLocaleExt - allowedValues` function inside `lib\src\pages\settings\language_page.dart`
 
 ## Reporting Bugs
 
