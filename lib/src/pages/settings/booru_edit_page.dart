@@ -154,7 +154,15 @@ class _BooruEditState extends State<BooruEdit> {
             SettingsTextInput(
               controller: booruURLController,
               title: context.loc.settings.booruEditor.booruUrl,
-              onChanged: (_) => setState(() {}),
+              onChanged: (_) {
+                if (booruURLController.text.isEmpty) {
+                  booruFaviconController.text = widget.booru.type == null ? '' : widget.booru.faviconURL ?? '';
+                  booruType = widget.booru.type;
+                  selectedBooruType = widget.booru.type ?? BooruType.Autodetect;
+                }
+
+                setState(() {});
+              },
               inputType: TextInputType.url,
               clearable: true,
               pasteable: true,
@@ -386,6 +394,41 @@ class _BooruEditState extends State<BooruEdit> {
       booruURLController.text = booruURLController.text.substring(0, booruURLController.text.length - 1);
     }
 
+    // pre-select booru type for popular sites to avoid false positives for autodetect
+    if (selectedBooruType.isAutodetect) {
+      final String host = Uri.parse(booruURLController.text).host;
+      switch (host) {
+        case 'gelbooru.com':
+        case 'rule34.xxx':
+        case 'safebooru.org':
+          selectedBooruType = BooruType.Gelbooru;
+          break;
+        case 'danbooru.donmai.us':
+        case 'bleachbooru.org':
+        case 'booru.allthefallen.moe':
+          selectedBooruType = BooruType.Danbooru;
+          break;
+        case 'sankaku.app':
+        case 'sankakucomplex.com':
+        case 'chan.sankakucomplex.com':
+          selectedBooruType = BooruType.Sankaku;
+          break;
+        case 'idol.sankakucomplex.com':
+          selectedBooruType = BooruType.IdolSankaku;
+          break;
+        case 'e621.net':
+          selectedBooruType = BooruType.e621;
+          break;
+        case 'rule34.paheal.net':
+          selectedBooruType = BooruType.Shimmie;
+          break;
+        case 'rule34hentai.net':
+          selectedBooruType = BooruType.R34Hentai;
+          break;
+      }
+      setState(() {});
+    }
+
     booruURLController.text = convertSiteUrlToApiUrl();
 
     booruFaviconController.text = booruFaviconController.text.trim().isEmpty
@@ -427,15 +470,15 @@ class _BooruEditState extends State<BooruEdit> {
           style: const TextStyle(fontSize: 20),
         ),
         content: Column(
+          spacing: 12,
           children: [
             Text(
               context.loc.settings.booruEditor.testBooruFailedMsg,
               style: const TextStyle(fontSize: 16),
             ),
             if (errorString.trim().isNotEmpty)
-              Text(
+              LoliHtml(
                 '${context.loc.error}: $errorString',
-                style: const TextStyle(fontSize: 16),
               ),
           ],
         ),
@@ -608,6 +651,9 @@ class _BooruEditState extends State<BooruEdit> {
       }
 
       await settingsHandler.saveBooru(newBooru);
+
+      // loadd all boorus to force add favs/dls to the list
+      await settingsHandler.loadBoorus();
 
       FlashElements.showSnackbar(
         context: context,

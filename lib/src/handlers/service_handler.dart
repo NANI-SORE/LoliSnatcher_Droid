@@ -451,6 +451,15 @@ class ServiceHandler {
       visible ? SystemUiMode.edgeToEdge : SystemUiMode.immersiveSticky,
       overlays: visible ? SystemUiOverlay.values : [],
     );
+
+    if (visible) {
+      // TODO this is a temp fix while edgeToEdge is broken after f3.44 (details: https://github.com/flutter/flutter/issues/186723)
+      await SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.manual,
+        overlays: SystemUiOverlay.values,
+      );
+      await SystemChrome.restoreSystemUIOverlays();
+    }
   }
 
   static Future<String> getIP() async {

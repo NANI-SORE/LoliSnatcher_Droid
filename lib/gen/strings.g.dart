@@ -67,8 +67,7 @@ enum AppLocale with BaseAppLocale<AppLocale, Translations> {
   ptBr(languageCode: 'pt', countryCode: 'BR'),
   ruRu(languageCode: 'ru', countryCode: 'RU'),
   trTr(languageCode: 'tr', countryCode: 'TR'),
-  zhCn(languageCode: 'zh', countryCode: 'CN')
-  ;
+  zhCn(languageCode: 'zh', countryCode: 'CN');
 
   const AppLocale({
     required this.languageCode,

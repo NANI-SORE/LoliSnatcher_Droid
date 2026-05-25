@@ -21,14 +21,13 @@
         android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
-            android:launchMode="singleInstance"
+            android:launchMode="singleTask"
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:enabled="true"
             android:exported="true"
             android:windowSoftInputMode="stateVisible">
-            <!-- android:launchMode="singleTop" - allows multiple instances of the app (i.e. - opened from a config link) -->
             <!-- LAUNCHER intent is on activity-aliases for dynamic app name in release -->
             <!-- Debug manifest adds LAUNCHER directly to MainActivity -->
 

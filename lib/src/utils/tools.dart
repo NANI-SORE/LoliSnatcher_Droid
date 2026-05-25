@@ -426,6 +426,34 @@ class Tools {
 
     return false;
   }
+
+  static String? urlJoin(String? base, String? segment) {
+    if (base == null) return segment;
+    if (segment == null) return base;
+
+    final baseUri = Uri.parse(base), segUri = Uri.parse(segment);
+    final schemeRegex = RegExp(r'^[a-zA-Z][a-zA-Z\d+\-.]*:');
+    if (schemeRegex.hasMatch(segment)) return segment;
+    if (segment.startsWith('//')) return '${baseUri.scheme}:$segment';
+    if (segment.startsWith('?')) return baseUri.replace(query: segUri.query, fragment: segUri.fragment).toString();
+    if (segment.startsWith('#')) return baseUri.replace(fragment: segUri.fragment).toString();
+
+    var path = baseUri.path.endsWith('/') ? baseUri.path : baseUri.path.substring(0, baseUri.path.lastIndexOf('/') + 1);
+    if (segment.startsWith('/')) {
+      path = segment.substring(1);
+    } else {
+      path += segUri.path;
+    }
+
+    return Uri(
+      scheme: baseUri.scheme,
+      host: baseUri.host,
+      port: baseUri.hasPort ? baseUri.port : null,
+      path: path,
+      query: segUri.query.isEmpty ? null : segUri.query,
+      fragment: segUri.fragment.isEmpty ? null : segUri.fragment,
+    ).toString();
+  }
 }
 
 bool captchaScreenActive = false;

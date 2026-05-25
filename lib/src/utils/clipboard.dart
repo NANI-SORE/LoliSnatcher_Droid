@@ -49,6 +49,8 @@ class ClipboardUtils {
     CancelToken? cancelToken,
     void Function(int, int?)? onReceiveProgress,
   }) async {
+    if (item.mediaType.value.isVideo) return;
+
     final ctx = NavigationHandler.instance.navContext;
 
     try {

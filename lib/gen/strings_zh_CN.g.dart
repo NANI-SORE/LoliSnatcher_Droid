@@ -465,9 +465,9 @@ class _TranslationsSnatcherZhCn extends TranslationsSnatcherEn {
   @override
   String get amountOfFilesToSnatch => TranslationOverrides.string(_root.$meta, 'snatcher.amountOfFilesToSnatch', {}) ?? '要下载的文件数量';
   @override
-  String get delayInMs => TranslationOverrides.string(_root.$meta, 'snatcher.delayInMs', {}) ?? '延迟（毫秒）';
+  String get delayInMs => TranslationOverrides.string(_root.$meta, 'snatcher.delayInMs', {}) ?? '间隔（毫秒）';
   @override
-  String get delayBetweenEachDownload => TranslationOverrides.string(_root.$meta, 'snatcher.delayBetweenEachDownload', {}) ?? '每次下载之间的延迟';
+  String get delayBetweenEachDownload => TranslationOverrides.string(_root.$meta, 'snatcher.delayBetweenEachDownload', {}) ?? '每次下载之间的间隔时间';
   @override
   String get snatchFiles => TranslationOverrides.string(_root.$meta, 'snatcher.snatchFiles', {}) ?? '开始下载';
   @override
@@ -2038,13 +2038,13 @@ class _TranslationsSettingsViewerZhCn extends TranslationsSettingsViewerEn {
       TranslationOverrides.string(_root.$meta, 'settings.viewer.atLeast4ButtonsVisibleOnToolbar', {}) ?? '在工具栏中至少要有4个按钮保持可见。';
   @override
   String get otherButtonsWillGoIntoOverflow =>
-      TranslationOverrides.string(_root.$meta, 'settings.viewer.otherButtonsWillGoIntoOverflow', {}) ?? '其他按钮会被收纳在更多(三点)菜单中。';
+      TranslationOverrides.string(_root.$meta, 'settings.viewer.otherButtonsWillGoIntoOverflow', {}) ?? '其他按钮会被收纳在展开(三点)菜单中。';
   @override
   String get longPressToMoveItems => TranslationOverrides.string(_root.$meta, 'settings.viewer.longPressToMoveItems', {}) ?? '长按移动项目';
   @override
   String get onlyForVideos => TranslationOverrides.string(_root.$meta, 'settings.viewer.onlyForVideos', {}) ?? '仅限视频';
   @override
-  String get thisButtonCannotBeDisabled => TranslationOverrides.string(_root.$meta, 'settings.viewer.thisButtonCannotBeDisabled', {}) ?? '不可以禁用此按钮';
+  String get thisButtonCannotBeDisabled => TranslationOverrides.string(_root.$meta, 'settings.viewer.thisButtonCannotBeDisabled', {}) ?? '不可以隐藏这个按钮';
   @override
   String get defaultShareAction => TranslationOverrides.string(_root.$meta, 'settings.viewer.defaultShareAction', {}) ?? '默认分享行为';
   @override
@@ -2472,7 +2472,7 @@ class _TranslationsSettingsNetworkZhCn extends TranslationsSettingsNetworkEn {
   String get title => TranslationOverrides.string(_root.$meta, 'settings.network.title', {}) ?? '网络';
   @override
   String get enableSelfSignedSSLCertificates =>
-      TranslationOverrides.string(_root.$meta, 'settings.network.enableSelfSignedSSLCertificates', {}) ?? '启用自签名的SSL证书';
+      TranslationOverrides.string(_root.$meta, 'settings.network.enableSelfSignedSSLCertificates', {}) ?? '允许自签名的SSL证书';
   @override
   String get proxy => TranslationOverrides.string(_root.$meta, 'settings.network.proxy', {}) ?? '代理';
   @override
@@ -2533,7 +2533,7 @@ class _TranslationsSettingsPrivacyZhCn extends TranslationsSettingsPrivacyEn {
   @override
   String get autoLockAfter => TranslationOverrides.string(_root.$meta, 'settings.privacy.autoLockAfter', {}) ?? '自动锁定计时';
   @override
-  String get autoLockAfterTip => TranslationOverrides.string(_root.$meta, 'settings.privacy.autoLockAfterTip', {}) ?? '单位是秒，设成0以禁用';
+  String get autoLockAfterTip => TranslationOverrides.string(_root.$meta, 'settings.privacy.autoLockAfterTip', {}) ?? '单位是秒，设置成0不自动锁定';
   @override
   String get bluronLeave => TranslationOverrides.string(_root.$meta, 'settings.privacy.bluronLeave', {}) ?? '离开应用时模糊界面';
   @override
@@ -2619,7 +2619,7 @@ class _TranslationsSettingsCacheZhCn extends TranslationsSettingsCacheEn {
   @override
   String get favouriteItemsOnSnatching => TranslationOverrides.string(_root.$meta, 'settings.cache.favouriteItemsOnSnatching', {}) ?? '下载时收藏该项目';
   @override
-  String get writeImageDataOnSave => TranslationOverrides.string(_root.$meta, 'settings.cache.writeImageDataOnSave', {}) ?? '保存时将图像数据写入JSON';
+  String get writeImageDataOnSave => TranslationOverrides.string(_root.$meta, 'settings.cache.writeImageDataOnSave', {}) ?? '下载时保存图像信息到同名JSON文件';
   @override
   String get requiresCustomStorageDirectory =>
       TranslationOverrides.string(_root.$meta, 'settings.cache.requiresCustomStorageDirectory', {}) ?? '需要自定义目录';
@@ -3401,7 +3401,7 @@ class _TranslationsSettingsViewerButtonPositionValuesZhCn extends TranslationsSe
 
   // Translations
   @override
-  String get disabled => TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonPositionValues.disabled', {}) ?? '禁用';
+  String get disabled => TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonPositionValues.disabled', {}) ?? '隐藏';
   @override
   String get left => TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonPositionValues.left', {}) ?? '左';
   @override
@@ -3692,8 +3692,8 @@ extension on TranslationsZhCn {
           'snatcher.enterTags' => TranslationOverrides.string(_root.$meta, 'snatcher.enterTags', {}) ?? '输入标签',
           'snatcher.amount' => TranslationOverrides.string(_root.$meta, 'snatcher.amount', {}) ?? '数量',
           'snatcher.amountOfFilesToSnatch' => TranslationOverrides.string(_root.$meta, 'snatcher.amountOfFilesToSnatch', {}) ?? '要下载的文件数量',
-          'snatcher.delayInMs' => TranslationOverrides.string(_root.$meta, 'snatcher.delayInMs', {}) ?? '延迟（毫秒）',
-          'snatcher.delayBetweenEachDownload' => TranslationOverrides.string(_root.$meta, 'snatcher.delayBetweenEachDownload', {}) ?? '每次下载之间的延迟',
+          'snatcher.delayInMs' => TranslationOverrides.string(_root.$meta, 'snatcher.delayInMs', {}) ?? '间隔（毫秒）',
+          'snatcher.delayBetweenEachDownload' => TranslationOverrides.string(_root.$meta, 'snatcher.delayBetweenEachDownload', {}) ?? '每次下载之间的间隔时间',
           'snatcher.snatchFiles' => TranslationOverrides.string(_root.$meta, 'snatcher.snatchFiles', {}) ?? '开始下载',
           'snatcher.itemWasAlreadySnatched' => TranslationOverrides.string(_root.$meta, 'snatcher.itemWasAlreadySnatched', {}) ?? '此项目之前已下载过',
           'snatcher.failedToSnatchItem' => TranslationOverrides.string(_root.$meta, 'snatcher.failedToSnatchItem', {}) ?? '项目下载失败',
@@ -4191,11 +4191,11 @@ extension on TranslationsZhCn {
           'settings.viewer.atLeast4ButtonsVisibleOnToolbar' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.atLeast4ButtonsVisibleOnToolbar', {}) ?? '在工具栏中至少要有4个按钮保持可见。',
           'settings.viewer.otherButtonsWillGoIntoOverflow' =>
-            TranslationOverrides.string(_root.$meta, 'settings.viewer.otherButtonsWillGoIntoOverflow', {}) ?? '其他按钮会被收纳在更多(三点)菜单中。',
+            TranslationOverrides.string(_root.$meta, 'settings.viewer.otherButtonsWillGoIntoOverflow', {}) ?? '其他按钮会被收纳在展开(三点)菜单中。',
           'settings.viewer.longPressToMoveItems' => TranslationOverrides.string(_root.$meta, 'settings.viewer.longPressToMoveItems', {}) ?? '长按移动项目',
           'settings.viewer.onlyForVideos' => TranslationOverrides.string(_root.$meta, 'settings.viewer.onlyForVideos', {}) ?? '仅限视频',
           'settings.viewer.thisButtonCannotBeDisabled' =>
-            TranslationOverrides.string(_root.$meta, 'settings.viewer.thisButtonCannotBeDisabled', {}) ?? '不可以禁用此按钮',
+            TranslationOverrides.string(_root.$meta, 'settings.viewer.thisButtonCannotBeDisabled', {}) ?? '不可以隐藏这个按钮',
           'settings.viewer.defaultShareAction' => TranslationOverrides.string(_root.$meta, 'settings.viewer.defaultShareAction', {}) ?? '默认分享行为',
           'settings.viewer.shareActions' => TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActions', {}) ?? '分享行为',
           'settings.viewer.shareActionsAsk' => TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionsAsk', {}) ?? '- 询问 - 始终询问分享什么',
@@ -4260,7 +4260,7 @@ extension on TranslationsZhCn {
           'settings.viewer.toolbarPositionValues.bottom' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.toolbarPositionValues.bottom', {}) ?? '底部',
           'settings.viewer.buttonPositionValues.disabled' =>
-            TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonPositionValues.disabled', {}) ?? '禁用',
+            TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonPositionValues.disabled', {}) ?? '隐藏',
           'settings.viewer.buttonPositionValues.left' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonPositionValues.left', {}) ?? '左',
           'settings.viewer.buttonPositionValues.right' =>
@@ -4533,7 +4533,7 @@ extension on TranslationsZhCn {
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupCancelled', {}) ?? '备份已取消',
           'settings.network.title' => TranslationOverrides.string(_root.$meta, 'settings.network.title', {}) ?? '网络',
           'settings.network.enableSelfSignedSSLCertificates' =>
-            TranslationOverrides.string(_root.$meta, 'settings.network.enableSelfSignedSSLCertificates', {}) ?? '启用自签名的SSL证书',
+            TranslationOverrides.string(_root.$meta, 'settings.network.enableSelfSignedSSLCertificates', {}) ?? '允许自签名的SSL证书',
           'settings.network.proxy' => TranslationOverrides.string(_root.$meta, 'settings.network.proxy', {}) ?? '代理',
           'settings.network.proxySubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.network.proxySubtitle', {}) ?? '流式传输的视频不会走代理，如有需要请切换到缓存模式',
@@ -4575,7 +4575,8 @@ extension on TranslationsZhCn {
           'settings.privacy.appLock' => TranslationOverrides.string(_root.$meta, 'settings.privacy.appLock', {}) ?? '应用锁',
           'settings.privacy.appLockMsg' => TranslationOverrides.string(_root.$meta, 'settings.privacy.appLockMsg', {}) ?? '手动或一段时间后锁定应用。需要PIN/生物验证',
           'settings.privacy.autoLockAfter' => TranslationOverrides.string(_root.$meta, 'settings.privacy.autoLockAfter', {}) ?? '自动锁定计时',
-          'settings.privacy.autoLockAfterTip' => TranslationOverrides.string(_root.$meta, 'settings.privacy.autoLockAfterTip', {}) ?? '单位是秒，设成0以禁用',
+          'settings.privacy.autoLockAfterTip' =>
+            TranslationOverrides.string(_root.$meta, 'settings.privacy.autoLockAfterTip', {}) ?? '单位是秒，设置成0不自动锁定',
           'settings.privacy.bluronLeave' => TranslationOverrides.string(_root.$meta, 'settings.privacy.bluronLeave', {}) ?? '离开应用时模糊界面',
           'settings.privacy.bluronLeaveMsg' => TranslationOverrides.string(_root.$meta, 'settings.privacy.bluronLeaveMsg', {}) ?? '由于系统限制，可能在某些设备上无效',
           'settings.privacy.incognitoKeyboard' => TranslationOverrides.string(_root.$meta, 'settings.privacy.incognitoKeyboard', {}) ?? '无痕键盘',
@@ -4621,7 +4622,7 @@ extension on TranslationsZhCn {
           'settings.cache.favouriteItemsOnSnatching' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.favouriteItemsOnSnatching', {}) ?? '下载时收藏该项目',
           'settings.cache.writeImageDataOnSave' =>
-            TranslationOverrides.string(_root.$meta, 'settings.cache.writeImageDataOnSave', {}) ?? '保存时将图像数据写入JSON',
+            TranslationOverrides.string(_root.$meta, 'settings.cache.writeImageDataOnSave', {}) ?? '下载时保存图像信息到同名JSON文件',
           'settings.cache.requiresCustomStorageDirectory' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.requiresCustomStorageDirectory', {}) ?? '需要自定义目录',
           'settings.cache.setStorageDirectory' => TranslationOverrides.string(_root.$meta, 'settings.cache.setStorageDirectory', {}) ?? '设置存储目录',
