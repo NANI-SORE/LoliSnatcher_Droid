@@ -44,14 +44,14 @@ dependencies:
   flutter_inappwebview: ^6.2.0-beta.3
   flutter_keyboard_visibility: ^6.0.0
   flutter_linkify: ^6.0.0
-  flutter_secure_storage: ^10.2.0
+  flutter_secure_storage: ^10.3.0
   flutter_socks_proxy:
     git:
       url: https://github.com/jiangtian616/socks_proxy
       ref: 52759af6c6b245db4ba5bfa9ccc64d74f3ceb2fb
   font_awesome_flutter: ^11.0.0
   fpdart: ^1.2.0
-  fvp: ^0.36.2
+  fvp: ^0.37.0
   get_it: ^9.2.1
   get: # ^5.0.0-release-candidate-9.3.2 # TODO - MOVE TO A DIFFERENT STATE MANAGEMENT SOLUTIONS
     git:
@@ -64,7 +64,7 @@ dependencies:
       url: https://github.com/NANI-SORE/http_proxy.git
       ref: 36a202ceec982d199acdcd717ce85436372f447d # master - forked to fix build errors and remove allowing all bad certs
   huge_listview: ^2.0.12
-  image: ^4.8.0
+  image: ^4.9.0
   intl: ^0.20.2
   keyboard_actions: # ^4.2.0
     git:
@@ -111,6 +111,7 @@ dependencies:
 dependency_overrides:
   android_intent_plus: ^6.0.0
   material_color_utilities: ^0.13.0 # flutter_test conflict
+  meta: ^1.18.2 # flutter_test and image conflict
   share_plus: ^13.1.0 # alice conflict
   xml: ^7.0.1 # image conflict
 
