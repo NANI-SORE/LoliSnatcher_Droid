@@ -81,9 +81,8 @@ class TransparentPointer extends SingleChildRenderObjectWidget {
 class RenderTransparentPointer extends RenderProxyBox {
   RenderTransparentPointer({
     RenderBox? child,
-    bool transparent = true,
-  }) : _transparent = transparent,
-       super(child);
+    this._transparent = true,
+  }) : super(child);
 
   bool get transparent => _transparent;
   bool _transparent;

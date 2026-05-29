@@ -955,23 +955,20 @@ class MainActivity: FlutterFragmentActivity() {
         val pm = packageManager
 
         try {
-            // Disable all aliases first
             for ((_, aliasComponent) in aliasMap) {
                 val component = ComponentName(packageName, "$packageName$aliasComponent")
+                val state = if (aliasComponent == targetAlias) {
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                } else {
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+                }
+
                 pm.setComponentEnabledSetting(
                     component,
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    state,
                     PackageManager.DONT_KILL_APP
                 )
             }
-
-            // Enable the selected alias
-            val component = ComponentName(packageName, "$packageName$targetAlias")
-            pm.setComponentEnabledSetting(
-                component,
-                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                PackageManager.DONT_KILL_APP
-            )
 
             return true
         } catch (e: Exception) {

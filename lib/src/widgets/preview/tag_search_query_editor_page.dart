@@ -3,25 +3,24 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:fading_edge_scrollview/fading_edge_scrollview.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:intl/intl.dart';
-import 'package:lolisnatcher/src/handlers/search_handler.dart';
-import 'package:lolisnatcher/src/widgets/desktop/desktop_scroll.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/meta_tag.dart';
 import 'package:lolisnatcher/src/data/tag_suggestion.dart';
+import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
-import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/kaomoji.dart';
 import 'package:lolisnatcher/src/widgets/common/marquee_text.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
+import 'package:lolisnatcher/src/widgets/desktop/desktop_scroll.dart';
 import 'package:lolisnatcher/src/widgets/gallery/tag_view.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_query_editor_page.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_tag_chip.dart';
@@ -300,17 +299,11 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
               leading: const Icon(Icons.copy),
               onTap: () async {
                 final tagText = tag.tag;
-
-                await Clipboard.setData(ClipboardData(text: tagText));
-                FlashElements.showSnackbar(
-                  context: context,
-                  title: Text(context.loc.copied, style: const TextStyle(fontSize: 20)),
-                  content: Text(context.loc.searchBar.copiedTagToClipboard(tag: tagText)),
-                  sideColor: Colors.green,
-                  leadingIcon: Icons.check,
-                  leadingIconColor: Colors.green,
-                  duration: const Duration(seconds: 2),
+                await ClipboardUtils.copyTextToClipboard(
+                  tagText,
+                  subtitle: context.loc.searchBar.copiedTagToClipboard(tag: tagText),
                 );
+
                 Navigator.of(context).pop();
               },
             ),

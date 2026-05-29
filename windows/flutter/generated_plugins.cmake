@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
+  clipboard
   dynamic_color
   flutter_avif_windows
   flutter_inappwebview_windows

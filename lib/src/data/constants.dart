@@ -43,9 +43,9 @@ class Constants {
 
   // TODO don't forget to update on every new release
   static const UpdateInfo updateInfo = UpdateInfo(
-    versionName: '2.5.0',
-    buildNumber: 5210,
-    title: '2.5.0 - Localization, fonts, optimization, pinned tags and more',
+    versionName: '2.5.1',
+    buildNumber: 5212,
+    title: '2.5.1 - Chinese and German localization, fixes',
     isInStore: true,
     isImportant: false,
     storePackage: 'com.noaisu.play.loliSnatcher',
@@ -56,7 +56,29 @@ If you encounter any issues or have suggestions, please post them in GitHub issu
 
 [WE NEED YOUR HELP]: We are looking for volunteers to help us translate the app into other languages. For details, visit our GitHub page or Discord server.
 
+
+A minor update aimed at adding new localization languages and fixing some issues.
+
 -------------------
+
+Release - 2.5.1+5212 (28.05.2026):
+
+- Added Chinese (Simplified) and German localizations
+- Possible fix of broken screen orientation after leaving fullscreen video
+- Adjusted long tap-drag logic on videos, added ability to slowdown and reverse video playback (reverse performance depends on the selected video backend setting)
+- Fixed some layout issues
+- Fixed auto leave dialog on captcha completion appearing again on new page load after you decided to stay
+- Fixed some jpeg images failing to load
+- Fixed duplicates and random sorting of tags on r34xxx
+- Hydrus OR query handling (Thanks to hekate)
+- Improved autodetect logic for some boorus
+- Fixed favourites/downloads booru options not appearing after adding first booru config until app is restarted
+- Fixed viewer toolbar buttons setting not resetting correctly
+
+-------------------
+-------------------
+
+Previous release:
 
 Hotfix 2 - 2.5.0+5210 (09.04.2026):
 
@@ -79,7 +101,7 @@ Hotfix 1 - 2.5.0+5209 (31.03.2026):
 
 -------------------
 
-Release - 2.5.0+5208 (30.03.2026):
+Previous release - 2.5.0+5208 (30.03.2026):
 
 Main in this update:
 - Localization (Russian, Turkish, Japanese)
@@ -160,11 +182,6 @@ Fixes:
 
 
 and other small fixes and changes...
-
--------------------
-
-Known issues:
-- Rendering may break after changing screen orientation (i.e. by opening video in fullscreen), can be fixed by changing screen orientation back and forth/reentering video fullscreen
 ''',
   );
 }

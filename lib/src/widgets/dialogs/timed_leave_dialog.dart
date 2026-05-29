@@ -89,7 +89,7 @@ class _TimedLeaveDialogContentState extends State<_TimedLeaveDialogContent> with
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -152,22 +152,35 @@ class _TimedLeaveDialogContentState extends State<_TimedLeaveDialogContent> with
                 );
               },
             ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: .end,
-              children: [
-                CancelButton(
-                  withIcon: true,
-                  action: () => Navigator.of(context).pop(false),
-                  label: context.loc.stay,
+            const SizedBox(height: 16),
+            Theme(
+              data: Theme.of(context).copyWith(
+                elevatedButtonTheme: ElevatedButtonThemeData(
+                  style: Theme.of(context).elevatedButtonTheme.style!.copyWith(
+                    minimumSize: const WidgetStatePropertyAll(Size(double.infinity, 54)),
+                  ),
                 ),
-                const SizedBox(width: 12),
-                ConfirmButton(
-                  withIcon: true,
-                  action: () => Navigator.of(context).pop(true),
-                  label: context.loc.leaveNow,
-                ),
-              ],
+              ),
+              child: Row(
+                mainAxisAlignment: .center,
+                spacing: 12,
+                children: [
+                  Expanded(
+                    child: CancelButton(
+                      withIcon: true,
+                      action: () => Navigator.of(context).pop(false),
+                      label: context.loc.stay,
+                    ),
+                  ),
+                  Expanded(
+                    child: ConfirmButton(
+                      withIcon: true,
+                      action: () => Navigator.of(context).pop(true),
+                      label: context.loc.leaveNow,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

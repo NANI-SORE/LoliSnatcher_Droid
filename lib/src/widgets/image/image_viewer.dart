@@ -101,7 +101,7 @@ class ImageViewerState extends State<ImageViewer> {
 
   static const int kMaxTextureHeight = 4096;
   static const int kMaxTileMemoryBudget = 512 * 1024 * 1024; // max GPU texture memory for all tiles
-  static const int kMaxPixelsHeight = 80000;
+  static const int kMaxPixelsHeight = 100000;
   bool isTiled = false;
   List<ImageProvider>? tiledProviders;
   ValueNotifier<bool?> isTilingProcessing = ValueNotifier(null);
@@ -124,13 +124,18 @@ class ImageViewerState extends State<ImageViewer> {
     final int? maxSize = settingsHandler.preloadSizeLimit == 0
         ? null
         : (1024 * 1024 * settingsHandler.preloadSizeLimit * 1000).round();
+    if (size != null && size > 0) {
+      widget.booruItem.fileSize = size;
+    }
+
     if (size == null) {
-      return;
+      //
     } else if (size == 0) {
       stopLoading(
         reason: .error,
         title: context.loc.media.loading.fileIsZeroBytes,
       );
+      return;
     } else if (maxSize != null && (size > maxSize) && !blockPreloadState.isIgnore) {
       stopLoading(
         reason: .tooBig,
@@ -138,10 +143,19 @@ class ImageViewerState extends State<ImageViewer> {
             '${context.loc.media.loading.fileSize(size: Tools.formatBytes(size, 2))}\n'
             '${context.loc.media.loading.sizeLimit(limit: Tools.formatBytes(maxSize, 2, withTrailingZeroes: false))}',
       );
+      return;
     }
 
-    if (size > 0) {
-      widget.booruItem.fileSize = size;
+    if (widget.booruItem.fileHeight != null &&
+        widget.booruItem.fileHeight! > settingsHandler.preloadHeight &&
+        !blockPreloadState.isIgnore) {
+      stopLoading(
+        reason: .tooBig,
+        details:
+            '${context.loc.media.loading.fileSize(size: '${widget.booruItem.fileWidth?.toFormattedString()}x${widget.booruItem.fileHeight?.toFormattedString()}')}\n'
+            '${context.loc.media.loading.sizeLimit(limit: '...x${settingsHandler.preloadHeight.toFormattedString()}')}',
+      );
+      return;
     }
   }
 
@@ -166,7 +180,10 @@ class ImageViewerState extends State<ImageViewer> {
               : null,
         );
       } else {
-        stopLoading(reason: .error);
+        stopLoading(
+          reason: .error,
+          details: error.toString(),
+        );
       }
     }
   }

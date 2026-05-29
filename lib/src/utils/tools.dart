@@ -269,6 +269,8 @@ class Tools {
       }
 
       captchaScreenActive = true;
+
+      bool userDecidedToStay = false;
       await Navigator.push(
         NavigationHandler.instance.navContext,
         MaterialPageRoute(
@@ -301,7 +303,11 @@ class Tools {
                   htmlContent.contains('id="cf-challenge-') ||
                   htmlContent.contains('cf-browser-verification');
               final bool isKnownCaptchaRunning = hasCaptchaStrings(url.host, htmlContent);
-              if (context.mounted && hasClearanceCookie && !isCloudflareChallengeActive && !isKnownCaptchaRunning) {
+              if (context.mounted &&
+                  hasClearanceCookie &&
+                  !isCloudflareChallengeActive &&
+                  !isKnownCaptchaRunning &&
+                  !userDecidedToStay) {
                 // allow user to stay in webview through a dialog, in case of false positives, otherwise leave after a few seconds
                 final bool res = await showTimedLeaveDialog(
                   context,
@@ -309,7 +315,12 @@ class Tools {
                   icon: const Icon(Icons.thumb_up_alt_rounded),
                   duration: const Duration(seconds: 4),
                 );
-                if (res) Navigator.of(context).pop();
+
+                if (res) {
+                  Navigator.of(context).pop();
+                } else {
+                  userDecidedToStay = true;
+                }
               }
             },
           ),
@@ -413,6 +424,34 @@ class Tools {
     }
 
     return false;
+  }
+
+  static String? urlJoin(String? base, String? segment) {
+    if (base == null) return segment;
+    if (segment == null) return base;
+
+    final baseUri = Uri.parse(base), segUri = Uri.parse(segment);
+    final schemeRegex = RegExp(r'^[a-zA-Z][a-zA-Z\d+\-.]*:');
+    if (schemeRegex.hasMatch(segment)) return segment;
+    if (segment.startsWith('//')) return '${baseUri.scheme}:$segment';
+    if (segment.startsWith('?')) return baseUri.replace(query: segUri.query, fragment: segUri.fragment).toString();
+    if (segment.startsWith('#')) return baseUri.replace(fragment: segUri.fragment).toString();
+
+    var path = baseUri.path.endsWith('/') ? baseUri.path : baseUri.path.substring(0, baseUri.path.lastIndexOf('/') + 1);
+    if (segment.startsWith('/')) {
+      path = segment.substring(1);
+    } else {
+      path += segUri.path;
+    }
+
+    return Uri(
+      scheme: baseUri.scheme,
+      host: baseUri.host,
+      port: baseUri.hasPort ? baseUri.port : null,
+      path: path,
+      query: segUri.query.isEmpty ? null : segUri.query,
+      fragment: segUri.fragment.isEmpty ? null : segUri.fragment,
+    ).toString();
   }
 }
 

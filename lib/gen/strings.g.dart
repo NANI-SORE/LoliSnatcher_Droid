@@ -3,8 +3,8 @@
 /// Source: assets/i18n
 /// To regenerate, run: `dart run slang`
 ///
-/// Locales: 6
-/// Strings: 5034 (839 per locale)
+/// Locales: 13
+/// Strings: 8329 (640 per locale)
 
 // coverage:ignore-file
 // ignore_for_file: type=lint, unused_import
@@ -16,7 +16,14 @@ import 'package:slang/overrides.dart';
 import 'package:slang_flutter/slang_flutter.dart';
 export 'package:slang_flutter/slang_flutter.dart';
 
+import 'strings_de_DE.g.dart' deferred as l_de_DE;
+import 'strings_es_ES.g.dart' deferred as l_es_ES;
+import 'strings_es_MX.g.dart' deferred as l_es_MX;
+import 'strings_fr_FR.g.dart' deferred as l_fr_FR;
+import 'strings_it_IT.g.dart' deferred as l_it_IT;
 import 'strings_ja_JP.g.dart' deferred as l_ja_JP;
+import 'strings_ko_KR.g.dart' deferred as l_ko_KR;
+import 'strings_pl_PL.g.dart' deferred as l_pl_PL;
 import 'strings_pt_BR.g.dart' deferred as l_pt_BR;
 import 'strings_ru_RU.g.dart' deferred as l_ru_RU;
 import 'strings_tr_TR.g.dart' deferred as l_tr_TR;
@@ -51,12 +58,18 @@ final _buildConfig = BuildModelConfig(
 /// - if (LocaleSettings.currentLocale == AppLocale.en) // locale check
 enum AppLocale with BaseAppLocale<AppLocale, Translations> {
   en(languageCode: 'en'),
+  deDe(languageCode: 'de', countryCode: 'DE'),
+  esEs(languageCode: 'es', countryCode: 'ES'),
+  esMx(languageCode: 'es', countryCode: 'MX'),
+  frFr(languageCode: 'fr', countryCode: 'FR'),
+  itIt(languageCode: 'it', countryCode: 'IT'),
   jaJp(languageCode: 'ja', countryCode: 'JP'),
+  koKr(languageCode: 'ko', countryCode: 'KR'),
+  plPl(languageCode: 'pl', countryCode: 'PL'),
   ptBr(languageCode: 'pt', countryCode: 'BR'),
   ruRu(languageCode: 'ru', countryCode: 'RU'),
   trTr(languageCode: 'tr', countryCode: 'TR'),
-  zhCn(languageCode: 'zh', countryCode: 'CN')
-  ;
+  zhCn(languageCode: 'zh', countryCode: 'CN');
 
   const AppLocale({
     required this.languageCode,
@@ -84,9 +97,58 @@ enum AppLocale with BaseAppLocale<AppLocale, Translations> {
           cardinalResolver: cardinalResolver,
           ordinalResolver: ordinalResolver,
         );
+      case AppLocale.deDe:
+        await l_de_DE.loadLibrary();
+        return l_de_DE.TranslationsDeDe(
+          overrides: overrides,
+          cardinalResolver: cardinalResolver,
+          ordinalResolver: ordinalResolver,
+        );
+      case AppLocale.esEs:
+        await l_es_ES.loadLibrary();
+        return l_es_ES.TranslationsEsEs(
+          overrides: overrides,
+          cardinalResolver: cardinalResolver,
+          ordinalResolver: ordinalResolver,
+        );
+      case AppLocale.esMx:
+        await l_es_MX.loadLibrary();
+        return l_es_MX.TranslationsEsMx(
+          overrides: overrides,
+          cardinalResolver: cardinalResolver,
+          ordinalResolver: ordinalResolver,
+        );
+      case AppLocale.frFr:
+        await l_fr_FR.loadLibrary();
+        return l_fr_FR.TranslationsFrFr(
+          overrides: overrides,
+          cardinalResolver: cardinalResolver,
+          ordinalResolver: ordinalResolver,
+        );
+      case AppLocale.itIt:
+        await l_it_IT.loadLibrary();
+        return l_it_IT.TranslationsItIt(
+          overrides: overrides,
+          cardinalResolver: cardinalResolver,
+          ordinalResolver: ordinalResolver,
+        );
       case AppLocale.jaJp:
         await l_ja_JP.loadLibrary();
         return l_ja_JP.TranslationsJaJp(
+          overrides: overrides,
+          cardinalResolver: cardinalResolver,
+          ordinalResolver: ordinalResolver,
+        );
+      case AppLocale.koKr:
+        await l_ko_KR.loadLibrary();
+        return l_ko_KR.TranslationsKoKr(
+          overrides: overrides,
+          cardinalResolver: cardinalResolver,
+          ordinalResolver: ordinalResolver,
+        );
+      case AppLocale.plPl:
+        await l_pl_PL.loadLibrary();
+        return l_pl_PL.TranslationsPlPl(
           overrides: overrides,
           cardinalResolver: cardinalResolver,
           ordinalResolver: ordinalResolver,
@@ -135,8 +197,50 @@ enum AppLocale with BaseAppLocale<AppLocale, Translations> {
           cardinalResolver: cardinalResolver,
           ordinalResolver: ordinalResolver,
         );
+      case AppLocale.deDe:
+        return l_de_DE.TranslationsDeDe(
+          overrides: overrides,
+          cardinalResolver: cardinalResolver,
+          ordinalResolver: ordinalResolver,
+        );
+      case AppLocale.esEs:
+        return l_es_ES.TranslationsEsEs(
+          overrides: overrides,
+          cardinalResolver: cardinalResolver,
+          ordinalResolver: ordinalResolver,
+        );
+      case AppLocale.esMx:
+        return l_es_MX.TranslationsEsMx(
+          overrides: overrides,
+          cardinalResolver: cardinalResolver,
+          ordinalResolver: ordinalResolver,
+        );
+      case AppLocale.frFr:
+        return l_fr_FR.TranslationsFrFr(
+          overrides: overrides,
+          cardinalResolver: cardinalResolver,
+          ordinalResolver: ordinalResolver,
+        );
+      case AppLocale.itIt:
+        return l_it_IT.TranslationsItIt(
+          overrides: overrides,
+          cardinalResolver: cardinalResolver,
+          ordinalResolver: ordinalResolver,
+        );
       case AppLocale.jaJp:
         return l_ja_JP.TranslationsJaJp(
+          overrides: overrides,
+          cardinalResolver: cardinalResolver,
+          ordinalResolver: ordinalResolver,
+        );
+      case AppLocale.koKr:
+        return l_ko_KR.TranslationsKoKr(
+          overrides: overrides,
+          cardinalResolver: cardinalResolver,
+          ordinalResolver: ordinalResolver,
+        );
+      case AppLocale.plPl:
+        return l_pl_PL.TranslationsPlPl(
           overrides: overrides,
           cardinalResolver: cardinalResolver,
           ordinalResolver: ordinalResolver,
@@ -201,7 +305,8 @@ Translations get loc => LocaleSettings.instance.currentTranslations;
 class TranslationProvider extends BaseTranslationProvider<AppLocale, Translations> {
   TranslationProvider({required super.child}) : super(settings: LocaleSettings.instance);
 
-  static InheritedLocaleData<AppLocale, Translations> of(BuildContext context) => InheritedLocaleData.of<AppLocale, Translations>(context);
+  static InheritedLocaleData<AppLocale, Translations> of(BuildContext context) =>
+      InheritedLocaleData.of<AppLocale, Translations>(context);
 }
 
 /// Method B shorthand via [BuildContext] extension method.
@@ -231,17 +336,27 @@ class LocaleSettings extends BaseFlutterLocaleSettings<AppLocale, Translations> 
   static Future<AppLocale> setLocaleRaw(String rawLocale, {bool? listenToDeviceLocale = false}) =>
       instance.setLocaleRaw(rawLocale, listenToDeviceLocale: listenToDeviceLocale);
   static Future<AppLocale> useDeviceLocale() => instance.useDeviceLocale();
-  static Future<void> setPluralResolver({String? language, AppLocale? locale, PluralResolver? cardinalResolver, PluralResolver? ordinalResolver}) =>
-      instance.setPluralResolver(
-        language: language,
-        locale: locale,
-        cardinalResolver: cardinalResolver,
-        ordinalResolver: ordinalResolver,
-      );
-  static Future<void> overrideTranslations({required AppLocale locale, required FileType fileType, required String content}) =>
-      instance.overrideTranslations(locale: locale, fileType: fileType, content: content);
-  static Future<void> overrideTranslationsFromMap({required AppLocale locale, required bool isFlatMap, required Map map}) =>
-      instance.overrideTranslationsFromMap(locale: locale, isFlatMap: isFlatMap, map: map);
+  static Future<void> setPluralResolver({
+    String? language,
+    AppLocale? locale,
+    PluralResolver? cardinalResolver,
+    PluralResolver? ordinalResolver,
+  }) => instance.setPluralResolver(
+    language: language,
+    locale: locale,
+    cardinalResolver: cardinalResolver,
+    ordinalResolver: ordinalResolver,
+  );
+  static Future<void> overrideTranslations({
+    required AppLocale locale,
+    required FileType fileType,
+    required String content,
+  }) => instance.overrideTranslations(locale: locale, fileType: fileType, content: content);
+  static Future<void> overrideTranslationsFromMap({
+    required AppLocale locale,
+    required bool isFlatMap,
+    required Map map,
+  }) => instance.overrideTranslationsFromMap(locale: locale, isFlatMap: isFlatMap, map: map);
 
   // synchronous versions
   static AppLocale setLocaleSync(AppLocale locale, {bool? listenToDeviceLocale = false}) =>
@@ -249,15 +364,22 @@ class LocaleSettings extends BaseFlutterLocaleSettings<AppLocale, Translations> 
   static AppLocale setLocaleRawSync(String rawLocale, {bool? listenToDeviceLocale = false}) =>
       instance.setLocaleRawSync(rawLocale, listenToDeviceLocale: listenToDeviceLocale);
   static AppLocale useDeviceLocaleSync() => instance.useDeviceLocaleSync();
-  static void setPluralResolverSync({String? language, AppLocale? locale, PluralResolver? cardinalResolver, PluralResolver? ordinalResolver}) =>
-      instance.setPluralResolverSync(
-        language: language,
-        locale: locale,
-        cardinalResolver: cardinalResolver,
-        ordinalResolver: ordinalResolver,
-      );
-  static void overrideTranslationsSync({required AppLocale locale, required FileType fileType, required String content}) =>
-      instance.overrideTranslationsSync(locale: locale, fileType: fileType, content: content);
+  static void setPluralResolverSync({
+    String? language,
+    AppLocale? locale,
+    PluralResolver? cardinalResolver,
+    PluralResolver? ordinalResolver,
+  }) => instance.setPluralResolverSync(
+    language: language,
+    locale: locale,
+    cardinalResolver: cardinalResolver,
+    ordinalResolver: ordinalResolver,
+  );
+  static void overrideTranslationsSync({
+    required AppLocale locale,
+    required FileType fileType,
+    required String content,
+  }) => instance.overrideTranslationsSync(locale: locale, fileType: fileType, content: content);
   static void overrideTranslationsFromMapSync({required AppLocale locale, required bool isFlatMap, required Map map}) =>
       instance.overrideTranslationsFromMapSync(locale: locale, isFlatMap: isFlatMap, map: map);
 }

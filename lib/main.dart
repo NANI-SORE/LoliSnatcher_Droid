@@ -76,6 +76,9 @@ void main() async {
   await SettingsHandler.register().initialize();
   LocalAuthHandler.register();
 
+  // load all locales data to enable loading any entry from any language (i.e. for handleFavDlsNameChange check or flags in About page)
+  unawaited(LocaleSettings.instance.loadAllLocales());
+
   await ServiceHandler.setSystemUiVisibility(true);
 
   runApp(TranslationProvider(child: const MainApp()));

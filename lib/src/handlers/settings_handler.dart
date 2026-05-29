@@ -4,15 +4,12 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:alice_lightweight/alice.dart';
 import 'package:alice_lightweight/helper/alice_save_helper.dart';
 import 'package:fvp/fvp.dart' as fvp;
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
-import 'package:lolisnatcher/src/data/tag.dart';
-import 'package:lolisnatcher/src/pages/settings/language_page.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import 'package:lolisnatcher/gen/strings.g.dart';
@@ -23,7 +20,6 @@ import 'package:lolisnatcher/src/data/settings/app_alias.dart';
 import 'package:lolisnatcher/src/data/settings/app_mode.dart';
 import 'package:lolisnatcher/src/data/settings/button_position.dart';
 import 'package:lolisnatcher/src/data/settings/gallery_button.dart';
-import 'package:lolisnatcher/src/data/settings/settings_enum.dart';
 import 'package:lolisnatcher/src/data/settings/hand_side.dart';
 import 'package:lolisnatcher/src/data/settings/image_quality.dart';
 import 'package:lolisnatcher/src/data/settings/mpv_hardware_decoding.dart';
@@ -32,11 +28,13 @@ import 'package:lolisnatcher/src/data/settings/preview_display_mode.dart';
 import 'package:lolisnatcher/src/data/settings/preview_quality.dart';
 import 'package:lolisnatcher/src/data/settings/proxy_type.dart';
 import 'package:lolisnatcher/src/data/settings/scroll_direction.dart';
+import 'package:lolisnatcher/src/data/settings/settings_enum.dart';
 import 'package:lolisnatcher/src/data/settings/share_action.dart';
 import 'package:lolisnatcher/src/data/settings/tab_page_restore_mode.dart';
 import 'package:lolisnatcher/src/data/settings/vertical_position.dart';
 import 'package:lolisnatcher/src/data/settings/video_backend_mode.dart';
 import 'package:lolisnatcher/src/data/settings/video_cache_mode.dart';
+import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/data/theme_item.dart';
 import 'package:lolisnatcher/src/data/update_info.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
@@ -44,8 +42,10 @@ import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/secure_storage_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
+import 'package:lolisnatcher/src/pages/settings/language_page.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/http_overrides.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
@@ -718,17 +718,13 @@ class SettingsHandler {
 
     // other
     'buttonOrder': {
-      'type': 'stringList',
-      'default': <String>[
-        ...GalleryButton.values.map((b) => b.toJson()),
-      ],
+      'type': 'galleryButtonList',
+      'default': <GalleryButton>[...GalleryButton.values],
     },
     'disabledButtons': {
-      'type': 'stringList',
-      'default': <String>[],
-      'options': <String>[
-        ...GalleryButton.disableable.map((b) => b.toJson()),
-      ],
+      'type': 'galleryButtonList',
+      'default': <GalleryButton>[],
+      'options': [...GalleryButton.disableable],
     },
     'cacheDuration': {
       'type': 'duration',
@@ -2206,7 +2202,7 @@ class SettingsHandler {
         page: (_) => Scaffold(
           appBar: SettingsAppBar(
             title:
-                '${isDiffVersion ? loc.settings.checkForUpdates.updateAvailable : '${isAfterUpdate ? loc.settings.checkForUpdates.whatsNew : loc.settings.checkForUpdates.updateChangelog}:'} ${updateInfo.value!.versionName}+${updateInfo.value!.buildNumber}',
+                '${isDiffVersion ? loc.settings.checkForUpdates.updateAvailable : '${isAfterUpdate ? loc.settings.checkForUpdates.whatsNew : loc.settings.checkForUpdates.updateChangelog}:'} ${_updateInfo.versionName}+${_updateInfo.buildNumber}',
           ),
           body: SafeArea(
             child: Column(
@@ -2353,10 +2349,8 @@ class SettingsHandler {
     alice = Alice(
       quickShareAction: Platform.isWindows
           ? (call) async {
-              await Clipboard.setData(
-                ClipboardData(
-                  text: await AliceSaveHelper.buildCallLog(call),
-                ),
+              await ClipboardUtils.copyTextToClipboard(
+                await AliceSaveHelper.buildCallLog(call),
               );
             }
           : null,

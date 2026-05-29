@@ -91,7 +91,8 @@ class GelbooruAlikesHandler extends BooruHandler {
         }
       }
 
-      final List<String> tags = parseFragment(getAttrOrElem(current, 'tags')).text?.split(' ') ?? [];
+      final List<String> tags = parseFragment(getAttrOrElem(current, 'tags')).text?.split(' ').toSet().toList() ?? [];
+      tags.sort();
 
       final BooruItem item = BooruItem(
         fileURL: fileURL,

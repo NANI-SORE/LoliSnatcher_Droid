@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:get/get.dart';
 import 'package:lolisnatcher/src/widgets/preview/page_indicator.dart';
@@ -15,7 +14,7 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/pages/gallery_view_page.dart';
-import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/widgets/common/long_press_repeater.dart';
 import 'package:lolisnatcher/src/widgets/preview/grid_builder.dart';
 import 'package:lolisnatcher/src/widgets/preview/shimmer_builder.dart';
@@ -338,14 +337,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
 
   Future<void> onSecondaryTap(int index, BuildContext context) async {
     final BooruItem item = searchHandler.currentFetched[index];
-    await Clipboard.setData(ClipboardData(text: Uri.encodeFull(item.fileURL)));
-    FlashElements.showSnackbar(
-      duration: const Duration(seconds: 2),
-      title: Text(context.loc.mediaPreviews.copiedFileURL, style: const TextStyle(fontSize: 20)),
-      content: Text(Uri.encodeFull(item.fileURL), style: const TextStyle(fontSize: 16)),
-      leadingIcon: Icons.copy,
-      sideColor: Colors.green,
-    );
+    await ClipboardUtils.copyImageToClipboard(item);
   }
 
   @override
@@ -446,7 +438,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
                                 parent: ScrollConfiguration.of(context).getScrollPhysics(context),
                               ),
                         shrinkWrap: false,
-                        cacheExtent: 300 * MediaQuery.devicePixelRatioOf(context),
+                        scrollCacheExtent: settingsHandler.shitDevice ? const .viewport(0.5) : const .viewport(1),
                         slivers: [
                           const MainAppBar(),
                           SliverPadding(

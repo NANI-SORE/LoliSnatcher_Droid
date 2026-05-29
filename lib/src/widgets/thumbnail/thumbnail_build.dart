@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
@@ -15,8 +14,8 @@ import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
-import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/pulse_widget.dart';
 import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
@@ -25,7 +24,7 @@ import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
 class ThumbnailBuild extends StatelessWidget {
   const ThumbnailBuild({
     required this.item,
-    required this.handler,
+    this.handler,
     this.selectedIndex,
     this.selectable = true,
     this.onSelected,
@@ -34,7 +33,7 @@ class ThumbnailBuild extends StatelessWidget {
   });
 
   final BooruItem item;
-  final BooruHandler handler;
+  final BooruHandler? handler;
   final int? selectedIndex;
   final bool selectable;
   final void Function()? onSelected;
@@ -79,7 +78,7 @@ class ThumbnailBuild extends StatelessWidget {
 
                 return Thumbnail(
                   item: item,
-                  booru: possibleBooru ?? handler.booru,
+                  booru: possibleBooru ?? handler?.booru,
                   isStandalone: true,
                   useHero: selectable,
                 );
@@ -107,15 +106,9 @@ class ThumbnailBuild extends StatelessWidget {
                   if (settingsHandler.isDebug.value == true)
                     InkWell(
                       onTap: () {
-                        Clipboard.setData(ClipboardData(text: item.toString()));
-                        FlashElements.showSnackbar(
-                          context: context,
-                          title: Text(context.loc.copied, style: const TextStyle(fontSize: 20)),
-                          content: Text(context.loc.common.booruItemCopiedToClipboard),
-                          sideColor: Colors.green,
-                          leadingIcon: Icons.copy,
-                          leadingIconColor: Colors.white,
-                          duration: const Duration(seconds: 2),
+                        ClipboardUtils.copyTextToClipboard(
+                          item.toString(),
+                          subtitle: context.loc.common.booruItemCopiedToClipboard,
                         );
                       },
                       child: Container(
@@ -141,7 +134,7 @@ class ThumbnailBuild extends StatelessWidget {
                       final List<Widget> widgets = [];
                       // Merge booru
                       if (handler is MergebooruHandler) {
-                        final fetchedMap = (handler as MergebooruHandler).fetchedMap;
+                        final fetchedMap = (handler! as MergebooruHandler).fetchedMap;
 
                         Booru? booru;
                         int? booruIndex;
@@ -180,7 +173,7 @@ class ThumbnailBuild extends StatelessWidget {
                       Booru? getMergeBooruEntry() {
                         if (handler is! MergebooruHandler) return null;
 
-                        final fetchedMap = (handler as MergebooruHandler).fetchedMap;
+                        final fetchedMap = (handler! as MergebooruHandler).fetchedMap;
                         for (int i = 0; i < fetchedMap.entries.length; i++) {
                           final entry = fetchedMap.entries.elementAt(i);
                           if (entry.value.items.contains(item)) {

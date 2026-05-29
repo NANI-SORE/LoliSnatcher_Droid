@@ -1120,17 +1120,13 @@ class DBHandler {
     final List<String> queryParts = [];
     final List<String> queryArgs = [];
     for (final BooruItem item in items) {
-      if (item.fileURL.contains('sankakucomplex.com') ||
-          item.fileURL.contains('rule34.xxx') ||
-          item.fileURL.contains('paheal.net')) {
-        // compare by post url, not file url (for example: r34xxx changes urls based on country)
-        // TODO merge them by type? i.e. - (postURL in [] OR fileURL in [])
-        queryParts.add('postURL = ?');
-        queryArgs.add(item.postURL);
-      } else {
-        queryParts.add('fileURL = ?');
-        queryArgs.add(item.fileURL);
-      }
+      // compare by post url (sankaku, r34xxx, paheal, file url conflicts after it was refetched)
+      queryParts.add('postURL = ?');
+      queryArgs.add(item.postURL);
+
+      // compare by file url
+      queryParts.add('fileURL = ?');
+      queryArgs.add(item.fileURL);
     }
 
     // DateTime startTime = DateTime.now();

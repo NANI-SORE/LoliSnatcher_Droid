@@ -1,15 +1,14 @@
 import 'dart:core';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:lolisnatcher/src/pages/settings/language_page.dart';
 
 import 'package:url_launcher/url_launcher_string.dart';
 
 import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/pages/settings/language_page.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/widgets/common/discord_button.dart';
-import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 
 class AboutPage extends StatelessWidget {
@@ -49,18 +48,9 @@ class AboutPage extends StatelessWidget {
                 );
               },
               onLongPress: () {
-                Clipboard.setData(const ClipboardData(text: Constants.email));
-                FlashElements.showSnackbar(
-                  context: context,
-                  title: Text(
-                    context.loc.copied,
-                    style: const TextStyle(fontSize: 20),
-                  ),
-                  content: Text(context.loc.settings.about.emailCopied),
-                  sideColor: Colors.green,
-                  leadingIcon: Icons.check,
-                  leadingIconColor: Colors.green,
-                  duration: const Duration(seconds: 2),
+                ClipboardUtils.copyTextToClipboard(
+                  Constants.email,
+                  subtitle: context.loc.settings.about.emailCopied,
                 );
               },
             ),
@@ -118,14 +108,24 @@ class AboutPage extends StatelessWidget {
               child: Text('${context.loc.settings.about.localizers}:'),
             ),
             SettingsButton(
-              name: 'Turkish',
-              subtitle: const Text('kyomoe'),
-              icon: buildFlag(context, AppLocale.trTr),
+              name: 'Chinese (Simplified)',
+              subtitle: const Text('RnJ4'),
+              icon: buildFlag(context, AppLocale.zhCn),
+            ),
+            SettingsButton(
+              name: 'German',
+              subtitle: const Text('Rin Kusu, Moddimation'),
+              icon: buildFlag(context, AppLocale.deDe),
             ),
             SettingsButton(
               name: 'Japanese',
               subtitle: const Text('stardust248397'),
               icon: buildFlag(context, AppLocale.jaJp),
+            ),
+            SettingsButton(
+              name: 'Turkish',
+              subtitle: const Text('kyomoe'),
+              icon: buildFlag(context, AppLocale.trTr),
             ),
             //
             const SizedBox(height: kMinInteractiveDimension),

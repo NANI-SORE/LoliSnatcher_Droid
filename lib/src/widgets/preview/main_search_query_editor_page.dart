@@ -12,6 +12,7 @@ import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:keyboard_actions/keyboard_actions.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/widgets/desktop/desktop_scroll.dart';
 import 'package:lolisnatcher/src/widgets/preview/tag_search_query_editor_page.dart';
 import 'package:rich_text_controller/rich_text_controller.dart';
@@ -497,16 +498,11 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
               leading: const Icon(Icons.copy),
               onTap: () async {
                 final tagText = tag.tag;
-
-                await Clipboard.setData(ClipboardData(text: tagText));
-                FlashElements.showSnackbar(
-                  title: Text(context.loc.copied, style: const TextStyle(fontSize: 20)),
-                  content: Text(context.loc.searchBar.copiedTagToClipboard(tag: tagText)),
-                  sideColor: Colors.green,
-                  leadingIcon: Icons.check,
-                  leadingIconColor: Colors.green,
-                  duration: const Duration(seconds: 2),
+                await ClipboardUtils.copyTextToClipboard(
+                  tagText,
+                  subtitle: context.loc.searchBar.copiedTagToClipboard(tag: tagText),
                 );
+
                 Navigator.of(context).pop();
               },
             ),
@@ -1788,14 +1784,8 @@ class _HistoryBlockState extends State<HistoryBlock> {
             const SizedBox(height: 10),
             ElevatedButton.icon(
               onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: entry.searchText));
-                FlashElements.showSnackbar(
-                  duration: const Duration(seconds: 2),
-                  title: Text(context.loc.copied, style: const TextStyle(fontSize: 20)),
-                  content: Text(entry.searchText, style: const TextStyle(fontSize: 16)),
-                  leadingIcon: Icons.copy,
-                  sideColor: Colors.green,
-                );
+                await ClipboardUtils.copyTextToClipboard(entry.searchText);
+
                 Navigator.of(context).pop();
               },
               icon: const Icon(Icons.copy),

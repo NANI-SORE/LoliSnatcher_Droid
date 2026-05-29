@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:auto_size_text_plus/auto_size_text_plus.dart';
 import 'package:get/get.dart';
@@ -14,6 +13,7 @@ import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/delete_button.dart';
@@ -876,15 +876,8 @@ class _TabManagerPageState extends State<TabManagerPage> {
             side: BorderSide(color: Theme.of(context).colorScheme.secondary),
           ),
           onTap: () async {
-            await Clipboard.setData(ClipboardData(text: tab.tags));
-            FlashElements.showSnackbar(
-              context: context,
-              duration: const Duration(seconds: 2),
-              title: Text(context.loc.copiedToClipboard, style: const TextStyle(fontSize: 20)),
-              content: Text(tab.tags, style: const TextStyle(fontSize: 16)),
-              leadingIcon: Icons.copy,
-              sideColor: Colors.green,
-            );
+            await ClipboardUtils.copyTextToClipboard(tab.tags);
+
             Navigator.of(context).pop();
           },
           leading: const Icon(Icons.copy),

@@ -5,7 +5,6 @@ import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:dio/dio.dart';
 import 'package:external_video_player_launcher/external_video_player_launcher.dart';
@@ -14,9 +13,9 @@ import 'package:preload_page_view/preload_page_view.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import 'package:lolisnatcher/src/boorus/hydrus_handler.dart';
-import 'package:lolisnatcher/src/data/settings/gallery_button.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/settings/gallery_button.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
@@ -28,6 +27,7 @@ import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/timed_progress_controller.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -330,7 +330,6 @@ class _HideableAppBarState extends State<HideableAppBar> {
         icon = Icons.save;
         break;
       case .favourite:
-        // icon = isFav == true ? Icons.favorite : Icons.favorite_border;
         // early return to override with animated icon
         return Obx(() {
           if (page.value == -1 || widget.tab.booruHandler.filteredFetched.isEmpty) {
@@ -800,15 +799,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
 
   void shareTextAction(String text) {
     if (SettingsHandler.isDesktopPlatform) {
-      Clipboard.setData(ClipboardData(text: Uri.encodeFull(text)));
-      FlashElements.showSnackbar(
-        context: context,
-        duration: const Duration(seconds: 2),
-        title: Text(context.loc.copiedToClipboard, style: const TextStyle(fontSize: 20)),
-        content: Text(Uri.encodeFull(text), style: const TextStyle(fontSize: 16)),
-        leadingIcon: Icons.copy,
-        sideColor: Colors.green,
-      );
+      ClipboardUtils.copyTextToClipboard(text);
     } else if (Platform.isAndroid) {
       ServiceHandler.loadShareTextIntent(text);
     }
@@ -972,58 +963,19 @@ class _HideableAppBarState extends State<HideableAppBar> {
       }
     }
 
-    String? path = await imageWriter.getCachePath(item.fileURL, 'media', fileNameExtras: item.fileNameExtras);
+    //
 
-    // TODO delete from cache after share window closes
-
-    if (path != null) {
-      if (Platform.isAndroid) {
-        // File is already in cache - share from there
-        await ServiceHandler.loadShareFileIntent(
-          path,
-          '${item.mediaType.value.isVideo ? 'video' : 'image'}/${item.fileExt!}',
-          text: text,
-        );
-      }
-    } else {
-      // File not in cache - load from network, share, delete from cache afterwards
-      FlashElements.showSnackbar(
-        context: context,
-        title: Text(context.loc.gallery.loadingFile, style: const TextStyle(fontSize: 20)),
-        content: Text(context.loc.gallery.loadingFileMessage, style: const TextStyle(fontSize: 16)),
-        overrideLeadingIconWidget: const SizedBox(
-          width: 50,
-          height: 50,
-          child: Padding(
-            padding: EdgeInsets.all(12),
-            child: CircularProgressIndicator(),
-          ),
-        ),
-        sideColor: Colors.yellow,
-      );
-
+    if (SettingsHandler.isDesktopPlatform) {
       shareCancelToken?.cancel();
       shareCancelToken = CancelToken();
       shareProgress = 0;
       sharedItem = item;
 
-      final String cacheFilePath = await imageWriter.getCachePathString(
-        item.fileURL,
-        'media',
-        clearName: true,
-        fileNameExtras: item.fileNameExtras,
-      );
-      await DioNetwork.download(
-        item.fileURL,
-        cacheFilePath,
+      await ClipboardUtils.copyImageToClipboard(
+        item,
         cancelToken: shareCancelToken,
-        headers: await Tools.getFileCustomHeaders(
-          widget.tab.booruHandler.booru,
-          item: item,
-          checkForReferer: true,
-        ),
-        onReceiveProgress: (int received, int total) {
-          if (total != -1) {
+        onReceiveProgress: (int received, int? total) {
+          if (total != null && total > 0) {
             shareProgress = received / total;
             if ((DateTime.now().millisecondsSinceEpoch - shareProgressLastTick) > 100) {
               setState(() {});
@@ -1033,12 +985,18 @@ class _HideableAppBarState extends State<HideableAppBar> {
         },
       );
 
-      final File cacheFile = File(
-        await imageWriter.getCachePath(item.fileURL, 'media', fileNameExtras: item.fileNameExtras) ?? '',
-      );
-      if (await cacheFile.exists()) {
-        path = cacheFile.path;
+      shareProgress = 0;
+      shareCancelToken = null;
+      sharedItem = null;
+      setState(() {});
+    } else {
+      String? path = await imageWriter.getCachePath(item.fileURL, 'media', fileNameExtras: item.fileNameExtras);
+
+      // TODO delete from cache after share window closes
+
+      if (path != null) {
         if (Platform.isAndroid) {
+          // File is already in cache - share from there
           await ServiceHandler.loadShareFileIntent(
             path,
             '${item.mediaType.value.isVideo ? 'video' : 'image'}/${item.fileExt!}',
@@ -1046,26 +1004,87 @@ class _HideableAppBarState extends State<HideableAppBar> {
           );
         }
       } else {
+        // File not in cache - load from network, share, delete from cache afterwards
         FlashElements.showSnackbar(
           context: context,
-          title: Text(context.loc.viewer.appBar.error, style: const TextStyle(fontSize: 20)),
-          content: Text(
-            context.loc.viewer.appBar.savingFileError,
-            style: const TextStyle(fontSize: 16),
+          title: Text(context.loc.gallery.loadingFile, style: const TextStyle(fontSize: 20)),
+          content: Text(context.loc.gallery.loadingFileMessage, style: const TextStyle(fontSize: 16)),
+          overrideLeadingIconWidget: const SizedBox(
+            width: 50,
+            height: 50,
+            child: Padding(
+              padding: EdgeInsets.all(12),
+              child: CircularProgressIndicator(),
+            ),
           ),
-          leadingIcon: Icons.warning_amber,
-          leadingIconColor: Colors.red,
-          sideColor: Colors.red,
+          sideColor: Colors.yellow,
         );
+
+        shareCancelToken?.cancel();
+        shareCancelToken = CancelToken();
+        shareProgress = 0;
+        sharedItem = item;
+
+        final String cacheFilePath = await imageWriter.getCachePathString(
+          item.fileURL,
+          'media',
+          clearName: true,
+          fileNameExtras: item.fileNameExtras,
+        );
+        await DioNetwork.download(
+          item.fileURL,
+          cacheFilePath,
+          cancelToken: shareCancelToken,
+          headers: await Tools.getFileCustomHeaders(
+            widget.tab.booruHandler.booru,
+            item: item,
+            checkForReferer: true,
+          ),
+          onReceiveProgress: (int received, int total) {
+            if (total > 0) {
+              shareProgress = received / total;
+              if ((DateTime.now().millisecondsSinceEpoch - shareProgressLastTick) > 100) {
+                setState(() {});
+                shareProgressLastTick = DateTime.now().millisecondsSinceEpoch;
+              }
+            }
+          },
+        );
+
+        final File cacheFile = File(
+          await imageWriter.getCachePath(item.fileURL, 'media', fileNameExtras: item.fileNameExtras) ?? '',
+        );
+        if (await cacheFile.exists()) {
+          path = cacheFile.path;
+          if (Platform.isAndroid) {
+            await ServiceHandler.loadShareFileIntent(
+              path,
+              '${item.mediaType.value.isVideo ? 'video' : 'image'}/${item.fileExt!}',
+              text: text,
+            );
+          }
+        } else {
+          FlashElements.showSnackbar(
+            context: context,
+            title: Text(context.loc.viewer.appBar.error, style: const TextStyle(fontSize: 20)),
+            content: Text(
+              context.loc.viewer.appBar.savingFileError,
+              style: const TextStyle(fontSize: 16),
+            ),
+            leadingIcon: Icons.warning_amber,
+            leadingIconColor: Colors.red,
+            sideColor: Colors.red,
+          );
+        }
+
+        shareProgress = 0;
+        shareCancelToken = null;
+        sharedItem = null;
+        setState(() {});
+
+        // TODO: find a way to detect when share menu was closed, orherwise this is triggered immediately and file is deleted before sending to another app
+        // imageWriter.deleteFileFromCache(path, 'media');
       }
-
-      shareProgress = 0;
-      shareCancelToken = null;
-      sharedItem = null;
-      setState(() {});
-
-      // TODO: find a way to detect when share menu was closed, orherwise this is triggered immediately and file is deleted before sending to another app
-      // imageWriter.deleteFileFromCache(path, 'media');
     }
   }
 

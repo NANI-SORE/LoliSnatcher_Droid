@@ -1,11 +1,10 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:auto_size_text_plus/auto_size_text_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
+import 'package:auto_size_text_plus/auto_size_text_plus.dart';
 import 'package:collection/collection.dart';
 import 'package:dio/dio.dart';
 import 'package:fading_edge_scrollview/fading_edge_scrollview.dart';
@@ -13,29 +12,26 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fpdart/fpdart.dart' show FpdartOnIterable;
 import 'package:get/get.dart' hide ContextExt, FirstWhereOrNullExt;
 import 'package:intl/intl.dart';
-import 'package:lolisnatcher/src/boorus/danbooru_handler.dart';
-import 'package:lolisnatcher/src/data/meta_tag.dart';
-import 'package:lolisnatcher/src/data/pinned_tag.dart';
-import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
-import 'package:lolisnatcher/src/widgets/preview/main_search_query_editor_page.dart';
 import 'package:lolisnatcher/src/widgets/preview/page_indicator.dart';
-import 'package:lolisnatcher/src/widgets/tabs/tab_selector.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
+import 'package:lolisnatcher/src/boorus/danbooru_handler.dart';
 import 'package:lolisnatcher/src/boorus/downloads_handler.dart';
 import 'package:lolisnatcher/src/boorus/favourites_handler.dart';
 import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
 import 'package:lolisnatcher/src/boorus/mergebooru_handler.dart';
 import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
-import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
-import 'package:lolisnatcher/src/data/tag_type.dart';
+import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/meta_tag.dart';
+import 'package:lolisnatcher/src/data/pinned_tag.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
-import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
+import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
+import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
@@ -43,6 +39,7 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/pages/gallery_view_page.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/debouncer.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/text_parser/rules/url_rule.dart';
@@ -51,6 +48,7 @@ import 'package:lolisnatcher/src/widgets/common/close_dialog_button.dart';
 import 'package:lolisnatcher/src/widgets/common/draggable_overflow_text.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/kaomoji.dart';
+import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
 import 'package:lolisnatcher/src/widgets/common/marquee_text.dart';
 import 'package:lolisnatcher/src/widgets/common/parsed_text.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -58,7 +56,9 @@ import 'package:lolisnatcher/src/widgets/desktop/desktop_scroll.dart';
 import 'package:lolisnatcher/src/widgets/dialogs/comments_dialog.dart';
 import 'package:lolisnatcher/src/widgets/gallery/notes_renderer.dart';
 import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
+import 'package:lolisnatcher/src/widgets/preview/main_search_query_editor_page.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_tag_chip.dart';
+import 'package:lolisnatcher/src/widgets/tabs/tab_selector.dart';
 import 'package:lolisnatcher/src/widgets/tags_manager/tm_list_item_dialog.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_card_build.dart';
 
@@ -220,7 +220,7 @@ class _TagViewState extends State<TagView> {
       hasLoadItemSupport = handler.hasLoadItemSupport;
       canLoadItemOnStart = handler.shouldUpdateIteminTagView;
       checkForPossibleBooruHandler();
-      setState(() {});
+      if (mounted) setState(() {});
     }
   }
 
@@ -244,7 +244,7 @@ class _TagViewState extends State<TagView> {
     if (hasLoadItemSupport && (!initial || canLoadItemOnStart) && (!item.isUpdated || force)) {
       loadingUpdate = true;
       failedUpdate = false;
-      setState(() {});
+      if (mounted) setState(() {});
       cancelToken = CancelToken();
       try {
         final res = await (possibleBooruHandler ?? handler).loadItem(
@@ -270,7 +270,7 @@ class _TagViewState extends State<TagView> {
         failedUpdate = true;
       }
       loadingUpdate = false;
-      setState(() {});
+      if (mounted) setState(() {});
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => parseSortGroupTags(),
       );
@@ -390,7 +390,7 @@ class _TagViewState extends State<TagView> {
     if (updateCache) {
       await cacheTabMatchData();
     }
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   void searchFocusListener() {
@@ -655,23 +655,10 @@ class _TagViewState extends State<TagView> {
         onTap:
             onTap ??
             (canCopy
-                ? () {
-                    Clipboard.setData(ClipboardData(text: data));
-                    FlashElements.showSnackbar(
-                      context: context,
-                      duration: const Duration(seconds: 2),
-                      title: Text(
-                        context.loc.copiedToClipboard,
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                      content: Text(
-                        '$title: $data',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                      leadingIcon: Icons.copy,
-                      sideColor: Colors.green,
-                    );
-                  }
+                ? () => ClipboardUtils.copyTextToClipboard(
+                    data,
+                    subtitle: '$title: $data',
+                  )
                 : null),
         onLongPress: onLongPress,
         title: Row(
@@ -1076,19 +1063,7 @@ class _TagViewState extends State<TagView> {
                                 );
                               }
                             : null,
-                        onLongPress: hasUploaderName
-                            ? () {
-                                Clipboard.setData(ClipboardData(text: text));
-                                FlashElements.showSnackbar(
-                                  context: context,
-                                  duration: const Duration(seconds: 2),
-                                  title: Text(context.loc.copiedToClipboard, style: const TextStyle(fontSize: 20)),
-                                  content: Text(text, style: const TextStyle(fontSize: 16)),
-                                  leadingIcon: Icons.copy,
-                                  sideColor: Colors.green,
-                                );
-                              }
-                            : null,
+                        onLongPress: hasUploaderName ? () => ClipboardUtils.copyTextToClipboard(text) : null,
                       );
                     },
                   ),
@@ -1347,21 +1322,8 @@ Future<void> showTagDialog({
             ),
             title: Text(context.loc.tagView.copy),
             onTap: () {
-              Clipboard.setData(ClipboardData(text: tag));
-              FlashElements.showSnackbar(
-                context: context,
-                duration: const Duration(seconds: 2),
-                title: Text(
-                  context.loc.copiedToClipboard,
-                  style: const TextStyle(fontSize: 20),
-                ),
-                content: Text(
-                  tag,
-                  style: const TextStyle(fontSize: 16),
-                ),
-                leadingIcon: Icons.copy,
-                sideColor: Colors.green,
-              );
+              ClipboardUtils.copyTextToClipboard(tag);
+
               Navigator.of(context).pop();
             },
           ),
@@ -1740,18 +1702,7 @@ class SourceLinkErrorDialog extends StatelessWidget {
       .toList();
 
   Future<void> copy(BuildContext context) async {
-    await Clipboard.setData(ClipboardData(text: link));
-    FlashElements.showSnackbar(
-      context: context,
-      duration: const Duration(seconds: 2),
-      title: Text(
-        context.loc.copiedToClipboard,
-        style: const TextStyle(fontSize: 20),
-      ),
-      content: Text(link, style: const TextStyle(fontSize: 16)),
-      leadingIcon: Icons.copy,
-      sideColor: Colors.green,
-    );
+    await ClipboardUtils.copyTextToClipboard(link);
   }
 
   @override
@@ -1759,48 +1710,65 @@ class SourceLinkErrorDialog extends StatelessWidget {
     return AlertDialog(
       title: Text(context.loc.tagView.sourceDialogTitle),
       scrollable: true,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 16),
-          if (detectedUrls.isNotEmpty) ...[
-            Text(
-              context.loc.tagView.detectedLinks,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 4),
-            ...detectedUrls.map(
-              (url) => ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.link, size: 20),
-                title: Text(url, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14)),
-                onTap: () async {
-                  final ok = await launchUrlString(
-                    url,
-                    mode: LaunchMode.externalApplication,
-                  );
-                  if (!ok) {
-                    FlashElements.showSnackbar(
-                      title: Text(context.loc.failedToOpenLink),
-                      content: Text(url),
+      insetPadding: const EdgeInsets.all(16),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: .min,
+          crossAxisAlignment: .start,
+          children: [
+            const SizedBox(height: 16),
+            if (detectedUrls.isNotEmpty) ...[
+              Text(
+                context.loc.tagView.detectedLinks,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 4),
+              ...detectedUrls.map(
+                (url) => InkWell(
+                  onTap: () async {
+                    final ok = await launchUrlString(
+                      url,
+                      mode: LaunchMode.externalApplication,
                     );
-                  }
-                },
+                    if (!ok) {
+                      FlashElements.showSnackbar(
+                        title: Text(context.loc.failedToOpenLink),
+                        content: Text(url),
+                      );
+                    }
+                  },
+                  child: SizedBox(
+                    height: 50,
+                    child: Row(
+                      spacing: 12,
+                      children: [
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.link,
+                          size: 20,
+                        ),
+                        Expanded(
+                          child: DraggableOverflowText(url),
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            ParsedText(
+              text: link,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
           ],
-          ParsedText(
-            text: link,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
+        ),
       ),
       actionsOverflowDirection: VerticalDirection.down,
       actionsOverflowButtonSpacing: 8,
@@ -1918,12 +1886,12 @@ class _TagContentPreviewState extends State<TagContentPreview> {
 
     if (tab!.booruHandler.locked && !isLastPage) {
       isLastPage = true;
-      setState(() {});
+      if (mounted) setState(() {});
     }
 
     if (tab!.booruHandler.errorString.isNotEmpty) {
       errorString = tab!.booruHandler.errorString;
-      setState(() {});
+      if (mounted) setState(() {});
     }
 
     if (tab!.booruHandler.totalCount.value == 0) {
@@ -1932,9 +1900,9 @@ class _TagContentPreviewState extends State<TagContentPreview> {
 
     Future.delayed(const Duration(milliseconds: 200), () {
       loading = false;
-      setState(() {});
+      if (mounted) setState(() {});
     });
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   Future<void> onPreviewTap(int index) async {
@@ -1989,14 +1957,7 @@ class _TagContentPreviewState extends State<TagContentPreview> {
     }
 
     final BooruItem item = tab!.booruHandler.filteredFetched[index];
-    await Clipboard.setData(ClipboardData(text: Uri.encodeFull(item.fileURL)));
-    FlashElements.showSnackbar(
-      duration: const Duration(seconds: 2),
-      title: Text(context.loc.tagView.copiedFileURL, style: const TextStyle(fontSize: 20)),
-      content: Text(Uri.encodeFull(item.fileURL), style: const TextStyle(fontSize: 16)),
-      leadingIcon: Icons.copy,
-      sideColor: Colors.green,
-    );
+    await ClipboardUtils.copyTextToClipboard(Uri.encodeFull(item.fileURL));
   }
 
   Future<void> showTagPreviewsListDialog() async {

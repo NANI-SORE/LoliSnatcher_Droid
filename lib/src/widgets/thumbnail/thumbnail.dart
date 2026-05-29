@@ -27,14 +27,14 @@ import 'package:lolisnatcher/src/widgets/preview/shimmer_builder.dart';
 class Thumbnail extends StatefulWidget {
   const Thumbnail({
     required this.item,
-    required this.booru,
+    this.booru,
     this.isStandalone = false,
     this.useHero = true,
     super.key,
   });
 
   final BooruItem item;
-  final Booru booru;
+  final Booru? booru;
 
   /// set to true when used in a list
   final bool isStandalone;
@@ -628,9 +628,11 @@ class _ThumbnailState extends State<Thumbnail> {
                 child: ListenableBuilder(
                   listenable: Listenable.merge([isLoaded, isFromCache, isFailed, errorCode]),
                   builder: (context, child) {
+                    if (widget.booru == null) return const SizedBox.shrink();
+
                     final bool isFavOrDlsOrHasLoad =
-                        widget.booru.type?.isFavouritesOrDownloads == true ||
-                        BooruHandlerFactory().getBooruHandler([widget.booru], null).booruHandler.hasLoadItemSupport;
+                        widget.booru?.type?.isFavouritesOrDownloads == true ||
+                        BooruHandlerFactory().getBooruHandler([widget.booru!], null).booruHandler.hasLoadItemSupport;
 
                     return ThumbnailLoading(
                       item: widget.item,
