@@ -190,28 +190,28 @@ class TranslationsItIt extends Translations with BaseTranslations<AppLocale, Tra
   @override
   String get downloads => TranslationOverrides.string(_root.$meta, 'downloads', {}) ?? 'Downloads';
   @override
-  late final _TranslationsValidationErrorsItIt validationErrors = _TranslationsValidationErrorsItIt._(_root);
+  late final _Translations$validationErrors$it_IT validationErrors = _Translations$validationErrors$it_IT._(_root);
   @override
-  late final _TranslationsInitItIt init = _TranslationsInitItIt._(_root);
+  late final _Translations$init$it_IT init = _Translations$init$it_IT._(_root);
   @override
-  late final _TranslationsPermissionsItIt permissions = _TranslationsPermissionsItIt._(_root);
+  late final _Translations$permissions$it_IT permissions = _Translations$permissions$it_IT._(_root);
   @override
-  late final _TranslationsAuthenticationItIt authentication = _TranslationsAuthenticationItIt._(_root);
+  late final _Translations$authentication$it_IT authentication = _Translations$authentication$it_IT._(_root);
   @override
-  late final _TranslationsSearchHandlerItIt searchHandler = _TranslationsSearchHandlerItIt._(_root);
+  late final _Translations$searchHandler$it_IT searchHandler = _Translations$searchHandler$it_IT._(_root);
   @override
-  late final _TranslationsSnatcherItIt snatcher = _TranslationsSnatcherItIt._(_root);
+  late final _Translations$snatcher$it_IT snatcher = _Translations$snatcher$it_IT._(_root);
   @override
-  late final _TranslationsMultibooruItIt multibooru = _TranslationsMultibooruItIt._(_root);
+  late final _Translations$multibooru$it_IT multibooru = _Translations$multibooru$it_IT._(_root);
   @override
-  late final _TranslationsHydrusItIt hydrus = _TranslationsHydrusItIt._(_root);
+  late final _Translations$hydrus$it_IT hydrus = _Translations$hydrus$it_IT._(_root);
   @override
-  late final _TranslationsTabsItIt tabs = _TranslationsTabsItIt._(_root);
+  late final _Translations$tabs$it_IT tabs = _Translations$tabs$it_IT._(_root);
 }
 
 // Path: validationErrors
-class _TranslationsValidationErrorsItIt extends TranslationsValidationErrorsEn {
-  _TranslationsValidationErrorsItIt._(TranslationsItIt root) : this._root = root, super.internal(root);
+class _Translations$validationErrors$it_IT extends Translations$validationErrors$en {
+  _Translations$validationErrors$it_IT._(TranslationsItIt root) : this._root = root, super.internal(root);
 
   final TranslationsItIt _root; // ignore: unused_field
 
@@ -253,8 +253,8 @@ class _TranslationsValidationErrorsItIt extends TranslationsValidationErrorsEn {
 }
 
 // Path: init
-class _TranslationsInitItIt extends TranslationsInitEn {
-  _TranslationsInitItIt._(TranslationsItIt root) : this._root = root, super.internal(root);
+class _Translations$init$it_IT extends Translations$init$en {
+  _Translations$init$it_IT._(TranslationsItIt root) : this._root = root, super.internal(root);
 
   final TranslationsItIt _root; // ignore: unused_field
 
@@ -274,8 +274,8 @@ class _TranslationsInitItIt extends TranslationsInitEn {
 }
 
 // Path: permissions
-class _TranslationsPermissionsItIt extends TranslationsPermissionsEn {
-  _TranslationsPermissionsItIt._(TranslationsItIt root) : this._root = root, super.internal(root);
+class _Translations$permissions$it_IT extends Translations$permissions$en {
+  _Translations$permissions$it_IT._(TranslationsItIt root) : this._root = root, super.internal(root);
 
   final TranslationsItIt _root; // ignore: unused_field
 
@@ -304,8 +304,8 @@ class _TranslationsPermissionsItIt extends TranslationsPermissionsEn {
 }
 
 // Path: authentication
-class _TranslationsAuthenticationItIt extends TranslationsAuthenticationEn {
-  _TranslationsAuthenticationItIt._(TranslationsItIt root) : this._root = root, super.internal(root);
+class _Translations$authentication$it_IT extends Translations$authentication$en {
+  _Translations$authentication$it_IT._(TranslationsItIt root) : this._root = root, super.internal(root);
 
   final TranslationsItIt _root; // ignore: unused_field
 
@@ -326,8 +326,8 @@ class _TranslationsAuthenticationItIt extends TranslationsAuthenticationEn {
 }
 
 // Path: searchHandler
-class _TranslationsSearchHandlerItIt extends TranslationsSearchHandlerEn {
-  _TranslationsSearchHandlerItIt._(TranslationsItIt root) : this._root = root, super.internal(root);
+class _Translations$searchHandler$it_IT extends Translations$searchHandler$en {
+  _Translations$searchHandler$it_IT._(TranslationsItIt root) : this._root = root, super.internal(root);
 
   final TranslationsItIt _root; // ignore: unused_field
 
@@ -390,8 +390,8 @@ class _TranslationsSearchHandlerItIt extends TranslationsSearchHandlerEn {
 }
 
 // Path: snatcher
-class _TranslationsSnatcherItIt extends TranslationsSnatcherEn {
-  _TranslationsSnatcherItIt._(TranslationsItIt root) : this._root = root, super.internal(root);
+class _Translations$snatcher$it_IT extends Translations$snatcher$en {
+  _Translations$snatcher$it_IT._(TranslationsItIt root) : this._root = root, super.internal(root);
 
   final TranslationsItIt _root; // ignore: unused_field
 
@@ -476,8 +476,8 @@ class _TranslationsSnatcherItIt extends TranslationsSnatcherEn {
 }
 
 // Path: multibooru
-class _TranslationsMultibooruItIt extends TranslationsMultibooruEn {
-  _TranslationsMultibooruItIt._(TranslationsItIt root) : this._root = root, super.internal(root);
+class _Translations$multibooru$it_IT extends Translations$multibooru$en {
+  _Translations$multibooru$it_IT._(TranslationsItIt root) : this._root = root, super.internal(root);
 
   final TranslationsItIt _root; // ignore: unused_field
 
@@ -499,8 +499,8 @@ class _TranslationsMultibooruItIt extends TranslationsMultibooruEn {
 }
 
 // Path: hydrus
-class _TranslationsHydrusItIt extends TranslationsHydrusEn {
-  _TranslationsHydrusItIt._(TranslationsItIt root) : this._root = root, super.internal(root);
+class _Translations$hydrus$it_IT extends Translations$hydrus$en {
+  _Translations$hydrus$it_IT._(TranslationsItIt root) : this._root = root, super.internal(root);
 
   final TranslationsItIt _root; // ignore: unused_field
 
@@ -518,8 +518,8 @@ class _TranslationsHydrusItIt extends TranslationsHydrusEn {
 }
 
 // Path: tabs
-class _TranslationsTabsItIt extends TranslationsTabsEn {
-  _TranslationsTabsItIt._(TranslationsItIt root) : this._root = root, super.internal(root);
+class _Translations$tabs$it_IT extends Translations$tabs$en {
+  _Translations$tabs$it_IT._(TranslationsItIt root) : this._root = root, super.internal(root);
 
   final TranslationsItIt _root; // ignore: unused_field
 

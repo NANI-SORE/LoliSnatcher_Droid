@@ -48,7 +48,7 @@ class TranslationsEsMx extends Translations with BaseTranslations<AppLocale, Tra
 
   // Translations
   @override
-  String get locale => TranslationOverrides.string(_root.$meta, 'locale', {}) ?? 'es_MX';
+  String get locale => TranslationOverrides.string(_root.$meta, 'locale', {}) ?? 'es-MX';
   @override
   String get localeName => TranslationOverrides.string(_root.$meta, 'localeName', {}) ?? 'Español';
   @override
@@ -56,15 +56,17 @@ class TranslationsEsMx extends Translations with BaseTranslations<AppLocale, Tra
   @override
   String get error => TranslationOverrides.string(_root.$meta, 'error', {}) ?? 'Error';
   @override
-  String get errorExclamation => TranslationOverrides.string(_root.$meta, 'errorExclamation', {}) ?? 'Error!';
+  String get errorExclamation => TranslationOverrides.string(_root.$meta, 'errorExclamation', {}) ?? '¡Error!';
   @override
   String get success => TranslationOverrides.string(_root.$meta, 'success', {}) ?? 'Hecho';
   @override
-  String get successExclamation => TranslationOverrides.string(_root.$meta, 'successExclamation', {}) ?? 'Hecho!';
+  String get successExclamation => TranslationOverrides.string(_root.$meta, 'successExclamation', {}) ?? '¡Hecho!';
   @override
   String get cancel => TranslationOverrides.string(_root.$meta, 'cancel', {}) ?? 'Cancelar';
   @override
-  String get kReturn => TranslationOverrides.string(_root.$meta, 'kReturn', {}) ?? 'Volver';
+  String get kReturn => TranslationOverrides.string(_root.$meta, 'kReturn', {}) ?? 'Regresar';
+  @override
+  String get later => TranslationOverrides.string(_root.$meta, 'later', {}) ?? 'Después';
   @override
   String get close => TranslationOverrides.string(_root.$meta, 'close', {}) ?? 'Cerrar';
   @override
@@ -74,9 +76,15 @@ class TranslationsEsMx extends Translations with BaseTranslations<AppLocale, Tra
   @override
   String get no => TranslationOverrides.string(_root.$meta, 'no', {}) ?? 'No';
   @override
+  String get pleaseWait => TranslationOverrides.string(_root.$meta, 'pleaseWait', {}) ?? 'Por favor espere...';
+  @override
   String get show => TranslationOverrides.string(_root.$meta, 'show', {}) ?? 'Mostrar';
   @override
   String get hide => TranslationOverrides.string(_root.$meta, 'hide', {}) ?? 'Ocultar';
+  @override
+  String get enable => TranslationOverrides.string(_root.$meta, 'enable', {}) ?? 'Activar';
+  @override
+  String get disable => TranslationOverrides.string(_root.$meta, 'disable', {}) ?? 'Desactivar';
   @override
   String get add => TranslationOverrides.string(_root.$meta, 'add', {}) ?? 'Añadir';
   @override
@@ -92,31 +100,41 @@ class TranslationsEsMx extends Translations with BaseTranslations<AppLocale, Tra
   @override
   String get retry => TranslationOverrides.string(_root.$meta, 'retry', {}) ?? 'Reintentar';
   @override
+  String get clear => TranslationOverrides.string(_root.$meta, 'clear', {}) ?? 'Despejar';
+  @override
   String get copy => TranslationOverrides.string(_root.$meta, 'copy', {}) ?? 'Copiar';
   @override
   String get copied => TranslationOverrides.string(_root.$meta, 'copied', {}) ?? 'Copiado';
   @override
-  String get copiedToClipboard => TranslationOverrides.string(_root.$meta, 'copiedToClipboard', {}) ?? 'Copiado en el Portapapeles';
+  String get copiedToClipboard => TranslationOverrides.string(_root.$meta, 'copiedToClipboard', {}) ?? 'Copiado en el portapapeles';
+  @override
+  String get nothingFound => TranslationOverrides.string(_root.$meta, 'nothingFound', {}) ?? 'Nada encontrado';
   @override
   String get paste => TranslationOverrides.string(_root.$meta, 'paste', {}) ?? 'Pegar';
   @override
-  String get copyErrorText => TranslationOverrides.string(_root.$meta, 'copyErrorText', {}) ?? 'Copiar Error';
+  String get copyErrorText => TranslationOverrides.string(_root.$meta, 'copyErrorText', {}) ?? 'Error de copia';
   @override
   String get booru => TranslationOverrides.string(_root.$meta, 'booru', {}) ?? 'Booru';
   @override
-  String get exitTheAppQuestion => TranslationOverrides.string(_root.$meta, 'exitTheAppQuestion', {}) ?? 'Salir de La App?';
+  String get goToSettings => TranslationOverrides.string(_root.$meta, 'goToSettings', {}) ?? 'Ir a configuración';
   @override
-  String get closeTheApp => TranslationOverrides.string(_root.$meta, 'closeTheApp', {}) ?? 'Cerrar App';
+  String get thisMayTakeSomeTime => TranslationOverrides.string(_root.$meta, 'thisMayTakeSomeTime', {}) ?? 'Esto podría tardar...';
   @override
-  String get invalidUrl => TranslationOverrides.string(_root.$meta, 'invalidUrl', {}) ?? 'URL Invalida!';
+  String get exitTheAppQuestion => TranslationOverrides.string(_root.$meta, 'exitTheAppQuestion', {}) ?? '¿Salir de la app?';
   @override
-  String get clipboardIsEmpty => TranslationOverrides.string(_root.$meta, 'clipboardIsEmpty', {}) ?? 'El Portapapeles Esta Vacio!';
+  String get closeTheApp => TranslationOverrides.string(_root.$meta, 'closeTheApp', {}) ?? 'Cerrar app';
   @override
-  String get failedToOpenLink => TranslationOverrides.string(_root.$meta, 'failedToOpenLink', {}) ?? 'Error al Abrir el Link';
+  String get invalidUrl => TranslationOverrides.string(_root.$meta, 'invalidUrl', {}) ?? '¡URL Invalida!';
   @override
-  String get apiKey => TranslationOverrides.string(_root.$meta, 'apiKey', {}) ?? 'API Key';
+  String get clipboardIsEmpty => TranslationOverrides.string(_root.$meta, 'clipboardIsEmpty', {}) ?? '¡El portapapeles está vacío!';
   @override
-  String get userId => TranslationOverrides.string(_root.$meta, 'userId', {}) ?? 'User ID';
+  String get failedToOpenLink => TranslationOverrides.string(_root.$meta, 'failedToOpenLink', {}) ?? 'Error al abrir el link';
+  @override
+  String get apiKey => TranslationOverrides.string(_root.$meta, 'apiKey', {}) ?? 'Llave API';
+  @override
+  String get userId => TranslationOverrides.string(_root.$meta, 'userId', {}) ?? 'ID de usuario';
+  @override
+  String get login => TranslationOverrides.string(_root.$meta, 'login', {}) ?? 'Iniciar sesión';
   @override
   String get password => TranslationOverrides.string(_root.$meta, 'password', {}) ?? 'Contraseña';
   @override
@@ -126,19 +144,25 @@ class TranslationsEsMx extends Translations with BaseTranslations<AppLocale, Tra
   @override
   String get discord => TranslationOverrides.string(_root.$meta, 'discord', {}) ?? 'Discord';
   @override
-  String get visitOurDiscord => TranslationOverrides.string(_root.$meta, 'visitOurDiscord', {}) ?? 'Visita Nuestro Servidor de Discord';
+  String get visitOurDiscord => TranslationOverrides.string(_root.$meta, 'visitOurDiscord', {}) ?? 'Visita nuestro servidor de Discord';
+  @override
+  String get item => TranslationOverrides.string(_root.$meta, 'item', {}) ?? 'Ítem';
   @override
   String get select => TranslationOverrides.string(_root.$meta, 'select', {}) ?? 'Seleccionar';
   @override
-  String get selectAll => TranslationOverrides.string(_root.$meta, 'selectAll', {}) ?? 'Seleccionar Todo';
+  String get selectAll => TranslationOverrides.string(_root.$meta, 'selectAll', {}) ?? 'Seleccionar todo';
+  @override
+  String get reset => TranslationOverrides.string(_root.$meta, 'reset', {}) ?? 'Resetear';
   @override
   String get open => TranslationOverrides.string(_root.$meta, 'open', {}) ?? 'Abrir';
   @override
-  String get openInNewTab => TranslationOverrides.string(_root.$meta, 'openInNewTab', {}) ?? 'Abrir en Pestaña Nueva';
+  String get openInNewTab => TranslationOverrides.string(_root.$meta, 'openInNewTab', {}) ?? 'Abrir en una nueva pestaña';
   @override
   String get move => TranslationOverrides.string(_root.$meta, 'move', {}) ?? 'Mover';
   @override
-  String get sort => TranslationOverrides.string(_root.$meta, 'sort', {}) ?? 'Ordenar por';
+  String get shuffle => TranslationOverrides.string(_root.$meta, 'shuffle', {}) ?? 'Barajar';
+  @override
+  String get sort => TranslationOverrides.string(_root.$meta, 'sort', {}) ?? 'Ordenar';
   @override
   String get go => TranslationOverrides.string(_root.$meta, 'go', {}) ?? 'Ir';
   @override
@@ -146,9 +170,11 @@ class TranslationsEsMx extends Translations with BaseTranslations<AppLocale, Tra
   @override
   String get filter => TranslationOverrides.string(_root.$meta, 'filter', {}) ?? 'Filtrar';
   @override
-  String get page => TranslationOverrides.string(_root.$meta, 'page', {}) ?? 'Pagina';
+  String get or => TranslationOverrides.string(_root.$meta, 'or', {}) ?? 'O (-)';
   @override
-  String get pageNumber => TranslationOverrides.string(_root.$meta, 'pageNumber', {}) ?? 'Pagina #';
+  String get page => TranslationOverrides.string(_root.$meta, 'page', {}) ?? 'Página';
+  @override
+  String get pageNumber => TranslationOverrides.string(_root.$meta, 'pageNumber', {}) ?? 'Página #';
   @override
   String get tags => TranslationOverrides.string(_root.$meta, 'tags', {}) ?? 'Etiquetas';
   @override
@@ -156,28 +182,54 @@ class TranslationsEsMx extends Translations with BaseTranslations<AppLocale, Tra
   @override
   String get name => TranslationOverrides.string(_root.$meta, 'name', {}) ?? 'Nombre';
   @override
-  String get username => TranslationOverrides.string(_root.$meta, 'username', {}) ?? 'Nombre de Usuario';
+  String get address => TranslationOverrides.string(_root.$meta, 'address', {}) ?? 'Dirección';
+  @override
+  String get username => TranslationOverrides.string(_root.$meta, 'username', {}) ?? 'Nombre de usuario';
   @override
   String get favourites => TranslationOverrides.string(_root.$meta, 'favourites', {}) ?? 'Favoritos';
   @override
-  String get downloads => TranslationOverrides.string(_root.$meta, 'downloads', {}) ?? 'Descargar';
+  String get downloads => TranslationOverrides.string(_root.$meta, 'downloads', {}) ?? 'Descargas';
   @override
-  late final _TranslationsValidationErrorsEsMx validationErrors = _TranslationsValidationErrorsEsMx._(_root);
+  late final Translations$validationErrors$es_MX validationErrors = Translations$validationErrors$es_MX.internal(_root);
   @override
-  late final _TranslationsInitEsMx init = _TranslationsInitEsMx._(_root);
+  late final Translations$init$es_MX init = Translations$init$es_MX.internal(_root);
   @override
-  late final _TranslationsAuthenticationEsMx authentication = _TranslationsAuthenticationEsMx._(_root);
+  late final Translations$authentication$es_MX authentication = Translations$authentication$es_MX.internal(_root);
   @override
-  late final _TranslationsSnatcherEsMx snatcher = _TranslationsSnatcherEsMx._(_root);
+  late final Translations$snatcher$es_MX snatcher = Translations$snatcher$es_MX.internal(_root);
 }
 
 // Path: validationErrors
-class _TranslationsValidationErrorsEsMx extends TranslationsValidationErrorsEn {
-  _TranslationsValidationErrorsEsMx._(TranslationsEsMx root) : this._root = root, super.internal(root);
+class Translations$validationErrors$es_MX extends Translations$validationErrors$en {
+  Translations$validationErrors$es_MX.internal(TranslationsEsMx root) : this._root = root, super.internal(root);
 
   final TranslationsEsMx _root; // ignore: unused_field
 
   // Translations
+  @override
+  String get required => TranslationOverrides.string(_root.$meta, 'validationErrors.required', {}) ?? 'Por favor ingrese un valor';
+  @override
+  String get invalid => TranslationOverrides.string(_root.$meta, 'validationErrors.invalid', {}) ?? 'Por favor ingrese un valor válido';
+  @override
+  String get invalidNumber => TranslationOverrides.string(_root.$meta, 'validationErrors.invalidNumber', {}) ?? 'Por favor ingrese un número';
+  @override
+  String get invalidNumericValue =>
+      TranslationOverrides.string(_root.$meta, 'validationErrors.invalidNumericValue', {}) ?? 'Por favor ingrese un valor numérico válido';
+  @override
+  String tooSmall({required double min}) =>
+      TranslationOverrides.string(_root.$meta, 'validationErrors.tooSmall', {'min': min}) ?? 'Por favor ingrese un valor mayor que ${min}';
+  @override
+  String tooBig({required double max}) =>
+      TranslationOverrides.string(_root.$meta, 'validationErrors.tooBig', {'max': max}) ?? 'Por favor ingrese un valor menor que ${max}';
+  @override
+  String rangeError({required double min, required double max}) =>
+      TranslationOverrides.string(_root.$meta, 'validationErrors.rangeError', {'min': min, 'max': max}) ??
+      'Por favor ingrese un valor entre ${min} y ${max}';
+  @override
+  String get greaterThanOrEqualZero =>
+      TranslationOverrides.string(_root.$meta, 'validationErrors.greaterThanOrEqualZero', {}) ?? 'Por favor ingrese un valor igual o mayor que 0';
+  @override
+  String get lessThan4 => TranslationOverrides.string(_root.$meta, 'validationErrors.lessThan4', {}) ?? 'Por favor ingrese un valor menor que 4';
   @override
   String get moreThan4ColumnsWarning =>
       TranslationOverrides.string(_root.$meta, 'validationErrors.moreThan4ColumnsWarning', {}) ??
@@ -189,8 +241,8 @@ class _TranslationsValidationErrorsEsMx extends TranslationsValidationErrorsEn {
 }
 
 // Path: init
-class _TranslationsInitEsMx extends TranslationsInitEn {
-  _TranslationsInitEsMx._(TranslationsEsMx root) : this._root = root, super.internal(root);
+class Translations$init$es_MX extends Translations$init$en {
+  Translations$init$es_MX.internal(TranslationsEsMx root) : this._root = root, super.internal(root);
 
   final TranslationsEsMx _root; // ignore: unused_field
 
@@ -208,8 +260,8 @@ class _TranslationsInitEsMx extends TranslationsInitEn {
 }
 
 // Path: authentication
-class _TranslationsAuthenticationEsMx extends TranslationsAuthenticationEn {
-  _TranslationsAuthenticationEsMx._(TranslationsEsMx root) : this._root = root, super.internal(root);
+class Translations$authentication$es_MX extends Translations$authentication$en {
+  Translations$authentication$es_MX.internal(TranslationsEsMx root) : this._root = root, super.internal(root);
 
   final TranslationsEsMx _root; // ignore: unused_field
 
@@ -220,8 +272,8 @@ class _TranslationsAuthenticationEsMx extends TranslationsAuthenticationEn {
 }
 
 // Path: snatcher
-class _TranslationsSnatcherEsMx extends TranslationsSnatcherEn {
-  _TranslationsSnatcherEsMx._(TranslationsEsMx root) : this._root = root, super.internal(root);
+class Translations$snatcher$es_MX extends Translations$snatcher$en {
+  Translations$snatcher$es_MX.internal(TranslationsEsMx root) : this._root = root, super.internal(root);
 
   final TranslationsEsMx _root; // ignore: unused_field
 
@@ -256,21 +308,25 @@ class _TranslationsSnatcherEsMx extends TranslationsSnatcherEn {
 extension on TranslationsEsMx {
   dynamic _flatMapFunction(String path) {
     return switch (path) {
-      'locale' => TranslationOverrides.string(_root.$meta, 'locale', {}) ?? 'es_MX',
+      'locale' => TranslationOverrides.string(_root.$meta, 'locale', {}) ?? 'es-MX',
       'localeName' => TranslationOverrides.string(_root.$meta, 'localeName', {}) ?? 'Español',
       'appName' => TranslationOverrides.string(_root.$meta, 'appName', {}) ?? 'LoliSnatcher',
       'error' => TranslationOverrides.string(_root.$meta, 'error', {}) ?? 'Error',
-      'errorExclamation' => TranslationOverrides.string(_root.$meta, 'errorExclamation', {}) ?? 'Error!',
+      'errorExclamation' => TranslationOverrides.string(_root.$meta, 'errorExclamation', {}) ?? '¡Error!',
       'success' => TranslationOverrides.string(_root.$meta, 'success', {}) ?? 'Hecho',
-      'successExclamation' => TranslationOverrides.string(_root.$meta, 'successExclamation', {}) ?? 'Hecho!',
+      'successExclamation' => TranslationOverrides.string(_root.$meta, 'successExclamation', {}) ?? '¡Hecho!',
       'cancel' => TranslationOverrides.string(_root.$meta, 'cancel', {}) ?? 'Cancelar',
-      'kReturn' => TranslationOverrides.string(_root.$meta, 'kReturn', {}) ?? 'Volver',
+      'kReturn' => TranslationOverrides.string(_root.$meta, 'kReturn', {}) ?? 'Regresar',
+      'later' => TranslationOverrides.string(_root.$meta, 'later', {}) ?? 'Después',
       'close' => TranslationOverrides.string(_root.$meta, 'close', {}) ?? 'Cerrar',
       'ok' => TranslationOverrides.string(_root.$meta, 'ok', {}) ?? 'Ok',
       'yes' => TranslationOverrides.string(_root.$meta, 'yes', {}) ?? 'Si',
       'no' => TranslationOverrides.string(_root.$meta, 'no', {}) ?? 'No',
+      'pleaseWait' => TranslationOverrides.string(_root.$meta, 'pleaseWait', {}) ?? 'Por favor espere...',
       'show' => TranslationOverrides.string(_root.$meta, 'show', {}) ?? 'Mostrar',
       'hide' => TranslationOverrides.string(_root.$meta, 'hide', {}) ?? 'Ocultar',
+      'enable' => TranslationOverrides.string(_root.$meta, 'enable', {}) ?? 'Activar',
+      'disable' => TranslationOverrides.string(_root.$meta, 'disable', {}) ?? 'Desactivar',
       'add' => TranslationOverrides.string(_root.$meta, 'add', {}) ?? 'Añadir',
       'edit' => TranslationOverrides.string(_root.$meta, 'edit', {}) ?? 'Editar',
       'remove' => TranslationOverrides.string(_root.$meta, 'remove', {}) ?? 'Quitar',
@@ -278,41 +334,71 @@ extension on TranslationsEsMx {
       'delete' => TranslationOverrides.string(_root.$meta, 'delete', {}) ?? 'Borrar',
       'confirm' => TranslationOverrides.string(_root.$meta, 'confirm', {}) ?? 'Confirmar',
       'retry' => TranslationOverrides.string(_root.$meta, 'retry', {}) ?? 'Reintentar',
+      'clear' => TranslationOverrides.string(_root.$meta, 'clear', {}) ?? 'Despejar',
       'copy' => TranslationOverrides.string(_root.$meta, 'copy', {}) ?? 'Copiar',
       'copied' => TranslationOverrides.string(_root.$meta, 'copied', {}) ?? 'Copiado',
-      'copiedToClipboard' => TranslationOverrides.string(_root.$meta, 'copiedToClipboard', {}) ?? 'Copiado en el Portapapeles',
+      'copiedToClipboard' => TranslationOverrides.string(_root.$meta, 'copiedToClipboard', {}) ?? 'Copiado en el portapapeles',
+      'nothingFound' => TranslationOverrides.string(_root.$meta, 'nothingFound', {}) ?? 'Nada encontrado',
       'paste' => TranslationOverrides.string(_root.$meta, 'paste', {}) ?? 'Pegar',
-      'copyErrorText' => TranslationOverrides.string(_root.$meta, 'copyErrorText', {}) ?? 'Copiar Error',
+      'copyErrorText' => TranslationOverrides.string(_root.$meta, 'copyErrorText', {}) ?? 'Error de copia',
       'booru' => TranslationOverrides.string(_root.$meta, 'booru', {}) ?? 'Booru',
-      'exitTheAppQuestion' => TranslationOverrides.string(_root.$meta, 'exitTheAppQuestion', {}) ?? 'Salir de La App?',
-      'closeTheApp' => TranslationOverrides.string(_root.$meta, 'closeTheApp', {}) ?? 'Cerrar App',
-      'invalidUrl' => TranslationOverrides.string(_root.$meta, 'invalidUrl', {}) ?? 'URL Invalida!',
-      'clipboardIsEmpty' => TranslationOverrides.string(_root.$meta, 'clipboardIsEmpty', {}) ?? 'El Portapapeles Esta Vacio!',
-      'failedToOpenLink' => TranslationOverrides.string(_root.$meta, 'failedToOpenLink', {}) ?? 'Error al Abrir el Link',
-      'apiKey' => TranslationOverrides.string(_root.$meta, 'apiKey', {}) ?? 'API Key',
-      'userId' => TranslationOverrides.string(_root.$meta, 'userId', {}) ?? 'User ID',
+      'goToSettings' => TranslationOverrides.string(_root.$meta, 'goToSettings', {}) ?? 'Ir a configuración',
+      'thisMayTakeSomeTime' => TranslationOverrides.string(_root.$meta, 'thisMayTakeSomeTime', {}) ?? 'Esto podría tardar...',
+      'exitTheAppQuestion' => TranslationOverrides.string(_root.$meta, 'exitTheAppQuestion', {}) ?? '¿Salir de la app?',
+      'closeTheApp' => TranslationOverrides.string(_root.$meta, 'closeTheApp', {}) ?? 'Cerrar app',
+      'invalidUrl' => TranslationOverrides.string(_root.$meta, 'invalidUrl', {}) ?? '¡URL Invalida!',
+      'clipboardIsEmpty' => TranslationOverrides.string(_root.$meta, 'clipboardIsEmpty', {}) ?? '¡El portapapeles está vacío!',
+      'failedToOpenLink' => TranslationOverrides.string(_root.$meta, 'failedToOpenLink', {}) ?? 'Error al abrir el link',
+      'apiKey' => TranslationOverrides.string(_root.$meta, 'apiKey', {}) ?? 'Llave API',
+      'userId' => TranslationOverrides.string(_root.$meta, 'userId', {}) ?? 'ID de usuario',
+      'login' => TranslationOverrides.string(_root.$meta, 'login', {}) ?? 'Iniciar sesión',
       'password' => TranslationOverrides.string(_root.$meta, 'password', {}) ?? 'Contraseña',
       'pause' => TranslationOverrides.string(_root.$meta, 'pause', {}) ?? 'Pausa',
       'resume' => TranslationOverrides.string(_root.$meta, 'resume', {}) ?? 'Reanudar',
       'discord' => TranslationOverrides.string(_root.$meta, 'discord', {}) ?? 'Discord',
-      'visitOurDiscord' => TranslationOverrides.string(_root.$meta, 'visitOurDiscord', {}) ?? 'Visita Nuestro Servidor de Discord',
+      'visitOurDiscord' => TranslationOverrides.string(_root.$meta, 'visitOurDiscord', {}) ?? 'Visita nuestro servidor de Discord',
+      'item' => TranslationOverrides.string(_root.$meta, 'item', {}) ?? 'Ítem',
       'select' => TranslationOverrides.string(_root.$meta, 'select', {}) ?? 'Seleccionar',
-      'selectAll' => TranslationOverrides.string(_root.$meta, 'selectAll', {}) ?? 'Seleccionar Todo',
+      'selectAll' => TranslationOverrides.string(_root.$meta, 'selectAll', {}) ?? 'Seleccionar todo',
+      'reset' => TranslationOverrides.string(_root.$meta, 'reset', {}) ?? 'Resetear',
       'open' => TranslationOverrides.string(_root.$meta, 'open', {}) ?? 'Abrir',
-      'openInNewTab' => TranslationOverrides.string(_root.$meta, 'openInNewTab', {}) ?? 'Abrir en Pestaña Nueva',
+      'openInNewTab' => TranslationOverrides.string(_root.$meta, 'openInNewTab', {}) ?? 'Abrir en una nueva pestaña',
       'move' => TranslationOverrides.string(_root.$meta, 'move', {}) ?? 'Mover',
-      'sort' => TranslationOverrides.string(_root.$meta, 'sort', {}) ?? 'Ordenar por',
+      'shuffle' => TranslationOverrides.string(_root.$meta, 'shuffle', {}) ?? 'Barajar',
+      'sort' => TranslationOverrides.string(_root.$meta, 'sort', {}) ?? 'Ordenar',
       'go' => TranslationOverrides.string(_root.$meta, 'go', {}) ?? 'Ir',
       'search' => TranslationOverrides.string(_root.$meta, 'search', {}) ?? 'Buscar',
       'filter' => TranslationOverrides.string(_root.$meta, 'filter', {}) ?? 'Filtrar',
-      'page' => TranslationOverrides.string(_root.$meta, 'page', {}) ?? 'Pagina',
-      'pageNumber' => TranslationOverrides.string(_root.$meta, 'pageNumber', {}) ?? 'Pagina #',
+      'or' => TranslationOverrides.string(_root.$meta, 'or', {}) ?? 'O (-)',
+      'page' => TranslationOverrides.string(_root.$meta, 'page', {}) ?? 'Página',
+      'pageNumber' => TranslationOverrides.string(_root.$meta, 'pageNumber', {}) ?? 'Página #',
       'tags' => TranslationOverrides.string(_root.$meta, 'tags', {}) ?? 'Etiquetas',
       'type' => TranslationOverrides.string(_root.$meta, 'type', {}) ?? 'Tipo',
       'name' => TranslationOverrides.string(_root.$meta, 'name', {}) ?? 'Nombre',
-      'username' => TranslationOverrides.string(_root.$meta, 'username', {}) ?? 'Nombre de Usuario',
+      'address' => TranslationOverrides.string(_root.$meta, 'address', {}) ?? 'Dirección',
+      'username' => TranslationOverrides.string(_root.$meta, 'username', {}) ?? 'Nombre de usuario',
       'favourites' => TranslationOverrides.string(_root.$meta, 'favourites', {}) ?? 'Favoritos',
-      'downloads' => TranslationOverrides.string(_root.$meta, 'downloads', {}) ?? 'Descargar',
+      'downloads' => TranslationOverrides.string(_root.$meta, 'downloads', {}) ?? 'Descargas',
+      'validationErrors.required' => TranslationOverrides.string(_root.$meta, 'validationErrors.required', {}) ?? 'Por favor ingrese un valor',
+      'validationErrors.invalid' => TranslationOverrides.string(_root.$meta, 'validationErrors.invalid', {}) ?? 'Por favor ingrese un valor válido',
+      'validationErrors.invalidNumber' =>
+        TranslationOverrides.string(_root.$meta, 'validationErrors.invalidNumber', {}) ?? 'Por favor ingrese un número',
+      'validationErrors.invalidNumericValue' =>
+        TranslationOverrides.string(_root.$meta, 'validationErrors.invalidNumericValue', {}) ?? 'Por favor ingrese un valor numérico válido',
+      'validationErrors.tooSmall' =>
+        ({required double min}) =>
+            TranslationOverrides.string(_root.$meta, 'validationErrors.tooSmall', {'min': min}) ?? 'Por favor ingrese un valor mayor que ${min}',
+      'validationErrors.tooBig' =>
+        ({required double max}) =>
+            TranslationOverrides.string(_root.$meta, 'validationErrors.tooBig', {'max': max}) ?? 'Por favor ingrese un valor menor que ${max}',
+      'validationErrors.rangeError' =>
+        ({required double min, required double max}) =>
+            TranslationOverrides.string(_root.$meta, 'validationErrors.rangeError', {'min': min, 'max': max}) ??
+            'Por favor ingrese un valor entre ${min} y ${max}',
+      'validationErrors.greaterThanOrEqualZero' =>
+        TranslationOverrides.string(_root.$meta, 'validationErrors.greaterThanOrEqualZero', {}) ?? 'Por favor ingrese un valor igual o mayor que 0',
+      'validationErrors.lessThan4' =>
+        TranslationOverrides.string(_root.$meta, 'validationErrors.lessThan4', {}) ?? 'Por favor ingrese un valor menor que 4',
       'validationErrors.moreThan4ColumnsWarning' =>
         TranslationOverrides.string(_root.$meta, 'validationErrors.moreThan4ColumnsWarning', {}) ??
             'Usar mas de 4 Columnas Puede Afectar el Rendimiento',

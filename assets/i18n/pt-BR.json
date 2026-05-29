@@ -126,7 +126,7 @@
         "listOfBrokenTabs": "Lista de abas corrompidas:",
         "tabsMerged": "Abas mescladas",
         "addedTabsCount(param=count)": {
-            "one": "${count} nova aba adicionada",
+            "one": "${count} novas abas adicionadas",
             "few": "${count} novas abas adicionadas",
             "many": "${count} novas abas adicionadas",
             "other": "${count} novas abas adicionadas"

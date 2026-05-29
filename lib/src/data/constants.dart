@@ -44,7 +44,7 @@ class Constants {
   // TODO don't forget to update on every new release
   static const UpdateInfo updateInfo = UpdateInfo(
     versionName: '2.5.1',
-    buildNumber: 5211,
+    buildNumber: 5212,
     title: '2.5.1 - Chinese and German localization, fixes',
     isInStore: true,
     isImportant: false,
@@ -61,11 +61,11 @@ A minor update aimed at adding new localization languages and fixing some issues
 
 -------------------
 
-Release - 2.5.1+5211:
+Release - 2.5.1+5212 (28.05.2026):
 
-- Added Chinese (Simplified) and German localization
+- Added Chinese (Simplified) and German localizations
 - Possible fix of broken screen orientation after leaving fullscreen video
-- Adjusted long tap-drag logic on videos, added ability to slowdown and reverse video playback (reverse quality depends on the selected video backend setting)
+- Adjusted long tap-drag logic on videos, added ability to slowdown and reverse video playback (reverse performance depends on the selected video backend setting)
 - Fixed some layout issues
 - Fixed auto leave dialog on captcha completion appearing again on new page load after you decided to stay
 - Fixed some jpeg images failing to load
@@ -76,6 +76,9 @@ Release - 2.5.1+5211:
 - Fixed viewer toolbar buttons setting not resetting correctly
 
 -------------------
+-------------------
+
+Previous release:
 
 Hotfix 2 - 2.5.0+5210 (09.04.2026):
 

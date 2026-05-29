@@ -190,14 +190,14 @@ class TranslationsEsEs extends Translations with BaseTranslations<AppLocale, Tra
   @override
   String get downloads => TranslationOverrides.string(_root.$meta, 'downloads', {}) ?? 'Descargas';
   @override
-  late final _TranslationsValidationErrorsEsEs validationErrors = _TranslationsValidationErrorsEsEs._(_root);
+  late final Translations$validationErrors$es_ES validationErrors = Translations$validationErrors$es_ES.internal(_root);
   @override
-  late final _TranslationsInitEsEs init = _TranslationsInitEsEs._(_root);
+  late final Translations$init$es_ES init = Translations$init$es_ES.internal(_root);
 }
 
 // Path: validationErrors
-class _TranslationsValidationErrorsEsEs extends TranslationsValidationErrorsEn {
-  _TranslationsValidationErrorsEsEs._(TranslationsEsEs root) : this._root = root, super.internal(root);
+class Translations$validationErrors$es_ES extends Translations$validationErrors$en {
+  Translations$validationErrors$es_ES.internal(TranslationsEsEs root) : this._root = root, super.internal(root);
 
   final TranslationsEsEs _root; // ignore: unused_field
 
@@ -240,8 +240,8 @@ class _TranslationsValidationErrorsEsEs extends TranslationsValidationErrorsEn {
 }
 
 // Path: init
-class _TranslationsInitEsEs extends TranslationsInitEn {
-  _TranslationsInitEsEs._(TranslationsEsEs root) : this._root = root, super.internal(root);
+class Translations$init$es_ES extends Translations$init$en {
+  Translations$init$es_ES.internal(TranslationsEsEs root) : this._root = root, super.internal(root);
 
   final TranslationsEsEs _root; // ignore: unused_field
 

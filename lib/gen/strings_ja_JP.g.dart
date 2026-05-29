@@ -208,78 +208,78 @@ class TranslationsJaJp extends Translations with BaseTranslations<AppLocale, Tra
   @override
   String get leaveNow => TranslationOverrides.string(_root.$meta, 'leaveNow', {}) ?? '今すぐ離れる';
   @override
-  late final _TranslationsValidationErrorsJaJp validationErrors = _TranslationsValidationErrorsJaJp._(_root);
+  late final _Translations$validationErrors$ja_JP validationErrors = _Translations$validationErrors$ja_JP._(_root);
   @override
-  late final _TranslationsInitJaJp init = _TranslationsInitJaJp._(_root);
+  late final _Translations$init$ja_JP init = _Translations$init$ja_JP._(_root);
   @override
-  late final _TranslationsPermissionsJaJp permissions = _TranslationsPermissionsJaJp._(_root);
+  late final _Translations$permissions$ja_JP permissions = _Translations$permissions$ja_JP._(_root);
   @override
-  late final _TranslationsAuthenticationJaJp authentication = _TranslationsAuthenticationJaJp._(_root);
+  late final _Translations$authentication$ja_JP authentication = _Translations$authentication$ja_JP._(_root);
   @override
-  late final _TranslationsSearchHandlerJaJp searchHandler = _TranslationsSearchHandlerJaJp._(_root);
+  late final _Translations$searchHandler$ja_JP searchHandler = _Translations$searchHandler$ja_JP._(_root);
   @override
-  late final _TranslationsSnatcherJaJp snatcher = _TranslationsSnatcherJaJp._(_root);
+  late final _Translations$snatcher$ja_JP snatcher = _Translations$snatcher$ja_JP._(_root);
   @override
-  late final _TranslationsMultibooruJaJp multibooru = _TranslationsMultibooruJaJp._(_root);
+  late final _Translations$multibooru$ja_JP multibooru = _Translations$multibooru$ja_JP._(_root);
   @override
-  late final _TranslationsHydrusJaJp hydrus = _TranslationsHydrusJaJp._(_root);
+  late final _Translations$hydrus$ja_JP hydrus = _Translations$hydrus$ja_JP._(_root);
   @override
-  late final _TranslationsTabsJaJp tabs = _TranslationsTabsJaJp._(_root);
+  late final _Translations$tabs$ja_JP tabs = _Translations$tabs$ja_JP._(_root);
   @override
-  late final _TranslationsHistoryJaJp history = _TranslationsHistoryJaJp._(_root);
+  late final _Translations$history$ja_JP history = _Translations$history$ja_JP._(_root);
   @override
-  late final _TranslationsWebviewJaJp webview = _TranslationsWebviewJaJp._(_root);
+  late final _Translations$webview$ja_JP webview = _Translations$webview$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsJaJp settings = _TranslationsSettingsJaJp._(_root);
+  late final _Translations$settings$ja_JP settings = _Translations$settings$ja_JP._(_root);
   @override
-  late final _TranslationsCommentsJaJp comments = _TranslationsCommentsJaJp._(_root);
+  late final _Translations$comments$ja_JP comments = _Translations$comments$ja_JP._(_root);
   @override
-  late final _TranslationsPageChangerJaJp pageChanger = _TranslationsPageChangerJaJp._(_root);
+  late final _Translations$pageChanger$ja_JP pageChanger = _Translations$pageChanger$ja_JP._(_root);
   @override
-  late final _TranslationsTagsFiltersDialogsJaJp tagsFiltersDialogs = _TranslationsTagsFiltersDialogsJaJp._(_root);
+  late final _Translations$tagsFiltersDialogs$ja_JP tagsFiltersDialogs = _Translations$tagsFiltersDialogs$ja_JP._(_root);
   @override
-  late final _TranslationsTagsManagerJaJp tagsManager = _TranslationsTagsManagerJaJp._(_root);
+  late final _Translations$tagsManager$ja_JP tagsManager = _Translations$tagsManager$ja_JP._(_root);
   @override
-  late final _TranslationsLockscreenJaJp lockscreen = _TranslationsLockscreenJaJp._(_root);
+  late final _Translations$lockscreen$ja_JP lockscreen = _Translations$lockscreen$ja_JP._(_root);
   @override
-  late final _TranslationsLoliSyncJaJp loliSync = _TranslationsLoliSyncJaJp._(_root);
+  late final _Translations$loliSync$ja_JP loliSync = _Translations$loliSync$ja_JP._(_root);
   @override
-  late final _TranslationsImageSearchJaJp imageSearch = _TranslationsImageSearchJaJp._(_root);
+  late final _Translations$imageSearch$ja_JP imageSearch = _Translations$imageSearch$ja_JP._(_root);
   @override
-  late final _TranslationsTagViewJaJp tagView = _TranslationsTagViewJaJp._(_root);
+  late final _Translations$tagView$ja_JP tagView = _Translations$tagView$ja_JP._(_root);
   @override
-  late final _TranslationsPinnedTagsJaJp pinnedTags = _TranslationsPinnedTagsJaJp._(_root);
+  late final _Translations$pinnedTags$ja_JP pinnedTags = _Translations$pinnedTags$ja_JP._(_root);
   @override
-  late final _TranslationsSearchBarJaJp searchBar = _TranslationsSearchBarJaJp._(_root);
+  late final _Translations$searchBar$ja_JP searchBar = _Translations$searchBar$ja_JP._(_root);
   @override
-  late final _TranslationsMobileHomeJaJp mobileHome = _TranslationsMobileHomeJaJp._(_root);
+  late final _Translations$mobileHome$ja_JP mobileHome = _Translations$mobileHome$ja_JP._(_root);
   @override
-  late final _TranslationsDesktopHomeJaJp desktopHome = _TranslationsDesktopHomeJaJp._(_root);
+  late final _Translations$desktopHome$ja_JP desktopHome = _Translations$desktopHome$ja_JP._(_root);
   @override
-  late final _TranslationsGalleryViewJaJp galleryView = _TranslationsGalleryViewJaJp._(_root);
+  late final _Translations$galleryView$ja_JP galleryView = _Translations$galleryView$ja_JP._(_root);
   @override
-  late final _TranslationsMediaPreviewsJaJp mediaPreviews = _TranslationsMediaPreviewsJaJp._(_root);
+  late final _Translations$mediaPreviews$ja_JP mediaPreviews = _Translations$mediaPreviews$ja_JP._(_root);
   @override
-  late final _TranslationsViewerJaJp viewer = _TranslationsViewerJaJp._(_root);
+  late final _Translations$viewer$ja_JP viewer = _Translations$viewer$ja_JP._(_root);
   @override
-  late final _TranslationsCommonJaJp common = _TranslationsCommonJaJp._(_root);
+  late final _Translations$common$ja_JP common = _Translations$common$ja_JP._(_root);
   @override
-  late final _TranslationsGalleryJaJp gallery = _TranslationsGalleryJaJp._(_root);
+  late final _Translations$gallery$ja_JP gallery = _Translations$gallery$ja_JP._(_root);
   @override
-  late final _TranslationsGalleryButtonsJaJp galleryButtons = _TranslationsGalleryButtonsJaJp._(_root);
+  late final _Translations$galleryButtons$ja_JP galleryButtons = _Translations$galleryButtons$ja_JP._(_root);
   @override
-  late final _TranslationsMediaJaJp media = _TranslationsMediaJaJp._(_root);
+  late final _Translations$media$ja_JP media = _Translations$media$ja_JP._(_root);
   @override
-  late final _TranslationsImageStatsJaJp imageStats = _TranslationsImageStatsJaJp._(_root);
+  late final _Translations$imageStats$ja_JP imageStats = _Translations$imageStats$ja_JP._(_root);
   @override
-  late final _TranslationsPreviewJaJp preview = _TranslationsPreviewJaJp._(_root);
+  late final _Translations$preview$ja_JP preview = _Translations$preview$ja_JP._(_root);
   @override
-  late final _TranslationsTagTypeJaJp tagType = _TranslationsTagTypeJaJp._(_root);
+  late final _Translations$tagType$ja_JP tagType = _Translations$tagType$ja_JP._(_root);
 }
 
 // Path: validationErrors
-class _TranslationsValidationErrorsJaJp extends TranslationsValidationErrorsEn {
-  _TranslationsValidationErrorsJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$validationErrors$ja_JP extends Translations$validationErrors$en {
+  _Translations$validationErrors$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -316,8 +316,8 @@ class _TranslationsValidationErrorsJaJp extends TranslationsValidationErrorsEn {
 }
 
 // Path: init
-class _TranslationsInitJaJp extends TranslationsInitEn {
-  _TranslationsInitJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$init$ja_JP extends Translations$init$en {
+  _Translations$init$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -337,8 +337,8 @@ class _TranslationsInitJaJp extends TranslationsInitEn {
 }
 
 // Path: permissions
-class _TranslationsPermissionsJaJp extends TranslationsPermissionsEn {
-  _TranslationsPermissionsJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$permissions$ja_JP extends Translations$permissions$en {
+  _Translations$permissions$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -366,8 +366,8 @@ class _TranslationsPermissionsJaJp extends TranslationsPermissionsEn {
 }
 
 // Path: authentication
-class _TranslationsAuthenticationJaJp extends TranslationsAuthenticationEn {
-  _TranslationsAuthenticationJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$authentication$ja_JP extends Translations$authentication$en {
+  _Translations$authentication$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -386,8 +386,8 @@ class _TranslationsAuthenticationJaJp extends TranslationsAuthenticationEn {
 }
 
 // Path: searchHandler
-class _TranslationsSearchHandlerJaJp extends TranslationsSearchHandlerEn {
-  _TranslationsSearchHandlerJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$searchHandler$ja_JP extends Translations$searchHandler$en {
+  _Translations$searchHandler$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -455,8 +455,8 @@ class _TranslationsSearchHandlerJaJp extends TranslationsSearchHandlerEn {
 }
 
 // Path: snatcher
-class _TranslationsSnatcherJaJp extends TranslationsSnatcherEn {
-  _TranslationsSnatcherJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$snatcher$ja_JP extends Translations$snatcher$en {
+  _Translations$snatcher$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -546,8 +546,8 @@ class _TranslationsSnatcherJaJp extends TranslationsSnatcherEn {
 }
 
 // Path: multibooru
-class _TranslationsMultibooruJaJp extends TranslationsMultibooruEn {
-  _TranslationsMultibooruJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$multibooru$ja_JP extends Translations$multibooru$en {
+  _Translations$multibooru$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -568,8 +568,8 @@ class _TranslationsMultibooruJaJp extends TranslationsMultibooruEn {
 }
 
 // Path: hydrus
-class _TranslationsHydrusJaJp extends TranslationsHydrusEn {
-  _TranslationsHydrusJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$hydrus$ja_JP extends Translations$hydrus$en {
+  _Translations$hydrus$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -587,8 +587,8 @@ class _TranslationsHydrusJaJp extends TranslationsHydrusEn {
 }
 
 // Path: tabs
-class _TranslationsTabsJaJp extends TranslationsTabsEn {
-  _TranslationsTabsJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$tabs$ja_JP extends Translations$tabs$en {
+  _Translations$tabs$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -735,14 +735,14 @@ class _TranslationsTabsJaJp extends TranslationsTabsEn {
         other: '${count} 個のタブを削除してよろしいですか？',
       );
   @override
-  late final _TranslationsTabsFiltersJaJp filters = _TranslationsTabsFiltersJaJp._(_root);
+  late final _Translations$tabs$filters$ja_JP filters = _Translations$tabs$filters$ja_JP._(_root);
   @override
-  late final _TranslationsTabsMoveJaJp move = _TranslationsTabsMoveJaJp._(_root);
+  late final _Translations$tabs$move$ja_JP move = _Translations$tabs$move$ja_JP._(_root);
 }
 
 // Path: history
-class _TranslationsHistoryJaJp extends TranslationsHistoryEn {
-  _TranslationsHistoryJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$history$ja_JP extends Translations$history$en {
+  _Translations$history$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -806,8 +806,8 @@ class _TranslationsHistoryJaJp extends TranslationsHistoryEn {
 }
 
 // Path: webview
-class _TranslationsWebviewJaJp extends TranslationsWebviewEn {
-  _TranslationsWebviewJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$webview$ja_JP extends Translations$webview$en {
+  _Translations$webview$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -824,12 +824,12 @@ class _TranslationsWebviewJaJp extends TranslationsWebviewEn {
   @override
   String get captchaCompleted => TranslationOverrides.string(_root.$meta, 'webview.captchaCompleted', {}) ?? '認証完了';
   @override
-  late final _TranslationsWebviewNavigationJaJp navigation = _TranslationsWebviewNavigationJaJp._(_root);
+  late final _Translations$webview$navigation$ja_JP navigation = _Translations$webview$navigation$ja_JP._(_root);
 }
 
 // Path: settings
-class _TranslationsSettingsJaJp extends TranslationsSettingsEn {
-  _TranslationsSettingsJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$ja_JP extends Translations$settings$en {
+  _Translations$settings$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -837,60 +837,60 @@ class _TranslationsSettingsJaJp extends TranslationsSettingsEn {
   @override
   String get title => TranslationOverrides.string(_root.$meta, 'settings.title', {}) ?? '設定';
   @override
-  late final _TranslationsSettingsLanguageJaJp language = _TranslationsSettingsLanguageJaJp._(_root);
+  late final _Translations$settings$language$ja_JP language = _Translations$settings$language$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsBooruJaJp booru = _TranslationsSettingsBooruJaJp._(_root);
+  late final _Translations$settings$booru$ja_JP booru = _Translations$settings$booru$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsBooruEditorJaJp booruEditor = _TranslationsSettingsBooruEditorJaJp._(_root);
+  late final _Translations$settings$booruEditor$ja_JP booruEditor = _Translations$settings$booruEditor$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsInterfaceJaJp interface = _TranslationsSettingsInterfaceJaJp._(_root);
+  late final _Translations$settings$interface$ja_JP interface = _Translations$settings$interface$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsThemeJaJp theme = _TranslationsSettingsThemeJaJp._(_root);
+  late final _Translations$settings$theme$ja_JP theme = _Translations$settings$theme$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsViewerJaJp viewer = _TranslationsSettingsViewerJaJp._(_root);
+  late final _Translations$settings$viewer$ja_JP viewer = _Translations$settings$viewer$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsVideoJaJp video = _TranslationsSettingsVideoJaJp._(_root);
+  late final _Translations$settings$video$ja_JP video = _Translations$settings$video$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsDownloadsJaJp downloads = _TranslationsSettingsDownloadsJaJp._(_root);
+  late final _Translations$settings$downloads$ja_JP downloads = _Translations$settings$downloads$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsDatabaseJaJp database = _TranslationsSettingsDatabaseJaJp._(_root);
+  late final _Translations$settings$database$ja_JP database = _Translations$settings$database$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsBackupAndRestoreJaJp backupAndRestore = _TranslationsSettingsBackupAndRestoreJaJp._(_root);
+  late final _Translations$settings$backupAndRestore$ja_JP backupAndRestore = _Translations$settings$backupAndRestore$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsNetworkJaJp network = _TranslationsSettingsNetworkJaJp._(_root);
+  late final _Translations$settings$network$ja_JP network = _Translations$settings$network$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsPrivacyJaJp privacy = _TranslationsSettingsPrivacyJaJp._(_root);
+  late final _Translations$settings$privacy$ja_JP privacy = _Translations$settings$privacy$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsPerformanceJaJp performance = _TranslationsSettingsPerformanceJaJp._(_root);
+  late final _Translations$settings$performance$ja_JP performance = _Translations$settings$performance$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsCacheJaJp cache = _TranslationsSettingsCacheJaJp._(_root);
+  late final _Translations$settings$cache$ja_JP cache = _Translations$settings$cache$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsItemFiltersJaJp itemFilters = _TranslationsSettingsItemFiltersJaJp._(_root);
+  late final _Translations$settings$itemFilters$ja_JP itemFilters = _Translations$settings$itemFilters$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsSyncJaJp sync = _TranslationsSettingsSyncJaJp._(_root);
+  late final _Translations$settings$sync$ja_JP sync = _Translations$settings$sync$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsAboutJaJp about = _TranslationsSettingsAboutJaJp._(_root);
+  late final _Translations$settings$about$ja_JP about = _Translations$settings$about$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsCheckForUpdatesJaJp checkForUpdates = _TranslationsSettingsCheckForUpdatesJaJp._(_root);
+  late final _Translations$settings$checkForUpdates$ja_JP checkForUpdates = _Translations$settings$checkForUpdates$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsLogsJaJp logs = _TranslationsSettingsLogsJaJp._(_root);
+  late final _Translations$settings$logs$ja_JP logs = _Translations$settings$logs$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsHelpJaJp help = _TranslationsSettingsHelpJaJp._(_root);
+  late final _Translations$settings$help$ja_JP help = _Translations$settings$help$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsDebugJaJp debug = _TranslationsSettingsDebugJaJp._(_root);
+  late final _Translations$settings$debug$ja_JP debug = _Translations$settings$debug$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsLoggingJaJp logging = _TranslationsSettingsLoggingJaJp._(_root);
+  late final _Translations$settings$logging$ja_JP logging = _Translations$settings$logging$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsWebviewJaJp webview = _TranslationsSettingsWebviewJaJp._(_root);
+  late final _Translations$settings$webview$ja_JP webview = _Translations$settings$webview$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsDirPickerJaJp dirPicker = _TranslationsSettingsDirPickerJaJp._(_root);
+  late final _Translations$settings$dirPicker$ja_JP dirPicker = _Translations$settings$dirPicker$ja_JP._(_root);
   @override
   String get version => TranslationOverrides.string(_root.$meta, 'settings.version', {}) ?? 'バージョン';
 }
 
 // Path: comments
-class _TranslationsCommentsJaJp extends TranslationsCommentsEn {
-  _TranslationsCommentsJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$comments$ja_JP extends Translations$comments$en {
+  _Translations$comments$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -905,8 +905,8 @@ class _TranslationsCommentsJaJp extends TranslationsCommentsEn {
 }
 
 // Path: pageChanger
-class _TranslationsPageChangerJaJp extends TranslationsPageChangerEn {
-  _TranslationsPageChangerJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$pageChanger$ja_JP extends Translations$pageChanger$en {
+  _Translations$pageChanger$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -936,8 +936,8 @@ class _TranslationsPageChangerJaJp extends TranslationsPageChangerEn {
 }
 
 // Path: tagsFiltersDialogs
-class _TranslationsTagsFiltersDialogsJaJp extends TranslationsTagsFiltersDialogsEn {
-  _TranslationsTagsFiltersDialogsJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$tagsFiltersDialogs$ja_JP extends Translations$tagsFiltersDialogs$en {
+  _Translations$tagsFiltersDialogs$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -957,8 +957,8 @@ class _TranslationsTagsFiltersDialogsJaJp extends TranslationsTagsFiltersDialogs
 }
 
 // Path: tagsManager
-class _TranslationsTagsManagerJaJp extends TranslationsTagsManagerEn {
-  _TranslationsTagsManagerJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$tagsManager$ja_JP extends Translations$tagsManager$en {
+  _Translations$tagsManager$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1005,8 +1005,8 @@ class _TranslationsTagsManagerJaJp extends TranslationsTagsManagerEn {
 }
 
 // Path: lockscreen
-class _TranslationsLockscreenJaJp extends TranslationsLockscreenEn {
-  _TranslationsLockscreenJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$lockscreen$ja_JP extends Translations$lockscreen$en {
+  _Translations$lockscreen$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1022,8 +1022,8 @@ class _TranslationsLockscreenJaJp extends TranslationsLockscreenEn {
 }
 
 // Path: loliSync
-class _TranslationsLoliSyncJaJp extends TranslationsLoliSyncEn {
-  _TranslationsLoliSyncJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$loliSync$ja_JP extends Translations$loliSync$en {
+  _Translations$loliSync$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1059,8 +1059,8 @@ class _TranslationsLoliSyncJaJp extends TranslationsLoliSyncEn {
 }
 
 // Path: imageSearch
-class _TranslationsImageSearchJaJp extends TranslationsImageSearchEn {
-  _TranslationsImageSearchJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$imageSearch$ja_JP extends Translations$imageSearch$en {
+  _Translations$imageSearch$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1070,8 +1070,8 @@ class _TranslationsImageSearchJaJp extends TranslationsImageSearchEn {
 }
 
 // Path: tagView
-class _TranslationsTagViewJaJp extends TranslationsTagViewEn {
-  _TranslationsTagViewJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$tagView$ja_JP extends Translations$tagView$en {
+  _Translations$tagView$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1180,8 +1180,8 @@ class _TranslationsTagViewJaJp extends TranslationsTagViewEn {
 }
 
 // Path: pinnedTags
-class _TranslationsPinnedTagsJaJp extends TranslationsPinnedTagsEn {
-  _TranslationsPinnedTagsJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$pinnedTags$ja_JP extends Translations$pinnedTags$en {
+  _Translations$pinnedTags$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1249,8 +1249,8 @@ class _TranslationsPinnedTagsJaJp extends TranslationsPinnedTagsEn {
 }
 
 // Path: searchBar
-class _TranslationsSearchBarJaJp extends TranslationsSearchBarEn {
-  _TranslationsSearchBarJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$searchBar$ja_JP extends Translations$searchBar$en {
+  _Translations$searchBar$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1300,8 +1300,8 @@ class _TranslationsSearchBarJaJp extends TranslationsSearchBarEn {
 }
 
 // Path: mobileHome
-class _TranslationsMobileHomeJaJp extends TranslationsMobileHomeEn {
-  _TranslationsMobileHomeJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$mobileHome$ja_JP extends Translations$mobileHome$en {
+  _Translations$mobileHome$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1330,8 +1330,8 @@ class _TranslationsMobileHomeJaJp extends TranslationsMobileHomeEn {
 }
 
 // Path: desktopHome
-class _TranslationsDesktopHomeJaJp extends TranslationsDesktopHomeEn {
-  _TranslationsDesktopHomeJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$desktopHome$ja_JP extends Translations$desktopHome$en {
+  _Translations$desktopHome$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1349,8 +1349,8 @@ class _TranslationsDesktopHomeJaJp extends TranslationsDesktopHomeEn {
 }
 
 // Path: galleryView
-class _TranslationsGalleryViewJaJp extends TranslationsGalleryViewEn {
-  _TranslationsGalleryViewJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$galleryView$ja_JP extends Translations$galleryView$en {
+  _Translations$galleryView$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1364,8 +1364,8 @@ class _TranslationsGalleryViewJaJp extends TranslationsGalleryViewEn {
 }
 
 // Path: mediaPreviews
-class _TranslationsMediaPreviewsJaJp extends TranslationsMediaPreviewsEn {
-  _TranslationsMediaPreviewsJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$mediaPreviews$ja_JP extends Translations$mediaPreviews$en {
+  _Translations$mediaPreviews$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1385,23 +1385,23 @@ class _TranslationsMediaPreviewsJaJp extends TranslationsMediaPreviewsEn {
 }
 
 // Path: viewer
-class _TranslationsViewerJaJp extends TranslationsViewerEn {
-  _TranslationsViewerJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$viewer$ja_JP extends Translations$viewer$en {
+  _Translations$viewer$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
   // Translations
   @override
-  late final _TranslationsViewerTutorialJaJp tutorial = _TranslationsViewerTutorialJaJp._(_root);
+  late final _Translations$viewer$tutorial$ja_JP tutorial = _Translations$viewer$tutorial$ja_JP._(_root);
   @override
-  late final _TranslationsViewerAppBarJaJp appBar = _TranslationsViewerAppBarJaJp._(_root);
+  late final _Translations$viewer$appBar$ja_JP appBar = _Translations$viewer$appBar$ja_JP._(_root);
   @override
-  late final _TranslationsViewerNotesJaJp notes = _TranslationsViewerNotesJaJp._(_root);
+  late final _Translations$viewer$notes$ja_JP notes = _Translations$viewer$notes$ja_JP._(_root);
 }
 
 // Path: common
-class _TranslationsCommonJaJp extends TranslationsCommonEn {
-  _TranslationsCommonJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$common$ja_JP extends Translations$common$en {
+  _Translations$common$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1414,8 +1414,8 @@ class _TranslationsCommonJaJp extends TranslationsCommonEn {
 }
 
 // Path: gallery
-class _TranslationsGalleryJaJp extends TranslationsGalleryEn {
-  _TranslationsGalleryJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$gallery$ja_JP extends Translations$gallery$en {
+  _Translations$gallery$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1441,8 +1441,8 @@ class _TranslationsGalleryJaJp extends TranslationsGalleryEn {
 }
 
 // Path: galleryButtons
-class _TranslationsGalleryButtonsJaJp extends TranslationsGalleryButtonsEn {
-  _TranslationsGalleryButtonsJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$galleryButtons$ja_JP extends Translations$galleryButtons$en {
+  _Translations$galleryButtons$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1472,21 +1472,21 @@ class _TranslationsGalleryButtonsJaJp extends TranslationsGalleryButtonsEn {
 }
 
 // Path: media
-class _TranslationsMediaJaJp extends TranslationsMediaEn {
-  _TranslationsMediaJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$media$ja_JP extends Translations$media$en {
+  _Translations$media$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
   // Translations
   @override
-  late final _TranslationsMediaLoadingJaJp loading = _TranslationsMediaLoadingJaJp._(_root);
+  late final _Translations$media$loading$ja_JP loading = _Translations$media$loading$ja_JP._(_root);
   @override
-  late final _TranslationsMediaVideoJaJp video = _TranslationsMediaVideoJaJp._(_root);
+  late final _Translations$media$video$ja_JP video = _Translations$media$video$ja_JP._(_root);
 }
 
 // Path: imageStats
-class _TranslationsImageStatsJaJp extends TranslationsImageStatsEn {
-  _TranslationsImageStatsJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$imageStats$ja_JP extends Translations$imageStats$en {
+  _Translations$imageStats$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1504,19 +1504,19 @@ class _TranslationsImageStatsJaJp extends TranslationsImageStatsEn {
 }
 
 // Path: preview
-class _TranslationsPreviewJaJp extends TranslationsPreviewEn {
-  _TranslationsPreviewJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$preview$ja_JP extends Translations$preview$en {
+  _Translations$preview$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
   // Translations
   @override
-  late final _TranslationsPreviewErrorJaJp error = _TranslationsPreviewErrorJaJp._(_root);
+  late final _Translations$preview$error$ja_JP error = _Translations$preview$error$ja_JP._(_root);
 }
 
 // Path: tagType
-class _TranslationsTagTypeJaJp extends TranslationsTagTypeEn {
-  _TranslationsTagTypeJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$tagType$ja_JP extends Translations$tagType$en {
+  _Translations$tagType$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1536,8 +1536,8 @@ class _TranslationsTagTypeJaJp extends TranslationsTagTypeEn {
 }
 
 // Path: tabs.filters
-class _TranslationsTabsFiltersJaJp extends TranslationsTabsFiltersEn {
-  _TranslationsTabsFiltersJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$tabs$filters$ja_JP extends Translations$tabs$filters$en {
+  _Translations$tabs$filters$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1576,8 +1576,8 @@ class _TranslationsTabsFiltersJaJp extends TranslationsTabsFiltersEn {
 }
 
 // Path: tabs.move
-class _TranslationsTabsMoveJaJp extends TranslationsTabsMoveEn {
-  _TranslationsTabsMoveJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$tabs$move$ja_JP extends Translations$tabs$move$en {
+  _Translations$tabs$move$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1604,8 +1604,8 @@ class _TranslationsTabsMoveJaJp extends TranslationsTabsMoveEn {
 }
 
 // Path: webview.navigation
-class _TranslationsWebviewNavigationJaJp extends TranslationsWebviewNavigationEn {
-  _TranslationsWebviewNavigationJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$webview$navigation$ja_JP extends Translations$webview$navigation$en {
+  _Translations$webview$navigation$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1647,8 +1647,8 @@ class _TranslationsWebviewNavigationJaJp extends TranslationsWebviewNavigationEn
 }
 
 // Path: settings.language
-class _TranslationsSettingsLanguageJaJp extends TranslationsSettingsLanguageEn {
-  _TranslationsSettingsLanguageJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$language$ja_JP extends Translations$settings$language$en {
+  _Translations$settings$language$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1666,8 +1666,8 @@ class _TranslationsSettingsLanguageJaJp extends TranslationsSettingsLanguageEn {
 }
 
 // Path: settings.booru
-class _TranslationsSettingsBooruJaJp extends TranslationsSettingsBooruEn {
-  _TranslationsSettingsBooruJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$booru$ja_JP extends Translations$settings$booru$en {
+  _Translations$settings$booru$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1739,8 +1739,8 @@ class _TranslationsSettingsBooruJaJp extends TranslationsSettingsBooruEn {
 }
 
 // Path: settings.booruEditor
-class _TranslationsSettingsBooruEditorJaJp extends TranslationsSettingsBooruEditorEn {
-  _TranslationsSettingsBooruEditorJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$booruEditor$ja_JP extends Translations$settings$booruEditor$en {
+  _Translations$settings$booruEditor$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1826,8 +1826,8 @@ class _TranslationsSettingsBooruEditorJaJp extends TranslationsSettingsBooruEdit
 }
 
 // Path: settings.interface
-class _TranslationsSettingsInterfaceJaJp extends TranslationsSettingsInterfaceEn {
-  _TranslationsSettingsInterfaceJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$interface$ja_JP extends Translations$settings$interface$en {
+  _Translations$settings$interface$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -1925,21 +1925,20 @@ class _TranslationsSettingsInterfaceJaJp extends TranslationsSettingsInterfaceEn
   @override
   String get scrollModifier => TranslationOverrides.string(_root.$meta, 'settings.interface.scrollModifier', {}) ?? 'スクロール乗数';
   @override
-  late final _TranslationsSettingsInterfacePreviewQualityValuesJaJp previewQualityValues = _TranslationsSettingsInterfacePreviewQualityValuesJaJp._(
-    _root,
-  );
+  late final _Translations$settings$interface$previewQualityValues$ja_JP previewQualityValues =
+      _Translations$settings$interface$previewQualityValues$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsInterfacePreviewDisplayModeValuesJaJp previewDisplayModeValues =
-      _TranslationsSettingsInterfacePreviewDisplayModeValuesJaJp._(_root);
+  late final _Translations$settings$interface$previewDisplayModeValues$ja_JP previewDisplayModeValues =
+      _Translations$settings$interface$previewDisplayModeValues$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsInterfaceAppModeValuesJaJp appModeValues = _TranslationsSettingsInterfaceAppModeValuesJaJp._(_root);
+  late final _Translations$settings$interface$appModeValues$ja_JP appModeValues = _Translations$settings$interface$appModeValues$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsInterfaceHandSideValuesJaJp handSideValues = _TranslationsSettingsInterfaceHandSideValuesJaJp._(_root);
+  late final _Translations$settings$interface$handSideValues$ja_JP handSideValues = _Translations$settings$interface$handSideValues$ja_JP._(_root);
 }
 
 // Path: settings.theme
-class _TranslationsSettingsThemeJaJp extends TranslationsSettingsThemeEn {
-  _TranslationsSettingsThemeJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$theme$ja_JP extends Translations$settings$theme$en {
+  _Translations$settings$theme$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -2019,8 +2018,8 @@ class _TranslationsSettingsThemeJaJp extends TranslationsSettingsThemeEn {
 }
 
 // Path: settings.viewer
-class _TranslationsSettingsViewerJaJp extends TranslationsSettingsViewerEn {
-  _TranslationsSettingsViewerJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$viewer$ja_JP extends Translations$settings$viewer$en {
+  _Translations$settings$viewer$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -2153,24 +2152,25 @@ class _TranslationsSettingsViewerJaJp extends TranslationsSettingsViewerEn {
   @override
   String get kannaLoadingGif => TranslationOverrides.string(_root.$meta, 'settings.viewer.kannaLoadingGif', {}) ?? '読み込み時にカンナのGIFを表示';
   @override
-  late final _TranslationsSettingsViewerImageQualityValuesJaJp imageQualityValues = _TranslationsSettingsViewerImageQualityValuesJaJp._(_root);
-  @override
-  late final _TranslationsSettingsViewerScrollDirectionValuesJaJp scrollDirectionValues = _TranslationsSettingsViewerScrollDirectionValuesJaJp._(
+  late final _Translations$settings$viewer$imageQualityValues$ja_JP imageQualityValues = _Translations$settings$viewer$imageQualityValues$ja_JP._(
     _root,
   );
   @override
-  late final _TranslationsSettingsViewerToolbarPositionValuesJaJp toolbarPositionValues = _TranslationsSettingsViewerToolbarPositionValuesJaJp._(
-    _root,
-  );
+  late final _Translations$settings$viewer$scrollDirectionValues$ja_JP scrollDirectionValues =
+      _Translations$settings$viewer$scrollDirectionValues$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsViewerButtonPositionValuesJaJp buttonPositionValues = _TranslationsSettingsViewerButtonPositionValuesJaJp._(_root);
+  late final _Translations$settings$viewer$toolbarPositionValues$ja_JP toolbarPositionValues =
+      _Translations$settings$viewer$toolbarPositionValues$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsViewerShareActionValuesJaJp shareActionValues = _TranslationsSettingsViewerShareActionValuesJaJp._(_root);
+  late final _Translations$settings$viewer$buttonPositionValues$ja_JP buttonPositionValues =
+      _Translations$settings$viewer$buttonPositionValues$ja_JP._(_root);
+  @override
+  late final _Translations$settings$viewer$shareActionValues$ja_JP shareActionValues = _Translations$settings$viewer$shareActionValues$ja_JP._(_root);
 }
 
 // Path: settings.video
-class _TranslationsSettingsVideoJaJp extends TranslationsSettingsVideoEn {
-  _TranslationsSettingsVideoJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$video$ja_JP extends Translations$settings$video$en {
+  _Translations$settings$video$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -2222,18 +2222,17 @@ class _TranslationsSettingsVideoJaJp extends TranslationsSettingsVideoEn {
   @override
   String get videoCacheMode => TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheMode', {}) ?? 'ビデオキャッシュモード';
   @override
-  late final _TranslationsSettingsVideoCacheModesJaJp cacheModes = _TranslationsSettingsVideoCacheModesJaJp._(_root);
+  late final _Translations$settings$video$cacheModes$ja_JP cacheModes = _Translations$settings$video$cacheModes$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsVideoCacheModeValuesJaJp cacheModeValues = _TranslationsSettingsVideoCacheModeValuesJaJp._(_root);
+  late final _Translations$settings$video$cacheModeValues$ja_JP cacheModeValues = _Translations$settings$video$cacheModeValues$ja_JP._(_root);
   @override
-  late final _TranslationsSettingsVideoVideoBackendModeValuesJaJp videoBackendModeValues = _TranslationsSettingsVideoVideoBackendModeValuesJaJp._(
-    _root,
-  );
+  late final _Translations$settings$video$videoBackendModeValues$ja_JP videoBackendModeValues =
+      _Translations$settings$video$videoBackendModeValues$ja_JP._(_root);
 }
 
 // Path: settings.downloads
-class _TranslationsSettingsDownloadsJaJp extends TranslationsSettingsDownloadsEn {
-  _TranslationsSettingsDownloadsJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$downloads$ja_JP extends Translations$settings$downloads$en {
+  _Translations$settings$downloads$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -2265,8 +2264,8 @@ class _TranslationsSettingsDownloadsJaJp extends TranslationsSettingsDownloadsEn
 }
 
 // Path: settings.database
-class _TranslationsSettingsDatabaseJaJp extends TranslationsSettingsDatabaseEn {
-  _TranslationsSettingsDatabaseJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$database$ja_JP extends Translations$settings$database$en {
+  _Translations$settings$database$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -2419,8 +2418,8 @@ class _TranslationsSettingsDatabaseJaJp extends TranslationsSettingsDatabaseEn {
 }
 
 // Path: settings.backupAndRestore
-class _TranslationsSettingsBackupAndRestoreJaJp extends TranslationsSettingsBackupAndRestoreEn {
-  _TranslationsSettingsBackupAndRestoreJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$backupAndRestore$ja_JP extends Translations$settings$backupAndRestore$en {
+  _Translations$settings$backupAndRestore$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -2538,8 +2537,8 @@ class _TranslationsSettingsBackupAndRestoreJaJp extends TranslationsSettingsBack
 }
 
 // Path: settings.network
-class _TranslationsSettingsNetworkJaJp extends TranslationsSettingsNetworkEn {
-  _TranslationsSettingsNetworkJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$network$ja_JP extends Translations$settings$network$en {
+  _Translations$settings$network$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -2596,8 +2595,8 @@ class _TranslationsSettingsNetworkJaJp extends TranslationsSettingsNetworkEn {
 }
 
 // Path: settings.privacy
-class _TranslationsSettingsPrivacyJaJp extends TranslationsSettingsPrivacyEn {
-  _TranslationsSettingsPrivacyJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$privacy$ja_JP extends Translations$settings$privacy$en {
+  _Translations$settings$privacy$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -2640,8 +2639,8 @@ class _TranslationsSettingsPrivacyJaJp extends TranslationsSettingsPrivacyEn {
 }
 
 // Path: settings.performance
-class _TranslationsSettingsPerformanceJaJp extends TranslationsSettingsPerformanceEn {
-  _TranslationsSettingsPerformanceJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$performance$ja_JP extends Translations$settings$performance$en {
+  _Translations$settings$performance$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -2678,8 +2677,8 @@ class _TranslationsSettingsPerformanceJaJp extends TranslationsSettingsPerforman
 }
 
 // Path: settings.cache
-class _TranslationsSettingsCacheJaJp extends TranslationsSettingsCacheEn {
-  _TranslationsSettingsCacheJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$cache$ja_JP extends Translations$settings$cache$en {
+  _Translations$settings$cache$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -2788,8 +2787,8 @@ class _TranslationsSettingsCacheJaJp extends TranslationsSettingsCacheEn {
 }
 
 // Path: settings.itemFilters
-class _TranslationsSettingsItemFiltersJaJp extends TranslationsSettingsItemFiltersEn {
-  _TranslationsSettingsItemFiltersJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$itemFilters$ja_JP extends Translations$settings$itemFilters$en {
+  _Translations$settings$itemFilters$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -2823,8 +2822,8 @@ class _TranslationsSettingsItemFiltersJaJp extends TranslationsSettingsItemFilte
 }
 
 // Path: settings.sync
-class _TranslationsSettingsSyncJaJp extends TranslationsSettingsSyncEn {
-  _TranslationsSettingsSyncJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$sync$ja_JP extends Translations$settings$sync$en {
+  _Translations$settings$sync$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -2975,8 +2974,8 @@ class _TranslationsSettingsSyncJaJp extends TranslationsSettingsSyncEn {
 }
 
 // Path: settings.about
-class _TranslationsSettingsAboutJaJp extends TranslationsSettingsAboutEn {
-  _TranslationsSettingsAboutJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$about$ja_JP extends Translations$settings$about$en {
+  _Translations$settings$about$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3010,8 +3009,8 @@ class _TranslationsSettingsAboutJaJp extends TranslationsSettingsAboutEn {
 }
 
 // Path: settings.checkForUpdates
-class _TranslationsSettingsCheckForUpdatesJaJp extends TranslationsSettingsCheckForUpdatesEn {
-  _TranslationsSettingsCheckForUpdatesJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$checkForUpdates$ja_JP extends Translations$settings$checkForUpdates$en {
+  _Translations$settings$checkForUpdates$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3042,8 +3041,8 @@ class _TranslationsSettingsCheckForUpdatesJaJp extends TranslationsSettingsCheck
 }
 
 // Path: settings.logs
-class _TranslationsSettingsLogsJaJp extends TranslationsSettingsLogsEn {
-  _TranslationsSettingsLogsJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$logs$ja_JP extends Translations$settings$logs$en {
+  _Translations$settings$logs$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3060,8 +3059,8 @@ class _TranslationsSettingsLogsJaJp extends TranslationsSettingsLogsEn {
 }
 
 // Path: settings.help
-class _TranslationsSettingsHelpJaJp extends TranslationsSettingsHelpEn {
-  _TranslationsSettingsHelpJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$help$ja_JP extends Translations$settings$help$en {
+  _Translations$settings$help$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3071,8 +3070,8 @@ class _TranslationsSettingsHelpJaJp extends TranslationsSettingsHelpEn {
 }
 
 // Path: settings.debug
-class _TranslationsSettingsDebugJaJp extends TranslationsSettingsDebugEn {
-  _TranslationsSettingsDebugJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$debug$ja_JP extends Translations$settings$debug$en {
+  _Translations$settings$debug$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3131,8 +3130,8 @@ class _TranslationsSettingsDebugJaJp extends TranslationsSettingsDebugEn {
 }
 
 // Path: settings.logging
-class _TranslationsSettingsLoggingJaJp extends TranslationsSettingsLoggingEn {
-  _TranslationsSettingsLoggingJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$logging$ja_JP extends Translations$settings$logging$en {
+  _Translations$settings$logging$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3142,8 +3141,8 @@ class _TranslationsSettingsLoggingJaJp extends TranslationsSettingsLoggingEn {
 }
 
 // Path: settings.webview
-class _TranslationsSettingsWebviewJaJp extends TranslationsSettingsWebviewEn {
-  _TranslationsSettingsWebviewJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$webview$ja_JP extends Translations$settings$webview$en {
+  _Translations$settings$webview$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3155,8 +3154,8 @@ class _TranslationsSettingsWebviewJaJp extends TranslationsSettingsWebviewEn {
 }
 
 // Path: settings.dirPicker
-class _TranslationsSettingsDirPickerJaJp extends TranslationsSettingsDirPickerEn {
-  _TranslationsSettingsDirPickerJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$dirPicker$ja_JP extends Translations$settings$dirPicker$en {
+  _Translations$settings$dirPicker$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3186,8 +3185,8 @@ class _TranslationsSettingsDirPickerJaJp extends TranslationsSettingsDirPickerEn
 }
 
 // Path: viewer.tutorial
-class _TranslationsViewerTutorialJaJp extends TranslationsViewerTutorialEn {
-  _TranslationsViewerTutorialJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$viewer$tutorial$ja_JP extends Translations$viewer$tutorial$en {
+  _Translations$viewer$tutorial$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3203,8 +3202,8 @@ class _TranslationsViewerTutorialJaJp extends TranslationsViewerTutorialEn {
 }
 
 // Path: viewer.appBar
-class _TranslationsViewerAppBarJaJp extends TranslationsViewerAppBarEn {
-  _TranslationsViewerAppBarJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$viewer$appBar$ja_JP extends Translations$viewer$appBar$en {
+  _Translations$viewer$appBar$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3283,8 +3282,8 @@ class _TranslationsViewerAppBarJaJp extends TranslationsViewerAppBarEn {
 }
 
 // Path: viewer.notes
-class _TranslationsViewerNotesJaJp extends TranslationsViewerNotesEn {
-  _TranslationsViewerNotesJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$viewer$notes$ja_JP extends Translations$viewer$notes$en {
+  _Translations$viewer$notes$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3299,8 +3298,8 @@ class _TranslationsViewerNotesJaJp extends TranslationsViewerNotesEn {
 }
 
 // Path: media.loading
-class _TranslationsMediaLoadingJaJp extends TranslationsMediaLoadingEn {
-  _TranslationsMediaLoadingJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$media$loading$ja_JP extends Translations$media$loading$en {
+  _Translations$media$loading$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3326,7 +3325,7 @@ class _TranslationsMediaLoadingJaJp extends TranslationsMediaLoadingEn {
   String startedSecondsAgo({required int seconds}) =>
       TranslationOverrides.string(_root.$meta, 'media.loading.startedSecondsAgo', {'seconds': seconds}) ?? '${seconds} 秒前から開始';
   @override
-  late final _TranslationsMediaLoadingStopReasonsJaJp stopReasons = _TranslationsMediaLoadingStopReasonsJaJp._(_root);
+  late final _Translations$media$loading$stopReasons$ja_JP stopReasons = _Translations$media$loading$stopReasons$ja_JP._(_root);
   @override
   String get fileIsZeroBytes => TranslationOverrides.string(_root.$meta, 'media.loading.fileIsZeroBytes', {}) ?? '空のファイル';
   @override
@@ -3341,8 +3340,8 @@ class _TranslationsMediaLoadingJaJp extends TranslationsMediaLoadingEn {
 }
 
 // Path: media.video
-class _TranslationsMediaVideoJaJp extends TranslationsMediaVideoEn {
-  _TranslationsMediaVideoJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$media$video$ja_JP extends Translations$media$video$en {
+  _Translations$media$video$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3373,8 +3372,8 @@ class _TranslationsMediaVideoJaJp extends TranslationsMediaVideoEn {
 }
 
 // Path: preview.error
-class _TranslationsPreviewErrorJaJp extends TranslationsPreviewErrorEn {
-  _TranslationsPreviewErrorJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$preview$error$ja_JP extends Translations$preview$error$en {
+  _Translations$preview$error$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3417,8 +3416,8 @@ class _TranslationsPreviewErrorJaJp extends TranslationsPreviewErrorEn {
 }
 
 // Path: settings.interface.previewQualityValues
-class _TranslationsSettingsInterfacePreviewQualityValuesJaJp extends TranslationsSettingsInterfacePreviewQualityValuesEn {
-  _TranslationsSettingsInterfacePreviewQualityValuesJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$interface$previewQualityValues$ja_JP extends Translations$settings$interface$previewQualityValues$en {
+  _Translations$settings$interface$previewQualityValues$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3430,8 +3429,8 @@ class _TranslationsSettingsInterfacePreviewQualityValuesJaJp extends Translation
 }
 
 // Path: settings.interface.previewDisplayModeValues
-class _TranslationsSettingsInterfacePreviewDisplayModeValuesJaJp extends TranslationsSettingsInterfacePreviewDisplayModeValuesEn {
-  _TranslationsSettingsInterfacePreviewDisplayModeValuesJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$interface$previewDisplayModeValues$ja_JP extends Translations$settings$interface$previewDisplayModeValues$en {
+  _Translations$settings$interface$previewDisplayModeValues$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3445,8 +3444,8 @@ class _TranslationsSettingsInterfacePreviewDisplayModeValuesJaJp extends Transla
 }
 
 // Path: settings.interface.appModeValues
-class _TranslationsSettingsInterfaceAppModeValuesJaJp extends TranslationsSettingsInterfaceAppModeValuesEn {
-  _TranslationsSettingsInterfaceAppModeValuesJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$interface$appModeValues$ja_JP extends Translations$settings$interface$appModeValues$en {
+  _Translations$settings$interface$appModeValues$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3458,8 +3457,8 @@ class _TranslationsSettingsInterfaceAppModeValuesJaJp extends TranslationsSettin
 }
 
 // Path: settings.interface.handSideValues
-class _TranslationsSettingsInterfaceHandSideValuesJaJp extends TranslationsSettingsInterfaceHandSideValuesEn {
-  _TranslationsSettingsInterfaceHandSideValuesJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$interface$handSideValues$ja_JP extends Translations$settings$interface$handSideValues$en {
+  _Translations$settings$interface$handSideValues$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3471,8 +3470,8 @@ class _TranslationsSettingsInterfaceHandSideValuesJaJp extends TranslationsSetti
 }
 
 // Path: settings.viewer.imageQualityValues
-class _TranslationsSettingsViewerImageQualityValuesJaJp extends TranslationsSettingsViewerImageQualityValuesEn {
-  _TranslationsSettingsViewerImageQualityValuesJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$viewer$imageQualityValues$ja_JP extends Translations$settings$viewer$imageQualityValues$en {
+  _Translations$settings$viewer$imageQualityValues$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3484,8 +3483,8 @@ class _TranslationsSettingsViewerImageQualityValuesJaJp extends TranslationsSett
 }
 
 // Path: settings.viewer.scrollDirectionValues
-class _TranslationsSettingsViewerScrollDirectionValuesJaJp extends TranslationsSettingsViewerScrollDirectionValuesEn {
-  _TranslationsSettingsViewerScrollDirectionValuesJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$viewer$scrollDirectionValues$ja_JP extends Translations$settings$viewer$scrollDirectionValues$en {
+  _Translations$settings$viewer$scrollDirectionValues$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3497,8 +3496,8 @@ class _TranslationsSettingsViewerScrollDirectionValuesJaJp extends TranslationsS
 }
 
 // Path: settings.viewer.toolbarPositionValues
-class _TranslationsSettingsViewerToolbarPositionValuesJaJp extends TranslationsSettingsViewerToolbarPositionValuesEn {
-  _TranslationsSettingsViewerToolbarPositionValuesJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$viewer$toolbarPositionValues$ja_JP extends Translations$settings$viewer$toolbarPositionValues$en {
+  _Translations$settings$viewer$toolbarPositionValues$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3510,8 +3509,8 @@ class _TranslationsSettingsViewerToolbarPositionValuesJaJp extends TranslationsS
 }
 
 // Path: settings.viewer.buttonPositionValues
-class _TranslationsSettingsViewerButtonPositionValuesJaJp extends TranslationsSettingsViewerButtonPositionValuesEn {
-  _TranslationsSettingsViewerButtonPositionValuesJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$viewer$buttonPositionValues$ja_JP extends Translations$settings$viewer$buttonPositionValues$en {
+  _Translations$settings$viewer$buttonPositionValues$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3525,8 +3524,8 @@ class _TranslationsSettingsViewerButtonPositionValuesJaJp extends TranslationsSe
 }
 
 // Path: settings.viewer.shareActionValues
-class _TranslationsSettingsViewerShareActionValuesJaJp extends TranslationsSettingsViewerShareActionValuesEn {
-  _TranslationsSettingsViewerShareActionValuesJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$viewer$shareActionValues$ja_JP extends Translations$settings$viewer$shareActionValues$en {
+  _Translations$settings$viewer$shareActionValues$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3550,8 +3549,8 @@ class _TranslationsSettingsViewerShareActionValuesJaJp extends TranslationsSetti
 }
 
 // Path: settings.video.cacheModes
-class _TranslationsSettingsVideoCacheModesJaJp extends TranslationsSettingsVideoCacheModesEn {
-  _TranslationsSettingsVideoCacheModesJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$video$cacheModes$ja_JP extends Translations$settings$video$cacheModes$en {
+  _Translations$settings$video$cacheModes$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3576,8 +3575,8 @@ class _TranslationsSettingsVideoCacheModesJaJp extends TranslationsSettingsVideo
 }
 
 // Path: settings.video.cacheModeValues
-class _TranslationsSettingsVideoCacheModeValuesJaJp extends TranslationsSettingsVideoCacheModeValuesEn {
-  _TranslationsSettingsVideoCacheModeValuesJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$video$cacheModeValues$ja_JP extends Translations$settings$video$cacheModeValues$en {
+  _Translations$settings$video$cacheModeValues$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3591,8 +3590,8 @@ class _TranslationsSettingsVideoCacheModeValuesJaJp extends TranslationsSettings
 }
 
 // Path: settings.video.videoBackendModeValues
-class _TranslationsSettingsVideoVideoBackendModeValuesJaJp extends TranslationsSettingsVideoVideoBackendModeValuesEn {
-  _TranslationsSettingsVideoVideoBackendModeValuesJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$settings$video$videoBackendModeValues$ja_JP extends Translations$settings$video$videoBackendModeValues$en {
+  _Translations$settings$video$videoBackendModeValues$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 
@@ -3606,8 +3605,8 @@ class _TranslationsSettingsVideoVideoBackendModeValuesJaJp extends TranslationsS
 }
 
 // Path: media.loading.stopReasons
-class _TranslationsMediaLoadingStopReasonsJaJp extends TranslationsMediaLoadingStopReasonsEn {
-  _TranslationsMediaLoadingStopReasonsJaJp._(TranslationsJaJp root) : this._root = root, super.internal(root);
+class _Translations$media$loading$stopReasons$ja_JP extends Translations$media$loading$stopReasons$en {
+  _Translations$media$loading$stopReasons$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
 
   final TranslationsJaJp _root; // ignore: unused_field
 

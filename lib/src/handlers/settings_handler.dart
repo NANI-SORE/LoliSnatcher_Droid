@@ -642,7 +642,7 @@ class SettingsHandler {
         page: (_) => Scaffold(
           appBar: SettingsAppBar(
             title:
-                '${isDiffVersion ? loc.settings.checkForUpdates.updateAvailable : '${isAfterUpdate ? loc.settings.checkForUpdates.whatsNew : loc.settings.checkForUpdates.updateChangelog}:'} ${updateInfo.value!.versionName}+${updateInfo.value!.buildNumber}',
+                '${isDiffVersion ? loc.settings.checkForUpdates.updateAvailable : '${isAfterUpdate ? loc.settings.checkForUpdates.whatsNew : loc.settings.checkForUpdates.updateChangelog}:'} ${_updateInfo.versionName}+${_updateInfo.buildNumber}',
           ),
           body: SafeArea(
             child: Column(

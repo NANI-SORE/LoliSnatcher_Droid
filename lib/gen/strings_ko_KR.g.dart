@@ -182,28 +182,28 @@ class TranslationsKoKr extends Translations with BaseTranslations<AppLocale, Tra
   @override
   String get downloads => TranslationOverrides.string(_root.$meta, 'downloads', {}) ?? '다운로드';
   @override
-  late final _TranslationsValidationErrorsKoKr validationErrors = _TranslationsValidationErrorsKoKr._(_root);
+  late final _Translations$validationErrors$ko_KR validationErrors = _Translations$validationErrors$ko_KR._(_root);
   @override
-  late final _TranslationsInitKoKr init = _TranslationsInitKoKr._(_root);
+  late final _Translations$init$ko_KR init = _Translations$init$ko_KR._(_root);
   @override
-  late final _TranslationsPermissionsKoKr permissions = _TranslationsPermissionsKoKr._(_root);
+  late final _Translations$permissions$ko_KR permissions = _Translations$permissions$ko_KR._(_root);
   @override
-  late final _TranslationsAuthenticationKoKr authentication = _TranslationsAuthenticationKoKr._(_root);
+  late final _Translations$authentication$ko_KR authentication = _Translations$authentication$ko_KR._(_root);
   @override
-  late final _TranslationsSearchHandlerKoKr searchHandler = _TranslationsSearchHandlerKoKr._(_root);
+  late final _Translations$searchHandler$ko_KR searchHandler = _Translations$searchHandler$ko_KR._(_root);
   @override
-  late final _TranslationsSnatcherKoKr snatcher = _TranslationsSnatcherKoKr._(_root);
+  late final _Translations$snatcher$ko_KR snatcher = _Translations$snatcher$ko_KR._(_root);
   @override
-  late final _TranslationsMultibooruKoKr multibooru = _TranslationsMultibooruKoKr._(_root);
+  late final _Translations$multibooru$ko_KR multibooru = _Translations$multibooru$ko_KR._(_root);
   @override
-  late final _TranslationsHydrusKoKr hydrus = _TranslationsHydrusKoKr._(_root);
+  late final _Translations$hydrus$ko_KR hydrus = _Translations$hydrus$ko_KR._(_root);
   @override
-  late final _TranslationsTabsKoKr tabs = _TranslationsTabsKoKr._(_root);
+  late final _Translations$tabs$ko_KR tabs = _Translations$tabs$ko_KR._(_root);
 }
 
 // Path: validationErrors
-class _TranslationsValidationErrorsKoKr extends TranslationsValidationErrorsEn {
-  _TranslationsValidationErrorsKoKr._(TranslationsKoKr root) : this._root = root, super.internal(root);
+class _Translations$validationErrors$ko_KR extends Translations$validationErrors$en {
+  _Translations$validationErrors$ko_KR._(TranslationsKoKr root) : this._root = root, super.internal(root);
 
   final TranslationsKoKr _root; // ignore: unused_field
 
@@ -240,8 +240,8 @@ class _TranslationsValidationErrorsKoKr extends TranslationsValidationErrorsEn {
 }
 
 // Path: init
-class _TranslationsInitKoKr extends TranslationsInitEn {
-  _TranslationsInitKoKr._(TranslationsKoKr root) : this._root = root, super.internal(root);
+class _Translations$init$ko_KR extends Translations$init$en {
+  _Translations$init$ko_KR._(TranslationsKoKr root) : this._root = root, super.internal(root);
 
   final TranslationsKoKr _root; // ignore: unused_field
 
@@ -261,8 +261,8 @@ class _TranslationsInitKoKr extends TranslationsInitEn {
 }
 
 // Path: permissions
-class _TranslationsPermissionsKoKr extends TranslationsPermissionsEn {
-  _TranslationsPermissionsKoKr._(TranslationsKoKr root) : this._root = root, super.internal(root);
+class _Translations$permissions$ko_KR extends Translations$permissions$en {
+  _Translations$permissions$ko_KR._(TranslationsKoKr root) : this._root = root, super.internal(root);
 
   final TranslationsKoKr _root; // ignore: unused_field
 
@@ -289,8 +289,8 @@ class _TranslationsPermissionsKoKr extends TranslationsPermissionsEn {
 }
 
 // Path: authentication
-class _TranslationsAuthenticationKoKr extends TranslationsAuthenticationEn {
-  _TranslationsAuthenticationKoKr._(TranslationsKoKr root) : this._root = root, super.internal(root);
+class _Translations$authentication$ko_KR extends Translations$authentication$en {
+  _Translations$authentication$ko_KR._(TranslationsKoKr root) : this._root = root, super.internal(root);
 
   final TranslationsKoKr _root; // ignore: unused_field
 
@@ -309,8 +309,8 @@ class _TranslationsAuthenticationKoKr extends TranslationsAuthenticationEn {
 }
 
 // Path: searchHandler
-class _TranslationsSearchHandlerKoKr extends TranslationsSearchHandlerEn {
-  _TranslationsSearchHandlerKoKr._(TranslationsKoKr root) : this._root = root, super.internal(root);
+class _Translations$searchHandler$ko_KR extends Translations$searchHandler$en {
+  _Translations$searchHandler$ko_KR._(TranslationsKoKr root) : this._root = root, super.internal(root);
 
   final TranslationsKoKr _root; // ignore: unused_field
 
@@ -373,8 +373,8 @@ class _TranslationsSearchHandlerKoKr extends TranslationsSearchHandlerEn {
 }
 
 // Path: snatcher
-class _TranslationsSnatcherKoKr extends TranslationsSnatcherEn {
-  _TranslationsSnatcherKoKr._(TranslationsKoKr root) : this._root = root, super.internal(root);
+class _Translations$snatcher$ko_KR extends Translations$snatcher$en {
+  _Translations$snatcher$ko_KR._(TranslationsKoKr root) : this._root = root, super.internal(root);
 
   final TranslationsKoKr _root; // ignore: unused_field
 
@@ -464,8 +464,8 @@ class _TranslationsSnatcherKoKr extends TranslationsSnatcherEn {
 }
 
 // Path: multibooru
-class _TranslationsMultibooruKoKr extends TranslationsMultibooruEn {
-  _TranslationsMultibooruKoKr._(TranslationsKoKr root) : this._root = root, super.internal(root);
+class _Translations$multibooru$ko_KR extends Translations$multibooru$en {
+  _Translations$multibooru$ko_KR._(TranslationsKoKr root) : this._root = root, super.internal(root);
 
   final TranslationsKoKr _root; // ignore: unused_field
 
@@ -486,8 +486,8 @@ class _TranslationsMultibooruKoKr extends TranslationsMultibooruEn {
 }
 
 // Path: hydrus
-class _TranslationsHydrusKoKr extends TranslationsHydrusEn {
-  _TranslationsHydrusKoKr._(TranslationsKoKr root) : this._root = root, super.internal(root);
+class _Translations$hydrus$ko_KR extends Translations$hydrus$en {
+  _Translations$hydrus$ko_KR._(TranslationsKoKr root) : this._root = root, super.internal(root);
 
   final TranslationsKoKr _root; // ignore: unused_field
 
@@ -504,8 +504,8 @@ class _TranslationsHydrusKoKr extends TranslationsHydrusEn {
 }
 
 // Path: tabs
-class _TranslationsTabsKoKr extends TranslationsTabsEn {
-  _TranslationsTabsKoKr._(TranslationsKoKr root) : this._root = root, super.internal(root);
+class _Translations$tabs$ko_KR extends Translations$tabs$en {
+  _Translations$tabs$ko_KR._(TranslationsKoKr root) : this._root = root, super.internal(root);
 
   final TranslationsKoKr _root; // ignore: unused_field
 
