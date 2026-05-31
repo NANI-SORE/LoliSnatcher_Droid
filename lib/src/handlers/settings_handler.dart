@@ -510,7 +510,7 @@ class SettingsHandler {
       'type': 'int',
       'default': 3,
       'step': 1,
-      'upperLimit': 10,
+      'upperLimit': 50,
       'lowerLimit': 0,
     },
     'autoLockTimeout': {
@@ -729,16 +729,16 @@ class SettingsHandler {
     'cacheDuration': {
       'type': 'duration',
       'default': Duration.zero,
-      'options': <Map<String, dynamic>>[
-        {'label': 'Never', 'value': Duration.zero},
-        {'label': '30 minutes', 'value': const Duration(minutes: 30)},
-        {'label': '1 hour', 'value': const Duration(hours: 1)},
-        {'label': '6 hours', 'value': const Duration(hours: 6)},
-        {'label': '12 hours', 'value': const Duration(hours: 12)},
-        {'label': '1 day', 'value': const Duration(days: 1)},
-        {'label': '2 days', 'value': const Duration(days: 2)},
-        {'label': '1 week', 'value': const Duration(days: 7)},
-        {'label': '1 month', 'value': const Duration(days: 30)},
+      'options': <Duration>[
+        Duration.zero,
+        const Duration(minutes: 30),
+        const Duration(hours: 1),
+        const Duration(hours: 6),
+        const Duration(hours: 12),
+        const Duration(days: 1),
+        const Duration(days: 2),
+        const Duration(days: 7),
+        const Duration(days: 30),
       ],
     },
 

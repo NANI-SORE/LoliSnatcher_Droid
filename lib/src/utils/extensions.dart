@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:duration/duration.dart';
+import 'package:duration/locale.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -166,5 +168,41 @@ extension ColorExts on Color {
     final hsl = HSLColor.fromColor(this);
     final hslDark = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
     return hslDark.toColor();
+  }
+}
+
+extension DurationExts on Duration {
+  String format({
+    bool abbreviate = false,
+  }) {
+    final durLoc =
+        DurationLocale.fromLanguageCode(
+          SettingsHandler.instance.locale.value?.languageCode ?? PlatformDispatcher.instance.locale.languageCode,
+        ) ??
+        englishLocale;
+
+    if (inDays >= 30) {
+      // format values bigger than a month (30+ days)
+      // duration package only supports up to weeks,
+      // so 30 days turns into "4 weeks 2 days" (default - upperTersity: week)
+      final inMonths = inDays ~/ 30;
+      final leftoverDur = parseDuration('${inSeconds - inMonths * const Duration(days: 30).inSeconds}s');
+      return '$inMonths${durLoc.defaultSpacer}${durLoc.month(
+                inMonths,
+                abbreviate,
+              )}'
+              ' '
+              '${leftoverDur == Duration.zero ? '' : leftoverDur.pretty(
+                      abbreviated: abbreviate,
+                      locale: durLoc,
+                    )}'
+          .trim();
+    }
+
+    return pretty(
+      upperTersity: .day,
+      abbreviated: abbreviate,
+      locale: durLoc,
+    );
   }
 }

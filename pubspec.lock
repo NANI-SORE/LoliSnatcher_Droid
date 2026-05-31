@@ -354,6 +354,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
+  duration:
+    dependency: "direct main"
+    description:
+      name: duration
+      sha256: "13e5d20723c9c1dde8fb318cf86716d10ce294734e81e44ae1a817f3ae714501"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.3"
   dynamic_color:
     dependency: "direct main"
     description:
@@ -820,10 +828,10 @@ packages:
     dependency: "direct main"
     description:
       name: fvp
-      sha256: "98af0fe7ea362b234d72f2907d7e6f8e885269b6421822aaa7379a8a6e36bdba"
+      sha256: f8b069a67e94ad53b975a9082e2272a11223ba8217fc82997428dceeb6f8b433
       url: "https://pub.dev"
     source: hosted
-    version: "0.37.0"
+    version: "0.37.1"
   get:
     dependency: "direct main"
     description:
@@ -958,10 +966,10 @@ packages:
     dependency: "direct main"
     description:
       name: image
-      sha256: ac8932c077c9b9005bbf0d73c36aef7de5aea7a766acfa471f36e96aa4d7725f
+      sha256: "6300175e00616bbc832e2fc91bfa4d776af5402c81c7151bee6905bb08473c52"
       url: "https://pub.dev"
     source: hosted
-    version: "4.9.0"
+    version: "4.9.1"
   intl:
     dependency: "direct main"
     description:
@@ -998,10 +1006,10 @@ packages:
     dependency: transitive
     description:
       name: jovial_svg
-      sha256: "99e9c3afcf7371ae38083ad52de23677d6d751f46150c3c6ae842e009e84d9f0"
+      sha256: "53d5ef08fafb28c56131bfd83894221597f522c324fb0f0e6fcbfdcae3b0867d"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.29"
+    version: "1.1.30"
   json_annotation:
     dependency: transitive
     description:
@@ -1343,10 +1351,10 @@ packages:
     dependency: "direct main"
     description:
       name: permission_handler
-      sha256: bc917da36261b00137bbc8896bf1482169cd76f866282368948f032c8c1caae1
+      sha256: ca045d03615023c08ccdb297aad46a9198193666039ddd36d4d85fd0b1864b98
       url: "https://pub.dev"
     source: hosted
-    version: "12.0.1"
+    version: "12.0.2"
   permission_handler_android:
     dependency: transitive
     description:
@@ -1359,10 +1367,10 @@ packages:
     dependency: transitive
     description:
       name: permission_handler_apple
-      sha256: f000131e755c54cf4d84a5d8bd6e4149e262cc31c5a8b1d698de1ac85fa41023
+      sha256: "447c18bc3c5fdea5c3039f042b2b365fd51e3634f5f6e269ed22c1f00071addc"
       url: "https://pub.dev"
     source: hosted
-    version: "9.4.7"
+    version: "9.4.8"
   permission_handler_html:
     dependency: transitive
     description:
@@ -1870,10 +1878,10 @@ packages:
     dependency: transitive
     description:
       name: video_player_android
-      sha256: "877a6c7ba772456077d7bfd71314629b3fe2b73733ce503fc77c3314d43a0ca0"
+      sha256: "5d18d04084cc0cfc7afde39d0a308d4041e8ae6e9d5255bc086c263998dd1201"
       url: "https://pub.dev"
     source: hosted
-    version: "2.9.5"
+    version: "2.9.6"
   video_player_avfoundation:
     dependency: transitive
     description:

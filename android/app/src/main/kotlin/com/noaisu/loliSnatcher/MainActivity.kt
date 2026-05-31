@@ -413,14 +413,16 @@ class MainActivity: FlutterFragmentActivity() {
                         }
                     }
                     "restartApp" -> {
-                        restartApp()
-                        result.success("ok")
+                        val alias = call.argument<String>("alias")
+                        val restartDiagnostics = getRestartDiagnostics(alias)
+                        Log.i("MainActivity", "restartApp diagnostics: $restartDiagnostics")
+                        result.success(restartDiagnostics)
+                        window.decorView.postDelayed({ restartApp(alias) }, 300L)
                     }
                     "setAppAlias" -> {
                         val alias = call.argument<String>("alias")
                         if (alias != null) {
-                            val success = setAppAlias(alias)
-                            result.success(success)
+                            result.success(setAppAlias(alias))
                         } else {
                             result.error("INVALID_ARGUMENT", "Alias is null", null)
                         }
@@ -430,6 +432,9 @@ class MainActivity: FlutterFragmentActivity() {
                     }
                     "getAvailableAliases" -> {
                         result.success(getAvailableAliases())
+                    }
+                    "getAppAliasDiagnostics" -> {
+                        result.success(getAppAliasDiagnostics(call.argument<String>("alias")))
                     }
                     else -> result.notImplemented()
                 }
@@ -662,12 +667,13 @@ class MainActivity: FlutterFragmentActivity() {
         }
     }
 
-    private fun restartApp() {
-        val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
-            ?: return
-
-        val component = launchIntent.component
-            ?: return
+    private fun restartApp(alias: String? = null) {
+        val component = alias?.let { aliasMap[it] }?.let { ComponentName(packageName, "$packageName$it") }
+            ?: packageManager.getLaunchIntentForPackage(packageName)?.component
+            ?: run {
+                Log.e("MainActivity", "Cannot restart app: launch intent is null. diagnostics=${getRestartDiagnostics(alias)}")
+                return
+            }
 
         applicationContext.startActivity(
             Intent.makeRestartActivityTask(component)
@@ -950,30 +956,58 @@ class MainActivity: FlutterFragmentActivity() {
         "booru" to ".MainActivityAlias_Booru"
     )
 
-    private fun setAppAlias(alias: String): Boolean {
-        val targetAlias = aliasMap[alias] ?: return false
+    private fun setAppAlias(alias: String): Map<String, Any?> {
+        val targetAlias = aliasMap[alias]
+        if (targetAlias == null) {
+            val diagnostics = getAppAliasDiagnostics(alias).toMutableMap()
+            diagnostics["success"] = false
+            diagnostics["error"] = "Unknown alias: $alias"
+            Log.e("MainActivity", "setAppAlias failed: $diagnostics")
+            return diagnostics
+        }
+
         val pm = packageManager
+        val targetComponent = ComponentName(packageName, "$packageName$targetAlias")
+        Log.i("MainActivity", "setAppAlias start requestedAlias=$alias targetComponent=${targetComponent.flattenToString()} before=${getAliasStates()}")
 
         try {
-            for ((_, aliasComponent) in aliasMap) {
-                val component = ComponentName(packageName, "$packageName$aliasComponent")
-                val state = if (aliasComponent == targetAlias) {
-                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-                } else {
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-                }
+            pm.setComponentEnabledSetting(
+                targetComponent,
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                PackageManager.DONT_KILL_APP
+            )
 
-                pm.setComponentEnabledSetting(
-                    component,
-                    state,
-                    PackageManager.DONT_KILL_APP
-                )
+            for ((key, aliasComponent) in aliasMap) {
+                if (aliasComponent == targetAlias) continue
+
+                val component = ComponentName(packageName, "$packageName$aliasComponent")
+                try {
+                    pm.setComponentEnabledSetting(
+                        component,
+                        PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                        PackageManager.DONT_KILL_APP
+                    )
+                } catch (e: Exception) {
+                    Log.e(
+                        "MainActivity",
+                        "Error disabling alias key=$key component=${component.flattenToString()} package=$packageName sdk=${Build.VERSION.SDK_INT}",
+                        e
+                    )
+                    throw e
+                }
             }
 
-            return true
+            val diagnostics = getAppAliasDiagnostics(alias).toMutableMap()
+            diagnostics["success"] = true
+            Log.i("MainActivity", "setAppAlias success: $diagnostics")
+            return diagnostics
         } catch (e: Exception) {
-            Log.e("MainActivity", "Error setting app alias", e)
-            return false
+            val diagnostics = getAppAliasDiagnostics(alias).toMutableMap()
+            diagnostics["success"] = false
+            diagnostics["error"] = "${e.javaClass.name}: ${e.localizedMessage}"
+            diagnostics["targetComponent"] = targetComponent.flattenToString()
+            Log.e("MainActivity", "Error setting app alias: $diagnostics", e)
+            return diagnostics
         }
     }
 
@@ -992,5 +1026,82 @@ class MainActivity: FlutterFragmentActivity() {
 
     private fun getAvailableAliases(): List<String> {
         return aliasMap.keys.toList()
+    }
+
+    private fun getAppAliasDiagnostics(requestedAlias: String? = null): Map<String, Any?> {
+        return mapOf(
+            "packageName" to packageName,
+            "sdkVersion" to Build.VERSION.SDK_INT,
+            "requestedAlias" to requestedAlias,
+            "currentAlias" to getCurrentAlias(),
+            "targetComponent" to requestedAlias?.let { aliasMap[it] }?.let { "$packageName$it" },
+            "launchComponent" to packageManager.getLaunchIntentForPackage(packageName)?.component?.flattenToString(),
+            "states" to getAliasStates(),
+        )
+    }
+
+    private fun getRestartDiagnostics(alias: String? = null): Map<String, Any?> {
+        val aliasComponent = alias?.let { aliasMap[it] }?.let { ComponentName(packageName, "$packageName$it") }
+        val launchComponent = packageManager.getLaunchIntentForPackage(packageName)?.component
+        return mapOf(
+            "packageName" to packageName,
+            "sdkVersion" to Build.VERSION.SDK_INT,
+            "requestedAlias" to alias,
+            "targetComponent" to aliasComponent?.flattenToString(),
+            "launchComponent" to launchComponent?.flattenToString(),
+            "restartComponent" to (aliasComponent ?: launchComponent)?.flattenToString(),
+            "states" to getAliasStates(),
+        )
+    }
+
+    private fun getAliasStates(): List<Map<String, Any?>> {
+        val pm = packageManager
+        return aliasMap.map { (key, alias) ->
+            val component = ComponentName(packageName, "$packageName$alias")
+            val state = pm.getComponentEnabledSetting(component)
+            val declared = try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    pm.getActivityInfo(
+                        component,
+                        PackageManager.ComponentInfoFlags.of(PackageManager.MATCH_DISABLED_COMPONENTS.toLong())
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    pm.getActivityInfo(component, PackageManager.MATCH_DISABLED_COMPONENTS)
+                }
+                true
+            } catch (e: Exception) {
+                false
+            }
+            val resolvesLauncherIntent = pm.resolveActivity(
+                Intent(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_LAUNCHER)
+                    setComponent(component)
+                },
+                PackageManager.MATCH_DISABLED_COMPONENTS
+            ) != null
+
+            mapOf(
+                "key" to key,
+                "component" to component.flattenToString(),
+                "state" to state,
+                "stateName" to componentStateName(state),
+                "declared" to declared,
+                "enabled" to (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED),
+                "default" to (state == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT),
+                "resolvesLauncherIntent" to resolvesLauncherIntent,
+            )
+        }
+    }
+
+    private fun componentStateName(state: Int): String {
+        return when (state) {
+            PackageManager.COMPONENT_ENABLED_STATE_DEFAULT -> "default"
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED -> "enabled"
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED -> "disabled"
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER -> "disabled_user"
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED_UNTIL_USED -> "disabled_until_used"
+            else -> "unknown_$state"
+        }
     }
 }

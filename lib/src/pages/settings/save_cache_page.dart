@@ -11,6 +11,7 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/services/image_writer_isolate.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -49,8 +50,7 @@ class _SaveCachePageState extends State<SaveCachePage> {
     _CacheType(_CacheTypeEnum.webView, 'WebView'),
   ]; // {displayed name, cache folder}
   List<Map<String, dynamic>> cacheStats = [];
-  Map<String, dynamic>? cacheDurationSelected;
-  late Duration cacheDuration;
+  Duration cacheDuration = Duration.zero;
   Isolate? isolate;
 
   @override
@@ -65,9 +65,6 @@ class _SaveCachePageState extends State<SaveCachePage> {
     snatchMode = settingsHandler.snatchMode;
     jsonWrite = settingsHandler.jsonWrite;
     cacheDuration = settingsHandler.cacheDuration;
-    cacheDurationSelected = settingsHandler.map['cacheDuration']!['options']!.firstWhere((dur) {
-      return dur['value'].inSeconds == cacheDuration.inSeconds;
-    });
     cacheSizeController.text = settingsHandler.cacheSize.toString();
     downloadNotifications = settingsHandler.downloadNotifications;
     snatchOnFavourite = settingsHandler.snatchOnFavourite;
@@ -417,22 +414,25 @@ class _SaveCachePageState extends State<SaveCachePage> {
                   },
                 ),
               ),
-              SettingsDropdown(
-                value: (cacheDurationSelected?['label'] ?? '') as String,
-                items: List<String>.from(
-                  settingsHandler.map['cacheDuration']!['options'].map((dur) {
-                    return dur['label'];
-                  }),
-                ),
-                onChanged: (String? newValue) {
+              SettingsDropdown<Duration>(
+                value: cacheDuration,
+                items: settingsHandler.map['cacheDuration']!['options'],
+                onChanged: (Duration? newValue) {
                   setState(() {
-                    cacheDurationSelected = settingsHandler.map['cacheDuration']!['options'].firstWhere((dur) {
-                      return dur['label'] == newValue;
-                    });
-                    cacheDuration = cacheDurationSelected!['value'];
+                    cacheDuration = newValue ?? settingsHandler.map['cacheDuration']!['default'];
                   });
                 },
                 title: context.loc.settings.cache.deleteCacheAfter,
+                itemTitleBuilder: (Duration? d) {
+                  switch (d) {
+                    case null:
+                      return '';
+                    case Duration.zero:
+                      return context.loc.settings.cache.neverDeleteDuration;
+                    default:
+                      return d.format();
+                  }
+                },
               ),
               SettingsTextInput(
                 controller: cacheSizeController,

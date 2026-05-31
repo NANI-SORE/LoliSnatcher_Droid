@@ -28,6 +28,7 @@ dependencies:
   device_info_plus: ^13.1.0
   dio: ^5.9.2
   dio_http2_adapter: ^2.7.1
+  duration: ^4.0.3
   dynamic_color: ^1.8.1
   equatable: ^2.0.8
   external_video_player_launcher: ^0.0.3
@@ -51,7 +52,7 @@ dependencies:
       ref: 52759af6c6b245db4ba5bfa9ccc64d74f3ceb2fb
   font_awesome_flutter: ^11.0.0
   fpdart: ^1.2.0
-  fvp: ^0.37.0
+  fvp: ^0.37.1
   get_it: ^9.2.1
   get: # ^5.0.0-release-candidate-9.3.2 # TODO - MOVE TO A DIFFERENT STATE MANAGEMENT SOLUTIONS
     git:
@@ -64,7 +65,7 @@ dependencies:
       url: https://github.com/NANI-SORE/http_proxy.git
       ref: 36a202ceec982d199acdcd717ce85436372f447d # master - forked to fix build errors and remove allowing all bad certs
   huge_listview: ^2.0.12
-  image: ^4.9.0
+  image: ^4.9.1
   intl: ^0.20.2
   keyboard_actions: # ^4.2.0
     git:
@@ -78,7 +79,7 @@ dependencies:
   media_kit_libs_video: ^1.0.7
   native_dio_adapter: ^1.5.1 # TODO use this for http3, probably should rewrite http client use to reduce amount of created clients
   path_provider: ^2.1.5
-  permission_handler: ^12.0.1
+  permission_handler: ^12.0.2
   photo_view:
     git:
       url: https://github.com/NANI-SORE/photo_view.git

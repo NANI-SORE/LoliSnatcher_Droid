@@ -1297,7 +1297,7 @@
             "rendering": "İşleniyor…",
             "loadingAndRenderingFromCache": "Önbellekten yükleniyor ve işleniyor…",
             "loadingFromCache": "Önbellekten yükleniyor…",
-            "buffering": "Arabelleğe alınıyor (Buffering)…",
+            "buffering": "Arabelleğe alınıyor...",
             "loading": "Yükleniyor…",
             "loadAnyway": "Yine de yükle",
             "restartLoading": "Yüklemeyi yeniden başlat",

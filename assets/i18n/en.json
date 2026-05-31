@@ -850,6 +850,7 @@
             "videoCacheNoteEnable": "[Note]: Videos will cache only if 'Cache Media' is enabled.",
             "videoCacheWarningDesktop": "[Warning]: On desktop Stream mode can work incorrectly for some Boorus.",
             "deleteCacheAfter": "Delete cache after:",
+            "neverDeleteDuration": "Never",
             "cacheSizeLimit": "Cache size Limit (in GB)",
             "maximumTotalCacheSize": "Maximum total cache size",
             "cacheStats": "Cache stats:",
