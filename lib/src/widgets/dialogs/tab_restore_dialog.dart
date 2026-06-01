@@ -3,6 +3,7 @@ import 'package:lolisnatcher/gen/strings.g.dart';
 
 import 'package:lolisnatcher/src/data/settings/tab_page_restore_mode.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/confirm_button.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -57,16 +58,31 @@ class _TabRestoreDialogState extends State<TabRestoreDialog> {
   @override
   Widget build(BuildContext context) {
     final contentItems = <Widget>[
+      const SizedBox(height: 12),
       Text(
         context.loc.pageChanger.restoreLastViewedPage,
         style: Theme.of(context).textTheme.titleLarge,
       ),
-      const SizedBox(height: 8),
-      TabRow(tab: widget.tab),
       const SizedBox(height: 12),
-      Text(
-        context.loc.pageChanger.browsedToPageLastTime(page: widget.pageNum),
-        style: Theme.of(context).textTheme.bodyMedium,
+      Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: TabRow(tab: widget.tab),
+      ),
+      const SizedBox(height: 12),
+      Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          context.loc.pageChanger.browsedToPageLastTime(page: widget.pageNum),
+          style: Theme.of(context).textTheme.bodyLarge?.bold,
+        ),
       ),
       const SizedBox(height: 12),
       RadioGroup<TabPageRestoreMode>(
@@ -81,13 +97,16 @@ class _TabRestoreDialogState extends State<TabRestoreDialog> {
               .map(
                 (mode) => RadioListTile<TabPageRestoreMode>(
                   value: mode,
-                  title: Text(mode.locName),
+                  title: Text(
+                    mode.locName,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
                   subtitle: selectedMode == mode && widget.pageNum > 10
                       ? switch (mode) {
                           .fetchNoScroll || .fetchAndScroll => Text(
                             context.loc.pageChanger.tooManyPagesToRestoreWarning,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.error,
+                            style: Theme.of(context).textTheme.bodySmall?.withColor(
+                              Theme.of(context).colorScheme.error,
                             ),
                           ),
                           _ => null,

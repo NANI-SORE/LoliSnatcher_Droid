@@ -9,11 +9,11 @@ enum TabPageRestoreMode with SettingsEnum<TabPageRestoreMode> {
   /// Fetch only the page #N
   fetchOnlyPage,
 
-  /// Fetch pages 1 through N sequentially, stay at page 1
-  fetchNoScroll,
-
   /// Fetch pages 1 through N sequentially, then scroll to page N
   fetchAndScroll,
+
+  /// Fetch pages 1 through N sequentially, stay at page 1
+  fetchNoScroll,
 
   /// Ignore saved page, start from page 1 (default behavior)
   ignore,
@@ -26,10 +26,10 @@ enum TabPageRestoreMode with SettingsEnum<TabPageRestoreMode> {
         return 'ask';
       case .fetchOnlyPage:
         return 'fetchOnlyPage';
-      case .fetchNoScroll:
-        return 'fetchNoScroll';
       case .fetchAndScroll:
         return 'fetchAndScroll';
+      case .fetchNoScroll:
+        return 'fetchNoScroll';
       case .ignore:
         return 'ignore';
     }
@@ -41,10 +41,10 @@ enum TabPageRestoreMode with SettingsEnum<TabPageRestoreMode> {
         return .ask;
       case 'fetchOnlyPage':
         return .fetchOnlyPage;
-      case 'fetchNoScroll':
-        return .fetchNoScroll;
       case 'fetchAndScroll':
         return .fetchAndScroll;
+      case 'fetchNoScroll':
+        return .fetchNoScroll;
       case 'ignore':
         return .ignore;
     }
@@ -57,8 +57,8 @@ enum TabPageRestoreMode with SettingsEnum<TabPageRestoreMode> {
 
   bool get isAsk => this == .ask;
   bool get isFetchOnlyPage => this == .fetchOnlyPage;
-  bool get isFetchNoScroll => this == .fetchNoScroll;
   bool get isFetchAndScroll => this == .fetchAndScroll;
+  bool get isFetchNoScroll => this == .fetchNoScroll;
   bool get isFetchMultiplePages => this == .fetchNoScroll || this == .fetchAndScroll;
   bool get isIgnore => this == .ignore;
 
@@ -69,10 +69,10 @@ enum TabPageRestoreMode with SettingsEnum<TabPageRestoreMode> {
         return loc.settings.interface.tabPageRestoreModeValues.ask;
       case .fetchOnlyPage:
         return loc.settings.interface.tabPageRestoreModeValues.fetchOnlyPage;
-      case .fetchNoScroll:
-        return loc.settings.interface.tabPageRestoreModeValues.fetchNoScroll;
       case .fetchAndScroll:
         return loc.settings.interface.tabPageRestoreModeValues.fetchAndScroll;
+      case .fetchNoScroll:
+        return loc.settings.interface.tabPageRestoreModeValues.fetchNoScroll;
       case .ignore:
         return loc.settings.interface.tabPageRestoreModeValues.ignore;
     }
