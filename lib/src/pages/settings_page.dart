@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
-import 'package:talker/talker.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import 'package:lolisnatcher/src/data/constants.dart';
@@ -27,7 +26,6 @@ import 'package:lolisnatcher/src/pages/settings/theme_page.dart';
 import 'package:lolisnatcher/src/pages/settings/user_interface_page.dart';
 import 'package:lolisnatcher/src/pages/settings/video_page.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
-import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/discord_button.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/mascot_image.dart';
@@ -164,49 +162,8 @@ class SettingsPage extends StatelessWidget {
                 SettingsButton(
                   name: context.loc.settings.logs.title,
                   icon: const Icon(Icons.print),
-                  trailingIcon: const Icon(Icons.exit_to_app),
-                  action: () async {
-                    await showDialog(
-                      context: context,
-                      builder: (_) => SettingsDialog(
-                        title: Text(
-                          context.loc.settings.logs.title,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              context.loc.settings.logs.shareLogsWarningTitle,
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                            Text(
-                              context.loc.settings.logs.shareLogsWarningMsg,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        actionButtons: [
-                          const CancelButton(withIcon: true),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.check),
-                            label: Text(context.loc.ok),
-                            onPressed: () async {
-                              await Logger.viewController?.downloadLogsFile(
-                                Logger.talker.history.text(
-                                  timeFormat: Logger.talker.settings.timeFormat,
-                                ),
-                              );
-                              Navigator.of(context).pop();
-                            },
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                  trailingIcon: const Icon(Icons.folder_outlined),
+                  page: () => const LogFilesPage(),
                   onLongPress: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(

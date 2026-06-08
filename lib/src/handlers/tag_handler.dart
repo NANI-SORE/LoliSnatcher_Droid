@@ -91,12 +91,6 @@ class TagHandler {
     tag.fullString = tag.fullString.toLowerCase();
     if (preferTypeIfNone && hasTag(tag.fullString)) {
       if (getTag(tag.fullString).tagType != TagType.none && tag.tagType == TagType.none) {
-        Logger.Inst().log(
-          'Skipped tag ${tag.fullString}',
-          'TagHandler',
-          'putTag',
-          LogTypes.tagHandlerInfo,
-        );
         return;
       }
     }

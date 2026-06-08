@@ -4288,6 +4288,14 @@ class Translations$settings$logging$en {
 
   /// en: 'Logger'
   String get logger => TranslationOverrides.string(_root.$meta, 'settings.logging.logger', {}) ?? 'Logger';
+
+  /// en: 'Capture Android logcat'
+  String get captureLogcat => TranslationOverrides.string(_root.$meta, 'settings.logging.captureLogcat', {}) ?? 'Capture Android logcat';
+
+  /// en: 'Record warning and error messages from this app's Android process'
+  String get captureLogcatDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.logging.captureLogcatDescription', {}) ??
+      'Record warning and error messages from this app\'s Android process';
 }
 
 // Path: settings.webview
@@ -6542,6 +6550,11 @@ extension on Translations {
           'settings.debug.restoredSessionFromString' =>
             TranslationOverrides.string(_root.$meta, 'settings.debug.restoredSessionFromString', {}) ?? 'Restored session from string',
           'settings.logging.logger' => TranslationOverrides.string(_root.$meta, 'settings.logging.logger', {}) ?? 'Logger',
+          'settings.logging.captureLogcat' =>
+            TranslationOverrides.string(_root.$meta, 'settings.logging.captureLogcat', {}) ?? 'Capture Android logcat',
+          'settings.logging.captureLogcatDescription' =>
+            TranslationOverrides.string(_root.$meta, 'settings.logging.captureLogcatDescription', {}) ??
+                'Record warning and error messages from this app\'s Android process',
           'settings.webview.openWebview' => TranslationOverrides.string(_root.$meta, 'settings.webview.openWebview', {}) ?? 'Open webview',
           'settings.webview.openWebviewTip' =>
             TranslationOverrides.string(_root.$meta, 'settings.webview.openWebviewTip', {}) ?? 'to login or obtain cookies',
@@ -6782,11 +6795,11 @@ extension on Translations {
           'searchBar.range' => TranslationOverrides.string(_root.$meta, 'searchBar.range', {}) ?? 'Range',
           'searchBar.popular' => TranslationOverrides.string(_root.$meta, 'searchBar.popular', {}) ?? 'Popular',
           'searchBar.selectDate' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDate', {}) ?? 'Select date',
-          'searchBar.selectDatesRange' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDatesRange', {}) ?? 'Select dates range',
-          'searchBar.history' => TranslationOverrides.string(_root.$meta, 'searchBar.history', {}) ?? 'History',
           _ => null,
         } ??
         switch (path) {
+          'searchBar.selectDatesRange' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDatesRange', {}) ?? 'Select dates range',
+          'searchBar.history' => TranslationOverrides.string(_root.$meta, 'searchBar.history', {}) ?? 'History',
           'searchBar.more' => TranslationOverrides.string(_root.$meta, 'searchBar.more', {}) ?? '…',
           'mobileHome.selectBooruForWebview' =>
             TranslationOverrides.string(_root.$meta, 'mobileHome.selectBooruForWebview', {}) ?? 'Select booru for webview',

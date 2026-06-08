@@ -3418,6 +3418,12 @@ class _Translations$settings$logging$ru_RU extends Translations$settings$logging
   // Translations
   @override
   String get logger => TranslationOverrides.string(_root.$meta, 'settings.logging.logger', {}) ?? 'Логгер';
+  @override
+  String get captureLogcat => TranslationOverrides.string(_root.$meta, 'settings.logging.captureLogcat', {}) ?? 'Записывать logcat';
+  @override
+  String get captureLogcatDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.logging.captureLogcatDescription', {}) ??
+      'Запись системных сообщений об ошибках и предупреждениях для этого процесса';
 }
 
 // Path: settings.webview
@@ -5625,6 +5631,10 @@ extension on TranslationsRuRu {
           'settings.debug.restoredSessionFromString' =>
             TranslationOverrides.string(_root.$meta, 'settings.debug.restoredSessionFromString', {}) ?? 'Сессия восстановлена из строки',
           'settings.logging.logger' => TranslationOverrides.string(_root.$meta, 'settings.logging.logger', {}) ?? 'Логгер',
+          'settings.logging.captureLogcat' => TranslationOverrides.string(_root.$meta, 'settings.logging.captureLogcat', {}) ?? 'Записывать logcat',
+          'settings.logging.captureLogcatDescription' =>
+            TranslationOverrides.string(_root.$meta, 'settings.logging.captureLogcatDescription', {}) ??
+                'Запись системных сообщений об ошибках и предупреждениях для этого процесса',
           'settings.webview.openWebview' => TranslationOverrides.string(_root.$meta, 'settings.webview.openWebview', {}) ?? 'Открыть вебвью',
           'settings.webview.openWebviewTip' =>
             TranslationOverrides.string(_root.$meta, 'settings.webview.openWebviewTip', {}) ?? 'чтобы залогиниться или получить куки',
@@ -5868,11 +5878,11 @@ extension on TranslationsRuRu {
           'searchBar.range' => TranslationOverrides.string(_root.$meta, 'searchBar.range', {}) ?? 'Диапазон',
           'searchBar.popular' => TranslationOverrides.string(_root.$meta, 'searchBar.popular', {}) ?? 'Популярное',
           'searchBar.selectDate' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDate', {}) ?? 'Выбери дату',
-          'searchBar.selectDatesRange' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDatesRange', {}) ?? 'Выбери диапазон дат',
-          'searchBar.history' => TranslationOverrides.string(_root.$meta, 'searchBar.history', {}) ?? 'История',
           _ => null,
         } ??
         switch (path) {
+          'searchBar.selectDatesRange' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDatesRange', {}) ?? 'Выбери диапазон дат',
+          'searchBar.history' => TranslationOverrides.string(_root.$meta, 'searchBar.history', {}) ?? 'История',
           'searchBar.more' => TranslationOverrides.string(_root.$meta, 'searchBar.more', {}) ?? '…',
           'mobileHome.selectBooruForWebview' =>
             TranslationOverrides.string(_root.$meta, 'mobileHome.selectBooruForWebview', {}) ?? 'Выбери сайт для вебвью',

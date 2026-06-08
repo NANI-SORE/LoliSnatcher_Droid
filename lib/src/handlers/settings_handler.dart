@@ -196,6 +196,7 @@ class SettingsHandler {
   bool disableImageScaling = false;
   bool gifsAsThumbnails = false;
   bool desktopListsDrag = false;
+  bool captureLogcat = false;
   bool showBottomSearchbar = true;
   bool useTopSearchbarInput = false;
   bool showSearchbarQuickActions = false;
@@ -277,6 +278,7 @@ class SettingsHandler {
     'showVideoStats',
     'isDebug',
     'desktopListsDrag',
+    'captureLogcat',
     'incognitoKeyboard',
     'appAlias',
     'showBottomSearchbar',
@@ -622,6 +624,10 @@ class SettingsHandler {
       'default': false,
     },
     'desktopListsDrag': {
+      'type': 'bool',
+      'default': false,
+    },
+    'captureLogcat': {
       'type': 'bool',
       'default': false,
     },
@@ -1144,6 +1150,8 @@ class SettingsHandler {
         return gifsAsThumbnails;
       case 'desktopListsDrag':
         return desktopListsDrag;
+      case 'captureLogcat':
+        return captureLogcat;
       case 'cacheDuration':
         return cacheDuration;
       case 'cacheSize':
@@ -1404,6 +1412,9 @@ class SettingsHandler {
         break;
       case 'desktopListsDrag':
         desktopListsDrag = validatedValue;
+        break;
+      case 'captureLogcat':
+        captureLogcat = validatedValue;
         break;
       case 'cacheDuration':
         cacheDuration = validatedValue;
@@ -2317,6 +2328,7 @@ class SettingsHandler {
     try {
       await getStoragePermission();
       await loadSettings();
+      await Logger.setLogcatCaptureEnabled(captureLogcat);
       await setLocale(locale.value);
     } catch (e, s) {
       Logger.Inst().log(
