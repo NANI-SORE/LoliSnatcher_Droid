@@ -3535,7 +3535,7 @@ class _Translations$media$loading$tr_TR extends Translations$media$loading$en {
   @override
   String get loadingFromCache => TranslationOverrides.string(_root.$meta, 'media.loading.loadingFromCache', {}) ?? 'Önbellekten yükleniyor…';
   @override
-  String get buffering => TranslationOverrides.string(_root.$meta, 'media.loading.buffering', {}) ?? 'Arabelleğe alınıyor (Buffering)…';
+  String get buffering => TranslationOverrides.string(_root.$meta, 'media.loading.buffering', {}) ?? 'Arabelleğe alınıyor...';
   @override
   String get loading => TranslationOverrides.string(_root.$meta, 'media.loading.loading', {}) ?? 'Yükleniyor…';
   @override
@@ -5861,7 +5861,7 @@ extension on TranslationsTrTr {
             TranslationOverrides.string(_root.$meta, 'media.loading.loadingAndRenderingFromCache', {}) ?? 'Önbellekten yükleniyor ve işleniyor…',
           'media.loading.loadingFromCache' =>
             TranslationOverrides.string(_root.$meta, 'media.loading.loadingFromCache', {}) ?? 'Önbellekten yükleniyor…',
-          'media.loading.buffering' => TranslationOverrides.string(_root.$meta, 'media.loading.buffering', {}) ?? 'Arabelleğe alınıyor (Buffering)…',
+          'media.loading.buffering' => TranslationOverrides.string(_root.$meta, 'media.loading.buffering', {}) ?? 'Arabelleğe alınıyor...',
           'media.loading.loading' => TranslationOverrides.string(_root.$meta, 'media.loading.loading', {}) ?? 'Yükleniyor…',
           'media.loading.loadAnyway' => TranslationOverrides.string(_root.$meta, 'media.loading.loadAnyway', {}) ?? 'Yine de yükle',
           'media.loading.restartLoading' =>

@@ -1,5 +1,5 @@
 import 'package:lolisnatcher/src/data/settings/settings_enum.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 
 enum MpvVideoOutput with SettingsEnum<MpvVideoOutput> {
   gpu,
@@ -46,7 +46,7 @@ enum MpvVideoOutput with SettingsEnum<MpvVideoOutput> {
   }
 
   static MpvVideoOutput get defaultValue {
-    return SettingsHandler.isDesktopPlatform ? MpvVideoOutput.libmpv : MpvVideoOutput.gpu;
+    return PlatformExt.isDesktop ? MpvVideoOutput.libmpv : MpvVideoOutput.gpu;
   }
 
   bool get isGpu => this == MpvVideoOutput.gpu;

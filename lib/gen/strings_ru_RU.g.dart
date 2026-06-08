@@ -666,6 +666,18 @@ class _Translations$tabs$ru_RU extends Translations$tabs$en {
   @override
   String get deleteTabs => TranslationOverrides.string(_root.$meta, 'tabs.deleteTabs', {}) ?? 'Удалить вкладки';
   @override
+  String get deleteDuplicateTabs => TranslationOverrides.string(_root.$meta, 'tabs.deleteDuplicateTabs', {}) ?? 'Удалить дубликаты вкладок';
+  @override
+  String get deleteDuplicateTabsQuestion =>
+      TranslationOverrides.string(_root.$meta, 'tabs.deleteDuplicateTabsQuestion', {}) ??
+      'Обнаружены дубликаты вкладок. Выбери в каждой группе вкладок те, которые ты хочешь оставить:';
+  @override
+  String get keepFirstDuplicateTabs => TranslationOverrides.string(_root.$meta, 'tabs.keepFirstDuplicateTabs', {}) ?? 'Оставить первую';
+  @override
+  String get keepLastDuplicateTabs => TranslationOverrides.string(_root.$meta, 'tabs.keepLastDuplicateTabs', {}) ?? 'Оставить последнюю';
+  @override
+  String get skipDuplicateTabDelete => TranslationOverrides.string(_root.$meta, 'tabs.skipDuplicateTabDelete', {}) ?? 'Пропустить';
+  @override
   String get shuffleTabs => TranslationOverrides.string(_root.$meta, 'tabs.shuffleTabs', {}) ?? 'Перемешать вкладки';
   @override
   String get tabRandomlyShuffled => TranslationOverrides.string(_root.$meta, 'tabs.tabRandomlyShuffled', {}) ?? 'Вкладки случайно перемешаны';
@@ -2936,6 +2948,8 @@ class _Translations$settings$cache$ru_RU extends Translations$settings$cache$en 
   @override
   String get deleteCacheAfter => TranslationOverrides.string(_root.$meta, 'settings.cache.deleteCacheAfter', {}) ?? 'Удалять кэш после:';
   @override
+  String get neverDeleteDuration => TranslationOverrides.string(_root.$meta, 'settings.cache.neverDeleteDuration', {}) ?? 'Никогда';
+  @override
   String get cacheSizeLimit => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheSizeLimit', {}) ?? 'Лимит размера кэша (в ГБ)';
   @override
   String get maximumTotalCacheSize =>
@@ -4195,6 +4209,13 @@ extension on TranslationsRuRu {
           'tabs.sortMode' => TranslationOverrides.string(_root.$meta, 'tabs.sortMode', {}) ?? 'Сортировать вкладки',
           'tabs.help' => TranslationOverrides.string(_root.$meta, 'tabs.help', {}) ?? 'Помощь',
           'tabs.deleteTabs' => TranslationOverrides.string(_root.$meta, 'tabs.deleteTabs', {}) ?? 'Удалить вкладки',
+          'tabs.deleteDuplicateTabs' => TranslationOverrides.string(_root.$meta, 'tabs.deleteDuplicateTabs', {}) ?? 'Удалить дубликаты вкладок',
+          'tabs.deleteDuplicateTabsQuestion' =>
+            TranslationOverrides.string(_root.$meta, 'tabs.deleteDuplicateTabsQuestion', {}) ??
+                'Обнаружены дубликаты вкладок. Выбери в каждой группе вкладок те, которые ты хочешь оставить:',
+          'tabs.keepFirstDuplicateTabs' => TranslationOverrides.string(_root.$meta, 'tabs.keepFirstDuplicateTabs', {}) ?? 'Оставить первую',
+          'tabs.keepLastDuplicateTabs' => TranslationOverrides.string(_root.$meta, 'tabs.keepLastDuplicateTabs', {}) ?? 'Оставить последнюю',
+          'tabs.skipDuplicateTabDelete' => TranslationOverrides.string(_root.$meta, 'tabs.skipDuplicateTabDelete', {}) ?? 'Пропустить',
           'tabs.shuffleTabs' => TranslationOverrides.string(_root.$meta, 'tabs.shuffleTabs', {}) ?? 'Перемешать вкладки',
           'tabs.tabRandomlyShuffled' => TranslationOverrides.string(_root.$meta, 'tabs.tabRandomlyShuffled', {}) ?? 'Вкладки случайно перемешаны',
           'tabs.tabOrderSaved' => TranslationOverrides.string(_root.$meta, 'tabs.tabOrderSaved', {}) ?? 'Порядок вкладок сохранён',
@@ -4804,6 +4825,9 @@ extension on TranslationsRuRu {
           'settings.video.backendDefaultHelp' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.backendDefaultHelp', {}) ??
                 'Основан на exoplayer. Имеет лучшую совместимость с устройствами, могут быть проблемы с 4K видео, некоторыми кодеками или старыми устройствами',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.video.backendMPVHelp' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.backendMPVHelp', {}) ??
                 'Основан на libmpv, имеет продвинутые настройки, которые могут помочь решить проблемы с некоторыми кодеками/устройствами\n[МОЖЕТ ВЫЗВАТЬ ВЫЛЕТЫ]',
@@ -4816,9 +4840,6 @@ extension on TranslationsRuRu {
           'settings.video.mpvUseHardwareAcceleration' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.mpvUseHardwareAcceleration', {}) ?? 'MPV: использовать аппаратное ускорение',
           'settings.video.mpvVO' => TranslationOverrides.string(_root.$meta, 'settings.video.mpvVO', {}) ?? 'MPV: VO',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.video.mpvHWDEC' => TranslationOverrides.string(_root.$meta, 'settings.video.mpvHWDEC', {}) ?? 'MPV: HWDEC',
           'settings.video.videoCacheMode' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheMode', {}) ?? 'Режим кэширования видео',
@@ -5256,6 +5277,7 @@ extension on TranslationsRuRu {
                 '[Предупреждение]: На компьютерах потоковый режим может работать некорректно для некоторых сайтов.',
           'settings.cache.deleteCacheAfter' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.deleteCacheAfter', {}) ?? 'Удалять кэш после:',
+          'settings.cache.neverDeleteDuration' => TranslationOverrides.string(_root.$meta, 'settings.cache.neverDeleteDuration', {}) ?? 'Никогда',
           'settings.cache.cacheSizeLimit' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.cacheSizeLimit', {}) ?? 'Лимит размера кэша (в ГБ)',
           'settings.cache.maximumTotalCacheSize' =>
@@ -5771,6 +5793,9 @@ extension on TranslationsRuRu {
           'desktopHome.save' => TranslationOverrides.string(_root.$meta, 'desktopHome.save', {}) ?? 'Сохранить',
           'desktopHome.noItemsSelected' => TranslationOverrides.string(_root.$meta, 'desktopHome.noItemsSelected', {}) ?? 'Ничего не выбрано',
           'galleryView.noItems' => TranslationOverrides.string(_root.$meta, 'galleryView.noItems', {}) ?? 'Нет элементов',
+          _ => null,
+        } ??
+        switch (path) {
           'galleryView.noItemSelected' => TranslationOverrides.string(_root.$meta, 'galleryView.noItemSelected', {}) ?? 'Нет выбранного элемента',
           'galleryView.close' => TranslationOverrides.string(_root.$meta, 'galleryView.close', {}) ?? 'Закрыть',
           'mediaPreviews.noBooruConfigsFound' =>
@@ -5778,9 +5803,6 @@ extension on TranslationsRuRu {
           'mediaPreviews.addNewBooru' => TranslationOverrides.string(_root.$meta, 'mediaPreviews.addNewBooru', {}) ?? 'Добавить новый сайт',
           'mediaPreviews.help' => TranslationOverrides.string(_root.$meta, 'mediaPreviews.help', {}) ?? 'Помощь',
           'mediaPreviews.settings' => TranslationOverrides.string(_root.$meta, 'mediaPreviews.settings', {}) ?? 'Настройки',
-          _ => null,
-        } ??
-        switch (path) {
           'mediaPreviews.restoringPreviousSession' =>
             TranslationOverrides.string(_root.$meta, 'mediaPreviews.restoringPreviousSession', {}) ?? 'Восстановление предыдущей сессии…',
           'mediaPreviews.copiedFileURL' =>

@@ -20,7 +20,8 @@ class Tag {
       json['fullString']?.toString() ?? json['name']?.toString() ?? 'unknown',
       tagType: TagType.values.byName(json['tagType']?.toString() ?? 'none'),
       count: json['count'] ?? 0,
-      updatedAt: json['updatedAt'] ?? (DateTime.now().millisecondsSinceEpoch - Constants.tagStaleTime),
+      updatedAt:
+          json['updatedAt'] ?? (DateTime.now().millisecondsSinceEpoch - Constants.tagStaleDuration.inMilliseconds),
     );
   }
 
@@ -46,6 +47,8 @@ class Tag {
   Color? getColour() {
     return tagType.getColour();
   }
+
+  bool isStale() => updatedAt < DateTime.now().subtract(Constants.tagStaleDuration).millisecondsSinceEpoch;
 
   Tag copyWith({
     String? fullString,

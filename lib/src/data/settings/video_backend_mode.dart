@@ -1,5 +1,6 @@
 import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/data/settings/settings_enum.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 
 enum VideoBackendMode with SettingsEnum<VideoBackendMode> {
   normal,
@@ -27,7 +28,22 @@ enum VideoBackendMode with SettingsEnum<VideoBackendMode> {
   }
 
   static VideoBackendMode get defaultValue {
+    if (PlatformExt.isDesktop) {
+      return VideoBackendMode.mpv;
+    }
+
     return VideoBackendMode.normal;
+  }
+
+  static List<VideoBackendMode> get allowedValues {
+    if (PlatformExt.isDesktop) {
+      return [
+        VideoBackendMode.mpv,
+        VideoBackendMode.mdk,
+      ];
+    }
+
+    return [...VideoBackendMode.values];
   }
 
   bool get isDefault => this == defaultValue;

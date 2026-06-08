@@ -68,7 +68,7 @@ class _DebugActionsWidgetState extends State<DebugActionsWidget> {
             },
             title: context.loc.settings.debug.blurImagesAndMuteVideosDevOnly,
           ),
-        if (SettingsHandler.isDesktopPlatform)
+        if (PlatformExt.isDesktop)
           SettingsToggle(
             value: SX.desktopListsDrag.value,
             onChanged: (newValue) {

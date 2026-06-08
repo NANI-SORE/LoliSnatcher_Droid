@@ -55,8 +55,6 @@ class SettingsHandler {
 
   static void unregister() => GetIt.instance.unregister<SettingsHandler>();
 
-  static bool get isDesktopPlatform => Platform.isWindows || Platform.isLinux || Platform.isMacOS;
-
   DBHandler dbHandler = DBHandler();
 
   late Alice alice;
@@ -77,6 +75,7 @@ class SettingsHandler {
   final RxString discordURL = RxString(Constants.discordURL);
 
   // debug toggles
+  bool useImageLogging = false;
   bool blurImages = kDebugMode ? Constants.blurImagesDefaultDev : false;
 
   ////////////////////////////////////////////////////
@@ -813,20 +812,16 @@ class SettingsHandler {
       postInitMessage.value = loc.init.settingUpProxy;
       await initProxy();
 
-      if (isDesktopPlatform) {
-        fvp.registerWith();
-      } else {
-        switch (SX.videoBackendMode.value) {
-          case VideoBackendMode.normal:
-            MediaKitVideoPlayer.registerNative();
-            break;
-          case VideoBackendMode.mpv:
-            MediaKitVideoPlayer.registerWith();
-            break;
-          case VideoBackendMode.mdk:
-            fvp.registerWith();
-            break;
-        }
+      switch (SX.videoBackendMode.value) {
+        case VideoBackendMode.normal:
+          MediaKitVideoPlayer.registerNative();
+          break;
+        case VideoBackendMode.mpv:
+          MediaKitVideoPlayer.registerWith();
+          break;
+        case VideoBackendMode.mdk:
+          fvp.registerWith();
+          break;
       }
 
       postInitMessage.value = loc.init.loadingDatabase;

@@ -1,7 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 
 /// A compact error widget that replaces Flutter's default ErrorWidget.
 ///
@@ -104,7 +103,7 @@ class CompactErrorWidget extends StatelessWidget {
               ),
             ),
           ),
-          if (Platform.isWindows || Platform.isLinux)
+          if (PlatformExt.isDesktop)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: TextButton.icon(

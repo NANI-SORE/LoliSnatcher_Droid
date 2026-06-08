@@ -1,7 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'package:path_provider/path_provider.dart';
@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 
 //The ServiceHandler class calls kotlin functions in MainActivity.kt
@@ -17,15 +18,13 @@ class ServiceHandler {
     Object? e, {
     StackTrace? s,
   }) {
-    if (kDebugMode) {
-      Logger.Inst().log(
-        e.toString(),
-        'ServiceHandler',
-        'log',
-        LogTypes.exception,
-        s: s,
-      );
-    }
+    Logger.Inst().log(
+      e.toString(),
+      'ServiceHandler',
+      'log',
+      LogTypes.exception,
+      s: s,
+    );
   }
 
   static const platform = MethodChannel('com.noaisu.loliSnatcher/services');
@@ -38,8 +37,13 @@ class ServiceHandler {
     }
   }
 
-  static Future<void> restartApp() {
-    return platform.invokeMethod('restartApp');
+  static Future<void> restartApp({String? alias}) async {
+    try {
+      final result = await platform.invokeMethod('restartApp', {'alias': alias});
+      log('restartApp diagnostics: ${_encodeLogPayload(result)}');
+    } catch (e, s) {
+      log('restartApp failed: $e', s: s);
+    }
   }
 
   static Future<int> getAndroidSDKVersion() async {
@@ -537,7 +541,7 @@ class ServiceHandler {
     }
 
     try {
-      if (Platform.isAndroid || Platform.isIOS) {
+      if (PlatformExt.isMobile) {
         await HapticFeedback.lightImpact();
       }
     } catch (e, s) {
@@ -556,12 +560,35 @@ class ServiceHandler {
   static Future<bool> setAppAlias(String alias) async {
     if (!Platform.isAndroid) return false;
     try {
+      final currentAlias = await getCurrentAlias();
+      log('setAppAlias start: requestedAlias=$alias currentAlias=$currentAlias');
       final result = await platform.invokeMethod('setAppAlias', {'alias': alias});
+      log('setAppAlias native result: ${_encodeLogPayload(result)}');
+
+      if (result is Map) {
+        return result['success'] == true;
+      }
+
       return result == true;
-    } catch (e) {
-      log(e);
+    } catch (e, s) {
+      log('setAppAlias failed: $e', s: s);
       return false;
     }
+  }
+
+  /// Gets native diagnostics for Android app launcher aliases.
+  static Future<Map<String, dynamic>> getAppAliasDiagnostics({String? alias}) async {
+    if (!Platform.isAndroid) return {};
+    try {
+      final result = await platform.invokeMethod('getAppAliasDiagnostics', {'alias': alias});
+      log('getAppAliasDiagnostics result: ${_encodeLogPayload(result)}');
+      if (result is Map) {
+        return Map<String, dynamic>.from(result);
+      }
+    } catch (e, s) {
+      log('getAppAliasDiagnostics failed: $e', s: s);
+    }
+    return {};
   }
 
   /// Gets the currently active app alias (Android only)
@@ -584,6 +611,14 @@ class ServiceHandler {
     } catch (e) {
       log(e);
       return ['loli_snatcher'];
+    }
+  }
+
+  static String _encodeLogPayload(Object? payload) {
+    try {
+      return const JsonEncoder.withIndent('  ').convert(payload);
+    } catch (_) {
+      return payload.toString();
     }
   }
 }

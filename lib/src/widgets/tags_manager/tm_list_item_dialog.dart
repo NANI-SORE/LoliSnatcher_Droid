@@ -45,7 +45,7 @@ class _TagsManagerListItemDialogState extends State<TagsManagerListItemDialog> {
   Widget build(BuildContext context) {
     final String staleText = DateTime.fromMillisecondsSinceEpoch(
       widget.tag.updatedAt,
-    ).add(const Duration(milliseconds: Constants.tagStaleTime)).toString();
+    ).add(Constants.tagStaleDuration).toString();
 
     return SettingsDialog(
       contentItems: [
@@ -75,7 +75,7 @@ class _TagsManagerListItemDialogState extends State<TagsManagerListItemDialog> {
           drawBottomBorder: false,
           itemBuilder: (item) => Row(
             children: [
-              if (item != null && item.isNone == false)
+              if (item != null)
                 Container(
                   height: 24,
                   width: 6,

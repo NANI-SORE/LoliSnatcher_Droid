@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -412,7 +411,7 @@ class QueryEditorKeyboardActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return KeyboardActions(
-      enable: SX.showSearchbarQuickActions.value && (Platform.isAndroid || Platform.isIOS),
+      enable: SX.showSearchbarQuickActions.value && PlatformExt.isMobile,
       config: buildConfig(context),
       autoScroll: false,
       overscroll: 0,

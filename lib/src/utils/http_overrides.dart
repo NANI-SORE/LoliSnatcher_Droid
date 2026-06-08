@@ -6,6 +6,7 @@ import 'package:http_proxy/http_proxy.dart';
 
 import 'package:lolisnatcher/src/data/settings/proxy_type.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 
 String systemProxyAddress = '';
 bool addedRootCert = false;
@@ -13,7 +14,7 @@ bool addedRootCert = false;
 Future<void> initProxy() async {
   final proxyType = SX.proxyType.value;
 
-  if (proxyType.isSystem && (Platform.isAndroid || Platform.isIOS)) {
+  if (proxyType.isSystem && PlatformExt.isMobile) {
     final HttpProxy httpProxy = await HttpProxy.createHttpProxy();
     if (httpProxy.host?.isNotEmpty == true && httpProxy.port?.isNotEmpty == true) {
       systemProxyAddress = '${httpProxy.host}:${httpProxy.port}';

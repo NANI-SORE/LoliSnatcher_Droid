@@ -808,6 +808,23 @@ class Translations$tabs$en {
   /// en: 'Delete tabs'
   String get deleteTabs => TranslationOverrides.string(_root.$meta, 'tabs.deleteTabs', {}) ?? 'Delete tabs';
 
+  /// en: 'Delete duplicate tabs'
+  String get deleteDuplicateTabs => TranslationOverrides.string(_root.$meta, 'tabs.deleteDuplicateTabs', {}) ?? 'Delete duplicate tabs';
+
+  /// en: 'Duplicate tabs found. Select tabs which you want to keep in every group:'
+  String get deleteDuplicateTabsQuestion =>
+      TranslationOverrides.string(_root.$meta, 'tabs.deleteDuplicateTabsQuestion', {}) ??
+      'Duplicate tabs found. Select tabs which you want to keep in every group:';
+
+  /// en: 'Keep first'
+  String get keepFirstDuplicateTabs => TranslationOverrides.string(_root.$meta, 'tabs.keepFirstDuplicateTabs', {}) ?? 'Keep first';
+
+  /// en: 'Keep last'
+  String get keepLastDuplicateTabs => TranslationOverrides.string(_root.$meta, 'tabs.keepLastDuplicateTabs', {}) ?? 'Keep last';
+
+  /// en: 'Skip'
+  String get skipDuplicateTabDelete => TranslationOverrides.string(_root.$meta, 'tabs.skipDuplicateTabDelete', {}) ?? 'Skip';
+
   /// en: 'Shuffle tabs'
   String get shuffleTabs => TranslationOverrides.string(_root.$meta, 'tabs.shuffleTabs', {}) ?? 'Shuffle tabs';
 
@@ -3664,6 +3681,9 @@ class Translations$settings$cache$en {
   /// en: 'Delete cache after:'
   String get deleteCacheAfter => TranslationOverrides.string(_root.$meta, 'settings.cache.deleteCacheAfter', {}) ?? 'Delete cache after:';
 
+  /// en: 'Never'
+  String get neverDeleteDuration => TranslationOverrides.string(_root.$meta, 'settings.cache.neverDeleteDuration', {}) ?? 'Never';
+
   /// en: 'Cache size Limit (in GB)'
   String get cacheSizeLimit => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheSizeLimit', {}) ?? 'Cache size Limit (in GB)';
 
@@ -5167,6 +5187,13 @@ extension on Translations {
           'tabs.sortMode' => TranslationOverrides.string(_root.$meta, 'tabs.sortMode', {}) ?? 'Sort tabs',
           'tabs.help' => TranslationOverrides.string(_root.$meta, 'tabs.help', {}) ?? 'Help',
           'tabs.deleteTabs' => TranslationOverrides.string(_root.$meta, 'tabs.deleteTabs', {}) ?? 'Delete tabs',
+          'tabs.deleteDuplicateTabs' => TranslationOverrides.string(_root.$meta, 'tabs.deleteDuplicateTabs', {}) ?? 'Delete duplicate tabs',
+          'tabs.deleteDuplicateTabsQuestion' =>
+            TranslationOverrides.string(_root.$meta, 'tabs.deleteDuplicateTabsQuestion', {}) ??
+                'Duplicate tabs found. Select tabs which you want to keep in every group:',
+          'tabs.keepFirstDuplicateTabs' => TranslationOverrides.string(_root.$meta, 'tabs.keepFirstDuplicateTabs', {}) ?? 'Keep first',
+          'tabs.keepLastDuplicateTabs' => TranslationOverrides.string(_root.$meta, 'tabs.keepLastDuplicateTabs', {}) ?? 'Keep last',
+          'tabs.skipDuplicateTabDelete' => TranslationOverrides.string(_root.$meta, 'tabs.skipDuplicateTabDelete', {}) ?? 'Skip',
           'tabs.shuffleTabs' => TranslationOverrides.string(_root.$meta, 'tabs.shuffleTabs', {}) ?? 'Shuffle tabs',
           'tabs.tabRandomlyShuffled' => TranslationOverrides.string(_root.$meta, 'tabs.tabRandomlyShuffled', {}) ?? 'Tab randomly shuffled',
           'tabs.tabOrderSaved' => TranslationOverrides.string(_root.$meta, 'tabs.tabOrderSaved', {}) ?? 'Tab order saved',
@@ -5746,6 +5773,9 @@ extension on Translations {
           'settings.video.backendDefaultHelp' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.backendDefaultHelp', {}) ??
                 'Based on exoplayer. Has best device compatibility, may have issues with 4K videos, some codecs or older devices',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.video.backendMPVHelp' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.backendMPVHelp', {}) ??
                 'Based on libmpv, has advanced settings which may help fix problems with some codecs/devices\n[MAY CAUSE CRASHES]',
@@ -5758,9 +5788,6 @@ extension on Translations {
           'settings.video.mpvUseHardwareAcceleration' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.mpvUseHardwareAcceleration', {}) ?? 'MPV: use hardware acceleration',
           'settings.video.mpvVO' => TranslationOverrides.string(_root.$meta, 'settings.video.mpvVO', {}) ?? 'MPV: VO',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.video.mpvHWDEC' => TranslationOverrides.string(_root.$meta, 'settings.video.mpvHWDEC', {}) ?? 'MPV: HWDEC',
           'settings.video.videoCacheMode' => TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheMode', {}) ?? 'Video cache mode',
           'settings.video.cacheModes.title' => TranslationOverrides.string(_root.$meta, 'settings.video.cacheModes.title', {}) ?? 'Video cache modes',
@@ -6172,6 +6199,7 @@ extension on Translations {
                 '[Warning]: On desktop Stream mode can work incorrectly for some Boorus.',
           'settings.cache.deleteCacheAfter' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.deleteCacheAfter', {}) ?? 'Delete cache after:',
+          'settings.cache.neverDeleteDuration' => TranslationOverrides.string(_root.$meta, 'settings.cache.neverDeleteDuration', {}) ?? 'Never',
           'settings.cache.cacheSizeLimit' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.cacheSizeLimit', {}) ?? 'Cache size Limit (in GB)',
           'settings.cache.maximumTotalCacheSize' =>
@@ -6673,6 +6701,9 @@ extension on Translations {
           'desktopHome.save' => TranslationOverrides.string(_root.$meta, 'desktopHome.save', {}) ?? 'Save',
           'desktopHome.noItemsSelected' => TranslationOverrides.string(_root.$meta, 'desktopHome.noItemsSelected', {}) ?? 'No items selected',
           'galleryView.noItems' => TranslationOverrides.string(_root.$meta, 'galleryView.noItems', {}) ?? 'No items',
+          _ => null,
+        } ??
+        switch (path) {
           'galleryView.noItemSelected' => TranslationOverrides.string(_root.$meta, 'galleryView.noItemSelected', {}) ?? 'No item selected',
           'galleryView.close' => TranslationOverrides.string(_root.$meta, 'galleryView.close', {}) ?? 'Close',
           'mediaPreviews.noBooruConfigsFound' =>
@@ -6680,9 +6711,6 @@ extension on Translations {
           'mediaPreviews.addNewBooru' => TranslationOverrides.string(_root.$meta, 'mediaPreviews.addNewBooru', {}) ?? 'Add new Booru',
           'mediaPreviews.help' => TranslationOverrides.string(_root.$meta, 'mediaPreviews.help', {}) ?? 'Help',
           'mediaPreviews.settings' => TranslationOverrides.string(_root.$meta, 'mediaPreviews.settings', {}) ?? 'Settings',
-          _ => null,
-        } ??
-        switch (path) {
           'mediaPreviews.restoringPreviousSession' =>
             TranslationOverrides.string(_root.$meta, 'mediaPreviews.restoringPreviousSession', {}) ?? 'Restoring previous session…',
           'mediaPreviews.copiedFileURL' =>

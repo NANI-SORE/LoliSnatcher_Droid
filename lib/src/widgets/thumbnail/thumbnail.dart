@@ -53,6 +53,7 @@ class _ThumbnailState extends State<Thumbnail> {
   final ValueNotifier<bool> isFailed = ValueNotifier(false);
   final ValueNotifier<bool> isLoaded = ValueNotifier(false);
   final ValueNotifier<bool> isLoadedExtra = ValueNotifier(false);
+  final ValueNotifier<bool> useExtra = ValueNotifier(false);
   final ValueNotifier<bool> failedRendering = ValueNotifier(false);
   final ValueNotifier<String?> errorCode = ValueNotifier(null);
   CancelToken? mainCancelToken, extraCancelToken, loadItemCancelToken;
@@ -146,7 +147,7 @@ class _ThumbnailState extends State<Thumbnail> {
           );
 
     // on desktop devicePixelRatio is not working?
-    final bool shouldResize = (thumbWidth != null || thumbHeight != null) && !SettingsHandler.isDesktopPlatform;
+    final bool shouldResize = (thumbWidth != null || thumbHeight != null) && !PlatformExt.isDesktop;
     final bool shouldPixelate = widget.item.isHidden && SX.shitDevice.value;
 
     if (shouldResize || shouldPixelate) {
@@ -262,6 +263,7 @@ class _ThumbnailState extends State<Thumbnail> {
         ? widget.item.thumbnailURL
         : (!isSampleGif || isGifSampleNotAllowed ? widget.item.sampleURL : widget.item.thumbnailURL);
     thumbFolder = (isThumbQuality == true || thumbURL == widget.item.thumbnailURL) ? 'thumbnails' : 'samples';
+    useExtra.value = isThumbQuality == false && !widget.item.isHidden && !SX.shitDevice.value;
 
     // delay loading a little to improve performance when scrolling fast, ignore delay if it's a standalone widget (i.e. not in a list)
     debounceLoading = Timer(
@@ -274,8 +276,6 @@ class _ThumbnailState extends State<Thumbnail> {
   Future<void> startDownloading({
     bool withCaptchaCheck = false,
   }) async {
-    final bool useExtra = isThumbQuality == false && !widget.item.isHidden && !SX.shitDevice.value;
-
     mainProvider.value = await getImageProvider(
       true,
       withCaptchaCheck: withCaptchaCheck,
@@ -305,7 +305,7 @@ class _ThumbnailState extends State<Thumbnail> {
     );
     mainImageStream!.addListener(mainImageListener!);
 
-    if (useExtra) {
+    if (useExtra.value) {
       extraProvider.value = await getImageProvider(false);
       extraImageStream?.removeListener(extraImageListener!);
       extraImageStream = extraProvider.value!.resolve(ImageConfiguration.empty);
@@ -450,8 +450,6 @@ class _ThumbnailState extends State<Thumbnail> {
         final double iconSize =
             (constraints.maxHeight < constraints.maxWidth ? constraints.maxHeight : constraints.maxWidth) * 0.75;
 
-        final bool useExtra = isThumbQuality == false && !widget.item.isHidden && !SX.shitDevice.value;
-
         final double blurAmount = (SettingsHandler.instance.blurImages && !widget.isStandalone)
             ? 40
             : max(constraints.maxWidth * (widget.isStandalone ? 0.1 : 0.06), 10);
@@ -470,8 +468,13 @@ class _ThumbnailState extends State<Thumbnail> {
                 },
               ),
             //
-            if (useExtra) // fetch small low quality thumbnail while loading a sample
-              ValueListenableBuilder(
+            ValueListenableBuilder(
+              valueListenable: useExtra,
+              builder: (context, useExtra, child) {
+                // fetch small low quality thumbnail while loading a sample
+                return useExtra ? child! : const SizedBox.shrink();
+              },
+              child: ValueListenableBuilder(
                 valueListenable: isLoadedExtra,
                 builder: (context, isLoadedExtra, child) {
                   return AnimatedOpacity(
@@ -523,6 +526,7 @@ class _ThumbnailState extends State<Thumbnail> {
                   ),
                 ),
               ),
+            ),
             //
             ValueListenableBuilder(
               valueListenable: isLoaded,

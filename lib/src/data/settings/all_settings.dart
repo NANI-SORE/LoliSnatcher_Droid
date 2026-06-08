@@ -6,7 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:fvp/fvp.dart' as fvp;
 
+import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/data/settings/app_alias.dart';
 import 'package:lolisnatcher/src/data/settings/app_mode.dart';
@@ -31,7 +33,6 @@ import 'package:lolisnatcher/src/data/settings/typed_settings.dart';
 import 'package:lolisnatcher/src/data/settings/vertical_position.dart';
 import 'package:lolisnatcher/src/data/settings/video_backend_mode.dart';
 import 'package:lolisnatcher/src/data/settings/video_cache_mode.dart';
-import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/theme_item.dart';
 import 'package:lolisnatcher/src/handlers/local_auth_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
@@ -39,17 +40,16 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/pages/settings/gallery_page.dart';
 import 'package:lolisnatcher/src/pages/settings/tags_filters_page.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
-import 'package:fvp/fvp.dart' as fvp;
-
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/http_overrides.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/confirm_button.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
-import 'package:lolisnatcher/src/widgets/settings/setting_builder.dart';
-import 'package:lolisnatcher/src/widgets/video/media_kit_video_player.dart';
 import 'package:lolisnatcher/src/widgets/settings/cache_stats_widget.dart';
+import 'package:lolisnatcher/src/widgets/settings/setting_builder.dart';
 import 'package:lolisnatcher/src/widgets/settings/toolbar_button_order_widget.dart';
+import 'package:lolisnatcher/src/widgets/video/media_kit_video_player.dart';
 
 /// Helper to create an [enumSetting] for enums using the [SettingsEnum] mixin.
 ///
@@ -105,13 +105,12 @@ T _val<T>(SettingKey key, [BuildContext? context]) {
 
 /// Human-readable label for cache duration options.
 String _cacheDurationLabel(BuildContext context, Duration d) {
-  if (d == Duration.zero) return 'Never';
-  if (d.inMinutes < 60) return '${d.inMinutes} minutes';
-  if (d.inHours < 24) return '${d.inHours} hour${d.inHours > 1 ? 's' : ''}';
-  if (d.inDays < 7) return '${d.inDays} day${d.inDays > 1 ? 's' : ''}';
-  if (d.inDays == 7) return '1 week';
-  if (d.inDays == 30) return '1 month';
-  return '${d.inDays} days';
+  switch (d) {
+    case Duration.zero:
+      return context.loc.settings.cache.neverDeleteDuration;
+    default:
+      return d.format();
+  }
 }
 
 /// Available theme options for the theme picker.
@@ -568,11 +567,7 @@ void registerAllSettings() {
         }
 
         // Parse valid buttons, ignoring unrecognized values
-        final parsed = raw
-            .whereType<String>()
-            .map(GalleryButton.fromString)
-            .whereType<GalleryButton>()
-            .toList();
+        final parsed = raw.whereType<String>().map(GalleryButton.fromString).whereType<GalleryButton>().toList();
 
         // Append any buttons not present in parsed list (future-proofing)
         for (final button in GalleryButton.values) {
@@ -789,26 +784,24 @@ void registerAllSettings() {
   registry.register(
     settingsEnumSetting<VideoBackendMode>(
       key: .videoBackendMode,
-      getDefaultValue: () => SettingsHandler.isDesktopPlatform ? VideoBackendMode.mpv : VideoBackendMode.defaultValue,
-      values: VideoBackendMode.values,
+      getDefaultValue: () => VideoBackendMode.defaultValue,
+      values: VideoBackendMode.allowedValues,
       fromString: VideoBackendMode.fromString,
       categories: [SettingCategory.video],
       isDeviceSpecific: true,
       dependsOn: [.disableVideo],
-      enabledWhen: ([BuildContext? context]) =>
-          !SettingsHandler.isDesktopPlatform && !_val<bool>(.disableVideo, context),
+      enabledWhen: ([BuildContext? context]) => !_val<bool>(.disableVideo, context),
       onChanged: (_, newValue) {
-        if (SettingsHandler.isDesktopPlatform) {
-          fvp.registerWith();
-        } else {
-          switch (newValue) {
-            case VideoBackendMode.normal:
-              MediaKitVideoPlayer.registerNative();
-            case VideoBackendMode.mpv:
-              MediaKitVideoPlayer.registerWith();
-            case VideoBackendMode.mdk:
-              fvp.registerWith();
-          }
+        switch (newValue) {
+          case VideoBackendMode.normal:
+            MediaKitVideoPlayer.registerNative();
+            break;
+          case VideoBackendMode.mpv:
+            MediaKitVideoPlayer.registerWith();
+            break;
+          case VideoBackendMode.mdk:
+            fvp.registerWith();
+            break;
         }
       },
       localization: SettingLocalization(
@@ -1219,7 +1212,7 @@ void registerAllSettings() {
       key: .cacheSize,
       getDefaultValue: () => 3,
       min: 0,
-      max: 10,
+      max: 50,
       step: 1,
       categories: [SettingCategory.cache],
       isDeviceSpecific: true,
@@ -1721,7 +1714,7 @@ void registerAllSettings() {
       step: 0.5,
       categories: [SettingCategory.interface],
       isDeviceSpecific: true,
-      enabledWhen: ([BuildContext? context]) => SettingsHandler.isDesktopPlatform,
+      enabledWhen: ([BuildContext? context]) => PlatformExt.isDesktop,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.mouseWheelScrollModifier,
       ),

@@ -16,6 +16,7 @@ class TagsManagerList extends StatelessWidget {
     required this.onRefresh,
     required this.onTap,
     required this.onSelect,
+    this.debug = false,
     super.key,
   });
 
@@ -24,6 +25,7 @@ class TagsManagerList extends StatelessWidget {
   final Future<void> Function() onRefresh;
   final void Function(Tag) onTap;
   final void Function(bool?, Tag) onSelect;
+  final bool debug;
 
   static const int defaultPageSize = 12;
 
@@ -67,6 +69,7 @@ class TagsManagerList extends StatelessWidget {
                     onSelect: (bool? value) {
                       onSelect(value, tag);
                     },
+                    debug: debug,
                   );
                 },
                 placeholderBuilder: (BuildContext context, int index) {

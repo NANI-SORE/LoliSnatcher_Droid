@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/html.dart';
 import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
 import 'package:lolisnatcher/src/widgets/common/long_press_repeater.dart';
@@ -123,7 +124,7 @@ class SettingsPageOpen {
     }
 
     final bool isTooNarrow = MediaQuery.sizeOf(context).width < 550;
-    final bool isDesktop = SX.appMode.value.isDesktop || SettingsHandler.isDesktopPlatform;
+    final bool isDesktop = SX.appMode.value.isDesktop || PlatformExt.isDesktop;
     final bool useDesktopMode = (!isTooNarrow && isDesktop && !asBottomSheet) || useFloatingDialog;
 
     dynamic result;

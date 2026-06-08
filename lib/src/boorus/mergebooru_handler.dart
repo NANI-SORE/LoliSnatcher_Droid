@@ -106,7 +106,7 @@ class MergebooruHandler extends BooruHandler {
     for (int i = 0; i < booruHandlers.length; i++) {
       final String currentTags = cleanBooruIndexesFromTags(tags, i);
       Logger.Inst().log('TAGS FOR #$i are: $currentTags', 'MergeBooruHandler', 'Search', LogTypes.booruHandlerInfo);
-      booruHandlers[i].pageNum = pageNum + booruHandlerPageNums[i];
+      booruHandlers[i].pageNum = pageNum + 1 + booruHandlerPageNums[i];
       final List<BooruItem> tmpFetched = (await booruHandlers[i].search(currentTags, null)) ?? [];
       tmpFetchedMap.addEntries([
         MapEntry(

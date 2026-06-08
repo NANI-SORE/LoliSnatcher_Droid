@@ -33,6 +33,13 @@ class _AppAliasWidgetState extends State<AppAliasWidget> {
   Future<void> _changeAppAlias(AppAlias? newAlias) async {
     if (newAlias == null || newAlias == appAlias) return;
 
+    final prevAlias = appAlias;
+    final nativeCurrentAlias = await ServiceHandler.getCurrentAlias();
+    ServiceHandler.log(
+      'PrivacyPage app alias change selected: previousSettingsAlias=${prevAlias.toJson()} '
+      'selectedAlias=${newAlias.toJson()} nativeCurrentAlias=$nativeCurrentAlias',
+    );
+
     await Future.delayed(const Duration(milliseconds: 100));
     final result = await showDialog(
       context: context,
@@ -55,22 +62,28 @@ class _AppAliasWidgetState extends State<AppAliasWidget> {
       ),
     );
 
+    ServiceHandler.log(
+      'PrivacyPage app alias restart dialog result: selectedAlias=${newAlias.toJson()} restartRequested=${result == true}',
+    );
+
     if (result == null || !result) {
       return;
     }
 
-    final prevAlias = appAlias;
     setState(() => appAlias = newAlias);
-    SX.appAlias.state.value = newAlias;
-    await settingsHandler.saveSettings(restate: false);
 
     final success = await ServiceHandler.setAppAlias(newAlias.toJson());
     if (success) {
-      await ServiceHandler.restartApp();
+      SX.appAlias.state.value = newAlias;
+      await settingsHandler.saveSettings(restate: false);
+      ServiceHandler.log('PrivacyPage app alias change succeeded: alias=${newAlias.toJson()}');
+      await ServiceHandler.restartApp(alias: newAlias.toJson());
     } else {
       setState(() => appAlias = prevAlias);
       SX.appAlias.state.value = prevAlias;
       await settingsHandler.saveSettings(restate: false);
+      await ServiceHandler.getAppAliasDiagnostics(alias: newAlias.toJson());
+      ServiceHandler.log('PrivacyPage app alias change failed: alias=${newAlias.toJson()}');
 
       if (!mounted) return;
 
