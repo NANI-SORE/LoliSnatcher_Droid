@@ -100,7 +100,8 @@ class _DebugPageState extends State<DebugPage> {
                 },
                 title: context.loc.settings.debug.showVideoStats,
               ),
-              if (kDebugMode)
+              //
+              if (kDebugMode) ...[
                 SettingsToggle(
                   value: settingsHandler.blurImages,
                   onChanged: (newValue) {
@@ -111,7 +112,18 @@ class _DebugPageState extends State<DebugPage> {
                   },
                   title: context.loc.settings.debug.blurImagesAndMuteVideosDevOnly,
                 ),
-              if (SettingsHandler.isDesktopPlatform)
+                SettingsToggle(
+                  value: settingsHandler.useImageLogging.value,
+                  onChanged: (newValue) {
+                    setState(() {
+                      settingsHandler.useImageLogging.value = newValue;
+                    });
+                  },
+                  title: 'Use Image Logging [DEV]',
+                ),
+              ],
+              //
+              if (PlatformExt.isDesktop)
                 SettingsToggle(
                   value: settingsHandler.desktopListsDrag,
                   onChanged: (newValue) {

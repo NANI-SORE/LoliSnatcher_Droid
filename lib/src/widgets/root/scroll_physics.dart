@@ -1,8 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 
 class CustomScrollBehavior extends MaterialScrollBehavior {
   const CustomScrollBehavior();
@@ -43,7 +42,7 @@ class CustomWidgetsBinding extends WidgetsFlutterBinding {
     }
   }
 
-  static bool get _shouldModifyScroll => Platform.isWindows || Platform.isLinux;
+  static bool get _shouldModifyScroll => PlatformExt.isDesktop;
 
   static WidgetsBinding ensureInitialized() {
     if (_shouldModifyScroll) {

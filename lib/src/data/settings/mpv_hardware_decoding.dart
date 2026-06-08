@@ -1,5 +1,5 @@
 import 'package:lolisnatcher/src/data/settings/settings_enum.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 
 enum MpvHardwareDecoding with SettingsEnum<MpvHardwareDecoding> {
   auto,
@@ -58,7 +58,7 @@ enum MpvHardwareDecoding with SettingsEnum<MpvHardwareDecoding> {
   }
 
   static MpvHardwareDecoding get defaultValue {
-    return SettingsHandler.isDesktopPlatform ? MpvHardwareDecoding.auto : MpvHardwareDecoding.autoSafe;
+    return PlatformExt.isDesktop ? MpvHardwareDecoding.auto : MpvHardwareDecoding.autoSafe;
   }
 
   bool get isAuto => this == MpvHardwareDecoding.auto;

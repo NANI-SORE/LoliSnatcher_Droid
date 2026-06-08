@@ -161,7 +161,7 @@ class _BooruEditState extends State<BooruEdit> {
               enableIMEPersonalizedLearning: !settingsHandler.incognitoKeyboard,
             ),
             //
-            if (Tools.isOnPlatformWithWebviewSupport)
+            if (PlatformExt.hasWebviewSupport)
               SettingsButton(
                 name: context.loc.settings.webview.openWebview,
                 subtitle: Text(context.loc.settings.webview.openWebviewTip),

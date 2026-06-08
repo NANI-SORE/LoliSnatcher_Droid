@@ -7,12 +7,16 @@ class DeleteButton extends StatelessWidget {
     this.action,
     this.returnData,
     this.withIcon = false,
+    this.text,
+    this.enabled = true,
     super.key,
   });
 
   final VoidCallback? action;
   final dynamic returnData;
   final bool withIcon;
+  final String? text;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -27,15 +31,17 @@ class DeleteButton extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        onPressed: () {
-          if (action != null) {
-            action?.call();
-          } else {
-            Navigator.of(context).pop(returnData);
-          }
-        },
+        onPressed: enabled
+            ? () {
+                if (action != null) {
+                  action?.call();
+                } else {
+                  Navigator.of(context).pop(returnData);
+                }
+              }
+            : null,
         icon: const Icon(Icons.delete_forever),
-        label: Text(context.loc.delete),
+        label: Text(text ?? context.loc.delete),
       );
     }
 
@@ -53,7 +59,7 @@ class DeleteButton extends StatelessWidget {
           Navigator.of(context).pop(returnData);
         }
       },
-      child: Text(context.loc.delete),
+      child: Text(text ?? context.loc.delete),
     );
   }
 }

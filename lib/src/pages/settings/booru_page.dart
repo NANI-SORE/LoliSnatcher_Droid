@@ -13,7 +13,6 @@ import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
-import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -65,7 +64,7 @@ class _BooruPageState extends State<BooruPage> {
   void copyBooruLink(bool withSensitiveData) {
     Navigator.of(context).pop(true); // remove dialog
     final String link = selectedBooru?.toLink(withSensitiveData) ?? '';
-    if (SettingsHandler.isDesktopPlatform) {
+    if (PlatformExt.isDesktop) {
       ClipboardUtils.copyTextToClipboard(link, subtitle: '');
     } else if (Platform.isAndroid) {
       ServiceHandler.loadShareTextIntent(link);
@@ -343,7 +342,7 @@ class _BooruPageState extends State<BooruPage> {
   }
 
   Widget webviewButton() {
-    if (BooruType.saveable.contains(selectedBooru?.type) && Tools.isOnPlatformWithWebviewSupport) {
+    if (BooruType.saveable.contains(selectedBooru?.type) && PlatformExt.hasWebviewSupport) {
       // TODO add help button and explain how to properly setup cookies?
       return SettingsButton(
         name: context.loc.settings.webview.openWebview,

@@ -1195,8 +1195,7 @@ class _TagText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color? color = tag.getColour();
-    color = color == Colors.transparent ? null : color;
+    final Color color = tag.getColour() ?? Theme.of(context).colorScheme.onSurface;
     final basicStyle = TextStyle(
       fontSize: 14,
       fontWeight: filterText?.isNotEmpty == true ? FontWeight.w400 : FontWeight.w600,
@@ -1221,7 +1220,7 @@ class _TagText extends StatelessWidget {
             TextSpan(
               text: filterText,
               style: fullStyle.copyWith(
-                backgroundColor: color?.withValues(alpha: 0.1),
+                backgroundColor: color.withValues(alpha: 0.1),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1261,297 +1260,335 @@ Future<void> showTagDialog({
   final searchHandler = SearchHandler.instance;
   final tagHandler = TagHandler.instance;
 
+  final controller = ScrollController();
+
   await showDialog(
     context: context,
     routeSettings: RouteSettings(name: 'tagDialog/$tag'),
     builder: (BuildContext context) {
       return SettingsDialog(
-        contentPadding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-        contentItems: [
-          SizedBox(
-            height: 60,
-            width: MediaQuery.sizeOf(context).width,
-            child: ListTile(
-              title: MarqueeText(
-                key: ValueKey(tag),
-                text: tag,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-                isExpanded: false,
-              ),
-            ),
-          ),
-          Row(
-            children: [
-              Container(
-                width: 6,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: tagHandler.getTag(tag).getColour(),
-                  borderRadius: BorderRadius.circular(5),
+        contentPadding: EdgeInsets.zero,
+        scrollable: false,
+        content: Column(
+          mainAxisSize: .min,
+          children: [
+            Container(
+              height: 50,
+              width: MediaQuery.sizeOf(context).width,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: ListTile(
+                title: MarqueeText(
+                  key: ValueKey(tag),
+                  text: tag,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  isExpanded: false,
                 ),
               ),
-              const SizedBox(width: 10),
-              Text(
-                tagHandler.getTag(tag).tagType.locName,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          //
-          TagContentPreview(
-            tag: tag,
-            boorus: handler.booru.type?.isMerge == true
-                ? [
-                    ...(handler as MergebooruHandler).booruHandlers.map((e) => e.booru),
-                  ]
-                : [handler.booru],
-            parentTab: searchHandler.currentTab,
-          ),
-          //
-          ListTile(
-            leading: Icon(
-              Icons.copy,
-              color: Theme.of(context).iconTheme.color,
             ),
-            title: Text(context.loc.tagView.copy),
-            onTap: () {
-              ClipboardUtils.copyTextToClipboard(tag);
+            Padding(
+              padding: const EdgeInsets.only(left: 30),
+              child: Builder(
+                builder: (_) {
+                  final t = tagHandler.getTag(tag);
 
-              Navigator.of(context).pop();
-            },
-          ),
-          //
-          if (isInSearch)
-            ListTile(
-              leading: Icon(
-                Icons.delete_outline,
-                color: Theme.of(context).iconTheme.color,
-              ),
-              title: Text(context.loc.tagView.removeFromSearch),
-              onTap: () {
-                searchHandler.removeTagFromSearch(tag);
-                Navigator.of(context).pop();
-              },
-            )
-          else ...[
-            ListTile(
-              leading: const Icon(Icons.add, color: Colors.green),
-              title: Text(context.loc.tagView.addToSearch),
-              onTap: () {
-                searchHandler.addTagToSearch(tag);
-
-                FlashElements.showSnackbar(
-                  context: context,
-                  duration: const Duration(seconds: 2),
-                  title: Text(
-                    context.loc.tagView.addedToSearchBar,
-                    style: const TextStyle(fontSize: 20),
-                  ),
-                  content: Text(
-                    tag,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  leadingIcon: Icons.add,
-                  sideColor: Colors.green,
-                );
-
-                Navigator.of(context).pop();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.remove_rounded, color: Colors.red),
-              title: Text(context.loc.tagView.excludeFromSearch),
-              onTap: () {
-                searchHandler.addTagToSearch('-$tag');
-
-                FlashElements.showSnackbar(
-                  context: context,
-                  duration: const Duration(seconds: 2),
-                  title: Text(
-                    context.loc.tagView.exclusionAddedToSearchBar,
-                    style: const TextStyle(fontSize: 20),
-                  ),
-                  content: Text(
-                    tag,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  leadingIcon: Icons.add,
-                  sideColor: Colors.green,
-                );
-
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-          //
-          if (!isHidden && !isMarked)
-            ListTile(
-              leading: const Icon(Icons.star, color: Colors.yellow),
-              title: Text(context.loc.tagView.addToMarked),
-              onTap: () {
-                settingsHandler.addTagToList('marked', tag);
-                searchHandler.filterCurrentFetched();
-                handler.refilterAll();
-                onUpdate();
-                Navigator.of(context).pop(true);
-              },
-            ),
-          if (!isHidden && !isMarked)
-            ListTile(
-              leading: const Icon(CupertinoIcons.eye_slash, color: Colors.red),
-              title: Text(context.loc.tagView.addToHidden),
-              onTap: () {
-                settingsHandler.addTagToList('hidden', tag);
-                searchHandler.filterCurrentFetched();
-                handler.refilterAll();
-                onUpdate();
-                Navigator.of(context).pop();
-              },
-            ),
-          if (isMarked)
-            ListTile(
-              leading: Icon(
-                Icons.star_border,
-                color: Theme.of(context).iconTheme.color,
-              ),
-              title: Text(context.loc.tagView.removeFromMarked),
-              onTap: () {
-                settingsHandler.removeTagFromList('marked', tag);
-                onUpdate();
-                Navigator.of(context).pop();
-              },
-            ),
-          if (isHidden)
-            ListTile(
-              leading: Icon(
-                CupertinoIcons.eye_slash,
-                color: Theme.of(context).iconTheme.color,
-              ),
-              title: Text(context.loc.tagView.removeFromHidden),
-              onTap: () {
-                settingsHandler.removeTagFromList('hidden', tag);
-                onUpdate();
-                Navigator.of(context).pop();
-              },
-            ),
-          //
-          FutureBuilder<PinnedTag?>(
-            future: settingsHandler.dbHandler.getPinnedTag(
-              tag,
-              booruType: searchHandler.currentBooru.type?.name,
-              booruName: searchHandler.currentBooru.name,
-            ),
-            builder: (_, snapshot) {
-              final isPinned = snapshot.data != null;
-              final pinnedTag = snapshot.data;
-
-              void reopenDialog() {
-                Navigator.of(context).pop();
-                showTagDialog(
-                  context: context,
-                  tag: tag,
-                  handler: handler,
-                  isHidden: isHidden,
-                  isMarked: isMarked,
-                  isInSearch: isInSearch,
-                  hasTabWithTag: hasTabWithTag,
-                  onUpdate: onUpdate,
-                );
-              }
-
-              return ListTile(
-                title: Text(isPinned ? context.loc.pinnedTags.unpinTag : context.loc.pinnedTags.pinTag),
-                leading: Icon(isPinned ? Icons.push_pin : Icons.push_pin_outlined),
-                onTap: () async {
-                  if (isPinned && pinnedTag != null) {
-                    await showUnpinTagDialog(
-                      context,
-                      tag,
-                      pinnedTag,
-                      () {},
-                    );
-                  } else {
-                    await showPinTagDialog(
-                      context,
-                      tag,
-                      searchHandler.currentBooru,
-                      () {},
-                    );
-                  }
-                  reopenDialog();
+                  return Row(
+                    children: [
+                      if (!t.tagType.isNone)
+                        Container(
+                          width: 6,
+                          height: 24,
+                          margin: const EdgeInsets.only(right: 10),
+                          decoration: BoxDecoration(
+                            color: t.getColour(),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                        ),
+                      Text(
+                        t.tagType.locName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  );
                 },
-              );
-            },
-          ),
-          //
-          if (hasTabWithTag.hasTagInAnyForm)
-            ListTile(
-              leading: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(
-                    CupertinoIcons.doc_on_doc,
-                    color: Theme.of(context).iconTheme.color,
-                  ),
+              ),
+            ),
+            //
+            Flexible(
+              child: Scrollbar(
+                controller: controller,
+                thumbVisibility: false,
+                interactive: true,
+                child: FadingEdgeScrollView.fromSingleChildScrollView(
+                  child: SingleChildScrollView(
+                    controller: controller,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: ListBody(
+                      children: [
+                        TagContentPreview(
+                          tag: tag,
+                          boorus: handler.booru.type?.isMerge == true
+                              ? [
+                                  ...(handler as MergebooruHandler).booruHandlers.map((e) => e.booru),
+                                ]
+                              : [handler.booru],
+                          parentTab: searchHandler.currentTab,
+                        ),
+                        //
+                        ListTile(
+                          leading: Icon(
+                            Icons.copy,
+                            color: Theme.of(context).iconTheme.color,
+                          ),
+                          title: Text(context.loc.tagView.copy),
+                          onTap: () {
+                            ClipboardUtils.copyTextToClipboard(tag);
 
-                  Positioned(
-                    right: -5,
-                    top: -5,
-                    child: Icon(
-                      Icons.circle,
-                      size: 6,
-                      color: hasTabWithTag.color(context),
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                        //
+                        if (isInSearch)
+                          ListTile(
+                            leading: Icon(
+                              Icons.delete_outline,
+                              color: Theme.of(context).iconTheme.color,
+                            ),
+                            title: Text(context.loc.tagView.removeFromSearch),
+                            onTap: () {
+                              searchHandler.removeTagFromSearch(tag);
+                              Navigator.of(context).pop();
+                            },
+                          )
+                        else ...[
+                          ListTile(
+                            leading: const Icon(Icons.add, color: Colors.green),
+                            title: Text(context.loc.tagView.addToSearch),
+                            onTap: () {
+                              searchHandler.addTagToSearch(tag);
+
+                              FlashElements.showSnackbar(
+                                context: context,
+                                duration: const Duration(seconds: 2),
+                                title: Text(
+                                  context.loc.tagView.addedToSearchBar,
+                                  style: const TextStyle(fontSize: 20),
+                                ),
+                                content: Text(
+                                  tag,
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                                leadingIcon: Icons.add,
+                                sideColor: Colors.green,
+                              );
+
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.remove_rounded, color: Colors.red),
+                            title: Text(context.loc.tagView.excludeFromSearch),
+                            onTap: () {
+                              searchHandler.addTagToSearch('-$tag');
+
+                              FlashElements.showSnackbar(
+                                context: context,
+                                duration: const Duration(seconds: 2),
+                                title: Text(
+                                  context.loc.tagView.exclusionAddedToSearchBar,
+                                  style: const TextStyle(fontSize: 20),
+                                ),
+                                content: Text(
+                                  tag,
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                                leadingIcon: Icons.add,
+                                sideColor: Colors.green,
+                              );
+
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        ],
+                        //
+                        if (!isHidden && !isMarked)
+                          ListTile(
+                            leading: const Icon(Icons.star, color: Colors.yellow),
+                            title: Text(context.loc.tagView.addToMarked),
+                            onTap: () {
+                              settingsHandler.addTagToList('marked', tag);
+                              searchHandler.filterCurrentFetched();
+                              handler.refilterAll();
+                              onUpdate();
+                              Navigator.of(context).pop(true);
+                            },
+                          ),
+                        if (!isHidden && !isMarked)
+                          ListTile(
+                            leading: const Icon(CupertinoIcons.eye_slash, color: Colors.red),
+                            title: Text(context.loc.tagView.addToHidden),
+                            onTap: () {
+                              settingsHandler.addTagToList('hidden', tag);
+                              searchHandler.filterCurrentFetched();
+                              handler.refilterAll();
+                              onUpdate();
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        if (isMarked)
+                          ListTile(
+                            leading: Icon(
+                              Icons.star_border,
+                              color: Theme.of(context).iconTheme.color,
+                            ),
+                            title: Text(context.loc.tagView.removeFromMarked),
+                            onTap: () {
+                              settingsHandler.removeTagFromList('marked', tag);
+                              onUpdate();
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        if (isHidden)
+                          ListTile(
+                            leading: Icon(
+                              CupertinoIcons.eye_slash,
+                              color: Theme.of(context).iconTheme.color,
+                            ),
+                            title: Text(context.loc.tagView.removeFromHidden),
+                            onTap: () {
+                              settingsHandler.removeTagFromList('hidden', tag);
+                              onUpdate();
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        //
+                        FutureBuilder<PinnedTag?>(
+                          future: settingsHandler.dbHandler.getPinnedTag(
+                            tag,
+                            booruType: searchHandler.currentBooru.type?.name,
+                            booruName: searchHandler.currentBooru.name,
+                          ),
+                          builder: (_, snapshot) {
+                            final isPinned = snapshot.data != null;
+                            final pinnedTag = snapshot.data;
+
+                            void reopenDialog() {
+                              Navigator.of(context).pop();
+                              showTagDialog(
+                                context: context,
+                                tag: tag,
+                                handler: handler,
+                                isHidden: isHidden,
+                                isMarked: isMarked,
+                                isInSearch: isInSearch,
+                                hasTabWithTag: hasTabWithTag,
+                                onUpdate: onUpdate,
+                              );
+                            }
+
+                            return ListTile(
+                              title: Text(isPinned ? context.loc.pinnedTags.unpinTag : context.loc.pinnedTags.pinTag),
+                              leading: Icon(isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+                              onTap: () async {
+                                if (isPinned && pinnedTag != null) {
+                                  await showUnpinTagDialog(
+                                    context,
+                                    tag,
+                                    pinnedTag,
+                                    () {},
+                                  );
+                                } else {
+                                  await showPinTagDialog(
+                                    context,
+                                    tag,
+                                    searchHandler.currentBooru,
+                                    () {},
+                                  );
+                                }
+                                reopenDialog();
+                              },
+                            );
+                          },
+                        ),
+                        //
+                        if (hasTabWithTag.hasTagInAnyForm)
+                          ListTile(
+                            leading: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Icon(
+                                  CupertinoIcons.doc_on_doc,
+                                  color: Theme.of(context).iconTheme.color,
+                                ),
+
+                                Positioned(
+                                  right: -5,
+                                  top: -5,
+                                  child: Icon(
+                                    Icons.circle,
+                                    size: 6,
+                                    color: hasTabWithTag.color(context),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            title: Text(context.loc.tagView.relatedTabs),
+                            onTap: () => showRelatedTabsDialog(context, tag),
+                          ),
+                        ListTile(
+                          leading: Icon(
+                            Icons.edit,
+                            color: Theme.of(context).iconTheme.color,
+                          ),
+                          title: Text(context.loc.tagView.editTag),
+                          onTap: () async {
+                            Navigator.of(context).pop();
+                            final item = tagHandler.getTag(tag);
+                            await showDialog(
+                              context: context,
+                              builder: (context) => TagsManagerListItemDialog(
+                                tag: item,
+                                onChangedType: (TagType? newValue) {
+                                  if (newValue != null && item.tagType != newValue) {
+                                    item.tagType = newValue;
+                                    tagHandler.putTag(
+                                      item,
+                                      dbEnabled: settingsHandler.dbEnabled,
+                                      preferTypeIfNone: false,
+                                    );
+                                    onUpdate();
+                                  }
+                                },
+                              ),
+                            );
+                            onUpdate();
+                          },
+                        ),
+                        //
+                        ListTile(
+                          leading: Icon(
+                            Icons.cancel_outlined,
+                            color: Theme.of(context).iconTheme.color,
+                          ),
+                          title: Text(context.loc.close),
+                          onTap: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-              title: Text(context.loc.tagView.relatedTabs),
-              onTap: () => showRelatedTabsDialog(context, tag),
-            ),
-          ListTile(
-            leading: Icon(
-              Icons.edit,
-              color: Theme.of(context).iconTheme.color,
-            ),
-            title: Text(context.loc.tagView.editTag),
-            onTap: () async {
-              Navigator.of(context).pop();
-              final item = tagHandler.getTag(tag);
-              await showDialog(
-                context: context,
-                builder: (context) => TagsManagerListItemDialog(
-                  tag: item,
-                  onChangedType: (TagType? newValue) {
-                    if (newValue != null && item.tagType != newValue) {
-                      item.tagType = newValue;
-                      tagHandler.putTag(item, dbEnabled: settingsHandler.dbEnabled);
-                      onUpdate();
-                    }
-                  },
                 ),
-              );
-              onUpdate();
-            },
-          ),
-          //
-          ListTile(
-            leading: Icon(
-              Icons.cancel_outlined,
-              color: Theme.of(context).iconTheme.color,
+              ),
             ),
-            title: Text(context.loc.close),
-            onTap: () {
-              Navigator.of(context).pop();
-            },
-          ),
-        ],
+          ],
+        ),
       );
     },
   );
@@ -2001,8 +2038,7 @@ class _TagContentPreviewState extends State<TagContentPreview> {
                     ? null
                     : Container(
                         width: context.mediaSize.width,
-                        height: 52,
-                        margin: const EdgeInsets.only(top: 8),
+                        margin: const EdgeInsets.only(top: 4),
                         child: SettingsBooruDropdown(
                           title: context.loc.booru,
                           placeholder: context.loc.tagView.selectBooruToLoad,
@@ -2040,148 +2076,156 @@ class _TagContentPreviewState extends State<TagContentPreview> {
                       onTap: errorString.isNotEmpty ? () => loadPreview(refresh: true) : null,
                     )
                   : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: .min,
+                      crossAxisAlignment: .start,
                       children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.search),
-                            const SizedBox(width: 8),
-                            Obx(() {
-                              final int count = tab!.booruHandler.totalCount.value;
-                              return AnimatedSize(
-                                duration: const Duration(milliseconds: 200),
-                                alignment: Alignment.centerLeft,
-                                child: Column(
-                                  mainAxisSize: .min,
-                                  crossAxisAlignment: .start,
-                                  children: [
-                                    Text(context.loc.tagView.preview),
-                                    if (count > 0)
-                                      Text(
-                                        count.toFormattedString(),
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: Theme.of(context).textTheme.bodySmall!.color!.withValues(alpha: 0.66),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              );
-                            }),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              onPressed: () => loadPreview(refresh: true),
-                              icon: const Icon(Icons.refresh),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  tab = null;
-                                });
-                              },
-                              icon: const Icon(Icons.close),
-                            ),
-                            const Spacer(),
-                            if (widget.parentTab != null)
-                              IconButton(
-                                icon: const Icon(Icons.list),
-                                onPressed: showTagPreviewsListDialog,
-                              ),
-                            Builder(
-                              builder: (context) {
-                                final HasTabWithTagResult hasTabWithTag = SearchHandler.instance.hasTabWithTag(
-                                  widget.tag,
-                                  customBooru: selectedBooru,
-                                );
-
-                                return IconButton(
-                                  icon: Stack(
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Row(
+                            mainAxisSize: .min,
+                            children: [
+                              const Icon(Icons.search),
+                              const SizedBox(width: 8),
+                              Obx(() {
+                                final int count = tab!.booruHandler.totalCount.value;
+                                return AnimatedSize(
+                                  duration: const Duration(milliseconds: 200),
+                                  alignment: Alignment.centerLeft,
+                                  child: Column(
+                                    mainAxisSize: .min,
+                                    crossAxisAlignment: .start,
                                     children: [
-                                      const Icon(Icons.fiber_new),
-                                      if (hasTabWithTag.hasTagInAnyForm)
-                                        Positioned(
-                                          right: 0,
-                                          top: 0,
-                                          child: Icon(
-                                            Icons.circle,
-                                            size: 6,
-                                            color: hasTabWithTag.color(context),
+                                      Text(context.loc.tagView.preview),
+                                      if (count > 0)
+                                        Text(
+                                          count.toFormattedString(),
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            color: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall!.color!.withValues(alpha: 0.66),
                                           ),
                                         ),
                                     ],
                                   ),
-                                  onPressed: () {
-                                    SearchHandler.instance.addTabByString(
-                                      widget.tag,
-                                      customBooru: selectedBooru,
-                                    );
+                                );
+                              }),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                onPressed: () => loadPreview(refresh: true),
+                                icon: const Icon(Icons.refresh),
+                              ),
+                              const SizedBox(width: 2),
+                              IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    tab = null;
+                                    selectedBooru = null;
+                                  });
+                                },
+                                icon: const Icon(Icons.close),
+                              ),
+                              const Spacer(),
+                              if (widget.parentTab != null)
+                                IconButton(
+                                  icon: const Icon(Icons.list),
+                                  onPressed: showTagPreviewsListDialog,
+                                ),
+                              Builder(
+                                builder: (context) {
+                                  final HasTabWithTagResult hasTabWithTag = SearchHandler.instance.hasTabWithTag(
+                                    widget.tag,
+                                    customBooru: selectedBooru,
+                                  );
 
-                                    FlashElements.showSnackbar(
-                                      context: context,
-                                      isKeyUnique: true,
-                                      key: 'added_new_tab',
-                                      duration: const Duration(seconds: 2),
-                                      title: Text(
-                                        context.loc.tagView.addedNewTab,
-                                        style: const TextStyle(fontSize: 20),
-                                      ),
-                                      content: Text(widget.tag, style: const TextStyle(fontSize: 16)),
-                                      leadingIcon: Icons.fiber_new,
-                                      sideColor: Colors.green,
-                                      primaryActionBuilder: (context, controller) {
-                                        return Row(
-                                          children: [
-                                            IconButton(
-                                              onPressed: () {
-                                                ServiceHandler.vibrate();
-                                                if (settingsHandler.appMode.value.isMobile) {
-                                                  Navigator.of(context).popUntil((r) => r.isFirst); // exit viewer
-                                                }
-                                                WidgetsBinding.instance.addPostFrameCallback((_) {
-                                                  SearchHandler.instance.changeTabIndex(
-                                                    SearchHandler.instance.tabs.length - 1,
-                                                  );
-                                                });
-                                                controller.dismiss();
-                                              },
-                                              icon: Icon(
-                                                Icons.arrow_forward_rounded,
-                                                color: Theme.of(context).colorScheme.onSurface,
-                                              ),
+                                  return IconButton(
+                                    icon: Stack(
+                                      children: [
+                                        const Icon(Icons.fiber_new),
+                                        if (hasTabWithTag.hasTagInAnyForm)
+                                          Positioned(
+                                            right: 0,
+                                            top: 0,
+                                            child: Icon(
+                                              Icons.circle,
+                                              size: 6,
+                                              color: hasTabWithTag.color(context),
                                             ),
-                                            const SizedBox(width: 4),
-                                            IconButton(
-                                              onPressed: () => controller.dismiss(),
-                                              icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface),
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    );
-                                  },
-                                  onLongPress: () async {
-                                    await ServiceHandler.vibrate();
-                                    if (settingsHandler.appMode.value.isMobile) {
-                                      Navigator.of(context).popUntil((route) => route.isFirst); // exit viewer
-                                    }
-                                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                                          ),
+                                      ],
+                                    ),
+                                    onPressed: () {
                                       SearchHandler.instance.addTabByString(
                                         widget.tag,
                                         customBooru: selectedBooru,
-                                        switchToNew: true,
                                       );
-                                    });
-                                  },
-                                );
-                              },
-                            ),
-                          ],
+
+                                      FlashElements.showSnackbar(
+                                        context: context,
+                                        isKeyUnique: true,
+                                        key: 'added_new_tab',
+                                        duration: const Duration(seconds: 2),
+                                        title: Text(
+                                          context.loc.tagView.addedNewTab,
+                                          style: const TextStyle(fontSize: 20),
+                                        ),
+                                        content: Text(widget.tag, style: const TextStyle(fontSize: 16)),
+                                        leadingIcon: Icons.fiber_new,
+                                        sideColor: Colors.green,
+                                        primaryActionBuilder: (context, controller) {
+                                          return Row(
+                                            children: [
+                                              IconButton(
+                                                onPressed: () {
+                                                  ServiceHandler.vibrate();
+                                                  if (settingsHandler.appMode.value.isMobile) {
+                                                    Navigator.of(context).popUntil((r) => r.isFirst); // exit viewer
+                                                  }
+                                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                                    SearchHandler.instance.changeTabIndex(
+                                                      SearchHandler.instance.tabs.length - 1,
+                                                    );
+                                                  });
+                                                  controller.dismiss();
+                                                },
+                                                icon: Icon(
+                                                  Icons.arrow_forward_rounded,
+                                                  color: Theme.of(context).colorScheme.onSurface,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              IconButton(
+                                                onPressed: () => controller.dismiss(),
+                                                icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    },
+                                    onLongPress: () async {
+                                      await ServiceHandler.vibrate();
+                                      if (settingsHandler.appMode.value.isMobile) {
+                                        Navigator.of(context).popUntil((route) => route.isFirst); // exit viewer
+                                      }
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        SearchHandler.instance.addTabByString(
+                                          widget.tag,
+                                          customBooru: selectedBooru,
+                                          switchToNew: true,
+                                        );
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 8),
-                        SizedBox(
+                        Container(
                           width: context.mediaSize.width,
-                          height: 52,
+                          height: 60,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: SettingsBooruDropdown(
                             title: context.loc.booru,
                             placeholder: context.loc.tagView.selectBooruToLoad,

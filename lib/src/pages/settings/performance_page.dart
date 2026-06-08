@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -203,7 +201,7 @@ class _PerformancePageState extends State<PerformancePage> {
                     return context.loc.validationErrors.required;
                   } else if (parse == null) {
                     return context.loc.validationErrors.invalidNumericValue;
-                  } else if (parse > 4 && (Platform.isAndroid || Platform.isIOS || kDebugMode)) {
+                  } else if (parse > 4 && (PlatformExt.isMobile || kDebugMode)) {
                     return context.loc.validationErrors.moreThan4ColumnsWarning;
                   } else {
                     return null;
@@ -226,7 +224,7 @@ class _PerformancePageState extends State<PerformancePage> {
                     return context.loc.validationErrors.required;
                   } else if (parse == null) {
                     return context.loc.validationErrors.invalidNumericValue;
-                  } else if (parse > 8 && (Platform.isAndroid || Platform.isIOS || kDebugMode)) {
+                  } else if (parse > 8 && (PlatformExt.isMobile || kDebugMode)) {
                     return context.loc.validationErrors.moreThan8ColumnsWarning;
                   } else {
                     return null;

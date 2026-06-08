@@ -405,8 +405,7 @@ class _SaveCachePageState extends State<SaveCachePage> {
                             const Text(''),
                             Text(context.loc.settings.cache.videoCacheNoteEnable),
                             const Text(''),
-                            if (SettingsHandler.isDesktopPlatform)
-                              Text(context.loc.settings.cache.videoCacheWarningDesktop),
+                            if (PlatformExt.isDesktop) Text(context.loc.settings.cache.videoCacheWarningDesktop),
                           ],
                         );
                       },

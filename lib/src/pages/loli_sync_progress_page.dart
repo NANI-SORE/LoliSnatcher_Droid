@@ -1,5 +1,4 @@
 import 'dart:core';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 
@@ -7,6 +6,7 @@ import 'package:lolisnatcher/src/handlers/loli_sync_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/pages/loli_sync_page.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 
 class LoliSyncProgressPage extends StatefulWidget {
@@ -217,7 +217,7 @@ class _LoliSyncProgressPageState extends State<LoliSyncProgressPage> {
                     const SizedBox(height: 10),
                     Icon(widget.type == 'sender' ? Icons.sync : Icons.dns_outlined, size: 250),
                     const SizedBox(height: 10),
-                    if (Platform.isAndroid || Platform.isIOS)
+                    if (PlatformExt.isMobile)
                       SettingsToggle(
                         title: context.loc.loliSync.keepScreenAwake,
                         value: wakelocked,

@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 
 //The ServiceHandler class calls kotlin functions in MainActivity.kt
@@ -540,7 +541,7 @@ class ServiceHandler {
     }
 
     try {
-      if (Platform.isAndroid || Platform.isIOS) {
+      if (PlatformExt.isMobile) {
         await HapticFeedback.lightImpact();
       }
     } catch (e, s) {

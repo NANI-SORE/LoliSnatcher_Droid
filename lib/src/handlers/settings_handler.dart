@@ -70,8 +70,6 @@ class SettingsHandler {
 
   static void unregister() => GetIt.instance.unregister<SettingsHandler>();
 
-  static bool get isDesktopPlatform => Platform.isWindows || Platform.isLinux || Platform.isMacOS;
-
   DBHandler dbHandler = DBHandler();
 
   late Alice alice;
@@ -97,6 +95,7 @@ class SettingsHandler {
   final RxBool showPerf = false.obs;
   final RxBool showImageStats = false.obs;
   final RxBool showVideoStats = false.obs;
+  final RxBool useImageLogging = false.obs;
   bool blurImages = kDebugMode ? Constants.blurImagesDefaultDev : false;
 
   ////////////////////////////////////////////////////
@@ -132,7 +131,7 @@ class SettingsHandler {
   String proxyAddress = '';
   String proxyUsername = '';
   String proxyPassword = '';
-  VideoBackendMode videoBackendMode = isDesktopPlatform ? VideoBackendMode.mpv : VideoBackendMode.normal;
+  VideoBackendMode videoBackendMode = VideoBackendMode.defaultValue;
   MpvVideoOutput altVideoPlayerVO = MpvVideoOutput.defaultValue;
   MpvHardwareDecoding altVideoPlayerHWDEC = MpvHardwareDecoding.defaultValue;
 
@@ -366,8 +365,8 @@ class SettingsHandler {
     },
     'videoBackendMode': {
       'type': 'videoBackendMode',
-      'default': isDesktopPlatform ? VideoBackendMode.mpv : VideoBackendMode.defaultValue,
-      'options': VideoBackendMode.values,
+      'default': VideoBackendMode.defaultValue,
+      'options': VideoBackendMode.allowedValues,
     },
     'altVideoPlayerVO': {
       'type': 'mpvVideoOutput',
@@ -2373,20 +2372,16 @@ class SettingsHandler {
       postInitMessage.value = loc.init.settingUpProxy;
       await initProxy();
 
-      if (isDesktopPlatform) {
-        fvp.registerWith();
-      } else {
-        switch (videoBackendMode) {
-          case VideoBackendMode.normal:
-            MediaKitVideoPlayer.registerNative();
-            break;
-          case VideoBackendMode.mpv:
-            MediaKitVideoPlayer.registerWith();
-            break;
-          case VideoBackendMode.mdk:
-            fvp.registerWith();
-            break;
-        }
+      switch (videoBackendMode) {
+        case VideoBackendMode.normal:
+          MediaKitVideoPlayer.registerNative();
+          break;
+        case VideoBackendMode.mpv:
+          MediaKitVideoPlayer.registerWith();
+          break;
+        case VideoBackendMode.mdk:
+          fvp.registerWith();
+          break;
       }
 
       postInitMessage.value = loc.init.loadingDatabase;

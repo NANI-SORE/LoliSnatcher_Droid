@@ -7,6 +7,7 @@ import 'package:lolisnatcher/src/data/settings/mpv_video_output.dart';
 import 'package:lolisnatcher/src/data/settings/video_backend_mode.dart';
 import 'package:lolisnatcher/src/data/settings/video_cache_mode.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/video/media_kit_video_player.dart';
 
@@ -24,9 +25,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
   bool startVideosMuted = false;
   bool disableVideo = false;
   bool altVideoPlayerHwAccel = true;
-  VideoBackendMode videoBackendMode = SettingsHandler.isDesktopPlatform
-      ? VideoBackendMode.mpv
-      : VideoBackendMode.normal;
+  VideoBackendMode videoBackendMode = .defaultValue;
   late MpvVideoOutput altVideoPlayerVO;
   late MpvHardwareDecoding altVideoPlayerHWDEC;
   late VideoCacheMode videoCacheMode;
@@ -38,6 +37,10 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
     autoPlay = settingsHandler.autoPlayEnabled;
     startVideosMuted = settingsHandler.startVideosMuted;
     disableVideo = settingsHandler.disableVideo;
+
+    if (!VideoBackendMode.allowedValues.contains(settingsHandler.videoBackendMode)) {
+      settingsHandler.videoBackendMode = VideoBackendMode.defaultValue;
+    }
     videoBackendMode = settingsHandler.videoBackendMode;
     altVideoPlayerHwAccel = settingsHandler.altVideoPlayerHwAccel;
     altVideoPlayerVO = settingsHandler.altVideoPlayerVO;
@@ -49,26 +52,26 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
     settingsHandler.autoPlayEnabled = autoPlay;
     settingsHandler.startVideosMuted = startVideosMuted;
     settingsHandler.disableVideo = disableVideo;
-    settingsHandler.videoBackendMode = SettingsHandler.isDesktopPlatform ? VideoBackendMode.mpv : videoBackendMode;
+
+    if (!VideoBackendMode.allowedValues.contains(videoBackendMode)) {
+      videoBackendMode = VideoBackendMode.defaultValue;
+    }
+    settingsHandler.videoBackendMode = videoBackendMode;
     settingsHandler.altVideoPlayerHwAccel = altVideoPlayerHwAccel;
     settingsHandler.altVideoPlayerVO = altVideoPlayerVO;
     settingsHandler.altVideoPlayerHWDEC = altVideoPlayerHWDEC;
     settingsHandler.videoCacheMode = videoCacheMode;
 
-    if (SettingsHandler.isDesktopPlatform) {
-      fvp.registerWith();
-    } else {
-      switch (videoBackendMode) {
-        case VideoBackendMode.normal:
-          MediaKitVideoPlayer.registerNative();
-          break;
-        case VideoBackendMode.mpv:
-          MediaKitVideoPlayer.registerWith();
-          break;
-        case VideoBackendMode.mdk:
-          fvp.registerWith();
-          break;
-      }
+    switch (videoBackendMode) {
+      case VideoBackendMode.normal:
+        MediaKitVideoPlayer.registerNative();
+        break;
+      case VideoBackendMode.mpv:
+        MediaKitVideoPlayer.registerWith();
+        break;
+      case VideoBackendMode.mdk:
+        fvp.registerWith();
+        break;
     }
 
     await settingsHandler.saveSettings(restate: false);
@@ -137,33 +140,32 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                 name: context.loc.settings.video.experimental,
                 icon: const Icon(Icons.science),
               ),
-              if (!SettingsHandler.isDesktopPlatform)
-                SettingsDropdown(
-                  value: videoBackendMode,
-                  items: VideoBackendMode.values,
-                  itemTitleBuilder: (item) => switch (item) {
-                    VideoBackendMode.normal => context.loc.settings.video.backendDefault,
-                    VideoBackendMode.mpv => context.loc.settings.video.backendMPV,
-                    VideoBackendMode.mdk => context.loc.settings.video.backendMDK,
-                    _ => '',
-                  },
-                  itemSubtitleBuilder: (item) => switch (item) {
-                    VideoBackendMode.normal => context.loc.settings.video.backendDefaultHelp,
-                    VideoBackendMode.mpv => context.loc.settings.video.backendMPVHelp,
-                    VideoBackendMode.mdk => context.loc.settings.video.backendMDKHelp,
-                    _ => '',
-                  },
-                  onChanged: (newValue) {
-                    setState(() {
-                      videoBackendMode = newValue ?? VideoBackendMode.normal;
-                    });
-                  },
-                  title: context.loc.settings.video.videoPlayerBackend,
-                ),
+              SettingsDropdown(
+                value: videoBackendMode,
+                items: VideoBackendMode.allowedValues,
+                itemTitleBuilder: (item) => switch (item) {
+                  VideoBackendMode.normal => context.loc.settings.video.backendDefault,
+                  VideoBackendMode.mpv => context.loc.settings.video.backendMPV,
+                  VideoBackendMode.mdk => context.loc.settings.video.backendMDK,
+                  _ => '',
+                },
+                itemSubtitleBuilder: (item) => switch (item) {
+                  VideoBackendMode.normal => context.loc.settings.video.backendDefaultHelp,
+                  VideoBackendMode.mpv => context.loc.settings.video.backendMPVHelp,
+                  VideoBackendMode.mdk => context.loc.settings.video.backendMDKHelp,
+                  _ => '',
+                },
+                onChanged: (newValue) {
+                  setState(() {
+                    videoBackendMode = newValue ?? VideoBackendMode.defaultValue;
+                  });
+                },
+                title: context.loc.settings.video.videoPlayerBackend,
+              ),
 
               AnimatedSize(
                 duration: const Duration(milliseconds: 300),
-                child: (!videoBackendMode.isNormal || SettingsHandler.isDesktopPlatform)
+                child: (!videoBackendMode.isNormal)
                     ? Column(
                         children: [
                           if (videoBackendMode.isMpv) ...[
@@ -243,7 +245,7 @@ class _VideoSettingsPageState extends State<VideoSettingsPage> {
                                         const Text(''),
                                         Text(context.loc.settings.video.cacheModes.cacheNote),
                                         const Text(''),
-                                        if (SettingsHandler.isDesktopPlatform)
+                                        if (PlatformExt.isDesktop)
                                           Text(context.loc.settings.video.cacheModes.desktopWarning),
                                       ],
                                     );

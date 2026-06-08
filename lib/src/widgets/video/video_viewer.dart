@@ -9,12 +9,11 @@ import 'package:flutter/services.dart';
 
 import 'package:chewie/chewie.dart';
 import 'package:dio/dio.dart';
-import 'package:lolisnatcher/src/widgets/image/image_viewer.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:video_player/video_player.dart';
 
-import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/settings/video_cache_mode.dart';
 import 'package:lolisnatcher/src/handlers/local_auth_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
@@ -22,9 +21,11 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/services/dio_downloader.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/media_loading.dart';
 import 'package:lolisnatcher/src/widgets/common/transparent_pointer.dart';
+import 'package:lolisnatcher/src/widgets/image/image_viewer.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
 import 'package:lolisnatcher/src/widgets/video/loli_controls.dart';
 
@@ -786,7 +787,7 @@ class VideoViewerState extends State<VideoViewer> {
               child: isVideoInited
                   ? Listener(
                       onPointerSignal: (pointerSignal) {
-                        if (SettingsHandler.isDesktopPlatform && pointerSignal is PointerScrollEvent) {
+                        if (PlatformExt.isDesktop && pointerSignal is PointerScrollEvent) {
                           scrollZoomImage(pointerSignal.scrollDelta.dy);
                         }
                       },

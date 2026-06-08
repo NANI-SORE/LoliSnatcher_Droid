@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -985,7 +984,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
       ),
       // Suggestions text input
       KeyboardActions(
-        enable: settingsHandler.showSearchbarQuickActions && (Platform.isAndroid || Platform.isIOS),
+        enable: settingsHandler.showSearchbarQuickActions && PlatformExt.isMobile,
         config: buildConfig(),
         autoScroll: false,
         overscroll: 0,
@@ -1050,15 +1049,14 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
               //
               if (settingsHandler.useTopSearchbarInput)
                 const SizedBox(height: 4)
-              else if (settingsHandler.showSearchbarQuickActions && (Platform.isAndroid || Platform.isIOS))
+              else if (settingsHandler.showSearchbarQuickActions && PlatformExt.isMobile)
                 KeyboardVisibilityBuilder(
                   builder: (context, isKbVisible) {
                     return AnimatedSize(
                       duration: const Duration(milliseconds: 200),
                       child: SizedBox(
                         width: double.maxFinite,
-                        height:
-                            (isKbVisible || (suggestionTextFocusNodeHasFocus && (Platform.isAndroid || Platform.isIOS)))
+                        height: (isKbVisible || (suggestionTextFocusNodeHasFocus && PlatformExt.isMobile))
                             ? 0 // keyboardActionsHeight
                             : MediaQuery.paddingOf(context).bottom,
                         // child: ColoredBox(color: Colors.yellow.withValues(alpha: 0.2)),

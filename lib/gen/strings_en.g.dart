@@ -814,6 +814,23 @@ class Translations$tabs$en {
   /// en: 'Delete tabs'
   String get deleteTabs => TranslationOverrides.string(_root.$meta, 'tabs.deleteTabs', {}) ?? 'Delete tabs';
 
+  /// en: 'Delete duplicate tabs'
+  String get deleteDuplicateTabs => TranslationOverrides.string(_root.$meta, 'tabs.deleteDuplicateTabs', {}) ?? 'Delete duplicate tabs';
+
+  /// en: 'Duplicate tabs found. Select tabs which you want to keep in every group:'
+  String get deleteDuplicateTabsQuestion =>
+      TranslationOverrides.string(_root.$meta, 'tabs.deleteDuplicateTabsQuestion', {}) ??
+      'Duplicate tabs found. Select tabs which you want to keep in every group:';
+
+  /// en: 'Keep first'
+  String get keepFirstDuplicateTabs => TranslationOverrides.string(_root.$meta, 'tabs.keepFirstDuplicateTabs', {}) ?? 'Keep first';
+
+  /// en: 'Keep last'
+  String get keepLastDuplicateTabs => TranslationOverrides.string(_root.$meta, 'tabs.keepLastDuplicateTabs', {}) ?? 'Keep last';
+
+  /// en: 'Skip'
+  String get skipDuplicateTabDelete => TranslationOverrides.string(_root.$meta, 'tabs.skipDuplicateTabDelete', {}) ?? 'Skip';
+
   /// en: 'Shuffle tabs'
   String get shuffleTabs => TranslationOverrides.string(_root.$meta, 'tabs.shuffleTabs', {}) ?? 'Shuffle tabs';
 
@@ -5244,6 +5261,13 @@ extension on Translations {
           'tabs.sortMode' => TranslationOverrides.string(_root.$meta, 'tabs.sortMode', {}) ?? 'Sort tabs',
           'tabs.help' => TranslationOverrides.string(_root.$meta, 'tabs.help', {}) ?? 'Help',
           'tabs.deleteTabs' => TranslationOverrides.string(_root.$meta, 'tabs.deleteTabs', {}) ?? 'Delete tabs',
+          'tabs.deleteDuplicateTabs' => TranslationOverrides.string(_root.$meta, 'tabs.deleteDuplicateTabs', {}) ?? 'Delete duplicate tabs',
+          'tabs.deleteDuplicateTabsQuestion' =>
+            TranslationOverrides.string(_root.$meta, 'tabs.deleteDuplicateTabsQuestion', {}) ??
+                'Duplicate tabs found. Select tabs which you want to keep in every group:',
+          'tabs.keepFirstDuplicateTabs' => TranslationOverrides.string(_root.$meta, 'tabs.keepFirstDuplicateTabs', {}) ?? 'Keep first',
+          'tabs.keepLastDuplicateTabs' => TranslationOverrides.string(_root.$meta, 'tabs.keepLastDuplicateTabs', {}) ?? 'Keep last',
+          'tabs.skipDuplicateTabDelete' => TranslationOverrides.string(_root.$meta, 'tabs.skipDuplicateTabDelete', {}) ?? 'Skip',
           'tabs.shuffleTabs' => TranslationOverrides.string(_root.$meta, 'tabs.shuffleTabs', {}) ?? 'Shuffle tabs',
           'tabs.tabRandomlyShuffled' => TranslationOverrides.string(_root.$meta, 'tabs.tabRandomlyShuffled', {}) ?? 'Tab randomly shuffled',
           'tabs.tabOrderSaved' => TranslationOverrides.string(_root.$meta, 'tabs.tabOrderSaved', {}) ?? 'Tab order saved',
@@ -5825,6 +5849,9 @@ extension on Translations {
           'settings.viewer.shareActionValues.hydrus' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionValues.hydrus', {}) ?? 'Hydrus',
           'settings.video.title' => TranslationOverrides.string(_root.$meta, 'settings.video.title', {}) ?? 'Video',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.video.disableVideos' => TranslationOverrides.string(_root.$meta, 'settings.video.disableVideos', {}) ?? 'Disable videos',
           'settings.video.disableVideosHelp' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.disableVideosHelp', {}) ??
@@ -5833,9 +5860,6 @@ extension on Translations {
           'settings.video.startVideosMuted' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.startVideosMuted', {}) ?? 'Start videos muted',
           'settings.video.experimental' => TranslationOverrides.string(_root.$meta, 'settings.video.experimental', {}) ?? '[Experimental]',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.video.videoPlayerBackend' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.videoPlayerBackend', {}) ?? 'Video player backend',
           'settings.video.backendDefault' => TranslationOverrides.string(_root.$meta, 'settings.video.backendDefault', {}) ?? 'Default',
@@ -6760,15 +6784,15 @@ extension on Translations {
           'searchBar.selectDate' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDate', {}) ?? 'Select date',
           'searchBar.selectDatesRange' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDatesRange', {}) ?? 'Select dates range',
           'searchBar.history' => TranslationOverrides.string(_root.$meta, 'searchBar.history', {}) ?? 'History',
+          _ => null,
+        } ??
+        switch (path) {
           'searchBar.more' => TranslationOverrides.string(_root.$meta, 'searchBar.more', {}) ?? '…',
           'mobileHome.selectBooruForWebview' =>
             TranslationOverrides.string(_root.$meta, 'mobileHome.selectBooruForWebview', {}) ?? 'Select booru for webview',
           'mobileHome.lockApp' => TranslationOverrides.string(_root.$meta, 'mobileHome.lockApp', {}) ?? 'Lock app',
           'mobileHome.fileAlreadyExists' => TranslationOverrides.string(_root.$meta, 'mobileHome.fileAlreadyExists', {}) ?? 'File already exists',
           'mobileHome.failedToDownload' => TranslationOverrides.string(_root.$meta, 'mobileHome.failedToDownload', {}) ?? 'Failed to download',
-          _ => null,
-        } ??
-        switch (path) {
           'mobileHome.cancelledByUser' => TranslationOverrides.string(_root.$meta, 'mobileHome.cancelledByUser', {}) ?? 'Cancelled by user',
           'mobileHome.saveAnyway' => TranslationOverrides.string(_root.$meta, 'mobileHome.saveAnyway', {}) ?? 'Save anyway',
           'mobileHome.skip' => TranslationOverrides.string(_root.$meta, 'mobileHome.skip', {}) ?? 'Skip',

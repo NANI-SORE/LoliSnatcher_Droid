@@ -37,6 +37,7 @@ import 'package:lolisnatcher/src/pages/lockscreen_page.dart';
 import 'package:lolisnatcher/src/pages/mobile_home_page.dart';
 import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/root/dev_overlay.dart';
@@ -468,7 +469,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     }
     initedDeepLinks = true;
 
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (PlatformExt.isMobile) {
       appLinks = AppLinks();
 
       final Uri? initialLink = await appLinks!.getInitialLink();
@@ -531,7 +532,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (PlatformExt.isMobile) {
       ServiceHandler.setSystemUiVisibility(true);
 
       // force landscape orientation if enabled desktop mode on mobile device

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
@@ -415,11 +414,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                       },
                                     );
                                   } else if (isVideo) {
-                                    if (!settingsHandler.disableVideo &&
-                                        (Platform.isAndroid ||
-                                            Platform.isIOS ||
-                                            Platform.isWindows ||
-                                            Platform.isLinux)) {
+                                    if (!settingsHandler.disableVideo) {
                                       itemWidget = ValueListenableBuilder(
                                         valueListenable: page,
                                         builder: (_, pageVal, _) {

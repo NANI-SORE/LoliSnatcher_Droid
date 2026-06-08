@@ -4,7 +4,6 @@ import 'package:lolisnatcher/src/data/tag.dart';
 
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
-import 'package:lolisnatcher/src/widgets/common/marquee_text.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tf_add_dialog.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tf_edit_dialog.dart';
@@ -174,8 +173,8 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> with SingleTickerProv
             controller: tabController,
             indicatorColor: Theme.of(context).colorScheme.secondary,
             onTap: (_) => tagSearchController.clear(),
-            labelColor: Theme.of(context).colorScheme.onSecondary,
-            unselectedLabelColor: Theme.of(context).colorScheme.onSecondary.withValues(alpha: 0.66),
+            labelColor: Theme.of(context).appBarTheme.foregroundColor,
+            unselectedLabelColor: Theme.of(context).appBarTheme.foregroundColor?.withValues(alpha: 0.5),
             labelStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             unselectedLabelStyle: const TextStyle(fontSize: 16),
             isScrollable: true,
@@ -189,10 +188,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> with SingleTickerProv
                 ),
                 height: 60,
                 child: Center(
-                  child: MarqueeText(
-                    text: context.loc.settings.itemFilters.hidden,
-                    isExpanded: false,
-                  ),
+                  child: Text(context.loc.settings.itemFilters.hidden),
                 ),
               ),
               Tab(
@@ -202,10 +198,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> with SingleTickerProv
                   color: Colors.yellow,
                 ),
                 height: 60,
-                child: MarqueeText(
-                  text: context.loc.settings.itemFilters.marked,
-                  isExpanded: false,
-                ),
+                child: Text(context.loc.settings.itemFilters.marked),
               ),
               Tab(
                 icon: Icon(
@@ -214,10 +207,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> with SingleTickerProv
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
                 height: 60,
-                child: MarqueeText(
-                  text: context.loc.settings.title,
-                  isExpanded: false,
-                ),
+                child: Text(context.loc.settings.title),
               ),
             ],
           ),

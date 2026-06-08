@@ -1,5 +1,6 @@
 import 'package:lolisnatcher/src/data/settings/settings_enum.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 
 /// Used for zoomButtonPosition, changePageButtonsPosition, scrollGridButtonsPosition
 enum ButtonPosition with SettingsEnum<ButtonPosition> {
@@ -41,7 +42,7 @@ enum ButtonPosition with SettingsEnum<ButtonPosition> {
 
   /// Default for settings that are disabled on mobile by default
   static ButtonPosition get defaultValueDesktopOnly {
-    return SettingsHandler.isDesktopPlatform ? ButtonPosition.right : ButtonPosition.disabled;
+    return PlatformExt.isDesktop ? ButtonPosition.right : ButtonPosition.disabled;
   }
 
   bool get isDisabled => this == ButtonPosition.disabled;

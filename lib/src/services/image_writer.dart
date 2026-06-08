@@ -212,10 +212,12 @@ class ImageWriter {
     void Function(int, int)? onProgress,
     bool ignoreExists,
     void Function(CancelToken)? onCancelTokenCreate,
+    bool Function()? onRetryCurrent,
   ) async* {
     int snatchedCounter = 1;
     final List<BooruItem> existsList = [], failedList = [], cancelledList = [];
     for (int i = 0; i < snatched.length; i++) {
+      bool retryCurrent = false;
       await Future.delayed(Duration(milliseconds: cooldown), () async {
         final snatchResult = await write(
           snatched.elementAt(i),
@@ -228,12 +230,19 @@ class ImageWriter {
           existsList.add(snatched[i]);
         } else if (snatchResult is! String) {
           if (snatchResult is DioException && CancelToken.isCancel(snatchResult)) {
-            cancelledList.add(snatched[i]);
+            retryCurrent = onRetryCurrent?.call() ?? false;
+            if (!retryCurrent) {
+              cancelledList.add(snatched[i]);
+            }
           } else {
             failedList.add(snatched[i]);
           }
         }
       });
+      if (retryCurrent) {
+        i--;
+        continue;
+      }
       snatchedCounter++;
       yield {
         'snatched': snatchedCounter,

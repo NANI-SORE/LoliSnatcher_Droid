@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -652,15 +651,14 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
               ),
               if (settingsHandler.useTopSearchbarInput)
                 const SizedBox(height: 4)
-              else if (settingsHandler.showSearchbarQuickActions && (Platform.isAndroid || Platform.isIOS))
+              else if (settingsHandler.showSearchbarQuickActions && PlatformExt.isMobile)
                 KeyboardVisibilityBuilder(
                   builder: (context, isKbVisible) {
                     return AnimatedSize(
                       duration: const Duration(milliseconds: 200),
                       child: SizedBox(
                         width: double.infinity,
-                        height:
-                            (isKbVisible || (suggestionTextFocusNodeHasFocus && (Platform.isAndroid || Platform.isIOS)))
+                        height: (isKbVisible || (suggestionTextFocusNodeHasFocus && PlatformExt.isMobile))
                             ? 0
                             : MediaQuery.paddingOf(context).bottom,
                       ),

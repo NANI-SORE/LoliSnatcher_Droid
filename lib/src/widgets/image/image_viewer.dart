@@ -395,7 +395,7 @@ class ImageViewerState extends State<ImageViewer> {
     // scale image only if it's not an animation, scaling is allowed, not on desktop and item is not marked as noScale
     if (!widget.booruItem.mediaType.value.isAnimation &&
         !settingsHandler.disableImageScaling &&
-        !SettingsHandler.isDesktopPlatform &&
+        !PlatformExt.isDesktop &&
         !widget.booruItem.isNoScale.value &&
         (widthLimit ?? 0) > 0) {
       // resizeimage if resolution is too high (in attempt to fix crashes if multiple very HQ images are loaded), only check by width, otherwise looooooong/thin images could look bad
@@ -631,7 +631,7 @@ class ImageViewerState extends State<ImageViewer> {
 
         // Try native region decoding on Android (uses BitmapRegionDecoder)
         List<Uint8List>? nativeSlices;
-        if (!SettingsHandler.isDesktopPlatform) {
+        if (!PlatformExt.isDesktop) {
           nativeSlices = await ServiceHandler.sliceImage(cachePath, kMaxTextureHeight);
         }
 
@@ -780,7 +780,7 @@ class ImageViewerState extends State<ImageViewer> {
           //
           Listener(
             onPointerSignal: (pointerSignal) {
-              if (!isProviderLoaded || !SettingsHandler.isDesktopPlatform) {
+              if (!isProviderLoaded || !PlatformExt.isDesktop) {
                 return;
               }
               if (pointerSignal is PointerScrollEvent) {

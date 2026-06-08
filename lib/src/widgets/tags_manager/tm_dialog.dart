@@ -6,6 +6,7 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/tags_manager/tm_add_dialog.dart';
+import 'package:lolisnatcher/src/widgets/tags_manager/tm_filter.dart';
 import 'package:lolisnatcher/src/widgets/tags_manager/tm_list.dart';
 import 'package:lolisnatcher/src/widgets/tags_manager/tm_list_bottom.dart';
 import 'package:lolisnatcher/src/widgets/tags_manager/tm_list_filter.dart';
@@ -62,17 +63,7 @@ class _TagsManagerDialogState extends State<TagsManagerDialog> {
   }
 
   void filterTags() {
-    // logic of this IF repeats, because we don't need to call array filtering every time when there are no filters enabled
-    if (filterSearchController.text != '') {
-      filteredTags = tags.where((t) {
-        final String filter = filterSearchController.text.toLowerCase();
-        final bool textFilter = t.fullString.toLowerCase().contains(filter);
-        final bool typeFilter = t.tagType.toString().toLowerCase().contains(filter);
-        return textFilter || typeFilter;
-      }).toList();
-    } else {
-      filteredTags = [...tags];
-    }
+    filteredTags = filterTagsByQuery(tags, filterSearchController.text);
     filteredTags.sort(compareTags);
     setState(() {});
   }
@@ -102,23 +93,39 @@ class _TagsManagerDialogState extends State<TagsManagerDialog> {
           onChangedType: (TagType? newValue) {
             if (newValue != null && item.tagType != newValue) {
               item.tagType = newValue;
-              tagHandler.putTag(item, dbEnabled: dbEnabled);
+              tagHandler.putTag(
+                item,
+                dbEnabled: dbEnabled,
+                preferTypeIfNone: false,
+              );
               filterTags();
             }
           },
           onSetStale: () {
             item.updatedAt = 100;
-            tagHandler.putTag(item, dbEnabled: dbEnabled);
+            tagHandler.putTag(
+              item,
+              dbEnabled: dbEnabled,
+              preferTypeIfNone: true,
+            );
             filterTags();
           },
           onResetStale: () {
             item.updatedAt = DateTime.now().millisecondsSinceEpoch;
-            tagHandler.putTag(item, dbEnabled: dbEnabled);
+            tagHandler.putTag(
+              item,
+              dbEnabled: dbEnabled,
+              preferTypeIfNone: true,
+            );
             filterTags();
           },
           onSetUnstaleable: () {
             item.updatedAt = DateTime.now().millisecondsSinceEpoch * 10;
-            tagHandler.putTag(item, dbEnabled: dbEnabled);
+            tagHandler.putTag(
+              item,
+              dbEnabled: dbEnabled,
+              preferTypeIfNone: true,
+            );
             filterTags();
           },
         );
@@ -129,13 +136,15 @@ class _TagsManagerDialogState extends State<TagsManagerDialog> {
   Future<void> showAddDialog() async {
     final Tag? tag = await showDialog(
       context: context,
-      builder: (context) {
-        return const TagsManagerAddDialog();
-      },
+      builder: (_) => const TagsManagerAddDialog(),
     );
 
     if (tag != null && !tagHandler.hasTag(tag.fullString)) {
-      await tagHandler.putTag(tag, dbEnabled: settingsHandler.dbEnabled);
+      await tagHandler.putTag(
+        tag,
+        dbEnabled: settingsHandler.dbEnabled,
+        preferTypeIfNone: false,
+      );
       tags.add(tag);
       filterTags();
     }
@@ -176,6 +185,7 @@ class _TagsManagerDialogState extends State<TagsManagerDialog> {
               key: Key('tags-list-#${filteredTags.length}'),
               tags: filteredTags,
               selected: selected,
+              debug: true,
               onRefresh: () async {
                 getTags();
               },

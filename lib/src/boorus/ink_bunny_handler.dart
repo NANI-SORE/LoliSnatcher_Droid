@@ -129,7 +129,7 @@ class InkBunnyHandler extends BooruHandler {
 
   // The api doesn't give much information about the posts so we need to get their ids and then do another query to get all the data
   Future getSubmissionResponse(dynamic parsedResponse) async {
-    totalCount.value = int.parse(parsedResponse['results_count_all']);
+    totalCount.value = int.tryParse(parsedResponse['results_count_all'].toString()) ?? 0;
     final List<String> ids = [];
     for (int i = 0; i < parsedResponse['submissions'].length; i++) {
       final current = parsedResponse['submissions'][i];

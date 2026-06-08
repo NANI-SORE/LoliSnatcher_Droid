@@ -7,6 +7,7 @@ import 'package:flash/flash.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 
@@ -132,7 +133,7 @@ class FlashElements {
     final ThemeData themeData = Theme.of(contextToUse);
 
     final bool isDesktop =
-        !ignoreDesktopCheck && (SettingsHandler.instance.appMode.value.isDesktop || SettingsHandler.isDesktopPlatform);
+        !ignoreDesktopCheck && (SettingsHandler.instance.appMode.value.isDesktop || PlatformExt.isDesktop);
     final bool isTooWide = screenSize.width > 500;
     final bool isDark = themeData.brightness == Brightness.dark;
 

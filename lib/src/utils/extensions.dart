@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
@@ -215,4 +216,12 @@ extension DurationExts on Duration {
       locale: durLoc,
     );
   }
+}
+
+extension PlatformExt on Platform {
+  static bool isMobile = Platform.isAndroid || Platform.isIOS;
+
+  static bool isDesktop = Platform.isWindows || Platform.isLinux || Platform.isMacOS || Platform.isFuchsia;
+
+  static bool hasWebviewSupport = Platform.isAndroid || Platform.isIOS || Platform.isWindows || Platform.isMacOS;
 }

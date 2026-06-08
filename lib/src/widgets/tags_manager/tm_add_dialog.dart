@@ -47,6 +47,21 @@ class _TagsManagerAddDialogState extends State<TagsManagerAddDialog> {
           title: context.loc.tagsManager.type,
           titleAsLabel: true,
           drawBottomBorder: false,
+          itemBuilder: (item) => Row(
+            children: [
+              if (item != null)
+                Container(
+                  height: 24,
+                  width: 6,
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: item.getColour(),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                ),
+              Text(item == null ? 'Any' : '${item.locName} (${item.name})'),
+            ],
+          ),
         ),
       ],
       actionButtons: [

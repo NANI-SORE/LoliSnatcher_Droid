@@ -21,7 +21,7 @@ class TagsManagerListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isStale = tag.updatedAt < DateTime.now().subtract(const Duration(days: 3)).millisecondsSinceEpoch;
+    final bool isStale = tag.isStale();
     final String staleText = (isStale && debug) ? ' (stale)' : '';
 
     return Container(

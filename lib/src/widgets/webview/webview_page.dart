@@ -5,8 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 
+import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/webview/webview_navigation_controls.dart';
 import 'package:lolisnatcher/src/widgets/webview/webview_navigation_menu.dart';
@@ -60,7 +61,7 @@ class _InAppWebviewViewState extends State<InAppWebviewView> {
       javaScriptCanOpenWindowsAutomatically: true,
     );
 
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (PlatformExt.isMobile) {
       pullToRefreshController = PullToRefreshController(
         settings: PullToRefreshSettings(
           color: Colors.blue,
@@ -123,7 +124,7 @@ class _InAppWebviewViewState extends State<InAppWebviewView> {
       ),
       body: Stack(
         children: [
-          if (Tools.isOnPlatformWithWebviewSupport)
+          if (PlatformExt.hasWebviewSupport)
             InAppWebView(
               initialUrlRequest: URLRequest(url: WebUri(widget.initialUrl)),
               initialSettings: settings,

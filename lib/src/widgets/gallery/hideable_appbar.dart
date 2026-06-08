@@ -8,7 +8,8 @@ import 'package:flutter/material.dart';
 
 import 'package:dio/dio.dart';
 import 'package:external_video_player_launcher/external_video_player_launcher.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide FirstWhereOrNullExt;
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
@@ -798,7 +799,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
   }
 
   void shareTextAction(String text) {
-    if (SettingsHandler.isDesktopPlatform) {
+    if (PlatformExt.isDesktop) {
       ClipboardUtils.copyTextToClipboard(text);
     } else if (Platform.isAndroid) {
       ServiceHandler.loadShareTextIntent(text);
@@ -965,7 +966,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
 
     //
 
-    if (SettingsHandler.isDesktopPlatform) {
+    if (PlatformExt.isDesktop) {
       shareCancelToken?.cancel();
       shareCancelToken = CancelToken();
       shareProgress = 0;

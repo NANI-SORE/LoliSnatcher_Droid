@@ -11,6 +11,7 @@ import 'package:lolisnatcher/src/handlers/local_auth_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/pages/settings_page.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/mascot_image.dart';
@@ -125,7 +126,7 @@ class MainDrawer extends StatelessWidget {
                   Obx(() {
                     if (settingsHandler.booruList.isNotEmpty &&
                         searchHandler.tabs.isNotEmpty &&
-                        Tools.isOnPlatformWithWebviewSupport) {
+                        PlatformExt.hasWebviewSupport) {
                       final List<Booru> boorus = [
                         searchHandler.currentBooru,
                         ...searchHandler.currentSecondaryBoorus.value ?? <Booru>[],
@@ -199,7 +200,7 @@ class MainDrawer extends StatelessWidget {
                     return const SizedBox.shrink();
                   }),
                   //
-                  if (SettingsHandler.isDesktopPlatform)
+                  if (PlatformExt.isDesktop)
                     SettingsButton(
                       name: context.loc.closeTheApp,
                       icon: const Icon(Icons.exit_to_app),

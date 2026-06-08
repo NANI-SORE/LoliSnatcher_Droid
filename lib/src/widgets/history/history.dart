@@ -375,7 +375,8 @@ class _HistoryListState extends State<HistoryList> {
             child: MarqueeText(
               key: ValueKey(currentEntry.searchText),
               text: currentEntry.searchText,
-              style: const TextStyle(
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodyLarge?.color,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),

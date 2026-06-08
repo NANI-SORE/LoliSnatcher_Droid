@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +16,6 @@ import 'package:lolisnatcher/src/widgets/image/image_viewer.dart';
 import 'package:lolisnatcher/src/widgets/video/guess_extension_viewer.dart';
 import 'package:lolisnatcher/src/widgets/video/load_item_viewer.dart';
 import 'package:lolisnatcher/src/widgets/video/video_viewer.dart';
-import 'package:lolisnatcher/src/widgets/video/video_viewer_placeholder.dart';
 
 /// This class will listen for the value of viewedItem in searchtabs
 /// It will return an empty container if that item has no file URL.
@@ -55,25 +53,15 @@ class _DesktopImageListenerState extends State<DesktopImageListener> {
         ),
       );
     } else if (item.mediaType.value.isVideo) {
-      if (Platform.isAndroid || Platform.isIOS || Platform.isWindows || Platform.isLinux) {
-        return Obx(
-          () => VideoViewer(
-            item,
-            booru: searchHandler.currentBooru,
-            isViewed: ViewerHandler.instance.current.value?.key == item.key,
-            enableFullscreen: true,
-            key: item.key,
-          ),
-        );
-      } else {
-        return Obx(
-          () => VideoViewerPlaceholder(
-            item: item,
-            booru: searchHandler.currentBooru,
-            key: item.key,
-          ),
-        );
-      }
+      return Obx(
+        () => VideoViewer(
+          item,
+          booru: searchHandler.currentBooru,
+          isViewed: ViewerHandler.instance.current.value?.key == item.key,
+          enableFullscreen: true,
+          key: item.key,
+        ),
+      );
     } else if (item.mediaType.value.isNeedToGuess) {
       return Obx(
         () => GuessExtensionViewer(

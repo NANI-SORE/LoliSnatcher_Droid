@@ -2,6 +2,7 @@
 
 import 'package:lolisnatcher/src/data/settings/settings_enum.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 
 enum AppMode with SettingsEnum<AppMode> {
   Desktop,
@@ -37,7 +38,7 @@ enum AppMode with SettingsEnum<AppMode> {
   }
 
   static AppMode get defaultValue {
-    return SettingsHandler.isDesktopPlatform ? AppMode.Desktop : AppMode.Mobile;
+    return PlatformExt.isDesktop ? AppMode.Desktop : AppMode.Mobile;
   }
 
   @override

@@ -1,14 +1,13 @@
-import 'dart:io';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:material_color_utilities/material_color_utilities.dart';
 
 import 'package:lolisnatcher/src/data/theme_item.dart';
+import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/root/predictive_back_transition.dart';
 
 class ThemeHandler {
@@ -367,7 +366,7 @@ class ThemeHandler {
 
   ScrollbarThemeData scrollbarTheme(ColorScheme colorScheme) => ScrollbarThemeData(
     thickness: WidgetStateProperty.resolveWith((states) {
-      if (Platform.isAndroid || Platform.isIOS) {
+      if (PlatformExt.isMobile) {
         return 8;
       } else {
         final List<WidgetState> goodStates = [WidgetState.hovered, WidgetState.focused, WidgetState.pressed];
@@ -381,7 +380,7 @@ class ThemeHandler {
     }),
     interactive: true,
     thumbVisibility: WidgetStateProperty.resolveWith((states) {
-      if (Platform.isAndroid || Platform.isIOS) {
+      if (PlatformExt.isMobile) {
         return true;
       } else {
         final List<WidgetState> goodStates = [WidgetState.hovered, WidgetState.focused, WidgetState.pressed];

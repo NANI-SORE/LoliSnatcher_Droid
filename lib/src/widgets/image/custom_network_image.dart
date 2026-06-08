@@ -9,6 +9,7 @@ import 'package:flutter/painting.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_avif/flutter_avif.dart';
+import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 
 import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
@@ -123,7 +124,9 @@ class NetworkImageLoader {
     }
 
     // --- Download Logic ---
-    final client = DioNetwork.getClient(skipLogging: true);
+    final client = DioNetwork.getClient(
+      skipLogging: !SettingsHandler.instance.useImageLogging.value,
+    );
     if (withCaptchaCheck) {
       DioNetwork.captchaInterceptor(
         client,

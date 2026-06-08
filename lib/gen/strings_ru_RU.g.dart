@@ -670,6 +670,18 @@ class _Translations$tabs$ru_RU extends Translations$tabs$en {
   @override
   String get deleteTabs => TranslationOverrides.string(_root.$meta, 'tabs.deleteTabs', {}) ?? 'Удалить вкладки';
   @override
+  String get deleteDuplicateTabs => TranslationOverrides.string(_root.$meta, 'tabs.deleteDuplicateTabs', {}) ?? 'Удалить дубликаты вкладок';
+  @override
+  String get deleteDuplicateTabsQuestion =>
+      TranslationOverrides.string(_root.$meta, 'tabs.deleteDuplicateTabsQuestion', {}) ??
+      'Обнаружены дубликаты вкладок. Выбери в каждой группе вкладок те, которые ты хочешь оставить:';
+  @override
+  String get keepFirstDuplicateTabs => TranslationOverrides.string(_root.$meta, 'tabs.keepFirstDuplicateTabs', {}) ?? 'Оставить первую';
+  @override
+  String get keepLastDuplicateTabs => TranslationOverrides.string(_root.$meta, 'tabs.keepLastDuplicateTabs', {}) ?? 'Оставить последнюю';
+  @override
+  String get skipDuplicateTabDelete => TranslationOverrides.string(_root.$meta, 'tabs.skipDuplicateTabDelete', {}) ?? 'Пропустить';
+  @override
   String get shuffleTabs => TranslationOverrides.string(_root.$meta, 'tabs.shuffleTabs', {}) ?? 'Перемешать вкладки';
   @override
   String get tabRandomlyShuffled => TranslationOverrides.string(_root.$meta, 'tabs.tabRandomlyShuffled', {}) ?? 'Вкладки случайно перемешаны';
@@ -4262,6 +4274,13 @@ extension on TranslationsRuRu {
           'tabs.sortMode' => TranslationOverrides.string(_root.$meta, 'tabs.sortMode', {}) ?? 'Сортировать вкладки',
           'tabs.help' => TranslationOverrides.string(_root.$meta, 'tabs.help', {}) ?? 'Помощь',
           'tabs.deleteTabs' => TranslationOverrides.string(_root.$meta, 'tabs.deleteTabs', {}) ?? 'Удалить вкладки',
+          'tabs.deleteDuplicateTabs' => TranslationOverrides.string(_root.$meta, 'tabs.deleteDuplicateTabs', {}) ?? 'Удалить дубликаты вкладок',
+          'tabs.deleteDuplicateTabsQuestion' =>
+            TranslationOverrides.string(_root.$meta, 'tabs.deleteDuplicateTabsQuestion', {}) ??
+                'Обнаружены дубликаты вкладок. Выбери в каждой группе вкладок те, которые ты хочешь оставить:',
+          'tabs.keepFirstDuplicateTabs' => TranslationOverrides.string(_root.$meta, 'tabs.keepFirstDuplicateTabs', {}) ?? 'Оставить первую',
+          'tabs.keepLastDuplicateTabs' => TranslationOverrides.string(_root.$meta, 'tabs.keepLastDuplicateTabs', {}) ?? 'Оставить последнюю',
+          'tabs.skipDuplicateTabDelete' => TranslationOverrides.string(_root.$meta, 'tabs.skipDuplicateTabDelete', {}) ?? 'Пропустить',
           'tabs.shuffleTabs' => TranslationOverrides.string(_root.$meta, 'tabs.shuffleTabs', {}) ?? 'Перемешать вкладки',
           'tabs.tabRandomlyShuffled' => TranslationOverrides.string(_root.$meta, 'tabs.tabRandomlyShuffled', {}) ?? 'Вкладки случайно перемешаны',
           'tabs.tabOrderSaved' => TranslationOverrides.string(_root.$meta, 'tabs.tabOrderSaved', {}) ?? 'Порядок вкладок сохранён',
@@ -4874,6 +4893,9 @@ extension on TranslationsRuRu {
           'settings.viewer.shareActionValues.hydrus' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionValues.hydrus', {}) ?? 'Hydrus',
           'settings.video.title' => TranslationOverrides.string(_root.$meta, 'settings.video.title', {}) ?? 'Видео',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.video.disableVideos' => TranslationOverrides.string(_root.$meta, 'settings.video.disableVideos', {}) ?? 'Отключить видео',
           'settings.video.disableVideosHelp' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.disableVideosHelp', {}) ??
@@ -4883,9 +4905,6 @@ extension on TranslationsRuRu {
           'settings.video.startVideosMuted' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.startVideosMuted', {}) ?? 'Запускать видео без звука',
           'settings.video.experimental' => TranslationOverrides.string(_root.$meta, 'settings.video.experimental', {}) ?? '[Экспериментально]',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.video.videoPlayerBackend' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.videoPlayerBackend', {}) ?? 'Движок видеоплеера',
           'settings.video.backendDefault' => TranslationOverrides.string(_root.$meta, 'settings.video.backendDefault', {}) ?? 'По умолчанию',
@@ -5851,15 +5870,15 @@ extension on TranslationsRuRu {
           'searchBar.selectDate' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDate', {}) ?? 'Выбери дату',
           'searchBar.selectDatesRange' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDatesRange', {}) ?? 'Выбери диапазон дат',
           'searchBar.history' => TranslationOverrides.string(_root.$meta, 'searchBar.history', {}) ?? 'История',
+          _ => null,
+        } ??
+        switch (path) {
           'searchBar.more' => TranslationOverrides.string(_root.$meta, 'searchBar.more', {}) ?? '…',
           'mobileHome.selectBooruForWebview' =>
             TranslationOverrides.string(_root.$meta, 'mobileHome.selectBooruForWebview', {}) ?? 'Выбери сайт для вебвью',
           'mobileHome.lockApp' => TranslationOverrides.string(_root.$meta, 'mobileHome.lockApp', {}) ?? 'Заблокировать приложение',
           'mobileHome.fileAlreadyExists' => TranslationOverrides.string(_root.$meta, 'mobileHome.fileAlreadyExists', {}) ?? 'Файл уже существует',
           'mobileHome.failedToDownload' => TranslationOverrides.string(_root.$meta, 'mobileHome.failedToDownload', {}) ?? 'Не удалось загрузить',
-          _ => null,
-        } ??
-        switch (path) {
           'mobileHome.cancelledByUser' => TranslationOverrides.string(_root.$meta, 'mobileHome.cancelledByUser', {}) ?? 'Отменено пользователем',
           'mobileHome.saveAnyway' => TranslationOverrides.string(_root.$meta, 'mobileHome.saveAnyway', {}) ?? 'Сохранить в любом случае',
           'mobileHome.skip' => TranslationOverrides.string(_root.$meta, 'mobileHome.skip', {}) ?? 'Пропустить',

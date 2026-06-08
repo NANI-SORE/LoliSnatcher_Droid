@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 
 import 'package:sqflite/sqflite.dart';
 
@@ -38,7 +39,7 @@ class DBHandler {
     String path, {
     ValueChanged<String>? onStatusUpdate,
   }) async {
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (PlatformExt.isMobile) {
       db = await openDatabase(
         '${path}store.db',
         version: 1,
