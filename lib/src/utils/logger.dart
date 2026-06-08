@@ -27,15 +27,17 @@ class Logger {
       settings: TalkerSettings(
         enabled: true,
         maxHistoryItems: 100000,
-        useConsoleLogs: kDebugMode,
+        useConsoleLogs: true,
         useHistory: true,
       ),
       logger: TalkerLogger(
         output: (String message) {
-          final StringBuffer buffer = StringBuffer();
-          final lines = message.split('\n');
-          lines.forEach(buffer.writeln);
-          Platform.isIOS ? lines.forEach(print) : dev.log(buffer.toString());
+          if (kDebugMode) {
+            final StringBuffer buffer = StringBuffer();
+            final lines = message.split('\n');
+            lines.forEach(buffer.writeln);
+            Platform.isIOS ? lines.forEach(print) : dev.log(buffer.toString());
+          }
           _fileLogger.writeTalker(message);
         },
       ),
