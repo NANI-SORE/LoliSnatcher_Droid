@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
@@ -46,10 +47,19 @@ class _MainAppBarState extends State<MainAppBar> {
     state.toggle(direction: dir);
   }
 
-  void _onMenuLongTap() {
-    ServiceHandler.vibrate();
+  Future<void> _onMenuLongTap() async {
+    unawaited(ServiceHandler.vibrate());
     // scroll to start on long press of menu buttons
     searchHandler.gridScrollController.jumpTo(0);
+    await Future.delayed(const Duration(milliseconds: 10));
+    for (double i = 1; i >= 0; i--) {
+      // do a smallest back and forth movement to trigger page indicator update
+      await searchHandler.gridScrollController.animateTo(
+        i / 10,
+        duration: const Duration(milliseconds: 1),
+        curve: Curves.linear,
+      );
+    }
   }
 
   Widget menuButton(InnerDrawerDirection direction) {
