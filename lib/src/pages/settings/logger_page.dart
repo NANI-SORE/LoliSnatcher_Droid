@@ -4,17 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+
+import 'package:share_plus/share_plus.dart';
+import 'package:talker_flutter/talker_flutter.dart';
+
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/confirm_button.dart';
 import 'package:lolisnatcher/src/widgets/common/delete_button.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
-
-import 'package:share_plus/share_plus.dart';
-import 'package:talker_flutter/talker_flutter.dart';
-
-import 'package:lolisnatcher/src/utils/logger.dart';
 
 class LoggerViewPage extends StatelessWidget {
   const LoggerViewPage({
@@ -500,14 +500,17 @@ class _LogFileViewPageState extends State<LogFileViewPage> {
               _text = snapshot.data!;
               return Stack(
                 children: [
-                  SingleChildScrollView(
-                    key: _scrollViewportKey,
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(12),
-                    child: SelectableText.rich(
-                      _buildHighlightedText(Theme.of(context).colorScheme),
-                      key: _selectableTextKey,
-                      style: _textStyle,
+                  Scrollbar(
+                    interactive: true,
+                    child: SingleChildScrollView(
+                      key: _scrollViewportKey,
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(12),
+                      child: SelectableText.rich(
+                        _buildHighlightedText(Theme.of(context).colorScheme),
+                        key: _selectableTextKey,
+                        style: _textStyle,
+                      ),
                     ),
                   ),
                   if (_showSearch)

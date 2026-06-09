@@ -15,6 +15,8 @@ import 'package:talker_dio_logger/talker_dio_logger.dart';
 // ignore: implementation_imports
 import 'package:talker_flutter/src/controller/talker_view_controller.dart';
 
+// TODO detect crashes and after that send user to logs page on start?
+
 class Logger {
   static Logger? _loggerInstance;
 
@@ -413,7 +415,7 @@ class _DailyFileLogger {
     if (_sinkDate != date) {
       await _sink?.flush();
       await _sink?.close();
-      final file = File('${_logDirectory.path}${Platform.pathSeparator}lolisnatcher-$date.log');
+      final file = File('${_logDirectory.path}${Platform.pathSeparator}losn-$date.log');
       _sinkBytes = await file.exists() ? await file.length() : 0;
       _sizeLimitReached = _sinkBytes >= _maxFileBytes;
       _sink = file.openWrite(mode: FileMode.append);
@@ -531,7 +533,7 @@ class _DailyFileLogger {
     await flush();
     _pendingWrite = _pendingWrite.then((_) async {
       if (_sink != null && _sinkDate != null) {
-        final activePath = '${_logDirectory.path}${Platform.pathSeparator}lolisnatcher-$_sinkDate.log';
+        final activePath = '${_logDirectory.path}${Platform.pathSeparator}losn-$_sinkDate.log';
         if (File(activePath).absolute.path == file.absolute.path) {
           await _sink!.flush();
           await _sink!.close();
