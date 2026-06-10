@@ -144,6 +144,7 @@ enum SettingKey {
   lastSyncPort,
   appAlias,
   usePredictiveBack,
+  captureLogcat,
 
   // Debug
   shitDevice,
@@ -325,6 +326,7 @@ abstract class SX {
   static const lastSyncPort = TypedKey<String>(SettingKey.lastSyncPort);
   static const appAlias = TypedKey<AppAlias>(SettingKey.appAlias);
   static const usePredictiveBack = TypedKey<bool>(SettingKey.usePredictiveBack);
+  static const captureLogcat = TypedKey<bool>(SettingKey.captureLogcat);
 
   // Debug
   static const shitDevice = TypedKey<bool>(SettingKey.shitDevice);

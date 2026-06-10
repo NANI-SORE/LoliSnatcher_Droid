@@ -61,6 +61,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> with SingleTickerProv
     final cleanedMarked = settingsHandler.cleanTagsList(markedList.map(Tag.new).toList());
     SX.hiddenTags.state.value = cleanedHidden;
     SX.markedTags.state.value = cleanedMarked;
+    settingsHandler.tagsFiltersMetadataVersion++;
     await settingsHandler.saveSettings(restate: false);
   }
 

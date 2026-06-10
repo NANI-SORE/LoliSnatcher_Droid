@@ -1784,6 +1784,19 @@ void registerAllSettings() {
     ),
   );
 
+  registry.register(
+    boolSetting(
+      key: .captureLogcat,
+      getDefaultValue: () => false,
+      categories: [SettingCategory.logging],
+      isDeviceSpecific: true,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.logging.captureLogcat,
+        subtitle: (ctx) => ctx.loc.settings.logging.captureLogcatDescription,
+      ),
+    ),
+  );
+
   // ============================================
   // DEBUG
   // ============================================

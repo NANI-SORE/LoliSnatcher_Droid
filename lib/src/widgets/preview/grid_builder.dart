@@ -54,9 +54,9 @@ class GridBuilder extends StatelessWidget {
             child: Obx(() {
               final BooruItem item = currentFetched[index];
 
-              final bool hasSelected = tab.selected.isNotEmpty;
-              final selectedIndex = tab.selected.indexOf(item);
-              final bool isSelected = selectedIndex != -1;
+              final bool hasSelected = tab.selected.isNotEmpty && tab.hasSelectedItems;
+              final selectedIndex = tab.selectedIndexOf(item);
+              final bool isSelected = selectedIndex != null;
               final bool isHighlighted = ViewerHandler.instance.current.value?.key == item.key;
 
               return ThumbnailCardBuild(

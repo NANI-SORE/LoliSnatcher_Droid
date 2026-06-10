@@ -175,8 +175,8 @@ enum SettingCategory {
   network,
   privacy,
   performance,
-  debug
-  ;
+  logging,
+  debug;
 
   /// Localized category name.
   String locName(BuildContext context) {
@@ -207,6 +207,8 @@ enum SettingCategory {
         return context.loc.settings.privacy.title;
       case SettingCategory.performance:
         return context.loc.settings.performance.title;
+      case SettingCategory.logging:
+        return context.loc.settings.logging.logger;
       case SettingCategory.debug:
         return context.loc.settings.debug.title;
     }
@@ -240,6 +242,8 @@ enum SettingCategory {
         return FontAwesomeIcons.userShield;
       case SettingCategory.performance:
         return Icons.speed;
+      case SettingCategory.logging:
+        return Icons.print;
       case SettingCategory.debug:
         return Icons.developer_mode;
     }

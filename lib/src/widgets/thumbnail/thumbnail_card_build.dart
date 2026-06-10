@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import 'package:get/get.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
 import 'package:lolisnatcher/src/data/booru_item.dart';
@@ -90,34 +91,26 @@ class ThumbnailCardBuild extends StatelessWidget {
             ),
             //
             Positioned.fill(
-              child: ListenableBuilder(
-                listenable: Listenable.merge([
-                  snatchHandler.current,
-                  snatchHandler.queueProgress,
-                  snatchHandler.total,
-                  snatchHandler.received,
-                ]),
-                builder: (context, _) {
-                  final current = snatchHandler.current.value;
-                  final queueProgress = snatchHandler.queueProgress.value;
-                  final total = snatchHandler.total.value;
-
-                  final bool isCurrentlyBeingSnatched = current?.booruItems[queueProgress] == item && total != 0;
-
-                  if (isCurrentlyBeingSnatched) {
-                    return AnimatedProgressIndicator(
-                      value: snatchHandler.currentProgress,
-                      animationDuration: const Duration(milliseconds: 50),
-                      indicatorStyle: IndicatorStyle.square,
-                      valueColor: Theme.of(context).progressIndicatorTheme.color,
-                      strokeWidth: defaultBorderWidth * 3,
-                      borderRadius: 10,
-                    );
-                  }
-
+              child: Obx(() {
+                if (snatchHandler.activeItem.value != item) {
                   return const SizedBox.shrink();
-                },
-              ),
+                }
+
+                return ListenableBuilder(
+                  listenable: Listenable.merge([
+                    snatchHandler.total,
+                    snatchHandler.received,
+                  ]),
+                  builder: (context, _) => AnimatedProgressIndicator(
+                    value: snatchHandler.currentProgress,
+                    animationDuration: const Duration(milliseconds: 50),
+                    indicatorStyle: IndicatorStyle.square,
+                    valueColor: Theme.of(context).progressIndicatorTheme.color,
+                    strokeWidth: defaultBorderWidth * 3,
+                    borderRadius: 10,
+                  ),
+                );
+              }),
             ),
           ],
         ),

@@ -98,24 +98,51 @@ class BooruItem extends Equatable {
   double? previewAspectRatio;
   int? fileSize;
 
+  List<Tag>? _cachedMetadataTags;
+  int _cachedTagsMetadataVersion = -1;
+  bool _cachedIsHidden = false;
+  bool _cachedIsMarked = false;
+  bool _cachedIsSound = false;
+  bool _cachedIsAI = false;
+
   bool get isLong {
     return fileAspectRatio != null && fileAspectRatio! < 0.3;
   }
 
   bool get isHidden {
-    return SettingsHandler.instance.containsHidden(tagsList.map((t) => t.fullString).toList());
+    _updateTagMetadata();
+    return _cachedIsHidden;
   }
 
   bool get isMarked {
-    return SettingsHandler.instance.containsMarked(tagsList.map((t) => t.fullString).toList());
+    _updateTagMetadata();
+    return _cachedIsMarked;
   }
 
   bool get isSound {
-    return SettingsHandler.instance.containsSound(tagsList.map((t) => t.fullString).toList());
+    _updateTagMetadata();
+    return _cachedIsSound;
   }
 
   bool get isAI {
-    return SettingsHandler.instance.containsAI(tagsList.map((t) => t.fullString).toList());
+    _updateTagMetadata();
+    return _cachedIsAI;
+  }
+
+  void _updateTagMetadata() {
+    final settingsHandler = SettingsHandler.instance;
+    if (identical(_cachedMetadataTags, tagsList) &&
+        _cachedTagsMetadataVersion == settingsHandler.tagsFiltersMetadataVersion) {
+      return;
+    }
+
+    final cleanTags = settingsHandler.cleanTagsList(tagsList);
+    _cachedMetadataTags = tagsList;
+    _cachedTagsMetadataVersion = settingsHandler.tagsFiltersMetadataVersion;
+    _cachedIsHidden = settingsHandler.containsHidden(cleanTags);
+    _cachedIsMarked = settingsHandler.containsMarked(cleanTags);
+    _cachedIsSound = settingsHandler.containsSound(cleanTags);
+    _cachedIsAI = settingsHandler.containsAI(cleanTags);
   }
 
   Map<String, dynamic> toJson() {
@@ -233,7 +260,7 @@ enum MediaType {
   notSupportedAnimation,
   unknown,
   needToGuess,
-  needToLoadItem
+  needToLoadItem,
   ;
 
   bool get isImage {

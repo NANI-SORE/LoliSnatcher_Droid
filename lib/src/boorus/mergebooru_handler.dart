@@ -24,6 +24,9 @@ class MergebooruHandler extends BooruHandler {
   List<int> booruHandlerPageNums = [];
 
   Map<int, ({Booru booru, List<BooruItem> items})> fetchedMap = {};
+  final Map<BooruItem, ({Booru booru, int index})> _itemSources = Map.identity();
+
+  ({Booru booru, int index})? sourceFor(BooruItem item) => _itemSources[item];
 
   @override
   bool get hasSizeData => booruHandlers.every((e) => e.hasSizeData);
@@ -169,6 +172,10 @@ class MergebooruHandler extends BooruHandler {
               ]);
             }
             fetchedMap[i]!.items.add(items[innerFetchedIndex]);
+            _itemSources[items[innerFetchedIndex]] = (
+              booru: booruHandlers[i].booru,
+              index: i,
+            );
           } else {
             Logger.Inst().log(
               'Skipped because hash match: ${items[innerFetchedIndex].fileURL}',

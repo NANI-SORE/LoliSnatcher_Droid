@@ -998,7 +998,9 @@
             "restoredSessionFromString": "Сессия восстановлена из строки"
         },
         "logging": {
-            "logger": "Логгер"
+            "logger": "Логгер",
+            "captureLogcat": "Записывать logcat",
+            "captureLogcatDescription": "Запись системных сообщений об ошибках и предупреждениях для этого процесса"
         },
         "webview": {
             "openWebview": "Открыть вебвью",

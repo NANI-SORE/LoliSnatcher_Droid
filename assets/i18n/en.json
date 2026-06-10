@@ -998,7 +998,9 @@
             "restoredSessionFromString": "Restored session from string"
         },
         "logging": {
-            "logger": "Logger"
+            "logger": "Logger",
+            "captureLogcat": "Capture Android logcat",
+            "captureLogcatDescription": "Record warning and error messages from this app's Android process"
         },
         "webview": {
             "openWebview": "Open webview",

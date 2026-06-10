@@ -10,15 +10,125 @@
 struct _MyApplication {
   GtkApplication parent_instance;
   char** dart_entrypoint_arguments;
+  GtkWindow* window;
+  gint window_x;
+  gint window_y;
+  gint window_width;
+  gint window_height;
+  gboolean window_maximized;
 };
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
+
+static gchar* get_window_state_path() {
+  return g_build_filename(g_get_user_config_dir(), "loliSnatcher",
+                          "window.ini", nullptr);
+}
+
+static void load_window_state(MyApplication* self) {
+  g_autofree gchar* path = get_window_state_path();
+  g_autoptr(GKeyFile) key_file = g_key_file_new();
+  g_autoptr(GError) error = nullptr;
+  if (!g_key_file_load_from_file(key_file, path, G_KEY_FILE_NONE, &error)) {
+    return;
+  }
+
+  const gint width = g_key_file_get_integer(key_file, "window", "width", nullptr);
+  const gint height =
+      g_key_file_get_integer(key_file, "window", "height", nullptr);
+  if (width >= 320 && height >= 240) {
+    self->window_width = width;
+    self->window_height = height;
+  }
+
+  self->window_x = g_key_file_get_integer(key_file, "window", "x", nullptr);
+  self->window_y = g_key_file_get_integer(key_file, "window", "y", nullptr);
+  self->window_maximized =
+      g_key_file_get_boolean(key_file, "window", "maximized", nullptr);
+
+  GdkScreen* screen = gdk_screen_get_default();
+  if (screen == nullptr) {
+    return;
+  }
+
+  GdkRectangle desktop_bounds{};
+  for (gint i = 0; i < gdk_screen_get_n_monitors(screen); ++i) {
+    GdkRectangle monitor_bounds{};
+    gdk_screen_get_monitor_geometry(screen, i, &monitor_bounds);
+    if (i == 0) {
+      desktop_bounds = monitor_bounds;
+    } else {
+      gdk_rectangle_union(&desktop_bounds, &monitor_bounds, &desktop_bounds);
+    }
+  }
+
+  const bool horizontally_visible =
+      self->window_x + 50 < desktop_bounds.x + desktop_bounds.width &&
+      self->window_x + self->window_width - 50 > desktop_bounds.x;
+  const bool vertically_visible =
+      self->window_y + 50 < desktop_bounds.y + desktop_bounds.height &&
+      self->window_y + self->window_height - 50 > desktop_bounds.y;
+  if (!horizontally_visible || !vertically_visible) {
+    self->window_x = desktop_bounds.x + 10;
+    self->window_y = desktop_bounds.y + 10;
+  }
+}
+
+static void save_window_state(MyApplication* self) {
+  if (self->window == nullptr) {
+    return;
+  }
+
+  g_autoptr(GKeyFile) key_file = g_key_file_new();
+  g_key_file_set_integer(key_file, "window", "x", self->window_x);
+  g_key_file_set_integer(key_file, "window", "y", self->window_y);
+  g_key_file_set_integer(key_file, "window", "width", self->window_width);
+  g_key_file_set_integer(key_file, "window", "height", self->window_height);
+  g_key_file_set_boolean(key_file, "window", "maximized",
+                         self->window_maximized);
+
+  g_autofree gchar* directory =
+      g_build_filename(g_get_user_config_dir(), "loliSnatcher", nullptr);
+  g_mkdir_with_parents(directory, 0700);
+  g_autofree gchar* path = get_window_state_path();
+  g_autoptr(GError) error = nullptr;
+  if (!g_key_file_save_to_file(key_file, path, &error)) {
+    g_warning("Failed to save window state: %s", error->message);
+  }
+}
+
+static gboolean window_configure_cb(GtkWidget*, GdkEvent* event,
+                                    MyApplication* self) {
+  if (!self->window_maximized) {
+    const GdkEventConfigure* configure_event =
+        reinterpret_cast<GdkEventConfigure*>(event);
+    self->window_x = configure_event->x;
+    self->window_y = configure_event->y;
+    self->window_width = configure_event->width;
+    self->window_height = configure_event->height;
+  }
+  return FALSE;
+}
+
+static gboolean window_state_cb(GtkWidget*, GdkEventWindowState* event,
+                                MyApplication* self) {
+  self->window_maximized =
+      (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED) != 0;
+  return FALSE;
+}
+
+static gboolean window_delete_cb(GtkWidget*, GdkEvent*,
+                                 MyApplication* self) {
+  save_window_state(self);
+  return FALSE;
+}
 
 // Implements GApplication::activate.
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
+  self->window = window;
 
   // Use a header bar when running in GNOME as this is the common style used
   // by applications and is the setup most users will be using (e.g. Ubuntu
@@ -47,8 +157,18 @@ static void my_application_activate(GApplication* application) {
     gtk_window_set_title(window, "loliSnatcher");
   }
 
-  gtk_window_set_default_size(window, 1280, 720);
+  load_window_state(self);
+  gtk_window_set_default_size(window, self->window_width, self->window_height);
+  gtk_window_move(window, self->window_x, self->window_y);
+  if (self->window_maximized) {
+    gtk_window_maximize(window);
+  }
   gtk_widget_show(GTK_WIDGET(window));
+  g_signal_connect(window, "configure-event", G_CALLBACK(window_configure_cb),
+                   self);
+  g_signal_connect(window, "window-state-event", G_CALLBACK(window_state_cb),
+                   self);
+  g_signal_connect(window, "delete-event", G_CALLBACK(window_delete_cb), self);
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(project, self->dart_entrypoint_arguments);
@@ -94,7 +214,14 @@ static void my_application_class_init(MyApplicationClass* klass) {
   G_OBJECT_CLASS(klass)->dispose = my_application_dispose;
 }
 
-static void my_application_init(MyApplication* self) {}
+static void my_application_init(MyApplication* self) {
+  self->window = nullptr;
+  self->window_x = 10;
+  self->window_y = 10;
+  self->window_width = 1280;
+  self->window_height = 720;
+  self->window_maximized = FALSE;
+}
 
 MyApplication* my_application_new() {
   return MY_APPLICATION(g_object_new(my_application_get_type(),
