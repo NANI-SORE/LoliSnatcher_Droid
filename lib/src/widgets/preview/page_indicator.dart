@@ -3,10 +3,59 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/dialogs/page_number_dialog.dart';
+
+class PageItemRange {
+  const PageItemRange(this.start, this.end);
+
+  final int start;
+  final int end;
+}
+
+class PageRangeIndex {
+  final Map<int, PageItemRange> _ranges = {};
+  int _processedLength = 0;
+  BooruItem? _lastProcessedItem;
+  int lastUpdateProcessedItems = 0;
+
+  PageItemRange? operator [](int page) => _ranges[page];
+
+  void clear() {
+    _ranges.clear();
+    _processedLength = 0;
+    _lastProcessedItem = null;
+    lastUpdateProcessedItems = 0;
+  }
+
+  void update(List<BooruItem> items) {
+    lastUpdateProcessedItems = 0;
+    final bool canAppend =
+        _processedLength <= items.length &&
+        (_processedLength == 0 || identical(items[_processedLength - 1], _lastProcessedItem));
+
+    if (!canAppend) {
+      _ranges.clear();
+      _processedLength = 0;
+      _lastProcessedItem = null;
+    }
+
+    for (int index = _processedLength; index < items.length; index++) {
+      lastUpdateProcessedItems++;
+      final int page = items[index].fetchedPage;
+      if (page >= 0) {
+        final previous = _ranges[page];
+        _ranges[page] = PageItemRange(previous?.start ?? index, index + 1);
+      }
+    }
+
+    _processedLength = items.length;
+    _lastProcessedItem = items.isEmpty ? null : items.last;
+  }
+}
 
 class GridPageIndicator extends StatelessWidget {
   const GridPageIndicator(
@@ -63,7 +112,9 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
 
   Timer? overlayTimer;
   Worker? pageWorker;
+  RxList<BooruItem>? observedItems;
   final RxBool showOverlay = false.obs;
+  final PageRangeIndex pageRanges = PageRangeIndex();
   double pageProgress = 0;
 
   @override
@@ -71,8 +122,24 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
     super.initState();
 
     searchHandler.gridScrollController.addListener(_onPageChanged);
+    searchHandler.index.addListener(_observeCurrentItems);
+    searchHandler.tabId.addListener(_observeCurrentItems);
+    _observeCurrentItems();
 
     pageWorker = ever(searchHandler.currentScrollPage, (_) => _onPageChanged());
+  }
+
+  void _observeCurrentItems() {
+    observedItems?.removeListener(_onItemsChanged);
+    observedItems = searchHandler.currentFetched;
+    observedItems?.addListener(_onItemsChanged);
+    pageRanges
+      ..clear()
+      ..update(searchHandler.currentFetched);
+  }
+
+  void _onItemsChanged() {
+    pageRanges.update(searchHandler.currentFetched);
   }
 
   void _onPageChanged() {
@@ -107,15 +174,13 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
       return 0;
     }
 
-    final int pageStart = currentFetched.indexWhere((item) => item.fetchedPage == page);
-    if (pageStart == -1) {
+    final pageRange = pageRanges[page];
+    if (pageRange == null) {
       return 0;
     }
 
-    int pageEnd = pageStart;
-    while (pageEnd < currentFetched.length && currentFetched[pageEnd].fetchedPage == page) {
-      pageEnd++;
-    }
+    final int pageStart = pageRange.start;
+    final int pageEnd = pageRange.end;
 
     final double viewportHeight = controller.position.viewportDimension;
     final double viewportTop = controller.viewportBoundaryGetter().top;
@@ -162,6 +227,9 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
   void dispose() {
     overlayTimer?.cancel();
     pageWorker?.dispose();
+    observedItems?.removeListener(_onItemsChanged);
+    searchHandler.index.removeListener(_observeCurrentItems);
+    searchHandler.tabId.removeListener(_observeCurrentItems);
     searchHandler.gridScrollController.removeListener(_onPageChanged);
     super.dispose();
   }

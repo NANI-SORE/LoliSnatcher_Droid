@@ -283,6 +283,7 @@ class SearchHandler {
   // stream that will notify it's listeners about scroll events of the grid controller
   StreamController<ScrollNotification>? _scrollStream;
   Stream<ScrollNotification>? get scrollStream => _scrollStream?.stream;
+  bool _scrollPageUpdateScheduled = false;
 
   void sendToScrollStream(ScrollNotification notification) {
     _scrollStream?.sink.add(notification);
@@ -290,7 +291,13 @@ class SearchHandler {
     scrollOffset.value = gridScrollController.offset;
     currentTab.scrollPosition = gridScrollController.offset;
 
+    if (!_scrollPageUpdateScheduled) {
+      _scrollPageUpdateScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollPageUpdateScheduled = false;
     _updateCurrentScrollPage();
+      });
+    }
   }
 
   void _updateCurrentScrollPage() {
