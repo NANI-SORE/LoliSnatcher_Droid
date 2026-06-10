@@ -48,6 +48,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
 
   Timer? viewedItemCleanupTimer;
   int viewedItemCleanupCount = 0;
+  final Set<BooruItem> viewedItems = {};
 
   @override
   void initState() {
@@ -226,16 +227,17 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   void viewerCallback() {
     // do cleanup after a delay to avoid animation stutter when leaving the viewer (especially when there are thousands of items)
     Future.delayed(const Duration(milliseconds: 500), () {
-      for (final item in searchHandler.currentFetched) {
+      for (final item in viewedItems) {
         if (item.toggleQuality.value) {
           item.toggleQuality.value = false;
         }
       }
-      searchHandler.filterCurrentFetched();
+      viewedItems.clear();
     });
   }
 
   void onViewerPageChanged(int index) {
+    viewedItems.add(searchHandler.currentFetched[index]);
     if (isMobile) {
       jumpTo(index);
     } else {
@@ -253,6 +255,9 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
 
       viewedItemCleanupTimer?.cancel();
       viewedItemCleanupCount = 0;
+      viewedItems
+        ..clear()
+        ..add(searchHandler.currentFetched[index]);
       viewerHandler.setCurrent(searchHandler.currentFetched[index]);
 
       isActive.value = false;

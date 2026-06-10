@@ -75,9 +75,9 @@ class StaggeredBuilder extends StatelessWidget {
                 // force to use minimum 100 px and max 60% of screen height
                 possibleHeight = max(min(itemMaxHeight, possibleHeight), 100);
 
-                final bool hasSelected = tab.selected.isNotEmpty;
-                final selectedIndex = tab.selected.indexOf(item);
-                final bool isSelected = selectedIndex != -1;
+                final bool hasSelected = tab.selected.isNotEmpty && tab.hasSelectedItems;
+                final selectedIndex = tab.selectedIndexOf(item);
+                final bool isSelected = selectedIndex != null;
 
                 return Stack(
                   children: [

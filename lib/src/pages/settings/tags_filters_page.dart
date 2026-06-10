@@ -64,6 +64,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> with SingleTickerProv
   Future<void> _onPopInvoked(_, _) async {
     settingsHandler.hiddenTags = settingsHandler.cleanTagsList(hiddenList.map(Tag.new).toList()).toSet();
     settingsHandler.markedTags = settingsHandler.cleanTagsList(markedList.map(Tag.new).toList()).toSet();
+    settingsHandler.tagsFiltersMetadataVersion++;
     settingsHandler.filterHated = filterHated;
     settingsHandler.filterMarked = filterMarked;
     settingsHandler.filterFavourites = filterFavourites;

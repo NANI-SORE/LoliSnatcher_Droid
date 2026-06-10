@@ -62,6 +62,7 @@ A minor update aimed at adding new localization languages and fixing some issues
 -------------------
 
 Hotfix 1 - 2.5.1+5213 (xx.xx.2026):
+
 - Fixed inkbunny parsing (Thanks to Split50)
 - Added a Retry button to currently downloading item to quickly restart it without moving it to the end of the queue, useful if item is stuck for some reason (also stuck download items will now auto retry after 10 seconds of inactivity)
 - Added a dialog to quickly delete tabs after enabling duplicates filter in tab managers

@@ -501,6 +501,7 @@ class _LogFileViewPageState extends State<LogFileViewPage> {
               return Stack(
                 children: [
                   Scrollbar(
+                    controller: _scrollController,
                     interactive: true,
                     child: SingleChildScrollView(
                       key: _scrollViewportKey,

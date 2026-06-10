@@ -21,6 +21,15 @@ import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
 import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
 
+class _SourceCacheEntry {
+  const _SourceCacheEntry(this.version, this.booru);
+
+  final int version;
+  final Booru? booru;
+}
+
+final Expando<_SourceCacheEntry> _sourceCache = Expando<_SourceCacheEntry>();
+
 class ThumbnailBuild extends StatelessWidget {
   const ThumbnailBuild({
     required this.item,
@@ -39,6 +48,32 @@ class ThumbnailBuild extends StatelessWidget {
   final void Function()? onSelected;
   final bool simple;
 
+  Booru? _resolveSourceBooru(SettingsHandler settingsHandler) {
+    final cached = _sourceCache[item];
+    if (cached?.version == settingsHandler.booruListVersion) {
+      return cached?.booru;
+    }
+
+    final itemFileHost = Uri.tryParse(item.fileURL)?.host;
+    final itemPostHost = Uri.tryParse(item.postURL)?.host;
+    final possibleBooru = settingsHandler.booruList.firstWhereOrNull((e) {
+      final booruHost = Uri.tryParse(e.baseURL ?? '')?.host;
+
+      return (itemPostHost?.isNotEmpty == true &&
+              booruHost?.isNotEmpty == true &&
+              (itemPostHost == booruHost ||
+                  switch (e.type) {
+                    BooruType.IdolSankaku => IdolSankakuHandler.knownUrls.contains(itemPostHost),
+                    BooruType.Sankaku => SankakuHandler.knownPostUrls.contains(itemPostHost),
+                    _ => false,
+                  })) ||
+          (itemFileHost?.isNotEmpty == true && booruHost?.isNotEmpty == true && itemFileHost == booruHost);
+    });
+    final result = possibleBooru?.type?.isFavouritesOrDownloads == true ? null : possibleBooru;
+    _sourceCache[item] = _SourceCacheEntry(settingsHandler.booruListVersion, result);
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     final SettingsHandler settingsHandler = SettingsHandler.instance;
@@ -52,29 +87,7 @@ class ThumbnailBuild extends StatelessWidget {
             child: Builder(
               builder: (context) {
                 final bool isFavsOrDls = handler is FavouritesHandler || handler is DownloadsHandler;
-                Booru? possibleBooru;
-                if (isFavsOrDls) {
-                  final itemFileHost = Uri.tryParse(item.fileURL)?.host;
-                  final itemPostHost = Uri.tryParse(item.postURL)?.host;
-                  possibleBooru = SettingsHandler.instance.booruList.firstWhereOrNull((e) {
-                    final booruHost = Uri.tryParse(e.baseURL ?? '')?.host;
-
-                    return (itemPostHost?.isNotEmpty == true &&
-                            booruHost?.isNotEmpty == true &&
-                            (itemPostHost! == booruHost! ||
-                                switch (e.type) {
-                                  BooruType.IdolSankaku => IdolSankakuHandler.knownUrls.contains(itemPostHost),
-                                  BooruType.Sankaku => SankakuHandler.knownPostUrls.contains(itemPostHost),
-                                  _ => false,
-                                })) ||
-                        (itemFileHost?.isNotEmpty == true &&
-                            booruHost?.isNotEmpty == true &&
-                            itemFileHost! == booruHost!);
-                  });
-                  if (possibleBooru?.type?.isFavouritesOrDownloads == true) {
-                    possibleBooru = null;
-                  }
-                }
+                final possibleBooru = isFavsOrDls ? _resolveSourceBooru(settingsHandler) : null;
 
                 return Thumbnail(
                   item: item,
@@ -132,131 +145,88 @@ class ThumbnailBuild extends StatelessWidget {
                   Builder(
                     builder: (context) {
                       final List<Widget> widgets = [];
+                      final mergeSource = handler is MergebooruHandler
+                          ? (handler! as MergebooruHandler).sourceFor(item)
+                          : null;
                       // Merge booru
                       if (handler is MergebooruHandler) {
-                        final fetchedMap = (handler! as MergebooruHandler).fetchedMap;
-
-                        Booru? booru;
-                        int? booruIndex;
-                        for (int i = 0; i < fetchedMap.entries.length; i++) {
-                          final entry = fetchedMap.entries.elementAt(i);
-                          if (entry.value.items.contains(item)) {
-                            booruIndex = i;
-                            booru = entry.value.booru;
-                            break;
-                          }
-                        }
-
-                        if (booru == null) {
+                        if (mergeSource == null) {
                           return const SizedBox.shrink();
                         }
 
-                        if (booruIndex != null) {
-                          booruIndex += 1;
-                          widgets.add(
-                            Text(
-                              '$booruIndex',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                                height: 1,
-                              ),
-                            ),
-                          );
-                        }
                         widgets.add(
-                          BooruFavicon(booru, size: 16),
+                          Text(
+                            '${mergeSource.index + 1}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.white,
+                              height: 1,
+                            ),
+                          ),
+                        );
+                        widgets.add(
+                          BooruFavicon(mergeSource.booru, size: 16),
                         );
                       }
 
                       // Favourites/Downloads booru
-                      Booru? getMergeBooruEntry() {
-                        if (handler is! MergebooruHandler) return null;
-
-                        final fetchedMap = (handler! as MergebooruHandler).fetchedMap;
-                        for (int i = 0; i < fetchedMap.entries.length; i++) {
-                          final entry = fetchedMap.entries.elementAt(i);
-                          if (entry.value.items.contains(item)) {
-                            return entry.value.booru;
-                          }
-                        }
-                        return null;
-                      }
-
                       final bool isFavsOrDls =
                           handler is FavouritesHandler ||
                           handler is DownloadsHandler ||
-                          getMergeBooruEntry()?.type?.isFavouritesOrDownloads == true;
+                          mergeSource?.booru.type?.isFavouritesOrDownloads == true;
                       if (isFavsOrDls) {
-                        final itemFileHost = Uri.tryParse(item.fileURL)?.host;
                         final itemPostHost = Uri.tryParse(item.postURL)?.host;
-                        final Booru? possibleBooru = SettingsHandler.instance.booruList.firstWhereOrNull((e) {
-                          final booruHost = Uri.tryParse(e.baseURL ?? '')?.host;
+                        final possibleBooru = _resolveSourceBooru(settingsHandler);
+                        final possibleFaviconUrl =
+                            possibleBooru?.faviconURL ??
+                            (itemPostHost != null ? 'https://$itemPostHost/favicon.ico' : null);
 
-                          return (itemPostHost?.isNotEmpty == true &&
-                                  booruHost?.isNotEmpty == true &&
-                                  (itemPostHost! == booruHost! ||
-                                      switch (e.type) {
-                                        BooruType.IdolSankaku => IdolSankakuHandler.knownUrls.contains(itemPostHost),
-                                        BooruType.Sankaku => SankakuHandler.knownPostUrls.contains(itemPostHost),
-                                        _ => false,
-                                      })) ||
-                              (itemFileHost?.isNotEmpty == true &&
-                                  booruHost?.isNotEmpty == true &&
-                                  itemFileHost! == booruHost!);
-                        });
-                        if (possibleBooru?.type?.isFavouritesOrDownloads != true) {
-                          final possibleFaviconUrl =
-                              possibleBooru?.faviconURL ??
-                              (itemPostHost != null ? 'https://$itemPostHost/favicon.ico' : null);
-
-                          if (possibleBooru?.name != null) {
-                            widgets.add(
-                              Flexible(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(left: 2),
-                                  child: Text(
-                                    possibleBooru?.name ?? '',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 8,
-                                      color: Colors.white,
-                                      height: 1,
-                                    ),
+                        if (possibleBooru?.name != null) {
+                          widgets.add(
+                            Flexible(
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 2),
+                                child: Text(
+                                  possibleBooru?.name ?? '',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 8,
+                                    color: Colors.white,
+                                    height: 1,
                                   ),
                                 ),
-                              ),
-                            );
-                          }
-
-                          widgets.add(
-                            GestureDetector(
-                              onTap: possibleBooru != null
-                                  ? () {
-                                      final String? url = possibleBooru.baseURL;
-                                      if (url == null || url.isEmpty) {
-                                        return;
-                                      }
-
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (context) => InAppWebviewView(
-                                            initialUrl: url,
-                                            userAgent: Tools.browserUserAgent,
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  : null,
-                              child: BooruFavicon(
-                                possibleBooru,
-                                customFaviconUrl: possibleFaviconUrl,
-                                size: 16,
                               ),
                             ),
                           );
                         }
+
+                        widgets.add(
+                          GestureDetector(
+                            onTap: possibleBooru != null
+                                ? () {
+                                    final String? url = possibleBooru.baseURL;
+                                    if (url == null || url.isEmpty) {
+                                      return;
+                                    }
+
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) => InAppWebviewView(
+                                          initialUrl: url,
+                                          userAgent: Tools.browserUserAgent,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                : null,
+                            child: BooruFavicon(
+                              possibleBooru,
+                              customFaviconUrl: possibleFaviconUrl,
+                              size: 16,
+                            ),
+                          ),
+                        );
                       }
 
                       //
@@ -374,12 +344,8 @@ class _ThumbnailBottomRightIcons extends StatelessWidget {
     final SettingsHandler settingsHandler = SettingsHandler.instance;
     final SnatchHandler snatchHandler = SnatchHandler.instance;
 
-    final tagsData = settingsHandler.parseTagsList(
-      item.tagsList,
-      isCapped: false,
-    );
-    final bool isSound = tagsData.soundTags.isNotEmpty;
-    final bool isAi = tagsData.aiTags.isNotEmpty;
+    final bool isSound = item.isSound;
+    final bool isAi = item.isAI;
     final bool hasNotes = item.hasNotes == true;
     final bool hasComments = item.hasComments == true;
 
@@ -387,15 +353,12 @@ class _ThumbnailBottomRightIcons extends StatelessWidget {
       final IconData? itemIcon = Tools.getFileIcon(item.possibleMediaType.value ?? item.mediaType.value);
 
       final bool? isFav = item.isFavourite.value;
-      final bool isFavOrMarked = isFav == true || tagsData.markedTags.isNotEmpty;
+      final bool isFavOrMarked = isFav == true || item.isMarked;
       // final bool isHidden = tagsData.hiddenTags.isNotEmpty;
       final bool isSnatched = item.isSnatched.value == true;
 
-      final bool isInQueueToBeSnatched =
-          snatchHandler.current.value?.booruItems.any((booruItem) => booruItem == item) == true;
-      final bool isCurrentlyBeingSnatched =
-          snatchHandler.current.value?.booruItems[snatchHandler.queueProgress.value] == item &&
-          snatchHandler.total.value != 0;
+      final bool isInQueueToBeSnatched = snatchHandler.currentItemKeys.contains(item.key);
+      final bool isCurrentlyBeingSnatched = snatchHandler.activeItem.value == item;
 
       int bottomRightAmount = 0;
       if (isFavOrMarked) bottomRightAmount += 1;

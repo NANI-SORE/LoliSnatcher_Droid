@@ -25,6 +25,24 @@ constexpr const wchar_t kWindowClassName[] = L"FLUTTER_RUNNER_WIN32_WINDOW";
 constexpr const wchar_t kGetPreferredBrightnessRegKey[] =
   L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
 constexpr const wchar_t kGetPreferredBrightnessRegValue[] = L"AppsUseLightTheme";
+constexpr const wchar_t kWindowStateRegKey[] =
+    L"Software\\loliSnatcher\\Window";
+
+bool ReadRegistryDword(HKEY key, const wchar_t* name, DWORD* value) {
+  DWORD size = sizeof(*value);
+  DWORD type = 0;
+  return RegQueryValueEx(key, name, nullptr, &type,
+                         reinterpret_cast<BYTE*>(value), &size) ==
+             ERROR_SUCCESS &&
+         type == REG_DWORD;
+}
+
+void WriteRegistryDword(HKEY key, const wchar_t* name, LONG value) {
+  const DWORD stored_value = static_cast<DWORD>(value);
+  RegSetValueEx(key, name, 0, REG_DWORD,
+                reinterpret_cast<const BYTE*>(&stored_value),
+                sizeof(stored_value));
+}
 
 // The number of Win32Window objects that currently exist.
 static int g_active_window_count = 0;
@@ -150,7 +168,96 @@ bool Win32Window::Create(const std::wstring& title,
 }
 
 bool Win32Window::Show() {
-  return ShowWindow(window_handle_, SW_SHOWNORMAL);
+  return ShowWindow(window_handle_,
+                    IsZoomed(window_handle_) ? SW_SHOWMAXIMIZED
+                                             : SW_SHOWNORMAL);
+}
+
+void Win32Window::LoadSavedWindowState(Point* origin, Size* size,
+                                       bool* maximized) {
+  HKEY key = nullptr;
+  if (RegOpenKeyEx(HKEY_CURRENT_USER, kWindowStateRegKey, 0, KEY_READ, &key) !=
+      ERROR_SUCCESS) {
+    return;
+  }
+
+  DWORD left = 0;
+  DWORD top = 0;
+  DWORD right = 0;
+  DWORD bottom = 0;
+  DWORD saved_maximized = 0;
+  const bool has_bounds =
+      ReadRegistryDword(key, L"Left", &left) &&
+      ReadRegistryDword(key, L"Top", &top) &&
+      ReadRegistryDword(key, L"Right", &right) &&
+      ReadRegistryDword(key, L"Bottom", &bottom);
+  ReadRegistryDword(key, L"Maximized", &saved_maximized);
+  RegCloseKey(key);
+
+  if (!has_bounds) {
+    return;
+  }
+
+  RECT saved_rect = {
+      static_cast<LONG>(left),
+      static_cast<LONG>(top),
+      static_cast<LONG>(right),
+      static_cast<LONG>(bottom),
+  };
+  if (saved_rect.right <= saved_rect.left ||
+      saved_rect.bottom <= saved_rect.top) {
+    return;
+  }
+
+  HMONITOR monitor = MonitorFromRect(&saved_rect, MONITOR_DEFAULTTONULL);
+  if (monitor == nullptr) {
+    return;
+  }
+
+  MONITORINFO monitor_info{sizeof(monitor_info)};
+  if (!GetMonitorInfo(monitor, &monitor_info)) {
+    return;
+  }
+
+  RECT intersection{};
+  if (!IntersectRect(&intersection, &saved_rect, &monitor_info.rcWork) ||
+      intersection.right - intersection.left < 50 ||
+      intersection.bottom - intersection.top < 50) {
+    return;
+  }
+
+  const double scale_factor = FlutterDesktopGetDpiForMonitor(monitor) / 96.0;
+  origin->x = static_cast<int>(saved_rect.left / scale_factor);
+  origin->y = static_cast<int>(saved_rect.top / scale_factor);
+  size->width =
+      static_cast<unsigned int>((saved_rect.right - saved_rect.left) /
+                                scale_factor);
+  size->height =
+      static_cast<unsigned int>((saved_rect.bottom - saved_rect.top) /
+                                scale_factor);
+  *maximized = saved_maximized != 0;
+}
+
+void Win32Window::SaveWindowState() {
+  WINDOWPLACEMENT placement{sizeof(placement)};
+  if (!GetWindowPlacement(window_handle_, &placement)) {
+    return;
+  }
+
+  HKEY key = nullptr;
+  if (RegCreateKeyEx(HKEY_CURRENT_USER, kWindowStateRegKey, 0, nullptr, 0,
+                     KEY_WRITE, nullptr, &key, nullptr) != ERROR_SUCCESS) {
+    return;
+  }
+
+  WriteRegistryDword(key, L"Left", placement.rcNormalPosition.left);
+  WriteRegistryDword(key, L"Top", placement.rcNormalPosition.top);
+  WriteRegistryDword(key, L"Right", placement.rcNormalPosition.right);
+  WriteRegistryDword(key, L"Bottom", placement.rcNormalPosition.bottom);
+  WriteRegistryDword(
+      key, L"Maximized",
+      IsZoomed(window_handle_) || placement.showCmd == SW_SHOWMAXIMIZED);
+  RegCloseKey(key);
 }
 
 // static
@@ -179,6 +286,10 @@ Win32Window::MessageHandler(HWND hwnd,
                             WPARAM const wparam,
                             LPARAM const lparam) noexcept {
   switch (message) {
+    case WM_CLOSE:
+      SaveWindowState();
+      break;
+
     case WM_DESTROY:
       window_handle_ = nullptr;
       Destroy();

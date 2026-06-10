@@ -39,6 +39,8 @@ class SnatchHandler {
   final RxString status = ''.obs;
   final RxInt queueProgress = 0.obs;
   final Rx<SnatchItem?> current = Rx<SnatchItem?>(null);
+  final RxSet<Key> currentItemKeys = <Key>{}.obs;
+  final Rxn<BooruItem> activeItem = Rxn<BooruItem>();
   final RxInt received = 0.obs;
   final RxInt total = 0.obs;
 
@@ -79,6 +81,11 @@ class SnatchHandler {
     final progressChanged = received.value != newReceived || total.value != newTotal;
     received.value = newReceived;
     total.value = newTotal;
+    final currentValue = current.value;
+    final progress = queueProgress.value;
+    activeItem.value = newTotal > 0 && currentValue != null && progress < currentValue.booruItems.length
+        ? currentValue.booruItems[progress]
+        : null;
     if (progressChanged && cancelToken != null && !cancelToken!.isCancelled) {
       _restartProgressStuckTimer();
     }
@@ -219,6 +226,7 @@ class SnatchHandler {
         ? '0/${item.booruItems.length}/${queuedList.length}'
         : '0/${item.booruItems.length}';
     current.value = item;
+    currentItemKeys.assignAll(item.booruItems.map((booruItem) => booruItem.key));
 
     // writeMultipleFake(item.booruItems, item.booru, item.cooldown).listen(
     ImageWriter()
@@ -335,6 +343,7 @@ class SnatchHandler {
                 ? '$snatched/${item.booruItems.length}/${queuedList.length}'
                 : '$snatched/${item.booruItems.length}';
             queueProgress.value = queueProgress.value + 1;
+            activeItem.value = null;
             received.value = 0;
             total.value = 0;
           },
@@ -344,6 +353,8 @@ class SnatchHandler {
             _retryCurrentRequested = false;
             status.value = '';
             current.value = null;
+            currentItemKeys.clear();
+            activeItem.value = null;
             queueProgress.value = 0;
             received.value = 0;
             total.value = 0;

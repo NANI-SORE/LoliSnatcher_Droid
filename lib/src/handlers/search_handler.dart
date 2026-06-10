@@ -25,6 +25,7 @@ import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/data/settings/tab_page_restore_mode.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/dialogs/tab_restore_dialog.dart';
+import 'package:lolisnatcher/src/utils/ordered_selection_index.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 
@@ -295,7 +296,7 @@ class SearchHandler {
       _scrollPageUpdateScheduled = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollPageUpdateScheduled = false;
-    _updateCurrentScrollPage();
+        _updateCurrentScrollPage();
       });
     }
   }
@@ -1470,6 +1471,7 @@ class SearchTab {
     final temp = BooruHandlerFactory().getBooruHandler(tempBooruList, null);
     booruHandler = temp.booruHandler;
     booruHandler.pageNum = temp.startingPage;
+    selected.addListener(_updateSelectedIndices);
   }
   // unique id to use for booru controller
   final String id = uuid.v4();
@@ -1482,6 +1484,15 @@ class SearchTab {
   double scrollPosition = 0;
   int? scrollPage;
   RxList<BooruItem> selected = RxList<BooruItem>.from([]);
+  final OrderedSelectionIndex<BooruItem> _selectedIndices = OrderedSelectionIndex();
+
+  int? selectedIndexOf(BooruItem item) => _selectedIndices.indexOf(item);
+
+  bool get hasSelectedItems => _selectedIndices.isNotEmpty;
+
+  void _updateSelectedIndices() {
+    _selectedIndices.update(selected);
+  }
 
   /// Whether to save page position during tab backup.
   bool savePageEnabled = false;

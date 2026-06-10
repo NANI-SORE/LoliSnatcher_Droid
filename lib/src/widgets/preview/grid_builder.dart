@@ -60,9 +60,9 @@ class GridBuilder extends StatelessWidget {
 
               final bool isFirstOfPage = index == 0 || item.fetchedPage != currentFetched[index - 1].fetchedPage;
 
-              final bool hasSelected = tab.selected.isNotEmpty;
-              final selectedIndex = tab.selected.indexOf(item);
-              final bool isSelected = selectedIndex != -1;
+              final bool hasSelected = tab.selected.isNotEmpty && tab.hasSelectedItems;
+              final selectedIndex = tab.selectedIndexOf(item);
+              final bool isSelected = selectedIndex != null;
               final bool isHighlighted = ViewerHandler.instance.current.value?.key == item.key;
 
               return Stack(
