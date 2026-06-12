@@ -3,8 +3,8 @@
 /// Source: assets/i18n
 /// To regenerate, run: `dart run slang`
 ///
-/// Locales: 13
-/// Strings: 8345 (641 per locale)
+/// Locales: 14
+/// Strings: 8664 (618 per locale)
 
 // coverage:ignore-file
 // ignore_for_file: type=lint, unused_import
@@ -23,6 +23,7 @@ import 'strings_fr_FR.g.dart' deferred as l_fr_FR;
 import 'strings_it_IT.g.dart' deferred as l_it_IT;
 import 'strings_ja_JP.g.dart' deferred as l_ja_JP;
 import 'strings_ko_KR.g.dart' deferred as l_ko_KR;
+import 'strings_nl_NL.g.dart' deferred as l_nl_NL;
 import 'strings_pl_PL.g.dart' deferred as l_pl_PL;
 import 'strings_pt_BR.g.dart' deferred as l_pt_BR;
 import 'strings_ru_RU.g.dart' deferred as l_ru_RU;
@@ -65,6 +66,7 @@ enum AppLocale with BaseAppLocale<AppLocale, Translations> {
   itIt(languageCode: 'it', countryCode: 'IT'),
   jaJp(languageCode: 'ja', countryCode: 'JP'),
   koKr(languageCode: 'ko', countryCode: 'KR'),
+  nlNl(languageCode: 'nl', countryCode: 'NL'),
   plPl(languageCode: 'pl', countryCode: 'PL'),
   ptBr(languageCode: 'pt', countryCode: 'BR'),
   ruRu(languageCode: 'ru', countryCode: 'RU'),
@@ -142,6 +144,13 @@ enum AppLocale with BaseAppLocale<AppLocale, Translations> {
       case AppLocale.koKr:
         await l_ko_KR.loadLibrary();
         return l_ko_KR.TranslationsKoKr(
+          overrides: overrides,
+          cardinalResolver: cardinalResolver,
+          ordinalResolver: ordinalResolver,
+        );
+      case AppLocale.nlNl:
+        await l_nl_NL.loadLibrary();
+        return l_nl_NL.TranslationsNlNl(
           overrides: overrides,
           cardinalResolver: cardinalResolver,
           ordinalResolver: ordinalResolver,
@@ -235,6 +244,12 @@ enum AppLocale with BaseAppLocale<AppLocale, Translations> {
         );
       case AppLocale.koKr:
         return l_ko_KR.TranslationsKoKr(
+          overrides: overrides,
+          cardinalResolver: cardinalResolver,
+          ordinalResolver: ordinalResolver,
+        );
+      case AppLocale.nlNl:
+        return l_nl_NL.TranslationsNlNl(
           overrides: overrides,
           cardinalResolver: cardinalResolver,
           ordinalResolver: ordinalResolver,
