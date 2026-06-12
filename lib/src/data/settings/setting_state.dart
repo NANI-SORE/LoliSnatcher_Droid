@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/data/settings/setting_def.dart';
 import 'package:lolisnatcher/src/data/theme_item.dart';
 import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
@@ -28,6 +29,7 @@ class SettingState<T> {
 
   final ValueNotifier<T> _globalValue;
   final ValueNotifier<Map<String, T>> _booruOverrides;
+  bool _suppressSideEffects = false;
 
   /// Reactive notifier for the effective value (considers current booru override).
   /// Widgets should listen to this via [SettingBuilder] or [ValueListenableBuilder].
@@ -46,7 +48,7 @@ class SettingState<T> {
     final validated = def.validate?.call(newValue) ?? newValue;
     final oldValue = _globalValue.value;
     _globalValue.value = validated;
-    if (oldValue != validated) {
+    if (!def.supportsPerBooru && oldValue != validated) {
       def.onChanged?.call(oldValue, validated);
     }
   }
@@ -56,7 +58,12 @@ class SettingState<T> {
 
   /// Set the global value directly (ignoring overrides).
   set globalValue(T newValue) {
-    _globalValue.value = def.validate?.call(newValue) ?? newValue;
+    final validated = def.validate?.call(newValue) ?? newValue;
+    final oldValue = _globalValue.value;
+    _globalValue.value = validated;
+    if (!def.supportsPerBooru && oldValue != validated) {
+      def.onChanged?.call(oldValue, validated);
+    }
   }
 
   /// The global value notifier. Useful for listening to global-only changes.
@@ -85,22 +92,18 @@ class SettingState<T> {
 
   /// Set an override value for a specific booru.
   void setOverrideFor(String booruName, T val) {
-    final oldEffective = _computeEffective();
     final validated = def.validate?.call(val) ?? val;
     final map = Map<String, T>.from(_booruOverrides.value);
     map[booruName] = validated;
     _booruOverrides.value = map; // Triggers notification
-    _notifyIfEffectiveChanged(oldEffective);
   }
 
   /// Remove the override for a specific booru (will use global value).
   void removeOverrideFor(String booruName) {
     if (!_booruOverrides.value.containsKey(booruName)) return;
-    final oldEffective = _computeEffective();
     final map = Map<String, T>.from(_booruOverrides.value);
     map.remove(booruName);
     _booruOverrides.value = map; // Triggers notification
-    _notifyIfEffectiveChanged(oldEffective);
   }
 
   /// All booru names that have overrides for this setting.
@@ -201,7 +204,12 @@ class SettingState<T> {
 
   /// Load the global value from JSON.
   void loadFromJson(dynamic json) {
-    _globalValue.value = def.valueFromJson(json);
+    _suppressSideEffects = true;
+    try {
+      _globalValue.value = def.valueFromJson(json);
+    } finally {
+      _suppressSideEffects = false;
+    }
   }
 
   // ============================================
@@ -248,13 +256,6 @@ class SettingState<T> {
     return _globalValue.value;
   }
 
-  void _notifyIfEffectiveChanged(T oldEffective) {
-    final newEffective = _computeEffective();
-    if (oldEffective != newEffective) {
-      def.onChanged?.call(oldEffective, newEffective);
-    }
-  }
-
   ValueNotifier<T> _createEffectiveNotifier() {
     if (!def.supportsPerBooru) {
       // No per-booru support: effective value is always the global value.
@@ -283,7 +284,12 @@ class _EffectiveValueNotifier<T> extends ValueNotifier<T> {
   ValueNotifier<String?>? _booruNotifier;
 
   void _recompute() {
-    value = _state._computeEffective();
+    final oldValue = value;
+    final newValue = _state._computeEffective();
+    value = newValue;
+    if (!_state._suppressSideEffects && oldValue != newValue) {
+      _state.def.onChanged?.call(oldValue, newValue);
+    }
   }
 
   @override
@@ -397,7 +403,9 @@ class _OverrideBadge extends StatelessWidget {
               ),
               const SizedBox(width: 2),
               Text(
-                globalValueLabel != null ? 'Global: $globalValueLabel' : 'Custom',
+                globalValueLabel != null
+                    ? context.loc.settings.globalValue(value: globalValueLabel!)
+                    : context.loc.settings.theme.custom,
                 style: TextStyle(
                   fontSize: 10,
                   color: onColor,

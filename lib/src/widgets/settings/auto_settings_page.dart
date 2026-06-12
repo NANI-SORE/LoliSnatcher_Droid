@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:lolisnatcher/src/data/settings/setting_def.dart';
 import 'package:lolisnatcher/src/data/settings/setting_state.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
-import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
 
@@ -140,7 +138,9 @@ class AutoSettingsPage extends StatelessWidget {
         title: Text(context.loc.reset),
         contentItems: [
           Text(
-            'Reset all ${category.locName(context)} settings to their defaults?'.temploc,
+            context.loc.settings.resetCategoryQuestion(
+              category: category.locName(context),
+            ),
           ),
         ],
         actionButtons: [
@@ -201,11 +201,7 @@ class MultiCategorySettingsPage extends StatelessWidget {
               if (categories.length > 1) ...[
                 SettingsButton(
                   name: cat.locName(context),
-                  icon: switch (cat.icon) {
-                    IconData _ => Icon(cat.icon),
-                    FontAwesomeIcons _ => FaIcon(cat.icon),
-                    _ => const Icon(null),
-                  },
+                  icon: cat.iconWidget(),
                   enabled: false,
                 ),
               ],

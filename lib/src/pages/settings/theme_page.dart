@@ -212,9 +212,9 @@ class _ThemePageState extends State<ThemePage> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'The active booru "$currentBooru" has theme overrides. '
-                          'Changes here affect the global defaults, not the per-booru theme.'
-                      .temploc,
+                  context.loc.settings.activeBooruThemeOverrides(
+                    booru: currentBooru,
+                  ),
                   style: TextStyle(
                     color: colorScheme.onTertiaryContainer,
                     fontSize: 12,

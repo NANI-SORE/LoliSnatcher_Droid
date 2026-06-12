@@ -135,8 +135,10 @@ SettingDef<int> intSetting({
     valueToJson: (v) => v,
     valueFromJson: (json) {
       final int? parsed = json is String ? int.tryParse(json) : (json is int ? json : null);
-      if (parsed == null) return getDefaultValue();
-      return validate(parsed);
+      if (parsed == null || parsed < min || parsed > max) {
+        return getDefaultValue();
+      }
+      return parsed;
     },
     widgetBuilder: (context, dynamic state) {
       final s = state as SettingState<int>;
@@ -193,8 +195,10 @@ SettingDef<double> doubleSetting({
                 : json is int
                 ? json.toDouble()
                 : null);
-      if (parsed == null) return getDefaultValue();
-      return validate(parsed);
+      if (parsed == null || parsed < min || parsed > max) {
+        return getDefaultValue();
+      }
+      return parsed;
     },
     widgetBuilder: (context, dynamic state) {
       final s = state as SettingState<double>;
@@ -436,6 +440,7 @@ SettingDef<List<String>> stringListSetting({
   required SettingKey key,
   required List<String> Function() getDefaultValue,
   required SettingLocalization localization,
+  List<String> legacyJsonKeys = const [],
   Widget Function()? navigateTo,
   IconData? icon,
   List<SettingCategory> categories = const [],
@@ -449,6 +454,7 @@ SettingDef<List<String>> stringListSetting({
     key: key,
     getDefaultValue: getDefaultValue,
     localization: localization,
+    legacyJsonKeys: legacyJsonKeys,
     categories: categories,
     isDeviceSpecific: isDeviceSpecific,
     supportsPerBooru: supportsPerBooru,

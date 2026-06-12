@@ -37,7 +37,6 @@ import 'package:lolisnatcher/src/data/theme_item.dart';
 import 'package:lolisnatcher/src/handlers/local_auth_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
-import 'package:lolisnatcher/src/pages/settings/gallery_page.dart';
 import 'package:lolisnatcher/src/pages/settings/tags_filters_page.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -283,6 +282,7 @@ void registerAllSettings() {
       key: .showBottomSearchbar,
       getDefaultValue: () => true,
       categories: [SettingCategory.interface],
+      isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.showSearchBarInPreviewGrid,
       ),
@@ -294,6 +294,7 @@ void registerAllSettings() {
       key: .useTopSearchbarInput,
       getDefaultValue: () => false,
       categories: [SettingCategory.interface],
+      isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.moveInputToTopInSearchView,
       ),
@@ -305,6 +306,7 @@ void registerAllSettings() {
       key: .showSearchbarQuickActions,
       getDefaultValue: () => false,
       categories: [SettingCategory.interface],
+      isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.searchViewQuickActionsPanel,
       ),
@@ -316,6 +318,7 @@ void registerAllSettings() {
       key: .autofocusSearchbar,
       getDefaultValue: () => true,
       categories: [SettingCategory.interface],
+      isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.searchViewInputAutofocus,
       ),
@@ -579,11 +582,7 @@ void registerAllSettings() {
         return parsed.map((b) => b.toJson()).toList();
       },
       widgetBuilder: (context, dynamic state) {
-        return SettingsButton(
-          name: context.loc.settings.viewer.toolbarButtonsOrder,
-          icon: const Icon(Icons.reorder),
-          page: () => const GalleryPage(),
-        );
+        return const ToolbarButtonOrderWidget();
       },
     ),
   );
@@ -593,7 +592,7 @@ void registerAllSettings() {
       key: .disabledButtons,
       getDefaultValue: () => <String>[],
       categories: [SettingCategory.viewer],
-      // No navigateTo — managed by the same GalleryPage as buttonOrder
+      // No widget builder: managed by the toolbar editor attached to buttonOrder.
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.buttonsOrder,
       ),
@@ -626,18 +625,11 @@ void registerAllSettings() {
   );
 
   registry.register(
-    widgetSlot(
-      key: .toolbarButtonOrderSlot,
-      categories: [SettingCategory.viewer],
-      builder: (_) => const ToolbarButtonOrderWidget(),
-    ),
-  );
-
-  registry.register(
     boolSetting(
       key: .expandDetails,
       getDefaultValue: () => false,
       categories: [SettingCategory.viewer],
+      isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.expandDetailsByDefault,
       ),
@@ -1304,19 +1296,13 @@ void registerAllSettings() {
   // NETWORK
   // ============================================
 
-  // All network proxy/cert settings share the same side effect:
-  // re-initialize the proxy configuration when any of them changes.
-  void onNetworkSettingChanged() {
-    initProxy();
-  }
-
   registry.register(
     boolSetting(
       key: .allowSelfSignedCerts,
       getDefaultValue: () => false,
       categories: [SettingCategory.network],
       isDeviceSpecific: true,
-      onChanged: (_, _) => onNetworkSettingChanged(),
+      onChanged: (_, _) => initProxy(),
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.network.enableSelfSignedSSLCertificates,
       ),
@@ -1332,7 +1318,9 @@ void registerAllSettings() {
       categories: [SettingCategory.network],
       isDeviceSpecific: true,
       supportsPerBooru: true,
-      onChanged: (_, _) => onNetworkSettingChanged(),
+      // The installed callback reads effective settings dynamically. Re-run
+      // initialization only to refresh the OS proxy address for system mode.
+      onChanged: (_, _) => initProxy(),
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.network.proxy,
         subtitle: (ctx) => ctx.loc.settings.network.proxySubtitle,
@@ -1352,9 +1340,9 @@ void registerAllSettings() {
         final t = _val<ProxyType>(.proxyType, context);
         return t != ProxyType.direct && t != ProxyType.system;
       },
-      onChanged: (_, _) => onNetworkSettingChanged(),
+      onChanged: (_, _) => initProxy(),
       localization: SettingLocalization(
-        title: (ctx) => ctx.loc.settings.network.proxySubtitle,
+        title: (ctx) => ctx.loc.address,
       ),
     ),
   );
@@ -1371,9 +1359,9 @@ void registerAllSettings() {
         final t = _val<ProxyType>(.proxyType, context);
         return t != ProxyType.direct && t != ProxyType.system;
       },
-      onChanged: (_, _) => onNetworkSettingChanged(),
+      onChanged: (_, _) => initProxy(),
       localization: SettingLocalization(
-        title: (ctx) => 'Proxy Username',
+        title: (ctx) => ctx.loc.username,
       ),
     ),
   );
@@ -1391,9 +1379,9 @@ void registerAllSettings() {
         final t = _val<ProxyType>(.proxyType, context);
         return t != ProxyType.direct && t != ProxyType.system;
       },
-      onChanged: (_, _) => onNetworkSettingChanged(),
+      onChanged: (_, _) => initProxy(),
       localization: SettingLocalization(
-        title: (ctx) => 'Proxy Password',
+        title: (ctx) => ctx.loc.password,
       ),
     ),
   );
@@ -1583,6 +1571,7 @@ void registerAllSettings() {
       key: .hiddenTags,
       getDefaultValue: () => <String>[],
       categories: [SettingCategory.tagsFilters],
+      legacyJsonKeys: const ['hatedTags'],
       navigateTo: () => const TagsFiltersPage(),
       icon: Icons.visibility_off,
       localization: SettingLocalization(
@@ -1596,6 +1585,7 @@ void registerAllSettings() {
       key: .markedTags,
       getDefaultValue: () => <String>[],
       categories: [SettingCategory.tagsFilters],
+      legacyJsonKeys: const ['lovedTags'],
       navigateTo: () => const TagsFiltersPage(),
       icon: Icons.bookmark,
       localization: SettingLocalization(

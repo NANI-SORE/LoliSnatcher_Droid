@@ -377,11 +377,23 @@ class BooruSettingsPage extends StatelessWidget {
 
 | Setting | Reason |
 |---------|--------|
-| `theme` | Visual preference is app-wide |
-| `themeMode` | Same as above |
 | `locale` | Language is app-wide |
 | `backupPath` | Storage location is device-specific |
 | `useLockscreen` | Security is app-wide |
+
+Theme, theme mode, AMOLED mode, dynamic colors, custom colors, font, and
+drawer mascot settings intentionally support per-booru overrides.
+
+---
+
+## Migration Audit Notes
+
+- The pre-migration baseline is commit `9dc6817f^`.
+- `hatedTags` and `lovedTags` are load-only aliases for the canonical
+  `hiddenTags` and `markedTags` keys.
+- `captureLogcat` is an intentional persisted addition.
+- `showFps`, `showPerf`, `showImageStats`, and `showVideoStats` are intentional
+  transient additions and are not written to `settings.json`.
 
 ---
 

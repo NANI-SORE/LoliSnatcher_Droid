@@ -233,7 +233,7 @@ class _BooruPageState extends State<BooruPage> {
     }
 
     return SettingsButton(
-      name: 'Per-booru Settings'.temploc,
+      name: context.loc.settings.perBooruSettings,
       icon: const Icon(Icons.tune),
       page: selectedBooru != null ? () => BooruOverridesPage(booru: selectedBooru!) : null,
     );

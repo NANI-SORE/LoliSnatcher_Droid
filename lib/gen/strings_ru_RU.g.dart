@@ -885,6 +885,33 @@ class _Translations$settings$ru_RU extends Translations$settings$en {
   @override
   String get title => TranslationOverrides.string(_root.$meta, 'settings.title', {}) ?? 'Настройки';
   @override
+  String get typeToSearch => TranslationOverrides.string(_root.$meta, 'settings.typeToSearch', {}) ?? 'Начни вводить текст для поиска по настройкам';
+  @override
+  String get noSettingsFound => TranslationOverrides.string(_root.$meta, 'settings.noSettingsFound', {}) ?? 'Настройки не найдены';
+  @override
+  String get perBooruSettings => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Индивидуальные настройки для сайта';
+  @override
+  String resetCategoryQuestion({required String category}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.resetCategoryQuestion', {'category': category}) ??
+      'Сбросить все настройки категории «${category}» до значений по умолчанию?';
+  @override
+  String globalValue({required String value}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.globalValue', {'value': value}) ?? 'Глобальное значение: ${value}';
+  @override
+  String booruOverridesTitle({required String booru}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruOverridesTitle', {'booru': booru}) ?? '${booru} — Индивидуальные настройки';
+  @override
+  String get resetAllOverrides =>
+      TranslationOverrides.string(_root.$meta, 'settings.resetAllOverrides', {}) ?? 'Сбросить все индивидуальные настройки';
+  @override
+  String resetAllOverridesDescription({required String booru}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.resetAllOverridesDescription', {'booru': booru}) ??
+      'Все индивидуальные настройки для сайта «${booru}» будут удалены. Вместо них будут использоваться глобальные значения.';
+  @override
+  String activeBooruThemeOverrides({required String booru}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.activeBooruThemeOverrides', {'booru': booru}) ??
+      'Для активного сайта «${booru}» заданы индивидуальные настройки темы. Изменения здесь повлияют на глобальные значения, а не на тему для этого сайта.';
+  @override
   late final _Translations$settings$language$ru_RU language = _Translations$settings$language$ru_RU._(_root);
   @override
   late final _Translations$settings$booru$ru_RU booru = _Translations$settings$booru$ru_RU._(_root);
@@ -4400,6 +4427,31 @@ extension on TranslationsRuRu {
           'webview.navigation.noForwardHistoryItem' =>
             TranslationOverrides.string(_root.$meta, 'webview.navigation.noForwardHistoryItem', {}) ?? 'Нет элемента для перехода вперёд',
           'settings.title' => TranslationOverrides.string(_root.$meta, 'settings.title', {}) ?? 'Настройки',
+          'settings.typeToSearch' =>
+            TranslationOverrides.string(_root.$meta, 'settings.typeToSearch', {}) ?? 'Начни вводить текст для поиска по настройкам',
+          'settings.noSettingsFound' => TranslationOverrides.string(_root.$meta, 'settings.noSettingsFound', {}) ?? 'Настройки не найдены',
+          'settings.perBooruSettings' =>
+            TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Индивидуальные настройки для сайта',
+          'settings.resetCategoryQuestion' =>
+            ({required String category}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.resetCategoryQuestion', {'category': category}) ??
+                'Сбросить все настройки категории «${category}» до значений по умолчанию?',
+          'settings.globalValue' =>
+            ({required String value}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.globalValue', {'value': value}) ?? 'Глобальное значение: ${value}',
+          'settings.booruOverridesTitle' =>
+            ({required String booru}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.booruOverridesTitle', {'booru': booru}) ?? '${booru} — Индивидуальные настройки',
+          'settings.resetAllOverrides' =>
+            TranslationOverrides.string(_root.$meta, 'settings.resetAllOverrides', {}) ?? 'Сбросить все индивидуальные настройки',
+          'settings.resetAllOverridesDescription' =>
+            ({required String booru}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.resetAllOverridesDescription', {'booru': booru}) ??
+                'Все индивидуальные настройки для сайта «${booru}» будут удалены. Вместо них будут использоваться глобальные значения.',
+          'settings.activeBooruThemeOverrides' =>
+            ({required String booru}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.activeBooruThemeOverrides', {'booru': booru}) ??
+                'Для активного сайта «${booru}» заданы индивидуальные настройки темы. Изменения здесь повлияют на глобальные значения, а не на тему для этого сайта.',
           'settings.language.title' => TranslationOverrides.string(_root.$meta, 'settings.language.title', {}) ?? 'Язык',
           'settings.language.system' => TranslationOverrides.string(_root.$meta, 'settings.language.system', {}) ?? 'Системный',
           'settings.language.helpUsTranslate' =>
@@ -4815,6 +4867,9 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionValues.hydrus', {}) ?? 'Hydrus',
           'settings.video.title' => TranslationOverrides.string(_root.$meta, 'settings.video.title', {}) ?? 'Видео',
           'settings.video.disableVideos' => TranslationOverrides.string(_root.$meta, 'settings.video.disableVideos', {}) ?? 'Отключить видео',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.video.disableVideosHelp' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.disableVideosHelp', {}) ??
                 'Полезно на слабых устройствах, которые вылетают при попытке загрузить видео. Даёт возможность просмотреть видео во внешнем плеере или браузере.',
@@ -4831,9 +4886,6 @@ extension on TranslationsRuRu {
           'settings.video.backendDefaultHelp' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.backendDefaultHelp', {}) ??
                 'Основан на exoplayer. Имеет лучшую совместимость с устройствами, могут быть проблемы с 4K видео, некоторыми кодеками или старыми устройствами',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.video.backendMPVHelp' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.backendMPVHelp', {}) ??
                 'Основан на libmpv, имеет продвинутые настройки, которые могут помочь решить проблемы с некоторыми кодеками/устройствами\n[МОЖЕТ ВЫЗВАТЬ ВЫЛЕТЫ]',
@@ -5787,6 +5839,9 @@ extension on TranslationsRuRu {
           'mobileHome.fileAlreadyExists' => TranslationOverrides.string(_root.$meta, 'mobileHome.fileAlreadyExists', {}) ?? 'Файл уже существует',
           'mobileHome.failedToDownload' => TranslationOverrides.string(_root.$meta, 'mobileHome.failedToDownload', {}) ?? 'Не удалось загрузить',
           'mobileHome.cancelledByUser' => TranslationOverrides.string(_root.$meta, 'mobileHome.cancelledByUser', {}) ?? 'Отменено пользователем',
+          _ => null,
+        } ??
+        switch (path) {
           'mobileHome.saveAnyway' => TranslationOverrides.string(_root.$meta, 'mobileHome.saveAnyway', {}) ?? 'Сохранить в любом случае',
           'mobileHome.skip' => TranslationOverrides.string(_root.$meta, 'mobileHome.skip', {}) ?? 'Пропустить',
           'mobileHome.retryAll' =>
@@ -5801,9 +5856,6 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'desktopHome.addBoorusInSettings', {}) ?? 'Добавь сайт в настройках',
           'desktopHome.settings' => TranslationOverrides.string(_root.$meta, 'desktopHome.settings', {}) ?? 'Настройки',
           'desktopHome.save' => TranslationOverrides.string(_root.$meta, 'desktopHome.save', {}) ?? 'Сохранить',
-          _ => null,
-        } ??
-        switch (path) {
           'desktopHome.noItemsSelected' => TranslationOverrides.string(_root.$meta, 'desktopHome.noItemsSelected', {}) ?? 'Ничего не выбрано',
           'galleryView.noItems' => TranslationOverrides.string(_root.$meta, 'galleryView.noItems', {}) ?? 'Нет элементов',
           'galleryView.noItemSelected' => TranslationOverrides.string(_root.$meta, 'galleryView.noItemSelected', {}) ?? 'Нет выбранного элемента',

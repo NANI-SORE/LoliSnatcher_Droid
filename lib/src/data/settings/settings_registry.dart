@@ -53,7 +53,9 @@ class SettingsRegistry {
   /// Used for backwards compatibility with the existing `getByString`/`setByString` pattern.
   SettingState<dynamic>? getByJsonKey(String jsonKey) {
     for (final state in _states.values) {
-      if (state.def.jsonKey == jsonKey) return state;
+      if (state.def.jsonKey == jsonKey || state.def.legacyJsonKeys.contains(jsonKey)) {
+        return state;
+      }
     }
     return null;
   }
@@ -136,9 +138,21 @@ class SettingsRegistry {
   /// Load global setting values from JSON.
   /// Unrecognized keys are silently ignored (forwards compatibility).
   void loadFromJson(Map<String, dynamic> json) {
+    // Load canonical keys first so they win when a file contains both the
+    // current key and one of its historical aliases.
+    for (final state in _states.values) {
+      if (_excludeFromJson(state) || !json.containsKey(state.def.jsonKey)) {
+        continue;
+      }
+      state.loadFromJson(json[state.def.jsonKey]);
+    }
+
     for (final entry in json.entries) {
       final state = getByJsonKey(entry.key);
-      if (state != null && !_excludeFromJson(state)) {
+      if (state != null &&
+          !_excludeFromJson(state) &&
+          entry.key != state.def.jsonKey &&
+          !json.containsKey(state.def.jsonKey)) {
         state.loadFromJson(entry.value);
       }
     }

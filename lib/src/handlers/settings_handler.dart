@@ -103,14 +103,6 @@ class SettingsHandler {
       );
     }
 
-    // Handle legacy key renames before passing to registry
-    if (json.containsKey('hatedTags') && !json.containsKey('hiddenTags')) {
-      json['hiddenTags'] = json.remove('hatedTags');
-    }
-    if (json.containsKey('lovedTags') && !json.containsKey('markedTags')) {
-      json['markedTags'] = json.remove('lovedTags');
-    }
-
     SettingsRegistry.instance.loadFromJson(json);
 
     // Force mobile app mode until desktop UI is redone

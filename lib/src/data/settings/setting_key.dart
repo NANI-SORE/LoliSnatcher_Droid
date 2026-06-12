@@ -55,7 +55,6 @@ enum SettingKey {
   shareAction,
   buttonOrder,
   disabledButtons,
-  toolbarButtonOrderSlot,
   allowRotation,
   expandDetails,
   hideNotes,

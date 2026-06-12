@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/settings/setting_def.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
-import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/settings/auto_settings_page.dart';
 import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
@@ -84,21 +82,26 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
     final Widget body = Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: Text('${widget.booru.name} — Overrides'.temploc),
+        title: Text(
+          context.loc.settings.booruOverridesTitle(
+            booru: widget.booru.name ?? '',
+          ),
+        ),
         actions: [
           if (perBooruSettings.any((s) => s.hasOverrideFor(booruName)))
             IconButton(
               icon: const Icon(Icons.restart_alt),
-              tooltip: 'Reset all overrides'.temploc,
+              tooltip: context.loc.settings.resetAllOverrides,
               onPressed: () async {
                 final confirmed = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => SettingsDialog(
-                    title: Text('Reset all overrides?'.temploc),
+                    title: Text(context.loc.settings.resetAllOverrides),
                     contentItems: [
                       Text(
-                        'All custom settings for "${widget.booru.name}" will be removed. Global defaults will be used instead.'
-                            .temploc,
+                        context.loc.settings.resetAllOverridesDescription(
+                          booru: widget.booru.name ?? '',
+                        ),
                       ),
                     ],
                     actionButtons: [
@@ -133,11 +136,7 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
                 tabs: [
                   for (final cat in categories)
                     Tab(
-                      icon: switch (cat.icon) {
-                        IconData _ => Icon(cat.icon),
-                        FontAwesomeIcons _ => FaIcon(cat.icon),
-                        _ => const Icon(null),
-                      },
+                      icon: cat.iconWidget(),
                       text: cat.locName(context),
                     ),
                 ],
@@ -149,7 +148,7 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
               child: CircularProgressIndicator(),
             )
           : categories.length == 1
-          ? _buildCategoryList(categories.first)
+          ? _buildCategoryList(categories.first, showHeader: true)
           : TabBarView(
               controller: tabController,
               children: [
@@ -169,12 +168,21 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
     );
   }
 
-  Widget _buildCategoryList(SettingCategory category) {
+  Widget _buildCategoryList(
+    SettingCategory category, {
+    bool showHeader = false,
+  }) {
     final settings = grouped[category] ?? [];
 
     return ListView(
       padding: const EdgeInsets.only(top: 8, bottom: 40),
       children: [
+        if (showHeader)
+          SettingsButton(
+            name: category.locName(context),
+            icon: category.iconWidget(),
+            enabled: false,
+          ),
         for (final state in settings) ReactiveSettingWidget(state: state),
       ],
     );

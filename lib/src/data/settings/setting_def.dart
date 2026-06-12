@@ -21,6 +21,7 @@ class SettingDef<T> {
     required this.localization,
     required this.valueToJson,
     required this.valueFromJson,
+    this.legacyJsonKeys = const [],
     this.categories = const [],
     this.isDeviceSpecific = false,
     this.supportsPerBooru = false,
@@ -49,6 +50,10 @@ class SettingDef<T> {
   /// Deserialize a JSON-compatible value back to [T].
   /// Must handle invalid input gracefully (return a sensible fallback).
   final T Function(dynamic json) valueFromJson;
+
+  /// Historical JSON keys accepted when loading older settings files.
+  /// Serialization always uses [jsonKey].
+  final List<String> legacyJsonKeys;
 
   /// Categories this setting belongs to. A setting can appear in multiple categories
   /// (e.g., `enableHeroTransitions` in both `viewer` and `performance`).
@@ -214,7 +219,7 @@ enum SettingCategory {
     }
   }
 
-  dynamic get icon {
+  Object get icon {
     switch (this) {
       case SettingCategory.language:
         return Icons.translate_rounded;
@@ -247,6 +252,15 @@ enum SettingCategory {
       case SettingCategory.debug:
         return Icons.developer_mode;
     }
+  }
+
+  /// Builds the icon used for this category throughout the settings UI.
+  Widget iconWidget({double? size, Color? color}) {
+    return switch (icon) {
+      final IconData iconData => Icon(iconData, size: size, color: color),
+      final FaIconData iconData => FaIcon(iconData, size: size, color: color),
+      _ => const Icon(null),
+    };
   }
 
   /// Visibility condition. If non-null and returns false, this category

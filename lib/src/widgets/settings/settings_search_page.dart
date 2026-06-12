@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:lolisnatcher/gen/strings.g.dart';
+import 'package:lolisnatcher/src/data/settings/setting_def.dart';
 import 'package:lolisnatcher/src/data/settings/setting_state.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -34,10 +36,10 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
         : registry.search(_query, context).where(_isSearchVisible).toList();
 
     // Group results by their first category
-    final grouped = <String, List<SettingState<dynamic>>>{};
+    final grouped = <SettingCategory, List<SettingState<dynamic>>>{};
     for (final state in results) {
-      final categoryName = state.def.categories.isNotEmpty ? state.def.categories.first.locName(context) : 'Other';
-      grouped.putIfAbsent(categoryName, () => []).add(state);
+      final category = state.def.categories.first;
+      grouped.putIfAbsent(category, () => []).add(state);
     }
 
     return Scaffold(
@@ -47,7 +49,7 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
           controller: _controller,
           autofocus: true,
           decoration: InputDecoration(
-            hintText: 'Search settings...',
+            hintText: context.loc.search,
             border: InputBorder.none,
             suffixIcon: _query.isNotEmpty
                 ? IconButton(
@@ -63,9 +65,9 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
         ),
       ),
       body: _query.isEmpty
-          ? const Center(child: Text('Type to search settings'))
+          ? Center(child: Text(context.loc.settings.typeToSearch))
           : results.isEmpty
-          ? const Center(child: Text('No settings found'))
+          ? Center(child: Text(context.loc.settings.noSettingsFound))
           : ListView.builder(
               itemCount: _countItems(grouped),
               itemBuilder: (context, index) => _buildItem(context, grouped, index),
@@ -75,13 +77,14 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
 
   bool _isSearchVisible(SettingState<dynamic> state) {
     if (state.def.widgetBuilder == null || state.def.isWidgetSlot) return false;
+    if (state.def.categories.isEmpty) return false;
     if (state.def.categories.isNotEmpty && !state.def.categories.any((c) => c.visibleWhen?.call() ?? true)) {
       return false;
     }
     return state.def.enabledWhen?.call() ?? true;
   }
 
-  int _countItems(Map<String, List<SettingState<dynamic>>> grouped) {
+  int _countItems(Map<SettingCategory, List<SettingState<dynamic>>> grouped) {
     int count = 0;
     for (final entry in grouped.entries) {
       count++; // category header
@@ -90,13 +93,18 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
     return count;
   }
 
-  Widget _buildItem(BuildContext context, Map<String, List<SettingState<dynamic>>> grouped, int index) {
+  Widget _buildItem(
+    BuildContext context,
+    Map<SettingCategory, List<SettingState<dynamic>>> grouped,
+    int index,
+  ) {
     int current = 0;
     for (final entry in grouped.entries) {
       if (current == index) {
         // Category header
         return SettingsButton(
-          name: entry.key,
+          name: entry.key.locName(context),
+          icon: entry.key.iconWidget(),
           enabled: false,
         );
       }

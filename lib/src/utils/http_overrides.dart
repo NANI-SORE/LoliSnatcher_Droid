@@ -12,15 +12,6 @@ String systemProxyAddress = '';
 bool addedRootCert = false;
 
 Future<void> initProxy() async {
-  final proxyType = SX.proxyType.value;
-
-  if (proxyType.isSystem && PlatformExt.isMobile) {
-    final HttpProxy httpProxy = await HttpProxy.createHttpProxy();
-    if (httpProxy.host?.isNotEmpty == true && httpProxy.port?.isNotEmpty == true) {
-      systemProxyAddress = '${httpProxy.host}:${httpProxy.port}';
-    }
-  }
-
   if (Platform.isAndroid && !addedRootCert) {
     final List<int> cert = ascii.encode(_kIsrgRootX1);
     // add newer root certificate for older devices
@@ -33,23 +24,40 @@ Future<void> initProxy() async {
     onCreate: (client) => client.badCertificateCallback = (_, _, _) {
       return SX.allowSelfSignedCerts.value;
     },
-    findProxy: (_) {
-      final configAddress = getProxyConfigAddress();
-
-      switch (proxyType) {
-        case ProxyType.direct:
-          return 'DIRECT';
-        case ProxyType.system:
-          return systemProxyAddress.isEmpty ? 'DIRECT' : 'PROXY $systemProxyAddress; DIRECT';
-        case ProxyType.http:
-          return configAddress.isEmpty ? 'DIRECT' : 'PROXY $configAddress; DIRECT';
-        case ProxyType.socks5:
-          return configAddress.isEmpty ? 'DIRECT' : 'SOCKS5 $configAddress; DIRECT';
-        case ProxyType.socks4:
-          return configAddress.isEmpty ? 'DIRECT' : 'SOCKS4 $configAddress; DIRECT';
-      }
-    },
+    findProxy: (_) => getProxyDirective(),
   );
+
+  if (SX.proxyType.value.isSystem && PlatformExt.isMobile) {
+    final HttpProxy httpProxy = await HttpProxy.createHttpProxy();
+    if (httpProxy.host?.isNotEmpty == true && httpProxy.port?.isNotEmpty == true) {
+      systemProxyAddress = '${httpProxy.host}:${httpProxy.port}';
+    } else {
+      systemProxyAddress = '';
+    }
+  }
+}
+
+/// Resolves the proxy from the current effective settings.
+///
+/// This is intentionally evaluated for every new HTTP client instead of being
+/// captured by [initProxy]. Changing tabs can switch the active booru and its
+/// proxy overrides immediately before a request starts.
+String getProxyDirective() {
+  final proxyType = SX.proxyType.value;
+  final configAddress = getProxyConfigAddress();
+
+  switch (proxyType) {
+    case ProxyType.direct:
+      return 'DIRECT';
+    case ProxyType.system:
+      return systemProxyAddress.isEmpty ? 'DIRECT' : 'PROXY $systemProxyAddress; DIRECT';
+    case ProxyType.http:
+      return configAddress.isEmpty ? 'DIRECT' : 'PROXY $configAddress; DIRECT';
+    case ProxyType.socks5:
+      return configAddress.isEmpty ? 'DIRECT' : 'SOCKS5 $configAddress; DIRECT';
+    case ProxyType.socks4:
+      return configAddress.isEmpty ? 'DIRECT' : 'SOCKS4 $configAddress; DIRECT';
+  }
 }
 
 String getProxyConfigAddress() {

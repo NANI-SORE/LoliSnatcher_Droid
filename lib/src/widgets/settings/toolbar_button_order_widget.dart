@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:lolisnatcher/src/data/settings/gallery_button.dart';
@@ -29,13 +30,36 @@ class _ToolbarButtonOrderWidgetState extends State<ToolbarButtonOrderWidget> {
     super.initState();
     buttonOrder = SX.buttonOrder.value.map(GalleryButton.fromString).whereType<GalleryButton>().toList();
     disabledButtons = SX.disabledButtons.value.map(GalleryButton.fromString).whereType<GalleryButton>().toList();
+    SX.buttonOrder.state.effectiveNotifier.addListener(_syncFromSettings);
+    SX.disabledButtons.state.effectiveNotifier.addListener(_syncFromSettings);
   }
 
   @override
   void dispose() {
-    SX.buttonOrder.state.value = buttonOrder.map((b) => b.name).toList();
-    SX.disabledButtons.state.value = disabledButtons.map((b) => b.name).toList();
+    SX.buttonOrder.state.effectiveNotifier.removeListener(_syncFromSettings);
+    SX.disabledButtons.state.effectiveNotifier.removeListener(_syncFromSettings);
     super.dispose();
+  }
+
+  void _commit() {
+    SX.buttonOrder.state.value = buttonOrder.map((button) => button.name).toList();
+    SX.disabledButtons.state.value = disabledButtons.map((button) => button.name).toList();
+  }
+
+  void _syncFromSettings() {
+    final newOrder = SX.buttonOrder.value.map(GalleryButton.fromString).whereType<GalleryButton>().toList();
+    final newDisabled = SX.disabledButtons.value.map(GalleryButton.fromString).whereType<GalleryButton>().toList();
+    if (listEquals(buttonOrder, newOrder) && listEquals(disabledButtons, newDisabled)) {
+      return;
+    }
+    setState(() {
+      buttonOrder
+        ..clear()
+        ..addAll(newOrder);
+      disabledButtons
+        ..clear()
+        ..addAll(newDisabled);
+    });
   }
 
   @override
@@ -65,6 +89,7 @@ class _ToolbarButtonOrderWidgetState extends State<ToolbarButtonOrderWidget> {
                   disabledButtons.addAll(
                     SX.disabledButtons.state.defaultValue.map(GalleryButton.fromString).whereType<GalleryButton>(),
                   );
+                  _commit();
                 });
               },
             ),
@@ -133,6 +158,7 @@ class _ToolbarButtonOrderWidgetState extends State<ToolbarButtonOrderWidget> {
                               } else {
                                 disabledButtons.remove(button);
                               }
+                              _commit();
                             });
                           }
 
@@ -179,6 +205,7 @@ class _ToolbarButtonOrderWidgetState extends State<ToolbarButtonOrderWidget> {
                                 } else {
                                   disabledButtons.remove(button);
                                 }
+                                _commit();
                               });
                             },
                           ),
@@ -220,6 +247,7 @@ class _ToolbarButtonOrderWidgetState extends State<ToolbarButtonOrderWidget> {
               setState(() {
                 final item = buttonOrder.removeAt(oldIndex);
                 buttonOrder.insert(newIndex, item);
+                _commit();
               });
             },
           ),

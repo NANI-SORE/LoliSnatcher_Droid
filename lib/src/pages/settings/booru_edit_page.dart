@@ -138,7 +138,7 @@ class _BooruEditState extends State<BooruEdit> {
             ),
             if (widget.booru.name != 'New')
               SettingsButton(
-                name: 'Per-booru Settings'.temploc,
+                name: context.loc.settings.perBooruSettings,
                 icon: const Icon(Icons.tune),
                 page: () => BooruOverridesPage(booru: widget.booru, saveOnPop: false),
               ),
