@@ -20,6 +20,30 @@ struct _MyApplication {
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 
+constexpr gint kDefaultWindowOffset = 100;
+constexpr gint kFallbackWindowWidth = 960;
+constexpr gint kFallbackWindowHeight = 540;
+
+static void set_default_window_state(MyApplication* self) {
+  self->window_x = kDefaultWindowOffset;
+  self->window_y = kDefaultWindowOffset;
+  self->window_width = kFallbackWindowWidth;
+  self->window_height = kFallbackWindowHeight;
+  self->window_maximized = FALSE;
+
+  GdkScreen* screen = gdk_screen_get_default();
+  if (screen == nullptr || gdk_screen_get_n_monitors(screen) == 0) {
+    return;
+  }
+
+  GdkRectangle bounds{};
+  gdk_screen_get_monitor_geometry(screen, 0, &bounds);
+  self->window_x = bounds.x + kDefaultWindowOffset;
+  self->window_y = bounds.y + kDefaultWindowOffset;
+  self->window_width = bounds.width / 2;
+  self->window_height = bounds.height / 2;
+}
+
 static gchar* get_window_state_path() {
   return g_build_filename(g_get_user_config_dir(), "loliSnatcher",
                           "window.ini", nullptr);
@@ -123,6 +147,26 @@ static gboolean window_delete_cb(GtkWidget*, GdkEvent*,
   return FALSE;
 }
 
+static void window_method_call_cb(FlMethodChannel*,
+                                  FlMethodCall* method_call,
+                                  gpointer user_data) {
+  MyApplication* self = MY_APPLICATION(user_data);
+  g_autoptr(FlMethodResponse) response = nullptr;
+
+  if (g_strcmp0(fl_method_call_get_name(method_call), "reset") == 0) {
+    set_default_window_state(self);
+    gtk_window_unmaximize(self->window);
+    gtk_window_resize(self->window, self->window_width, self->window_height);
+    gtk_window_move(self->window, self->window_x, self->window_y);
+    save_window_state(self);
+    response = FL_METHOD_RESPONSE(fl_method_success_response_new(nullptr));
+  } else {
+    response = FL_METHOD_RESPONSE(fl_method_not_implemented_response_new());
+  }
+
+  fl_method_call_respond(method_call, response, nullptr);
+}
+
 // Implements GApplication::activate.
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
@@ -157,6 +201,7 @@ static void my_application_activate(GApplication* application) {
     gtk_window_set_title(window, "loliSnatcher");
   }
 
+  set_default_window_state(self);
   load_window_state(self);
   gtk_window_set_default_size(window, self->window_width, self->window_height);
   gtk_window_move(window, self->window_x, self->window_y);
@@ -178,6 +223,12 @@ static void my_application_activate(GApplication* application) {
   gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
+
+  g_autoptr(FlMethodChannel) window_channel = fl_method_channel_new(
+      fl_engine_get_binary_messenger(fl_view_get_engine(view)),
+      "lolisnatcher/window", FL_METHOD_CODEC(fl_standard_method_codec_new()));
+  fl_method_channel_set_method_call_handler(
+      window_channel, window_method_call_cb, self, nullptr);
 
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }
@@ -216,10 +267,10 @@ static void my_application_class_init(MyApplicationClass* klass) {
 
 static void my_application_init(MyApplication* self) {
   self->window = nullptr;
-  self->window_x = 10;
-  self->window_y = 10;
-  self->window_width = 1280;
-  self->window_height = 720;
+  self->window_x = kDefaultWindowOffset;
+  self->window_y = kDefaultWindowOffset;
+  self->window_width = kFallbackWindowWidth;
+  self->window_height = kFallbackWindowHeight;
   self->window_maximized = FALSE;
 }
 

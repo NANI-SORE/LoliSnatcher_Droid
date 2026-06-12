@@ -107,6 +107,7 @@ class _MainAppState extends State<MainApp> {
   void initState() {
     super.initState();
 
+    HardwareKeyboard.instance.addHandler(handleGlobalKeyEvent);
     initHandlers();
   }
 
@@ -156,6 +157,7 @@ class _MainAppState extends State<MainApp> {
 
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(handleGlobalKeyEvent);
     SX.isDebug.state.effectiveNotifier.removeListener(devOverlayListener);
     NotifyHandler.unregister();
     NavigationHandler.unregister();
@@ -171,6 +173,25 @@ class _MainAppState extends State<MainApp> {
 
   void updateState() {
     setState(() {});
+  }
+
+  void resetDesktopWindow() {
+    if (Platform.isWindows || Platform.isLinux) {
+      unawaited(
+        const MethodChannel('lolisnatcher/window').invokeMethod<void>('reset'),
+      );
+    }
+  }
+
+  bool handleGlobalKeyEvent(KeyEvent event) {
+    final bool isZeroKey =
+        event.physicalKey == PhysicalKeyboardKey.digit0 || event.physicalKey == PhysicalKeyboardKey.numpad0;
+    if (event is! KeyDownEvent || !isZeroKey || !HardwareKeyboard.instance.isControlPressed) {
+      return false;
+    }
+
+    resetDesktopWindow();
+    return true;
   }
 
   @override

@@ -144,6 +144,7 @@ enum SettingKey {
   appAlias,
   usePredictiveBack,
   captureLogcat,
+  useImageLogging,
 
   // Debug
   shitDevice,
@@ -326,6 +327,7 @@ abstract class SX {
   static const appAlias = TypedKey<AppAlias>(SettingKey.appAlias);
   static const usePredictiveBack = TypedKey<bool>(SettingKey.usePredictiveBack);
   static const captureLogcat = TypedKey<bool>(SettingKey.captureLogcat);
+  static const useImageLogging = TypedKey<bool>(SettingKey.useImageLogging);
 
   // Debug
   static const shitDevice = TypedKey<bool>(SettingKey.shitDevice);

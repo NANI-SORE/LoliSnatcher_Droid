@@ -25,9 +25,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
   FlutterWindow window(project);
-  Win32Window::Point origin(10, 10);
-  Win32Window::Size size(1280, 720);
+  Win32Window::Point origin(100, 100);
+  Win32Window::Size size(960, 540);
   bool maximized = false;
+  Win32Window::GetDefaultWindowState(&origin, &size);
   Win32Window::LoadSavedWindowState(&origin, &size, &maximized);
   if (!window.Create(L"lolisnatcher", origin, size)) {
     return EXIT_FAILURE;

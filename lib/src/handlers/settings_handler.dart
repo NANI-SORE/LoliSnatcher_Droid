@@ -75,7 +75,6 @@ class SettingsHandler {
   final RxString discordURL = RxString(Constants.discordURL);
 
   // debug toggles
-  bool useImageLogging = false;
   bool blurImages = kDebugMode ? Constants.blurImagesDefaultDev : false;
 
   ////////////////////////////////////////////////////

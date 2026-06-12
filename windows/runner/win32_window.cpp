@@ -173,6 +173,26 @@ bool Win32Window::Show() {
                                              : SW_SHOWNORMAL);
 }
 
+void Win32Window::GetDefaultWindowState(Point* origin, Size* size) {
+  constexpr int kDefaultOffset = 100;
+  HMONITOR monitor = MonitorFromWindow(nullptr, MONITOR_DEFAULTTOPRIMARY);
+  MONITORINFO monitor_info{sizeof(monitor_info)};
+  if (!GetMonitorInfo(monitor, &monitor_info)) {
+    return;
+  }
+
+  const double scale_factor = FlutterDesktopGetDpiForMonitor(monitor) / 96.0;
+  const RECT& bounds = monitor_info.rcMonitor;
+  origin->x =
+      static_cast<int>(bounds.left / scale_factor) + kDefaultOffset;
+  origin->y =
+      static_cast<int>(bounds.top / scale_factor) + kDefaultOffset;
+  size->width = static_cast<unsigned int>(
+      (bounds.right - bounds.left) / scale_factor / 2);
+  size->height = static_cast<unsigned int>(
+      (bounds.bottom - bounds.top) / scale_factor / 2);
+}
+
 void Win32Window::LoadSavedWindowState(Point* origin, Size* size,
                                        bool* maximized) {
   HKEY key = nullptr;
@@ -244,20 +264,55 @@ void Win32Window::SaveWindowState() {
     return;
   }
 
+  const bool maximized =
+      IsZoomed(window_handle_) || placement.showCmd == SW_SHOWMAXIMIZED;
+  RECT bounds = placement.rcNormalPosition;
+  if (!maximized) {
+    // GetWindowRect uses screen coordinates, unlike rcNormalPosition which
+    // uses workspace coordinates and can be offset by the taskbar.
+    if (!GetWindowRect(window_handle_, &bounds)) {
+      return;
+    }
+  } else {
+    HMONITOR monitor =
+        MonitorFromWindow(window_handle_, MONITOR_DEFAULTTONEAREST);
+    MONITORINFO monitor_info{sizeof(monitor_info)};
+    if (GetMonitorInfo(monitor, &monitor_info)) {
+      OffsetRect(&bounds,
+                 monitor_info.rcWork.left - monitor_info.rcMonitor.left,
+                 monitor_info.rcWork.top - monitor_info.rcMonitor.top);
+    }
+  }
+
   HKEY key = nullptr;
   if (RegCreateKeyEx(HKEY_CURRENT_USER, kWindowStateRegKey, 0, nullptr, 0,
                      KEY_WRITE, nullptr, &key, nullptr) != ERROR_SUCCESS) {
     return;
   }
 
-  WriteRegistryDword(key, L"Left", placement.rcNormalPosition.left);
-  WriteRegistryDword(key, L"Top", placement.rcNormalPosition.top);
-  WriteRegistryDword(key, L"Right", placement.rcNormalPosition.right);
-  WriteRegistryDword(key, L"Bottom", placement.rcNormalPosition.bottom);
-  WriteRegistryDword(
-      key, L"Maximized",
-      IsZoomed(window_handle_) || placement.showCmd == SW_SHOWMAXIMIZED);
+  WriteRegistryDword(key, L"Left", bounds.left);
+  WriteRegistryDword(key, L"Top", bounds.top);
+  WriteRegistryDword(key, L"Right", bounds.right);
+  WriteRegistryDword(key, L"Bottom", bounds.bottom);
+  WriteRegistryDword(key, L"Maximized", maximized);
   RegCloseKey(key);
+}
+
+void Win32Window::ResetWindowState() {
+  Point origin(100, 100);
+  Size size(960, 540);
+  GetDefaultWindowState(&origin, &size);
+
+  HMONITOR monitor = MonitorFromWindow(nullptr, MONITOR_DEFAULTTOPRIMARY);
+  const double scale_factor = FlutterDesktopGetDpiForMonitor(monitor) / 96.0;
+
+  ShowWindow(window_handle_, SW_RESTORE);
+  SetWindowPos(window_handle_, nullptr, Scale(origin.x, scale_factor),
+               Scale(origin.y, scale_factor),
+               Scale(size.width, scale_factor),
+               Scale(size.height, scale_factor),
+               SWP_NOZORDER | SWP_NOACTIVATE);
+  SaveWindowState();
 }
 
 // static

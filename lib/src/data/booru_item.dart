@@ -59,6 +59,9 @@ class BooruItem extends Equatable {
     }
 
     mediaType = Rx<MediaType>(MediaType.fromExtension(fileExt));
+    if (mediaType.value.isImage && tagsList.any((t) => t.fullString == 'animated')) {
+      mediaType.value = MediaType.animation;
+    }
   }
 
   late Key key;

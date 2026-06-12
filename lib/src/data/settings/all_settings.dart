@@ -1659,6 +1659,87 @@ void registerAllSettings() {
   );
 
   registry.register(
+    confirmBoolSetting(
+      key: .shitDevice,
+      getDefaultValue: () => false,
+      categories: [SettingCategory.performance],
+      isDeviceSpecific: true,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.performance.lowPerformanceMode,
+        subtitle: (ctx) => ctx.loc.settings.performance.lowPerformanceModeSubtitle,
+      ),
+      widgetConfig: SettingWidgetConfig(
+        trailingIcon: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: () {
+              showDialog(
+                context: ctx,
+                builder: (dialogCtx) => SettingsDialog(
+                  title: Text(dialogCtx.loc.settings.performance.lowPerformanceModeDialogTitle),
+                  contentItems: [
+                    Text(dialogCtx.loc.settings.performance.lowPerformanceModeDialogDisablesDetailed),
+                    Text(dialogCtx.loc.settings.performance.lowPerformanceModeDialogDisablesResourceIntensive),
+                    const Text(''),
+                    Text(dialogCtx.loc.settings.performance.lowPerformanceModeDialogSetsOptimal),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+      buildDialogContent: (ctx) => SettingsDialog(
+        title: Text(ctx.loc.settings.performance.lowPerformanceModeDialogTitle),
+        contentItems: [
+          Text(ctx.loc.settings.performance.lowPerformanceModeDialogDisablesDetailed),
+          Text(ctx.loc.settings.performance.lowPerformanceModeDialogDisablesResourceIntensive),
+          const Text(''),
+          Text(ctx.loc.settings.performance.lowPerformanceModeDialogSetsOptimal),
+          ...[
+            ctx.loc.settings.interface.previewQuality,
+            ctx.loc.settings.viewer.imageQuality,
+            ctx.loc.settings.interface.previewColumnsPortrait,
+            ctx.loc.settings.interface.previewColumnsLandscape,
+            ctx.loc.settings.viewer.preloadAmount,
+            ctx.loc.settings.viewer.preloadSizeLimit,
+            ctx.loc.settings.viewer.preloadHeightLimit,
+            ctx.loc.settings.interface.dontScaleImages,
+            ctx.loc.settings.performance.autoplayVideos,
+          ].map((s) => Text('- $s')),
+        ],
+        actionButtons: [
+          TextButton.icon(
+            style: TextButton.styleFrom(foregroundColor: Theme.of(ctx).colorScheme.onSurface),
+            onPressed: () => Navigator.of(ctx).pop(false),
+            icon: const Icon(Icons.cancel_outlined),
+            label: Text(ctx.loc.cancel),
+          ),
+          TextButton.icon(
+            style: TextButton.styleFrom(foregroundColor: Theme.of(ctx).colorScheme.onSurface),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            icon: const Icon(Icons.check_circle_outline),
+            label: Text(ctx.loc.confirm),
+          ),
+        ],
+      ),
+      onConfirmed: () {
+        // Cascade low-perf mode settings
+        final reg = SettingsRegistry.instance;
+        reg.get<PreviewQuality>(.previewMode)?.value = PreviewQuality.thumbnail;
+        reg.get<ImageQuality>(.galleryMode)?.value = ImageQuality.sample;
+        reg.get<int>(.portraitColumns)?.value = 2;
+        reg.get<int>(.landscapeColumns)?.value = 4;
+        reg.get<int>(.preloadCount)?.value = 0;
+        reg.get<double>(.preloadSizeLimit)?.value = 0.2;
+        reg.get<int>(.preloadHeight)?.value = 8192;
+        reg.get<bool>(.autoPlayEnabled)?.value = false;
+        reg.get<bool>(.disableImageScaling)?.value = false;
+      },
+    ),
+  );
+
+  registry.register(
     boolSetting(
       key: .wakeLockEnabled,
       getDefaultValue: () => true,
@@ -1792,87 +1873,6 @@ void registerAllSettings() {
   // ============================================
 
   registry.register(
-    confirmBoolSetting(
-      key: .shitDevice,
-      getDefaultValue: () => false,
-      categories: [SettingCategory.debug, SettingCategory.performance],
-      isDeviceSpecific: true,
-      localization: SettingLocalization(
-        title: (ctx) => ctx.loc.settings.performance.lowPerformanceMode,
-        subtitle: (ctx) => ctx.loc.settings.performance.lowPerformanceModeSubtitle,
-      ),
-      widgetConfig: SettingWidgetConfig(
-        trailingIcon: Builder(
-          builder: (ctx) => IconButton(
-            icon: const Icon(Icons.help_outline),
-            onPressed: () {
-              showDialog(
-                context: ctx,
-                builder: (dialogCtx) => SettingsDialog(
-                  title: Text(dialogCtx.loc.settings.performance.lowPerformanceModeDialogTitle),
-                  contentItems: [
-                    Text(dialogCtx.loc.settings.performance.lowPerformanceModeDialogDisablesDetailed),
-                    Text(dialogCtx.loc.settings.performance.lowPerformanceModeDialogDisablesResourceIntensive),
-                    const Text(''),
-                    Text(dialogCtx.loc.settings.performance.lowPerformanceModeDialogSetsOptimal),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-      buildDialogContent: (ctx) => SettingsDialog(
-        title: Text(ctx.loc.settings.performance.lowPerformanceModeDialogTitle),
-        contentItems: [
-          Text(ctx.loc.settings.performance.lowPerformanceModeDialogDisablesDetailed),
-          Text(ctx.loc.settings.performance.lowPerformanceModeDialogDisablesResourceIntensive),
-          const Text(''),
-          Text(ctx.loc.settings.performance.lowPerformanceModeDialogSetsOptimal),
-          ...[
-            ctx.loc.settings.interface.previewQuality,
-            ctx.loc.settings.viewer.imageQuality,
-            ctx.loc.settings.interface.previewColumnsPortrait,
-            ctx.loc.settings.interface.previewColumnsLandscape,
-            ctx.loc.settings.viewer.preloadAmount,
-            ctx.loc.settings.viewer.preloadSizeLimit,
-            ctx.loc.settings.viewer.preloadHeightLimit,
-            ctx.loc.settings.interface.dontScaleImages,
-            ctx.loc.settings.performance.autoplayVideos,
-          ].map((s) => Text('- $s')),
-        ],
-        actionButtons: [
-          TextButton.icon(
-            style: TextButton.styleFrom(foregroundColor: Theme.of(ctx).colorScheme.onSurface),
-            onPressed: () => Navigator.of(ctx).pop(false),
-            icon: const Icon(Icons.cancel_outlined),
-            label: Text(ctx.loc.cancel),
-          ),
-          TextButton.icon(
-            style: TextButton.styleFrom(foregroundColor: Theme.of(ctx).colorScheme.onSurface),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            icon: const Icon(Icons.check_circle_outline),
-            label: Text(ctx.loc.confirm),
-          ),
-        ],
-      ),
-      onConfirmed: () {
-        // Cascade low-perf mode settings
-        final reg = SettingsRegistry.instance;
-        reg.get<PreviewQuality>(.previewMode)?.value = PreviewQuality.thumbnail;
-        reg.get<ImageQuality>(.galleryMode)?.value = ImageQuality.sample;
-        reg.get<int>(.portraitColumns)?.value = 2;
-        reg.get<int>(.landscapeColumns)?.value = 4;
-        reg.get<int>(.preloadCount)?.value = 0;
-        reg.get<double>(.preloadSizeLimit)?.value = 0.2;
-        reg.get<int>(.preloadHeight)?.value = 8192;
-        reg.get<bool>(.autoPlayEnabled)?.value = false;
-        reg.get<bool>(.disableImageScaling)?.value = false;
-      },
-    ),
-  );
-
-  registry.register(
     boolSetting(
       key: .isDebug,
       getDefaultValue: () => kDebugMode,
@@ -1932,6 +1932,18 @@ void registerAllSettings() {
       isTransient: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.debug.showVideoStats,
+      ),
+    ),
+  );
+
+  registry.register(
+    boolSetting(
+      key: .useImageLogging,
+      getDefaultValue: () => false,
+      categories: [SettingCategory.debug],
+      isDeviceSpecific: true,
+      localization: SettingLocalization(
+        title: (ctx) => 'Use image logging',
       ),
     ),
   );

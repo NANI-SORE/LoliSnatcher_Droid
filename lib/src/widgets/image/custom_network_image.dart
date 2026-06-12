@@ -9,8 +9,8 @@ import 'package:flutter/painting.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_avif/flutter_avif.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -18,6 +18,8 @@ import 'package:lolisnatcher/src/widgets/image/abstract_custom_network_image.dar
 
 /// Shared logic for downloading, caching, and atomic writing of images.
 class NetworkImageLoader {
+  static const Duration _defaultReceiveTimeout = Duration(seconds: 30);
+
   static Future<void> _commitCacheFile(File tempFile, String destPath) async {
     final dest = File(destPath);
     try {
@@ -125,7 +127,7 @@ class NetworkImageLoader {
 
     // --- Download Logic ---
     final client = DioNetwork.getClient(
-      skipLogging: !SettingsHandler.instance.useImageLogging,
+      skipLogging: !SX.useImageLogging.state.value,
     );
     if (withCaptchaCheck) {
       DioNetwork.captchaInterceptor(
@@ -135,6 +137,9 @@ class NetworkImageLoader {
     }
 
     Response? response;
+    // Dio applies receiveTimeout between response chunks. Without a default,
+    // a server that sends an initial buffer and then stalls stays pending forever
+    final effectiveReceiveTimeout = receiveTimeout ?? _defaultReceiveTimeout;
     try {
       response = withCache
           ? await client.downloadUri(
@@ -143,7 +148,7 @@ class NetworkImageLoader {
               options: Options(
                 headers: headers,
                 sendTimeout: sendTimeout,
-                receiveTimeout: receiveTimeout,
+                receiveTimeout: effectiveReceiveTimeout,
                 followRedirects: headers?.containsKey('LS-IGNORE-REDIRECT') == true ? false : true,
               ),
               onReceiveProgress: (int count, int total) {
@@ -163,7 +168,7 @@ class NetworkImageLoader {
                 headers: headers,
                 responseType: ResponseType.bytes,
                 sendTimeout: sendTimeout,
-                receiveTimeout: receiveTimeout,
+                receiveTimeout: effectiveReceiveTimeout,
                 followRedirects: headers?.containsKey('LS-IGNORE-REDIRECT') == true ? false : true,
               ),
               onReceiveProgress: (int count, int total) {
