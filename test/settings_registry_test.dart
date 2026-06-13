@@ -218,6 +218,41 @@ void main() {
     );
   });
 
+  test('debug settings search visibility follows the debug toggle', () {
+    final debugToggle = SX.isDebug.state;
+    final debugSetting = SX.showFps.state;
+
+    SX.isDebug.state.value = false;
+    expect(registry.isCategoryVisible(SettingCategory.debug), isFalse);
+    expect(registry.isSearchVisible(debugToggle), isFalse);
+    expect(registry.isSearchVisible(debugSetting), isFalse);
+
+    SX.isDebug.state.value = true;
+    expect(registry.isCategoryVisible(SettingCategory.debug), isTrue);
+    expect(registry.isSearchVisible(debugToggle), isFalse);
+    expect(registry.isSearchVisible(debugSetting), isTrue);
+  });
+
+  test('settings can be conditionally hidden from search', () {
+    var visible = false;
+    final state = SettingState<bool>(
+      SettingDef<bool>(
+        key: SettingKey.captureLogcat,
+        getDefaultValue: () => false,
+        localization: const SettingLocalization(title: _testTitle),
+        valueToJson: (value) => value,
+        valueFromJson: (json) => json is bool ? json : false,
+        categories: const [SettingCategory.logging],
+        searchVisibleWhen: () => visible,
+        widgetBuilder: (_, _) => const SizedBox.shrink(),
+      ),
+    );
+
+    expect(registry.isSearchVisible(state), isFalse);
+    visible = true;
+    expect(registry.isSearchVisible(state), isTrue);
+  });
+
   test('proxy directive follows active booru overrides immediately', () {
     SX.proxyType.state.globalValue = ProxyType.direct;
     SX.proxyAddress.state.globalValue = '';

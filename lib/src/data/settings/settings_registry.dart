@@ -79,9 +79,19 @@ class SettingsRegistry {
     return _states.values.where((s) => s.def.categories.contains(category)).toList();
   }
 
-  /// All categories that are currently visible (respects [SettingCategory.visibleWhen]).
+  /// Whether a category is currently visible.
+  bool isCategoryVisible(SettingCategory category) {
+    switch (category) {
+      case SettingCategory.debug:
+        return get<bool>(SettingKey.isDebug)?.value ?? false;
+      default:
+        return true;
+    }
+  }
+
+  /// All categories that are currently visible.
   List<SettingCategory> get visibleCategories {
-    return SettingCategory.values.where((c) => c.visibleWhen?.call() ?? true).toList();
+    return SettingCategory.values.where(isCategoryVisible).toList();
   }
 
   /// Settings flagged as device-specific (not synced across devices).
@@ -113,10 +123,25 @@ class SettingsRegistry {
 
     final queryLower = query.toLowerCase();
     return _states.values.where((state) {
-      if (state.def.isWidgetSlot) return false;
+      if (!isSearchVisible(state)) return false;
       final searchable = state.def.getSearchableText(context);
       return searchable.any((text) => text.toLowerCase().contains(queryLower));
     }).toList();
+  }
+
+  /// Whether a setting is allowed to appear in global settings search.
+  bool isSearchVisible(SettingState<dynamic> state) {
+    final def = state.def;
+    if (!def.isSearchable || def.isWidgetSlot || def.widgetBuilder == null) {
+      return false;
+    }
+    if (def.categories.isEmpty || !def.categories.any(isCategoryVisible)) {
+      return false;
+    }
+    if (!(def.searchVisibleWhen?.call() ?? true)) {
+      return false;
+    }
+    return def.enabledWhen?.call() ?? true;
   }
 
   // ============================================

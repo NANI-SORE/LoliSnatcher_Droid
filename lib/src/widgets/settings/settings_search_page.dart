@@ -31,14 +31,12 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
   @override
   Widget build(BuildContext context) {
     final registry = SettingsRegistry.instance;
-    final results = _query.isEmpty
-        ? <SettingState<dynamic>>[]
-        : registry.search(_query, context).where(_isSearchVisible).toList();
+    final results = _query.isEmpty ? <SettingState<dynamic>>[] : registry.search(_query, context);
 
     // Group results by their first category
     final grouped = <SettingCategory, List<SettingState<dynamic>>>{};
     for (final state in results) {
-      final category = state.def.categories.first;
+      final category = state.def.categories.firstWhere(registry.isCategoryVisible);
       grouped.putIfAbsent(category, () => []).add(state);
     }
 
@@ -73,15 +71,6 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
               itemBuilder: (context, index) => _buildItem(context, grouped, index),
             ),
     );
-  }
-
-  bool _isSearchVisible(SettingState<dynamic> state) {
-    if (state.def.widgetBuilder == null || state.def.isWidgetSlot) return false;
-    if (state.def.categories.isEmpty) return false;
-    if (state.def.categories.isNotEmpty && !state.def.categories.any((c) => c.visibleWhen?.call() ?? true)) {
-      return false;
-    }
-    return state.def.enabledWhen?.call() ?? true;
   }
 
   int _countItems(Map<SettingCategory, List<SettingState<dynamic>>> grouped) {

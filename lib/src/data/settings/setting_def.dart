@@ -27,6 +27,8 @@ class SettingDef<T> {
     this.supportsPerBooru = false,
     this.isWidgetSlot = false,
     this.isTransient = false,
+    this.isSearchable = true,
+    this.searchVisibleWhen,
     this.validate,
     this.widgetBuilder,
     this.dependsOn,
@@ -75,6 +77,14 @@ class SettingDef<T> {
   /// It resets to its default value on each app launch.
   /// Use for runtime-only toggles like debug overlays.
   final bool isTransient;
+
+  /// Whether this setting can ever appear in global settings search.
+  final bool isSearchable;
+
+  /// Optional runtime condition for global settings search visibility.
+  ///
+  /// Use [isSearchable] for settings that must never be discoverable.
+  final bool Function()? searchVisibleWhen;
 
   /// Optional validation/clamping. Called before setting a new value.
   /// Return the (possibly adjusted) value.
@@ -261,21 +271,5 @@ enum SettingCategory {
       final FaIconData iconData => FaIcon(iconData, size: size, color: color),
       _ => const Icon(null),
     };
-  }
-
-  /// Visibility condition. If non-null and returns false, this category
-  /// and all its settings are hidden from the UI.
-  bool Function()? get visibleWhen {
-    switch (this) {
-      case SettingCategory.debug:
-        // Only show debug category in debug mode or when isDebug setting enabled.
-        // Uses a late check because the registry may not have the setting yet at startup.
-        return () {
-          const isDebugMode = bool.fromEnvironment('dart.vm.product') == false;
-          return isDebugMode;
-        };
-      default:
-        return null;
-    }
   }
 }
