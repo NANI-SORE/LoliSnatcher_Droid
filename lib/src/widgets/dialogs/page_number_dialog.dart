@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
 
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/pulse_widget.dart';
@@ -16,7 +17,6 @@ class PageNumberDialog extends StatefulWidget {
 
 class _PageNumberDialogState extends State<PageNumberDialog> {
   final SearchHandler searchHandler = SearchHandler.instance;
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
 
   final pageNumberController = TextEditingController(), delayController = TextEditingController();
 
@@ -44,7 +44,7 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
   @override
   Widget build(BuildContext context) {
     final int total = searchHandler.currentBooruHandler.totalCount.value;
-    final int possibleMaxPageNum = total != 0 ? (total / settingsHandler.itemLimit).round() : 0;
+    final int possibleMaxPageNum = total != 0 ? (total / SX.limit.value).round() : 0;
     final bool isPageBelowCurrentLoaded = pageNumber <= searchHandler.currentBooruHandler.pageNum;
 
     return SettingsBottomSheet(

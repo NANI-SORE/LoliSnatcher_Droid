@@ -2,13 +2,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
 
+import 'package:lolisnatcher/src/data/settings/setting_def.dart';
+import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tf_add_dialog.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tf_edit_dialog.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tf_list.dart';
-import 'package:lolisnatcher/src/widgets/tags_filters/tf_settings_list.dart';
 
 class TagsFiltersPage extends StatefulWidget {
   const TagsFiltersPage({super.key});
@@ -26,23 +28,16 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> with SingleTickerProv
 
   List<String> hiddenList = [];
   List<String> markedList = [];
-  bool filterHated = false, filterMarked = false, filterFavourites = false, filterSnatched = false, filterAi = false;
 
   @override
   void initState() {
     super.initState();
 
-    hiddenList = settingsHandler.hiddenTags.toList();
+    hiddenList = [...SX.hiddenTags.value];
     hiddenList.sort(sortTags);
 
-    markedList = settingsHandler.markedTags.toList();
+    markedList = [...SX.markedTags.value];
     markedList.sort(sortTags);
-
-    filterHated = settingsHandler.filterHated;
-    filterMarked = settingsHandler.filterMarked;
-    filterFavourites = settingsHandler.filterFavourites;
-    filterSnatched = settingsHandler.filterSnatched;
-    filterAi = settingsHandler.filterAi;
 
     tabController = TabController(vsync: this, length: 3)..addListener(updateState);
   }
@@ -62,14 +57,11 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> with SingleTickerProv
   }
 
   Future<void> _onPopInvoked(_, _) async {
-    settingsHandler.hiddenTags = settingsHandler.cleanTagsList(hiddenList.map(Tag.new).toList()).toSet();
-    settingsHandler.markedTags = settingsHandler.cleanTagsList(markedList.map(Tag.new).toList()).toSet();
+    final cleanedHidden = settingsHandler.cleanTagsList(hiddenList.map(Tag.new).toList());
+    final cleanedMarked = settingsHandler.cleanTagsList(markedList.map(Tag.new).toList());
+    SX.hiddenTags.state.value = cleanedHidden;
+    SX.markedTags.state.value = cleanedMarked;
     settingsHandler.tagsFiltersMetadataVersion++;
-    settingsHandler.filterHated = filterHated;
-    settingsHandler.filterMarked = filterMarked;
-    settingsHandler.filterFavourites = filterFavourites;
-    settingsHandler.filterSnatched = filterSnatched;
-    settingsHandler.filterAi = filterAi;
     await settingsHandler.saveSettings(restate: false);
   }
 
@@ -250,33 +242,16 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> with SingleTickerProv
               tagSearchController: tagSearchController,
               openAddDialog: () => openAddDialog('Marked'),
             ),
-            TagsFiltersSettingsList(
-              scrollController: scrollController,
-              filterHated: filterHated,
-              onFilterHatedChanged: (bool newValue) {
-                filterHated = newValue;
-                updateState();
-              },
-              filterMarked: filterMarked,
-              onFilterMarkedChanged: (bool newValue) {
-                filterMarked = newValue;
-                updateState();
-              },
-              filterFavourites: filterFavourites,
-              onFilterFavouritesChanged: (bool newValue) {
-                filterFavourites = newValue;
-                updateState();
-              },
-              filterSnatched: filterSnatched,
-              onFilterSnatchedChanged: (bool newValue) {
-                filterSnatched = newValue;
-                updateState();
-              },
-              filterAi: filterAi,
-              onFilterAiChanged: (bool newValue) {
-                filterAi = newValue;
-                updateState();
-              },
+            ListView(
+              controller: scrollController,
+              children: [
+                const SettingsButton(name: '', enabled: false),
+                for (final state in SettingsRegistry.instance.byCategory(SettingCategory.tagsFilters))
+                  if (state.def.widgetBuilder != null &&
+                      state.def.key != SettingKey.hiddenTags &&
+                      state.def.key != SettingKey.markedTags)
+                    state.buildWidget(context),
+              ],
             ),
           ],
         ),

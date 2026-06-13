@@ -4,11 +4,12 @@ import 'package:flutter/material.dart';
 
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
+import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/utils/html_parse.dart';
 import 'package:lolisnatcher/src/widgets/common/close_dialog_button.dart';
@@ -33,7 +34,6 @@ class NotesRenderer extends StatefulWidget {
 }
 
 class _NotesRendererState extends State<NotesRenderer> {
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
   final ViewerHandler viewerHandler = ViewerHandler.instance;
 
   late BooruItem item;
@@ -61,7 +61,7 @@ class _NotesRendererState extends State<NotesRenderer> {
   void initState() {
     super.initState();
 
-    shouldScale = settingsHandler.galleryMode.isSample || !settingsHandler.disableImageScaling;
+    shouldScale = SX.galleryMode.value.isSample || !SX.disableImageScaling.value;
     resizeScale = 1;
     screenToImageRatio = 1;
 
@@ -192,8 +192,8 @@ class _NotesRendererState extends State<NotesRenderer> {
   }
 
   void _computeOffsets() {
-    final bool isVertical = settingsHandler.galleryScrollDirection.isVertical;
-    final bool isUsingCustomAnim = !settingsHandler.disableCustomPageTransitions;
+    final bool isVertical = SX.galleryScrollDirection.value.isVertical;
+    final bool isUsingCustomAnim = !SX.disableCustomPageTransitions.value;
 
     final double page = widget.pageController?.hasClients == true ? (widget.pageController!.page ?? 0) : 0;
     // Extract the sub-page fractional offset and map it to [-0.5, 0.5]

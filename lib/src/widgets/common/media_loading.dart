@@ -1,9 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:lolisnatcher/gen/strings.g.dart';
 
 import 'package:lolisnatcher/src/data/booru_item.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/utils/debouncer.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/animated_progress_indicator.dart';
@@ -55,8 +56,6 @@ class MediaLoading extends StatefulWidget {
 }
 
 class _MediaLoadingState extends State<MediaLoading> {
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
-
   String _getStopReasonDescription(BuildContext context, ViewerStopReason? reason) {
     if (reason == null) return '';
     return switch (reason) {
@@ -191,7 +190,7 @@ class _MediaLoadingState extends State<MediaLoading> {
     final int totalBytes = hasProgressData ? _total : 0;
     final double percentDone = hasProgressData ? (expectedBytes / totalBytes) : 0;
 
-    if (settingsHandler.shitDevice) {
+    if (SX.shitDevice.value) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -348,7 +347,7 @@ class _MediaLoadingState extends State<MediaLoading> {
         ? context.loc.media.loading.startedSecondsAgo(seconds: sinceStartSeconds)
         : '';
 
-    final bool isMovedBelow = settingsHandler.previewMode.isSample && !widget.item.isHidden;
+    final bool isMovedBelow = SX.previewMode.value.isSample && !widget.item.isHidden;
 
     // print('$percentDone | $percentDoneText');
 
@@ -395,7 +394,7 @@ class _MediaLoadingState extends State<MediaLoading> {
         if (isMovedBelow) const SizedBox(height: 60),
       ];
     } else {
-      if (settingsHandler.loadingGif) {
+      if (SX.loadingGif.value) {
         children = [
           const Center(child: Image(image: AssetImage('assets/images/loading.gif'))),
           const SizedBox(height: 30),

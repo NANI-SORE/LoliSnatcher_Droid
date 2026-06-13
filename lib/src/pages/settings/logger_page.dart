@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 
 import 'package:share_plus/share_plus.dart';
 import 'package:talker_flutter/talker_flutter.dart';
@@ -144,7 +145,7 @@ class _LogFilesPageState extends State<LogFilesPage> {
 
   Future<void> _setLogcatCapture(bool enabled) async {
     setState(() {
-      settingsHandler.captureLogcat = enabled;
+      SX.captureLogcat.state.value = enabled;
     });
     await Logger.setLogcatCaptureEnabled(enabled);
     await settingsHandler.saveSettings(restate: false);
@@ -186,7 +187,7 @@ class _LogFilesPageState extends State<LogFilesPage> {
         children: [
           if (Platform.isAndroid)
             SettingsToggle(
-              value: settingsHandler.captureLogcat,
+              value: SX.captureLogcat.value,
               onChanged: _setLogcatCapture,
               title: context.loc.settings.logging.captureLogcat,
               subtitle: Text(context.loc.settings.logging.captureLogcatDescription),

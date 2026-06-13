@@ -1094,6 +1094,41 @@ class Translations$settings$en {
   /// en: 'Settings'
   String get title => TranslationOverrides.string(_root.$meta, 'settings.title', {}) ?? 'Settings';
 
+  /// en: 'Type to search settings'
+  String get typeToSearch => TranslationOverrides.string(_root.$meta, 'settings.typeToSearch', {}) ?? 'Type to search settings';
+
+  /// en: 'No settings found'
+  String get noSettingsFound => TranslationOverrides.string(_root.$meta, 'settings.noSettingsFound', {}) ?? 'No settings found';
+
+  /// en: 'Per-booru Settings'
+  String get perBooruSettings => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Per-booru Settings';
+
+  /// en: 'Reset all ${category: String} settings to their defaults?'
+  String resetCategoryQuestion({required String category}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.resetCategoryQuestion', {'category': category}) ??
+      'Reset all ${category} settings to their defaults?';
+
+  /// en: 'Global: ${value: String}'
+  String globalValue({required String value}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.globalValue', {'value': value}) ?? 'Global: ${value}';
+
+  /// en: '${booru: String} — Overrides'
+  String booruOverridesTitle({required String booru}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruOverridesTitle', {'booru': booru}) ?? '${booru} — Overrides';
+
+  /// en: 'Reset all overrides'
+  String get resetAllOverrides => TranslationOverrides.string(_root.$meta, 'settings.resetAllOverrides', {}) ?? 'Reset all overrides';
+
+  /// en: 'All custom settings for "${booru: String}" will be removed. Global defaults will be used instead.'
+  String resetAllOverridesDescription({required String booru}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.resetAllOverridesDescription', {'booru': booru}) ??
+      'All custom settings for "${booru}" will be removed. Global defaults will be used instead.';
+
+  /// en: 'The active booru "${booru: String}" has theme overrides. Changes here affect the global defaults, not the per-booru theme.'
+  String activeBooruThemeOverrides({required String booru}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.activeBooruThemeOverrides', {'booru': booru}) ??
+      'The active booru "${booru}" has theme overrides. Changes here affect the global defaults, not the per-booru theme.';
+
   late final Translations$settings$language$en language = Translations$settings$language$en.internal(_root);
   late final Translations$settings$booru$en booru = Translations$settings$booru$en.internal(_root);
   late final Translations$settings$booruEditor$en booruEditor = Translations$settings$booruEditor$en.internal(_root);
@@ -5445,6 +5480,27 @@ extension on Translations {
           'webview.navigation.noForwardHistoryItem' =>
             TranslationOverrides.string(_root.$meta, 'webview.navigation.noForwardHistoryItem', {}) ?? 'No forward history item',
           'settings.title' => TranslationOverrides.string(_root.$meta, 'settings.title', {}) ?? 'Settings',
+          'settings.typeToSearch' => TranslationOverrides.string(_root.$meta, 'settings.typeToSearch', {}) ?? 'Type to search settings',
+          'settings.noSettingsFound' => TranslationOverrides.string(_root.$meta, 'settings.noSettingsFound', {}) ?? 'No settings found',
+          'settings.perBooruSettings' => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Per-booru Settings',
+          'settings.resetCategoryQuestion' =>
+            ({required String category}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.resetCategoryQuestion', {'category': category}) ??
+                'Reset all ${category} settings to their defaults?',
+          'settings.globalValue' =>
+            ({required String value}) => TranslationOverrides.string(_root.$meta, 'settings.globalValue', {'value': value}) ?? 'Global: ${value}',
+          'settings.booruOverridesTitle' =>
+            ({required String booru}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.booruOverridesTitle', {'booru': booru}) ?? '${booru} — Overrides',
+          'settings.resetAllOverrides' => TranslationOverrides.string(_root.$meta, 'settings.resetAllOverrides', {}) ?? 'Reset all overrides',
+          'settings.resetAllOverridesDescription' =>
+            ({required String booru}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.resetAllOverridesDescription', {'booru': booru}) ??
+                'All custom settings for "${booru}" will be removed. Global defaults will be used instead.',
+          'settings.activeBooruThemeOverrides' =>
+            ({required String booru}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.activeBooruThemeOverrides', {'booru': booru}) ??
+                'The active booru "${booru}" has theme overrides. Changes here affect the global defaults, not the per-booru theme.',
           'settings.language.title' => TranslationOverrides.string(_root.$meta, 'settings.language.title', {}) ?? 'Language',
           'settings.language.system' => TranslationOverrides.string(_root.$meta, 'settings.language.system', {}) ?? 'System',
           'settings.language.helpUsTranslate' =>
@@ -5861,6 +5917,9 @@ extension on Translations {
         } ??
         switch (path) {
           'settings.video.disableVideos' => TranslationOverrides.string(_root.$meta, 'settings.video.disableVideos', {}) ?? 'Disable videos',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.video.disableVideosHelp' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.disableVideosHelp', {}) ??
                 'Useful on low end devices that crash when trying to load videos. Gives options to view video in external player or browser instead.',
@@ -6807,6 +6866,9 @@ extension on Translations {
           'mobileHome.fileAlreadyExists' => TranslationOverrides.string(_root.$meta, 'mobileHome.fileAlreadyExists', {}) ?? 'File already exists',
           'mobileHome.failedToDownload' => TranslationOverrides.string(_root.$meta, 'mobileHome.failedToDownload', {}) ?? 'Failed to download',
           'mobileHome.cancelledByUser' => TranslationOverrides.string(_root.$meta, 'mobileHome.cancelledByUser', {}) ?? 'Cancelled by user',
+          _ => null,
+        } ??
+        switch (path) {
           'mobileHome.saveAnyway' => TranslationOverrides.string(_root.$meta, 'mobileHome.saveAnyway', {}) ?? 'Save anyway',
           'mobileHome.skip' => TranslationOverrides.string(_root.$meta, 'mobileHome.skip', {}) ?? 'Skip',
           'mobileHome.retryAll' =>

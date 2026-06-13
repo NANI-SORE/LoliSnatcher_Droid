@@ -15,11 +15,13 @@ import 'package:uuid/uuid.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/data/settings/tab_page_restore_mode.dart';
@@ -115,7 +117,7 @@ class SearchHandler {
 
     // record search query to db
     final SettingsHandler settingsHandler = SettingsHandler.instance;
-    if (searchText != '' && settingsHandler.searchHistoryEnabled) {
+    if (searchText != '' && SX.searchHistoryEnabled.value) {
       settingsHandler.dbHandler.updateSearchHistory(
         searchText,
         booru.type?.name,
@@ -173,10 +175,7 @@ class SearchHandler {
         sideColor: Colors.yellow,
       );
 
-      final SettingsHandler settingsHandler = SettingsHandler.instance;
-      final String defaultText = currentBooru.defTags?.isNotEmpty == true
-          ? currentBooru.defTags!
-          : settingsHandler.defTags;
+      final String defaultText = currentBooru.defTags?.isNotEmpty == true ? currentBooru.defTags! : SX.defTags.value;
       searchTextController.text = defaultText;
 
       final SearchTab newTab = SearchTab(currentBooru, null, defaultText);
@@ -209,10 +208,7 @@ class SearchHandler {
         sideColor: Colors.yellow,
       );
 
-      final SettingsHandler settingsHandler = SettingsHandler.instance;
-      final String defaultText = currentBooru.defTags?.isNotEmpty == true
-          ? currentBooru.defTags!
-          : settingsHandler.defTags;
+      final String defaultText = currentBooru.defTags?.isNotEmpty == true ? currentBooru.defTags! : SX.defTags.value;
       searchTextController.text = defaultText;
 
       final SearchTab newTab = SearchTab(currentBooru, null, defaultText);
@@ -409,6 +405,9 @@ class SearchHandler {
       Tools.forceClearMemoryCache(withLive: true);
     }
 
+    // Sync current booru context to the settings registry for per-booru overrides
+    SettingsRegistry.instance.setCurrentBooru(currentTab.selectedBooru.value.name);
+
     // set search text (even if index didn't change)
     searchTextController.text = currentTab.tags;
 
@@ -573,7 +572,7 @@ class SearchHandler {
     await changeTabIndex(currentIndex, ignoreSameIndexCheck: true);
 
     // write to history
-    if (text != '' && settingsHandler.searchHistoryEnabled) {
+    if (text != '' && SX.searchHistoryEnabled.value) {
       unawaited(
         settingsHandler.dbHandler.updateSearchHistory(
           text,
@@ -857,9 +856,7 @@ class SearchHandler {
       if (settingsHandler.booruList.isNotEmpty) {
         defaultBooru = settingsHandler.booruList[0];
       }
-      final String defaultText = defaultBooru.defTags?.isNotEmpty == true
-          ? defaultBooru.defTags!
-          : settingsHandler.defTags;
+      final String defaultText = defaultBooru.defTags?.isNotEmpty == true ? defaultBooru.defTags! : SX.defTags.value;
       if (defaultBooru.type != null) {
         final SearchTab newTab = SearchTab(defaultBooru, null, defaultText);
         tabs.add(newTab);
@@ -1043,9 +1040,7 @@ class SearchHandler {
       if (settingsHandler.booruList.isNotEmpty) {
         defaultBooru = settingsHandler.booruList[0];
       }
-      final String defaultText = defaultBooru.defTags?.isNotEmpty == true
-          ? defaultBooru.defTags!
-          : settingsHandler.defTags;
+      final String defaultText = defaultBooru.defTags?.isNotEmpty == true ? defaultBooru.defTags! : SX.defTags.value;
       searchTextController.text = defaultText;
       if (defaultBooru.type != null) {
         final defaultTab = SearchTab(defaultBooru, null, defaultText);
@@ -1128,9 +1123,7 @@ class SearchHandler {
     // if there are more than 1 tab or check return false - start backup
     final int tabIndex = currentIndex;
     final bool onlyDefaultTab =
-        tabs.length == 1 &&
-        tabs[0].booruHandler.booru.name == settingsHandler.prefBooru &&
-        tabs[0].tags == settingsHandler.defTags;
+        tabs.length == 1 && tabs[0].booruHandler.booru.name == SX.prefBooru.value && tabs[0].tags == SX.defTags.value;
     if (!onlyDefaultTab && settingsHandler.booruList.isNotEmpty) {
       final List<String> dump = tabs.map((tab) {
         final String tags = tab.tags;
@@ -1248,9 +1241,7 @@ class SearchHandler {
       if (settingsHandler.booruList.isNotEmpty) {
         defaultBooru = settingsHandler.booruList[0];
       }
-      final String defaultText = defaultBooru.defTags?.isNotEmpty == true
-          ? defaultBooru.defTags!
-          : settingsHandler.defTags;
+      final String defaultText = defaultBooru.defTags?.isNotEmpty == true ? defaultBooru.defTags! : SX.defTags.value;
       searchTextController.text = defaultText;
       if (defaultBooru.type != null) {
         final SearchTab newTab = SearchTab(defaultBooru, null, defaultText);
@@ -1537,11 +1528,11 @@ class SearchTab {
       item.isFavourite.value = newValue;
 
       final SettingsHandler settingsHandler = SettingsHandler.instance;
-      if (!skipSnatching && settingsHandler.snatchOnFavourite && newValue && item.isSnatched.value != true) {
+      if (!skipSnatching && SX.snatchOnFavourite.value && newValue && item.isSnatched.value != true) {
         SnatchHandler.instance.queue(
           [item],
           booruHandler.booru,
-          settingsHandler.snatchCooldown,
+          SX.snatchCooldown.value,
           false,
         );
       }
@@ -1565,11 +1556,11 @@ class SearchTab {
     bool skipSnatching = false,
   }) async {
     final SettingsHandler settingsHandler = SettingsHandler.instance;
-    if (!skipSnatching && settingsHandler.snatchOnFavourite && newValue) {
+    if (!skipSnatching && SX.snatchOnFavourite.value && newValue) {
       SnatchHandler.instance.queue(
         items.where((e) => e.isSnatched.value != true).toList(),
         booruHandler.booru,
-        settingsHandler.snatchCooldown,
+        SX.snatchCooldown.value,
         false,
       );
     }

@@ -16,6 +16,7 @@ import 'package:lolisnatcher/src/data/response_error.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/data/tag_suggestion.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
@@ -61,32 +62,33 @@ abstract class BooruHandler {
   /// Should always be called after fetched changed (so don't forget to add it in custom afterParseResponse or search methods)
   /// (See gelbooru or favourites handlers for example)
   void filterFetched() {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
+    final bool doFilterHated = SX.filterHated.value;
+    final bool doFilterMarked = SX.filterMarked.value;
+    final bool doFilterAi = SX.filterAi.value;
+    final bool doFilterFavourites = SX.filterFavourites.value && booru.type?.isFavourites != true;
+    final bool doFilterSnatched = SX.filterSnatched.value && booru.type?.isDownloads != true;
 
     final List<BooruItem> newFilteredItems = [];
 
     for (int i = _filterWatermark; i < fetched.length; i++) {
       final item = fetched[i];
-
-      if (settingsHandler.filterHated && item.isHidden) {
+      if (doFilterHated && item.isHidden) {
         continue;
       }
 
-      if (settingsHandler.filterMarked && item.isMarked) {
+      if (doFilterMarked && item.isMarked) {
         continue;
       }
 
-      if (settingsHandler.filterAi && item.isAI) {
+      if (doFilterAi && item.isAI) {
         continue;
       }
 
-      final bool filterFavourites = settingsHandler.filterFavourites && booru.type?.isFavourites != true;
-      if (filterFavourites && item.isFavourite.value == true) {
+      if (doFilterFavourites && item.isFavourite.value == true) {
         continue;
       }
 
-      final bool filterSnatched = settingsHandler.filterSnatched && booru.type?.isDownloads != true;
-      if (filterSnatched && item.isSnatched.value == true) {
+      if (doFilterSnatched && item.isSnatched.value == true) {
         continue;
       }
 

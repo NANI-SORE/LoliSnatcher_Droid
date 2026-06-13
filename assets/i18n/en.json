@@ -376,6 +376,15 @@
     },
     "settings": {
         "title": "Settings",
+        "typeToSearch": "Type to search settings",
+        "noSettingsFound": "No settings found",
+        "perBooruSettings": "Per-booru Settings",
+        "resetCategoryQuestion(param=category)": "Reset all ${category: String} settings to their defaults?",
+        "globalValue(param=value)": "Global: ${value: String}",
+        "booruOverridesTitle(param=booru)": "${booru: String} — Overrides",
+        "resetAllOverrides": "Reset all overrides",
+        "resetAllOverridesDescription(param=booru)": "All custom settings for \"${booru: String}\" will be removed. Global defaults will be used instead.",
+        "activeBooruThemeOverrides(param=booru)": "The active booru \"${booru: String}\" has theme overrides. Changes here affect the global defaults, not the per-booru theme.",
         "language": {
             "title": "Language",
             "system": "System",

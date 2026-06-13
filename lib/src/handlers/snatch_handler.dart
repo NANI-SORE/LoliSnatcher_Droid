@@ -11,6 +11,7 @@ import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
@@ -249,7 +250,7 @@ class SnatchHandler {
 
             // last yield in stream will send fetch results counters
             // but show this message only when queue is empty => snatching is complete
-            if (SettingsHandler.instance.downloadNotifications && isLastMessage) {
+            if (SX.downloadNotifications.value && isLastMessage) {
               if (current.value!.booruItems.length == 1) {
                 final context = NavigationHandler.instance.navContext;
                 FlashElements.showSnackbar(
@@ -394,7 +395,7 @@ class SnatchHandler {
       queuedList.add(item);
 
       if (booruItems.length > 1) {
-        if (SettingsHandler.instance.downloadNotifications) {
+        if (SX.downloadNotifications.value) {
           final context = NavigationHandler.instance.navContext;
           FlashElements.showSnackbar(
             title: Text(
@@ -408,7 +409,7 @@ class SnatchHandler {
           );
         }
       } else {
-        if (SettingsHandler.instance.downloadNotifications) {
+        if (SX.downloadNotifications.value) {
           final context = NavigationHandler.instance.navContext;
           FlashElements.showSnackbar(
             title: Text(

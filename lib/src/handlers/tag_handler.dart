@@ -10,6 +10,7 @@ import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
@@ -111,8 +112,8 @@ class TagHandler {
   }
 
   Future getTagTypes(UntypedCollection untyped) async {
-    if (SettingsHandler.instance.tagTypeFetchEnabled) {
-      final bool dbEnabled = SettingsHandler.instance.dbEnabled;
+    if (SX.tagTypeFetchEnabled.value) {
+      final bool dbEnabled = SX.dbEnabled.value;
 
       Logger.Inst().log('Snatching tags: ${untyped.tags}', 'TagHandler', 'getTagTypes', LogTypes.tagHandlerInfo);
       tagFetchActive.value = true;
@@ -172,7 +173,7 @@ class TagHandler {
 
   /// Stores given tags list with given type, if tag is already in the tag map - update it's type, but only if the type was "none"
   Future<void> addTagsWithType(List<String> tags, TagType type) async {
-    final dbEnabled = SettingsHandler.instance.dbEnabled;
+    final dbEnabled = SX.dbEnabled.value;
 
     for (final String tag in tags) {
       if (!hasTagAndNotStale(tag)) {
@@ -213,7 +214,7 @@ class TagHandler {
 
   Future<bool> loadTags() async {
     try {
-      final bool dbEnabled = SettingsHandler.instance.dbEnabled;
+      final bool dbEnabled = SX.dbEnabled.value;
       if (dbEnabled) {
         final List<Tag> tags = await SettingsHandler.instance.dbHandler.getAllTags();
         for (final Tag tag in tags) {
@@ -260,7 +261,7 @@ class TagHandler {
     void Function(int progress, int total)? onProgress,
   }) async {
     try {
-      final bool dbEnabled = SettingsHandler.instance.dbEnabled;
+      final bool dbEnabled = SX.dbEnabled.value;
 
       final List jsonList = jsonDecode(jsonString);
       for (final Map<String, dynamic> rawTag in jsonList) {
@@ -318,7 +319,7 @@ class TagHandler {
     final SettingsHandler settings = SettingsHandler.instance;
     await getStoragePermission();
     prevLength = tagMap.entries.length;
-    if (settings.dbEnabled) {
+    if (SX.dbEnabled.value) {
       //await settings.dbHandler.updateTagsFromObjects(toList());
     } else {
       try {

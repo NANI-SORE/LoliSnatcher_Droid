@@ -15,6 +15,7 @@ import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
@@ -48,10 +49,10 @@ class _DatabasePageState extends State<DatabasePage> {
   void initState() {
     super.initState();
 
-    dbEnabled = settingsHandler.dbEnabled;
-    indexesEnabled = settingsHandler.indexesEnabled;
-    searchHistoryEnabled = settingsHandler.searchHistoryEnabled;
-    tagTypeFetchEnabled = settingsHandler.tagTypeFetchEnabled;
+    dbEnabled = SX.dbEnabled.value;
+    indexesEnabled = SX.indexesEnabled.value;
+    searchHistoryEnabled = SX.searchHistoryEnabled.value;
+    tagTypeFetchEnabled = SX.tagTypeFetchEnabled.value;
 
     final List<Booru> sankakuBoorus = getSankakuBoorus();
     if (sankakuBoorus.isNotEmpty) {
@@ -93,10 +94,10 @@ class _DatabasePageState extends State<DatabasePage> {
       return;
     }
 
-    settingsHandler.dbEnabled = dbEnabled;
-    settingsHandler.indexesEnabled = indexesEnabled;
-    settingsHandler.searchHistoryEnabled = searchHistoryEnabled;
-    settingsHandler.tagTypeFetchEnabled = tagTypeFetchEnabled;
+    SX.dbEnabled.state.value = dbEnabled;
+    SX.indexesEnabled.state.value = indexesEnabled;
+    SX.searchHistoryEnabled.state.value = searchHistoryEnabled;
+    SX.tagTypeFetchEnabled.state.value = tagTypeFetchEnabled;
     await settingsHandler.saveSettings(restate: false);
   }
 
@@ -353,7 +354,7 @@ class _DatabasePageState extends State<DatabasePage> {
                               },
                             ),
                           ),
-                          if (settingsHandler.isDebug.value) ...[
+                          if (SX.isDebug.value) ...[
                             SettingsButton(
                               name: context.loc.settings.database.createIndexesDebug,
                               icon: const Icon(Icons.create_new_folder_rounded),
@@ -670,7 +671,7 @@ class _DatabasePageState extends State<DatabasePage> {
                               hintText: context.loc.settings.database.searchQueryOptional,
                               clearable: true,
                               pasteable: true,
-                              enableIMEPersonalizedLearning: !settingsHandler.incognitoKeyboard,
+                              enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
                             ),
                             SettingsButton(
                               name: context.loc.settings.database.updateSankakuUrls,

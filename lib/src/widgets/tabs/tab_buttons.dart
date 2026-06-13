@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/dialogs/add_new_tab_dialog.dart';
 import 'package:lolisnatcher/src/widgets/dialogs/page_number_dialog.dart';
@@ -92,7 +92,7 @@ class TabButtons extends StatelessWidget {
           onPressed: () {
             final String defaultText = searchHandler.currentBooru.defTags?.isNotEmpty == true
                 ? searchHandler.currentBooru.defTags!
-                : SettingsHandler.instance.defTags;
+                : SX.defTags.value;
             // add new tab to the list end and switch to it
             searchHandler.searchTextController.text = defaultText;
             searchHandler.addTabByString(defaultText, switchToNew: true);

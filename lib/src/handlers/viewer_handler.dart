@@ -7,8 +7,8 @@ import 'package:photo_view/photo_view.dart';
 
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/debouncer.dart';
 import 'package:lolisnatcher/src/widgets/image/image_viewer.dart';
 import 'package:lolisnatcher/src/widgets/video/video_viewer.dart';
@@ -305,10 +305,8 @@ class ViewerHandler {
       ServiceHandler.vibrate();
     }
 
-    final settingsHandler = SettingsHandler.instance;
-
     // enable volume buttons if current page is a video AND appbar is set to visible
-    final bool isVolumeAllowed = !settingsHandler.useVolumeButtonsForScroll || newAppbarVisibility;
+    final bool isVolumeAllowed = !SX.useVolumeButtonsForScroll.value || newAppbarVisibility;
     ServiceHandler.setVolumeButtons(isVolumeAllowed);
   }
 

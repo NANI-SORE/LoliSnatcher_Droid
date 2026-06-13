@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 
 import 'package:lolisnatcher/src/boorus/mergebooru_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -133,9 +134,7 @@ class TabSelector extends StatelessWidget {
           }
 
           return Container(
-            padding: settingsHandler.appMode.value.isDesktop
-                ? const EdgeInsets.all(5)
-                : const EdgeInsets.only(left: 16, right: 16),
+            padding: SX.appMode.value.isDesktop ? const EdgeInsets.all(5) : const EdgeInsets.only(left: 16, right: 16),
             height: 54,
             decoration: isCurrent
                 ? BoxDecoration(
@@ -805,7 +804,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
               margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               // margin: const EdgeInsets.fromLTRB(2, 8, 2, 5),
               onChanged: (_) => getTabs(),
-              enableIMEPersonalizedLearning: !settingsHandler.incognitoKeyboard,
+              enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
             ),
           ),
           const SizedBox(width: 4),
@@ -1409,7 +1408,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
                   controller: scrollController,
                   thickness: 8,
                   interactive: true,
-                  scrollbarOrientation: settingsHandler.handSide.value.isLeft
+                  scrollbarOrientation: SX.handSide.value.isLeft
                       ? ScrollbarOrientation.left
                       : ScrollbarOrientation.right,
                   child: ReorderableListView.builder(
@@ -1550,7 +1549,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
                 width: double.infinity,
                 child: Row(
                   children: [
-                    if (settingsHandler.handSide.value.isLeft) ...[
+                    if (SX.handSide.value.isLeft) ...[
                       if (selectMode) ...[
                         selectAllBtn,
                         const SizedBox(width: 6),
@@ -1581,7 +1580,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
                         ),
                       ),
                     ),
-                    if (settingsHandler.handSide.value.isRight) ...[
+                    if (SX.handSide.value.isRight) ...[
                       if (selectMode) ...[
                         const SizedBox(width: 6),
                         deleteSelectedBtn,
@@ -1797,7 +1796,7 @@ class _DuplicateTabsDeleteDialogState extends State<_DuplicateTabsDeleteDialog> 
               drawBottomBorder: false,
               margin: EdgeInsets.zero,
               onChanged: (_) => setState(() {}),
-              enableIMEPersonalizedLearning: !SettingsHandler.instance.incognitoKeyboard,
+              enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
             ),
             Expanded(
               child: duplicateDeletePreviewList(),
@@ -1840,9 +1839,7 @@ class _DuplicateTabsDeleteDialogState extends State<_DuplicateTabsDeleteDialog> 
     return Scrollbar(
       controller: scrollController,
       interactive: true,
-      scrollbarOrientation: SettingsHandler.instance.handSide.value.isLeft
-          ? ScrollbarOrientation.left
-          : ScrollbarOrientation.right,
+      scrollbarOrientation: SX.handSide.value.isLeft ? .left : .right,
       child: ListView.builder(
         controller: scrollController,
         clipBehavior: Clip.hardEdge,

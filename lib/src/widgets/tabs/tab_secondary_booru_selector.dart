@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
@@ -33,7 +34,7 @@ class TabSecondaryBooruSelector extends StatelessWidget {
         );
       }
 
-      final bool isDesktop = settingsHandler.appMode.value.isDesktop;
+      final bool isDesktop = SX.appMode.value.isDesktop;
       final EdgeInsetsGeometry margin = isDesktop
           ? const EdgeInsets.fromLTRB(2, 5, 2, 2)
           : const EdgeInsets.fromLTRB(5, 8, 5, 8);

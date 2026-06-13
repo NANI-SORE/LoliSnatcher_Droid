@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/html.dart';
@@ -122,10 +123,8 @@ class SettingsPageOpen {
       return null;
     }
 
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
-
     final bool isTooNarrow = MediaQuery.sizeOf(context).width < 550;
-    final bool isDesktop = settingsHandler.appMode.value.isDesktop || PlatformExt.isDesktop;
+    final bool isDesktop = SX.appMode.value.isDesktop || PlatformExt.isDesktop;
     final bool useDesktopMode = (!isTooNarrow && isDesktop && !asBottomSheet) || useFloatingDialog;
 
     dynamic result;
@@ -1449,11 +1448,13 @@ class SettingsAppBar extends StatelessWidget implements PreferredSizeWidget {
   const SettingsAppBar({
     required this.title,
     this.leading,
+    this.actions,
     super.key,
   });
 
   final String title;
   final Widget? leading;
+  final List<Widget>? actions;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -1466,6 +1467,7 @@ class SettingsAppBar extends StatelessWidget implements PreferredSizeWidget {
         isExpanded: false,
       ),
       leading: leading,
+      actions: actions,
     );
   }
 }

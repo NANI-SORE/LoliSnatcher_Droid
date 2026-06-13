@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
@@ -19,7 +20,6 @@ class SnatcherPage extends StatefulWidget {
 
 class _SnatcherPageState extends State<SnatcherPage> {
   final SearchHandler searchHandler = SearchHandler.instance;
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
   final SnatchHandler snatchHandler = SnatchHandler.instance;
 
   final snatcherTagsController = TextEditingController();
@@ -34,9 +34,9 @@ class _SnatcherPageState extends State<SnatcherPage> {
     setPermissions();
     //If the user has searched tags on the main window they will be loaded into the tags field
     snatcherTagsController.text = searchHandler.currentTab.tags;
-    snatcherAmountController.text = settingsHandler.itemLimit.toString();
+    snatcherAmountController.text = SX.limit.value.toString();
     selectedBooru = searchHandler.currentBooru;
-    snatcherSleepController.text = settingsHandler.snatchCooldown.toString();
+    snatcherSleepController.text = SX.snatchCooldown.value.toString();
   }
 
   @override
@@ -81,7 +81,7 @@ class _SnatcherPageState extends State<SnatcherPage> {
               hintText: context.loc.snatcher.delayBetweenEachDownload,
               inputType: TextInputType.number,
               inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
-              resetText: () => settingsHandler.snatchCooldown.toString(),
+              resetText: () => SX.snatchCooldown.value.toString(),
               numberButtons: true,
               numberStep: 50,
               numberMin: 100,

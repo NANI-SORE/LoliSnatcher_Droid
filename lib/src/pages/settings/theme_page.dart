@@ -12,9 +12,13 @@ import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/ok_button.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
+import 'package:lolisnatcher/src/data/settings/all_settings.dart';
+import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/data/theme_item.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/handlers/theme_handler.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/utils/debouncer.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -50,15 +54,18 @@ class _ThemePageState extends State<ThemePage> {
   @override
   void initState() {
     super.initState();
-    theme = settingsHandler.theme.value;
-    themeMode = settingsHandler.themeMode.value;
-    useDynamicColor = settingsHandler.useDynamicColor.value;
-    isAmoled = settingsHandler.isAmoled.value;
-    fontFamily = settingsHandler.fontFamily.value;
-    enableMascot = settingsHandler.enableDrawerMascot;
-    mascotPathOverride = settingsHandler.drawerMascotPathOverride;
-    primaryPickerColor = settingsHandler.customPrimaryColor.value;
-    accentPickerColor = settingsHandler.customAccentColor.value;
+    // Read global values, not effective values — this page edits globals.
+    // Using .value would pick up per-booru overrides from the active booru
+    // and then write them back as globals on save.
+    theme = SX.theme.state.globalValue;
+    themeMode = SX.themeMode.state.globalValue;
+    useDynamicColor = SX.useDynamicColor.state.globalValue;
+    isAmoled = SX.isAmoled.state.globalValue;
+    fontFamily = SX.fontFamily.state.globalValue;
+    enableMascot = SX.enableDrawerMascot.state.globalValue;
+    mascotPathOverride = SX.drawerMascotPathOverride.state.globalValue;
+    primaryPickerColor = SX.customPrimaryColor.state.globalValue;
+    accentPickerColor = SX.customAccentColor.state.globalValue;
 
     checkSdk();
   }
@@ -78,46 +85,44 @@ class _ThemePageState extends State<ThemePage> {
     super.dispose();
   }
 
-  //called when page is closed or to debounce theme change, sets settingshandler variables and then writes settings to disk
-  Future<void> _onPopInvoked(
-    _,
-    _, {
-    bool? withRestate,
-  }) async {
-    settingsHandler.theme.value = theme;
-    settingsHandler.themeMode.value = themeMode;
-    settingsHandler.useDynamicColor.value = useDynamicColor;
-    settingsHandler.isAmoled.value = isAmoled;
-    settingsHandler.fontFamily.value = fontFamily;
-    settingsHandler.enableDrawerMascot = enableMascot;
+  /// Write all local state to the registry and save to disk.
+  Future<void> _saveToRegistry({bool restate = false}) async {
+    SX.theme.state.globalValue = theme;
+    SX.themeMode.state.globalValue = themeMode;
+    SX.useDynamicColor.state.globalValue = useDynamicColor;
+    SX.isAmoled.state.globalValue = isAmoled;
+    SX.fontFamily.state.globalValue = fontFamily;
+    SX.enableDrawerMascot.state.globalValue = enableMascot;
+    SX.customPrimaryColor.state.globalValue = primaryPickerColor;
+    SX.customAccentColor.state.globalValue = accentPickerColor;
 
-    // print('onPrimary: ${ThemeData.estimateBrightnessForColor(primaryPickerColor!) == Brightness.dark}');
-    // print('onAccent: ${ThemeData.estimateBrightnessForColor(accentPickerColor!) == Brightness.dark}');
-    settingsHandler.customPrimaryColor.value = primaryPickerColor;
-    settingsHandler.customAccentColor.value = accentPickerColor;
-    //This needs to be done here because if its done in the buttons onclick
-    //and you back out too fast the image path will not be returned in time to save it to settings
+    // Mascot path: write the image file first if needed
     if (needToWriteMascot) {
       if (mascotPathOverride.isNotEmpty) {
         mascotPathOverride = await ImageWriter().writeMascotImage(mascotPathOverride);
-        settingsHandler.drawerMascotPathOverride = mascotPathOverride;
         needToWriteMascot = false;
       }
-    } else {
-      settingsHandler.drawerMascotPathOverride = mascotPathOverride;
     }
-    await settingsHandler.saveSettings(restate: withRestate ?? false);
+    SX.drawerMascotPathOverride.state.globalValue = mascotPathOverride;
+
+    await settingsHandler.saveSettings(restate: restate);
+  }
+
+  /// Called on pop — just ensures final save happens (no-op if debounce already saved).
+  Future<void> _onPopInvoked(_, _) async {
+    Debounce.cancel('theme_change');
+    await _saveToRegistry();
   }
 
   Future<void> updateTheme({bool withRestate = false}) async {
     // instantly do local restate
     setState(() {});
 
-    // set global restate to happen only after X ms after last update happens
+    // save after a debounce so the theme updates live
     Debounce.debounce(
       tag: 'theme_change',
       callback: () async {
-        await _onPopInvoked(false, null, withRestate: withRestate);
+        await _saveToRegistry(restate: withRestate);
         setState(() {});
       },
       duration: const Duration(milliseconds: 500),
@@ -173,6 +178,53 @@ class _ThemePageState extends State<ThemePage> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildOverrideWarning(BuildContext context) {
+    final currentBooru = SettingsRegistry.instance.currentBooruName;
+    if (currentBooru == null) return const SizedBox.shrink();
+
+    // Check if any theme-related setting has a per-booru override for the active booru
+    final themeKeys = [
+      SX.theme,
+      SX.themeMode,
+      SX.isAmoled,
+      SX.useDynamicColor,
+      SX.customPrimaryColor,
+      SX.customAccentColor,
+    ];
+    final hasOverride = themeKeys.any((k) => k.state.hasOverrideFor(currentBooru));
+    if (!hasOverride) return const SizedBox.shrink();
+
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Material(
+        color: colorScheme.tertiaryContainer,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: colorScheme.onTertiaryContainer, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  context.loc.settings.activeBooruThemeOverrides(
+                    booru: currentBooru,
+                  ),
+                  style: TextStyle(
+                    color: colorScheme.onTertiaryContainer,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -239,290 +291,310 @@ class _ThemePageState extends State<ThemePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Build theme from local (global) state so the page visually reflects
+    // the global theme being edited, not a per-booru override.
+    final localThemeItem = theme.name == 'Custom'
+        ? ThemeItem(name: 'Custom', primary: primaryPickerColor, accent: accentPickerColor)
+        : theme;
+    final themeHandler = ThemeHandler(
+      theme: localThemeItem,
+      themeMode: themeMode,
+      isAmoled: isAmoled,
+      fontFamily: fontFamily,
+      context: context,
+    );
+
     return PopScope(
       onPopInvokedWithResult: _onPopInvoked,
-      child: Scaffold(
-        resizeToAvoidBottomInset: true,
-        appBar: SettingsAppBar(title: context.loc.settings.theme.title),
-        body: Center(
-          child: ListView(
-            children: [
-              SettingsOptionsList(
-                value: themeMode,
-                items: ThemeMode.values,
-                onChanged: (ThemeMode? newValue) {
-                  themeMode = newValue!;
-                  updateTheme();
-                },
-                title: context.loc.settings.theme.themeMode,
-                itemTitleBuilder: (item) => item?.locName(context) ?? '?',
-                itemLeadingBuilder: (ThemeMode? item) {
-                  const double size = 40;
-
-                  return SizedBox(
-                    width: size,
-                    height: size,
-                    child: switch (item) {
-                      ThemeMode.dark => const Icon(Icons.dark_mode),
-                      ThemeMode.light => const Icon(Icons.light_mode),
-                      ThemeMode.system => Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          ClipPath(
-                            clipper: _SunClipper(),
-                            child: const Padding(
-                              padding: EdgeInsets.only(right: 8),
-                              child: Icon(Icons.light_mode),
-                            ),
-                          ),
-                          ClipPath(
-                            clipper: _MoonClipper(),
-                            child: const Padding(
-                              padding: EdgeInsets.only(left: 5),
-                              child: Icon(Icons.dark_mode),
-                            ),
-                          ),
-                        ],
-                      ),
-                      _ => const SizedBox.shrink(),
-                    },
-                  );
-                },
-              ),
-              if (themeMode == ThemeMode.system || themeMode == ThemeMode.dark)
-                SettingsToggle(
-                  value: isAmoled,
-                  onChanged: (bool newValue) {
-                    isAmoled = newValue;
+      child: Theme(
+        data: themeHandler.getTheme(),
+        child: Scaffold(
+          resizeToAvoidBottomInset: true,
+          appBar: SettingsAppBar(title: context.loc.settings.theme.title),
+          body: Center(
+            child: ListView(
+              children: [
+                _buildOverrideWarning(context),
+                SettingsOptionsList(
+                  value: themeMode,
+                  items: ThemeMode.values,
+                  onChanged: (ThemeMode? newValue) {
+                    themeMode = newValue!;
                     updateTheme();
                   },
-                  title: context.loc.settings.theme.blackBg,
-                ),
-              if (currentSdk >= 31)
-                SettingsToggle(
-                  value: useDynamicColor,
-                  onChanged: (bool newValue) {
-                    useDynamicColor = newValue;
-                    updateTheme();
-                  },
-                  title: context.loc.settings.theme.useDynamicColor,
-                  subtitle: Platform.isAndroid ? Text(context.loc.settings.theme.android12PlusOnly) : null,
-                ),
-              if (!useDynamicColor)
-                SettingsDropdown(
-                  value: theme.name,
-                  items: List<String>.from(settingsHandler.map['theme']!['options'].map((e) => e.name).toList()),
-                  onChanged: (String? newValue) {
-                    theme = settingsHandler.map['theme']!['options'].where((e) => e.name == newValue).toList()[0];
-                    updateTheme(withRestate: true);
-                  },
-                  title: context.loc.settings.theme.theme,
-                  itemBuilder: (String? value) {
-                    final ThemeItem theme = settingsHandler.map['theme']!['options'].firstWhere((e) => e.name == value);
-                    final Color? primary = theme.name == 'Custom' ? primaryPickerColor : theme.primary;
-                    final Color? accent = theme.name == 'Custom' ? accentPickerColor : theme.accent;
+                  title: context.loc.settings.theme.themeMode,
+                  itemTitleBuilder: (item) => item?.locName(context) ?? '?',
+                  itemLeadingBuilder: (ThemeMode? item) {
+                    const double size = 40;
 
-                    const double themeSize = 40;
-
-                    return Row(
-                      children: [
-                        Center(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: (Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.white)
-                                    .withValues(alpha: 0.6),
-                                width: 1,
-                              ),
-                              shape: BoxShape.rectangle,
-                              color: primary,
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              clipBehavior: Clip.antiAlias,
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  ClipPath(
-                                    clipper: _ThemeLeftClipper(),
-                                    child: Container(
-                                      color: primary,
-                                      height: themeSize,
-                                      width: themeSize,
-                                    ),
-                                  ),
-                                  ClipPath(
-                                    clipper: _ThemeRightClipper(),
-                                    child: Container(
-                                      color: accent,
-                                      height: themeSize,
-                                      width: themeSize,
-                                    ),
-                                  ),
-                                ],
+                    return SizedBox(
+                      width: size,
+                      height: size,
+                      child: switch (item) {
+                        ThemeMode.dark => const Icon(Icons.dark_mode),
+                        ThemeMode.light => const Icon(Icons.light_mode),
+                        ThemeMode.system => Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            ClipPath(
+                              clipper: _SunClipper(),
+                              child: const Padding(
+                                padding: EdgeInsets.only(right: 8),
+                                child: Icon(Icons.light_mode),
                               ),
                             ),
-                          ),
+                            ClipPath(
+                              clipper: _MoonClipper(),
+                              child: const Padding(
+                                padding: EdgeInsets.only(left: 5),
+                                child: Icon(Icons.dark_mode),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 10),
-                        Text(
-                          context.loc['settings.theme.${value?.toLowerCase()}'] ?? '?',
-                        ),
-                        switch (value) {
-                          'Halloween' => const Padding(
-                            padding: EdgeInsets.only(left: 8),
-                            child: FaIcon(FontAwesomeIcons.ghost),
-                          ),
-                          'Custom' => const Padding(
-                            padding: EdgeInsets.only(left: 8),
-                            child: Icon(Icons.build),
-                          ),
-                          _ => const SizedBox.shrink(),
-                        },
-                      ],
+                        _ => const SizedBox.shrink(),
+                      },
                     );
                   },
                 ),
-              if (theme.name == 'Custom' && !useDynamicColor)
-                SettingsButton(
-                  name: context.loc.settings.theme.primaryColor,
-                  subtitle: Text(
-                    '${ColorTools.materialNameAndCode(primaryPickerColor!)} '
-                    'aka ${ColorTools.nameThatColor(primaryPickerColor!)}',
+                if (themeMode == ThemeMode.system || themeMode == ThemeMode.dark)
+                  SettingsToggle(
+                    value: isAmoled,
+                    onChanged: (bool newValue) {
+                      isAmoled = newValue;
+                      updateTheme();
+                    },
+                    title: context.loc.settings.theme.blackBg,
                   ),
-                  action: () async {
-                    // Store current color before we open the dialog.
-                    final Color colorBeforeDialog = primaryPickerColor!;
-                    // Wait for the picker to close, if dialog was dismissed,
-                    // then restore the color we had before it was opened.
+                if (currentSdk >= 31)
+                  SettingsToggle(
+                    value: useDynamicColor,
+                    onChanged: (bool newValue) {
+                      useDynamicColor = newValue;
+                      updateTheme();
+                    },
+                    title: context.loc.settings.theme.useDynamicColor,
+                    subtitle: Platform.isAndroid ? Text(context.loc.settings.theme.android12PlusOnly) : null,
+                  ),
+                if (!useDynamicColor)
+                  SettingsDropdown<ThemeItem>(
+                    value: theme,
+                    items: getThemeOptions(),
+                    onChanged: (ThemeItem? newValue) {
+                      if (newValue != null) {
+                        theme = newValue;
+                        updateTheme(withRestate: true);
+                      }
+                    },
+                    title: context.loc.settings.theme.theme,
+                    itemTitleBuilder: (ThemeItem? item) => item?.locName(context) ?? '',
+                    itemBuilder: (ThemeItem? value) {
+                      final Color? primary = value?.name == 'Custom' ? primaryPickerColor : value?.primary;
+                      final Color? accent = value?.name == 'Custom' ? accentPickerColor : value?.accent;
 
-                    if (!await colorPickerDialog(
-                      primaryPickerColor!,
-                      (Color newColor) {
-                        primaryPickerColor = newColor;
-                        updateTheme();
-                      },
-                    )) {
-                      primaryPickerColor = colorBeforeDialog;
-                      await updateTheme();
-                    }
-                  },
-                  trailingIcon: ColorIndicator(
-                    width: 44,
-                    height: 44,
-                    hasBorder: true,
-                    borderRadius: 4,
-                    borderColor: (Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.white)
-                        .withValues(alpha: 0.6),
-                    color: primaryPickerColor!,
-                  ),
-                ),
-              if (theme.name == 'Custom' && !useDynamicColor)
-                SettingsButton(
-                  name: context.loc.settings.theme.secondaryColor,
-                  subtitle: Text(
-                    '${ColorTools.materialNameAndCode(accentPickerColor!)} '
-                    'aka ${ColorTools.nameThatColor(accentPickerColor!)}',
-                  ),
-                  action: () async {
-                    // Store current color before we open the dialog.
-                    final Color colorBeforeDialog = accentPickerColor!;
-                    // Wait for the picker to close, if dialog was dismissed,
-                    // then restore the color we had before it was opened.
+                      const double themeSize = 40;
 
-                    if (!await colorPickerDialog(
-                      accentPickerColor!,
-                      (Color newColor) {
-                        accentPickerColor = newColor;
-                        updateTheme();
-                      },
-                    )) {
-                      accentPickerColor = colorBeforeDialog;
-                      await updateTheme();
-                    }
-                  },
-                  trailingIcon: ColorIndicator(
-                    width: 44,
-                    height: 44,
-                    hasBorder: true,
-                    borderRadius: 4,
-                    borderColor: (Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.white)
-                        .withValues(alpha: 0.6),
-                    color: accentPickerColor!,
+                      return Row(
+                        children: [
+                          Center(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color:
+                                      (Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.white)
+                                          .withValues(alpha: 0.6),
+                                  width: 1,
+                                ),
+                                shape: BoxShape.rectangle,
+                                color: primary,
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                clipBehavior: Clip.antiAlias,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    ClipPath(
+                                      clipper: _ThemeLeftClipper(),
+                                      child: Container(
+                                        color: primary,
+                                        height: themeSize,
+                                        width: themeSize,
+                                      ),
+                                    ),
+                                    ClipPath(
+                                      clipper: _ThemeRightClipper(),
+                                      child: Container(
+                                        color: accent,
+                                        height: themeSize,
+                                        width: themeSize,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            value?.locName(context) ?? '?',
+                          ),
+                          switch (value?.name) {
+                            'Halloween' => const Padding(
+                              padding: EdgeInsets.only(left: 8),
+                              child: FaIcon(FontAwesomeIcons.ghost),
+                            ),
+                            'Custom' => const Padding(
+                              padding: EdgeInsets.only(left: 8),
+                              child: Icon(Icons.build),
+                            ),
+                            _ => const SizedBox.shrink(),
+                          },
+                        ],
+                      );
+                    },
                   ),
-                ),
-              if (theme.name == 'Custom' && !useDynamicColor)
+                if (theme.name == 'Custom' && !useDynamicColor)
+                  SettingsButton(
+                    name: context.loc.settings.theme.primaryColor,
+                    subtitle: Text(
+                      '${ColorTools.materialNameAndCode(primaryPickerColor!)} '
+                      'aka ${ColorTools.nameThatColor(primaryPickerColor!)}',
+                    ),
+                    action: () async {
+                      // Store current color before we open the dialog.
+                      final Color colorBeforeDialog = primaryPickerColor!;
+                      // Wait for the picker to close, if dialog was dismissed,
+                      // then restore the color we had before it was opened.
+
+                      if (!await colorPickerDialog(
+                        primaryPickerColor!,
+                        (Color newColor) {
+                          primaryPickerColor = newColor;
+                          updateTheme();
+                        },
+                      )) {
+                        primaryPickerColor = colorBeforeDialog;
+                        await updateTheme();
+                      }
+                    },
+                    trailingIcon: ColorIndicator(
+                      width: 44,
+                      height: 44,
+                      hasBorder: true,
+                      borderRadius: 4,
+                      borderColor: (Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.white)
+                          .withValues(alpha: 0.6),
+                      color: primaryPickerColor!,
+                    ),
+                  ),
+                if (theme.name == 'Custom' && !useDynamicColor)
+                  SettingsButton(
+                    name: context.loc.settings.theme.secondaryColor,
+                    subtitle: Text(
+                      '${ColorTools.materialNameAndCode(accentPickerColor!)} '
+                      'aka ${ColorTools.nameThatColor(accentPickerColor!)}',
+                    ),
+                    action: () async {
+                      // Store current color before we open the dialog.
+                      final Color colorBeforeDialog = accentPickerColor!;
+                      // Wait for the picker to close, if dialog was dismissed,
+                      // then restore the color we had before it was opened.
+
+                      if (!await colorPickerDialog(
+                        accentPickerColor!,
+                        (Color newColor) {
+                          accentPickerColor = newColor;
+                          updateTheme();
+                        },
+                      )) {
+                        accentPickerColor = colorBeforeDialog;
+                        await updateTheme();
+                      }
+                    },
+                    trailingIcon: ColorIndicator(
+                      width: 44,
+                      height: 44,
+                      hasBorder: true,
+                      borderRadius: 4,
+                      borderColor: (Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.white)
+                          .withValues(alpha: 0.6),
+                      color: accentPickerColor!,
+                    ),
+                  ),
+                if (theme.name == 'Custom' && !useDynamicColor)
+                  SettingsButton(
+                    name: context.loc.reset,
+                    icon: const Icon(Icons.refresh),
+                    action: () {
+                      final defaultTheme = getDefaultTheme();
+                      primaryPickerColor = defaultTheme.primary;
+                      accentPickerColor = defaultTheme.accent;
+                      updateTheme();
+                    },
+                  ),
+                const SettingsButton(name: '', enabled: false),
                 SettingsButton(
-                  name: context.loc.reset,
-                  icon: const Icon(Icons.refresh),
-                  action: () {
-                    final ThemeItem theme = settingsHandler.map['theme']!['default'];
-                    primaryPickerColor = theme.primary;
-                    accentPickerColor = theme.accent;
+                  name: context.loc.settings.theme.fontFamily,
+                  subtitle: Text(
+                    fontFamily == 'System' ? context.loc.settings.theme.systemDefault : fontFamily,
+                    style: _getFontStyle(fontFamily),
+                  ),
+                  icon: const Icon(Icons.font_download),
+                  trailingIcon: fontFamily == 'System'
+                      ? null
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.refresh),
+                              onPressed: () {
+                                fontFamily = 'System';
+                                updateTheme();
+                              },
+                            ),
+                            const Icon(Icons.chevron_right),
+                          ],
+                        ),
+                  action: _showFontPicker,
+                ),
+                const SettingsButton(name: '', enabled: false),
+                SettingsToggle(
+                  value: enableMascot,
+                  onChanged: (bool newValue) {
+                    enableMascot = newValue;
                     updateTheme();
                   },
+                  title: context.loc.settings.theme.enableDrawerMascot,
                 ),
-              const SettingsButton(name: '', enabled: false),
-              SettingsButton(
-                name: context.loc.settings.theme.fontFamily,
-                subtitle: Text(
-                  fontFamily == 'System' ? context.loc.settings.theme.systemDefault : fontFamily,
-                  style: _getFontStyle(fontFamily),
-                ),
-                icon: const Icon(Icons.font_download),
-                trailingIcon: fontFamily == 'System'
-                    ? null
-                    : Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.refresh),
-                            onPressed: () {
-                              fontFamily = 'System';
-                              updateTheme();
-                            },
-                          ),
-                          const Icon(Icons.chevron_right),
-                        ],
-                      ),
-                action: _showFontPicker,
-              ),
-              const SettingsButton(name: '', enabled: false),
-              SettingsToggle(
-                value: enableMascot,
-                onChanged: (bool newValue) {
-                  enableMascot = newValue;
-                  updateTheme();
-                },
-                title: context.loc.settings.theme.enableDrawerMascot,
-              ),
-              SettingsButton(
-                name: context.loc.settings.theme.setCustomMascot,
-                subtitle: mascotPathOverride.isEmpty
-                    ? null
-                    : Text('${context.loc.settings.theme.currentMascotPath}: $mascotPathOverride'),
-                icon: const Icon(Icons.image_search_outlined),
-                action: () async {
-                  mascotPathOverride = await ServiceHandler.getImageSAFUri();
-                  needToWriteMascot = true;
-                  setState(() {});
-                },
-              ),
-              if (mascotPathOverride.isNotEmpty)
                 SettingsButton(
-                  name: context.loc.settings.theme.removeCustomMascot,
-                  icon: const Icon(Icons.delete_forever),
+                  name: context.loc.settings.theme.setCustomMascot,
+                  subtitle: mascotPathOverride.isEmpty
+                      ? null
+                      : Text('${context.loc.settings.theme.currentMascotPath}: $mascotPathOverride'),
+                  icon: const Icon(Icons.image_search_outlined),
                   action: () async {
-                    final File file = File(mascotPathOverride);
-                    if (await file.exists()) {
-                      await file.delete();
-                    }
-                    mascotPathOverride = '';
+                    mascotPathOverride = await ServiceHandler.getImageSAFUri();
+                    needToWriteMascot = true;
                     setState(() {});
                   },
                 ),
-            ],
+                if (mascotPathOverride.isNotEmpty)
+                  SettingsButton(
+                    name: context.loc.settings.theme.removeCustomMascot,
+                    icon: const Icon(Icons.delete_forever),
+                    action: () async {
+                      final File file = File(mascotPathOverride);
+                      if (await file.exists()) {
+                        await file.delete();
+                      }
+                      mascotPathOverride = '';
+                      setState(() {});
+                    },
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -779,10 +851,9 @@ class _FontPickerSheetState extends State<_FontPickerSheet> {
             final fontStyle = _getExtendedFontStyle(selectedFont);
 
             String text = context.loc.settings.theme.fontPreviewText;
-            final settings = SettingsHandler.instance;
-            if (settings.locale.value == null
+            if (SX.locale.value == null
                 ? PlatformDispatcher.instance.locale.languageCode != 'en'
-                : settings.locale.value != AppLocale.en) {
+                : SX.locale.value != AppLocale.en) {
               text =
                   '${LocaleSettings.instance.translationMap[AppLocale.en]?.settings.theme.fontPreviewText}\n\n${context.loc.settings.theme.fontPreviewText}';
             }
@@ -934,10 +1005,9 @@ class _CustomFontDialogState extends State<_CustomFontDialog> {
               child: Builder(
                 builder: (context) {
                   String text = context.loc.settings.theme.fontPreviewText;
-                  final settings = SettingsHandler.instance;
-                  if (settings.locale.value == null
+                  if (SX.locale.value == null
                       ? PlatformDispatcher.instance.locale.languageCode != 'en'
-                      : settings.locale.value != AppLocale.en) {
+                      : SX.locale.value != AppLocale.en) {
                     text =
                         '${LocaleSettings.instance.translationMap[AppLocale.en]?.settings.theme.fontPreviewText}\n\n${context.loc.settings.theme.fontPreviewText}';
                   }

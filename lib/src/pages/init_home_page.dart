@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 
@@ -17,7 +18,7 @@ class _InitHomePageState extends State<InitHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: SettingsAppBar(
-        title: settingsHandler.appAlias.locName,
+        title: SX.appAlias.value.locName,
         leading: const Icon(null),
       ),
       body: Center(

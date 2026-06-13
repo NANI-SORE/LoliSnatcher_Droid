@@ -7,8 +7,8 @@ import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:waterfall_flow/waterfall_flow.dart';
 
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/widgets/preview/page_indicator.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_card_build.dart';
@@ -35,9 +35,7 @@ class StaggeredBuilder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
-
-    final int columnCount = context.isPortrait ? settingsHandler.portraitColumns : settingsHandler.landscapeColumns;
+    final int columnCount = context.isPortrait ? SX.portraitColumns.value : SX.landscapeColumns.value;
     SearchHandler.instance.currentColumnCount = columnCount;
 
     return ValueListenableBuilder(

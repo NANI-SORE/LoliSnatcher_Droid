@@ -376,6 +376,15 @@
     },
     "settings": {
         "title": "Настройки",
+        "typeToSearch": "Начни вводить текст для поиска по настройкам",
+        "noSettingsFound": "Настройки не найдены",
+        "perBooruSettings": "Индивидуальные настройки для сайта",
+        "resetCategoryQuestion(param=category)": "Сбросить все настройки категории «${category: String}» до значений по умолчанию?",
+        "globalValue(param=value)": "Глобальное значение: ${value: String}",
+        "booruOverridesTitle(param=booru)": "${booru: String} — Индивидуальные настройки",
+        "resetAllOverrides": "Сбросить все индивидуальные настройки",
+        "resetAllOverridesDescription(param=booru)": "Все индивидуальные настройки для сайта «${booru: String}» будут удалены. Вместо них будут использоваться глобальные значения.",
+        "activeBooruThemeOverrides(param=booru)": "Для активного сайта «${booru: String}» заданы индивидуальные настройки темы. Изменения здесь повлияют на глобальные значения, а не на тему для этого сайта.",
         "language": {
             "title": "Язык",
             "system": "Системный",

@@ -11,6 +11,7 @@ import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
@@ -44,7 +45,7 @@ class ImageWriter {
     // if (fileExists) return null;
     if (!ignoreExists && (fileExists || item.isSnatched.value == true)) {
       item.isSnatched.value = true;
-      if (settingsHandler.dbEnabled) {
+      if (SX.dbEnabled.value) {
         await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
       }
       return null;
@@ -59,7 +60,7 @@ class ImageWriter {
         ...await Tools.getFileCustomHeaders(booru, item: item, checkForReferer: true),
       };
 
-      final String url = ((settingsHandler.snatchMode.isSample && item.sampleURL.isNotEmpty)
+      final String url = ((SX.snatchMode.value.isSample && item.sampleURL.isNotEmpty)
           ? item.sampleURL
           : item.fileURL);
 
@@ -68,7 +69,7 @@ class ImageWriter {
         onCancelTokenCreate(cancelToken);
       }
 
-      if (Platform.isAndroid && settingsHandler.extPathOverride.isNotEmpty) {
+      if (Platform.isAndroid && SX.extPathOverride.value.isNotEmpty) {
         await DioNetwork.downloadCustom(
           url,
           '$path/',
@@ -98,9 +99,9 @@ class ImageWriter {
       }
 
       try {
-        if (settingsHandler.jsonWrite) {
+        if (SX.jsonWrite.value) {
           if (Platform.isAndroid &&
-              settingsHandler.extPathOverride.isNotEmpty &&
+              SX.extPathOverride.value.isNotEmpty &&
               await ServiceHandler.getAndroidSDKVersion() >= 31) {
             final String? safPath = await ServiceHandler.createFileStreamFromSAFDirectory(
               fileNameWoutExt,
@@ -137,13 +138,13 @@ class ImageWriter {
       print('Image written: $path$fileName');
       SAFFileCache.instance.onFileCreated(fileName);
       item.isSnatched.value = true;
-      if (settingsHandler.dbEnabled) {
+      if (SX.dbEnabled.value) {
         await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
       }
 
       try {
         if (Platform.isAndroid) {
-          if (settingsHandler.extPathOverride.isNotEmpty && await ServiceHandler.getAndroidSDKVersion() >= 31) {
+          if (SX.extPathOverride.value.isNotEmpty && await ServiceHandler.getAndroidSDKVersion() >= 31) {
             // TODO disabled for now, because it causes huge delays if user has a lot of saved files
             // final bool result = await ServiceHandler.existsFileFromSAFDirectory(path, fileName);
             // if (!result) {
@@ -413,8 +414,8 @@ class ImageWriter {
         _cleanupCacheIsolate,
         _CacheCleanupConfig(
           cacheRootPath: cacheRootPath,
-          cacheDurationMs: settingsHandler.cacheDuration.inMilliseconds,
-          cacheSizeLimitBytes: (settingsHandler.cacheSize * pow(1024, 3)).toInt(),
+          cacheDurationMs: SX.cacheDuration.value.inMilliseconds,
+          cacheSizeLimitBytes: (SX.cacheSize.value * pow(1024, 3)).toInt(),
           cleanableFolders: cleanableFolders,
         ),
       );
@@ -565,10 +566,10 @@ class ImageWriter {
 
   Future<bool> setPaths() async {
     if (path.isEmpty) {
-      if (settingsHandler.extPathOverride.isEmpty) {
+      if (SX.extPathOverride.value.isEmpty) {
         path = await ServiceHandler.getPicturesDir();
       } else {
-        path = settingsHandler.extPathOverride;
+        path = SX.extPathOverride.value;
       }
     }
 
