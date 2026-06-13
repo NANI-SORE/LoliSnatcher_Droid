@@ -1303,7 +1303,7 @@ class SearchHandler {
     if (tab.pageRestored || isRunningAutoSearch.value) return;
 
     final int? savedPage = _pendingPageRestores[tabIndex];
-    if (savedPage == null || savedPage <= 1) {
+    if (savedPage == null || savedPage <= 2) {
       tab.pageRestored = true;
       return;
     }
@@ -1370,7 +1370,7 @@ class SearchHandler {
 
     await executePageRestore(
       tab,
-      savedPage,
+      savedPage - 1,
       mode,
       customDelay: mode.isFetchMultiplePages ? delay : null,
     );

@@ -22,7 +22,11 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
 
   bool scrollToFetchedPage = false;
 
-  int get pageNumber => int.tryParse(pageNumberController.text) ?? 0;
+  int get pageNumber {
+    final int? parsedNumber = int.tryParse(pageNumberController.text);
+
+    return parsedNumber != null ? parsedNumber - 1 : 0;
+  }
 
   int get delay => int.tryParse(delayController.text) ?? 200;
 
