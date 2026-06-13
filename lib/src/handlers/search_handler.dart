@@ -94,7 +94,7 @@ class SearchHandler {
       secondaryBoorus,
       searchText,
     );
-    newTab.savePageEnabled = SettingsHandler.instance.defaultSavePageEnabled;
+    newTab.savePageEnabled = SX.defaultSavePageEnabled.value;
     if (customPage != null) {
       newTab.booruHandler.pageNum = customPage;
     }
@@ -179,7 +179,7 @@ class SearchHandler {
       searchTextController.text = defaultText;
 
       final SearchTab newTab = SearchTab(currentBooru, null, defaultText);
-      newTab.savePageEnabled = settingsHandler.defaultSavePageEnabled;
+      newTab.savePageEnabled = SX.defaultSavePageEnabled.value;
       tabs[0] = newTab;
       changeTabIndex(0);
     }
@@ -212,7 +212,7 @@ class SearchHandler {
       searchTextController.text = defaultText;
 
       final SearchTab newTab = SearchTab(currentBooru, null, defaultText);
-      newTab.savePageEnabled = settingsHandler.defaultSavePageEnabled;
+      newTab.savePageEnabled = SX.defaultSavePageEnabled.value;
       tabs.value[0] = newTab;
       changeTabIndex(0);
     } else {
@@ -551,7 +551,7 @@ class SearchHandler {
           currentSecondaryBoorus.value,
           text,
         );
-        newTab.savePageEnabled = settingsHandler.defaultSavePageEnabled;
+        newTab.savePageEnabled = SX.defaultSavePageEnabled.value;
         tabs.add(newTab);
       } else {
         return;
@@ -1044,7 +1044,7 @@ class SearchHandler {
       searchTextController.text = defaultText;
       if (defaultBooru.type != null) {
         final defaultTab = SearchTab(defaultBooru, null, defaultText);
-        defaultTab.savePageEnabled = SettingsHandler.instance.defaultSavePageEnabled;
+        defaultTab.savePageEnabled = SX.defaultSavePageEnabled.value;
         tabs.add(defaultTab);
         await changeTabIndex(0);
       }
@@ -1245,7 +1245,7 @@ class SearchHandler {
       searchTextController.text = defaultText;
       if (defaultBooru.type != null) {
         final SearchTab newTab = SearchTab(defaultBooru, null, defaultText);
-        newTab.savePageEnabled = settingsHandler.defaultSavePageEnabled;
+        newTab.savePageEnabled = SX.defaultSavePageEnabled.value;
         tabs.clear();
         tabs.add(newTab);
         await changeTabIndex(0);
@@ -1309,7 +1309,7 @@ class SearchHandler {
     }
 
     final SettingsHandler settingsHandler = SettingsHandler.instance;
-    TabPageRestoreMode mode = settingsHandler.tabPageRestoreMode;
+    TabPageRestoreMode mode = SX.tabPageRestoreMode.value;
     int delay = 200;
 
     if (mode.isIgnore) {
@@ -1341,7 +1341,7 @@ class SearchHandler {
       }
 
       if (res.rememberChoice) {
-        settingsHandler.tabPageRestoreMode = res.selectedMode;
+        SX.tabPageRestoreMode.state.value = res.selectedMode;
         await settingsHandler.saveSettings(restate: false);
       }
       mode = res.selectedMode;

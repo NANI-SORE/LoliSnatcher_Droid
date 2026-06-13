@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -143,7 +144,7 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
   }
 
   void _onPageChanged() {
-    if (settingsHandler.shitDevice) {
+    if (SX.shitDevice.value) {
       if (pageProgress > 0 && mounted) {
         setState(() {
           pageProgress = 0;
@@ -248,7 +249,7 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: BackdropFilter(
-              enabled: !settingsHandler.shitDevice,
+              enabled: !SX.shitDevice.value,
               filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
               child: Stack(
                 children: [
