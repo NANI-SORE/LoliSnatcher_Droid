@@ -1003,10 +1003,10 @@ class _TabManagerPageState extends State<TabManagerPage> {
             ),
             secondary: const Icon(Icons.bookmark_outline),
             title: Text(context.loc.pageChanger.saveViewedPage),
-            value: tab.savePageEnabled,
+            value: tab.savePageEnabled.value,
             onChanged: (value) {
               setLocalState(() {
-                tab.savePageEnabled = value;
+                tab.savePageEnabled.value = value;
               });
             },
           ),

@@ -89,7 +89,7 @@ class GridPageIndicator extends StatelessWidget {
             ),
           ),
           const Icon(
-            Icons.insert_drive_file,
+            Icons.bookmark_border,
             size: 12,
           ),
         ],
@@ -304,9 +304,11 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
-                          const Icon(
-                            Icons.insert_drive_file,
-                            size: 14,
+                          Obx(
+                            () => Icon(
+                              searchHandler.currentTab.savePageEnabled.value ? Icons.bookmark : Icons.bookmark_border,
+                              size: 14,
+                            ),
                           ),
                           const Icon(
                             Icons.chevron_right,

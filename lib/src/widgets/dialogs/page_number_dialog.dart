@@ -120,13 +120,17 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
           ),
         ),
         SettingsToggle(
-          value: searchHandler.currentTab.savePageEnabled,
+          value: searchHandler.currentTab.savePageEnabled.value,
           onChanged: (newValue) {
             setState(() {
-              searchHandler.currentTab.savePageEnabled = newValue;
+              searchHandler.currentTab.savePageEnabled.value = newValue;
             });
           },
           title: context.loc.pageChanger.saveViewedPage,
+          leadingIcon: Icon(
+            searchHandler.currentTab.savePageEnabled.value ? Icons.bookmark : Icons.bookmark_border,
+            color: Theme.of(context).iconTheme.color,
+          ),
         ),
         SettingsButton(
           name: context.loc.pageChanger.currentPage(number: searchHandler.currentBooruHandler.pageNum),

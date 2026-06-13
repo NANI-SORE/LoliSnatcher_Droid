@@ -94,7 +94,7 @@ class SearchHandler {
       secondaryBoorus,
       searchText,
     );
-    newTab.savePageEnabled = SX.defaultSavePageEnabled.value;
+    newTab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
     if (customPage != null) {
       newTab.booruHandler.pageNum = customPage;
     }
@@ -179,7 +179,7 @@ class SearchHandler {
       searchTextController.text = defaultText;
 
       final SearchTab newTab = SearchTab(currentBooru, null, defaultText);
-      newTab.savePageEnabled = SX.defaultSavePageEnabled.value;
+      newTab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
       tabs[0] = newTab;
       changeTabIndex(0);
     }
@@ -212,7 +212,7 @@ class SearchHandler {
       searchTextController.text = defaultText;
 
       final SearchTab newTab = SearchTab(currentBooru, null, defaultText);
-      newTab.savePageEnabled = SX.defaultSavePageEnabled.value;
+      newTab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
       tabs.value[0] = newTab;
       changeTabIndex(0);
     } else {
@@ -455,7 +455,7 @@ class SearchHandler {
     );
     newTab.booruHandler.pageNum = newPageNum;
     pageNum.value = newPageNum;
-    newTab.savePageEnabled = tabs[currentIndex].savePageEnabled;
+    newTab.savePageEnabled.value = tabs[currentIndex].savePageEnabled.value;
     tabs[currentIndex] = newTab;
 
     await changeTabIndex(currentIndex, ignoreSameIndexCheck: true);
@@ -551,7 +551,7 @@ class SearchHandler {
           currentSecondaryBoorus.value,
           text,
         );
-        newTab.savePageEnabled = SX.defaultSavePageEnabled.value;
+        newTab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
         tabs.add(newTab);
       } else {
         return;
@@ -562,7 +562,7 @@ class SearchHandler {
         currentSecondaryBoorus.value,
         text,
       );
-      newTab.savePageEnabled = tabs[currentIndex].savePageEnabled;
+      newTab.savePageEnabled.value = tabs[currentIndex].savePageEnabled.value;
       tabs[currentIndex] = newTab;
     }
 
@@ -655,7 +655,7 @@ class SearchHandler {
     final List<Booru>? secondary = canAddSecondary ? secondaryBoorus : null;
 
     final SearchTab newTab = SearchTab(currentBooru, secondary, currentTab.tags);
-    newTab.savePageEnabled = tabs[currentIndex].savePageEnabled;
+    newTab.savePageEnabled.value = tabs[currentIndex].savePageEnabled.value;
     tabs[currentIndex] = newTab;
 
     // run search
@@ -1044,7 +1044,7 @@ class SearchHandler {
       searchTextController.text = defaultText;
       if (defaultBooru.type != null) {
         final defaultTab = SearchTab(defaultBooru, null, defaultText);
-        defaultTab.savePageEnabled = SX.defaultSavePageEnabled.value;
+        defaultTab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
         tabs.add(defaultTab);
         await changeTabIndex(0);
       }
@@ -1133,7 +1133,7 @@ class SearchHandler {
         final bool selected = tab == tabs[tabIndex];
 
         // Save page number only if enabled for this tab
-        final int? savedPageNum = tab.savePageEnabled ? (_getTabCurrentPage(tab) ?? tab.scrollPage) : null;
+        final int? savedPageNum = tab.savePageEnabled.value ? (_getTabCurrentPage(tab) ?? tab.scrollPage) : null;
 
         return jsonEncode(
           TabBackup(
@@ -1142,7 +1142,7 @@ class SearchHandler {
             secondaryBoorus: secondaryBoorusNames,
             selected: selected,
             pageNum: savedPageNum,
-            savePageEnabled: tab.savePageEnabled,
+            savePageEnabled: tab.savePageEnabled.value,
           ).toJson(),
         );
       }).toList();
@@ -1192,7 +1192,7 @@ class SearchHandler {
       secondaryBoorus.isEmpty ? null : secondaryBoorus,
       backup.tags,
     );
-    tab.savePageEnabled = backup.savePageEnabled;
+    tab.savePageEnabled.value = backup.savePageEnabled;
     tab.scrollPage = backup.pageNum;
     return tab;
   }
@@ -1245,7 +1245,7 @@ class SearchHandler {
       searchTextController.text = defaultText;
       if (defaultBooru.type != null) {
         final SearchTab newTab = SearchTab(defaultBooru, null, defaultText);
-        newTab.savePageEnabled = SX.defaultSavePageEnabled.value;
+        newTab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
         tabs.clear();
         tabs.add(newTab);
         await changeTabIndex(0);
@@ -1486,7 +1486,7 @@ class SearchTab {
   }
 
   /// Whether to save page position during tab backup.
-  bool savePageEnabled = false;
+  RxBool savePageEnabled = true.obs;
 
   /// Whether page restore has already been applied for this tab in this session.
   bool pageRestored = true;
