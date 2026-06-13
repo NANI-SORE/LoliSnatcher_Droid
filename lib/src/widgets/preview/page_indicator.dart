@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
@@ -171,7 +172,7 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
     final currentFetched = searchHandler.currentFetched;
     final int page = searchHandler.currentScrollPage.value;
 
-    if (!controller.hasClients || currentFetched.isEmpty || page < 0) {
+    if (!controller.hasClients || currentFetched.isEmpty || page < 0 || SX.shitDevice.value) {
       return 0;
     }
 
@@ -214,12 +215,27 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
     }
 
     if (topItemIndex == null || topItemPosition == null) {
+      if (pageEnd == currentFetched.length && controller.position.extentAfter <= precisionErrorTolerance) {
+        return 1;
+      }
       return pageProgress;
     }
 
     final double itemScrollProgress = (-topItemPosition / topItemHeight).clamp(0.0, 1.0);
     final int pageItemCount = pageEnd - pageStart;
     final double progressedItems = (topItemIndex - pageStart) + (itemScrollProgress * searchHandler.currentColumnCount);
+
+    if (pageEnd == currentFetched.length) {
+      final double remainingItems =
+          (controller.position.extentAfter / topItemHeight) * searchHandler.currentColumnCount;
+      final double reachableItems = progressedItems + remainingItems;
+
+      if (reachableItems <= precisionErrorTolerance) {
+        return 1;
+      }
+
+      return (progressedItems / reachableItems).clamp(0.0, 1.0);
+    }
 
     return (progressedItems / pageItemCount).clamp(0.0, 1.0);
   }
@@ -293,15 +309,20 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       child: Row(
+                        mainAxisSize: .min,
                         spacing: 2,
+                        crossAxisAlignment: .center,
                         children: [
-                          Text(
-                            page.toString(),
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              height: 1,
-                              color: Theme.of(context).colorScheme.onSurface,
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 2),
+                            child: Text(
+                              page.toString(),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                height: 1,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
                             ),
                           ),
                           Obx(
