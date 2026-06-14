@@ -1562,7 +1562,7 @@ void registerAllSettings() {
     stringSetting(
       key: .defTags,
       getDefaultValue: () => 'rating:safe',
-      categories: [SettingCategory.tagsFilters],
+      categories: [SettingCategory.booru],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.booru.defaultTags,
@@ -1591,7 +1591,7 @@ void registerAllSettings() {
       categories: [SettingCategory.tagsFilters],
       legacyJsonKeys: const ['lovedTags'],
       navigateTo: () => const TagsFiltersPage(),
-      icon: Icons.bookmark,
+      icon: Icons.star,
       localization: SettingLocalization(
         title: (ctx) => 'Marked Tags',
       ),
