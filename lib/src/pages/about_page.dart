@@ -107,26 +107,17 @@ class AboutPage extends StatelessWidget {
               margin: const EdgeInsets.fromLTRB(10, 10, 10, 10),
               child: Text('${context.loc.settings.about.localizers}:'),
             ),
-            SettingsButton(
-              name: 'Chinese (Simplified)',
-              subtitle: const Text('RnJ4'),
-              icon: buildFlag(context, AppLocale.zhCn),
-            ),
-            SettingsButton(
-              name: 'German',
-              subtitle: const Text('Rin Kusu, Moddimation'),
-              icon: buildFlag(context, AppLocale.deDe),
-            ),
-            SettingsButton(
-              name: 'Japanese',
-              subtitle: const Text('stardust248397'),
-              icon: buildFlag(context, AppLocale.jaJp),
-            ),
-            SettingsButton(
-              name: 'Turkish',
-              subtitle: const Text('kyomoe'),
-              icon: buildFlag(context, AppLocale.trTr),
-            ),
+            ...AppLocaleExt.allowedValues.map((l) {
+              if (l.translators == null) {
+                return const SizedBox.shrink();
+              }
+
+              return SettingsButton(
+                name: l.englishName,
+                subtitle: Text(l.translators!),
+                icon: buildFlag(context, l),
+              );
+            }),
             //
             const SizedBox(height: kMinInteractiveDimension),
             Container(

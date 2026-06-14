@@ -1,19 +1,18 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:country_flags/country_flags.dart';
-import 'package:lolisnatcher/src/data/constants.dart';
-import 'package:lolisnatcher/src/handlers/search_handler.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
+import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
-import 'package:url_launcher/url_launcher_string.dart';
 
 class LanguageSettingsPage extends StatelessWidget {
   const LanguageSettingsPage({super.key});
@@ -73,44 +72,120 @@ class _LanguageDropdownState extends State<LanguageDropdown> {
 
   @override
   Widget build(BuildContext context) {
-    return SettingsDropdown(
-      value: locale,
-      items: [
-        null,
-        ...AppLocaleExt.allowedValues,
+    return Column(
+      children: [
+        SettingsDropdown(
+          value: locale,
+          items: [
+            null,
+            ...AppLocaleExt.allowedValues,
+          ],
+          onChanged: (newValue) async {
+            locale = newValue;
+            setState(() {});
+            SX.locale.state.value = locale;
+            await settingsHandler.setLocale(locale);
+            // load boorus and force tab backup to avoid losing tabs from favs/dls
+            await settingsHandler.loadBoorus();
+            await settingsHandler.saveSettings(restate: false);
+            unawaited(SearchHandler.instance.backupTabs());
+            setState(() {});
+          },
+          title: context.loc.settings.language.title,
+          itemBuilder: (e) {
+            final usedLocale = e ?? AppLocaleUtils.findDeviceLocale();
+
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: buildFlag(context, e),
+                ),
+                Column(
+                  mainAxisSize: .min,
+                  crossAxisAlignment: .start,
+                  children: [
+                    Text(
+                      e != null
+                          ? (e == AppLocale.en ? '${e.localeName} (${e.localeCode})' : e.localeName)
+                          : context.loc.settings.language.system,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (e != AppLocale.en)
+                      Text(
+                        '${usedLocale.englishName} (${usedLocale.localeCode})',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            );
+          },
+          selectedItemBuilder: (e) {
+            final usedLocale = e ?? AppLocaleUtils.findDeviceLocale();
+
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: buildFlag(context, usedLocale),
+                ),
+                Column(
+                  mainAxisSize: .min,
+                  crossAxisAlignment: .start,
+                  children: [
+                    Text(
+                      e != null
+                          ? (e == AppLocale.en ? '${e.localeName} (${e.localeCode})' : e.localeName)
+                          : context.loc.settings.language.system,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (e != AppLocale.en)
+                      Text(
+                        '${usedLocale.englishName} (${usedLocale.localeCode})',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+        //
+        Builder(
+          builder: (context) {
+            final usedLocale = locale ?? AppLocaleUtils.findDeviceLocale();
+
+            return AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              child: usedLocale.translators == null
+                  ? const SizedBox(width: double.infinity)
+                  : SettingsButton(
+                      name: context.loc.settings.about.localizers,
+                      subtitle: Text(usedLocale.translators ?? ''),
+                    ),
+            );
+          },
+        ),
       ],
-      onChanged: (newValue) async {
-        locale = newValue;
-        setState(() {});
-        SX.locale.state.value = locale;
-        await settingsHandler.setLocale(locale);
-        // load boorus and force tab backup to avoid losing tabs from favs/dls
-        await settingsHandler.loadBoorus();
-        await settingsHandler.saveSettings(restate: false);
-        unawaited(SearchHandler.instance.backupTabs());
-        setState(() {});
-      },
-      title: context.loc.settings.language.title,
-      itemBuilder: (e) => Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: buildFlag(context, e),
-          ),
-          Text(
-            e != null
-                ? '${e.localeName} (${e.localeCode})'
-                : '${context.loc.settings.language.system} (${PlatformDispatcher.instance.locale.toLanguageTag()})',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -200,6 +275,55 @@ extension AppLocaleExt on AppLocale {
     /* Japanese */ AppLocale.jaJp,
     /* Turkish */ AppLocale.trTr,
   ];
+
+  String get englishName {
+    switch (this) {
+      case .en:
+        return 'English';
+      case .ruRu:
+        return 'Russian';
+      case .zhCn:
+        return 'Chinese (Simplified)';
+      case .nlNl:
+        return 'Dutch';
+      case .frFr:
+        return 'French';
+      case .deDe:
+        return 'German';
+      case .itIt:
+        return 'Italian';
+      case .jaJp:
+        return 'Japanese';
+      case .koKr:
+        return 'Korean';
+      case .plPl:
+        return 'Polish';
+      case .ptBr:
+        return 'Portuguese (Brazil)';
+      case .esEs:
+        return 'Spanish';
+      case .esMx:
+        return 'Spanish (Mexico)';
+      case .trTr:
+        return 'Turkish';
+    }
+  }
+
+  String? get translators {
+    switch (this) {
+      case .zhCn:
+        return 'RnJ4';
+      case .deDe:
+        return 'Rin Kusu, Moddimation';
+      case .jaJp:
+        return 'stardust248397';
+      case .trTr:
+        return 'kyomoe';
+      //
+      default:
+        return null;
+    }
+  }
 }
 
 class _SecondLanguageFlagClipper extends CustomClipper<Path> {

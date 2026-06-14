@@ -44,7 +44,7 @@ class Constants {
   // TODO don't forget to update on every new release
   static const UpdateInfo updateInfo = UpdateInfo(
     versionName: '2.5.1',
-    buildNumber: 5212,
+    buildNumber: 5214,
     title: '2.5.1 - Chinese and German localization, fixes',
     isInStore: true,
     isImportant: false,
@@ -54,24 +54,32 @@ class Constants {
 If you encounter any issues or have suggestions, please post them in GitHub issues or in our Discord server.
 
 
-[WE NEED YOUR HELP]: We are looking for volunteers to help us translate the app into other languages. For details, visit our GitHub page or Discord server.
+[WE NEED YOUR HELP]: We are looking for volunteers to help us translate the app into other languages. For details, visit our GitHub page or ask in Discord server.
 
 
-A minor update aimed at adding new localization languages and fixing some issues.
+A minor update to fix some issues.
 
 -------------------
 
-Hotfix 1 - 2.5.1+5213 (xx.xx.2026):
+Known issues:
+- on Gelbooru images may blink/flicker and return error 503, which will be fixed after retrying to load the image. This could be caused by their rate limiting becoming too aggressive or some problems from their provider, as a temporary workaround - set [Interface - Preview quality] to [Thumbnail] to reduce flicker and [Boorus and Search - Items fetched per page] to 20 to reduce the chance of being rate limited
+- German translations are incorrect, will be fixed in the future release after new contributor will be able to update them
+
+-------------------
+
+Hotfix 1 - 2.5.1+5214 (14.06.2026):
 
 - Fixed inkbunny parsing (Thanks to Split50)
 - Added a Retry button to currently downloading item to quickly restart it without moving it to the end of the queue, useful if item is stuck for some reason (also stuck download items will now auto retry after 10 seconds of inactivity)
-- Added a dialog to quickly delete tabs after enabling duplicates filter in tab managers
+- Added a dialog to quickly delete tabs after enabling duplicates filter in tab manager
 - Fixed some boorus not working in multibooru mode due to page number conflict
 - Fixed images failing to load on realbooru
 - Attempt to fix app name change failing on some devices
 - Translate values of cache duration limit setting
 - Increase cache size max limit to 50GB
 - Fixed scrolling texts in tag dialog and history using wrong color when using light theme
+- Fixed animated webp images running animation on preview grid when gif thumbnails are not enabled
+- Performance improvements
 
 -------------------
 
