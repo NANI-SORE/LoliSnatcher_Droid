@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:lolisnatcher/src/data/settings/setting_def.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
@@ -466,7 +467,7 @@ SettingDef<List<String>> stringListSetting({
   required SettingLocalization localization,
   List<String> legacyJsonKeys = const [],
   Widget Function()? navigateTo,
-  IconData? icon,
+  Object? icon,
   List<SettingCategory> categories = const [],
   bool isDeviceSpecific = false,
   bool supportsPerBooru = false,
@@ -499,7 +500,13 @@ SettingDef<List<String>> stringListSetting({
         ? (context, dynamic state) {
             return SettingsButton(
               name: localization.title(context),
-              icon: icon != null ? Icon(icon) : null,
+              icon: icon != null
+                  ? switch (icon) {
+                      IconData _ => Icon(icon),
+                      FaIconData _ => FaIcon(icon),
+                      _ => null,
+                    }
+                  : null,
               page: navigateTo,
             );
           }
