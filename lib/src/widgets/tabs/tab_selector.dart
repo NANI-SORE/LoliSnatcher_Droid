@@ -364,19 +364,36 @@ class TabSelector extends StatelessWidget {
                                           color: color,
                                           withFavicon: false,
                                         ),
-                                        MarqueeText(
-                                          text: [
-                                            if (currentTab.booruHandler is MergebooruHandler)
-                                              (currentTab.booruHandler as MergebooruHandler).booruList[0].name ?? ''
-                                            else
-                                              currentTab.booruHandler.booru.name ?? '',
-                                            //
-                                            for (final booru in (currentTab.secondaryBoorus.value ?? <Booru>[]))
-                                              booru.name ?? '',
-                                          ].join(', '),
-                                          style: inputDecoration.labelStyle?.copyWith(
-                                            fontSize: 14,
-                                            color: color?.withValues(alpha: 0.75),
+                                        Expanded(
+                                          child: Row(
+                                            mainAxisSize: .min,
+                                            crossAxisAlignment: .center,
+                                            children: [
+                                              if (currentTab.savePageEnabled.value)
+                                                const Padding(
+                                                  padding: EdgeInsets.only(right: 2),
+                                                  child: Icon(
+                                                    Icons.bookmark,
+                                                    size: 16,
+                                                  ),
+                                                ),
+                                              MarqueeText(
+                                                text: [
+                                                  if (currentTab.booruHandler is MergebooruHandler)
+                                                    (currentTab.booruHandler as MergebooruHandler).booruList[0].name ??
+                                                        ''
+                                                  else
+                                                    currentTab.booruHandler.booru.name ?? '',
+                                                  //
+                                                  for (final booru in (currentTab.secondaryBoorus.value ?? <Booru>[]))
+                                                    booru.name ?? '',
+                                                ].join(', '),
+                                                style: inputDecoration.labelStyle?.copyWith(
+                                                  fontSize: 14,
+                                                  color: color?.withValues(alpha: 0.75),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ],
@@ -999,7 +1016,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
               borderRadius: BorderRadius.circular(5),
               side: BorderSide(color: Theme.of(context).colorScheme.secondary),
             ),
-            secondary: const Icon(Icons.bookmark_outline),
+            secondary: Icon(tab.savePageEnabled.value ? Icons.bookmark : Icons.bookmark_outline),
             title: Text(context.loc.pageChanger.saveViewedPage),
             value: tab.savePageEnabled.value,
             onChanged: (value) {
@@ -2034,23 +2051,41 @@ class TabManagerItem extends StatelessWidget {
                             filterText: filterText,
                           ),
                         ),
-                        if (onOptionsTap != null) ...[
-                          const SizedBox(width: 4),
-                          optionsWidgetBuilder?.call(context, onOptionsTap) ??
-                              IconButton(
-                                onPressed: onOptionsTap,
-                                icon: const Icon(CupertinoIcons.slider_horizontal_3),
+                        Obx(
+                          () {
+                            if (tab.savePageEnabled.value) {
+                              return const Padding(
+                                padding: EdgeInsets.only(left: 3),
+                                child: Icon(
+                                  Icons.bookmark,
+                                  size: 16,
+                                ),
+                              );
+                            }
+
+                            return const SizedBox.shrink();
+                          },
+                        ),
+                        if (onOptionsTap != null)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 3),
+                            child:
+                                optionsWidgetBuilder?.call(context, onOptionsTap) ??
+                                IconButton(
+                                  onPressed: onOptionsTap,
+                                  icon: const Icon(CupertinoIcons.slider_horizontal_3),
+                                ),
+                          ),
+                        if (onCloseTap != null)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 3),
+                            child: IconButton(
+                              onPressed: onCloseTap,
+                              icon: const Icon(
+                                Icons.close,
                               ),
-                        ],
-                        if (onCloseTap != null) ...[
-                          if (onOptionsTap == null) const SizedBox(width: 4) else const SizedBox(width: 8),
-                          IconButton(
-                            onPressed: onCloseTap,
-                            icon: const Icon(
-                              Icons.close,
                             ),
                           ),
-                        ],
                       ],
                     ),
                   ),

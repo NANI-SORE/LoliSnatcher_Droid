@@ -4,7 +4,9 @@ import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
 import 'package:get/get.dart';
+
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
@@ -332,7 +334,7 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
                               child: Text(
                                 page.toString(),
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                   height: 1,
                                   color: Theme.of(context).colorScheme.onSurface,
@@ -342,12 +344,12 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
                             Obx(
                               () => Icon(
                                 searchHandler.currentTab.savePageEnabled.value ? Icons.bookmark : Icons.bookmark_border,
-                                size: 14,
+                                size: 16,
                               ),
                             ),
                             const Icon(
                               Icons.chevron_right,
-                              size: 12,
+                              size: 16,
                             ),
                           ],
                         ),
