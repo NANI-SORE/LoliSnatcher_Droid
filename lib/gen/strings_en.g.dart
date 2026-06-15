@@ -1203,9 +1203,17 @@ class Translations$pageChanger$en {
   String currentPage({required int number}) =>
       TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? 'Current page #${number}';
 
+  /// en: 'Current: ${number: int}'
+  String currentPageShort({required int number}) =>
+      TranslationOverrides.string(_root.$meta, 'pageChanger.currentPageShort', {'number': number}) ?? 'Current: ${number}';
+
   /// en: 'Possible max page #~${number: int}'
   String possibleMaxPage({required int number}) =>
       TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? 'Possible max page #~${number}';
+
+  /// en: 'Max: ~${number: int}'
+  String possibleMaxPageShort({required int number}) =>
+      TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPageShort', {'number': number}) ?? 'Max: ~${number}';
 
   /// en: 'Search currently running!'
   String get searchCurrentlyRunning =>
@@ -5897,6 +5905,9 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonPositionValues.left', {}) ?? 'Left',
           'settings.viewer.buttonPositionValues.right' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonPositionValues.right', {}) ?? 'Right',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.viewer.shareActionValues.ask' => TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionValues.ask', {}) ?? 'Ask',
           'settings.viewer.shareActionValues.postUrl' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionValues.postUrl', {}) ?? 'Post URL',
@@ -5913,13 +5924,7 @@ extension on Translations {
           'settings.viewer.shareActionValues.hydrus' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionValues.hydrus', {}) ?? 'Hydrus',
           'settings.video.title' => TranslationOverrides.string(_root.$meta, 'settings.video.title', {}) ?? 'Video',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.video.disableVideos' => TranslationOverrides.string(_root.$meta, 'settings.video.disableVideos', {}) ?? 'Disable videos',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.video.disableVideosHelp' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.disableVideosHelp', {}) ??
                 'Useful on low end devices that crash when trying to load videos. Gives options to view video in external player or browser instead.',
@@ -6646,9 +6651,15 @@ extension on Translations {
           'pageChanger.currentPage' =>
             ({required int number}) =>
                 TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? 'Current page #${number}',
+          'pageChanger.currentPageShort' =>
+            ({required int number}) =>
+                TranslationOverrides.string(_root.$meta, 'pageChanger.currentPageShort', {'number': number}) ?? 'Current: ${number}',
           'pageChanger.possibleMaxPage' =>
             ({required int number}) =>
                 TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? 'Possible max page #~${number}',
+          'pageChanger.possibleMaxPageShort' =>
+            ({required int number}) =>
+                TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPageShort', {'number': number}) ?? 'Max: ~${number}',
           'pageChanger.searchCurrentlyRunning' =>
             TranslationOverrides.string(_root.$meta, 'pageChanger.searchCurrentlyRunning', {}) ?? 'Search currently running!',
           'pageChanger.scrollToFetchedPage' =>
@@ -6841,6 +6852,9 @@ extension on Translations {
           'searchBar.copiedTagToClipboard' =>
             ({required String tag}) =>
                 TranslationOverrides.string(_root.$meta, 'searchBar.copiedTagToClipboard', {'tag': tag}) ?? 'Copied «${tag}» to clipboard',
+          _ => null,
+        } ??
+        switch (path) {
           'searchBar.prefix' => TranslationOverrides.string(_root.$meta, 'searchBar.prefix', {}) ?? 'Prefix',
           'searchBar.exclude' => TranslationOverrides.string(_root.$meta, 'searchBar.exclude', {}) ?? 'Exclude (—)',
           'searchBar.booruNumberPrefix' => TranslationOverrides.string(_root.$meta, 'searchBar.booruNumberPrefix', {}) ?? 'Booru (N#)',
@@ -6854,9 +6868,6 @@ extension on Translations {
           'searchBar.range' => TranslationOverrides.string(_root.$meta, 'searchBar.range', {}) ?? 'Range',
           'searchBar.popular' => TranslationOverrides.string(_root.$meta, 'searchBar.popular', {}) ?? 'Popular',
           'searchBar.selectDate' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDate', {}) ?? 'Select date',
-          _ => null,
-        } ??
-        switch (path) {
           'searchBar.selectDatesRange' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDatesRange', {}) ?? 'Select dates range',
           'searchBar.history' => TranslationOverrides.string(_root.$meta, 'searchBar.history', {}) ?? 'History',
           'searchBar.more' => TranslationOverrides.string(_root.$meta, 'searchBar.more', {}) ?? '…',
@@ -6866,9 +6877,6 @@ extension on Translations {
           'mobileHome.fileAlreadyExists' => TranslationOverrides.string(_root.$meta, 'mobileHome.fileAlreadyExists', {}) ?? 'File already exists',
           'mobileHome.failedToDownload' => TranslationOverrides.string(_root.$meta, 'mobileHome.failedToDownload', {}) ?? 'Failed to download',
           'mobileHome.cancelledByUser' => TranslationOverrides.string(_root.$meta, 'mobileHome.cancelledByUser', {}) ?? 'Cancelled by user',
-          _ => null,
-        } ??
-        switch (path) {
           'mobileHome.saveAnyway' => TranslationOverrides.string(_root.$meta, 'mobileHome.saveAnyway', {}) ?? 'Save anyway',
           'mobileHome.skip' => TranslationOverrides.string(_root.$meta, 'mobileHome.skip', {}) ?? 'Skip',
           'mobileHome.retryAll' =>

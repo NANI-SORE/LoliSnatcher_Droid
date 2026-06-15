@@ -136,19 +136,40 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
             color: Theme.of(context).iconTheme.color,
           ),
         ),
-        SettingsButton(
-          name: context.loc.pageChanger.currentPage(number: searchHandler.currentBooruHandler.pageNum),
-          action: () {
-            pageNumberController.text = searchHandler.currentScrollPage.value.toString();
-          },
+        Row(
+          children: [
+            Expanded(
+              child: SettingsButton(
+                name: possibleMaxPageNum == 0
+                    ? context.loc.pageChanger.currentPage(number: searchHandler.currentBooruHandler.pageNum)
+                    : context.loc.pageChanger.currentPageShort(number: searchHandler.currentBooruHandler.pageNum),
+                action: () {
+                  pageNumberController.text = searchHandler.currentScrollPage.value.toString();
+                },
+              ),
+            ),
+            //
+            if (possibleMaxPageNum != 0)
+              Expanded(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        width: 1,
+                        color: Theme.of(context).dividerColor,
+                      ),
+                    ),
+                  ),
+                  child: SettingsButton(
+                    name: context.loc.pageChanger.possibleMaxPageShort(number: possibleMaxPageNum),
+                    action: () {
+                      pageNumberController.text = possibleMaxPageNum.toString();
+                    },
+                  ),
+                ),
+              ),
+          ],
         ),
-        if (possibleMaxPageNum != 0)
-          SettingsButton(
-            name: context.loc.pageChanger.possibleMaxPage(number: possibleMaxPageNum),
-            action: () {
-              pageNumberController.text = possibleMaxPageNum.toString();
-            },
-          ),
         Obx(
           () => searchHandler.isRunningAutoSearch.value
               ? SettingsButton(
