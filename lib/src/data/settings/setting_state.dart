@@ -48,6 +48,9 @@ class SettingState<T> {
     final validated = def.validate?.call(newValue) ?? newValue;
     final oldValue = _globalValue.value;
     _globalValue.value = validated;
+    if (oldValue != validated) {
+      def.onScopedChanged?.call(oldValue, validated, null);
+    }
     if (!def.supportsPerBooru && oldValue != validated) {
       def.onChanged?.call(oldValue, validated);
     }
@@ -61,6 +64,9 @@ class SettingState<T> {
     final validated = def.validate?.call(newValue) ?? newValue;
     final oldValue = _globalValue.value;
     _globalValue.value = validated;
+    if (oldValue != validated) {
+      def.onScopedChanged?.call(oldValue, validated, null);
+    }
     if (!def.supportsPerBooru && oldValue != validated) {
       def.onChanged?.call(oldValue, validated);
     }
@@ -93,17 +99,26 @@ class SettingState<T> {
   /// Set an override value for a specific booru.
   void setOverrideFor(String booruName, T val) {
     final validated = def.validate?.call(val) ?? val;
+    final oldValue = _booruOverrides.value[booruName] ?? _globalValue.value;
     final map = Map<String, T>.from(_booruOverrides.value);
     map[booruName] = validated;
     _booruOverrides.value = map; // Triggers notification
+    if (oldValue != validated) {
+      def.onScopedChanged?.call(oldValue, validated, booruName);
+    }
   }
 
   /// Remove the override for a specific booru (will use global value).
   void removeOverrideFor(String booruName) {
     if (!_booruOverrides.value.containsKey(booruName)) return;
+    final oldValue = _booruOverrides.value[booruName] as T;
+    final newValue = _globalValue.value;
     final map = Map<String, T>.from(_booruOverrides.value);
     map.remove(booruName);
     _booruOverrides.value = map; // Triggers notification
+    if (oldValue != newValue) {
+      def.onScopedChanged?.call(oldValue, newValue, booruName);
+    }
   }
 
   /// All booru names that have overrides for this setting.

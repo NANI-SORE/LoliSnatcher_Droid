@@ -125,6 +125,7 @@ SettingDef<int> intSetting({
   List<SettingKey>? dependsOn,
   bool Function([BuildContext? context])? enabledWhen,
   void Function(int oldValue, int newValue)? onChanged,
+  void Function(int oldValue, int newValue, String? booruName)? onScopedChanged,
 }) {
   int validate(int value) => value.clamp(min, max);
 
@@ -141,6 +142,7 @@ SettingDef<int> intSetting({
     dependsOn: dependsOn,
     enabledWhen: enabledWhen,
     onChanged: onChanged,
+    onScopedChanged: onScopedChanged,
     valueToJson: (v) => v,
     valueFromJson: (json) {
       final int? parsed = json is String ? int.tryParse(json) : (json is int ? json : null);

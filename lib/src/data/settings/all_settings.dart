@@ -36,6 +36,7 @@ import 'package:lolisnatcher/src/data/settings/video_backend_mode.dart';
 import 'package:lolisnatcher/src/data/settings/video_cache_mode.dart';
 import 'package:lolisnatcher/src/data/theme_item.dart';
 import 'package:lolisnatcher/src/handlers/local_auth_handler.dart';
+import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/pages/settings/tags_filters_page.dart';
@@ -1674,6 +1675,11 @@ void registerAllSettings() {
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.booru.itemsPerPage,
       ),
+      onScopedChanged: (oldV, newV, booruName) {
+        if (oldV != newV) {
+          SearchHandler.instance.invalidateSavedPages(booruName: booruName);
+        }
+      },
     ),
   );
 

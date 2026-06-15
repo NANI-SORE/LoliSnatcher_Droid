@@ -533,6 +533,17 @@ class SearchHandler {
     }
   }
 
+  void invalidateSavedPages({String? booruName}) {
+    for (final tab in tabs) {
+      if (booruName != null && tab.selectedBooru.value.name != booruName) {
+        continue;
+      }
+      tab
+        ..pageRestored = true
+        ..scrollPage = null;
+    }
+  }
+
   // runs search on current tab
   Future<void> searchAction(String text, Booru? newBooru) async {
     final SettingsHandler settingsHandler = SettingsHandler.instance;
