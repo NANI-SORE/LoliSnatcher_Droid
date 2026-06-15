@@ -63,7 +63,7 @@
     "filter": "Фильтр",
     "or": "Или (~)",
     "page": "Страница",
-    "pageNumber": "Страница №",
+    "pageNumber": "Страница #",
     "tags": "Теги",
     "type": "Тип",
     "name": "Имя",
@@ -1048,12 +1048,12 @@
     },
     "pageChanger": {
         "title": "Переключатель страниц",
-        "pageLabel": "Страница №",
+        "pageLabel": "Страница #",
         "delayBetweenLoadings": "Задержка между загрузками (мс)",
         "delayInMs": "Задержка в мс",
-        "currentPage(param=number)": "Текущая страница №${number: int}",
+        "currentPage(param=number)": "Текущая страница #${number: int}",
         "currentPageShort(param=number)": "Текущая: ${number: int}",
-        "possibleMaxPage(param=number)": "Возможная макс. страница №~${number: int}",
+        "possibleMaxPage(param=number)": "Возможная макс. страница #~${number: int}",
         "possibleMaxPageShort(param=number)": "Максимум: ~${number: int}",
         "searchCurrentlyRunning": "В данный момент выполняется поиск!",
         "scrollToFetchedPage": "Прокрутить до загруженной страницы",
@@ -1379,7 +1379,7 @@
             "noResultsSubtitle": "Измени поисковый запрос или нажми чтобы попробовать снова",
             "reachedEnd": "Ты достиг конца",
             "reachedEndSubtitle(param=pageNum)": "Загружено страниц: ${pageNum: int}\nНажми здесь, чтобы перезагрузить последнюю страницу",
-            "loadingPage(param=pageNum)": "Загрузка страницы №${pageNum: int}…",
+            "loadingPage(param=pageNum)": "Загрузка страницы #${pageNum: int}…",
             "startedAgo(param=seconds)": {
                 "one": "Начато ${seconds} секунду назад",
                 "few": "Начато ${seconds} секунды назад",
@@ -1387,7 +1387,7 @@
                 "other": "Начато ${seconds} секунд назад"
             },
             "tapToRetryIfStuck": "Нажми чтобы попробовать снова, если запрос застрял или идет слишком долго",
-            "errorLoadingPage(param=pageNum)": "Ошибка при загрузке страницы №${pageNum: int}",
+            "errorLoadingPage(param=pageNum)": "Ошибка при загрузке страницы #${pageNum: int}",
             "errorWithMessage": "Нажми здесь для повтора",
             "errorNoResultsLoaded": "Ошибка, результаты не загружены",
             "tapToRetry": "Нажми здесь для повтора"

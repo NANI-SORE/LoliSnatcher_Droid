@@ -176,7 +176,7 @@ class TranslationsRuRu extends Translations with BaseTranslations<AppLocale, Tra
   @override
   String get page => TranslationOverrides.string(_root.$meta, 'page', {}) ?? 'Страница';
   @override
-  String get pageNumber => TranslationOverrides.string(_root.$meta, 'pageNumber', {}) ?? 'Страница №';
+  String get pageNumber => TranslationOverrides.string(_root.$meta, 'pageNumber', {}) ?? 'Страница #';
   @override
   String get tags => TranslationOverrides.string(_root.$meta, 'tags', {}) ?? 'Теги';
   @override
@@ -993,7 +993,7 @@ class _Translations$pageChanger$ru_RU extends Translations$pageChanger$en {
   @override
   String get title => TranslationOverrides.string(_root.$meta, 'pageChanger.title', {}) ?? 'Переключатель страниц';
   @override
-  String get pageLabel => TranslationOverrides.string(_root.$meta, 'pageChanger.pageLabel', {}) ?? 'Страница №';
+  String get pageLabel => TranslationOverrides.string(_root.$meta, 'pageChanger.pageLabel', {}) ?? 'Страница #';
   @override
   String get delayBetweenLoadings =>
       TranslationOverrides.string(_root.$meta, 'pageChanger.delayBetweenLoadings', {}) ?? 'Задержка между загрузками (мс)';
@@ -1001,13 +1001,13 @@ class _Translations$pageChanger$ru_RU extends Translations$pageChanger$en {
   String get delayInMs => TranslationOverrides.string(_root.$meta, 'pageChanger.delayInMs', {}) ?? 'Задержка в мс';
   @override
   String currentPage({required int number}) =>
-      TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? 'Текущая страница №${number}';
+      TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? 'Текущая страница #${number}';
   @override
   String currentPageShort({required int number}) =>
       TranslationOverrides.string(_root.$meta, 'pageChanger.currentPageShort', {'number': number}) ?? 'Текущая: ${number}';
   @override
   String possibleMaxPage({required int number}) =>
-      TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? 'Возможная макс. страница №~${number}';
+      TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? 'Возможная макс. страница #~${number}';
   @override
   String possibleMaxPageShort({required int number}) =>
       TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPageShort', {'number': number}) ?? 'Максимум: ~${number}';
@@ -3723,7 +3723,7 @@ class _Translations$preview$error$ru_RU extends Translations$preview$error$en {
       'Загружено страниц: ${pageNum}\nНажми здесь, чтобы перезагрузить последнюю страницу';
   @override
   String loadingPage({required int pageNum}) =>
-      TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? 'Загрузка страницы №${pageNum}…';
+      TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? 'Загрузка страницы #${pageNum}…';
   @override
   String startedAgo({required num seconds}) =>
       TranslationOverrides.plural(_root.$meta, 'preview.error.startedAgo', {'seconds': seconds}) ??
@@ -3740,7 +3740,7 @@ class _Translations$preview$error$ru_RU extends Translations$preview$error$en {
       'Нажми чтобы попробовать снова, если запрос застрял или идет слишком долго';
   @override
   String errorLoadingPage({required int pageNum}) =>
-      TranslationOverrides.string(_root.$meta, 'preview.error.errorLoadingPage', {'pageNum': pageNum}) ?? 'Ошибка при загрузке страницы №${pageNum}';
+      TranslationOverrides.string(_root.$meta, 'preview.error.errorLoadingPage', {'pageNum': pageNum}) ?? 'Ошибка при загрузке страницы #${pageNum}';
   @override
   String get errorWithMessage => TranslationOverrides.string(_root.$meta, 'preview.error.errorWithMessage', {}) ?? 'Нажми здесь для повтора';
   @override
@@ -4063,7 +4063,7 @@ extension on TranslationsRuRu {
           'filter' => TranslationOverrides.string(_root.$meta, 'filter', {}) ?? 'Фильтр',
           'or' => TranslationOverrides.string(_root.$meta, 'or', {}) ?? 'Или (~)',
           'page' => TranslationOverrides.string(_root.$meta, 'page', {}) ?? 'Страница',
-          'pageNumber' => TranslationOverrides.string(_root.$meta, 'pageNumber', {}) ?? 'Страница №',
+          'pageNumber' => TranslationOverrides.string(_root.$meta, 'pageNumber', {}) ?? 'Страница #',
           'tags' => TranslationOverrides.string(_root.$meta, 'tags', {}) ?? 'Теги',
           'type' => TranslationOverrides.string(_root.$meta, 'type', {}) ?? 'Тип',
           'name' => TranslationOverrides.string(_root.$meta, 'name', {}) ?? 'Имя',
@@ -5716,19 +5716,19 @@ extension on TranslationsRuRu {
           'comments.noBooruAPIForComments' =>
             TranslationOverrides.string(_root.$meta, 'comments.noBooruAPIForComments', {}) ?? 'У этого сайта нет комментариев или API для них',
           'pageChanger.title' => TranslationOverrides.string(_root.$meta, 'pageChanger.title', {}) ?? 'Переключатель страниц',
-          'pageChanger.pageLabel' => TranslationOverrides.string(_root.$meta, 'pageChanger.pageLabel', {}) ?? 'Страница №',
+          'pageChanger.pageLabel' => TranslationOverrides.string(_root.$meta, 'pageChanger.pageLabel', {}) ?? 'Страница #',
           'pageChanger.delayBetweenLoadings' =>
             TranslationOverrides.string(_root.$meta, 'pageChanger.delayBetweenLoadings', {}) ?? 'Задержка между загрузками (мс)',
           'pageChanger.delayInMs' => TranslationOverrides.string(_root.$meta, 'pageChanger.delayInMs', {}) ?? 'Задержка в мс',
           'pageChanger.currentPage' =>
             ({required int number}) =>
-                TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? 'Текущая страница №${number}',
+                TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? 'Текущая страница #${number}',
           'pageChanger.currentPageShort' =>
             ({required int number}) =>
                 TranslationOverrides.string(_root.$meta, 'pageChanger.currentPageShort', {'number': number}) ?? 'Текущая: ${number}',
           'pageChanger.possibleMaxPage' =>
             ({required int number}) =>
-                TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? 'Возможная макс. страница №~${number}',
+                TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? 'Возможная макс. страница #~${number}',
           'pageChanger.possibleMaxPageShort' =>
             ({required int number}) =>
                 TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPageShort', {'number': number}) ?? 'Максимум: ~${number}',
@@ -6146,7 +6146,7 @@ extension on TranslationsRuRu {
                 'Загружено страниц: ${pageNum}\nНажми здесь, чтобы перезагрузить последнюю страницу',
           'preview.error.loadingPage' =>
             ({required int pageNum}) =>
-                TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? 'Загрузка страницы №${pageNum}…',
+                TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? 'Загрузка страницы #${pageNum}…',
           'preview.error.startedAgo' =>
             ({required num seconds}) =>
                 TranslationOverrides.plural(_root.$meta, 'preview.error.startedAgo', {'seconds': seconds}) ??
@@ -6163,7 +6163,7 @@ extension on TranslationsRuRu {
           'preview.error.errorLoadingPage' =>
             ({required int pageNum}) =>
                 TranslationOverrides.string(_root.$meta, 'preview.error.errorLoadingPage', {'pageNum': pageNum}) ??
-                'Ошибка при загрузке страницы №${pageNum}',
+                'Ошибка при загрузке страницы #${pageNum}',
           'preview.error.errorWithMessage' =>
             TranslationOverrides.string(_root.$meta, 'preview.error.errorWithMessage', {}) ?? 'Нажми здесь для повтора',
           'preview.error.errorNoResultsLoaded' =>
