@@ -1185,8 +1185,8 @@ class DBHandler {
   Future<void> fixBooruItems(ValueChanged<String>? onStatusUpdate) async {
     try {
       await convertGelbooruServers(
-        'img2',
-        'video-cdn4',
+        'img4',
+        'img4',
         onStatusUpdate,
       ); // latest change i4->2, v3->4, ~early-mid December 25
       await fixR34XXXPostUrls(onStatusUpdate);
@@ -1206,6 +1206,7 @@ class DBHandler {
     String newVidServer,
     ValueChanged<String>? onStatusUpdate,
   ) async {
+    // TODO 15.06.2026 they have both images and videos on img4 now, probably will have to update logic to differentiate between them through file extension if they divide them again in the future. Maybe add some kind of remote config on github to update this logic without needing to update the app?
     final List<String> conditions = [];
     for (final server in [
       {'img': newImgServer},
