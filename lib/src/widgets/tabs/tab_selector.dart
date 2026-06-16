@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
@@ -1019,10 +1018,11 @@ class _TabManagerPageState extends State<TabManagerPage> {
             secondary: Icon(tab.savePageEnabled.value ? Icons.bookmark : Icons.bookmark_outline),
             title: Text(context.loc.pageChanger.saveViewedPage),
             value: tab.savePageEnabled.value,
-            onChanged: (value) {
+            onChanged: (v) async {
               setLocalState(() {
-                tab.savePageEnabled.value = value;
+                tab.savePageEnabled.value = v;
               });
+              await searchHandler.backupTabs();
             },
           ),
         ),

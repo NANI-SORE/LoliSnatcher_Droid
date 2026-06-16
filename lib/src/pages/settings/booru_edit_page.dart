@@ -693,6 +693,7 @@ class _BooruEditState extends State<BooruEdit> {
             tab.selectedBooru.value = newBooru;
           }
         }
+        unawaited(searchHandler.backupTabs());
       }
 
       unawaited(

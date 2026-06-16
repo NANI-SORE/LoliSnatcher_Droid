@@ -446,6 +446,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   final LocalAuthHandler localAuthHandler = LocalAuthHandler.instance;
 
   Timer? backupTimer;
+  Timer? tabBackupDebounceTimer;
   Timer? cacheStaleTimer;
   Timer? dbCleanupTimer;
   ImageWriter imageWriter = ImageWriter();
@@ -454,17 +455,19 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   StreamSubscription<Uri>? appLinksSubscription;
 
   bool initedDeepLinks = false;
+  bool tabBackupRunning = false;
+  bool tabBackupDirty = false;
 
   @override
   void initState() {
     super.initState();
 
-    backupTimer = Timer.periodic(const Duration(seconds: kDebugMode ? 5 : 20), (timer) {
-      // TODO rework so it happens on every tab change/addition, NOT on timer
-      searchHandler.backupTabs();
-      if (!tagHandler.tagSaveActive) {
-        tagHandler.saveTags();
-      }
+    searchHandler.tabs.addListener(backupTabsAndTags);
+    searchHandler.index.addListener(backupTabsAndTags);
+    searchHandler.currentScrollPage.addListener(backupTabsAndTags);
+
+    backupTimer = Timer.periodic(const Duration(seconds: kDebugMode ? 5 : 30), (_) {
+      backupTabsAndTags();
     });
 
     clearCache();
@@ -485,6 +488,47 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
 
   Future<void> clearCache() async {
     await imageWriter.cleanupCache();
+  }
+
+  void backupTabsAndTags() {
+    tabBackupDirty = true;
+    if (tabBackupRunning) {
+      return;
+    }
+
+    tabBackupDebounceTimer?.cancel();
+    tabBackupDebounceTimer = Timer(const Duration(milliseconds: 200), () {
+      tabBackupDebounceTimer = null;
+      unawaited(flushTabsAndTagsBackup());
+    });
+  }
+
+  Future<void> flushTabsAndTagsBackup() async {
+    if (tabBackupRunning) {
+      return;
+    }
+
+    tabBackupRunning = true;
+    try {
+      while (tabBackupDirty) {
+        tabBackupDirty = false;
+        Logger.Inst().log(
+          'Backing up tabs and tags at ${DateTime.now().toIso8601String()}',
+          'MainApp',
+          'flushTabsAndTagsBackup',
+          null,
+        );
+        await searchHandler.backupTabs();
+        if (!tagHandler.tagSaveActive) {
+          await tagHandler.saveTags();
+        }
+      }
+    } finally {
+      tabBackupRunning = false;
+      if (tabBackupDirty) {
+        backupTabsAndTags();
+      }
+    }
   }
 
   Future<void> initDeepLinks() async {
@@ -528,6 +572,10 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    searchHandler.tabs.removeListener(backupTabsAndTags);
+    searchHandler.index.removeListener(backupTabsAndTags);
+    searchHandler.currentScrollPage.removeListener(backupTabsAndTags);
+    tabBackupDebounceTimer?.cancel();
     backupTimer?.cancel();
     cacheStaleTimer?.cancel();
     dbCleanupTimer?.cancel();

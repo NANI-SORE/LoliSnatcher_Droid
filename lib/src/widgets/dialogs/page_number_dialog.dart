@@ -125,10 +125,11 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
         ),
         SettingsToggle(
           value: searchHandler.currentTab.savePageEnabled.value,
-          onChanged: (newValue) {
+          onChanged: (newValue) async {
             setState(() {
               searchHandler.currentTab.savePageEnabled.value = newValue;
             });
+            await searchHandler.backupTabs();
           },
           title: context.loc.pageChanger.saveViewedPage,
           leadingIcon: Icon(
