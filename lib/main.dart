@@ -37,6 +37,7 @@ import 'package:lolisnatcher/src/pages/init_home_page.dart';
 import 'package:lolisnatcher/src/pages/lockscreen_page.dart';
 import 'package:lolisnatcher/src/pages/mobile_home_page.dart';
 import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/auto_backup_service.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
@@ -444,6 +445,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   final SearchHandler searchHandler = SearchHandler.instance;
   final TagHandler tagHandler = TagHandler.instance;
   final LocalAuthHandler localAuthHandler = LocalAuthHandler.instance;
+  final AutoBackupService autoBackupService = AutoBackupService();
 
   Timer? backupTimer;
   Timer? tabBackupDebounceTimer;
@@ -484,6 +486,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     // consider app launch as return to the app
     WidgetsBinding.instance.addObserver(this);
     localAuthHandler.onReturn();
+    unawaited(autoBackupService.runIfDue());
   }
 
   Future<void> clearCache() async {
@@ -598,6 +601,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       case AppLifecycleState.resumed:
         // check if app needs to be locked when user returns to the app
         localAuthHandler.onReturn();
+        unawaited(autoBackupService.runIfDue());
         break;
     }
   }

@@ -158,6 +158,8 @@ class DBHandler {
   Future<bool> createIndexes() async {
     await db?.execute('CREATE INDEX IF NOT EXISTS ImageTag_tagID_index ON ImageTag (tagID);');
     await db?.execute('CREATE INDEX IF NOT EXISTS ImageTag_booruItemID_index ON ImageTag (booruItemID);');
+    await db?.execute('CREATE INDEX IF NOT EXISTS BooruItem_fav_id_idx ON BooruItem(id) WHERE isFavourite = 1;');
+    await db?.execute('CREATE INDEX IF NOT EXISTS BooruItem_snatched_id_idx ON BooruItem(id) WHERE isSnatched = 1;');
     return true;
   }
 
@@ -169,6 +171,8 @@ class DBHandler {
     await db?.execute('DROP INDEX IF EXISTS BooruItem_fileURL_index;');
     await db?.execute('DROP INDEX IF EXISTS BooruItem_id_index;');
     await db?.execute('DROP INDEX IF EXISTS BooruItem_fileURL_isFavourite_isSnatched_index;');
+    await db?.execute('DROP INDEX IF EXISTS BooruItem_fav_id_idx;');
+    await db?.execute('DROP INDEX IF EXISTS BooruItem_snatched_id_idx;');
     await db?.execute('DROP INDEX IF EXISTS Tag_name_index;');
     await db?.execute('DROP INDEX IF EXISTS Tag_id_index;');
     return true;
@@ -515,6 +519,61 @@ class DBHandler {
       final id = row['dbid'] as int;
       final itemTags = tagsMap[id] ?? [];
       return BooruItem.fromDBRow(row, itemTags);
+    }).toList();
+  }
+
+  Future<int?> resolveFlaggedStartId({
+    required bool isDownloads,
+    required int startIndex,
+  }) async {
+    final db = this.db;
+    if (db == null) return null;
+    final flagColumn = isDownloads ? 'isSnatched' : 'isFavourite';
+    final result = await db.rawQuery(
+      'SELECT id FROM BooruItem WHERE $flagColumn = 1 ORDER BY id ASC LIMIT 1 OFFSET ?',
+      [max(0, startIndex)],
+    );
+    if (result.isEmpty) return null;
+    return result.first['id'] as int?;
+  }
+
+  Future<List<BooruItem>> getFlaggedItemsAfterId({
+    required bool isDownloads,
+    required int lastSeenId,
+    required int limit,
+  }) async {
+    final db = this.db;
+    if (db == null) return [];
+    final flagColumn = isDownloads ? 'isSnatched' : 'isFavourite';
+    final results = await db.rawQuery(
+      'SELECT id as dbid, thumbnailURL, sampleURL, fileURL, postURL, mediaType, isSnatched, isFavourite '
+      'FROM BooruItem '
+      'WHERE $flagColumn = 1 AND id > ? '
+      'ORDER BY id ASC LIMIT ?',
+      [lastSeenId, limit],
+    );
+    if (results.isEmpty) return [];
+
+    final itemIDs = results.map((r) => r['dbid']! as int).toList();
+    final tagPlaceholders = List.filled(itemIDs.length, '?').join(',');
+    final tagsResult = await db.rawQuery(
+      'SELECT it.booruItemID, t.name '
+      'FROM Tag AS t '
+      'INNER JOIN ImageTag AS it ON t.id = it.tagID '
+      'WHERE it.booruItemID IN ($tagPlaceholders)',
+      itemIDs,
+    );
+
+    final Map<int, List<String>> tagsMap = {};
+    for (final row in tagsResult) {
+      final id = row['booruItemID']! as int;
+      final tagName = row['name'].toString();
+      tagsMap.putIfAbsent(id, () => []).add(tagName);
+    }
+
+    return results.map((row) {
+      final id = row['dbid']! as int;
+      return BooruItem.fromDBRow(row, tagsMap[id] ?? []);
     }).toList();
   }
 
@@ -904,6 +963,43 @@ class DBHandler {
     return List.from(result.map(HistoryItem.fromMap));
   }
 
+  Future<List<Map<String, dynamic>>> exportSearchHistoryRows() async {
+    final result = await db?.rawQuery(
+      'SELECT id, booruType, booruName, searchText, isFavourite, timestamp FROM SearchHistory ORDER BY id ASC',
+    );
+    return result ?? [];
+  }
+
+  Future<void> importSearchHistoryRows(List<Map<String, dynamic>> rows) async {
+    if (rows.isEmpty) return;
+    final batch = db?.batch();
+    for (final row in rows) {
+      final searchText = row['searchText']?.toString().trim();
+      if (searchText == null || searchText.isEmpty) continue;
+      final booruType = row['booruType']?.toString();
+      final booruName = row['booruName']?.toString();
+      batch?.rawDelete(
+        'DELETE FROM SearchHistory WHERE searchText = ? AND booruType IS ? AND booruName IS ?',
+        [searchText, booruType, booruName],
+      );
+      batch?.rawInsert(
+        'INSERT INTO SearchHistory(booruType, booruName, searchText, isFavourite, timestamp) VALUES(?, ?, ?, ?, ?)',
+        [
+          booruType,
+          booruName,
+          searchText,
+          _intFromBackupValue(row['isFavourite']),
+          row['timestamp']?.toString(),
+        ],
+      );
+    }
+    await batch?.commit(noResult: true);
+    const String notFavouriteQuery = "(isFavourite != '1' OR isFavourite is null)";
+    await db?.rawDelete(
+      'DELETE FROM SearchHistory WHERE $notFavouriteQuery AND id NOT IN (SELECT id FROM SearchHistory WHERE $notFavouriteQuery ORDER BY id DESC LIMIT ${Constants.historyLimit});',
+    );
+  }
+
   Future<List<HistoryItem>> getLatestSearchHistory() async {
     final metaData = await db?.rawQuery(
       'SELECT * FROM (SELECT * FROM SearchHistory ORDER BY timestamp DESC LIMIT 20)',
@@ -1022,6 +1118,47 @@ class DBHandler {
     }
 
     return result.map(PinnedTag.fromMap).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> exportPinnedTagRows() async {
+    final result = await db?.rawQuery(
+      'SELECT id, tagName, booruType, booruName, pinnedAt, sortOrder, label FROM PinnedTag ORDER BY sortOrder ASC, pinnedAt DESC',
+    );
+    return result ?? [];
+  }
+
+  Future<void> importPinnedTagRows(List<Map<String, dynamic>> rows) async {
+    if (rows.isEmpty) return;
+    final batch = db?.batch();
+    for (final row in rows) {
+      final tagName = row['tagName']?.toString().trim();
+      if (tagName == null || tagName.isEmpty) continue;
+      final booruType = row['booruType']?.toString();
+      final booruName = row['booruName']?.toString();
+      batch?.rawDelete(
+        'DELETE FROM PinnedTag WHERE tagName = ? AND booruName IS ? AND booruType IS ?',
+        [tagName, booruName, booruType],
+      );
+      batch?.rawInsert(
+        'INSERT INTO PinnedTag(tagName, booruType, booruName, pinnedAt, sortOrder, label) VALUES(?, ?, ?, ?, ?, ?)',
+        [
+          tagName,
+          booruType,
+          booruName,
+          _intFromBackupValue(row['pinnedAt']) ?? DateTime.now().millisecondsSinceEpoch,
+          _intFromBackupValue(row['sortOrder']) ?? 0,
+          row['label']?.toString(),
+        ],
+      );
+    }
+    await batch?.commit(noResult: true);
+  }
+
+  int? _intFromBackupValue(Object? value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString());
   }
 
   /// Check if a tag is pinned (either globally or for specific booru)

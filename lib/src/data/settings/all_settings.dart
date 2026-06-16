@@ -1267,6 +1267,19 @@ void registerAllSettings() {
     ),
   );
 
+  registry.register(
+    boolSetting(
+      key: .syncVisibleOnNetwork,
+      getDefaultValue: () => true,
+      categories: [SettingCategory.backup],
+      isDeviceSpecific: true,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.backupAndTransfer.visibleOnNetwork,
+        subtitle: (ctx) => ctx.loc.settings.backupAndTransfer.visibleOnNetworkSubtitle,
+      ),
+    ),
+  );
+
   // ============================================
   // DATABASE
   // ============================================
@@ -1836,30 +1849,6 @@ void registerAllSettings() {
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.language.title,
-      ),
-    ),
-  );
-
-  registry.register(
-    stringSetting(
-      key: .lastSyncIp,
-      getDefaultValue: () => '',
-      categories: [SettingCategory.network],
-      isDeviceSpecific: true,
-      localization: SettingLocalization(
-        title: (ctx) => ctx.loc.settings.sync.ipAddress,
-      ),
-    ),
-  );
-
-  registry.register(
-    stringSetting(
-      key: .lastSyncPort,
-      getDefaultValue: () => '',
-      categories: [SettingCategory.network],
-      isDeviceSpecific: true,
-      localization: SettingLocalization(
-        title: (ctx) => ctx.loc.settings.sync.port,
       ),
     ),
   );

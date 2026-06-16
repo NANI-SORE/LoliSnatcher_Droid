@@ -32,8 +32,6 @@ const legacyKeys = <String>{
   'extPathOverride',
   'drawerMascotPathOverride',
   'backupPath',
-  'lastSyncIp',
-  'lastSyncPort',
   'customUserAgent',
   'proxyAddress',
   'proxyUsername',

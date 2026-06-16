@@ -38,11 +38,49 @@ class ServiceHandler {
   }
 
   static Future<void> restartApp({String? alias}) async {
+    if (Platform.isWindows || Platform.isLinux) {
+      await _restartDesktopApp();
+      return;
+    }
+
+    if (Platform.isIOS) {
+      await _closeIosAppForManualRestart();
+      return;
+    }
+
     try {
       final result = await platform.invokeMethod('restartApp', {'alias': alias});
       log('restartApp diagnostics: ${_encodeLogPayload(result)}');
     } catch (e, s) {
       log('restartApp failed: $e', s: s);
+    }
+  }
+
+  static Future<void> _restartDesktopApp() async {
+    try {
+      final executable = Platform.resolvedExecutable;
+      final args = Platform.executableArguments;
+      final workingDirectory = File(executable).parent.path;
+      await Process.start(
+        executable,
+        args,
+        workingDirectory: workingDirectory,
+        mode: ProcessStartMode.detached,
+      );
+      exit(0);
+    } catch (e, s) {
+      log('desktop restartApp failed: $e', s: s);
+    }
+  }
+
+  static Future<void> _closeIosAppForManualRestart() async {
+    try {
+      log('restartApp requested on iOS, but iOS does not allow apps to relaunch themselves.');
+      await SystemNavigator.pop(animated: true);
+      await Future.delayed(const Duration(milliseconds: 500));
+      exit(0);
+    } catch (e, s) {
+      log('iOS restartApp fallback failed: $e', s: s);
     }
   }
 
@@ -356,6 +394,17 @@ class ServiceHandler {
       } else if (Platform.isIOS) {
         result = '${await getExtDir()}/LoliSnatcher/Pictures/';
       }
+    } catch (e) {
+      log(e);
+    }
+    return result;
+  }
+
+  static Future<String> getDownloadsDir() async {
+    String result = '';
+    try {
+      final dir = await getDownloadsDirectory();
+      result = dir?.path ?? '${await getExtDir()}${Platform.pathSeparator}Downloads';
     } catch (e) {
       log(e);
     }

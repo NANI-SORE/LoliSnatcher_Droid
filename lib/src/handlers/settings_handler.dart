@@ -26,6 +26,7 @@ import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/secure_storage_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/auto_backup_service.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
@@ -767,6 +768,19 @@ class SettingsHandler {
     try {
       await getStoragePermission();
       await loadSettings();
+      try {
+        await AutoBackupService().runAfterUpdateIfDue(() {
+          postInitMessage.value = loc.init.backingUpDataAfterUpdate;
+        });
+      } catch (e, s) {
+        Logger.Inst().log(
+          e.toString(),
+          'SettingsHandler',
+          'runAfterUpdateBackup',
+          LogTypes.settingsLoad,
+          s: s,
+        );
+      }
       await Logger.setLogcatCaptureEnabled(SX.captureLogcat.value);
       await setLocale(SX.locale.value);
     } catch (e, s) {

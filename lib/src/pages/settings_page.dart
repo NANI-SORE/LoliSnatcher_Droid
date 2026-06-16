@@ -10,8 +10,7 @@ import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/pages/about_page.dart';
-import 'package:lolisnatcher/src/pages/loli_sync_page.dart';
-import 'package:lolisnatcher/src/pages/settings/backup_restore_page.dart';
+import 'package:lolisnatcher/src/pages/settings/backup_transfer_page.dart';
 import 'package:lolisnatcher/src/pages/settings/booru_page.dart';
 import 'package:lolisnatcher/src/pages/settings/database_page.dart';
 import 'package:lolisnatcher/src/pages/settings/debug_page.dart';
@@ -113,9 +112,9 @@ class SettingsPage extends StatelessWidget {
                 page: () => const DatabasePage(),
               ),
               SettingsButton(
-                name: context.loc.settings.backupAndRestore.title,
+                name: context.loc.settings.backupAndTransfer.title,
                 icon: const Icon(Icons.restore_page),
-                page: () => const BackupRestorePage(),
+                page: () => const BackupTransferPage(),
               ),
               SettingsButton(
                 name: context.loc.settings.network.title,
@@ -137,28 +136,6 @@ class SettingsPage extends StatelessWidget {
                   size: 20,
                 ),
                 page: () => const PerformancePage(),
-              ),
-              SettingsButton(
-                name: context.loc.settings.sync.title,
-                icon: const Icon(Icons.sync),
-                action: SX.dbEnabled.value
-                    ? null
-                    : () {
-                        FlashElements.showSnackbar(
-                          context: context,
-                          title: Text(
-                            context.loc.errorExclamation,
-                            style: const TextStyle(fontSize: 20),
-                          ),
-                          content: Text(
-                            context.loc.settings.sync.dbError,
-                          ),
-                          leadingIcon: Icons.error_outline,
-                          leadingIconColor: Colors.red,
-                          sideColor: Colors.red,
-                        );
-                      },
-                page: SX.dbEnabled.value ? () => const LoliSyncPage() : null,
               ),
               const DiscordButton(),
               SettingsButton(
