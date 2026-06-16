@@ -247,7 +247,8 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> with SingleTickerProv
               children: [
                 const SettingsButton(name: '', enabled: false),
                 for (final state in SettingsRegistry.instance.byCategory(SettingCategory.tagsFilters))
-                  if (state.def.widgetBuilder != null &&
+                  if (SettingsRegistry.instance.isSettingVisible(state) &&
+                      state.def.widgetBuilder != null &&
                       state.def.key != SettingKey.hiddenTags &&
                       state.def.key != SettingKey.markedTags)
                     state.buildWidget(context),

@@ -69,6 +69,7 @@ SettingDef<T> settingsEnumSetting<T extends Enum>({
   bool isDeviceSpecific = false,
   bool supportsPerBooru = false,
   bool isSearchable = true,
+  bool Function()? visibleWhen,
   bool Function()? searchVisibleWhen,
   SettingWidgetConfig? widgetConfig,
   List<SettingKey>? dependsOn,
@@ -89,6 +90,7 @@ SettingDef<T> settingsEnumSetting<T extends Enum>({
     isDeviceSpecific: isDeviceSpecific,
     supportsPerBooru: supportsPerBooru,
     isSearchable: isSearchable,
+    visibleWhen: visibleWhen,
     searchVisibleWhen: searchVisibleWhen,
     widgetConfig: widgetConfig,
     dependsOn: dependsOn,
@@ -1010,6 +1012,7 @@ void registerAllSettings() {
       categories: [SettingCategory.theme],
       isDeviceSpecific: true,
       supportsPerBooru: true,
+      visibleWhen: () => Platform.isAndroid,
       pickFile: ServiceHandler.getImageSAFUri,
       setButtonLabel: (ctx) => ctx.loc.settings.theme.setCustomMascot,
       removeButtonLabel: (ctx) => ctx.loc.settings.theme.removeCustomMascot,
@@ -1146,6 +1149,7 @@ void registerAllSettings() {
       getDefaultValue: () => '',
       categories: [SettingCategory.cache],
       isDeviceSpecific: true,
+      visibleWhen: () => Platform.isAndroid,
       pickDirectory: ServiceHandler.setExtDir,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.cache.setStorageDirectory,
@@ -1232,6 +1236,7 @@ void registerAllSettings() {
       getDefaultValue: () => '',
       categories: [SettingCategory.backup],
       isDeviceSpecific: true,
+      visibleWhen: () => Platform.isAndroid,
       pickDirectory: ServiceHandler.getSAFDirectoryAccess,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.backupAndRestore.selectBackupDir,
@@ -1501,7 +1506,7 @@ void registerAllSettings() {
       getDefaultValue: () => false,
       categories: [SettingCategory.privacy],
       isDeviceSpecific: true,
-      enabledWhen: ([BuildContext? context]) => LocalAuthHandler.instance.isSupportedPlatform,
+      visibleWhen: () => LocalAuthHandler.instance.isSupportedPlatform,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.privacy.appLock,
         subtitle: (ctx) => ctx.loc.settings.privacy.appLockMsg,
@@ -1546,7 +1551,7 @@ void registerAllSettings() {
       getDefaultValue: () => false,
       categories: [SettingCategory.privacy],
       isDeviceSpecific: true,
-      enabledWhen: ([BuildContext? context]) => Platform.isAndroid,
+      visibleWhen: () => Platform.isAndroid,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.privacy.incognitoKeyboard,
         subtitle: (ctx) => ctx.loc.settings.privacy.incognitoKeyboardMsg,
@@ -1774,6 +1779,7 @@ void registerAllSettings() {
       getDefaultValue: () => false,
       categories: [SettingCategory.interface],
       isDeviceSpecific: true,
+      visibleWhen: () => PlatformExt.isDesktop,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.debug.enableDragScrollOnListsDesktopOnly,
       ),
@@ -1789,7 +1795,7 @@ void registerAllSettings() {
       step: 0.5,
       categories: [SettingCategory.interface],
       isDeviceSpecific: true,
-      enabledWhen: ([BuildContext? context]) => PlatformExt.isDesktop,
+      visibleWhen: () => PlatformExt.isDesktop,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.mouseWheelScrollModifier,
       ),
@@ -1839,7 +1845,7 @@ void registerAllSettings() {
       fromString: AppAlias.fromString,
       categories: [SettingCategory.privacy],
       isDeviceSpecific: true,
-      enabledWhen: ([BuildContext? context]) => Platform.isAndroid,
+      visibleWhen: () => Platform.isAndroid,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.privacy.appDisplayName,
         subtitle: (ctx) => ctx.loc.settings.privacy.appDisplayNameDescription,
@@ -1853,6 +1859,7 @@ void registerAllSettings() {
       getDefaultValue: () => true,
       categories: [SettingCategory.interface],
       isDeviceSpecific: true,
+      visibleWhen: () => Platform.isAndroid,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.usePredictiveBack,
       ),

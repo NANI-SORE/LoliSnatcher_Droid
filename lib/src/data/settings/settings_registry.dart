@@ -79,6 +79,15 @@ class SettingsRegistry {
     return _states.values.where((s) => s.def.categories.contains(category)).toList();
   }
 
+  /// Whether a setting should be shown in UI on the current platform/build.
+  bool isSettingVisible(SettingState<dynamic> state) {
+    final def = state.def;
+    if (def.categories.isEmpty || !def.categories.any(isCategoryVisible)) {
+      return false;
+    }
+    return def.visibleWhen?.call() ?? true;
+  }
+
   /// Whether a category is currently visible.
   bool isCategoryVisible(SettingCategory category) {
     switch (category) {
@@ -135,7 +144,7 @@ class SettingsRegistry {
     if (!def.isSearchable || def.isWidgetSlot || def.widgetBuilder == null) {
       return false;
     }
-    if (def.categories.isEmpty || !def.categories.any(isCategoryVisible)) {
+    if (!isSettingVisible(state)) {
       return false;
     }
     if (!(def.searchVisibleWhen?.call() ?? true)) {

@@ -49,7 +49,9 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
     super.initState();
 
     final registry = SettingsRegistry.instance;
-    final perBooruSettings = registry.perBooruSettings.where((s) => s.def.widgetBuilder != null).toList();
+    final perBooruSettings = registry.perBooruSettings
+        .where((s) => registry.isSettingVisible(s) && s.def.widgetBuilder != null)
+        .toList();
 
     grouped = {};
     for (final state in perBooruSettings) {
@@ -77,7 +79,9 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
   Widget build(BuildContext context) {
     final booruName = widget.booru.name ?? '';
     final registry = SettingsRegistry.instance;
-    final perBooruSettings = registry.perBooruSettings.where((s) => s.def.widgetBuilder != null).toList();
+    final perBooruSettings = registry.perBooruSettings
+        .where((s) => registry.isSettingVisible(s) && s.def.widgetBuilder != null)
+        .toList();
 
     final Widget body = Scaffold(
       resizeToAvoidBottomInset: false,
