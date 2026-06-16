@@ -77,7 +77,7 @@ class AutoSettingsPage extends StatelessWidget {
     final states = registry.byCategory(category);
 
     // Filter to only settings that have a widget builder
-    final renderableStates = states.where((s) => s.def.widgetBuilder != null).toList();
+    final renderableStates = states.where((s) => registry.isSettingVisible(s) && s.def.widgetBuilder != null).toList();
 
     // Listen to all settings in this category to reactively show/hide reset button
     final allNotifiers = renderableStates
@@ -206,7 +206,8 @@ class MultiCategorySettingsPage extends StatelessWidget {
                 ),
               ],
               for (final state in registry.byCategory(cat))
-                if (state.def.widgetBuilder != null) ReactiveSettingWidget(state: state),
+                if (registry.isSettingVisible(state) && state.def.widgetBuilder != null)
+                  ReactiveSettingWidget(state: state),
             ],
             ...extraWidgets,
           ],
@@ -236,6 +237,10 @@ class ReactiveSettingWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final dependsOn = state.def.dependsOn;
     final enabledWhen = state.def.enabledWhen;
+
+    if (!SettingsRegistry.instance.isSettingVisible(state)) {
+      return const SizedBox.shrink();
+    }
 
     // No enabledWhen — always show
     if (enabledWhen == null) {

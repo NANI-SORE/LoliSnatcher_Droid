@@ -28,6 +28,7 @@ class SettingDef<T> {
     this.isWidgetSlot = false,
     this.isTransient = false,
     this.isSearchable = true,
+    this.visibleWhen,
     this.searchVisibleWhen,
     this.validate,
     this.widgetBuilder,
@@ -81,6 +82,13 @@ class SettingDef<T> {
 
   /// Whether this setting can ever appear in global settings search.
   final bool isSearchable;
+
+  /// Optional static UI visibility condition.
+  ///
+  /// Use this for platform or build-target availability, for example Android-only
+  /// settings or desktop-only settings. Unlike [enabledWhen], this should not
+  /// depend on mutable setting values.
+  final bool Function()? visibleWhen;
 
   /// Optional runtime condition for global settings search visibility.
   ///
