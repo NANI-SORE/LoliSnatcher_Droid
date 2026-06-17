@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/backup_transfer_logger.dart';
 
 class TransferSocketConnection {
   TransferSocketConnection(this.socket) : _reader = _SocketChunkReader(socket);
@@ -15,6 +16,11 @@ class TransferSocketConnection {
   Future<void> writeFrame(Map<String, dynamic> frame) async {
     final payload = Uint8List.fromList(utf8.encode(jsonEncode(frame)));
     final header = ByteData(4)..setUint32(0, payload.length, Endian.big);
+    BackupTransferLogger.info(
+      'Writing frame type=${frame['type']} bytes=${payload.length}',
+      'TransferSocketConnection',
+      'writeFrame',
+    );
     socket.add(header.buffer.asUint8List());
     socket.add(payload);
     await socket.flush();
@@ -24,7 +30,13 @@ class TransferSocketConnection {
     final header = await _reader.readExactly(4);
     final length = ByteData.sublistView(header).getUint32(0, Endian.big);
     final payload = await _reader.readExactly(length);
-    return Map<String, dynamic>.from(jsonDecode(utf8.decode(payload)));
+    final frame = Map<String, dynamic>.from(jsonDecode(utf8.decode(payload)));
+    BackupTransferLogger.info(
+      'Read frame type=${frame['type']} bytes=$length',
+      'TransferSocketConnection',
+      'readFrame',
+    );
+    return frame;
   }
 
   Future<Uint8List> readBytes(int length, void Function(int read)? onProgress) async {
@@ -49,6 +61,11 @@ class TransferSocketConnection {
     void Function(int read)? onProgress, {
     bool Function()? isCancelled,
   }) async {
+    BackupTransferLogger.info(
+      'Reading $length bytes to file ${file.path}',
+      'TransferSocketConnection',
+      'readBytesToFile',
+    );
     final sink = file.openWrite();
     var remaining = length;
     var read = 0;
@@ -68,6 +85,11 @@ class TransferSocketConnection {
         progress.call(read);
       }
       progress.complete(read);
+      BackupTransferLogger.info(
+        'Finished reading $read bytes to file ${file.path}',
+        'TransferSocketConnection',
+        'readBytesToFile',
+      );
     } finally {
       await sink.close();
     }
@@ -92,6 +114,11 @@ class TransferSocketConnection {
     void Function(int sent)? onProgress, {
     bool Function()? isCancelled,
   }) async {
+    BackupTransferLogger.info(
+      'Writing file ${file.path}',
+      'TransferSocketConnection',
+      'writeFile',
+    );
     final progress = _ProgressThrottle(onProgress);
     var sent = 0;
     final stream = file.openRead();
@@ -108,6 +135,11 @@ class TransferSocketConnection {
       }
     }
     progress.complete(sent);
+    BackupTransferLogger.info(
+      'Finished writing file ${file.path} bytes=$sent',
+      'TransferSocketConnection',
+      'writeFile',
+    );
   }
 }
 

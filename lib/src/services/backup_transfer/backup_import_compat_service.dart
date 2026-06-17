@@ -5,6 +5,7 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_entry_registry.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_models.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_package_service.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/backup_transfer_logger.dart';
 
 class BackupImportCompatService {
   BackupImportCompatService({
@@ -21,6 +22,11 @@ class BackupImportCompatService {
     Uint8List bytes, {
     BackupImportOptions options = const BackupImportOptions(),
   }) async {
+    BackupTransferLogger.info(
+      'Importing named bytes file=$fileName bytes=${bytes.length}',
+      'BackupImportCompatService',
+      'importNamedBytes',
+    );
     final lowerName = fileName.toLowerCase();
     if (lowerName.endsWith('.lsbackup')) {
       return packageService.importPackage(bytes, options: options);
@@ -37,8 +43,18 @@ class BackupImportCompatService {
       _ => null,
     };
     if (legacyId == null) {
+      BackupTransferLogger.info(
+        'Unsupported backup file $fileName',
+        'BackupImportCompatService',
+        'importNamedBytes',
+      );
       throw FormatException(loc.settings.backupAndTransfer.unsupportedBackupFile(fileName: fileName));
     }
+    BackupTransferLogger.info(
+      'Importing legacy backup file=$fileName as ${legacyId.name}',
+      'BackupImportCompatService',
+      'importNamedBytes',
+    );
     await registry.byId(legacyId).importEntry(bytes, options);
     return [legacyId];
   }
@@ -48,6 +64,11 @@ class BackupImportCompatService {
     File file, {
     BackupImportOptions options = const BackupImportOptions(),
   }) async {
+    BackupTransferLogger.info(
+      'Importing named file file=$fileName path=${file.path}',
+      'BackupImportCompatService',
+      'importNamedFile',
+    );
     final lowerName = fileName.toLowerCase();
     if (lowerName.endsWith('.lsbackup')) {
       return packageService.importPackageFile(file, options: options);

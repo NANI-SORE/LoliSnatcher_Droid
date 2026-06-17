@@ -17,6 +17,7 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_models.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/backup_transfer_logger.dart';
 
 class BackupEntryRegistry {
   BackupEntryRegistry._();
@@ -174,6 +175,7 @@ class BackupEntryRegistry {
 
   Future<BackupEntryPayload> _exportSettings(BackupExportOptions options) async {
     final json = SettingsRegistry.instance.toJson();
+    final beforeFilterCount = json.length;
     if (options.excludeDeviceSpecificSettings) {
       for (final state in SettingsRegistry.instance.deviceSpecific) {
         json.remove(state.def.jsonKey);
@@ -182,10 +184,20 @@ class BackupEntryRegistry {
     for (final key in _alwaysLocalSettingKeys) {
       json.remove(key.jsonKey);
     }
+    BackupTransferLogger.info(
+      'Exporting settings count=${json.length} filtered=${beforeFilterCount - json.length} excludeDeviceSpecific=${options.excludeDeviceSpecificSettings}',
+      'BackupEntryRegistry',
+      '_exportSettings',
+    );
     return _jsonPayload('settings.json', json);
   }
 
   Future<void> _importSettings(Uint8List bytes, BackupImportOptions options) async {
+    BackupTransferLogger.info(
+      'Importing settings bytes=${bytes.length}',
+      'BackupEntryRegistry',
+      '_importSettings',
+    );
     await _settingsHandler.loadFromJSON(utf8.decode(bytes), false);
     await _settingsHandler.saveSettings(restate: true);
   }
@@ -215,6 +227,11 @@ class BackupEntryRegistry {
     final booruList = _settingsHandler.booruList.isEmpty
         ? await _readBoorusFromFiles()
         : _settingsHandler.booruList.where((e) => BooruType.saveable.contains(e.type)).toList();
+    BackupTransferLogger.info(
+      'Exporting booru profiles count=${booruList.length}',
+      'BackupEntryRegistry',
+      '_exportBoorus',
+    );
     return _jsonPayload('boorus.json', booruList.map((b) => b.toJson()).toList());
   }
 
@@ -240,6 +257,8 @@ class BackupEntryRegistry {
     if (decoded is! List) return;
     final configBoorusPath = '${await ServiceHandler.getConfigDir()}boorus/';
     final configBoorusDir = await Directory(configBoorusPath).create(recursive: true);
+    var imported = 0;
+    var skipped = 0;
     for (final raw in decoded) {
       if (raw is! Map) continue;
       final booru = Booru.fromMap(Map<String, dynamic>.from(raw));
@@ -249,8 +268,16 @@ class BackupEntryRegistry {
       if (!alreadyExists && isAllowed && booru.name?.isNotEmpty == true) {
         final booruFile = File('${configBoorusDir.path}${booru.name}.json');
         await booruFile.writeAsString(jsonEncode(booru.toJson()));
+        imported++;
+      } else {
+        skipped++;
       }
     }
+    BackupTransferLogger.info(
+      'Imported booru profiles imported=$imported skipped=$skipped',
+      'BackupEntryRegistry',
+      '_importBoorus',
+    );
     await _settingsHandler.loadBoorus();
   }
 
@@ -259,6 +286,11 @@ class BackupEntryRegistry {
     if (!await file.exists()) {
       throw StateError(loc.settings.backupAndTransfer.databaseFileNotFound);
     }
+    BackupTransferLogger.info(
+      'Exporting database file ${file.path} bytes=${await file.length()}',
+      'BackupEntryRegistry',
+      '_exportDatabase',
+    );
     return BackupEntryPayload(
       fileName: 'store.db',
       bytes: await file.readAsBytes(),
@@ -271,10 +303,20 @@ class BackupEntryRegistry {
     if (!await file.exists()) {
       throw StateError(loc.settings.backupAndTransfer.databaseFileNotFound);
     }
+    BackupTransferLogger.info(
+      'Exporting database file reference ${file.path}',
+      'BackupEntryRegistry',
+      '_exportDatabaseFile',
+    );
     return file;
   }
 
   Future<void> _importDatabase(Uint8List bytes, BackupImportOptions options) async {
+    BackupTransferLogger.info(
+      'Importing database bytes=${bytes.length}',
+      'BackupEntryRegistry',
+      '_importDatabase',
+    );
     final tempFile = File('${await ServiceHandler.getCacheDir()}backup_transfer_import_store.db');
     await tempFile.parent.create(recursive: true);
     await tempFile.writeAsBytes(bytes, flush: true);
@@ -287,6 +329,11 @@ class BackupEntryRegistry {
   }
 
   Future<void> _importDatabaseFile(File file, BackupImportOptions options) async {
+    BackupTransferLogger.info(
+      'Importing database file ${file.path} bytes=${await file.length()}',
+      'BackupEntryRegistry',
+      '_importDatabaseFile',
+    );
     await _forceIndexesForLargeDatabase(file);
     final configDir = await _prepareDatabaseImport();
     final dbFile = File('${configDir}store.db');
@@ -298,6 +345,11 @@ class BackupEntryRegistry {
     final count = await _countDatabaseItems(file);
     if (count <= 10000 || SX.indexesEnabled.value) return;
     SX.indexesEnabled.state.value = true;
+    BackupTransferLogger.info(
+      'Enabling database indexes for imported database count=$count',
+      'BackupEntryRegistry',
+      '_forceIndexesForLargeDatabase',
+    );
     await _settingsHandler.saveSettings(restate: false);
   }
 
@@ -318,6 +370,11 @@ class BackupEntryRegistry {
   Future<String> _prepareDatabaseImport() async {
     final configDir = await ServiceHandler.getConfigDir();
     _searchHandler.canBackup.value = false;
+    BackupTransferLogger.info(
+      'Preparing database import',
+      'BackupEntryRegistry',
+      '_prepareDatabaseImport',
+    );
     await _settingsHandler.dbHandler.closeDb();
     for (final suffix in ['-wal', '-shm']) {
       final sidecar = File('${configDir}store.db$suffix');
@@ -327,6 +384,11 @@ class BackupEntryRegistry {
   }
 
   Future<void> _finishDatabaseImport() async {
+    BackupTransferLogger.info(
+      'Finishing database import and restarting app',
+      'BackupEntryRegistry',
+      '_finishDatabaseImport',
+    );
     await Future.delayed(const Duration(seconds: 1));
     await ServiceHandler.restartApp();
     if (Platform.isAndroid) {
@@ -349,6 +411,11 @@ class BackupEntryRegistry {
       );
       lastSeenId = (startId ?? 0) - 1;
     }
+    BackupTransferLogger.info(
+      'Exporting ${isDownloads ? 'snatched' : 'favourites'} startIndex=${options.startIndex} initialLastSeenId=$lastSeenId',
+      'BackupEntryRegistry',
+      '_exportFlaggedItems',
+    );
 
     while (true) {
       final batch = await _settingsHandler.dbHandler.getFlaggedItemsAfterId(
@@ -371,6 +438,11 @@ class BackupEntryRegistry {
       if (batch.length < limit) break;
     }
 
+    BackupTransferLogger.info(
+      'Exported ${encodedItems.length} ${isDownloads ? 'snatched' : 'favourites'} items',
+      'BackupEntryRegistry',
+      '_exportFlaggedItems',
+    );
     return _jsonPayload(isDownloads ? 'snatched.json' : 'favourites.json', encodedItems);
   }
 
@@ -384,10 +456,20 @@ class BackupEntryRegistry {
     if (items.isNotEmpty) {
       await _settingsHandler.dbHandler.updateMultipleBooruItems(items, BooruUpdateMode.sync);
     }
+    BackupTransferLogger.info(
+      'Imported flagged items count=${items.length}',
+      'BackupEntryRegistry',
+      '_importFlaggedItems',
+    );
   }
 
   Future<BackupEntryPayload> _exportTabs(BackupExportOptions options) async {
     final tabs = _searchHandler.generateBackupJson() ?? '[]';
+    BackupTransferLogger.info(
+      'Exporting tabs bytes=${tabs.length}',
+      'BackupEntryRegistry',
+      '_exportTabs',
+    );
     return BackupEntryPayload(
       fileName: 'tabs.json',
       bytes: Uint8List.fromList(utf8.encode(tabs)),
@@ -397,6 +479,11 @@ class BackupEntryRegistry {
 
   Future<void> _importTabs(Uint8List bytes, BackupImportOptions options) async {
     final text = utf8.decode(bytes);
+    BackupTransferLogger.info(
+      'Importing tabs bytes=${bytes.length} mode=${options.tabsMode.name}',
+      'BackupEntryRegistry',
+      '_importTabs',
+    );
     switch (options.tabsMode) {
       case BackupTabsMode.merge:
         _searchHandler.mergeTabs(text);
@@ -409,10 +496,21 @@ class BackupEntryRegistry {
   }
 
   Future<BackupEntryPayload> _exportTags(BackupExportOptions options) async {
-    return _jsonPayload('tags.json', _tagHandler.toList());
+    final tags = _tagHandler.toList();
+    BackupTransferLogger.info(
+      'Exporting tags count=${tags.length}',
+      'BackupEntryRegistry',
+      '_exportTags',
+    );
+    return _jsonPayload('tags.json', tags);
   }
 
   Future<void> _importTags(Uint8List bytes, BackupImportOptions options) async {
+    BackupTransferLogger.info(
+      'Importing tags bytes=${bytes.length} mode=${options.tagsMode.name}',
+      'BackupEntryRegistry',
+      '_importTags',
+    );
     await _tagHandler.loadFromJSON(
       utf8.decode(bytes),
       preferTagTypeIfNone: options.tagsMode == BackupTagsMode.preferTypeIfNone,
@@ -420,23 +518,47 @@ class BackupEntryRegistry {
   }
 
   Future<BackupEntryPayload> _exportPinnedTags(BackupExportOptions options) async {
-    return _jsonPayload('pinned_tags.json', await _settingsHandler.dbHandler.exportPinnedTagRows());
+    final rows = await _settingsHandler.dbHandler.exportPinnedTagRows();
+    BackupTransferLogger.info(
+      'Exporting pinned tags count=${rows.length}',
+      'BackupEntryRegistry',
+      '_exportPinnedTags',
+    );
+    return _jsonPayload('pinned_tags.json', rows);
   }
 
   Future<void> _importPinnedTags(Uint8List bytes, BackupImportOptions options) async {
     final decoded = jsonDecode(utf8.decode(bytes));
     if (decoded is! List) return;
-    await _settingsHandler.dbHandler.importPinnedTagRows(_mapsFromJsonList(decoded));
+    final rows = _mapsFromJsonList(decoded);
+    BackupTransferLogger.info(
+      'Importing pinned tags count=${rows.length}',
+      'BackupEntryRegistry',
+      '_importPinnedTags',
+    );
+    await _settingsHandler.dbHandler.importPinnedTagRows(rows);
   }
 
   Future<BackupEntryPayload> _exportSearchHistory(BackupExportOptions options) async {
-    return _jsonPayload('search_history.json', await _settingsHandler.dbHandler.exportSearchHistoryRows());
+    final rows = await _settingsHandler.dbHandler.exportSearchHistoryRows();
+    BackupTransferLogger.info(
+      'Exporting search history count=${rows.length}',
+      'BackupEntryRegistry',
+      '_exportSearchHistory',
+    );
+    return _jsonPayload('search_history.json', rows);
   }
 
   Future<void> _importSearchHistory(Uint8List bytes, BackupImportOptions options) async {
     final decoded = jsonDecode(utf8.decode(bytes));
     if (decoded is! List) return;
-    await _settingsHandler.dbHandler.importSearchHistoryRows(_mapsFromJsonList(decoded));
+    final rows = _mapsFromJsonList(decoded);
+    BackupTransferLogger.info(
+      'Importing search history count=${rows.length}',
+      'BackupEntryRegistry',
+      '_importSearchHistory',
+    );
+    await _settingsHandler.dbHandler.importSearchHistoryRows(rows);
   }
 
   List<Map<String, dynamic>> _mapsFromJsonList(List<dynamic> decoded) {

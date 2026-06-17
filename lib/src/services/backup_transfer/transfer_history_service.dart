@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_models.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/backup_transfer_logger.dart';
 
 enum TransferHistoryDirection {
   sent,
@@ -59,21 +60,45 @@ class TransferHistoryService {
 
   Future<List<TransferHistoryEntry>> load() async {
     final file = await _file();
-    if (!await file.exists()) return [];
+    if (!await file.exists()) {
+      BackupTransferLogger.info(
+        'Transfer history file does not exist',
+        'TransferHistoryService',
+        'load',
+      );
+      return [];
+    }
     try {
       final decoded = jsonDecode(await file.readAsString());
       if (decoded is! List) return [];
-      return decoded
+      final entries = decoded
           .whereType<Map>()
           .map((raw) => TransferHistoryEntry.fromJson(Map<String, dynamic>.from(raw)))
           .whereType<TransferHistoryEntry>()
           .toList(growable: false);
-    } catch (_) {
+      BackupTransferLogger.info(
+        'Loaded ${entries.length} transfer history entries',
+        'TransferHistoryService',
+        'load',
+      );
+      return entries;
+    } catch (e, s) {
+      BackupTransferLogger.error(
+        e,
+        'TransferHistoryService',
+        'load',
+        stackTrace: s,
+      );
       return [];
     }
   }
 
   Future<void> add(TransferHistoryEntry entry) async {
+    BackupTransferLogger.info(
+      'Adding transfer history direction=${entry.direction.name} peer=${entry.peerAddress} entries=${entry.entryIds.map((id) => id.name).join(',')}',
+      'TransferHistoryService',
+      'add',
+    );
     final entries = [
       entry,
       ...await load(),

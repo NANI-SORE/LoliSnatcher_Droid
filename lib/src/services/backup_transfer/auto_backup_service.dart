@@ -9,6 +9,7 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_entry_registry.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_file_naming.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_package_service.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/backup_transfer_logger.dart';
 
 class AutoBackupConfig {
   const AutoBackupConfig({
@@ -119,6 +120,11 @@ class AutoBackupService {
   Future<bool> runIfDue() async {
     final config = await loadConfig();
     if (!config.isDue) return false;
+    BackupTransferLogger.info(
+      'Auto backup is due',
+      'AutoBackupService',
+      'runIfDue',
+    );
     await runNow(config);
     return true;
   }
@@ -133,6 +139,11 @@ class AutoBackupService {
     if (!config.backupOnUpdate) return false;
     final currentBuild = Constants.updateInfo.buildNumber;
     if (config.lastUpdateBackupBuild == currentBuild) return false;
+    BackupTransferLogger.info(
+      'After-update backup is due for build $currentBuild',
+      'AutoBackupService',
+      'runAfterUpdateIfDue',
+    );
     await _run(config, kind: _AutoBackupKind.update);
     return true;
   }
@@ -152,6 +163,11 @@ class AutoBackupService {
       ),
     };
     final fileName = '$fileStem.${BackupFileNaming.extension}';
+    BackupTransferLogger.info(
+      'Starting ${kind.name} auto backup: file=$fileName location=${config.location.isEmpty ? '<default>' : config.location}',
+      'AutoBackupService',
+      '_run',
+    );
     if (hasConfiguredLocation && (Platform.isAndroid || config.location.startsWith('content://'))) {
       final tempDir = Directory(
         '${await ServiceHandler.getCacheDir()}backup_transfer${Platform.pathSeparator}${DateTime.now().microsecondsSinceEpoch}',
@@ -178,6 +194,11 @@ class AutoBackupService {
       }
       final updated = _markComplete(config, kind, now);
       await saveConfig(updated);
+      BackupTransferLogger.info(
+        'Finished ${kind.name} auto backup to SAF location',
+        'AutoBackupService',
+        '_run',
+      );
       return updated;
     }
 
@@ -194,6 +215,11 @@ class AutoBackupService {
     }
     final updated = _markComplete(config, kind, now);
     await saveConfig(updated);
+    BackupTransferLogger.info(
+      'Finished ${kind.name} auto backup to ${dir.path}',
+      'AutoBackupService',
+      '_run',
+    );
     return updated;
   }
 
@@ -225,7 +251,13 @@ class AutoBackupService {
         .cast<File>()
         .toList();
     backups.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
-    for (final stale in backups.skip(maximumBackups)) {
+    final staleBackups = backups.skip(maximumBackups).toList();
+    BackupTransferLogger.info(
+      'Pruning ${staleBackups.length} normal auto backups from ${dir.path}',
+      'AutoBackupService',
+      '_prune',
+    );
+    for (final stale in staleBackups) {
       await stale.delete();
     }
   }
@@ -240,7 +272,13 @@ class AutoBackupService {
         .cast<File>()
         .toList();
     backups.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
-    for (final stale in backups.skip(maximumBackups)) {
+    final staleBackups = backups.skip(maximumBackups).toList();
+    BackupTransferLogger.info(
+      'Pruning ${staleBackups.length} update backups from ${dir.path}',
+      'AutoBackupService',
+      '_pruneUpdateBackups',
+    );
+    for (final stale in staleBackups) {
       await stale.delete();
     }
   }
@@ -249,7 +287,13 @@ class AutoBackupService {
     if (maximumBackups <= 0) return;
     final names = await ServiceHandler.listFileNamesFromSAFDirectory(safUri);
     final backups = names.where(BackupFileNaming.isUpdateAutoBackupPath).toList()..sort((a, b) => b.compareTo(a));
-    for (final stale in backups.skip(maximumBackups)) {
+    final staleBackups = backups.skip(maximumBackups).toList();
+    BackupTransferLogger.info(
+      'Pruning ${staleBackups.length} update backups from SAF location',
+      'AutoBackupService',
+      '_pruneSafUpdateBackups',
+    );
+    for (final stale in staleBackups) {
       await ServiceHandler.deleteFileFromSAFDirectory(safUri, stale);
     }
   }

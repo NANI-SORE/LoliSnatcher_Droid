@@ -11,6 +11,7 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_entry_registry.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_file_naming.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_models.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/backup_transfer_logger.dart';
 
 class BackupPackageService {
   BackupPackageService({
@@ -28,12 +29,20 @@ class BackupPackageService {
     BackupExportOptions options = const BackupExportOptions(),
     Map<BackupEntryId, BackupExportOptions> entryOptions = const {},
   }) async {
+    BackupTransferLogger.info(
+      'Exporting in-memory package entries=${entryIds.map((id) => id.name).join(',')}',
+      'BackupPackageService',
+      'exportPackage',
+    );
     final files = <Map<String, Object>>[];
     final entries = <Map<String, dynamic>>[];
 
     for (final id in entryIds) {
       final definition = registry.byId(id);
-      if (!await definition.isAvailable()) continue;
+      if (!await definition.isAvailable()) {
+        BackupTransferLogger.info('Skipping unavailable entry ${id.name}', 'BackupPackageService', 'exportPackage');
+        continue;
+      }
       final payload = await definition.exportEntry(entryOptions[id] ?? options);
       final path = payload.fileName;
       files.add({
@@ -56,10 +65,16 @@ class BackupPackageService {
       'entries': entries,
     };
 
-    return compute(_encodeBackupPackage, {
+    final packageBytes = await compute(_encodeBackupPackage, {
       'files': files,
       'manifest': manifest,
     });
+    BackupTransferLogger.info(
+      'Finished in-memory package entries=${entries.length} bytes=${packageBytes.length}',
+      'BackupPackageService',
+      'exportPackage',
+    );
+    return packageBytes;
   }
 
   Future<File> exportPackageFile({
@@ -68,6 +83,11 @@ class BackupPackageService {
     BackupExportOptions options = const BackupExportOptions(),
     Map<BackupEntryId, BackupExportOptions> entryOptions = const {},
   }) async {
+    BackupTransferLogger.info(
+      'Exporting file package output=${outputFile.path} entries=${entryIds.map((id) => id.name).join(',')}',
+      'BackupPackageService',
+      'exportPackageFile',
+    );
     final tempDir = Directory('${outputFile.path}.parts');
     if (await tempDir.exists()) {
       await tempDir.delete(recursive: true);
@@ -79,7 +99,14 @@ class BackupPackageService {
     try {
       for (final id in entryIds) {
         final definition = registry.byId(id);
-        if (!await definition.isAvailable()) continue;
+        if (!await definition.isAvailable()) {
+          BackupTransferLogger.info(
+            'Skipping unavailable entry ${id.name}',
+            'BackupPackageService',
+            'exportPackageFile',
+          );
+          continue;
+        }
         final path = definition.fileName;
         final exportFile = definition.exportFile;
         File sourceFile;
@@ -120,6 +147,11 @@ class BackupPackageService {
         'outputPath': outputFile.path,
         'files': files,
       });
+      BackupTransferLogger.info(
+        'Finished file package output=${outputFile.path} entries=${entries.length} bytes=${await outputFile.length()}',
+        'BackupPackageService',
+        'exportPackageFile',
+      );
       return outputFile;
     } finally {
       unawaited(tempDir.delete(recursive: true).catchError((_) => tempDir));
@@ -130,6 +162,11 @@ class BackupPackageService {
     Uint8List bytes, {
     BackupImportOptions options = const BackupImportOptions(),
   }) async {
+    BackupTransferLogger.info(
+      'Importing in-memory package bytes=${bytes.length}',
+      'BackupPackageService',
+      'importPackage',
+    );
     final decoded = await compute(_decodeBackupPackage, bytes);
     return _importDecodedPackage(decoded, options);
   }
@@ -138,6 +175,11 @@ class BackupPackageService {
     File file, {
     BackupImportOptions options = const BackupImportOptions(),
   }) async {
+    BackupTransferLogger.info(
+      'Importing package file path=${file.path} bytes=${await file.length()}',
+      'BackupPackageService',
+      'importPackageFile',
+    );
     final extractDir = Directory('${file.parent.path}${Platform.pathSeparator}${file.uri.pathSegments.last}.entries');
     try {
       if (await extractDir.exists()) {
@@ -168,6 +210,11 @@ class BackupPackageService {
     final imported = <BackupEntryId>[];
     final rawEntries = manifest['entries'];
     if (rawEntries is! List) return imported;
+    BackupTransferLogger.info(
+      'Decoded package format=${manifest['format']} entries=${rawEntries.length}',
+      'BackupPackageService',
+      '_importDecodedPackage',
+    );
 
     final sortedEntries = rawEntries.whereType<Map>().toList()
       ..sort((a, b) {
@@ -185,6 +232,11 @@ class BackupPackageService {
       if (id.name != raw['id']) continue;
       final path = raw['path']?.toString();
       if (path == null) continue;
+      BackupTransferLogger.info(
+        'Importing package entry id=${id.name} path=$path',
+        'BackupPackageService',
+        '_importDecodedPackage',
+      );
       final content = files[path];
       final definition = registry.byId(id);
       if (content is Uint8List) {
@@ -205,11 +257,21 @@ class BackupPackageService {
       }
       imported.add(id);
     }
+    BackupTransferLogger.info(
+      'Finished package import entries=${imported.map((id) => id.name).join(',')}',
+      'BackupPackageService',
+      '_importDecodedPackage',
+    );
     return imported;
   }
 
   Future<String?> savePackageWithPicker(Uint8List bytes) async {
     final fileName = BackupFileNaming.packageFileName(DateTime.now());
+    BackupTransferLogger.info(
+      'Opening save picker for in-memory package file=$fileName bytes=${bytes.length}',
+      'BackupPackageService',
+      'savePackageWithPicker',
+    );
     final path = await FilePicker.saveFile(
       dialogTitle: loc.settings.backupAndTransfer.exportBackupDialogTitle,
       fileName: fileName,
@@ -222,6 +284,7 @@ class BackupPackageService {
     if (!await file.exists()) {
       await file.writeAsBytes(bytes, flush: true);
     }
+    BackupTransferLogger.info('Saved package to $path', 'BackupPackageService', 'savePackageWithPicker');
     return path;
   }
 
@@ -231,6 +294,11 @@ class BackupPackageService {
     Map<BackupEntryId, BackupExportOptions> entryOptions = const {},
   }) async {
     final fileName = BackupFileNaming.packageFileName(DateTime.now());
+    BackupTransferLogger.info(
+      'Opening save picker for file-backed package file=$fileName entries=${entryIds.map((id) => id.name).join(',')}',
+      'BackupPackageService',
+      'exportPackageFileWithPicker',
+    );
     if (Platform.isAndroid) {
       final savePath = await ServiceHandler.getSAFDirectoryAccess();
       if (savePath.isEmpty) return null;
@@ -249,6 +317,11 @@ class BackupPackageService {
           'application/zip',
         );
         if (!copied) throw FileSystemException('Failed to save backup package', savePath);
+        BackupTransferLogger.info(
+          'Saved Android package to SAF location $savePath',
+          'BackupPackageService',
+          'exportPackageFileWithPicker',
+        );
         return savePath;
       } finally {
         unawaited(tempFile.parent.delete(recursive: true).catchError((_) => tempFile.parent));
@@ -269,6 +342,7 @@ class BackupPackageService {
       options: options,
       entryOptions: entryOptions,
     );
+    BackupTransferLogger.info('Saved package to $path', 'BackupPackageService', 'exportPackageFileWithPicker');
     return path;
   }
 
@@ -288,6 +362,11 @@ class BackupPackageService {
     );
     if (file == null) return null;
     final bytes = await file.readAsBytes();
+    BackupTransferLogger.info(
+      'Picked backup file name=${file.name} bytes=${bytes.length}',
+      'BackupPackageService',
+      'pickBackupFile',
+    );
     return (name: file.name, bytes: bytes);
   }
 }

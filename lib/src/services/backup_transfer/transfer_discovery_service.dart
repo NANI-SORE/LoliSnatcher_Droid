@@ -5,6 +5,7 @@ import 'package:bonsoir/bonsoir.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_models.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/backup_transfer_logger.dart';
 
 class TransferDiscoveryService {
   // Stable protocol identifier. Do not rebrand unless cross-app discovery is intentionally broken.
@@ -28,6 +29,11 @@ class TransferDiscoveryService {
   }) async {
     await stopBroadcast();
     final serviceName = '${loc.appName} $port';
+    BackupTransferLogger.info(
+      'Starting Bonsoir broadcast name=$serviceName port=$port deviceId=$deviceId',
+      'TransferDiscoveryService',
+      'startBroadcast',
+    );
     final service = BonsoirService(
       name: serviceName,
       type: serviceType,
@@ -46,6 +52,9 @@ class TransferDiscoveryService {
   }
 
   Future<void> stopBroadcast() async {
+    if (_broadcast != null) {
+      BackupTransferLogger.info('Stopping Bonsoir broadcast', 'TransferDiscoveryService', 'stopBroadcast');
+    }
     await _broadcast?.stop();
     _broadcast = null;
   }
@@ -57,6 +66,11 @@ class TransferDiscoveryService {
     await stopDiscovery();
     _ignoredDeviceId = ignoredDeviceId;
     _ignoredHosts = ignoredHosts.where((host) => host.isNotEmpty).toSet();
+    BackupTransferLogger.info(
+      'Starting Bonsoir discovery ignoredDeviceId=${ignoredDeviceId ?? '<none>'} ignoredHosts=${_ignoredHosts.join(',')}',
+      'TransferDiscoveryService',
+      'startDiscovery',
+    );
     _devices.clear();
     _discovery = BonsoirDiscovery(type: serviceType);
     await _discovery!.initialize();
@@ -65,6 +79,13 @@ class TransferDiscoveryService {
   }
 
   Future<void> stopDiscovery() async {
+    if (_discovery != null) {
+      BackupTransferLogger.info(
+        'Stopping Bonsoir discovery',
+        'TransferDiscoveryService',
+        'stopDiscovery',
+      );
+    }
     await _discoverySub?.cancel();
     _discoverySub = null;
     await _discovery?.stop();
@@ -84,6 +105,11 @@ class TransferDiscoveryService {
   void _onDiscoveryEvent(BonsoirDiscoveryEvent event) {
     switch (event) {
       case BonsoirDiscoveryServiceFoundEvent():
+        BackupTransferLogger.info(
+          'Found Bonsoir service ${event.service.name}',
+          'TransferDiscoveryService',
+          '_onDiscoveryEvent',
+        );
         event.service.resolve(_discovery!.serviceResolver);
         break;
       case BonsoirDiscoveryServiceResolvedEvent():
@@ -94,9 +120,21 @@ class TransferDiscoveryService {
         final port = service.port;
         if (host == null) return;
         final attributes = service.attributes;
-        if (_isIgnoredService(host, attributes)) return;
+        if (_isIgnoredService(host, attributes)) {
+          BackupTransferLogger.info(
+            'Ignoring local Bonsoir service host=$host port=$port deviceId=${attributes['devId']}',
+            'TransferDiscoveryService',
+            '_onDiscoveryEvent',
+          );
+          return;
+        }
         final name = attributes['devName']?.toString() ?? service.name;
         final id = '$host:$port';
+        BackupTransferLogger.info(
+          'Resolved transfer device id=$id name=$name version=${attributes['version']}',
+          'TransferDiscoveryService',
+          '_onDiscoveryEvent',
+        );
         _devices[id] = DiscoveredTransferDevice(
           id: id,
           name: name,
@@ -113,6 +151,11 @@ class TransferDiscoveryService {
         final host = service.hostAddress ?? _extractHost(service.toJson());
         final port = service.port.toString();
         if (host == null) return;
+        BackupTransferLogger.info(
+          'Lost transfer device $host:$port',
+          'TransferDiscoveryService',
+          '_onDiscoveryEvent',
+        );
         _devices.remove('$host:$port');
         _emitDevices();
         break;

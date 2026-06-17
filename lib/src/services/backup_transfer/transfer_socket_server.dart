@@ -8,6 +8,7 @@ import 'package:lolisnatcher/src/services/backup_transfer/backup_entry_registry.
 import 'package:lolisnatcher/src/services/backup_transfer/backup_file_naming.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_models.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_package_service.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/backup_transfer_logger.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/transfer_history_service.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/transfer_socket_protocol.dart';
 
@@ -44,6 +45,11 @@ class TransferSocketServer {
     _cancelled = false;
     _deviceName = deviceName;
     final bindAddress = host == null || host.isEmpty ? InternetAddress.anyIPv4 : InternetAddress(host);
+    BackupTransferLogger.info(
+      'Starting transfer socket server host=${bindAddress.address} port=$port deviceName=${deviceName ?? '<default>'}',
+      'TransferSocketServer',
+      'start',
+    );
     _server = await ServerSocket.bind(bindAddress, port);
     _log(
       loc.settings.backupAndTransfer.serverListening(
@@ -54,6 +60,11 @@ class TransferSocketServer {
   }
 
   Future<void> stop() async {
+    BackupTransferLogger.info(
+      'Stopping transfer socket server',
+      'TransferSocketServer',
+      'stop',
+    );
     _cancelled = true;
     await _server?.close();
     _server = null;
@@ -62,6 +73,11 @@ class TransferSocketServer {
   }
 
   Future<void> cancelTransfers() async {
+    BackupTransferLogger.info(
+      'Cancelling active transfers sockets=${_activeSockets.length}',
+      'TransferSocketServer',
+      'cancelTransfers',
+    );
     await _cancelActiveConnections();
     stats.add(
       BackupTransferStats(
@@ -120,6 +136,11 @@ class TransferSocketServer {
           address: '${socket.remoteAddress.address}:${socket.remotePort}',
         ),
       );
+      BackupTransferLogger.info(
+        'Client connected remote=${socket.remoteAddress.address}:${socket.remotePort}',
+        'TransferSocketServer',
+        'serveSocket',
+      );
       await connection.writeFrame({
         'type': 'hello',
         'protocol': 1,
@@ -151,6 +172,11 @@ class TransferSocketServer {
           )
           .toSet()
           .toList();
+      BackupTransferLogger.info(
+        'Received selection receiver=${receiverName ?? '<unknown>'} entries=${entryIds.map((id) => id.name).join(',')} options=$transferOptions includeDeviceSpecific=$includeDeviceSpecificSettings',
+        'TransferSocketServer',
+        'serveSocket',
+      );
       _log(loc.settings.backupAndTransfer.exportingEntries(count: entryIds.length));
       final cacheDir = Directory('${await ServiceHandler.getCacheDir()}backup_transfer');
       await cacheDir.create(recursive: true);
@@ -174,6 +200,11 @@ class TransferSocketServer {
       );
       if (_cancelled || _cancelledSockets.contains(socket)) return;
       final packageSize = await packageFile.length();
+      BackupTransferLogger.info(
+        'Sending transfer package path=${packageFile.path} bytes=$packageSize',
+        'TransferSocketServer',
+        'serveSocket',
+      );
       await connection.writeFrame({
         'type': 'entryStart',
         'entry': 'package',
@@ -213,13 +244,20 @@ class TransferSocketServer {
         ),
       );
       _log(loc.settings.backupAndTransfer.transferComplete);
+      BackupTransferLogger.info(
+        'Transfer complete remote=${socket.remoteAddress.address}:${socket.remotePort} bytes=$packageSize',
+        'TransferSocketServer',
+        'serveSocket',
+      );
     } catch (e) {
       final wasCancelled = _cancelled || _cancelledSockets.contains(socket);
       final message = loc.settings.backupAndTransfer.transferFailed(error: e.toString());
       if (wasCancelled) {
         _log(loc.settings.backupAndTransfer.transferCancelled);
+        BackupTransferLogger.info('Transfer cancelled', 'TransferSocketServer', 'serveSocket');
       } else {
         _log(message);
+        BackupTransferLogger.error(e, 'TransferSocketServer', 'serveSocket');
         stats.add(
           BackupTransferStats(
             bytesTransferred: 0,
@@ -238,6 +276,11 @@ class TransferSocketServer {
       _cancelledSockets.remove(socket);
       _activeConnections.remove(socket);
       if (packageFile != null) {
+        BackupTransferLogger.info(
+          'Deleting transfer package ${packageFile.path}',
+          'TransferSocketServer',
+          'serveSocket',
+        );
         unawaited(packageFile.delete().catchError((_) => packageFile!));
       }
       await socket.close();
@@ -246,5 +289,10 @@ class TransferSocketServer {
 
   void _log(String message) {
     logs.add(BackupTransferLog(message));
+    BackupTransferLogger.info(
+      message,
+      'TransferSocketServer',
+      '_log',
+    );
   }
 }

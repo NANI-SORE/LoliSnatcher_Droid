@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/backup_transfer_logger.dart';
 
 class TransferDeviceInfo {
   const TransferDeviceInfo._();
@@ -17,13 +18,18 @@ class TransferDeviceInfo {
     try {
       if (await file.exists()) {
         final existing = (await file.readAsString()).trim();
-        if (existing.isNotEmpty) return existing;
+        if (existing.isNotEmpty) {
+          BackupTransferLogger.info('Loaded transfer device id', 'TransferDeviceInfo', 'instanceId');
+          return existing;
+        }
       }
       final next = _uuid.v4();
       await file.parent.create(recursive: true);
       await file.writeAsString(next, flush: true);
+      BackupTransferLogger.info('Created transfer device id', 'TransferDeviceInfo', 'instanceId');
       return next;
     } catch (_) {
+      BackupTransferLogger.info('Using ephemeral transfer device id', 'TransferDeviceInfo', 'instanceId');
       return _uuid.v4();
     }
   }
@@ -67,6 +73,11 @@ class TransferDeviceInfo {
         ]);
       }
     } catch (_) {}
+    BackupTransferLogger.info(
+      'Falling back to app name as transfer display name',
+      'TransferDeviceInfo',
+      'displayName',
+    );
     return loc.appName;
   }
 

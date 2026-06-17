@@ -6,6 +6,7 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_file_naming.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_import_compat_service.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_models.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/backup_transfer_logger.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/transfer_formatters.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/transfer_history_service.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/transfer_socket_protocol.dart';
@@ -41,6 +42,11 @@ class TransferSocketClient {
     var lastBytesTransferred = 0;
     int? totalBytes;
     try {
+      BackupTransferLogger.info(
+        'Connecting to sender $host:$port entries=${entries.map((entry) => entry.name).join(',')} options=$transferOptions',
+        'TransferSocketClient',
+        'receive',
+      );
       _socket = await Socket.connect(host, port, timeout: const Duration(seconds: 10));
       final activeConnection = TransferSocketConnection(_socket!);
       connection = activeConnection;
@@ -50,6 +56,11 @@ class TransferSocketClient {
         loc.settings.backupAndTransfer.connectedTo(
           device: hello['deviceName']?.toString() ?? host,
         ),
+      );
+      BackupTransferLogger.info(
+        'Received hello $hello',
+        'TransferSocketClient',
+        'receive',
       );
       await activeConnection.writeFrame({
         'type': 'selectEntries',
@@ -75,6 +86,11 @@ class TransferSocketClient {
             final packageFile = File(
               '${cacheDir.path}${Platform.pathSeparator}${DateTime.now().microsecondsSinceEpoch}-${BackupFileNaming.transferPackageFileName}',
             );
+            BackupTransferLogger.info(
+              'Receiving package entry=${frame['entry']} bytes=$size path=${packageFile.path}',
+              'TransferSocketClient',
+              'receive',
+            );
             await activeConnection.readBytesToFile(
               size,
               packageFile,
@@ -92,6 +108,11 @@ class TransferSocketClient {
               isCancelled: () => _cancelled,
             );
             if (_cancelled) {
+              BackupTransferLogger.info(
+                'Receive cancelled, deleting partial package ${packageFile.path}',
+                'TransferSocketClient',
+                'receive',
+              );
               unawaited(packageFile.delete().catchError((_) => packageFile));
               return;
             }
@@ -109,6 +130,11 @@ class TransferSocketClient {
               packageFile,
               options: options,
             );
+            BackupTransferLogger.info(
+              'Imported received package ${packageFile.path}',
+              'TransferSocketClient',
+              'receive',
+            );
             unawaited(packageFile.delete().catchError((_) => packageFile));
             _log(loc.settings.backupAndTransfer.importedReceivedPackage);
             break;
@@ -122,6 +148,11 @@ class TransferSocketClient {
               ),
             );
             _log(loc.settings.backupAndTransfer.transferComplete);
+            BackupTransferLogger.info(
+              'Receive complete bytes=$lastBytesTransferred total=$totalBytes',
+              'TransferSocketClient',
+              'receive',
+            );
             return;
           case 'error':
             throw StateError(frame['message']?.toString() ?? loc.settings.backupAndTransfer.senderError);
@@ -135,6 +166,9 @@ class TransferSocketClient {
       final message = loc.settings.backupAndTransfer.transferFailed(error: e.toString());
       if (!wasCancelled) {
         _log(message);
+        BackupTransferLogger.error(e, 'TransferSocketClient', 'receive');
+      } else {
+        BackupTransferLogger.info('Receive cancelled', 'TransferSocketClient', 'receive');
       }
       stats.add(
         BackupTransferStats(
@@ -161,6 +195,7 @@ class TransferSocketClient {
 
   Future<void> cancel() async {
     _cancelled = true;
+    BackupTransferLogger.info('Cancelling receiver socket', 'TransferSocketClient', 'cancel');
     _socket?.destroy();
     _socket = null;
     _log(loc.settings.backupAndTransfer.transferCancelled);
@@ -174,5 +209,10 @@ class TransferSocketClient {
 
   void _log(String message) {
     logs.add(BackupTransferLog(message));
+    BackupTransferLogger.info(
+      message,
+      'TransferSocketClient',
+      '_log',
+    );
   }
 }
