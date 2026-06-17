@@ -19,9 +19,14 @@ import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 ///
 /// The dialog will not show if the user has already accepted perms or android sdk is below 33
 Future<bool> getStoragePermission() async {
-  if ((Platform.isAndroid && await ServiceHandler.getAndroidSDKVersion() < 33) || Platform.isIOS) {
+  if (Platform.isIOS) {
+    return Permission.photosAddOnly.request().isGranted;
+  }
+
+  if (Platform.isAndroid && await ServiceHandler.getAndroidSDKVersion() < 33) {
     return Permission.storage.request().isGranted;
   }
+
   return true;
   // print(Platform.environment['HOME']);
 }

@@ -115,7 +115,7 @@ class ImageWriter {
               );
               await ServiceHandler.closeStreamToFileFromSAFDirectory(safPath);
             }
-          } else if (Platform.isAndroid && await ServiceHandler.getAndroidSDKVersion() < 31) {
+          } else if (!Platform.isAndroid || await ServiceHandler.getAndroidSDKVersion() < 31) {
             final File jsonFile = File('$path$fileNameWoutExt.json');
             await jsonFile.writeAsString(
               jsonEncode(item.toJson()),
@@ -136,10 +136,6 @@ class ImageWriter {
 
       print('Image written: $path$fileName');
       SAFFileCache.instance.onFileCreated(fileName);
-      item.isSnatched.value = true;
-      if (settingsHandler.dbEnabled) {
-        await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
-      }
 
       try {
         if (Platform.isAndroid) {
@@ -152,6 +148,14 @@ class ImageWriter {
           } else {
             await ServiceHandler.callMediaScanner(image.path);
           }
+        } else if (Platform.isIOS) {
+          final bool savedToGallery = await ServiceHandler.saveFileToGallery(
+            image.path,
+            item.mediaType.toJson(),
+          );
+          if (!savedToGallery) {
+            throw Exception('Failed to save file to Photos');
+          }
         }
       } catch (e, s) {
         Logger.Inst().log(
@@ -162,6 +166,11 @@ class ImageWriter {
           s: s,
         );
         return e;
+      }
+
+      item.isSnatched.value = true;
+      if (settingsHandler.dbEnabled) {
+        await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
       }
     } catch (e, s) {
       Logger.Inst().log(

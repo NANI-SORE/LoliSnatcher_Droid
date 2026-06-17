@@ -36,6 +36,21 @@ class ServiceHandler {
     }
   }
 
+  static Future<bool> saveFileToGallery(String path, String mediaType) async {
+    if (!Platform.isIOS) return false;
+
+    try {
+      return await platform.invokeMethod('saveFileToGallery', {
+            'path': path,
+            'mediaType': mediaType,
+          }) ??
+          false;
+    } catch (e) {
+      log(e);
+      return false;
+    }
+  }
+
   static Future<void> restartApp({String? alias}) async {
     try {
       final result = await platform.invokeMethod('restartApp', {'alias': alias});
