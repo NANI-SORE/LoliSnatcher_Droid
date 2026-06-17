@@ -26,6 +26,12 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Share app data between devices</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_lolisync._tcp</string>
+	</array>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>LoliSnatcher saves downloaded images and videos to your photo library.</string>
 	<key>UIApplicationSceneManifest</key>

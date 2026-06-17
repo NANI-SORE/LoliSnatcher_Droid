@@ -16,7 +16,10 @@ import UIKit
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
 
-    let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "LoliSnatcherServices")
+    guard let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "LoliSnatcherServices") else {
+      return
+    }
+
     servicesChannel = FlutterMethodChannel(
       name: "com.noaisu.loliSnatcher/services",
       binaryMessenger: registrar.messenger()
