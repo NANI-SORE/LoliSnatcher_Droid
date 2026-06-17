@@ -804,7 +804,7 @@
             "autoBackup": "Automatic backup",
             "enableAutoBackup": "Enable automatic backup",
             "backupAfterUpdates": "Backup after updates",
-            "backupAfterUpdatesSubtitle": "Create an unstaleable backup on first app start after each update. Saved in Downloads folder or in Backup folder below (if set). Maximum of 5 backups are kept, older ones will be deleted",
+            "backupAfterUpdatesSubtitle": "Create an unstaleable backup on first app start after each update. Saved in Downloads folder or in Backup folder below (if set)",
             "backupLocation": "Backup location",
             "backupLocationNotSelected": "Not selected",
             "change": "Change",
@@ -813,6 +813,7 @@
             "weekly": "Weekly",
             "monthly": "Monthly",
             "maximumBackups": "Maximum backups",
+            "backupCountUnlimited": "Unlimited",
             "backupCount(param=count)": {
                 "one": "${count} backup",
                 "few": "${count} backups",

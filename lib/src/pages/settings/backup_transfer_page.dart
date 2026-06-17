@@ -237,6 +237,7 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
                           value: autoConfig.maximumBackups,
                           items:
                               const [
+                                    0,
                                     3,
                                     5,
                                     10,
@@ -246,7 +247,9 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
                                     (value) => DropdownMenuItem(
                                       value: value,
                                       child: Text(
-                                        context.loc.settings.backupAndTransfer.backupCount(count: value),
+                                        value == 0
+                                            ? context.loc.settings.backupAndTransfer.backupCountUnlimited
+                                            : context.loc.settings.backupAndTransfer.backupCount(count: value),
                                       ),
                                     ),
                                   )

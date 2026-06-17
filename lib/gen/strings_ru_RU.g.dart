@@ -2817,17 +2817,18 @@ class _Translations$settings$backupAndTransfer$ru_RU extends Translations$settin
   String get advancedExportImport =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.advancedExportImport', {}) ?? 'Расширенный экспорт/импорт';
   @override
-  String get autoBackup => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackup', {}) ?? 'Автоматические резервные копии';
+  String get autoBackup =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackup', {}) ?? 'Автоматическое резервное копирование';
   @override
   String get enableAutoBackup =>
-      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.enableAutoBackup', {}) ?? 'Включить автоматические резервные копии';
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.enableAutoBackup', {}) ?? 'Включить автоматическое резервное копирование';
   @override
   String get backupAfterUpdates =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdates', {}) ?? 'Резервная копия после обновлений';
   @override
   String get backupAfterUpdatesSubtitle =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdatesSubtitle', {}) ??
-      'Создавать резервную копию при первом запуске приложения после каждого обновления. Сохраняется в папке Downloads или в папке резервных копий ниже (если установлена). Максимум хранится до 5 резервных копий, старшие будут удаляться';
+      'Создавать резервную копию при первом запуске приложения после каждого обновления. Сохраняется в папке Downloads или в папке резервных копий ниже (если установлена)';
   @override
   String get backupLocation => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupLocation', {}) ?? 'Папка резервных копий';
   @override
@@ -2847,6 +2848,9 @@ class _Translations$settings$backupAndTransfer$ru_RU extends Translations$settin
   @override
   String get maximumBackups =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.maximumBackups', {}) ?? 'Максимум резервных копий';
+  @override
+  String get backupCountUnlimited =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupCountUnlimited', {}) ?? 'Неограничено';
   @override
   String backupCount({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'settings.backupAndTransfer.backupCount', {'count': count}) ??
@@ -5593,14 +5597,15 @@ extension on TranslationsRuRu {
           'settings.backupAndTransfer.advancedExportImport' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.advancedExportImport', {}) ?? 'Расширенный экспорт/импорт',
           'settings.backupAndTransfer.autoBackup' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackup', {}) ?? 'Автоматические резервные копии',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackup', {}) ?? 'Автоматическое резервное копирование',
           'settings.backupAndTransfer.enableAutoBackup' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.enableAutoBackup', {}) ?? 'Включить автоматические резервные копии',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.enableAutoBackup', {}) ??
+                'Включить автоматическое резервное копирование',
           'settings.backupAndTransfer.backupAfterUpdates' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdates', {}) ?? 'Резервная копия после обновлений',
           'settings.backupAndTransfer.backupAfterUpdatesSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdatesSubtitle', {}) ??
-                'Создавать резервную копию при первом запуске приложения после каждого обновления. Сохраняется в папке Downloads или в папке резервных копий ниже (если установлена). Максимум хранится до 5 резервных копий, старшие будут удаляться',
+                'Создавать резервную копию при первом запуске приложения после каждого обновления. Сохраняется в папке Downloads или в папке резервных копий ниже (если установлена)',
           'settings.backupAndTransfer.backupLocation' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupLocation', {}) ?? 'Папка резервных копий',
           'settings.backupAndTransfer.backupLocationNotSelected' =>
@@ -5613,6 +5618,8 @@ extension on TranslationsRuRu {
           'settings.backupAndTransfer.monthly' => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.monthly', {}) ?? 'Ежемесячно',
           'settings.backupAndTransfer.maximumBackups' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.maximumBackups', {}) ?? 'Максимум резервных копий',
+          'settings.backupAndTransfer.backupCountUnlimited' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupCountUnlimited', {}) ?? 'Неограничено',
           'settings.backupAndTransfer.backupCount' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'settings.backupAndTransfer.backupCount', {'count': count}) ??
@@ -6306,10 +6313,10 @@ extension on TranslationsRuRu {
           'tagsManager.title' => TranslationOverrides.string(_root.$meta, 'tagsManager.title', {}) ?? 'Теги',
           'tagsManager.addTag' => TranslationOverrides.string(_root.$meta, 'tagsManager.addTag', {}) ?? 'Добавить тег',
           'tagsManager.name' => TranslationOverrides.string(_root.$meta, 'tagsManager.name', {}) ?? 'Имя',
-          'tagsManager.type' => TranslationOverrides.string(_root.$meta, 'tagsManager.type', {}) ?? 'Тип',
           _ => null,
         } ??
         switch (path) {
+          'tagsManager.type' => TranslationOverrides.string(_root.$meta, 'tagsManager.type', {}) ?? 'Тип',
           'tagsManager.add' => TranslationOverrides.string(_root.$meta, 'tagsManager.add', {}) ?? 'Добавить',
           'tagsManager.staleAfter' =>
             ({required String staleText}) =>

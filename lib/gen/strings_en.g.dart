@@ -3529,10 +3529,10 @@ class Translations$settings$backupAndTransfer$en {
   String get backupAfterUpdates =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdates', {}) ?? 'Backup after updates';
 
-  /// en: 'Create an unstaleable backup on first app start after each update. Saved in Downloads folder or in Backup folder below (if set). Maximum of 5 backups are kept, older ones will be deleted'
+  /// en: 'Create an unstaleable backup on first app start after each update. Saved in Downloads folder or in Backup folder below (if set)'
   String get backupAfterUpdatesSubtitle =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdatesSubtitle', {}) ??
-      'Create an unstaleable backup on first app start after each update. Saved in Downloads folder or in Backup folder below (if set). Maximum of 5 backups are kept, older ones will be deleted';
+      'Create an unstaleable backup on first app start after each update. Saved in Downloads folder or in Backup folder below (if set)';
 
   /// en: 'Backup location'
   String get backupLocation => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupLocation', {}) ?? 'Backup location';
@@ -3558,6 +3558,9 @@ class Translations$settings$backupAndTransfer$en {
 
   /// en: 'Maximum backups'
   String get maximumBackups => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.maximumBackups', {}) ?? 'Maximum backups';
+
+  /// en: 'Unlimited'
+  String get backupCountUnlimited => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupCountUnlimited', {}) ?? 'Unlimited';
 
   /// en: '(one) {${count} backup} (few) {${count} backups} (many) {${count} backups} (other) {${count} backups}'
   String backupCount({required num count}) =>
@@ -6650,7 +6653,7 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdates', {}) ?? 'Backup after updates',
           'settings.backupAndTransfer.backupAfterUpdatesSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdatesSubtitle', {}) ??
-                'Create an unstaleable backup on first app start after each update. Saved in Downloads folder or in Backup folder below (if set). Maximum of 5 backups are kept, older ones will be deleted',
+                'Create an unstaleable backup on first app start after each update. Saved in Downloads folder or in Backup folder below (if set)',
           'settings.backupAndTransfer.backupLocation' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupLocation', {}) ?? 'Backup location',
           'settings.backupAndTransfer.backupLocationNotSelected' =>
@@ -6663,6 +6666,8 @@ extension on Translations {
           'settings.backupAndTransfer.monthly' => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.monthly', {}) ?? 'Monthly',
           'settings.backupAndTransfer.maximumBackups' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.maximumBackups', {}) ?? 'Maximum backups',
+          'settings.backupAndTransfer.backupCountUnlimited' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupCountUnlimited', {}) ?? 'Unlimited',
           'settings.backupAndTransfer.backupCount' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'settings.backupAndTransfer.backupCount', {'count': count}) ??
@@ -7334,10 +7339,10 @@ extension on Translations {
           'tagsManager.title' => TranslationOverrides.string(_root.$meta, 'tagsManager.title', {}) ?? 'Tags',
           'tagsManager.addTag' => TranslationOverrides.string(_root.$meta, 'tagsManager.addTag', {}) ?? 'Add tag',
           'tagsManager.name' => TranslationOverrides.string(_root.$meta, 'tagsManager.name', {}) ?? 'Name',
-          'tagsManager.type' => TranslationOverrides.string(_root.$meta, 'tagsManager.type', {}) ?? 'Type',
           _ => null,
         } ??
         switch (path) {
+          'tagsManager.type' => TranslationOverrides.string(_root.$meta, 'tagsManager.type', {}) ?? 'Type',
           'tagsManager.add' => TranslationOverrides.string(_root.$meta, 'tagsManager.add', {}) ?? 'Add',
           'tagsManager.staleAfter' =>
             ({required String staleText}) =>
