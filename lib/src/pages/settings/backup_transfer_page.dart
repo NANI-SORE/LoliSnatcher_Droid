@@ -70,6 +70,14 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
     });
   }
 
+  Future<void> _resetAutoBackupConfig() async {
+    await _runBusy(() async {
+      await autoBackupService.resetConfig();
+      autoConfig = await autoBackupService.loadConfig();
+      if (mounted) _snack(context.loc.reset, false);
+    });
+  }
+
   Future<void> _chooseAutoLocation() async {
     final path = Platform.isAndroid
         ? await ServiceHandler.getSAFDirectoryAccess()
@@ -155,7 +163,14 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                _SectionTitle(context.loc.settings.backupAndTransfer.autoBackup),
+                _SectionTitle(
+                  context.loc.settings.backupAndTransfer.autoBackup,
+                  trailing: IconButton(
+                    tooltip: context.loc.reset,
+                    icon: const Icon(Icons.restore),
+                    onPressed: busy ? null : _resetAutoBackupConfig,
+                  ),
+                ),
                 Card(
                   child: Column(
                     children: [
@@ -185,7 +200,7 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
                               ? context.loc.settings.backupAndTransfer.backupLocationNotSelected
                               : autoConfig.location,
                         ),
-                        trailing: TextButton(
+                        trailing: FilledButton(
                           onPressed: _chooseAutoLocation,
                           child: Text(context.loc.settings.backupAndTransfer.change),
                         ),
@@ -287,15 +302,23 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
+  const _SectionTitle(this.text, {this.trailing});
 
   final String text;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
-      child: Text(text, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(text, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+          ),
+          ?trailing,
+        ],
+      ),
     );
   }
 }

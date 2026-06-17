@@ -768,19 +768,6 @@ class SettingsHandler {
     try {
       await getStoragePermission();
       await loadSettings();
-      try {
-        await AutoBackupService().runAfterUpdateIfDue(() {
-          postInitMessage.value = loc.init.backingUpDataAfterUpdate;
-        });
-      } catch (e, s) {
-        Logger.Inst().log(
-          e.toString(),
-          'SettingsHandler',
-          'runAfterUpdateBackup',
-          LogTypes.settingsLoad,
-          s: s,
-        );
-      }
       await Logger.setLogcatCaptureEnabled(SX.captureLogcat.value);
       await setLocale(SX.locale.value);
     } catch (e, s) {
@@ -834,6 +821,8 @@ class SettingsHandler {
     }
 
     try {
+      await _runAfterUpdateBackupIfDue();
+
       postInitMessage.value = loc.init.settingUpProxy;
       await initProxy();
 
@@ -887,6 +876,23 @@ class SettingsHandler {
     isPostInit.value = true;
     postInitMessage.value = '';
     return;
+  }
+
+  Future<void> _runAfterUpdateBackupIfDue() async {
+    try {
+      await AutoBackupService().runAfterUpdateIfDue(() async {
+        postInitMessage.value = loc.init.backingUpDataAfterUpdate;
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+    } catch (e, s) {
+      Logger.Inst().log(
+        e.toString(),
+        'SettingsHandler',
+        'runAfterUpdateBackup',
+        LogTypes.settingsLoad,
+        s: s,
+      );
+    }
   }
 }
 

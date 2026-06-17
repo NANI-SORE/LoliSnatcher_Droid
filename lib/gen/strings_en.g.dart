@@ -3529,10 +3529,10 @@ class Translations$settings$backupAndTransfer$en {
   String get backupAfterUpdates =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdates', {}) ?? 'Backup after updates';
 
-  /// en: 'Create an unstaleable backup on first app start after each update. Saved in Downloads folder or in Backup folder below (if set). Limited to 5 backups'
+  /// en: 'Create an unstaleable backup on first app start after each update. Saved in Downloads folder or in Backup folder below (if set). Maximum of 5 backups are kept, older ones will be deleted'
   String get backupAfterUpdatesSubtitle =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdatesSubtitle', {}) ??
-      'Create an unstaleable backup on first app start after each update. Saved in Downloads folder or in Backup folder below (if set). Limited to 5 backups';
+      'Create an unstaleable backup on first app start after each update. Saved in Downloads folder or in Backup folder below (if set). Maximum of 5 backups are kept, older ones will be deleted';
 
   /// en: 'Backup location'
   String get backupLocation => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupLocation', {}) ?? 'Backup location';
@@ -6650,7 +6650,7 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdates', {}) ?? 'Backup after updates',
           'settings.backupAndTransfer.backupAfterUpdatesSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdatesSubtitle', {}) ??
-                'Create an unstaleable backup on first app start after each update. Saved in Downloads folder or in Backup folder below (if set). Limited to 5 backups',
+                'Create an unstaleable backup on first app start after each update. Saved in Downloads folder or in Backup folder below (if set). Maximum of 5 backups are kept, older ones will be deleted',
           'settings.backupAndTransfer.backupLocation' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupLocation', {}) ?? 'Backup location',
           'settings.backupAndTransfer.backupLocationNotSelected' =>

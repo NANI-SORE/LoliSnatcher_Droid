@@ -117,6 +117,14 @@ class AutoBackupService {
     await file.writeAsString(jsonEncode(config.toJson()));
   }
 
+  Future<void> resetConfig() async {
+    final file = await _configFile();
+    if (await file.exists()) {
+      await file.delete();
+    }
+    BackupTransferLogger.info('Reset auto backup config', 'AutoBackupService', 'resetConfig');
+  }
+
   Future<bool> runIfDue() async {
     final config = await loadConfig();
     if (!config.isDue) return false;
@@ -133,12 +141,12 @@ class AutoBackupService {
     return _run(config, kind: _AutoBackupKind.normal);
   }
 
-  Future<bool> runAfterUpdateIfDue(VoidCallback beforeStart) async {
-    beforeStart();
+  Future<bool> runAfterUpdateIfDue(AsyncCallback? beforeStart) async {
     final config = await loadConfig();
     if (!config.backupOnUpdate) return false;
     final currentBuild = Constants.updateInfo.buildNumber;
     if (config.lastUpdateBackupBuild == currentBuild) return false;
+    await beforeStart?.call();
     BackupTransferLogger.info(
       'After-update backup is due for build $currentBuild',
       'AutoBackupService',

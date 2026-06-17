@@ -2827,7 +2827,7 @@ class _Translations$settings$backupAndTransfer$ru_RU extends Translations$settin
   @override
   String get backupAfterUpdatesSubtitle =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdatesSubtitle', {}) ??
-      'Создавать неудаляемую резервную копию при первом запуске приложения после каждого обновления';
+      'Создавать резервную копию при первом запуске приложения после каждого обновления. Сохраняется в папке Downloads или в папке резервных копий ниже (если установлена). Максимум хранится до 5 резервных копий, старшие будут удаляться';
   @override
   String get backupLocation => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupLocation', {}) ?? 'Папка резервных копий';
   @override
@@ -2853,7 +2853,7 @@ class _Translations$settings$backupAndTransfer$ru_RU extends Translations$settin
       (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
         count,
         one: '${count} резервная копия',
-        few: '${count} резервных копий',
+        few: '${count} резервных копии',
         many: '${count} резервных копий',
         other: '${count} резервных копий',
       );
@@ -5600,7 +5600,7 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdates', {}) ?? 'Резервная копия после обновлений',
           'settings.backupAndTransfer.backupAfterUpdatesSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdatesSubtitle', {}) ??
-                'Создавать неудаляемую резервную копию при первом запуске приложения после каждого обновления',
+                'Создавать резервную копию при первом запуске приложения после каждого обновления. Сохраняется в папке Downloads или в папке резервных копий ниже (если установлена). Максимум хранится до 5 резервных копий, старшие будут удаляться',
           'settings.backupAndTransfer.backupLocation' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupLocation', {}) ?? 'Папка резервных копий',
           'settings.backupAndTransfer.backupLocationNotSelected' =>
@@ -5619,7 +5619,7 @@ extension on TranslationsRuRu {
                 (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
                   count,
                   one: '${count} резервная копия',
-                  few: '${count} резервных копий',
+                  few: '${count} резервных копии',
                   many: '${count} резервных копий',
                   other: '${count} резервных копий',
                 ),
