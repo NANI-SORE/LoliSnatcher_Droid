@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/settings/setting_def.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/settings/auto_settings_page.dart';
 import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
@@ -19,9 +19,8 @@ import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
 /// - "Using default" badge when no override exists (tap to customize)
 /// - "Custom" badge with reset button when an override is active
 ///
-/// Saves overrides to the booru config file when popped (unless
-/// [saveOnPop] is false, e.g. when opened from [BooruEdit] which
-/// handles its own save).
+/// Saves override changes immediately unless [saveOnPop] is false, e.g. when
+/// opened from [BooruEdit] which handles its own save.
 class BooruOverridesPage extends StatefulWidget {
   const BooruOverridesPage({
     required this.booru,
@@ -31,7 +30,7 @@ class BooruOverridesPage extends StatefulWidget {
 
   final Booru booru;
 
-  /// Whether to auto-save overrides to the booru config on pop.
+  /// Whether override changes should save immediately.
   /// Set to false when opened from [BooruEdit] which handles its own save.
   final bool saveOnPop;
 
@@ -67,12 +66,6 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
   void dispose() {
     tabController.dispose();
     super.dispose();
-  }
-
-  void _onPop(_, _) {
-    if (widget.booru.name != null) {
-      SettingsHandler.instance.saveBooru(widget.booru, onlySave: true);
-    }
   }
 
   @override
@@ -121,7 +114,7 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
                   ),
                 );
                 if (confirmed == true) {
-                  registry.removeAllOverridesForBooru(booruName);
+                  registry.removeAllOverridesForBooru(booruName, save: widget.saveOnPop);
                   setState(() {});
                 }
               },
@@ -163,12 +156,8 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
 
     return BooruEditingScope(
       booruName: booruName,
-      child: widget.saveOnPop
-          ? PopScope(
-              onPopInvokedWithResult: _onPop,
-              child: body,
-            )
-          : body,
+      autosave: widget.saveOnPop,
+      child: body,
     );
   }
 

@@ -36,6 +36,7 @@ import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/data/settings/all_settings.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/data/settings/setting_state.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/video/media_kit_video_player.dart';
@@ -45,6 +46,10 @@ export 'package:lolisnatcher/gen/strings.g.dart';
 
 /// This class is used loading from and writing settings to files
 class SettingsHandler {
+  SettingsHandler() {
+    setSettingsSaveScheduler(scheduleSettingsSave);
+  }
+
   static SettingsHandler get instance => GetIt.instance<SettingsHandler>();
 
   static SettingsHandler register() {
@@ -84,6 +89,7 @@ class SettingsHandler {
 
   int tagsFiltersMetadataVersion = 0;
   int booruListVersion = 0;
+  final Map<String, Timer> _settingsSaveDebounceTimers = {};
 
   int currentColumnCount(BuildContext context) {
     return context.isPortrait ? SX.portraitColumns.value : SX.landscapeColumns.value;
@@ -220,6 +226,44 @@ class SettingsHandler {
       );
     }
     return true;
+  }
+
+  void scheduleSettingsSave({
+    bool debounce = false,
+    bool restate = false,
+    String? booruName,
+  }) {
+    Future<void> save() async {
+      if (booruName != null) {
+        Booru? booru;
+        for (final item in booruList) {
+          if (item.name == booruName) {
+            booru = item;
+            break;
+          }
+        }
+        if (booru != null) {
+          await saveBooru(booru, onlySave: true);
+        }
+        return;
+      }
+      await saveSettings(restate: restate);
+    }
+
+    if (debounce) {
+      final key = booruName ?? '__global__';
+      _settingsSaveDebounceTimers[key]?.cancel();
+      _settingsSaveDebounceTimers[key] = Timer(
+        const Duration(milliseconds: 600),
+        () {
+          _settingsSaveDebounceTimers.remove(key);
+          unawaited(save());
+        },
+      );
+      return;
+    }
+
+    unawaited(save());
   }
 
   Future<bool> loadBoorus() async {
@@ -368,7 +412,7 @@ class SettingsHandler {
 
     // Clean up in-memory per-booru setting overrides
     if (booru.name != null) {
-      SettingsRegistry.instance.removeAllOverridesForBooru(booru.name!);
+      SettingsRegistry.instance.removeAllOverridesForBooru(booru.name!, save: false);
     }
 
     if (SX.prefBooru.value == booru.name) {

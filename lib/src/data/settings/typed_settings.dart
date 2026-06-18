@@ -608,7 +608,7 @@ class _IntSettingWidgetState extends State<_IntSettingWidget> {
       resetText: () => widget.state.defaultValue.toString(),
       onChanged: (newValue) {
         final parsed = int.tryParse(newValue);
-        if (parsed != null) widget.state.setScopedValue(context, parsed);
+        if (parsed != null) widget.state.setScopedValue(context, parsed, debounceSave: true);
       },
     );
   }
@@ -683,7 +683,7 @@ class _DoubleSettingWidgetState extends State<_DoubleSettingWidget> {
       resetText: () => widget.state.defaultValue.toString(),
       onChanged: (newValue) {
         final parsed = double.tryParse(newValue);
-        if (parsed != null) widget.state.setScopedValue(context, parsed);
+        if (parsed != null) widget.state.setScopedValue(context, parsed, debounceSave: true);
       },
     );
   }
@@ -761,7 +761,7 @@ class _StringSettingWidgetState extends State<_StringSettingWidget> {
       copyable: widget.copyable,
       pasteable: widget.pasteable,
       resetText: () => widget.state.defaultValue,
-      onChanged: (newValue) => widget.state.setScopedValue(context, newValue),
+      onChanged: (newValue) => widget.state.setScopedValue(context, newValue, debounceSave: true),
     );
   }
 }
