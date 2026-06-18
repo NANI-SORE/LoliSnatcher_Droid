@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/data/settings/setting_def.dart';
 import 'package:lolisnatcher/src/data/settings/setting_state.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
 
@@ -16,23 +16,9 @@ import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
 /// Settings with [SettingDef.enabledWhen] + [SettingDef.dependsOn] are
 /// reactively shown/hidden when their dependency settings change value.
 ///
-/// By default, syncs and saves settings when the page is popped
-/// (see [saveOnPop], [restateOnPop]). Set [saveOnPop] to false if the
-/// parent widget handles saving itself (e.g. via a custom [PopScope]).
-///
 /// Usage:
 /// ```dart
-/// // Simple — auto-saves on pop:
 /// const AutoSettingsPage(category: SettingCategory.video)
-///
-/// // Custom pop handling:
-/// PopScope(
-///   onPopInvokedWithResult: myCustomOnPop,
-///   child: const AutoSettingsPage(
-///     category: SettingCategory.interface,
-///     saveOnPop: false,
-///   ),
-/// )
 /// ```
 class AutoSettingsPage extends StatelessWidget {
   const AutoSettingsPage({
@@ -40,8 +26,6 @@ class AutoSettingsPage extends StatelessWidget {
     this.header,
     this.footer,
     this.extraWidgets = const [],
-    this.saveOnPop = true,
-    this.restateOnPop = false,
     super.key,
   });
 
@@ -58,19 +42,6 @@ class AutoSettingsPage extends StatelessWidget {
   /// Useful for action buttons (e.g. "Clear cache"), info text, etc.
   final List<Widget> extraWidgets;
 
-  /// Whether to automatically sync and save settings when the page is popped.
-  /// Defaults to true. Set to false when using a custom [PopScope] wrapper.
-  final bool saveOnPop;
-
-  /// Whether to trigger a global restate after saving.
-  /// Only applies when [saveOnPop] is true.
-  final bool restateOnPop;
-
-  void _onPop(_, _) {
-    final settingsHandler = SettingsHandler.instance;
-    settingsHandler.saveSettings(restate: restateOnPop);
-  }
-
   @override
   Widget build(BuildContext context) {
     final registry = SettingsRegistry.instance;
@@ -85,7 +56,7 @@ class AutoSettingsPage extends StatelessWidget {
         .map((s) => s.effectiveNotifier as Listenable)
         .toList();
 
-    Widget body = Scaffold(
+    return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: SettingsAppBar(
         title: category.locName(context),
@@ -116,15 +87,6 @@ class AutoSettingsPage extends StatelessWidget {
         ),
       ),
     );
-
-    if (saveOnPop) {
-      body = PopScope(
-        onPopInvokedWithResult: _onPop,
-        child: body,
-      );
-    }
-
-    return body;
   }
 
   void _confirmReset(
