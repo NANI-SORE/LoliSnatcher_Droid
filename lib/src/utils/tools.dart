@@ -212,9 +212,7 @@ class Tools {
 
   static final String appUserAgent = 'LoliSnatcher_Droid/${Constants.updateInfo.versionName}';
   static String get browserUserAgent {
-    return (isTestMode || SX.customUserAgent.value.isEmpty)
-        ? appUserAgent
-        : SX.customUserAgent.value;
+    return (isTestMode || SX.customUserAgent.value.isEmpty) ? appUserAgent : SX.customUserAgent.value;
   }
 
   static bool get isTestMode => Platform.environment.containsKey('FLUTTER_TEST');
@@ -236,6 +234,44 @@ class Tools {
     return stringsToFind.any((t) => content.contains(t));
   }
 
+  static Map<String, String> parseCookieHeader(String cookieHeader) {
+    final Map<String, String> cookies = {};
+    for (final part in cookieHeader.split(';')) {
+      final trimmed = part.trim();
+      if (trimmed.isEmpty) continue;
+
+      final separatorIndex = trimmed.indexOf('=');
+      if (separatorIndex <= 0) continue;
+
+      final name = trimmed.substring(0, separatorIndex).trim();
+      final value = trimmed.substring(separatorIndex + 1).trim();
+      if (name.isEmpty) continue;
+
+      cookies[name] = value;
+    }
+
+    return cookies;
+  }
+
+  static String? getCookieValue(String cookieHeader, String name) {
+    return parseCookieHeader(cookieHeader)[name];
+  }
+
+  static String mergeCookieHeaders(
+    Iterable<String> cookieHeaders, {
+    Set<String> removeNames = const {},
+  }) {
+    final Map<String, String> cookies = {};
+    for (final cookieHeader in cookieHeaders) {
+      cookies.addAll(parseCookieHeader(cookieHeader));
+    }
+    for (final name in removeNames) {
+      cookies.remove(name);
+    }
+
+    return cookies.entries.map((e) => '${e.key}=${e.value}').join('; ');
+  }
+
   static Future<bool> checkForCaptcha(Response? response, Uri uri, {String? customUserAgent}) async {
     if (captchaScreenActive || isTestMode || response?.requestOptions.headers.containsKey(captchaCheckHeader) == true) {
       return false;
@@ -249,6 +285,13 @@ class Tools {
         (response?.statusCode == HttpStatus.forbidden ||
             response?.statusCode == HttpStatus.serviceUnavailable ||
             hasCaptchaContent)) {
+      final String invalidClearanceCookie =
+          Tools.getCookieValue(
+            response?.requestOptions.headers['Cookie'] as String? ?? '',
+            'cf_clearance',
+          ) ??
+          '';
+
       // delete invalid cloudflare cookie
       final webUri = WebUri('${uri.scheme}://$host');
       final bool res =
@@ -290,7 +333,7 @@ class Tools {
               final bool hasClearanceCookie = [
                 ...cookies,
                 ...?globalWindowsCookies[url.host],
-              ].any((c) => c.name == 'cf_clearance');
+              ].any((c) => c.name == 'cf_clearance' && c.value != invalidClearanceCookie);
 
               final String? htmlContent = await controller.evaluateJavascript(
                 source: 'window.document.documentElement.outerHTML;',

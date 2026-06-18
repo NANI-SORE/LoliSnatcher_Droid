@@ -1,16 +1,64 @@
 // ignore_for_file: invalid_use_of_internal_member
 
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:native_dio_adapter/native_dio_adapter.dart' as native_dio;
 
+import 'package:lolisnatcher/src/data/settings/proxy_type.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/http_overrides.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 
+class _SharedCronetAdapter implements HttpClientAdapter {
+  final Map<String, native_dio.CronetAdapter> _adapters = {};
+
+  native_dio.CronetAdapter _adapterFor(String userAgent) {
+    return _adapters.putIfAbsent(
+      userAgent,
+      () => native_dio.CronetAdapter(
+        native_dio.CronetEngine.build(
+          cacheMode: native_dio.CacheMode.disabled,
+          enableBrotli: true,
+          enableHttp2: true,
+          enableQuic: true,
+          userAgent: userAgent,
+        ),
+        closeEngine: false,
+      ),
+    );
+  }
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<dynamic>? cancelFuture,
+  ) {
+    final headerUserAgent = options.headers.entries
+        .firstWhereOrNull((e) => e.key.toLowerCase() == 'user-agent')
+        ?.value
+        .toString();
+    final userAgent = headerUserAgent?.isNotEmpty == true ? headerUserAgent! : Tools.browserUserAgent;
+    return _adapterFor(userAgent).fetch(options, requestStream, cancelFuture);
+  }
+
+  @override
+  void close({bool force = false}) {
+    // Dio instances are short-lived, keep shared Cronet clients alive.
+  }
+}
+
 class DioNetwork {
   DioNetwork._();
+
+  static final HttpClientAdapter _sharedCronetAdapter = _SharedCronetAdapter();
 
   static Dio getClient({
     String? baseUrl,
@@ -19,6 +67,9 @@ class DioNetwork {
     final dio = Dio();
 
     final settingsHandler = SettingsHandler.instance;
+    if (_shouldUseCronetAdapter()) {
+      dio.httpClientAdapter = _sharedCronetAdapter;
+    }
     // final proxyType = ProxyType.fromName(settingsHandler.proxyType);
     // if (settingsHandler.useHttp2 &&
     //     (proxyType.isDirect || (proxyType.isSystem && systemProxyAddress.isEmpty) || getProxyConfigAddress().isEmpty)) {
@@ -42,6 +93,15 @@ class DioNetwork {
     cookieInterceptor(dio);
 
     return dio;
+  }
+
+  static bool _shouldUseCronetAdapter() {
+    if (!Platform.isAndroid || SX.allowSelfSignedCerts.value) {
+      return false;
+    }
+
+    final proxyType = SX.proxyType.value;
+    return proxyType == ProxyType.direct || (proxyType == ProxyType.system && systemProxyAddress.isEmpty);
   }
 
   static Options mergeOptions(Options? options, Map<String, dynamic>? headers) {
@@ -89,11 +149,18 @@ class DioNetwork {
 
           final String oldCookie = response.requestOptions.headers['Cookie'] as String? ?? '';
           final String newCookie = await Tools.getCookies(response.requestOptions.uri.toString());
+          final String retryCookie = Tools.mergeCookieHeaders(
+            [oldCookie, newCookie],
+            removeNames: newCookie.contains('cf_clearance=') ? const <String>{} : const {'cf_clearance'},
+          );
           final headers = {
             ...response.requestOptions.headers,
-            'Cookie': '${oldCookie.replaceAll('cf_clearance', 'cf_clearance_old')} $newCookie'.trim(),
             Tools.captchaCheckHeader: 'done',
           };
+          headers.remove('Cookie');
+          if (retryCookie.isNotEmpty) {
+            headers['Cookie'] = retryCookie;
+          }
 
           final opts = Options(
             method: response.requestOptions.method,
@@ -121,11 +188,18 @@ class DioNetwork {
 
           final String oldCookie = error.requestOptions.headers['Cookie'] as String? ?? '';
           final String newCookie = await Tools.getCookies(error.requestOptions.uri.toString());
+          final String retryCookie = Tools.mergeCookieHeaders(
+            [oldCookie, newCookie],
+            removeNames: newCookie.contains('cf_clearance=') ? const <String>{} : const {'cf_clearance'},
+          );
           final headers = {
             ...error.requestOptions.headers,
-            'Cookie': '${oldCookie.replaceAll('cf_clearance', 'cf_clearance_old')} $newCookie'.trim(),
             Tools.captchaCheckHeader: 'done',
           };
+          headers.remove('Cookie');
+          if (retryCookie.isNotEmpty) {
+            headers['Cookie'] = retryCookie;
+          }
 
           final opts = Options(
             method: error.requestOptions.method,
@@ -155,9 +229,10 @@ class DioNetwork {
         onRequest: (RequestOptions options, RequestInterceptorHandler handler) async {
           final String oldCookie = options.headers['Cookie'] as String? ?? '';
           final String newCookie = await Tools.getCookies(options.uri.toString());
+          final String mergedCookie = Tools.mergeCookieHeaders([oldCookie, newCookie]);
           final headers = {
             ...options.headers,
-            'Cookie': '$oldCookie $newCookie'.trim(),
+            if (mergedCookie.isNotEmpty) 'Cookie': mergedCookie,
           };
           options.headers = headers;
           return handler.next(options);
