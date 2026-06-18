@@ -1912,7 +1912,6 @@ void registerAllSettings() {
       categories: [SettingCategory.debug],
       isDeviceSpecific: true,
       isSearchable: false,
-      visibleWhen: () => kDebugMode,
       localization: SettingLocalization(
         title: (ctx) => 'Debug Mode',
       ),
