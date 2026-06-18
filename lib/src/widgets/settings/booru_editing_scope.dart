@@ -24,19 +24,27 @@ class BooruEditingScope extends InheritedWidget {
   const BooruEditingScope({
     required this.booruName,
     required super.child,
+    this.autosave = true,
     super.key,
   });
 
   /// The name of the booru whose overrides are being edited.
   final String booruName;
 
+  /// Whether changes in this scope should be saved immediately.
+  final bool autosave;
+
   /// Returns the booru name being edited, or null if not inside a scope.
   static String? of(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<BooruEditingScope>()?.booruName;
   }
 
+  static bool autosaveOf(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<BooruEditingScope>()?.autosave ?? true;
+  }
+
   @override
   bool updateShouldNotify(BooruEditingScope oldWidget) {
-    return booruName != oldWidget.booruName;
+    return booruName != oldWidget.booruName || autosave != oldWidget.autosave;
   }
 }

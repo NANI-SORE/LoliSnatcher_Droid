@@ -9,9 +9,23 @@ import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
 /// Set by [SettingsRegistry] during initialization to avoid circular imports.
 ValueNotifier<String?> Function()? _currentBooruNotifierProvider;
 
+typedef SettingsSaveScheduler =
+    void Function({
+      bool debounce,
+      bool restate,
+      String? booruName,
+    });
+
+SettingsSaveScheduler? _settingsSaveScheduler;
+
 /// Called by [SettingsRegistry] to wire up the booru notifier provider.
 void setCurrentBooruNotifierProvider(ValueNotifier<String?> Function() provider) {
   _currentBooruNotifierProvider = provider;
+}
+
+/// Called by [SettingsHandler] to wire autosave without importing handlers here.
+void setSettingsSaveScheduler(SettingsSaveScheduler scheduler) {
+  _settingsSaveScheduler = scheduler;
 }
 
 /// Mutable state holding a setting's current value(s).
@@ -45,6 +59,10 @@ class SettingState<T> {
   /// Set the global value. Validates via [SettingDef.validate] and fires
   /// [SettingDef.onChanged] if the value actually changed.
   set value(T newValue) {
+    setValue(newValue);
+  }
+
+  void setValue(T newValue, {bool debounceSave = false}) {
     final validated = def.validate?.call(newValue) ?? newValue;
     final oldValue = _globalValue.value;
     _globalValue.value = validated;
@@ -53,6 +71,9 @@ class SettingState<T> {
     }
     if (!def.supportsPerBooru && oldValue != validated) {
       def.onChanged?.call(oldValue, validated);
+    }
+    if (oldValue != validated) {
+      _scheduleSave(debounce: debounceSave);
     }
   }
 
@@ -69,6 +90,9 @@ class SettingState<T> {
     }
     if (!def.supportsPerBooru && oldValue != validated) {
       def.onChanged?.call(oldValue, validated);
+    }
+    if (oldValue != validated) {
+      _scheduleSave();
     }
   }
 
@@ -97,27 +121,30 @@ class SettingState<T> {
   T? getOverrideFor(String booruName) => _booruOverrides.value[booruName];
 
   /// Set an override value for a specific booru.
-  void setOverrideFor(String booruName, T val) {
+  void setOverrideFor(
+    String booruName,
+    T val, {
+    bool save = true,
+    bool debounceSave = false,
+  }) {
     final validated = def.validate?.call(val) ?? val;
     final oldValue = _booruOverrides.value[booruName] ?? _globalValue.value;
     final map = Map<String, T>.from(_booruOverrides.value);
     map[booruName] = validated;
     _booruOverrides.value = map; // Triggers notification
-    if (oldValue != validated) {
-      def.onScopedChanged?.call(oldValue, validated, booruName);
+    if (save && oldValue != validated) {
+      _scheduleSave(debounce: debounceSave, booruName: booruName);
     }
   }
 
   /// Remove the override for a specific booru (will use global value).
-  void removeOverrideFor(String booruName) {
+  void removeOverrideFor(String booruName, {bool save = true}) {
     if (!_booruOverrides.value.containsKey(booruName)) return;
-    final oldValue = _booruOverrides.value[booruName] as T;
-    final newValue = _globalValue.value;
     final map = Map<String, T>.from(_booruOverrides.value);
     map.remove(booruName);
     _booruOverrides.value = map; // Triggers notification
-    if (oldValue != newValue) {
-      def.onScopedChanged?.call(oldValue, newValue, booruName);
+    if (save) {
+      _scheduleSave(booruName: booruName);
     }
   }
 
@@ -157,16 +184,21 @@ class SettingState<T> {
   ///
   /// When inside a scope: sets a per-booru override for that booru.
   /// When NOT inside a scope: sets the global value.
-  void setScopedValue(BuildContext context, T newValue) {
+  void setScopedValue(BuildContext context, T newValue, {bool debounceSave = false}) {
     if (!def.supportsPerBooru) {
-      value = newValue;
+      setValue(newValue, debounceSave: debounceSave);
       return;
     }
     final editingBooru = BooruEditingScope.of(context);
     if (editingBooru == null) {
-      value = newValue;
+      setValue(newValue, debounceSave: debounceSave);
     } else {
-      setOverrideFor(editingBooru, newValue);
+      setOverrideFor(
+        editingBooru,
+        newValue,
+        save: BooruEditingScope.autosaveOf(context),
+        debounceSave: debounceSave,
+      );
     }
   }
 
@@ -185,7 +217,7 @@ class SettingState<T> {
     if (!def.supportsPerBooru) return;
     final editingBooru = BooruEditingScope.of(context);
     if (editingBooru == null) return;
-    removeOverrideFor(editingBooru);
+    removeOverrideFor(editingBooru, save: BooruEditingScope.autosaveOf(context));
   }
 
   /// The notifier to listen to inside widget builders.
@@ -225,6 +257,15 @@ class SettingState<T> {
     } finally {
       _suppressSideEffects = false;
     }
+  }
+
+  void _scheduleSave({bool debounce = false, String? booruName}) {
+    if (_suppressSideEffects) return;
+    _settingsSaveScheduler?.call(
+      debounce: debounce,
+      restate: false,
+      booruName: booruName,
+    );
   }
 
   // ============================================
@@ -369,7 +410,10 @@ class _BooruOverrideWrapper extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 4, bottom: 4, right: 4),
                 child: _OverrideBadge(
                   globalValueLabel: _formatValue(globalValue),
-                  onReset: () => state.removeOverrideFor(booruName),
+                  onReset: () => state.removeOverrideFor(
+                    booruName,
+                    save: BooruEditingScope.autosaveOf(context),
+                  ),
                 ),
               ),
             child,

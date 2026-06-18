@@ -220,7 +220,7 @@ class SettingsRegistry {
     for (final entry in overrides.entries) {
       final state = getByJsonKey(entry.key);
       if (state != null && state.def.supportsPerBooru) {
-        state.setOverrideFor(booruName, state.def.valueFromJson(entry.value));
+        state.setOverrideFor(booruName, state.def.valueFromJson(entry.value), save: false);
       }
     }
   }
@@ -246,10 +246,10 @@ class SettingsRegistry {
 
   /// Clear all in-memory overrides for a booru.
   /// Call this when a booru is deleted.
-  void removeAllOverridesForBooru(String booruName) {
+  void removeAllOverridesForBooru(String booruName, {bool save = true}) {
     for (final state in _states.values) {
       if (state.def.supportsPerBooru) {
-        state.removeOverrideFor(booruName);
+        state.removeOverrideFor(booruName, save: save);
       }
     }
   }

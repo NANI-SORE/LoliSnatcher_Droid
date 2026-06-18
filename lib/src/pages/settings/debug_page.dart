@@ -11,7 +11,6 @@ class DebugPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const AutoSettingsPage(
       category: SettingCategory.debug,
-      restateOnPop: true,
       extraWidgets: [DebugActionsWidget()],
     );
   }
