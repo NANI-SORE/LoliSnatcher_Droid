@@ -37,7 +37,27 @@ flutter pub get
 ```bash
 # Build APK for manual install
 sh ./build.sh
+
+# Build Github APKs without Google Play Services or Cronet
+sh ./build.sh no-cronet
 ```
+
+`build.sh` also accepts an optional network stack as the second argument:
+
+```bash
+# Default: Cronet via Google Play Services
+sh ./build.sh test cronet-gms
+
+# Cronet without Google Play Services, using embedded Cronet
+sh ./build.sh test cronet-embedded
+
+# No native_dio_adapter/Cronet dependency
+sh ./build.sh test no-cronet
+```
+
+The interactive menu includes `Github (No GMS/Cronet)`, equivalent to `sh ./build.sh no-cronet`.
+
+The `no-cronet` build temporarily writes `pubspec_overrides.yaml` so `native_dio_adapter` resolves to the local stub in `tool/stubs/native_dio_adapter`, then restores/removes that file after the build.
 
 Output locations:
 - APK: `build/app/outputs/flutter-apk/LoliSnatcher_[version]_[build]_[arch]_[store/github/test].apk`

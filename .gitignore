@@ -24,12 +24,16 @@ nul
 
 # Flutter/Dart/Pub related
 **/doc/api/
-/.dart_tool/
+**/.dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
+**/.packages
 .pub-cache/
 .pub/
+**/.pub/
+pubspec_overrides.yaml
+tool/stubs/**/pubspec.lock
 /build/
 **/*.g.dart
 **/*.freezed.dart

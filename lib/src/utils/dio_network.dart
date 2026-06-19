@@ -95,8 +95,13 @@ class DioNetwork {
     return dio;
   }
 
+  static const bool _cronetBuildEnabled = bool.fromEnvironment(
+    'LS_ENABLE_CRONET',
+    defaultValue: true,
+  );
+
   static bool _shouldUseCronetAdapter() {
-    if (!Platform.isAndroid || SX.allowSelfSignedCerts.value) {
+    if (!_cronetBuildEnabled || !Platform.isAndroid || SX.allowSelfSignedCerts.value) {
       return false;
     }
 
