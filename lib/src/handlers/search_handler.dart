@@ -19,6 +19,7 @@ import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
+import 'package:lolisnatcher/src/handlers/server_favorite_adapter.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -1297,6 +1298,7 @@ class SearchTab {
         item,
         BooruUpdateMode.local,
       );
+      unawaited(_sendFavouriteToServer(item, newValue));
 
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         // update filtered items list in case user has favourites filter enabled
@@ -1330,12 +1332,73 @@ class SearchTab {
       items,
       BooruUpdateMode.local,
     );
+    for (final item in items) {
+      unawaited(_sendFavouriteToServer(item, newValue));
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // update filtered items list in case user has favourites filter enabled
       await Future.delayed(const Duration(milliseconds: 200));
       booruHandler.filterFetched();
     });
+  }
+
+  Future<void> _sendFavouriteToServer(BooruItem item, bool isFavourite) async {
+    final settingsHandler = SettingsHandler.instance;
+    final adapter = _serverFavoriteAdapterForItem(item, settingsHandler);
+    if (adapter == null) return;
+
+    final booru = adapter.booru;
+    final booruName = booru.name;
+    final sendSetting = SX.sendFavouritesToServer.state;
+    final shouldSend = booruName == null ? sendSetting.value : sendSetting.getOverrideFor(booruName) ?? sendSetting.globalValue;
+    if (!shouldSend) return;
+
+    final capabilities = adapter.capabilities;
+    if (isFavourite && !capabilities.canAdd) return;
+    if (!isFavourite && !capabilities.canRemove) return;
+
+    final serverId = adapter.serverIdFromItem(item);
+    if (serverId == null || serverId.isEmpty) return;
+    item.serverId = serverId;
+
+    final success = isFavourite ? await adapter.addFavorite(serverId) : await adapter.removeFavorite(serverId);
+    if (!success) {
+      Logger.Inst().log(
+        'Failed to ${isFavourite ? 'favourite' : 'unfavourite'} server item $serverId for ${booru.name ?? booru.baseURL}',
+        'SearchTab',
+        '_sendFavouriteToServer',
+        LogTypes.booruHandlerInfo,
+      );
+    }
+  }
+
+  ServerFavoriteAdapter? _serverFavoriteAdapterForItem(BooruItem item, SettingsHandler settingsHandler) {
+    const factory = ServerFavoriteAdapterFactory();
+
+    final currentAdapter = factory.adapterFor(booruHandler.booru);
+    if (currentAdapter?.serverIdFromItem(item)?.isNotEmpty == true) {
+      return currentAdapter;
+    }
+
+    final searchableUrls = [
+      item.postURL,
+      item.fileURL,
+      item.sampleURL,
+      item.thumbnailURL,
+    ].join(' ').toLowerCase();
+
+    for (final booru in settingsHandler.booruList) {
+      final adapter = factory.adapterFor(booru);
+      if (adapter == null) continue;
+      final matchesItem = adapter.localHosts.any((host) => host.isNotEmpty && searchableUrls.contains(host.toLowerCase()));
+      if (!matchesItem) continue;
+      if (adapter.serverIdFromItem(item)?.isNotEmpty == true) {
+        return adapter;
+      }
+    }
+
+    return null;
   }
 
   @override

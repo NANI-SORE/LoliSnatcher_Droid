@@ -1301,6 +1301,25 @@ void registerAllSettings() {
     ),
   );
 
+  registry.register(
+    boolSetting(
+      key: .sendFavouritesToServer,
+      getDefaultValue: () => true,
+      categories: [SettingCategory.database],
+      supportsPerBooru: true,
+      dependsOn: [.dbEnabled],
+      enabledWhen: ([BuildContext? context]) => _val<bool>(.dbEnabled, context),
+      localization: SettingLocalization(
+        title: (_) => 'Send favourites changes to server'.temploc,
+        subtitle: (_) => 'When supported, favourite and unfavourite actions also update the booru account.'.temploc,
+        searchKeywords: (_) => ['server favourites', 'server favorites', 'sync favourites', 'sync favorites'],
+      ),
+      widgetConfig: const SettingWidgetConfig(
+        trailingIcon: Icon(Icons.cloud_sync),
+      ),
+    ),
+  );
+
   // ============================================
   // NETWORK
   // ============================================

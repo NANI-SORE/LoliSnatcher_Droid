@@ -6,6 +6,7 @@ import 'package:equatable/equatable.dart';
 import 'package:get/get.dart';
 
 import 'package:lolisnatcher/src/data/note_item.dart';
+import 'package:lolisnatcher/src/data/server_favorites/server_id_parser.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -237,6 +238,7 @@ class BooruItem extends Equatable {
     );
     item.isFavourite.value = json['isFavourite'].toString() == 'true';
     item.isSnatched.value = json['isSnatched'].toString() == 'true';
+    item.serverId = ServerIdParser.fromStoredValue(json['serverId'], item.postURL);
     return item;
   }
 
@@ -249,6 +251,7 @@ class BooruItem extends Equatable {
       fileExt: row['fileURL'].toString().contains('Hydrus-Client-API') ? 'extra' : null,
       tagsList: tags.map(Tag.new).toList(),
       postURL: row['postURL'].toString(),
+      serverId: ServerIdParser.fromStoredValue(row['serverId'], row['postURL'].toString()),
     );
     item.isFavourite.value = Tools.intToBool(row['isFavourite']);
     item.isSnatched.value = Tools.intToBool(row['isSnatched']);
