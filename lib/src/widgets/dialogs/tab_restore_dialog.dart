@@ -112,9 +112,10 @@ class _TabRestoreDialogState extends State<TabRestoreDialog> {
                           _ => null,
                         }
                       : null,
-                  contentPadding: EdgeInsets.zero,
+                  contentPadding: const EdgeInsets.only(left: 3.5),
                   activeColor: Theme.of(context).colorScheme.secondary,
                   dense: true,
+                  materialTapTargetSize: .shrinkWrap,
                 ),
               )
               .toList(),
@@ -155,9 +156,14 @@ class _TabRestoreDialogState extends State<TabRestoreDialog> {
             rememberChoice = value ?? false;
           });
         },
-        title: Text(context.loc.pageChanger.rememberMyChoice),
+        title: Text(
+          context.loc.pageChanger.rememberMyChoice,
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
         controlAffinity: ListTileControlAffinity.leading,
         contentPadding: EdgeInsets.zero,
+        materialTapTargetSize: .shrinkWrap,
+        dense: true,
       ),
       const SizedBox(height: 16),
       Row(
