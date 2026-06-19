@@ -1,17 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/data/settings/gallery_button.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 
 /// Self-contained widget for reordering and toggling viewer toolbar buttons.
 ///
-/// Reads from and writes directly to [SettingsHandler.buttonOrder] and
-/// [SettingsHandler.disabledButtons]. Changes are committed when the parent
-/// page pops and calls `saveSettings()`.
+/// Reads from and writes directly to [SX.buttonOrder] and
+/// [SX.disabledButtons]. Changes are saved by the settings autosave layer.
 class ToolbarButtonOrderWidget extends StatefulWidget {
   const ToolbarButtonOrderWidget({super.key});
 
@@ -20,10 +19,9 @@ class ToolbarButtonOrderWidget extends StatefulWidget {
 }
 
 class _ToolbarButtonOrderWidgetState extends State<ToolbarButtonOrderWidget> {
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
-
   late final List<GalleryButton> buttonOrder;
   late final List<GalleryButton> disabledButtons;
+  bool _isCommitting = false;
 
   @override
   void initState() {
@@ -42,11 +40,19 @@ class _ToolbarButtonOrderWidgetState extends State<ToolbarButtonOrderWidget> {
   }
 
   void _commit() {
-    SX.buttonOrder.state.value = buttonOrder.map((button) => button.name).toList();
-    SX.disabledButtons.state.value = disabledButtons.map((button) => button.name).toList();
+    _isCommitting = true;
+    try {
+      SX.buttonOrder.state.value = buttonOrder.map((button) => button.toJson()).toList();
+      SX.disabledButtons.state.value = disabledButtons.map((button) => button.toJson()).toList();
+    } finally {
+      _isCommitting = false;
+    }
   }
 
   void _syncFromSettings() {
+    if (_isCommitting) {
+      return;
+    }
     final newOrder = SX.buttonOrder.value.map(GalleryButton.fromString).whereType<GalleryButton>().toList();
     final newDisabled = SX.disabledButtons.value.map(GalleryButton.fromString).whereType<GalleryButton>().toList();
     if (listEquals(buttonOrder, newOrder) && listEquals(disabledButtons, newDisabled)) {
@@ -152,14 +158,7 @@ class _ToolbarButtonOrderWidgetState extends State<ToolbarButtonOrderWidget> {
                       return ListTile(
                         onTap: () {
                           if (!isInfo) {
-                            setState(() {
-                              if (isActive) {
-                                disabledButtons.add(button);
-                              } else {
-                                disabledButtons.remove(button);
-                              }
-                              _commit();
-                            });
+                            _setButtonEnabled(button, !isActive);
                           }
 
                           FlashElements.showSnackbar(
@@ -199,14 +198,7 @@ class _ToolbarButtonOrderWidgetState extends State<ToolbarButtonOrderWidget> {
                                 return;
                               }
 
-                              setState(() {
-                                if (isActive) {
-                                  disabledButtons.add(button);
-                                } else {
-                                  disabledButtons.remove(button);
-                                }
-                                _commit();
-                              });
+                              _setButtonEnabled(button, !isActive);
                             },
                           ),
                         ),
@@ -255,5 +247,17 @@ class _ToolbarButtonOrderWidgetState extends State<ToolbarButtonOrderWidget> {
         ],
       ),
     );
+  }
+
+  void _setButtonEnabled(GalleryButton button, bool enabled) {
+    if (button.isInfo) return;
+    setState(() {
+      if (enabled) {
+        disabledButtons.remove(button);
+      } else if (!disabledButtons.contains(button)) {
+        disabledButtons.add(button);
+      }
+      _commit();
+    });
   }
 }

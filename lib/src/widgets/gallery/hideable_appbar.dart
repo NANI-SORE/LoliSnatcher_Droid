@@ -1348,7 +1348,12 @@ class _HideableAppBarState extends State<HideableAppBar> {
           height: viewerHandler.displayAppbar.value ? (isOnTop ? null : (widget.defaultHeight + extraPadding)) : 0,
           padding: isOnTop ? null : EdgeInsets.only(bottom: extraPadding),
           child: ListenableBuilder(
-            listenable: Listenable.merge([page, widget.tab.booruHandler.filteredFetched]),
+            listenable: Listenable.merge([
+              page,
+              widget.tab.booruHandler.filteredFetched,
+              SX.buttonOrder.state.effectiveNotifier,
+              SX.disabledButtons.state.effectiveNotifier,
+            ]),
             builder: (context, _) {
               final pageVal = page.value;
               final fetched = widget.tab.booruHandler.filteredFetched.value;
