@@ -423,7 +423,7 @@ class ThemeHandler {
         final Color color = colorScheme.secondary;
         return isHovered ? Color.lerp(color, Colors.black, 0.15)! : color;
       } else {
-        return isHovered ? Colors.grey[600] : Colors.grey;
+        return isHovered ? Colors.grey[600] : Colors.transparent;
       }
     }),
     checkColor: WidgetStateProperty.all(accentIsDark ? Colors.white : Colors.black),

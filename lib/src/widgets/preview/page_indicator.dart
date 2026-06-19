@@ -72,31 +72,42 @@ class GridPageIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Row(
-        mainAxisSize: .min,
-        spacing: 1,
-        children: [
-          Text(
-            page.toString(),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              height: 1,
-              fontWeight: FontWeight.bold,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: BackdropFilter(
+        enabled: !SX.shitDevice.value,
+        filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: context.theme.colorScheme.surface.withValues(alpha: 0.5),
+            border: Border.all(
+              color: context.theme.colorScheme.outline.withValues(alpha: 0.3),
             ),
+            borderRadius: BorderRadius.circular(4),
           ),
-          const Icon(
-            Icons.bookmark_border,
-            size: 12,
+          child: Row(
+            mainAxisSize: .min,
+            spacing: 1,
+            children: [
+              Text(
+                page.toString(),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 12,
+                  height: 1,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Icon(
+                Icons.bookmark_border,
+                size: 12,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -329,16 +340,13 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
                           spacing: 2,
                           crossAxisAlignment: .center,
                           children: [
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 2),
-                              child: Text(
-                                page.toString(),
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1,
-                                  color: Theme.of(context).colorScheme.onSurface,
-                                ),
+                            Text(
+                              page.toString(),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                height: 1,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             Obx(
