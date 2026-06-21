@@ -24,11 +24,13 @@ import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
 class BooruOverridesPage extends StatefulWidget {
   const BooruOverridesPage({
     required this.booru,
+    this.initialCategory,
     this.saveOnPop = true,
     super.key,
   });
 
   final Booru booru;
+  final SettingCategory? initialCategory;
 
   /// Whether override changes should save immediately.
   /// Set to false when opened from [BooruEdit] which handles its own save.
@@ -59,7 +61,12 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
     }
 
     categories = grouped.keys.toList()..sort((a, b) => a.index.compareTo(b.index));
-    tabController = TabController(length: categories.length, vsync: this);
+    final initialIndex = widget.initialCategory != null ? categories.indexOf(widget.initialCategory!) : -1;
+    tabController = TabController(
+      length: categories.length,
+      initialIndex: initialIndex >= 0 ? initialIndex : 0,
+      vsync: this,
+    );
   }
 
   @override

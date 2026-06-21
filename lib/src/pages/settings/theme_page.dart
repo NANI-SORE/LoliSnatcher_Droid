@@ -13,12 +13,14 @@ import 'package:lolisnatcher/src/widgets/common/ok_button.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import 'package:lolisnatcher/src/data/settings/all_settings.dart';
+import 'package:lolisnatcher/src/data/settings/setting_def.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/data/theme_item.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/theme_handler.dart';
+import 'package:lolisnatcher/src/pages/settings/booru_overrides_page.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/utils/debouncer.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -181,6 +183,21 @@ class _ThemePageState extends State<ThemePage> {
     );
   }
 
+  void _openActiveBooruThemeOverrides(String booruName) {
+    for (final booru in settingsHandler.booruList) {
+      if (booru.name == booruName) {
+        SettingsPageOpen(
+          context: context,
+          page: (_) => BooruOverridesPage(
+            booru: booru,
+            initialCategory: SettingCategory.theme,
+          ),
+        ).open();
+        return;
+      }
+    }
+  }
+
   Widget _buildOverrideWarning(BuildContext context) {
     final currentBooru = SettingsRegistry.instance.currentBooruName;
     if (currentBooru == null) return const SizedBox.shrink();
@@ -204,24 +221,37 @@ class _ThemePageState extends State<ThemePage> {
       child: Material(
         color: colorScheme.tertiaryContainer,
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Icon(Icons.info_outline, color: colorScheme.onTertiaryContainer, size: 20),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  context.loc.settings.activeBooruThemeOverrides(
-                    booru: currentBooru,
-                  ),
-                  style: TextStyle(
-                    color: colorScheme.onTertiaryContainer,
-                    fontSize: 12,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _openActiveBooruThemeOverrides(currentBooru),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: colorScheme.onTertiaryContainer,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    context.loc.settings.activeBooruThemeOverrides(
+                      booru: currentBooru,
+                    ),
+                    style: TextStyle(
+                      color: colorScheme.onTertiaryContainer,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
-              ),
-            ],
+                Icon(
+                  Icons.chevron_right,
+                  color: colorScheme.onTertiaryContainer,
+                  size: 20,
+                ),
+              ],
+            ),
           ),
         ),
       ),

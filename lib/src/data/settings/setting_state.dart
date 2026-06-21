@@ -166,11 +166,12 @@ class SettingState<T> {
   /// - Returns the override value if one exists for that booru
   /// - Returns the global value otherwise (the "default" the user sees)
   ///
-  /// When NOT inside a scope, returns the effective value (global or active booru override).
+  /// When NOT inside a scope, returns the global value for settings UI pages.
+  /// Runtime reads through [value] still use the effective active-booru value.
   T scopedValue(BuildContext context) {
     if (!def.supportsPerBooru) return value;
     final editingBooru = BooruEditingScope.of(context);
-    if (editingBooru == null) return value;
+    if (editingBooru == null) return globalValue;
     return getOverrideFor(editingBooru) ?? globalValue;
   }
 
@@ -218,11 +219,11 @@ class SettingState<T> {
   ///
   /// When inside a [BooruEditingScope], this returns a notifier that reacts to
   /// changes in the override map (so UI updates when the override is set/removed).
-  /// When not in a scope, returns the effective notifier.
+  /// When not in a scope, returns the global notifier for settings UI pages.
   ValueNotifier<dynamic> scopedNotifier(BuildContext context) {
     if (!def.supportsPerBooru) return effectiveNotifier;
     final editingBooru = BooruEditingScope.of(context);
-    if (editingBooru == null) return effectiveNotifier;
+    if (editingBooru == null) return globalNotifier;
     // Override map notifier triggers when any override changes.
     // The widget must read scopedValue() in its builder to get the correct value.
     return _booruOverrides;
@@ -371,7 +372,7 @@ String _formatValue(dynamic value) {
 ///
 /// The setting is always fully interactive. When the user changes the value,
 /// [setScopedValue] creates a per-booru override automatically.
-/// A badge appears when the override differs from the global default,
+/// A badge appears when the override differs from the global value,
 /// allowing the user to reset it.
 class _BooruOverrideWrapper extends StatelessWidget {
   const _BooruOverrideWrapper({
@@ -419,7 +420,7 @@ class _BooruOverrideWrapper extends StatelessWidget {
 }
 
 /// Small badge shown on settings that have an active per-booru override
-/// that differs from the global default. Tapping resets to the global value.
+/// that differs from the global value. Tapping resets to the global value.
 class _OverrideBadge extends StatelessWidget {
   const _OverrideBadge({
     required this.onReset,

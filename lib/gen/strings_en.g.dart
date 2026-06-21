@@ -1113,15 +1113,15 @@ class Translations$settings$en {
   /// en: 'Reset all overrides'
   String get resetAllOverrides => TranslationOverrides.string(_root.$meta, 'settings.resetAllOverrides', {}) ?? 'Reset all overrides';
 
-  /// en: 'All custom settings for "${booru: String}" will be removed. Global defaults will be used instead.'
+  /// en: 'All custom settings for "${booru: String}" will be removed. Global values will be used instead.'
   String resetAllOverridesDescription({required String booru}) =>
       TranslationOverrides.string(_root.$meta, 'settings.resetAllOverridesDescription', {'booru': booru}) ??
-      'All custom settings for "${booru}" will be removed. Global defaults will be used instead.';
+      'All custom settings for "${booru}" will be removed. Global values will be used instead.';
 
-  /// en: 'The active booru "${booru: String}" has theme overrides. Changes here affect the global defaults, not the per-booru theme.'
+  /// en: 'The active booru "${booru: String}" has theme overrides. Changes here affect global values, not the per-booru theme.'
   String activeBooruThemeOverrides({required String booru}) =>
       TranslationOverrides.string(_root.$meta, 'settings.activeBooruThemeOverrides', {'booru': booru}) ??
-      'The active booru "${booru}" has theme overrides. Changes here affect the global defaults, not the per-booru theme.';
+      'The active booru "${booru}" has theme overrides. Changes here affect global values, not the per-booru theme.';
 
   late final Translations$settings$language$en language = Translations$settings$language$en.internal(_root);
   late final Translations$settings$booru$en booru = Translations$settings$booru$en.internal(_root);
@@ -5422,11 +5422,11 @@ extension on Translations {
           'settings.resetAllOverridesDescription' =>
             ({required String booru}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.resetAllOverridesDescription', {'booru': booru}) ??
-                'All custom settings for "${booru}" will be removed. Global defaults will be used instead.',
+                'All custom settings for "${booru}" will be removed. Global values will be used instead.',
           'settings.activeBooruThemeOverrides' =>
             ({required String booru}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.activeBooruThemeOverrides', {'booru': booru}) ??
-                'The active booru "${booru}" has theme overrides. Changes here affect the global defaults, not the per-booru theme.',
+                'The active booru "${booru}" has theme overrides. Changes here affect global values, not the per-booru theme.',
           'settings.language.title' => TranslationOverrides.string(_root.$meta, 'settings.language.title', {}) ?? 'Language',
           'settings.language.system' => TranslationOverrides.string(_root.$meta, 'settings.language.system', {}) ?? 'System',
           'settings.language.helpUsTranslate' =>

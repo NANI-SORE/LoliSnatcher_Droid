@@ -53,7 +53,7 @@ class AutoSettingsPage extends StatelessWidget {
     // Listen to all settings in this category to reactively show/hide reset button
     final allNotifiers = renderableStates
         .where((s) => !s.def.isWidgetSlot)
-        .map((s) => s.effectiveNotifier as Listenable)
+        .map((s) => s.scopedNotifier(context) as Listenable)
         .toList();
 
     return Scaffold(
@@ -188,8 +188,7 @@ class MultiCategorySettingsPage extends StatelessWidget {
 ///
 /// When inside a [BooruEditingScope], the [enabledWhen] condition receives
 /// the [BuildContext] so that `_val()` reads scoped (per-booru) values instead
-/// of global/effective values. Dependency notifiers include the override map
-/// notifiers so that changes to per-booru overrides trigger re-evaluation.
+/// of global values.
 class ReactiveSettingWidget extends StatelessWidget {
   const ReactiveSettingWidget({required this.state, super.key});
 
@@ -226,12 +225,7 @@ class ReactiveSettingWidget extends StatelessWidget {
     for (final depKey in dependsOn) {
       final depState = registry.get<dynamic>(depKey);
       if (depState != null) {
-        dependencyNotifiers.add(depState.effectiveNotifier);
-        // When editing a booru, also listen to the override map so that
-        // changes to per-booru overrides trigger re-evaluation.
-        if (isEditingBooru && depState.def.supportsPerBooru) {
-          dependencyNotifiers.add(depState.overridesNotifier);
-        }
+        dependencyNotifiers.add(depState.scopedNotifier(context));
       }
     }
 

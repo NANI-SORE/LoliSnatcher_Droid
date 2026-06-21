@@ -100,8 +100,9 @@ SettingDef<T> settingsEnumSetting<T extends Enum>({
 }
 
 /// Shorthand to read a setting's current value from the registry.
-/// When [context] is provided and the setting supports per-booru overrides,
-/// reads the scoped value (override for the booru being edited, if any).
+/// When [context] is provided inside a booru editing scope and the setting
+/// supports per-booru overrides, reads the override for the booru being edited.
+/// Otherwise context reads return the global value used by settings pages.
 T _val<T>(SettingKey key, [BuildContext? context]) {
   final state = SettingsRegistry.instance.get<T>(key)!;
   if (context != null) return state.scopedValue(context);

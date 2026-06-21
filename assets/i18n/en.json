@@ -381,8 +381,8 @@
         "globalValue(param=value)": "Global: ${value: String}",
         "booruOverridesTitle(param=booru)": "${booru: String} — Overrides",
         "resetAllOverrides": "Reset all overrides",
-        "resetAllOverridesDescription(param=booru)": "All custom settings for \"${booru: String}\" will be removed. Global defaults will be used instead.",
-        "activeBooruThemeOverrides(param=booru)": "The active booru \"${booru: String}\" has theme overrides. Changes here affect the global defaults, not the per-booru theme.",
+        "resetAllOverridesDescription(param=booru)": "All custom settings for \"${booru: String}\" will be removed. Global values will be used instead.",
+        "activeBooruThemeOverrides(param=booru)": "The active booru \"${booru: String}\" has theme overrides. Changes here affect global values, not the per-booru theme.",
         "language": {
             "title": "Language",
             "system": "System",

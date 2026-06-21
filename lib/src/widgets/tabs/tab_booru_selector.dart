@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
 
+import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/pages/settings/booru_overrides_page.dart';
 import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
 import 'package:lolisnatcher/src/widgets/common/marquee_text.dart';
+import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
 
 class TabBooruSelector extends StatelessWidget {
@@ -40,6 +43,7 @@ class TabBooruSelector extends StatelessWidget {
       if (!settingsHandler.booruList.contains(selectedBooru)) {
         selectedBooru = null;
       }
+      final Booru? selectedBooruForOverrides = selectedBooru;
 
       final bool isDesktop = SX.appMode.value.isDesktop;
       final EdgeInsetsGeometry margin = isDesktop
@@ -56,6 +60,14 @@ class TabBooruSelector extends StatelessWidget {
               searchHandler.searchAction(searchHandler.searchTextController.text, newValue);
             }
           },
+          onLongPress: BooruType.saveable.contains(selectedBooruForOverrides?.type)
+              ? () {
+                  SettingsPageOpen(
+                    context: context,
+                    page: (_) => BooruOverridesPage(booru: selectedBooruForOverrides!),
+                  ).open();
+                }
+              : null,
           expandableByScroll: true,
           items: settingsHandler.booruList,
           itemExtent: 54,
