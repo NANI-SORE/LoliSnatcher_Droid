@@ -14,7 +14,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   alice_lightweight: ^3.10.0
-  app_links: ^7.1.2
+  app_links: ^7.2.0
   auto_size_text_plus: ^3.0.2
   calendar_date_picker2: ^3.0.0
   chewie: ^1.14.1
