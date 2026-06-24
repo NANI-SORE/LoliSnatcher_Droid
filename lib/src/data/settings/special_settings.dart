@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:flex_color_picker/flex_color_picker.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lolisnatcher/src/pages/settings/language_page.dart';
 
@@ -24,12 +25,13 @@ import 'package:lolisnatcher/src/widgets/settings/setting_builder.dart';
 
 /// Factory for [ThemeMode] settings (System/Light/Dark).
 ///
-/// Renders as a [SettingsSegmentedButton].
+/// Renders as a [SettingsDropdown].
 SettingDef<ThemeMode> themeModeSetting({
   required SettingKey key,
   required ThemeMode Function() getDefaultValue,
   required SettingLocalization localization,
   List<SettingCategory> categories = const [],
+  List<SettingSubcategory> subcategories = const [],
   bool isDeviceSpecific = false,
   bool supportsPerBooru = false,
   bool Function()? visibleWhen,
@@ -42,6 +44,7 @@ SettingDef<ThemeMode> themeModeSetting({
     getDefaultValue: getDefaultValue,
     localization: localization,
     categories: categories,
+    subcategories: subcategories,
     isDeviceSpecific: isDeviceSpecific,
     supportsPerBooru: supportsPerBooru,
     visibleWhen: visibleWhen,
@@ -61,13 +64,22 @@ SettingDef<ThemeMode> themeModeSetting({
       final s = state as SettingState<ThemeMode>;
       return SettingBuilder<ThemeMode>(
         setting: s,
-        builder: (ctx, value) => SettingsSegmentedButton<ThemeMode>(
+        builder: (ctx, value) => SettingsDropdown<ThemeMode>(
           title: localization.title(ctx),
           value: s.scopedValue(ctx),
-          values: ThemeMode.values,
-          defaultValue: s.defaultValue,
-          itemTitleBuilder: (mode) => _themeModeName(ctx, mode),
-          onChanged: (newValue) => s.setScopedValue(ctx, newValue),
+          items: ThemeMode.values,
+          itemTitleBuilder: (mode) => mode != null ? _themeModeName(ctx, mode) : '',
+          itemBuilder: (mode) => _ThemeModeOption(
+            mode: mode,
+            label: mode != null ? _themeModeName(ctx, mode) : '',
+          ),
+          selectedItemBuilder: (mode) => _ThemeModeOption(
+            mode: mode,
+            label: mode != null ? _themeModeName(ctx, mode) : '',
+          ),
+          onChanged: (newValue) {
+            if (newValue != null) s.setScopedValue(ctx, newValue);
+          },
         ),
       );
     },
@@ -86,6 +98,7 @@ SettingDef<AppLocale?> localeSetting({
   required SettingKey key,
   required SettingLocalization localization,
   List<SettingCategory> categories = const [],
+  List<SettingSubcategory> subcategories = const [],
   bool isDeviceSpecific = false,
   bool supportsPerBooru = false,
   bool Function()? visibleWhen,
@@ -98,6 +111,7 @@ SettingDef<AppLocale?> localeSetting({
     getDefaultValue: () => null,
     localization: localization,
     categories: categories,
+    subcategories: subcategories,
     isDeviceSpecific: isDeviceSpecific,
     supportsPerBooru: supportsPerBooru,
     visibleWhen: visibleWhen,
@@ -130,6 +144,7 @@ SettingDef<ThemeItem> themeSetting({
   required SettingLocalization localization,
   required List<ThemeItem> Function() getOptions,
   List<SettingCategory> categories = const [],
+  List<SettingSubcategory> subcategories = const [],
   bool isDeviceSpecific = false,
   bool supportsPerBooru = false,
   bool Function()? visibleWhen,
@@ -142,6 +157,7 @@ SettingDef<ThemeItem> themeSetting({
     getDefaultValue: getDefaultValue,
     localization: localization,
     categories: categories,
+    subcategories: subcategories,
     isDeviceSpecific: isDeviceSpecific,
     supportsPerBooru: supportsPerBooru,
     visibleWhen: visibleWhen,
@@ -166,7 +182,17 @@ SettingDef<ThemeItem> themeSetting({
           title: localization.title(ctx),
           value: s.scopedValue(ctx),
           items: getOptions(),
-          itemTitleBuilder: (item) => item?.name ?? '',
+          itemTitleBuilder: (item) => item?.locName(ctx) ?? '',
+          itemBuilder: (item) => _ThemeItemOption(
+            item: item,
+            primaryColor: _themeOptionPrimaryColor(ctx, item),
+            accentColor: _themeOptionAccentColor(ctx, item),
+          ),
+          selectedItemBuilder: (item) => _ThemeItemOption(
+            item: item,
+            primaryColor: _themeOptionPrimaryColor(ctx, item),
+            accentColor: _themeOptionAccentColor(ctx, item),
+          ),
           onChanged: (newValue) {
             if (newValue != null) s.setScopedValue(ctx, newValue);
           },
@@ -174,6 +200,215 @@ SettingDef<ThemeItem> themeSetting({
       );
     },
   );
+}
+
+Color? _themeOptionPrimaryColor(BuildContext context, ThemeItem? item) {
+  return item?.name == 'Custom' ? SX.customPrimaryColor.state.scopedValue(context) : item?.primary;
+}
+
+Color? _themeOptionAccentColor(BuildContext context, ThemeItem? item) {
+  return item?.name == 'Custom' ? SX.customAccentColor.state.scopedValue(context) : item?.accent;
+}
+
+class _ThemeModeOption extends StatelessWidget {
+  const _ThemeModeOption({
+    required this.mode,
+    required this.label,
+  });
+
+  final ThemeMode? mode;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 40,
+          height: 40,
+          child: switch (mode) {
+            ThemeMode.dark => const Icon(Icons.dark_mode),
+            ThemeMode.light => const Icon(Icons.light_mode),
+            ThemeMode.system => Stack(
+              alignment: Alignment.center,
+              children: [
+                ClipPath(
+                  clipper: _SunClipper(),
+                  child: const Padding(
+                    padding: EdgeInsets.only(right: 8),
+                    child: Icon(Icons.light_mode),
+                  ),
+                ),
+                ClipPath(
+                  clipper: _MoonClipper(),
+                  child: const Padding(
+                    padding: EdgeInsets.only(left: 5),
+                    child: Icon(Icons.dark_mode),
+                  ),
+                ),
+              ],
+            ),
+            _ => const SizedBox.shrink(),
+          },
+        ),
+        const SizedBox(width: 10),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ThemeItemOption extends StatelessWidget {
+  const _ThemeItemOption({
+    required this.item,
+    required this.primaryColor,
+    required this.accentColor,
+  });
+
+  final ThemeItem? item;
+  final Color? primaryColor;
+  final Color? accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    const double themeSize = 40;
+
+    return Row(
+      children: [
+        Center(
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: (Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.white).withValues(
+                  alpha: 0.6,
+                ),
+                width: 1,
+              ),
+              shape: BoxShape.rectangle,
+              color: primaryColor,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              clipBehavior: Clip.antiAlias,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  ClipPath(
+                    clipper: _ThemeLeftClipper(),
+                    child: Container(
+                      color: primaryColor,
+                      height: themeSize,
+                      width: themeSize,
+                    ),
+                  ),
+                  ClipPath(
+                    clipper: _ThemeRightClipper(),
+                    child: Container(
+                      color: accentColor,
+                      height: themeSize,
+                      width: themeSize,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Flexible(
+          child: Text(
+            item?.locName(context) ?? '?',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        switch (item?.name) {
+          'Halloween' => const Padding(
+            padding: EdgeInsets.only(left: 8),
+            child: FaIcon(FontAwesomeIcons.ghost),
+          ),
+          'Custom' => const Padding(
+            padding: EdgeInsets.only(left: 8),
+            child: Icon(Icons.build),
+          ),
+          _ => const SizedBox.shrink(),
+        },
+      ],
+    );
+  }
+}
+
+class _SunClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height);
+    path.lineTo(size.width * 0.37, size.height);
+    path.lineTo(size.width * 0.37, 0);
+    path.close();
+
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+class _MoonClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(size.width, 0);
+    path.lineTo(size.width, size.height);
+    path.lineTo(size.width * 0.45, size.height);
+    path.lineTo(size.width * 0.45, 0);
+    path.close();
+
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+class _ThemeLeftClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height);
+    path.lineTo(size.width * 0.7, size.height);
+    path.lineTo(size.width * 0.3, 0);
+    path.close();
+
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+class _ThemeRightClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(size.width, 0);
+    path.lineTo(size.width, size.height);
+    path.lineTo(size.width * 0.3, size.height);
+    path.lineTo(size.width * 0.7, 0);
+    path.close();
+
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
 
 /// Factory for font family settings.
@@ -186,6 +421,7 @@ SettingDef<String> fontFamilySetting({
   required SettingLocalization localization,
   required List<String> Function() getOptions,
   List<SettingCategory> categories = const [],
+  List<SettingSubcategory> subcategories = const [],
   bool isDeviceSpecific = false,
   bool supportsPerBooru = false,
   bool Function()? visibleWhen,
@@ -198,6 +434,7 @@ SettingDef<String> fontFamilySetting({
     getDefaultValue: getDefaultValue,
     localization: localization,
     categories: categories,
+    subcategories: subcategories,
     isDeviceSpecific: isDeviceSpecific,
     supportsPerBooru: supportsPerBooru,
     visibleWhen: visibleWhen,
@@ -225,6 +462,7 @@ SettingDef<Color?> colorPickerSetting({
   required Color? Function() getDefaultValue,
   required SettingLocalization localization,
   List<SettingCategory> categories = const [],
+  List<SettingSubcategory> subcategories = const [],
   bool isDeviceSpecific = false,
   bool supportsPerBooru = false,
   bool Function()? visibleWhen,
@@ -237,6 +475,7 @@ SettingDef<Color?> colorPickerSetting({
     getDefaultValue: getDefaultValue,
     localization: localization,
     categories: categories,
+    subcategories: subcategories,
     isDeviceSpecific: isDeviceSpecific,
     supportsPerBooru: supportsPerBooru,
     visibleWhen: visibleWhen,
@@ -266,6 +505,7 @@ SettingDef<String> directoryPickerSetting({
   required SettingLocalization localization,
   required Future<String> Function() pickDirectory,
   List<SettingCategory> categories = const [],
+  List<SettingSubcategory> subcategories = const [],
   bool isDeviceSpecific = false,
   bool Function()? visibleWhen,
   List<SettingKey>? dependsOn,
@@ -277,6 +517,7 @@ SettingDef<String> directoryPickerSetting({
     getDefaultValue: getDefaultValue,
     localization: localization,
     categories: categories,
+    subcategories: subcategories,
     isDeviceSpecific: isDeviceSpecific,
     visibleWhen: visibleWhen,
     dependsOn: dependsOn,
@@ -311,6 +552,7 @@ SettingDef<String> filePickerSetting({
   String Function(BuildContext context)? removeButtonLabel,
   Future<void> Function(String path)? onRemove,
   List<SettingCategory> categories = const [],
+  List<SettingSubcategory> subcategories = const [],
   bool isDeviceSpecific = false,
   bool supportsPerBooru = false,
   bool Function()? visibleWhen,
@@ -323,6 +565,7 @@ SettingDef<String> filePickerSetting({
     getDefaultValue: getDefaultValue,
     localization: localization,
     categories: categories,
+    subcategories: subcategories,
     isDeviceSpecific: isDeviceSpecific,
     supportsPerBooru: supportsPerBooru,
     visibleWhen: visibleWhen,
@@ -359,6 +602,7 @@ SettingDef<bool> confirmBoolSetting({
   required Widget Function(BuildContext context) buildDialogContent,
   void Function()? onConfirmed,
   List<SettingCategory> categories = const [],
+  List<SettingSubcategory> subcategories = const [],
   bool isDeviceSpecific = false,
   bool Function()? visibleWhen,
   SettingWidgetConfig? widgetConfig,
@@ -371,6 +615,7 @@ SettingDef<bool> confirmBoolSetting({
     getDefaultValue: getDefaultValue,
     localization: localization,
     categories: categories,
+    subcategories: subcategories,
     isDeviceSpecific: isDeviceSpecific,
     visibleWhen: visibleWhen,
     dependsOn: dependsOn,
@@ -436,14 +681,14 @@ class _FontFamilySettingWidget extends StatelessWidget {
             style: _getFontStyle(scopedVal),
           ),
           icon: const Icon(Icons.font_download),
-          trailingIcon: scopedVal == 'System'
+          trailingIcon: scopedVal == setting.resetValue(ctx)
               ? null
               : Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
                       icon: const Icon(Icons.refresh),
-                      onPressed: () => setting.setScopedValue(ctx, 'System'),
+                      onPressed: () => setting.resetScoped(ctx),
                     ),
                     const Icon(Icons.chevron_right),
                   ],
@@ -915,13 +1160,19 @@ class _ColorPickerSettingWidget extends StatelessWidget {
       colorCodeTextStyle: Theme.of(context).textTheme.bodyMedium,
       colorCodePrefixStyle: Theme.of(context).textTheme.bodySmall,
       selectedPickerTypeColor: Theme.of(context).colorScheme.primary,
+      hasBorder: true,
       pickersEnabled: const <ColorPickerType, bool>{
         ColorPickerType.both: true,
         ColorPickerType.primary: false,
         ColorPickerType.accent: false,
         ColorPickerType.bw: true,
-        ColorPickerType.custom: true,
+        ColorPickerType.custom: false,
         ColorPickerType.wheel: true,
+      },
+      pickerTypeLabels: <ColorPickerType, String>{
+        ColorPickerType.both: context.loc.settings.theme.colors,
+        ColorPickerType.bw: context.loc.settings.theme.blackAndWhite,
+        ColorPickerType.wheel: context.loc.settings.theme.wheel,
       },
       actionButtons: const ColorPickerActionButtons(
         okIcon: Icons.save,
@@ -958,20 +1209,31 @@ class _ColorPickerSettingWidget extends StatelessWidget {
             if (!await _showColorPicker(
               ctx,
               color,
-              (Color newColor) => setting.setScopedValue(ctx, newColor),
+              (Color newColor) => setting.setScopedValue(ctx, newColor, debounceSave: true),
             )) {
               setting.setScopedValue(ctx, colorBefore);
             }
           },
-          trailingIcon: ColorIndicator(
-            width: 44,
-            height: 44,
-            hasBorder: true,
-            borderRadius: 4,
-            borderColor: (Theme.of(ctx).brightness == Brightness.light ? Colors.black : Colors.white).withValues(
-              alpha: 0.6,
-            ),
-            color: color,
+          trailingIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 4,
+            children: [
+              if (color != setting.resetValue(ctx))
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () => setting.resetScoped(ctx),
+                ),
+              ColorIndicator(
+                width: 44,
+                height: 44,
+                hasBorder: true,
+                borderRadius: 4,
+                borderColor: (Theme.of(ctx).brightness == Brightness.light ? Colors.black : Colors.white).withValues(
+                  alpha: 0.6,
+                ),
+                color: color,
+              ),
+            ],
           ),
         );
       },
@@ -1125,7 +1387,8 @@ class _ConfirmBoolSettingWidget extends StatelessWidget {
         title: localization.title(ctx),
         subtitle: localization.subtitle != null ? Text(localization.subtitle!(ctx)) : null,
         value: setting.scopedValue(ctx),
-        defaultValue: setting.defaultValue,
+        defaultValue: setting.resetValue(ctx),
+        onReset: () => setting.resetScoped(ctx),
         enabled: enabledWhen?.call() ?? true,
         leadingIcon: widgetConfig?.leadingIcon,
         trailingIcon: widgetConfig?.trailingIcon,

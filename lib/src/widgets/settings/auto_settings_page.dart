@@ -80,9 +80,14 @@ class AutoSettingsPage extends StatelessWidget {
         child: ListView(
           children: [
             ?header,
-            for (final state in renderableStates) ReactiveSettingWidget(state: state),
+            ...buildSettingSubcategorySections(
+              context: context,
+              category: category,
+              states: renderableStates,
+            ),
             ...extraWidgets,
             ?footer,
+            const SizedBox(height: 64),
           ],
         ),
       ),
@@ -167,16 +172,204 @@ class MultiCategorySettingsPage extends StatelessWidget {
                   enabled: false,
                 ),
               ],
-              for (final state in registry.byCategory(cat))
-                if (registry.isSettingVisible(state) && state.def.widgetBuilder != null)
-                  ReactiveSettingWidget(state: state),
+              ...buildSettingSubcategorySections(
+                context: context,
+                category: cat,
+                states: registry
+                    .byCategory(cat)
+                    .where((s) => registry.isSettingVisible(s) && s.def.widgetBuilder != null),
+              ),
             ],
             ...extraWidgets,
+            const SizedBox(height: 64),
           ],
         ),
       ),
     );
   }
+}
+
+List<Widget> buildSettingSubcategorySections({
+  required BuildContext context,
+  required SettingCategory category,
+  required Iterable<SettingState<dynamic>> states,
+  Widget Function(SettingState<dynamic> state)? settingBuilder,
+}) {
+  final stateList = states.toList();
+  if (stateList.isEmpty) return const [];
+
+  return [
+    _ReactiveSettingSubcategoryList(
+      category: category,
+      states: stateList,
+      settingBuilder: settingBuilder,
+    ),
+  ];
+}
+
+class _ReactiveSettingSubcategoryList extends StatelessWidget {
+  const _ReactiveSettingSubcategoryList({
+    required this.category,
+    required this.states,
+    this.settingBuilder,
+  });
+
+  final SettingCategory category;
+  final List<SettingState<dynamic>> states;
+  final Widget Function(SettingState<dynamic> state)? settingBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    final notifiers = _dependencyNotifiers(context);
+    if (notifiers.isEmpty) {
+      return _buildSectionList(context);
+    }
+
+    return ListenableBuilder(
+      listenable: Listenable.merge(notifiers),
+      builder: (context, _) => _buildSectionList(context),
+    );
+  }
+
+  Widget _buildSectionList(BuildContext context) {
+    final registry = SettingsRegistry.instance;
+    final children = <Widget>[];
+    var hasRenderedSettings = false;
+
+    final subcategories = SettingSubcategory.values.where((subcategory) => subcategory.category == category);
+
+    for (final subcategory in subcategories) {
+      final sectionStates = states
+          .where((state) => registry.subcategoryFor(category, state) == subcategory)
+          .where((state) => _shouldShowSetting(context, state))
+          .toList();
+      if (sectionStates.isEmpty) continue;
+
+      children.add(
+        SettingsSubcategoryHeader(
+          title: subcategory.locName(context),
+          showTopDivider: hasRenderedSettings,
+        ),
+      );
+      children.addAll(
+        sectionStates.map((state) => settingBuilder?.call(state) ?? ReactiveSettingWidget(state: state)),
+      );
+      hasRenderedSettings = true;
+    }
+
+    for (final state in states) {
+      if (registry.subcategoryFor(category, state) == null && _shouldShowSetting(context, state)) {
+        children.add(settingBuilder?.call(state) ?? ReactiveSettingWidget(state: state));
+        hasRenderedSettings = true;
+      }
+    }
+
+    if (children.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
+    );
+  }
+
+  List<Listenable> _dependencyNotifiers(BuildContext context) {
+    final registry = SettingsRegistry.instance;
+    final notifiers = <Listenable>[];
+    for (final state in states) {
+      final dependsOn = state.def.dependsOn;
+      if (dependsOn == null || dependsOn.isEmpty) continue;
+
+      for (final depKey in dependsOn) {
+        final depState = registry.get<dynamic>(depKey);
+        if (depState != null) {
+          notifiers.add(depState.scopedNotifier(context));
+        }
+      }
+    }
+    return notifiers;
+  }
+}
+
+bool _shouldShowSetting(BuildContext context, SettingState<dynamic> state) {
+  if (!SettingsRegistry.instance.isSettingVisible(state)) {
+    return false;
+  }
+
+  final enabledWhen = state.def.enabledWhen;
+  if (enabledWhen == null) {
+    return true;
+  }
+
+  return enabledWhen(context);
+}
+
+class SettingsSubcategoryHeader extends StatelessWidget {
+  const SettingsSubcategoryHeader({
+    required this.title,
+    this.showTopDivider = true,
+    super.key,
+  });
+
+  final String title;
+  final bool showTopDivider;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textColor = _readableAccentColor(
+      foreground: theme.colorScheme.primary,
+      background: theme.colorScheme.surface,
+      fallback: theme.colorScheme.onSurface,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (showTopDivider)
+          Container(
+            margin: const EdgeInsets.only(top: kMinInteractiveDimension),
+            decoration: BoxDecoration(
+              color: theme.dividerColor.withValues(alpha: 0.15),
+            ),
+            height: 4,
+          ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+          child: Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: textColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+Color _readableAccentColor({
+  required Color foreground,
+  required Color background,
+  required Color fallback,
+}) {
+  const minReadableContrast = 3.0;
+  if (_contrastRatio(foreground, background) >= minReadableContrast) {
+    return foreground;
+  }
+
+  return fallback;
+}
+
+double _contrastRatio(Color a, Color b) {
+  final first = a.computeLuminance();
+  final second = b.computeLuminance();
+  final lighter = first > second ? first : second;
+  final darker = first > second ? second : first;
+
+  return (lighter + 0.05) / (darker + 0.05);
 }
 
 /// Wraps a single setting widget with reactive visibility.
@@ -208,12 +401,9 @@ class ReactiveSettingWidget extends StatelessWidget {
       return state.buildWidget(context);
     }
 
-    final isEditingBooru = BooruEditingScope.of(context) != null;
-
     // Static condition (no dependencies to listen to) — evaluate once
     if (dependsOn == null || dependsOn.isEmpty) {
-      // Pass context when editing a booru so _val reads scoped values
-      if (!enabledWhen(isEditingBooru ? context : null)) {
+      if (!enabledWhen(context)) {
         return const SizedBox.shrink();
       }
       return state.buildWidget(context);
@@ -236,7 +426,7 @@ class ReactiveSettingWidget extends StatelessWidget {
     return ListenableBuilder(
       listenable: Listenable.merge(dependencyNotifiers),
       builder: (context, _) {
-        final enabled = enabledWhen(isEditingBooru ? context : null);
+        final enabled = enabledWhen(context);
         return AnimatedSize(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
