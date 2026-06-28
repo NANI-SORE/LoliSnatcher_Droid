@@ -66,6 +66,7 @@ SettingDef<T> settingsEnumSetting<T extends Enum>({
   Widget? Function(BuildContext context, T? value)? itemLeadingBuilder,
   EnumDisplayMode displayMode = EnumDisplayMode.dropdown,
   List<SettingCategory> categories = const [],
+  List<SettingSubcategory> subcategories = const [],
   bool isDeviceSpecific = false,
   bool supportsPerBooru = false,
   bool isSearchable = true,
@@ -87,6 +88,7 @@ SettingDef<T> settingsEnumSetting<T extends Enum>({
     itemLeadingBuilder: itemLeadingBuilder,
     displayMode: displayMode,
     categories: categories,
+    subcategories: subcategories,
     isDeviceSpecific: isDeviceSpecific,
     supportsPerBooru: supportsPerBooru,
     isSearchable: isSearchable,
@@ -100,8 +102,9 @@ SettingDef<T> settingsEnumSetting<T extends Enum>({
 }
 
 /// Shorthand to read a setting's current value from the registry.
-/// When [context] is provided and the setting supports per-booru overrides,
-/// reads the scoped value (override for the booru being edited, if any).
+/// When [context] is provided inside a booru editing scope and the setting
+/// supports per-booru overrides, reads the override for the booru being edited.
+/// Otherwise context reads return the global value used by settings pages.
 T _val<T>(SettingKey key, [BuildContext? context]) {
   final state = SettingsRegistry.instance.get<T>(key)!;
   if (context != null) return state.scopedValue(context);
@@ -146,6 +149,38 @@ void registerAllSettings() {
   // ============================================
 
   registry.register(
+    settingsEnumSetting<AppMode>(
+      key: .appMode,
+      getDefaultValue: () => AppMode.defaultValue,
+      values: AppMode.values,
+      fromString: AppMode.fromString,
+      // categories: [SettingCategory.interface], // TODO reenable when desktop is redesigned
+      categories: [],
+      subcategories: [SettingSubcategory.layout],
+      isDeviceSpecific: true,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.interface.appUIMode,
+      ),
+    ),
+  );
+
+  registry.register(
+    settingsEnumSetting<HandSide>(
+      key: .handSide,
+      getDefaultValue: () => HandSide.defaultValue,
+      values: HandSide.values,
+      fromString: HandSide.fromString,
+      categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.layout],
+      isDeviceSpecific: true,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.interface.handSide,
+        helpText: (ctx) => ctx.loc.settings.interface.handSideHelp,
+      ),
+    ),
+  );
+
+  registry.register(
     intSetting(
       key: .portraitColumns,
       getDefaultValue: () => 2,
@@ -153,6 +188,7 @@ void registerAllSettings() {
       max: 100,
       step: 1,
       categories: [SettingCategory.interface, SettingCategory.performance],
+      subcategories: [SettingSubcategory.previewGrid, SettingSubcategory.previewPerformance],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.previewColumnsPortrait,
@@ -168,6 +204,7 @@ void registerAllSettings() {
       max: 100,
       step: 1,
       categories: [SettingCategory.interface, SettingCategory.performance],
+      subcategories: [SettingSubcategory.previewGrid, SettingSubcategory.previewPerformance],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.previewColumnsLandscape,
@@ -183,6 +220,7 @@ void registerAllSettings() {
       fromString: PreviewQuality.fromString,
       displayMode: EnumDisplayMode.optionsList,
       categories: [SettingCategory.interface, SettingCategory.performance],
+      subcategories: [SettingSubcategory.previewGrid, SettingSubcategory.previewPerformance],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.previewQuality,
@@ -228,6 +266,7 @@ void registerAllSettings() {
         };
       },
       categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.previewGrid],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.previewDisplay,
@@ -242,6 +281,7 @@ void registerAllSettings() {
       values: PreviewDisplayMode.values.where((e) => e != PreviewDisplayMode.staggered).toList(),
       fromString: PreviewDisplayMode.fromString,
       categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.previewGrid],
       supportsPerBooru: true,
       dependsOn: [.previewDisplay],
       enabledWhen: ([BuildContext? context]) =>
@@ -254,40 +294,11 @@ void registerAllSettings() {
   );
 
   registry.register(
-    settingsEnumSetting<AppMode>(
-      key: .appMode,
-      getDefaultValue: () => AppMode.defaultValue,
-      values: AppMode.values,
-      fromString: AppMode.fromString,
-      // categories: [SettingCategory.interface], // TODO reenable when desktop is redesigned
-      categories: [],
-      isDeviceSpecific: true,
-      localization: SettingLocalization(
-        title: (ctx) => ctx.loc.settings.interface.appUIMode,
-      ),
-    ),
-  );
-
-  registry.register(
-    settingsEnumSetting<HandSide>(
-      key: .handSide,
-      getDefaultValue: () => HandSide.defaultValue,
-      values: HandSide.values,
-      fromString: HandSide.fromString,
-      categories: [SettingCategory.interface],
-      isDeviceSpecific: true,
-      localization: SettingLocalization(
-        title: (ctx) => ctx.loc.settings.interface.handSide,
-        helpText: (ctx) => ctx.loc.settings.interface.handSideHelp,
-      ),
-    ),
-  );
-
-  registry.register(
     boolSetting(
       key: .showBottomSearchbar,
       getDefaultValue: () => true,
       categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.previewGrid],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.showSearchBarInPreviewGrid,
@@ -300,6 +311,7 @@ void registerAllSettings() {
       key: .useTopSearchbarInput,
       getDefaultValue: () => false,
       categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.previewGrid],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.moveInputToTopInSearchView,
@@ -312,6 +324,7 @@ void registerAllSettings() {
       key: .showSearchbarQuickActions,
       getDefaultValue: () => false,
       categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.previewGrid],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.searchViewQuickActionsPanel,
@@ -324,6 +337,7 @@ void registerAllSettings() {
       key: .autofocusSearchbar,
       getDefaultValue: () => true,
       categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.previewGrid],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.searchViewInputAutofocus,
@@ -336,6 +350,7 @@ void registerAllSettings() {
       key: .disableImageScaling,
       getDefaultValue: () => false,
       categories: [SettingCategory.interface, SettingCategory.performance],
+      subcategories: [SettingSubcategory.rendering, SettingSubcategory.previewPerformance],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.dontScaleImages,
@@ -370,6 +385,7 @@ void registerAllSettings() {
       key: .gifsAsThumbnails,
       getDefaultValue: () => false,
       categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.rendering],
       isDeviceSpecific: true,
       dependsOn: [.disableImageScaling],
       enabledWhen: ([BuildContext? context]) => _val<bool>(.disableImageScaling, context),
@@ -394,6 +410,7 @@ void registerAllSettings() {
       values: ImageQuality.values,
       fromString: ImageQuality.fromString,
       categories: [SettingCategory.viewer, SettingCategory.performance],
+      subcategories: [SettingSubcategory.loadingPreloading, SettingSubcategory.viewerPerformance],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.imageQuality,
@@ -409,6 +426,7 @@ void registerAllSettings() {
       max: 4,
       step: 1,
       categories: [SettingCategory.viewer, SettingCategory.performance],
+      subcategories: [SettingSubcategory.loadingPreloading, SettingSubcategory.viewerPerformance],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.preloadAmount,
@@ -424,6 +442,7 @@ void registerAllSettings() {
       max: 2000000000,
       step: 1024,
       categories: [SettingCategory.viewer, SettingCategory.performance],
+      subcategories: [SettingSubcategory.loadingPreloading, SettingSubcategory.viewerPerformance],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.preloadHeightLimit,
@@ -440,6 +459,7 @@ void registerAllSettings() {
       max: double.infinity,
       step: 0.1,
       categories: [SettingCategory.viewer, SettingCategory.performance],
+      subcategories: [SettingSubcategory.loadingPreloading, SettingSubcategory.viewerPerformance],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.preloadSizeLimit,
@@ -453,6 +473,7 @@ void registerAllSettings() {
       key: .autoHideImageBar,
       getDefaultValue: () => false,
       categories: [SettingCategory.viewer],
+      subcategories: [SettingSubcategory.toolbar],
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.hideToolbarWhenOpeningViewer,
       ),
@@ -466,6 +487,7 @@ void registerAllSettings() {
       values: VerticalPosition.values,
       fromString: VerticalPosition.fromString,
       categories: [SettingCategory.viewer],
+      subcategories: [SettingSubcategory.toolbar],
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.viewerToolbarPosition,
       ),
@@ -479,6 +501,7 @@ void registerAllSettings() {
       values: UiScrollDirection.values,
       fromString: UiScrollDirection.fromString,
       categories: [SettingCategory.viewer],
+      subcategories: [SettingSubcategory.toolbar],
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.viewerScrollDirection,
       ),
@@ -492,6 +515,7 @@ void registerAllSettings() {
       values: ButtonPosition.values,
       fromString: ButtonPosition.fromString,
       categories: [SettingCategory.viewer],
+      subcategories: [SettingSubcategory.toolbar],
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.zoomButtonPosition,
       ),
@@ -505,6 +529,7 @@ void registerAllSettings() {
       values: ButtonPosition.values,
       fromString: ButtonPosition.fromString,
       categories: [SettingCategory.viewer],
+      subcategories: [SettingSubcategory.toolbar],
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.changePageButtonsPosition,
       ),
@@ -518,6 +543,7 @@ void registerAllSettings() {
       values: ButtonPosition.values,
       fromString: ButtonPosition.fromString,
       categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.previewGrid],
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.scrollPreviewsButtonsPosition,
       ),
@@ -531,6 +557,7 @@ void registerAllSettings() {
       values: ShareAction.values,
       fromString: ShareAction.fromString,
       categories: [SettingCategory.viewer],
+      subcategories: [SettingSubcategory.toolbar],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.defaultShareAction,
@@ -560,6 +587,7 @@ void registerAllSettings() {
       key: .buttonOrder,
       getDefaultValue: () => GalleryButton.values.map((b) => b.toJson()).toList(),
       categories: [SettingCategory.viewer],
+      subcategories: [SettingSubcategory.toolbar],
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.toolbarButtonsOrder,
       ),
@@ -598,6 +626,7 @@ void registerAllSettings() {
       key: .disabledButtons,
       getDefaultValue: () => <String>[],
       categories: [SettingCategory.viewer],
+      subcategories: [SettingSubcategory.toolbar],
       // No widget builder: managed by the toolbar editor attached to buttonOrder.
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.buttonsOrder,
@@ -623,6 +652,7 @@ void registerAllSettings() {
       key: .allowRotation,
       getDefaultValue: () => false,
       categories: [SettingCategory.viewer],
+      subcategories: [SettingSubcategory.viewerBehavior],
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.enableRotation,
         subtitle: (ctx) => ctx.loc.settings.viewer.enableRotationSubtitle,
@@ -635,6 +665,7 @@ void registerAllSettings() {
       key: .expandDetails,
       getDefaultValue: () => false,
       categories: [SettingCategory.viewer],
+      subcategories: [SettingSubcategory.viewerBehavior],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.expandDetailsByDefault,
@@ -647,6 +678,7 @@ void registerAllSettings() {
       key: .hideNotes,
       getDefaultValue: () => false,
       categories: [SettingCategory.viewer],
+      subcategories: [SettingSubcategory.viewerBehavior],
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.hideTranslationNotesByDefault,
       ),
@@ -658,6 +690,7 @@ void registerAllSettings() {
       key: .enableHeroTransitions,
       getDefaultValue: () => true,
       categories: [SettingCategory.viewer, SettingCategory.performance],
+      subcategories: [SettingSubcategory.viewerBehavior, SettingSubcategory.viewerPerformance],
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.viewerOpenCloseAnimation,
       ),
@@ -669,6 +702,7 @@ void registerAllSettings() {
       key: .disableCustomPageTransitions,
       getDefaultValue: () => false,
       categories: [SettingCategory.viewer, SettingCategory.performance],
+      subcategories: [SettingSubcategory.viewerBehavior, SettingSubcategory.viewerPerformance],
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.viewerPageChangeAnimation,
       ),
@@ -683,6 +717,7 @@ void registerAllSettings() {
       max: 100000,
       step: 100,
       categories: [SettingCategory.viewer],
+      subcategories: [SettingSubcategory.slideshow],
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.slideshowDurationInMs,
         helpText: (ctx) => ctx.loc.settings.viewer.slideshowWIPNote,
@@ -695,6 +730,7 @@ void registerAllSettings() {
       key: .useVolumeButtonsForScroll,
       getDefaultValue: () => false,
       categories: [SettingCategory.viewer],
+      subcategories: [SettingSubcategory.physicalButtons],
       isDeviceSpecific: true,
       onChanged: (_, newValue) => ServiceHandler.setVolumeButtons(!newValue),
       localization: SettingLocalization(
@@ -726,6 +762,8 @@ void registerAllSettings() {
       max: 1000000,
       step: 10,
       categories: [SettingCategory.viewer],
+      subcategories: [SettingSubcategory.physicalButtons],
+      dependsOn: [.useVolumeButtonsForScroll],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.volumeButtonsScrollSpeed,
@@ -742,6 +780,7 @@ void registerAllSettings() {
       key: .disableVideo,
       getDefaultValue: () => false,
       categories: [SettingCategory.video, SettingCategory.performance],
+      subcategories: [SettingSubcategory.playback, SettingSubcategory.videoPerformance],
       isDeviceSpecific: true,
       supportsPerBooru: true,
       localization: SettingLocalization(
@@ -756,6 +795,7 @@ void registerAllSettings() {
       key: .autoPlayEnabled,
       getDefaultValue: () => true,
       categories: [SettingCategory.video, SettingCategory.performance],
+      subcategories: [SettingSubcategory.playback, SettingSubcategory.videoPerformance],
       supportsPerBooru: true,
       dependsOn: [.disableVideo],
       enabledWhen: ([BuildContext? context]) => !_val<bool>(.disableVideo, context),
@@ -770,6 +810,7 @@ void registerAllSettings() {
       key: .startVideosMuted,
       getDefaultValue: () => false,
       categories: [SettingCategory.video],
+      subcategories: [SettingSubcategory.playback],
       supportsPerBooru: true,
       dependsOn: [.disableVideo],
       enabledWhen: ([BuildContext? context]) => !_val<bool>(.disableVideo, context),
@@ -786,6 +827,7 @@ void registerAllSettings() {
       values: VideoBackendMode.allowedValues,
       fromString: VideoBackendMode.fromString,
       categories: [SettingCategory.video],
+      subcategories: [SettingSubcategory.backend],
       isDeviceSpecific: true,
       dependsOn: [.disableVideo],
       enabledWhen: ([BuildContext? context]) => !_val<bool>(.disableVideo, context),
@@ -815,17 +857,17 @@ void registerAllSettings() {
       values: VideoCacheMode.values,
       fromString: VideoCacheMode.fromString,
       categories: [SettingCategory.video],
-      dependsOn: [.disableVideo, .videoBackendMode],
-      enabledWhen: ([BuildContext? context]) =>
-          !_val<bool>(.disableVideo, context) &&
-          _val<VideoBackendMode>(.videoBackendMode, context) != VideoBackendMode.normal,
+      subcategories: [SettingSubcategory.backend],
+      dependsOn: [.disableVideo],
+      enabledWhen: ([BuildContext? context]) => !_val<bool>(.disableVideo, context),
       displayMode: EnumDisplayMode.optionsList,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.video.videoCacheMode,
         subtitle: (ctx) =>
             'Videos on some Boorus may not work correctly (i.e. endless loading) when using Stream video cache mode. '
-            'In that case try using Cache mode. Otherwise player will retry with Cache mode automatically if video is '
-            'in initial buffering state for 10+ seconds and video file size is less than 25mb',
+                    'In that case try using Cache mode. Otherwise player will retry with Cache mode automatically if video is '
+                    'in initial buffering state for 10+ seconds and video file size is less than 25mb'
+                .temploc,
       ),
     ),
   );
@@ -835,11 +877,12 @@ void registerAllSettings() {
       key: .altVideoPlayerHwAccel,
       getDefaultValue: () => true,
       categories: [SettingCategory.video],
+      subcategories: [SettingSubcategory.mpv],
       isDeviceSpecific: true,
       dependsOn: [.disableVideo, .videoBackendMode],
       enabledWhen: ([BuildContext? context]) =>
           !_val<bool>(.disableVideo, context) &&
-          _val<VideoBackendMode>(.videoBackendMode, context) != VideoBackendMode.normal,
+          _val<VideoBackendMode>(.videoBackendMode, context) == VideoBackendMode.mpv,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.video.mpvUseHardwareAcceleration,
       ),
@@ -853,6 +896,7 @@ void registerAllSettings() {
       values: MpvVideoOutput.values,
       fromString: MpvVideoOutput.fromString,
       categories: [SettingCategory.video],
+      subcategories: [SettingSubcategory.mpv],
       isDeviceSpecific: true,
       dependsOn: [.disableVideo, .videoBackendMode],
       enabledWhen: ([BuildContext? context]) =>
@@ -871,6 +915,7 @@ void registerAllSettings() {
       values: MpvHardwareDecoding.values,
       fromString: MpvHardwareDecoding.fromString,
       categories: [SettingCategory.video],
+      subcategories: [SettingSubcategory.mpv],
       isDeviceSpecific: true,
       dependsOn: [.disableVideo, .videoBackendMode],
       enabledWhen: ([BuildContext? context]) =>
@@ -887,11 +932,26 @@ void registerAllSettings() {
   // ============================================
 
   registry.register(
+    themeModeSetting(
+      key: .themeMode,
+      getDefaultValue: () => ThemeMode.dark,
+      categories: [SettingCategory.theme],
+      subcategories: [SettingSubcategory.theme],
+      isDeviceSpecific: true,
+      supportsPerBooru: true,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.theme.themeMode,
+      ),
+    ),
+  );
+
+  registry.register(
     themeSetting(
       key: .theme,
       getDefaultValue: getDefaultTheme,
       getOptions: getThemeOptions,
       categories: [SettingCategory.theme],
+      subcategories: [SettingSubcategory.theme],
       isDeviceSpecific: true,
       supportsPerBooru: true,
       dependsOn: [.useDynamicColor],
@@ -903,14 +963,35 @@ void registerAllSettings() {
   );
 
   registry.register(
-    themeModeSetting(
-      key: .themeMode,
-      getDefaultValue: () => ThemeMode.dark,
+    colorPickerSetting(
+      key: .customPrimaryColor,
+      getDefaultValue: () => Colors.pink[200],
       categories: [SettingCategory.theme],
+      subcategories: [SettingSubcategory.theme],
       isDeviceSpecific: true,
       supportsPerBooru: true,
+      dependsOn: [.useDynamicColor, .theme],
+      enabledWhen: ([BuildContext? context]) =>
+          !_val<bool>(.useDynamicColor, context) && _val<ThemeItem>(.theme, context).name == 'Custom',
       localization: SettingLocalization(
-        title: (ctx) => ctx.loc.settings.theme.themeMode,
+        title: (ctx) => ctx.loc.settings.theme.primaryColor,
+      ),
+    ),
+  );
+
+  registry.register(
+    colorPickerSetting(
+      key: .customAccentColor,
+      getDefaultValue: () => Colors.pink[600],
+      categories: [SettingCategory.theme],
+      subcategories: [SettingSubcategory.theme],
+      isDeviceSpecific: true,
+      supportsPerBooru: true,
+      dependsOn: [.useDynamicColor, .theme],
+      enabledWhen: ([BuildContext? context]) =>
+          !_val<bool>(.useDynamicColor, context) && _val<ThemeItem>(.theme, context).name == 'Custom',
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.theme.secondaryColor,
       ),
     ),
   );
@@ -920,6 +1001,7 @@ void registerAllSettings() {
       key: .isAmoled,
       getDefaultValue: () => false,
       categories: [SettingCategory.theme],
+      subcategories: [SettingSubcategory.theme],
       isDeviceSpecific: true,
       supportsPerBooru: true,
       dependsOn: [.themeMode],
@@ -938,42 +1020,13 @@ void registerAllSettings() {
       key: .useDynamicColor,
       getDefaultValue: () => false,
       categories: [SettingCategory.theme],
+      subcategories: [SettingSubcategory.theme],
       isDeviceSpecific: true,
       supportsPerBooru: true,
+      visibleWhen: () => Platform.isAndroid,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.theme.useDynamicColor,
-      ),
-    ),
-  );
-
-  registry.register(
-    colorPickerSetting(
-      key: .customPrimaryColor,
-      getDefaultValue: () => Colors.pink[200],
-      categories: [SettingCategory.theme],
-      isDeviceSpecific: true,
-      supportsPerBooru: true,
-      dependsOn: [.useDynamicColor, .theme],
-      enabledWhen: ([BuildContext? context]) =>
-          !_val<bool>(.useDynamicColor, context) && _val<ThemeItem>(.theme, context).name == 'Custom',
-      localization: SettingLocalization(
-        title: (ctx) => ctx.loc.settings.theme.primaryColor,
-      ),
-    ),
-  );
-
-  registry.register(
-    colorPickerSetting(
-      key: .customAccentColor,
-      getDefaultValue: () => Colors.pink[600],
-      categories: [SettingCategory.theme],
-      isDeviceSpecific: true,
-      supportsPerBooru: true,
-      dependsOn: [.useDynamicColor, .theme],
-      enabledWhen: ([BuildContext? context]) =>
-          !_val<bool>(.useDynamicColor, context) && _val<ThemeItem>(.theme, context).name == 'Custom',
-      localization: SettingLocalization(
-        title: (ctx) => ctx.loc.settings.theme.secondaryColor,
+        subtitle: (ctx) => ctx.loc.settings.theme.android12PlusOnly,
       ),
     ),
   );
@@ -984,6 +1037,7 @@ void registerAllSettings() {
       getDefaultValue: () => 'System',
       getOptions: () => ['System'], // Populated dynamically at runtime
       categories: [SettingCategory.theme],
+      subcategories: [SettingSubcategory.textAndDrawer],
       isDeviceSpecific: true,
       supportsPerBooru: true,
       localization: SettingLocalization(
@@ -997,6 +1051,7 @@ void registerAllSettings() {
       key: .enableDrawerMascot,
       getDefaultValue: () => false,
       categories: [SettingCategory.theme],
+      subcategories: [SettingSubcategory.textAndDrawer],
       isDeviceSpecific: true,
       supportsPerBooru: true,
       localization: SettingLocalization(
@@ -1010,6 +1065,7 @@ void registerAllSettings() {
       key: .drawerMascotPathOverride,
       getDefaultValue: () => '',
       categories: [SettingCategory.theme],
+      subcategories: [SettingSubcategory.textAndDrawer],
       isDeviceSpecific: true,
       supportsPerBooru: true,
       visibleWhen: () => Platform.isAndroid,
@@ -1049,6 +1105,7 @@ void registerAllSettings() {
       values: ImageQuality.values,
       fromString: ImageQuality.fromString,
       categories: [SettingCategory.cache],
+      subcategories: [SettingSubcategory.downloads],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.cache.snatchQuality,
@@ -1064,6 +1121,7 @@ void registerAllSettings() {
       max: 10000,
       step: 50,
       categories: [SettingCategory.cache],
+      subcategories: [SettingSubcategory.downloads],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.cache.snatchCooldown,
@@ -1076,6 +1134,7 @@ void registerAllSettings() {
       key: .downloadNotifications,
       getDefaultValue: () => true,
       categories: [SettingCategory.cache],
+      subcategories: [SettingSubcategory.downloads],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.cache.showDownloadNotifications,
@@ -1088,6 +1147,7 @@ void registerAllSettings() {
       key: .snatchOnFavourite,
       getDefaultValue: () => false,
       categories: [SettingCategory.cache],
+      subcategories: [SettingSubcategory.downloads],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.cache.snatchItemsOnFavouriting,
@@ -1110,6 +1170,7 @@ void registerAllSettings() {
       key: .favouriteOnSnatch,
       getDefaultValue: () => false,
       categories: [SettingCategory.cache],
+      subcategories: [SettingSubcategory.downloads],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.cache.favouriteItemsOnSnatching,
@@ -1132,6 +1193,7 @@ void registerAllSettings() {
       key: .jsonWrite,
       getDefaultValue: () => false,
       categories: [SettingCategory.cache],
+      subcategories: [SettingSubcategory.downloads],
       supportsPerBooru: true,
       dependsOn: [.extPathOverride],
       enabledWhen: ([BuildContext? context]) =>
@@ -1148,6 +1210,7 @@ void registerAllSettings() {
       key: .extPathOverride,
       getDefaultValue: () => '',
       categories: [SettingCategory.cache],
+      subcategories: [SettingSubcategory.storage],
       isDeviceSpecific: true,
       visibleWhen: () => Platform.isAndroid,
       pickDirectory: ServiceHandler.setExtDir,
@@ -1162,6 +1225,7 @@ void registerAllSettings() {
       key: .thumbnailCache,
       getDefaultValue: () => true,
       categories: [SettingCategory.cache],
+      subcategories: [SettingSubcategory.cache],
       isDeviceSpecific: true,
       supportsPerBooru: true,
       localization: SettingLocalization(
@@ -1175,6 +1239,7 @@ void registerAllSettings() {
       key: .mediaCache,
       getDefaultValue: () => true,
       categories: [SettingCategory.cache],
+      subcategories: [SettingSubcategory.cache],
       isDeviceSpecific: true,
       supportsPerBooru: true,
       localization: SettingLocalization(
@@ -1188,6 +1253,7 @@ void registerAllSettings() {
       key: .cacheDuration,
       getDefaultValue: () => Duration.zero,
       categories: [SettingCategory.cache],
+      subcategories: [SettingSubcategory.cache],
       isDeviceSpecific: true,
       options: const [
         Duration.zero,
@@ -1215,6 +1281,7 @@ void registerAllSettings() {
       max: 50,
       step: 1,
       categories: [SettingCategory.cache],
+      subcategories: [SettingSubcategory.cache],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.cache.cacheSizeLimit,
@@ -1226,6 +1293,7 @@ void registerAllSettings() {
     widgetSlot(
       key: .cacheStatsSlot,
       categories: [SettingCategory.cache],
+      subcategories: [SettingSubcategory.cacheStats],
       builder: (context) => const CacheStatsWidget(),
     ),
   );
@@ -1235,6 +1303,7 @@ void registerAllSettings() {
       key: .backupPath,
       getDefaultValue: () => '',
       categories: [SettingCategory.backup],
+      subcategories: [SettingSubcategory.backup],
       isDeviceSpecific: true,
       visibleWhen: () => Platform.isAndroid,
       pickDirectory: ServiceHandler.getSAFDirectoryAccess,
@@ -1253,6 +1322,7 @@ void registerAllSettings() {
       key: .dbEnabled,
       getDefaultValue: () => true,
       categories: [SettingCategory.database],
+      subcategories: [SettingSubcategory.database],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.database.enableDatabase,
@@ -1265,6 +1335,7 @@ void registerAllSettings() {
       key: .indexesEnabled,
       getDefaultValue: () => false,
       categories: [SettingCategory.database],
+      subcategories: [SettingSubcategory.database],
       isDeviceSpecific: true,
       dependsOn: [.dbEnabled],
       enabledWhen: ([BuildContext? context]) => _val<bool>(.dbEnabled, context),
@@ -1279,6 +1350,7 @@ void registerAllSettings() {
       key: .searchHistoryEnabled,
       getDefaultValue: () => true,
       categories: [SettingCategory.database],
+      subcategories: [SettingSubcategory.database],
       isDeviceSpecific: true,
       dependsOn: [.dbEnabled],
       enabledWhen: ([BuildContext? context]) => _val<bool>(.dbEnabled, context),
@@ -1293,6 +1365,7 @@ void registerAllSettings() {
       key: .tagTypeFetchEnabled,
       getDefaultValue: () => true,
       categories: [SettingCategory.database],
+      subcategories: [SettingSubcategory.database],
       dependsOn: [.dbEnabled],
       enabledWhen: ([BuildContext? context]) => _val<bool>(.dbEnabled, context),
       localization: SettingLocalization(
@@ -1329,6 +1402,7 @@ void registerAllSettings() {
       key: .allowSelfSignedCerts,
       getDefaultValue: () => false,
       categories: [SettingCategory.network],
+      subcategories: [SettingSubcategory.security],
       isDeviceSpecific: true,
       onChanged: (_, _) => initProxy(),
       localization: SettingLocalization(
@@ -1344,6 +1418,7 @@ void registerAllSettings() {
       values: ProxyType.values,
       fromString: ProxyType.fromString,
       categories: [SettingCategory.network],
+      subcategories: [SettingSubcategory.proxy],
       isDeviceSpecific: true,
       supportsPerBooru: true,
       // The installed callback reads effective settings dynamically. Re-run
@@ -1361,6 +1436,7 @@ void registerAllSettings() {
       key: .proxyAddress,
       getDefaultValue: () => '',
       categories: [SettingCategory.network],
+      subcategories: [SettingSubcategory.proxy],
       isDeviceSpecific: true,
       supportsPerBooru: true,
       dependsOn: [.proxyType],
@@ -1380,6 +1456,7 @@ void registerAllSettings() {
       key: .proxyUsername,
       getDefaultValue: () => '',
       categories: [SettingCategory.network],
+      subcategories: [SettingSubcategory.proxy],
       isDeviceSpecific: true,
       supportsPerBooru: true,
       dependsOn: [.proxyType],
@@ -1400,6 +1477,7 @@ void registerAllSettings() {
       getDefaultValue: () => '',
       obscureable: true,
       categories: [SettingCategory.network],
+      subcategories: [SettingSubcategory.proxy],
       isDeviceSpecific: true,
       supportsPerBooru: true,
       dependsOn: [.proxyType],
@@ -1419,6 +1497,7 @@ void registerAllSettings() {
       key: .customUserAgent,
       getDefaultValue: () => '',
       categories: [SettingCategory.network],
+      subcategories: [SettingSubcategory.requests],
       isDeviceSpecific: true,
       supportsPerBooru: true,
       pasteable: true,
@@ -1433,7 +1512,6 @@ void registerAllSettings() {
             Text(ctx.loc.settings.network.keepEmptyForDefault),
             Text(ctx.loc.settings.network.defaultUserAgent(agent: Tools.appUserAgent)),
             Text(ctx.loc.settings.network.userAgentUsedOnRequests),
-            Text(ctx.loc.settings.network.valueSavedAfterLeaving),
           ],
         ),
       ),
@@ -1449,6 +1527,7 @@ void registerAllSettings() {
       key: .filterHated,
       getDefaultValue: () => false,
       categories: [SettingCategory.tagsFilters],
+      subcategories: [SettingSubcategory.activeFilters],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.itemFilters.removeHidden,
@@ -1464,6 +1543,7 @@ void registerAllSettings() {
       key: .filterMarked,
       getDefaultValue: () => false,
       categories: [SettingCategory.tagsFilters],
+      subcategories: [SettingSubcategory.activeFilters],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.itemFilters.removeMarked,
@@ -1479,6 +1559,7 @@ void registerAllSettings() {
       key: .filterFavourites,
       getDefaultValue: () => false,
       categories: [SettingCategory.tagsFilters],
+      subcategories: [SettingSubcategory.activeFilters],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.itemFilters.removeFavourited,
@@ -1494,6 +1575,7 @@ void registerAllSettings() {
       key: .filterSnatched,
       getDefaultValue: () => false,
       categories: [SettingCategory.tagsFilters],
+      subcategories: [SettingSubcategory.activeFilters],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.itemFilters.removeSnatched,
@@ -1509,6 +1591,7 @@ void registerAllSettings() {
       key: .filterAi,
       getDefaultValue: () => false,
       categories: [SettingCategory.tagsFilters],
+      subcategories: [SettingSubcategory.activeFilters],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.itemFilters.removeAI,
@@ -1524,6 +1607,7 @@ void registerAllSettings() {
       key: .useLockscreen,
       getDefaultValue: () => false,
       categories: [SettingCategory.privacy],
+      subcategories: [SettingSubcategory.appLock],
       isDeviceSpecific: true,
       visibleWhen: () => LocalAuthHandler.instance.isSupportedPlatform,
       localization: SettingLocalization(
@@ -1538,6 +1622,7 @@ void registerAllSettings() {
       key: .blurOnLeave,
       getDefaultValue: () => false,
       categories: [SettingCategory.privacy],
+      subcategories: [SettingSubcategory.appLock],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.privacy.bluronLeave,
@@ -1554,26 +1639,13 @@ void registerAllSettings() {
       max: 2147483647,
       step: 10,
       categories: [SettingCategory.privacy],
+      subcategories: [SettingSubcategory.appLock],
       isDeviceSpecific: true,
       dependsOn: [.useLockscreen],
       enabledWhen: ([BuildContext? context]) => _val<bool>(.useLockscreen, context),
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.privacy.autoLockAfter,
         subtitle: (ctx) => ctx.loc.settings.privacy.autoLockAfterTip,
-      ),
-    ),
-  );
-
-  registry.register(
-    boolSetting(
-      key: .incognitoKeyboard,
-      getDefaultValue: () => false,
-      categories: [SettingCategory.privacy],
-      isDeviceSpecific: true,
-      visibleWhen: () => Platform.isAndroid,
-      localization: SettingLocalization(
-        title: (ctx) => ctx.loc.settings.privacy.incognitoKeyboard,
-        subtitle: (ctx) => ctx.loc.settings.privacy.incognitoKeyboardMsg,
       ),
     ),
   );
@@ -1587,7 +1659,7 @@ void registerAllSettings() {
       key: .defTags,
       getDefaultValue: () => 'rating:safe',
       categories: [SettingCategory.booru],
-      supportsPerBooru: true,
+      subcategories: [SettingSubcategory.defaults],
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.booru.defaultTags,
       ),
@@ -1599,6 +1671,7 @@ void registerAllSettings() {
       key: .hiddenTags,
       getDefaultValue: () => <String>[],
       categories: [SettingCategory.tagsFilters],
+      subcategories: [SettingSubcategory.tagLists],
       legacyJsonKeys: const ['hatedTags'],
       navigateTo: () => const TagsFiltersPage(),
       icon: Icons.visibility_off,
@@ -1613,6 +1686,7 @@ void registerAllSettings() {
       key: .markedTags,
       getDefaultValue: () => <String>[],
       categories: [SettingCategory.tagsFilters],
+      subcategories: [SettingSubcategory.tagLists],
       legacyJsonKeys: const ['lovedTags'],
       navigateTo: () => const TagsFiltersPage(),
       icon: Icons.star,
@@ -1631,6 +1705,7 @@ void registerAllSettings() {
       key: .prefBooru,
       getDefaultValue: () => '',
       categories: [SettingCategory.booru],
+      subcategories: [SettingSubcategory.defaults],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.booru.changeDefaultBooru,
@@ -1667,21 +1742,11 @@ void registerAllSettings() {
       max: 100,
       step: 10,
       categories: [SettingCategory.booru],
+      subcategories: [SettingSubcategory.defaults],
       supportsPerBooru: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.booru.itemsPerPage,
-      ),
-    ),
-  );
-
-  registry.register(
-    boolSetting(
-      key: .loadingGif,
-      getDefaultValue: () => false,
-      categories: [SettingCategory.interface],
-      isDeviceSpecific: true,
-      localization: SettingLocalization(
-        title: (ctx) => ctx.loc.settings.viewer.kannaLoadingGif,
+        subtitle: (ctx) => ctx.loc.settings.booru.itemsPerPageTip,
       ),
     ),
   );
@@ -1691,6 +1756,7 @@ void registerAllSettings() {
       key: .shitDevice,
       getDefaultValue: () => false,
       categories: [SettingCategory.performance],
+      subcategories: [SettingSubcategory.devicePerformance],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.performance.lowPerformanceMode,
@@ -1772,6 +1838,7 @@ void registerAllSettings() {
       key: .wakeLockEnabled,
       getDefaultValue: () => true,
       categories: [SettingCategory.performance],
+      subcategories: [SettingSubcategory.devicePerformance],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.viewer.preventDeviceFromSleeping,
@@ -1784,6 +1851,7 @@ void registerAllSettings() {
       key: .disableVibration,
       getDefaultValue: () => false,
       categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.additionalInterface],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.disableVibration,
@@ -1794,9 +1862,23 @@ void registerAllSettings() {
 
   registry.register(
     boolSetting(
+      key: .loadingGif,
+      getDefaultValue: () => false,
+      categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.additionalInterface],
+      isDeviceSpecific: true,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.viewer.kannaLoadingGif,
+      ),
+    ),
+  );
+
+  registry.register(
+    boolSetting(
       key: .desktopListsDrag,
       getDefaultValue: () => false,
       categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.additionalInterface],
       isDeviceSpecific: true,
       visibleWhen: () => PlatformExt.isDesktop,
       localization: SettingLocalization(
@@ -1813,6 +1895,7 @@ void registerAllSettings() {
       max: 100,
       step: 0.5,
       categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.additionalInterface],
       isDeviceSpecific: true,
       visibleWhen: () => PlatformExt.isDesktop,
       localization: SettingLocalization(
@@ -1825,9 +1908,42 @@ void registerAllSettings() {
     localeSetting(
       key: .locale,
       categories: [SettingCategory.language],
+      subcategories: [SettingSubcategory.language],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.language.title,
+      ),
+    ),
+  );
+
+  registry.register(
+    settingsEnumSetting<AppAlias>(
+      key: .appAlias,
+      getDefaultValue: () => AppAlias.defaultValue,
+      values: AppAlias.values,
+      fromString: AppAlias.fromString,
+      categories: [SettingCategory.privacy],
+      subcategories: [SettingSubcategory.privacy],
+      isDeviceSpecific: true,
+      visibleWhen: () => Platform.isAndroid,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.privacy.appDisplayName,
+        subtitle: (ctx) => ctx.loc.settings.privacy.appDisplayNameDescription,
+      ),
+    ),
+  );
+
+  registry.register(
+    boolSetting(
+      key: .incognitoKeyboard,
+      getDefaultValue: () => false,
+      categories: [SettingCategory.privacy],
+      subcategories: [SettingSubcategory.privacy],
+      isDeviceSpecific: true,
+      visibleWhen: () => Platform.isAndroid,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.privacy.incognitoKeyboard,
+        subtitle: (ctx) => ctx.loc.settings.privacy.incognitoKeyboardMsg,
       ),
     ),
   );
@@ -1837,6 +1953,7 @@ void registerAllSettings() {
       key: .lastSyncIp,
       getDefaultValue: () => '',
       categories: [SettingCategory.network],
+      subcategories: [SettingSubcategory.sync],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.sync.ipAddress,
@@ -1849,25 +1966,10 @@ void registerAllSettings() {
       key: .lastSyncPort,
       getDefaultValue: () => '',
       categories: [SettingCategory.network],
+      subcategories: [SettingSubcategory.sync],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.sync.port,
-      ),
-    ),
-  );
-
-  registry.register(
-    settingsEnumSetting<AppAlias>(
-      key: .appAlias,
-      getDefaultValue: () => AppAlias.defaultValue,
-      values: AppAlias.values,
-      fromString: AppAlias.fromString,
-      categories: [SettingCategory.privacy],
-      isDeviceSpecific: true,
-      visibleWhen: () => Platform.isAndroid,
-      localization: SettingLocalization(
-        title: (ctx) => ctx.loc.settings.privacy.appDisplayName,
-        subtitle: (ctx) => ctx.loc.settings.privacy.appDisplayNameDescription,
       ),
     ),
   );
@@ -1877,6 +1979,7 @@ void registerAllSettings() {
       key: .usePredictiveBack,
       getDefaultValue: () => true,
       categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.additionalInterface],
       isDeviceSpecific: true,
       visibleWhen: () => Platform.isAndroid,
       localization: SettingLocalization(
@@ -1890,6 +1993,7 @@ void registerAllSettings() {
       key: .captureLogcat,
       getDefaultValue: () => false,
       categories: [SettingCategory.logging],
+      subcategories: [SettingSubcategory.logs],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.logging.captureLogcat,
@@ -1907,6 +2011,7 @@ void registerAllSettings() {
       key: .isDebug,
       getDefaultValue: () => kDebugMode,
       categories: [SettingCategory.debug],
+      subcategories: [SettingSubcategory.debugMode],
       isDeviceSpecific: true,
       isSearchable: false,
       localization: SettingLocalization(
@@ -1920,6 +2025,7 @@ void registerAllSettings() {
       key: .showFps,
       getDefaultValue: () => false,
       categories: [SettingCategory.debug],
+      subcategories: [SettingSubcategory.overlays],
       isDeviceSpecific: true,
       isTransient: true,
       localization: SettingLocalization(
@@ -1933,6 +2039,7 @@ void registerAllSettings() {
       key: .showPerf,
       getDefaultValue: () => false,
       categories: [SettingCategory.debug],
+      subcategories: [SettingSubcategory.overlays],
       isDeviceSpecific: true,
       isTransient: true,
       localization: SettingLocalization(
@@ -1946,6 +2053,7 @@ void registerAllSettings() {
       key: .showImageStats,
       getDefaultValue: () => false,
       categories: [SettingCategory.debug],
+      subcategories: [SettingSubcategory.overlays],
       isDeviceSpecific: true,
       isTransient: true,
       localization: SettingLocalization(
@@ -1959,6 +2067,7 @@ void registerAllSettings() {
       key: .showVideoStats,
       getDefaultValue: () => false,
       categories: [SettingCategory.debug],
+      subcategories: [SettingSubcategory.overlays],
       isDeviceSpecific: true,
       isTransient: true,
       localization: SettingLocalization(
@@ -1972,6 +2081,7 @@ void registerAllSettings() {
       key: .useImageLogging,
       getDefaultValue: () => false,
       categories: [SettingCategory.debug],
+      subcategories: [SettingSubcategory.logging],
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => 'Use image logging',

@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
-import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/data/settings/setting_def.dart';
+import 'package:lolisnatcher/src/data/settings/settings_enum.dart';
 import 'package:lolisnatcher/src/data/theme_item.dart';
+import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/pages/settings/booru_overrides_page.dart';
+import 'package:lolisnatcher/src/widgets/common/close_dialog_button.dart';
+import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
+import 'package:lolisnatcher/src/widgets/settings/setting_chrome_scope.dart';
 
 /// Callback to get the current booru notifier from the registry.
 /// Set by [SettingsRegistry] during initialization to avoid circular imports.
@@ -96,12 +101,41 @@ class SettingState<T> {
   /// Convenience getter for the current default.
   T get defaultValue => def.getDefaultValue();
 
+  /// Value used by UI reset controls.
+  ///
+  /// Global settings pages reset to the app default. Per-booru settings reset
+  /// to the current global value, which is equivalent to inheriting global.
+  T resetValue(BuildContext context) {
+    if (!def.supportsPerBooru || BooruEditingScope.of(context) == null) {
+      return defaultValue;
+    }
+    return globalValue;
+  }
+
   /// Whether the global value differs from the default.
   bool get isModified => globalValue != def.getDefaultValue();
 
   /// Reset to the default value.
   void reset() {
     value = def.getDefaultValue();
+  }
+
+  /// Reset respecting the current UI scope.
+  ///
+  /// On global settings pages this resets the global value to the app default.
+  /// Inside a booru editing scope this removes the booru override so the booru
+  /// inherits the current global value.
+  void resetScoped(BuildContext context) {
+    if (!def.supportsPerBooru) {
+      reset();
+      return;
+    }
+    final editingBooru = BooruEditingScope.of(context);
+    if (editingBooru == null) {
+      reset();
+    } else {
+      removeOverrideFor(editingBooru, save: BooruEditingScope.autosaveOf(context));
+    }
   }
 
   // ============================================
@@ -166,11 +200,12 @@ class SettingState<T> {
   /// - Returns the override value if one exists for that booru
   /// - Returns the global value otherwise (the "default" the user sees)
   ///
-  /// When NOT inside a scope, returns the effective value (global or active booru override).
+  /// When NOT inside a scope, returns the global value for settings UI pages.
+  /// Runtime reads through [value] still use the effective active-booru value.
   T scopedValue(BuildContext context) {
-    if (!def.supportsPerBooru) return value;
+    if (!def.supportsPerBooru) return globalValue;
     final editingBooru = BooruEditingScope.of(context);
-    if (editingBooru == null) return value;
+    if (editingBooru == null) return globalValue;
     return getOverrideFor(editingBooru) ?? globalValue;
   }
 
@@ -187,9 +222,14 @@ class SettingState<T> {
     if (editingBooru == null) {
       setValue(newValue, debounceSave: debounceSave);
     } else {
+      final validated = def.validate?.call(newValue) ?? newValue;
+      if (validated == globalValue) {
+        removeOverrideFor(editingBooru, save: BooruEditingScope.autosaveOf(context));
+        return;
+      }
       setOverrideFor(
         editingBooru,
-        newValue,
+        validated,
         save: BooruEditingScope.autosaveOf(context),
         debounceSave: debounceSave,
       );
@@ -218,11 +258,11 @@ class SettingState<T> {
   ///
   /// When inside a [BooruEditingScope], this returns a notifier that reacts to
   /// changes in the override map (so UI updates when the override is set/removed).
-  /// When not in a scope, returns the effective notifier.
+  /// When not in a scope, returns the global notifier for settings UI pages.
   ValueNotifier<dynamic> scopedNotifier(BuildContext context) {
-    if (!def.supportsPerBooru) return effectiveNotifier;
+    if (!def.supportsPerBooru) return globalNotifier;
     final editingBooru = BooruEditingScope.of(context);
-    if (editingBooru == null) return effectiveNotifier;
+    if (editingBooru == null) return globalNotifier;
     // Override map notifier triggers when any override changes.
     // The widget must read scopedValue() in its builder to get the correct value.
     return _booruOverrides;
@@ -284,6 +324,10 @@ class SettingState<T> {
           child: widget,
         );
       }
+      return _GlobalOverridesWrapper(
+        state: this,
+        child: widget,
+      );
     }
 
     return widget;
@@ -353,17 +397,187 @@ class _EffectiveValueNotifier<T> extends ValueNotifier<T> {
 
 /// Format a setting value for display in a badge label.
 /// Keeps it short — truncates long strings.
-String _formatValue(dynamic value) {
-  if (value is bool) return value ? 'On' : 'Off';
+String _formatValue(BuildContext context, dynamic value) {
+  if (value is bool) return value ? context.loc.yes : context.loc.no;
+  if (value is ThemeMode) return context.loc['settings.theme.${value.name}'];
+  if (value is SettingsEnum) return value.locName;
   if (value is Enum) return value.name;
-  if (value is ThemeItem) return value.name;
+  if (value is ThemeItem) return value.locName(context);
   if (value is Color) {
     return '#${value.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
   }
   if (value is List) return '${value.length} items';
   final str = value.toString();
+  if (str.isEmpty) return context.loc.tabs.empty;
   if (str.length > 20) return '${str.substring(0, 17)}...';
   return str;
+}
+
+/// Shows explicit per-booru override values next to a global setting.
+class _GlobalOverridesWrapper extends StatelessWidget {
+  const _GlobalOverridesWrapper({
+    required this.state,
+    required this.child,
+  });
+
+  final SettingState<dynamic> state;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<Map<String, dynamic>>(
+      valueListenable: state._booruOverrides,
+      builder: (context, overrides, _) {
+        final entries = overrides.entries.where((entry) => entry.value != state.globalValue).toList()
+          ..sort((a, b) => a.key.toLowerCase().compareTo(b.key.toLowerCase()));
+
+        return SettingChromeScope(
+          chip: entries.isEmpty ? null : _GlobalOverridesChip(state: state, entries: entries),
+          child: child,
+        );
+      },
+    );
+  }
+}
+
+/// Small read-only chip shown on global settings that have booru overrides.
+class _GlobalOverridesChip extends StatelessWidget {
+  const _GlobalOverridesChip({
+    required this.state,
+    required this.entries,
+  });
+
+  final SettingState<dynamic> state;
+  final List<MapEntry<String, dynamic>> entries;
+
+  String label(BuildContext context) {
+    if (entries.length == 1) {
+      final entry = entries.first;
+      return '${entry.key}: ${_formatValue(context, entry.value)}';
+    }
+
+    final first = entries.first;
+    return '${first.key}: ${_formatValue(context, first.value)}, +${entries.length - 1}';
+  }
+
+  Future<void> _openOverride(BuildContext context, BuildContext dialogContext, String booruName) async {
+    final booruList = SettingsHandler.instance.booruList;
+    final booruIndex = booruList.indexWhere((item) => item.name == booruName);
+    final booru = booruIndex >= 0 ? booruList[booruIndex] : null;
+    if (booru == null) return;
+
+    Navigator.pop(dialogContext);
+
+    final initialCategory = state.def.categories.isNotEmpty ? state.def.categories.first : null;
+    await SettingsPageOpen(
+      context: context,
+      page: (_) => BooruOverridesPage(
+        booru: booru,
+        initialCategory: initialCategory,
+        initialSettingKey: state.def.key,
+      ),
+    ).open();
+  }
+
+  void _showAllOverrides(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(state.def.localization.title(context)),
+        contentPadding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420, maxHeight: 420),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final entry in entries)
+                  ListTile(
+                    leading: const Icon(Icons.tune),
+                    title: Text(
+                      entry.key,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      _formatValue(context, entry.value),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _openOverride(context, ctx, entry.key),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+                  child: Text(
+                    context.loc.settings.perBooruSettings,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: const [
+          CloseDialogButton(withIcon: true),
+        ],
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.secondaryContainer;
+    final onColor = theme.colorScheme.onSecondaryContainer;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showAllOverrides(context),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.tune,
+                size: 12,
+                color: onColor,
+              ),
+              const SizedBox(width: 2),
+              Flexible(
+                child: Text(
+                  label(context),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: onColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 2),
+              Icon(
+                Icons.chevron_right,
+                size: 12,
+                color: onColor,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Wraps a setting widget with per-booru override controls when editing
@@ -371,7 +585,7 @@ String _formatValue(dynamic value) {
 ///
 /// The setting is always fully interactive. When the user changes the value,
 /// [setScopedValue] creates a per-booru override automatically.
-/// A badge appears when the override differs from the global default,
+/// A badge appears when the override differs from the global value,
 /// allowing the user to reset it.
 class _BooruOverrideWrapper extends StatelessWidget {
   const _BooruOverrideWrapper({
@@ -390,28 +604,19 @@ class _BooruOverrideWrapper extends StatelessWidget {
       valueListenable: state._booruOverrides,
       builder: (context, overrides, _) {
         final hasOverride = overrides.containsKey(booruName);
-        final overrideValue = hasOverride ? overrides[booruName] : null;
         final globalValue = state.globalValue;
-        final isDifferent = hasOverride && overrideValue != globalValue;
 
-        return Column(
-          mainAxisSize: .min,
-          crossAxisAlignment: .end,
-
-          children: [
-            if (isDifferent)
-              Padding(
-                padding: const EdgeInsets.only(top: 4, bottom: 4, right: 4),
-                child: _OverrideBadge(
-                  globalValueLabel: _formatValue(globalValue),
+        return SettingChromeScope(
+          chip: hasOverride
+              ? _OverrideBadge(
+                  globalValueLabel: _formatValue(context, globalValue),
                   onReset: () => state.removeOverrideFor(
                     booruName,
                     save: BooruEditingScope.autosaveOf(context),
                   ),
-                ),
-              ),
-            child,
-          ],
+                )
+              : null,
+          child: child,
         );
       },
     );
@@ -419,7 +624,7 @@ class _BooruOverrideWrapper extends StatelessWidget {
 }
 
 /// Small badge shown on settings that have an active per-booru override
-/// that differs from the global default. Tapping resets to the global value.
+/// that differs from the global value. Tapping resets to the global value.
 class _OverrideBadge extends StatelessWidget {
   const _OverrideBadge({
     required this.onReset,

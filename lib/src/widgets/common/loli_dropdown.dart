@@ -25,6 +25,7 @@ class LoliDropdown<T> extends StatelessWidget {
     this.searchable = false,
     this.searchCheck,
     this.expandableByScroll = false,
+    this.onLongPress,
     super.key,
   });
 
@@ -44,6 +45,7 @@ class LoliDropdown<T> extends StatelessWidget {
   final bool searchable;
   final bool Function(String, T)? searchCheck;
   final bool expandableByScroll;
+  final VoidCallback? onLongPress;
 
   Future<bool> showDialog(BuildContext context) async {
     final dynamic res = await showModalBottomSheet(
@@ -182,6 +184,7 @@ class LoliDropdown<T> extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               borderRadius: withBorder ? const BorderRadius.all(Radius.circular(radius)) : null,
+              onLongPress: onLongPress,
               onTap: () async {
                 await showDialog(context);
               },

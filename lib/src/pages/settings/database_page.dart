@@ -68,10 +68,10 @@ class _DatabasePageState extends State<DatabasePage> {
   }
 
   Future<void> changeIndexes(bool newValue) async {
-    changingIndexes = true;
-    setState(() {});
-
-    indexesEnabled = newValue;
+    setState(() {
+      changingIndexes = true;
+      SX.indexesEnabled.state.value = newValue;
+    });
 
     if (newValue) {
       await settingsHandler.dbHandler.createIndexes();
@@ -98,10 +98,10 @@ class _DatabasePageState extends State<DatabasePage> {
             controller: scrollController,
             children: [
               SettingsToggle(
-                value: dbEnabled,
+                value: SX.dbEnabled.state.value,
                 onChanged: (newValue) {
                   setState(() {
-                    dbEnabled = newValue;
+                    SX.dbEnabled.state.value = newValue;
                   });
                 },
                 title: context.loc.settings.database.enableDatabase,
@@ -123,7 +123,7 @@ class _DatabasePageState extends State<DatabasePage> {
                   },
                 ),
               ),
-              if (dbEnabled) ...[
+              if (SX.dbEnabled.state.value) ...[
                 Stack(
                   children: [
                     IgnorePointer(
@@ -131,7 +131,7 @@ class _DatabasePageState extends State<DatabasePage> {
                       child: Column(
                         children: [
                           SettingsToggle(
-                            value: indexesEnabled,
+                            value: SX.indexesEnabled.state.value,
                             onChanged: changeIndexes,
                             title: context.loc.settings.database.enableIndexing,
                             trailingIcon: IconButton(
@@ -204,10 +204,10 @@ class _DatabasePageState extends State<DatabasePage> {
                   ],
                 ),
                 SettingsToggle(
-                  value: searchHistoryEnabled,
+                  value: SX.searchHistoryEnabled.state.value,
                   onChanged: (newValue) {
                     setState(() {
-                      searchHistoryEnabled = newValue;
+                      SX.searchHistoryEnabled.state.value = newValue;
                     });
                   },
                   title: context.loc.settings.database.enableSearchHistory,
@@ -234,10 +234,10 @@ class _DatabasePageState extends State<DatabasePage> {
                   ),
                 ),
                 SettingsToggle(
-                  value: tagTypeFetchEnabled,
+                  value: SX.tagTypeFetchEnabled.state.value,
                   onChanged: (newValue) {
                     setState(() {
-                      tagTypeFetchEnabled = newValue;
+                      SX.tagTypeFetchEnabled.state.value = newValue;
                     });
                   },
                   title: context.loc.settings.database.enableTagTypeFetching,

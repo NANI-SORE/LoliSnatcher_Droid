@@ -23,6 +23,7 @@ class SettingDef<T> {
     required this.valueFromJson,
     this.legacyJsonKeys = const [],
     this.categories = const [],
+    this.subcategories = const [],
     this.isDeviceSpecific = false,
     this.supportsPerBooru = false,
     this.isWidgetSlot = false,
@@ -61,6 +62,12 @@ class SettingDef<T> {
   /// Categories this setting belongs to. A setting can appear in multiple categories
   /// (e.g., `enableHeroTransitions` in both `viewer` and `performance`).
   final List<SettingCategory> categories;
+
+  /// Display subsections this setting belongs to within its categories.
+  ///
+  /// For settings shown in multiple categories, include one subcategory for
+  /// each page where a subsection header should be shown.
+  final List<SettingSubcategory> subcategories;
 
   /// If true, this setting is device-specific and won't be synced across devices.
   final bool isDeviceSpecific;
@@ -136,6 +143,9 @@ class SettingDef<T> {
     }
     for (final category in categories) {
       result.add(category.locName(context));
+    }
+    for (final subcategory in subcategories) {
+      result.add(subcategory.locName(context));
     }
     return result;
   }
@@ -279,5 +289,62 @@ enum SettingCategory {
       final FaIconData iconData => FaIcon(iconData, size: size, color: color),
       _ => const Icon(null),
     };
+  }
+}
+
+/// Subsections shown inside settings categories.
+enum SettingSubcategory {
+  layout(SettingCategory.interface, 'layout'),
+  previewGrid(SettingCategory.interface, 'previewGrid'),
+  rendering(SettingCategory.interface, 'rendering'),
+  additionalInterface(SettingCategory.interface, 'additionalInterface'),
+  loadingPreloading(SettingCategory.viewer, 'loadingPreloading'),
+  toolbar(SettingCategory.viewer, 'toolbar'),
+  viewerBehavior(SettingCategory.viewer, 'viewerBehavior'),
+  slideshow(SettingCategory.viewer, 'slideshow'),
+  physicalButtons(SettingCategory.viewer, 'physicalButtons'),
+  playback(SettingCategory.video, 'playback'),
+  backend(SettingCategory.video, 'backend'),
+  mpv(SettingCategory.video, 'mpv'),
+  theme(SettingCategory.theme, 'theme'),
+  textAndDrawer(SettingCategory.theme, 'textAndDrawer'),
+  cache(SettingCategory.cache, 'cache'),
+  downloads(SettingCategory.cache, 'downloads'),
+  storage(SettingCategory.cache, 'storage'),
+  cacheStats(SettingCategory.cache, 'cacheStats'),
+  backup(SettingCategory.backup, 'backup'),
+  database(SettingCategory.database, 'database'),
+  security(SettingCategory.network, 'security'),
+  proxy(SettingCategory.network, 'proxy'),
+  requests(SettingCategory.network, 'requests'),
+  sync(SettingCategory.network, 'sync'),
+  activeFilters(SettingCategory.tagsFilters, 'activeFilters'),
+  tagLists(SettingCategory.tagsFilters, 'tagLists'),
+  appLock(SettingCategory.privacy, 'appLock'),
+  privacy(SettingCategory.privacy, 'privacy'),
+  defaults(SettingCategory.booru, 'defaults'),
+  devicePerformance(SettingCategory.performance, 'devicePerformance'),
+  previewPerformance(SettingCategory.performance, 'previewPerformance'),
+  viewerPerformance(SettingCategory.performance, 'viewerPerformance'),
+  videoPerformance(SettingCategory.performance, 'videoPerformance'),
+  language(SettingCategory.language, 'language'),
+  logs(SettingCategory.logging, 'logs'),
+  debugMode(SettingCategory.debug, 'debugMode'),
+  overlays(SettingCategory.debug, 'overlays'),
+  logging(SettingCategory.debug, 'logging');
+
+  const SettingSubcategory(this.category, this.localizationKey);
+
+  final SettingCategory category;
+  final String localizationKey;
+
+  String locName(BuildContext context) {
+    final key = 'settings.subcategories.$localizationKey';
+    try {
+      final localized = context.loc[key];
+      return localized == key ? localizationKey : localized;
+    } catch (_) {
+      return localizationKey;
+    }
   }
 }
