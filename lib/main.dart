@@ -43,6 +43,7 @@ import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/root/dev_overlay.dart';
+import 'package:lolisnatcher/src/widgets/root/theme_builder.dart';
 import 'package:lolisnatcher/src/widgets/root/image_stats.dart';
 import 'package:lolisnatcher/src/widgets/root/scroll_physics.dart';
 import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
@@ -197,16 +198,18 @@ class _MainAppState extends State<MainApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: Listenable.merge([
+    return DebouncedListenableBuilder(
+      immediateListenables: [
         SX.theme.state.effectiveNotifier,
         SX.themeMode.state.effectiveNotifier,
         SX.useDynamicColor.state.effectiveNotifier,
         SX.isAmoled.state.effectiveNotifier,
+        SX.fontFamily.state.effectiveNotifier,
+      ],
+      debouncedListenables: [
         SX.customPrimaryColor.state.effectiveNotifier,
         SX.customAccentColor.state.effectiveNotifier,
-        SX.fontFamily.state.effectiveNotifier,
-      ]),
+      ],
       builder: (context, _) {
         final ThemeItem theme = SX.theme.value.name == 'Custom'
             ? ThemeItem(
@@ -480,7 +483,11 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     dbCleanupTimer = Timer(
       const Duration(minutes: kDebugMode ? 1 : 20),
       // happens only once N minutes after start, to avoid long db lockup during early work
-      () => settingsHandler.dbHandler.tagsCleanup(),
+      () {
+        if (searchHandler.canBackup.value) {
+          settingsHandler.dbHandler.tagsCleanup();
+        }
+      },
     );
 
     // consider app launch as return to the app
@@ -522,7 +529,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           null,
         );
         await searchHandler.backupTabs();
-        if (!tagHandler.tagSaveActive) {
+        if (searchHandler.canBackup.value && !tagHandler.tagSaveActive) {
           await tagHandler.saveTags();
         }
       }

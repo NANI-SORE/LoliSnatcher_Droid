@@ -11,6 +11,7 @@ import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
@@ -97,7 +98,7 @@ class TagHandler {
     }
     _tagMap[tag.fullString] = tag;
 
-    if (dbEnabled && useDB) {
+    if (dbEnabled && useDB && SearchHandler.instance.canBackup.value) {
       await SettingsHandler.instance.dbHandler.updateTagsFromObjects([tag]);
     }
     return;

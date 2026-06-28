@@ -70,6 +70,7 @@ class _ThumbnailState extends State<Thumbnail> {
   final ValueNotifier<ImageProvider?> mainProvider = ValueNotifier(null), extraProvider = ValueNotifier(null);
   ImageStreamListener? mainImageListener, extraImageListener;
   ImageStream? mainImageStream, extraImageStream;
+  int _loadGeneration = 0;
 
   bool isBlurred = true;
 
@@ -82,17 +83,21 @@ class _ThumbnailState extends State<Thumbnail> {
 
   @override
   void didUpdateWidget(Thumbnail oldWidget) {
+    super.didUpdateWidget(oldWidget);
     // force redraw on tab change
     if (oldWidget.item != widget.item) {
+      currentUrl = widget.item.thumbnailURL;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+
         await restartLoading();
       });
     }
-    super.didUpdateWidget(oldWidget);
   }
 
   Future<ImageProvider> getImageProvider(
     bool isMain, {
+    required int loadGeneration,
     bool withCaptchaCheck = false,
   }) async {
     if (isMain) {
@@ -116,9 +121,15 @@ class _ThumbnailState extends State<Thumbnail> {
             fileNameExtras: widget.item.fileNameExtras,
             sendTimeout: widget.isStandalone ? const Duration(seconds: 20) : null,
             receiveTimeout: widget.isStandalone ? const Duration(seconds: 20) : null,
-            onError: isMain ? onError : null,
+            onError: isMain
+                ? (error) {
+                    if (_isCurrentLoad(loadGeneration)) {
+                      onError(error);
+                    }
+                  }
+                : null,
             onCacheDetected: (bool didDetectCache) {
-              if (isMain) {
+              if (isMain && _isCurrentLoad(loadGeneration)) {
                 isFromCache.value = didDetectCache;
               }
             },
@@ -137,9 +148,15 @@ class _ThumbnailState extends State<Thumbnail> {
             fileNameExtras: widget.item.fileNameExtras,
             sendTimeout: widget.isStandalone ? const Duration(seconds: 20) : null,
             receiveTimeout: widget.isStandalone ? const Duration(seconds: 20) : null,
-            onError: isMain ? onError : null,
+            onError: isMain
+                ? (error) {
+                    if (_isCurrentLoad(loadGeneration)) {
+                      onError(error);
+                    }
+                  }
+                : null,
             onCacheDetected: (bool didDetectCache) {
-              if (isMain) {
+              if (isMain && _isCurrentLoad(loadGeneration)) {
                 isFromCache.value = didDetectCache;
               }
             },
@@ -244,6 +261,7 @@ class _ThumbnailState extends State<Thumbnail> {
   void selectThumbProvider({
     bool withCaptchaCheck = false,
   }) {
+    final int loadGeneration = ++_loadGeneration;
     startedAt.value = DateTime.now().millisecondsSinceEpoch;
 
     isThumbQuality =
@@ -259,28 +277,45 @@ class _ThumbnailState extends State<Thumbnail> {
     // delay loading a little to improve performance when scrolling fast, ignore delay if it's a standalone widget (i.e. not in a list)
     debounceLoading = Timer(
       Duration(milliseconds: widget.isStandalone ? 200 : 0),
-      () => startDownloading(withCaptchaCheck: withCaptchaCheck),
+      () => startDownloading(
+        loadGeneration: loadGeneration,
+        withCaptchaCheck: withCaptchaCheck,
+      ),
     );
     return;
   }
 
   Future<void> startDownloading({
+    required int loadGeneration,
     bool withCaptchaCheck = false,
   }) async {
-    mainProvider.value = await getImageProvider(
+    final ImageProvider newMainProvider = await getImageProvider(
       true,
+      loadGeneration: loadGeneration,
       withCaptchaCheck: withCaptchaCheck,
     );
-    mainImageStream?.removeListener(mainImageListener!);
+
+    if (!_isCurrentLoad(loadGeneration)) {
+      return;
+    }
+
+    mainProvider.value = newMainProvider;
+    _removeMainImageStreamListener();
     mainImageStream = mainProvider.value!.resolve(ImageConfiguration.empty);
     mainImageListener = ImageStreamListener(
       (imageInfo, syncCall) {
+        if (!_isCurrentLoad(loadGeneration)) return;
+
         isLoaded.value = true;
       },
       onChunk: (event) {
+        if (!_isCurrentLoad(loadGeneration)) return;
+
         onBytesAdded(event.cumulativeBytesLoaded, event.expectedTotalBytes);
       },
       onError: (e, s) {
+        if (!_isCurrentLoad(loadGeneration)) return;
+
         if (e is! DioException) {
           failedRendering.value = true;
         }
@@ -297,14 +332,27 @@ class _ThumbnailState extends State<Thumbnail> {
     mainImageStream!.addListener(mainImageListener!);
 
     if (useExtra.value) {
-      extraProvider.value = await getImageProvider(false);
-      extraImageStream?.removeListener(extraImageListener!);
+      final ImageProvider newExtraProvider = await getImageProvider(
+        false,
+        loadGeneration: loadGeneration,
+      );
+
+      if (!_isCurrentLoad(loadGeneration)) {
+        return;
+      }
+
+      extraProvider.value = newExtraProvider;
+      _removeExtraImageStreamListener();
       extraImageStream = extraProvider.value!.resolve(ImageConfiguration.empty);
       extraImageListener = ImageStreamListener(
         (imageInfo, syncCall) {
+          if (!_isCurrentLoad(loadGeneration)) return;
+
           isLoadedExtra.value = true;
         },
         onError: (e, s) {
+          if (!_isCurrentLoad(loadGeneration)) return;
+
           if (e is! DioException) {
             failedRendering.value = true;
           }
@@ -341,10 +389,16 @@ class _ThumbnailState extends State<Thumbnail> {
 
     bool? updateRes;
     if (withItemLoad) {
+      loadItemCancelToken = CancelToken();
+      final CancelToken itemLoadCancelToken = loadItemCancelToken!;
       updateRes = await tryToLoadAndUpdateItem(
         widget.item,
-        loadItemCancelToken,
+        itemLoadCancelToken,
       );
+
+      if (!mounted || itemLoadCancelToken.isCancelled || !identical(loadItemCancelToken, itemLoadCancelToken)) {
+        return;
+      }
     }
 
     selectThumbProvider(
@@ -382,16 +436,14 @@ class _ThumbnailState extends State<Thumbnail> {
   @override
   void dispose() {
     disposables();
+    disposeNotifiers();
     super.dispose();
   }
 
   void disposables() {
-    mainImageStream?.removeListener(mainImageListener!);
-    mainImageListener = null;
-    mainImageStream = null;
-    extraImageStream?.removeListener(extraImageListener!);
-    extraImageListener = null;
-    extraImageStream = null;
+    _loadGeneration++;
+    _removeMainImageStreamListener();
+    _removeExtraImageStreamListener();
 
     if (!(mainCancelToken?.isCancelled ?? true)) {
       mainCancelToken?.cancel();
@@ -417,7 +469,46 @@ class _ThumbnailState extends State<Thumbnail> {
     }
 
     debounceLoading?.cancel();
+    debounceLoading = null;
     Debounce.cancel('thumbnail_reload_${widget.item.hashCode}');
+  }
+
+  bool _isCurrentLoad(int loadGeneration) {
+    return mounted && loadGeneration == _loadGeneration;
+  }
+
+  void _removeMainImageStreamListener() {
+    final ImageStreamListener? listener = mainImageListener;
+    if (listener != null) {
+      mainImageStream?.removeListener(listener);
+    }
+    mainImageListener = null;
+    mainImageStream = null;
+  }
+
+  void _removeExtraImageStreamListener() {
+    final ImageStreamListener? listener = extraImageListener;
+    if (listener != null) {
+      extraImageStream?.removeListener(listener);
+    }
+    extraImageListener = null;
+    extraImageStream = null;
+  }
+
+  void disposeNotifiers() {
+    total.dispose();
+    received.dispose();
+    startedAt.dispose();
+    isFromCache.dispose();
+    isFirstBuild.dispose();
+    isFailed.dispose();
+    isLoaded.dispose();
+    isLoadedExtra.dispose();
+    useExtra.dispose();
+    failedRendering.dispose();
+    errorCode.dispose();
+    mainProvider.dispose();
+    extraProvider.dispose();
   }
 
   @override
@@ -425,6 +516,8 @@ class _ThumbnailState extends State<Thumbnail> {
     Widget imageStack = LayoutBuilder(
       builder: (context, constraints) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+
           calcThumbWidth(constraints);
           if (isFirstBuild.value) {
             isFirstBuild.value = false;
@@ -698,7 +791,7 @@ class _ThumbnailState extends State<Thumbnail> {
 /// Returns true if successful, false on error and null on skip
 Future<bool?> tryToLoadAndUpdateItem(
   BooruItem item,
-  CancelToken? cancelToken,
+  CancelToken cancelToken,
 ) async {
   try {
     final itemFileHost = Uri.tryParse(item.fileURL)?.host;
@@ -717,8 +810,6 @@ Future<bool?> tryToLoadAndUpdateItem(
           (itemFileHost?.isNotEmpty == true && booruHost?.isNotEmpty == true && itemFileHost! == booruHost!);
     });
 
-    cancelToken?.cancel();
-    cancelToken = CancelToken();
     if (possibleBooru != null) {
       final handler = BooruHandlerFactory().getBooruHandler([possibleBooru], null).booruHandler;
       if (handler.hasLoadItemSupport) {

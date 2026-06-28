@@ -147,8 +147,6 @@ class _CacheStatsWidgetState extends State<CacheStatsWidget> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const SettingsButton(name: '', enabled: false),
-        SettingsButton(name: context.loc.settings.cache.cacheStats),
         ...cacheTypes.map(buildCacheButton),
         SettingsButton(
           name: context.loc.settings.cache.clearAllCache,

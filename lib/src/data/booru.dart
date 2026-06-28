@@ -45,7 +45,7 @@ class Booru {
   /// Per-booru setting overrides. Stored in each booru's config file.
   /// Keys are setting JSON keys (matching SettingKey.jsonKey), values are
   /// JSON-serialized setting values.
-  /// Null or empty means no overrides — all settings use global defaults.
+  /// Null or empty means no overrides — all settings use global values.
   Map<String, dynamic>? settingOverrides;
 
   Map<String, dynamic> toJson() {

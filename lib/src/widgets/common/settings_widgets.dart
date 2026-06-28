@@ -12,9 +12,70 @@ import 'package:lolisnatcher/src/widgets/common/html.dart';
 import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
 import 'package:lolisnatcher/src/widgets/common/long_press_repeater.dart';
 import 'package:lolisnatcher/src/widgets/common/marquee_text.dart';
+import 'package:lolisnatcher/src/widgets/settings/setting_chrome_scope.dart';
 import 'package:lolisnatcher/src/widgets/tabs/tab_booru_selector.dart';
 
 const double borderWidth = 1;
+
+Widget? _settingChromeChip(BuildContext context) => SettingChromeScope.chipOf(context);
+
+Widget _settingsTitleRow({
+  required BuildContext context,
+  required Widget title,
+  List<Widget> afterChip = const [],
+}) {
+  final chip = _settingChromeChip(context);
+
+  return Row(
+    children: [
+      Expanded(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            title,
+            if (chip != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 260),
+                  child: chip,
+                ),
+              ),
+          ],
+        ),
+      ),
+      ...afterChip,
+    ],
+  );
+}
+
+Widget? _settingsSubtitle(BuildContext context, Widget? subtitle) {
+  return subtitle;
+}
+
+Widget? _settingsTrailingActions({
+  Widget? trailingIcon,
+  VoidCallback? onReset,
+}) {
+  if (trailingIcon == null && onReset == null) return null;
+
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      if (onReset != null)
+        IconButton(
+          onPressed: onReset,
+          icon: const Icon(Icons.refresh_rounded),
+        ),
+      if (trailingIcon != null)
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: trailingIcon,
+        ),
+    ],
+  );
+}
 
 class SettingsButton extends StatelessWidget {
   const SettingsButton({
@@ -75,8 +136,11 @@ class SettingsButton extends StatelessWidget {
       color: Colors.transparent,
       child: ListTile(
         leading: icon,
-        title: useHtml ? LoliHtml(name) : Text(name),
-        subtitle: subtitle,
+        title: _settingsTitleRow(
+          context: context,
+          title: useHtml ? LoliHtml(name) : Text(name),
+        ),
+        subtitle: _settingsSubtitle(context, subtitle),
         trailing: trailingIcon,
         enabled: enabled,
         dense: dense,
@@ -204,6 +268,7 @@ class SettingsToggle extends StatelessWidget {
     this.leadingIcon,
     this.trailingIcon,
     this.defaultValue,
+    this.onReset,
     this.enabled = true,
     super.key,
   });
@@ -217,6 +282,7 @@ class SettingsToggle extends StatelessWidget {
   final Widget? leadingIcon;
   final Widget? trailingIcon;
   final bool? defaultValue;
+  final VoidCallback? onReset;
   final bool enabled;
 
   @override
@@ -225,37 +291,35 @@ class SettingsToggle extends StatelessWidget {
       color: Colors.transparent,
       child: ListTile(
         enabled: enabled,
-        title: Row(
-          children: [
-            if (leadingIcon != null)
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: leadingIcon,
-              ),
-            Expanded(
-              child: Text(title),
-            ),
-            const SizedBox(width: 4),
-            if (defaultValue != null && value != defaultValue)
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: IconButton(
-                  icon: const Icon(Icons.restore),
-                  onPressed: () {
-                    onChanged(defaultValue!);
-                  },
+        title: _settingsTitleRow(
+          context: context,
+          title: Row(
+            children: [
+              if (leadingIcon != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: leadingIcon,
                 ),
+              Expanded(
+                child: Text(title),
               ),
-          ],
+            ],
+          ),
         ),
-        subtitle: subtitle,
+        subtitle: _settingsSubtitle(context, subtitle),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: trailingIcon,
-            ),
+            if (defaultValue != null && value != defaultValue)
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded),
+                onPressed: onReset ?? () => onChanged(defaultValue!),
+              ),
+            if (trailingIcon != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: trailingIcon,
+              ),
             Switch(
               value: value,
               onChanged: enabled ? onChanged : null,
@@ -315,35 +379,41 @@ class SettingsToggleTristate extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: ListTile(
-        title: Row(
+        title: _settingsTitleRow(
+          context: context,
+          title: Row(
+            children: [
+              if (leadingIcon != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: leadingIcon,
+                ),
+              Expanded(
+                child: Text(title),
+              ),
+            ],
+          ),
+        ),
+        subtitle: _settingsSubtitle(context, subtitle),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            if (leadingIcon != null)
+            if (defaultValue != null && value != defaultValue)
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded),
+                onPressed: () => onChanged(defaultValue),
+              ),
+            if (trailingIcon != null)
               Padding(
                 padding: const EdgeInsets.only(right: 8),
-                child: leadingIcon,
+                child: trailingIcon,
               ),
-            Expanded(
-              child: Text(title),
+            Checkbox(
+              value: value,
+              tristate: true,
+              onChanged: (_) => _onChangedToggle(),
             ),
-            const SizedBox(width: 4),
-            if (defaultValue != null && value != defaultValue)
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: IconButton(
-                  icon: const Icon(Icons.restore),
-                  onPressed: () {
-                    onChanged(defaultValue);
-                  },
-                ),
-              ),
-            trailingIcon ?? const SizedBox(width: 8),
           ],
-        ),
-        subtitle: subtitle,
-        trailing: Checkbox(
-          value: value,
-          tristate: true,
-          onChanged: (_) => _onChangedToggle(),
         ),
         onTap: _onChangedToggle,
         shape: Border(
@@ -370,6 +440,8 @@ class SettingsSegmentedButton<T> extends StatelessWidget {
     this.leadingIcon,
     this.trailingIcon,
     this.defaultValue,
+    this.onReset,
+    this.fitLabels = false,
     super.key,
   });
 
@@ -384,31 +456,81 @@ class SettingsSegmentedButton<T> extends StatelessWidget {
   final Widget? leadingIcon;
   final Widget? trailingIcon;
   final T? defaultValue;
+  final VoidCallback? onReset;
+  final bool fitLabels;
 
   @override
   Widget build(BuildContext context) {
+    Widget buildSegmentedButton({required Axis direction}) {
+      return SegmentedButton(
+        onSelectionChanged: (value) => onChanged(value.first),
+        emptySelectionAllowed: false,
+        multiSelectionEnabled: false,
+        style: ButtonStyle(
+          padding: WidgetStateProperty.all<EdgeInsetsGeometry>(
+            const EdgeInsets.symmetric(
+              horizontal: 4,
+              vertical: 2,
+            ),
+          ),
+        ),
+        direction: direction,
+        segments: [
+          for (final T v in values)
+            ButtonSegment(
+              value: v,
+              icon: const Icon(null),
+              label: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 2,
+                  vertical: 4,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        itemTitleBuilder(v),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const Icon(null),
+                  ],
+                ),
+              ),
+            ),
+        ],
+        selected: {value},
+      );
+    }
+
     return Material(
       color: Colors.transparent,
       child: ListTile(
-        title: Row(
-          children: [
-            if (leadingIcon != null)
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: leadingIcon,
+        title: _settingsTitleRow(
+          context: context,
+          title: Row(
+            children: [
+              if (leadingIcon != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: leadingIcon,
+                ),
+              Expanded(
+                child: Text(title),
               ),
-            Expanded(
-              child: Text(title),
-            ),
+            ],
+          ),
+          afterChip: [
             const SizedBox(width: 4),
             if (defaultValue != null && value != defaultValue)
               Padding(
                 padding: const EdgeInsets.only(left: 8),
                 child: IconButton(
-                  icon: const Icon(Icons.restore),
-                  onPressed: () {
-                    onChanged(defaultValue as T);
-                  },
+                  icon: const Icon(Icons.refresh),
+                  onPressed: onReset ?? () => onChanged(defaultValue as T),
                 ),
               ),
             trailingIcon ?? const SizedBox(width: 8),
@@ -419,45 +541,17 @@ class SettingsSegmentedButton<T> extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SegmentedButton(
-                onSelectionChanged: (value) => onChanged(value.first),
-                emptySelectionAllowed: false,
-                multiSelectionEnabled: false,
-                style: ButtonStyle(
-                  padding: WidgetStateProperty.all<EdgeInsetsGeometry>(
-                    const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 2,
-                    ),
-                  ),
-                ),
-                direction: Axis.horizontal,
-                segments: [
-                  for (final T v in values)
-                    ButtonSegment(
-                      value: v,
-                      icon: const Icon(null),
-                      label: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 2,
-                          vertical: 4,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                itemTitleBuilder(v),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            const Icon(null),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
-                selected: {value},
-              ),
+              if (fitLabels)
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final perSegmentWidth = constraints.maxWidth / values.length;
+                    return buildSegmentedButton(
+                      direction: perSegmentWidth < 104 ? Axis.vertical : Axis.horizontal,
+                    );
+                  },
+                )
+              else
+                buildSegmentedButton(direction: Axis.horizontal),
               if (subtitle != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
@@ -582,7 +676,10 @@ class SettingsDropdown<T> extends StatelessWidget {
             if (!titleAsLabel)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: Text(title),
+                child: _settingsTitleRow(
+                  context: context,
+                  title: Text(title),
+                ),
               ),
             LoliDropdown(
               value: value,
@@ -614,15 +711,11 @@ class SettingsDropdown<T> extends StatelessWidget {
             ),
           ],
         ),
-        subtitle: subtitle,
-        trailing:
-            trailingIcon ??
-            (onReset != null
-                ? IconButton(
-                    onPressed: onReset,
-                    icon: const Icon(Icons.refresh_rounded),
-                  )
-                : null),
+        subtitle: _settingsSubtitle(context, subtitle),
+        trailing: _settingsTrailingActions(
+          trailingIcon: trailingIcon,
+          onReset: onReset,
+        ),
         dense: false,
         contentPadding: contentPadding,
         shape: Border(
@@ -814,16 +907,15 @@ class SettingsOptionsList<T> extends StatelessWidget {
       child: Column(
         children: [
           ListTile(
-            title: Text(title),
-            subtitle: subtitle,
-            trailing:
-                trailingIcon ??
-                (onReset != null
-                    ? IconButton(
-                        onPressed: onReset,
-                        icon: const Icon(Icons.refresh_rounded),
-                      )
-                    : null),
+            title: _settingsTitleRow(
+              context: context,
+              title: Text(title),
+            ),
+            subtitle: _settingsSubtitle(context, subtitle),
+            trailing: _settingsTrailingActions(
+              trailingIcon: trailingIcon,
+              onReset: onReset,
+            ),
             dense: false,
             shape: Border(
               top: drawTopBorder
@@ -874,6 +966,7 @@ class SettingsTextInput extends StatefulWidget {
     this.margin = const EdgeInsets.symmetric(vertical: 8),
     this.clearable = false,
     this.resetText,
+    this.onReset,
     this.numberButtons = false,
     this.alwaysShowNumberButtons = false,
     this.numberStep = 1,
@@ -915,6 +1008,7 @@ class SettingsTextInput extends StatefulWidget {
   final EdgeInsets margin;
   final bool clearable;
   final String Function()? resetText;
+  final VoidCallback? onReset;
   final bool numberButtons;
   final bool alwaysShowNumberButtons;
   final double numberStep;
@@ -1028,8 +1122,12 @@ class _SettingsTextInputState extends State<SettingsTextInput> {
               color: Theme.of(context).colorScheme.onSurface,
             ),
             onPressed: () {
-              widget.controller.text = widget.resetText!();
-              onChangedCallback(widget.controller.text);
+              if (widget.onReset != null) {
+                widget.onReset!();
+              } else {
+                widget.controller.text = widget.resetText!();
+                onChangedCallback(widget.controller.text);
+              }
             },
           ),
         if (widget.numberButtons && (isFocused || widget.alwaysShowNumberButtons))
@@ -1167,10 +1265,13 @@ class _SettingsTextInputState extends State<SettingsTextInput> {
           if (!widget.titleAsLabel)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Text(
-                widget.title,
-                style: Theme.of(context).inputDecorationTheme.labelStyle?.copyWith(
-                  fontSize: 16,
+              child: _settingsTitleRow(
+                context: context,
+                title: Text(
+                  widget.title,
+                  style: Theme.of(context).inputDecorationTheme.labelStyle?.copyWith(
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ),
@@ -1193,11 +1294,15 @@ class _SettingsTextInputState extends State<SettingsTextInput> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!widget.titleAsLabel) Text(widget.title),
+            if (!widget.titleAsLabel)
+              _settingsTitleRow(
+                context: context,
+                title: Text(widget.title),
+              ),
             field,
           ],
         ),
-        subtitle: widget.subtitle,
+        subtitle: _settingsSubtitle(context, widget.subtitle),
         trailing: widget.trailingIcon,
         dense: false,
         shape: Border(
@@ -1449,15 +1554,17 @@ class SettingsAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.title,
     this.leading,
     this.actions,
+    this.bottom,
     super.key,
   });
 
   final String title;
   final Widget? leading;
   final List<Widget>? actions;
+  final PreferredSizeWidget? bottom;
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => Size.fromHeight(kToolbarHeight + (bottom?.preferredSize.height ?? 0));
 
   @override
   Widget build(BuildContext context) {
@@ -1468,6 +1575,7 @@ class SettingsAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       leading: leading,
       actions: actions,
+      bottom: bottom,
     );
   }
 }
