@@ -3,10 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/settings/setting_def.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/data/settings/setting_state.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
+import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
+import 'package:lolisnatcher/src/widgets/common/delete_button.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/settings/auto_settings_page.dart';
 import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
+
+enum _OverrideResetAction { category, all }
 
 /// Page for editing per-booru setting overrides.
 ///
@@ -24,11 +30,15 @@ import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
 class BooruOverridesPage extends StatefulWidget {
   const BooruOverridesPage({
     required this.booru,
+    this.initialCategory,
+    this.initialSettingKey,
     this.saveOnPop = true,
     super.key,
   });
 
   final Booru booru;
+  final SettingCategory? initialCategory;
+  final SettingKey? initialSettingKey;
 
   /// Whether override changes should save immediately.
   /// Set to false when opened from [BooruEdit] which handles its own save.
@@ -39,13 +49,20 @@ class BooruOverridesPage extends StatefulWidget {
 }
 
 class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProviderStateMixin {
-  late final Map<SettingCategory, List<dynamic>> grouped;
+  late final Map<SettingCategory, List<SettingState<dynamic>>> grouped;
   late final List<SettingCategory> categories;
   late final TabController tabController;
+  late final AnimationController highlightController;
+  final Map<SettingKey, GlobalKey> settingKeys = {};
+  bool highlightInitialSetting = false;
 
   @override
   void initState() {
     super.initState();
+    highlightController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
 
     final registry = SettingsRegistry.instance;
     final perBooruSettings = registry.perBooruSettings
@@ -59,11 +76,114 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
     }
 
     categories = grouped.keys.toList()..sort((a, b) => a.index.compareTo(b.index));
-    tabController = TabController(length: categories.length, vsync: this);
+    final initialCategory = widget.initialCategory ?? _categoryForSetting(widget.initialSettingKey);
+    final initialIndex = initialCategory != null ? categories.indexOf(initialCategory) : -1;
+    tabController = TabController(
+      length: categories.length,
+      initialIndex: initialIndex >= 0 ? initialIndex : 0,
+      vsync: this,
+    );
+
+    if (widget.initialSettingKey != null) {
+      highlightInitialSetting = true;
+      highlightController.repeat(reverse: true);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToInitialSetting());
+    }
+  }
+
+  SettingCategory? _categoryForSetting(SettingKey? key) {
+    if (key == null) return null;
+    for (final entry in grouped.entries) {
+      if (entry.value.any((state) => state.def.key == key)) {
+        return entry.key;
+      }
+    }
+    return null;
+  }
+
+  GlobalKey _keyForSetting(SettingKey key) {
+    return settingKeys.putIfAbsent(key, () => GlobalKey(debugLabel: 'booru-override-${key.name}'));
+  }
+
+  Future<void> _scrollToInitialSetting() async {
+    final key = widget.initialSettingKey;
+    if (key == null) return;
+
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    if (!mounted) return;
+
+    final context = settingKeys[key]?.currentContext;
+    if (context != null) {
+      await Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeInOut,
+        alignment: 0.18,
+      );
+    }
+
+    await Future<void>.delayed(const Duration(milliseconds: 2600));
+    if (mounted) {
+      highlightController.stop();
+      setState(() => highlightInitialSetting = false);
+    }
+  }
+
+  Future<void> _showResetOverridesDialog(
+    SettingsRegistry registry,
+    String booruName,
+  ) async {
+    final currentCategory = categories[tabController.index];
+    final categoryStates = grouped[currentCategory] ?? const <SettingState<dynamic>>[];
+
+    final action = await showDialog<_OverrideResetAction>(
+      context: context,
+      builder: (ctx) => SettingsDialog(
+        title: Text(context.loc.reset),
+        contentItems: [
+          Text(
+            context.loc.settings.resetAllOverridesDescription(
+              booru: widget.booru.name ?? '',
+            ),
+          ),
+        ],
+        actionButtons: [
+          DeleteButton(
+            withIcon: true,
+            returnData: _OverrideResetAction.category,
+            text: '${context.loc.reset}: ${currentCategory.locName(context)}',
+          ),
+          const SizedBox(height: 12),
+          DeleteButton(
+            withIcon: true,
+            returnData: _OverrideResetAction.all,
+            text: context.loc.settings.resetAllOverrides,
+          ),
+          const SizedBox(height: 12),
+          const CancelButton(withIcon: true),
+        ],
+      ),
+    );
+
+    switch (action) {
+      case _OverrideResetAction.category:
+        for (final state in categoryStates) {
+          state.removeOverrideFor(booruName, save: widget.saveOnPop);
+        }
+        setState(() {});
+        break;
+      case _OverrideResetAction.all:
+        registry.removeAllOverridesForBooru(booruName, save: widget.saveOnPop);
+        setState(() {});
+        break;
+      case null:
+        break;
+    }
   }
 
   @override
   void dispose() {
+    highlightController.dispose();
     tabController.dispose();
     super.dispose();
   }
@@ -78,46 +198,16 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
 
     final Widget body = Scaffold(
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        title: Text(
-          context.loc.settings.booruOverridesTitle(
-            booru: widget.booru.name ?? '',
-          ),
+      appBar: SettingsAppBar(
+        title: context.loc.settings.booruOverridesTitle(
+          booru: widget.booru.name ?? '',
         ),
         actions: [
           if (perBooruSettings.any((s) => s.hasOverrideFor(booruName)))
             IconButton(
               icon: const Icon(Icons.restart_alt),
               tooltip: context.loc.settings.resetAllOverrides,
-              onPressed: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => SettingsDialog(
-                    title: Text(context.loc.settings.resetAllOverrides),
-                    contentItems: [
-                      Text(
-                        context.loc.settings.resetAllOverridesDescription(
-                          booru: widget.booru.name ?? '',
-                        ),
-                      ),
-                    ],
-                    actionButtons: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: Text(context.loc.cancel),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: Text(context.loc.reset),
-                      ),
-                    ],
-                  ),
-                );
-                if (confirmed == true) {
-                  registry.removeAllOverridesForBooru(booruName, save: widget.saveOnPop);
-                  setState(() {});
-                }
-              },
+              onPressed: () => _showResetOverridesDialog(registry, booruName),
             ),
         ],
         bottom: categories.length > 1
@@ -176,7 +266,51 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
             icon: category.iconWidget(),
             enabled: false,
           ),
-        for (final state in settings) ReactiveSettingWidget(state: state),
+        ...buildSettingSubcategorySections(
+          context: context,
+          category: category,
+          states: settings,
+          settingBuilder: _buildSettingItem,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSettingItem(SettingState<dynamic> state) {
+    final isTarget = state.def.key == widget.initialSettingKey;
+    final showHighlight = isTarget && highlightInitialSetting;
+
+    return Stack(
+      key: _keyForSetting(state.def.key),
+      children: [
+        Positioned.fill(
+          child: IgnorePointer(
+            child: AnimatedOpacity(
+              opacity: showHighlight ? 1 : 0,
+              duration: const Duration(milliseconds: 450),
+              curve: Curves.easeInOut,
+              child: AnimatedBuilder(
+                animation: highlightController,
+                builder: (context, _) {
+                  final value = highlightController.value;
+                  final pulse = 0.24 + (0.14 * (1 - (2 * value - 1).abs()));
+                  return DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: pulse),
+                      border: Border(
+                        left: BorderSide(
+                          color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.9),
+                          width: 4,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+        ReactiveSettingWidget(state: state),
       ],
     );
   }

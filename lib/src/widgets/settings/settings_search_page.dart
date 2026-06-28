@@ -66,48 +66,22 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
           ? Center(child: Text(context.loc.settings.typeToSearch))
           : results.isEmpty
           ? Center(child: Text(context.loc.settings.noSettingsFound))
-          : ListView.builder(
-              itemCount: _countItems(grouped),
-              itemBuilder: (context, index) => _buildItem(context, grouped, index),
+          : ListView(
+              children: [
+                for (final entry in grouped.entries) ...[
+                  SettingsButton(
+                    name: entry.key.locName(context),
+                    icon: entry.key.iconWidget(),
+                    enabled: false,
+                  ),
+                  ...buildSettingSubcategorySections(
+                    context: context,
+                    category: entry.key,
+                    states: entry.value.where((s) => s.def.widgetBuilder != null),
+                  ),
+                ],
+              ],
             ),
     );
-  }
-
-  int _countItems(Map<SettingCategory, List<SettingState<dynamic>>> grouped) {
-    int count = 0;
-    for (final entry in grouped.entries) {
-      count++; // category header
-      count += entry.value.where((s) => s.def.widgetBuilder != null).length;
-    }
-    return count;
-  }
-
-  Widget _buildItem(
-    BuildContext context,
-    Map<SettingCategory, List<SettingState<dynamic>>> grouped,
-    int index,
-  ) {
-    int current = 0;
-    for (final entry in grouped.entries) {
-      if (current == index) {
-        // Category header
-        return SettingsButton(
-          name: entry.key.locName(context),
-          icon: entry.key.iconWidget(),
-          enabled: false,
-        );
-      }
-      current++;
-
-      final renderableStates = entry.value.where((s) => s.def.widgetBuilder != null).toList();
-      for (final state in renderableStates) {
-        if (current == index) {
-          return ReactiveSettingWidget(state: state);
-        }
-        current++;
-      }
-    }
-
-    return const SizedBox.shrink();
   }
 }

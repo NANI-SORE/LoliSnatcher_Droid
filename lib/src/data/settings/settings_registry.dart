@@ -79,6 +79,14 @@ class SettingsRegistry {
     return _states.values.where((s) => s.def.categories.contains(category)).toList();
   }
 
+  /// Display subsection for [state] on [category], if one was registered.
+  SettingSubcategory? subcategoryFor(SettingCategory category, SettingState<dynamic> state) {
+    for (final subcategory in state.def.subcategories) {
+      if (subcategory.category == category) return subcategory;
+    }
+    return null;
+  }
+
   /// Whether a setting should be shown in UI on the current platform/build.
   bool isSettingVisible(SettingState<dynamic> state) {
     final def = state.def;

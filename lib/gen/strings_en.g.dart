@@ -1119,16 +1119,17 @@ class Translations$settings$en {
   /// en: 'Reset all overrides'
   String get resetAllOverrides => TranslationOverrides.string(_root.$meta, 'settings.resetAllOverrides', {}) ?? 'Reset all overrides';
 
-  /// en: 'All custom settings for "${booru: String}" will be removed. Global defaults will be used instead.'
+  /// en: 'Сustom settings for "${booru: String}" will be removed. Global values will be used instead.'
   String resetAllOverridesDescription({required String booru}) =>
       TranslationOverrides.string(_root.$meta, 'settings.resetAllOverridesDescription', {'booru': booru}) ??
-      'All custom settings for "${booru}" will be removed. Global defaults will be used instead.';
+      'Сustom settings for "${booru}" will be removed. Global values will be used instead.';
 
-  /// en: 'The active booru "${booru: String}" has theme overrides. Changes here affect the global defaults, not the per-booru theme.'
+  /// en: 'The active booru "${booru: String}" has theme overrides. Changes here affect global values, not the per-booru theme.'
   String activeBooruThemeOverrides({required String booru}) =>
       TranslationOverrides.string(_root.$meta, 'settings.activeBooruThemeOverrides', {'booru': booru}) ??
-      'The active booru "${booru}" has theme overrides. Changes here affect the global defaults, not the per-booru theme.';
+      'The active booru "${booru}" has theme overrides. Changes here affect global values, not the per-booru theme.';
 
+  late final Translations$settings$subcategories$en subcategories = Translations$settings$subcategories$en.internal(_root);
   late final Translations$settings$language$en language = Translations$settings$language$en.internal(_root);
   late final Translations$settings$booru$en booru = Translations$settings$booru$en.internal(_root);
   late final Translations$settings$booruEditor$en booruEditor = Translations$settings$booruEditor$en.internal(_root);
@@ -2206,6 +2207,130 @@ class Translations$webview$navigation$en {
       TranslationOverrides.string(_root.$meta, 'webview.navigation.noForwardHistoryItem', {}) ?? 'No forward history item';
 }
 
+// Path: settings.subcategories
+class Translations$settings$subcategories$en {
+  Translations$settings$subcategories$en.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'App layout'
+  String get layout => TranslationOverrides.string(_root.$meta, 'settings.subcategories.layout', {}) ?? 'App layout';
+
+  /// en: 'Preview grid'
+  String get previewGrid => TranslationOverrides.string(_root.$meta, 'settings.subcategories.previewGrid', {}) ?? 'Preview grid';
+
+  /// en: 'Rendering'
+  String get rendering => TranslationOverrides.string(_root.$meta, 'settings.subcategories.rendering', {}) ?? 'Rendering';
+
+  /// en: 'Additional'
+  String get additionalInterface => TranslationOverrides.string(_root.$meta, 'settings.subcategories.additionalInterface', {}) ?? 'Additional';
+
+  /// en: 'Loading and preloading'
+  String get loadingPreloading =>
+      TranslationOverrides.string(_root.$meta, 'settings.subcategories.loadingPreloading', {}) ?? 'Loading and preloading';
+
+  /// en: 'Toolbar'
+  String get toolbar => TranslationOverrides.string(_root.$meta, 'settings.subcategories.toolbar', {}) ?? 'Toolbar';
+
+  /// en: 'Viewer behavior'
+  String get viewerBehavior => TranslationOverrides.string(_root.$meta, 'settings.subcategories.viewerBehavior', {}) ?? 'Viewer behavior';
+
+  /// en: 'Slideshow'
+  String get slideshow => TranslationOverrides.string(_root.$meta, 'settings.subcategories.slideshow', {}) ?? 'Slideshow';
+
+  /// en: 'Physical buttons'
+  String get physicalButtons => TranslationOverrides.string(_root.$meta, 'settings.subcategories.physicalButtons', {}) ?? 'Physical buttons';
+
+  /// en: 'Playback'
+  String get playback => TranslationOverrides.string(_root.$meta, 'settings.subcategories.playback', {}) ?? 'Playback';
+
+  /// en: 'Backend'
+  String get backend => TranslationOverrides.string(_root.$meta, 'settings.subcategories.backend', {}) ?? 'Backend';
+
+  /// en: 'MPV'
+  String get mpv => TranslationOverrides.string(_root.$meta, 'settings.subcategories.mpv', {}) ?? 'MPV';
+
+  /// en: 'Theme'
+  String get theme => TranslationOverrides.string(_root.$meta, 'settings.subcategories.theme', {}) ?? 'Theme';
+
+  /// en: 'Text and drawer'
+  String get textAndDrawer => TranslationOverrides.string(_root.$meta, 'settings.subcategories.textAndDrawer', {}) ?? 'Text and drawer';
+
+  /// en: 'Cache'
+  String get cache => TranslationOverrides.string(_root.$meta, 'settings.subcategories.cache', {}) ?? 'Cache';
+
+  /// en: 'Downloads'
+  String get downloads => TranslationOverrides.string(_root.$meta, 'settings.subcategories.downloads', {}) ?? 'Downloads';
+
+  /// en: 'Storage'
+  String get storage => TranslationOverrides.string(_root.$meta, 'settings.subcategories.storage', {}) ?? 'Storage';
+
+  /// en: 'Cache stats'
+  String get cacheStats => TranslationOverrides.string(_root.$meta, 'settings.subcategories.cacheStats', {}) ?? 'Cache stats';
+
+  /// en: 'Backup'
+  String get backup => TranslationOverrides.string(_root.$meta, 'settings.subcategories.backup', {}) ?? 'Backup';
+
+  /// en: 'Database'
+  String get database => TranslationOverrides.string(_root.$meta, 'settings.subcategories.database', {}) ?? 'Database';
+
+  /// en: 'Security'
+  String get security => TranslationOverrides.string(_root.$meta, 'settings.subcategories.security', {}) ?? 'Security';
+
+  /// en: 'Proxy'
+  String get proxy => TranslationOverrides.string(_root.$meta, 'settings.subcategories.proxy', {}) ?? 'Proxy';
+
+  /// en: 'Requests'
+  String get requests => TranslationOverrides.string(_root.$meta, 'settings.subcategories.requests', {}) ?? 'Requests';
+
+  /// en: 'Sync'
+  String get sync => TranslationOverrides.string(_root.$meta, 'settings.subcategories.sync', {}) ?? 'Sync';
+
+  /// en: 'Active filters'
+  String get activeFilters => TranslationOverrides.string(_root.$meta, 'settings.subcategories.activeFilters', {}) ?? 'Active filters';
+
+  /// en: 'Tag lists'
+  String get tagLists => TranslationOverrides.string(_root.$meta, 'settings.subcategories.tagLists', {}) ?? 'Tag lists';
+
+  /// en: 'App lock'
+  String get appLock => TranslationOverrides.string(_root.$meta, 'settings.subcategories.appLock', {}) ?? 'App lock';
+
+  /// en: 'Privacy'
+  String get privacy => TranslationOverrides.string(_root.$meta, 'settings.subcategories.privacy', {}) ?? 'Privacy';
+
+  /// en: 'Defaults'
+  String get defaults => TranslationOverrides.string(_root.$meta, 'settings.subcategories.defaults', {}) ?? 'Defaults';
+
+  /// en: 'Device performance'
+  String get devicePerformance => TranslationOverrides.string(_root.$meta, 'settings.subcategories.devicePerformance', {}) ?? 'Device performance';
+
+  /// en: 'Preview performance'
+  String get previewPerformance => TranslationOverrides.string(_root.$meta, 'settings.subcategories.previewPerformance', {}) ?? 'Preview performance';
+
+  /// en: 'Viewer performance'
+  String get viewerPerformance => TranslationOverrides.string(_root.$meta, 'settings.subcategories.viewerPerformance', {}) ?? 'Viewer performance';
+
+  /// en: 'Video performance'
+  String get videoPerformance => TranslationOverrides.string(_root.$meta, 'settings.subcategories.videoPerformance', {}) ?? 'Video performance';
+
+  /// en: 'Language'
+  String get language => TranslationOverrides.string(_root.$meta, 'settings.subcategories.language', {}) ?? 'Language';
+
+  /// en: 'Logs'
+  String get logs => TranslationOverrides.string(_root.$meta, 'settings.subcategories.logs', {}) ?? 'Logs';
+
+  /// en: 'Debug mode'
+  String get debugMode => TranslationOverrides.string(_root.$meta, 'settings.subcategories.debugMode', {}) ?? 'Debug mode';
+
+  /// en: 'Overlays'
+  String get overlays => TranslationOverrides.string(_root.$meta, 'settings.subcategories.overlays', {}) ?? 'Overlays';
+
+  /// en: 'Logging'
+  String get logging => TranslationOverrides.string(_root.$meta, 'settings.subcategories.logging', {}) ?? 'Logging';
+}
+
 // Path: settings.language
 class Translations$settings$language$en {
   Translations$settings$language$en.internal(this._root);
@@ -2653,6 +2778,15 @@ class Translations$settings$theme$en {
 
   /// en: 'Secondary color'
   String get secondaryColor => TranslationOverrides.string(_root.$meta, 'settings.theme.secondaryColor', {}) ?? 'Secondary color';
+
+  /// en: 'Colors'
+  String get colors => TranslationOverrides.string(_root.$meta, 'settings.theme.colors', {}) ?? 'Colors';
+
+  /// en: 'Black/white'
+  String get blackAndWhite => TranslationOverrides.string(_root.$meta, 'settings.theme.blackAndWhite', {}) ?? 'Black/white';
+
+  /// en: 'Wheel'
+  String get wheel => TranslationOverrides.string(_root.$meta, 'settings.theme.wheel', {}) ?? 'Wheel';
 
   /// en: 'Enable drawer mascot'
   String get enableDrawerMascot => TranslationOverrides.string(_root.$meta, 'settings.theme.enableDrawerMascot', {}) ?? 'Enable drawer mascot';
@@ -5504,11 +5638,60 @@ extension on Translations {
           'settings.resetAllOverridesDescription' =>
             ({required String booru}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.resetAllOverridesDescription', {'booru': booru}) ??
-                'All custom settings for "${booru}" will be removed. Global defaults will be used instead.',
+                'Сustom settings for "${booru}" will be removed. Global values will be used instead.',
           'settings.activeBooruThemeOverrides' =>
             ({required String booru}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.activeBooruThemeOverrides', {'booru': booru}) ??
-                'The active booru "${booru}" has theme overrides. Changes here affect the global defaults, not the per-booru theme.',
+                'The active booru "${booru}" has theme overrides. Changes here affect global values, not the per-booru theme.',
+          'settings.subcategories.layout' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.layout', {}) ?? 'App layout',
+          'settings.subcategories.previewGrid' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.previewGrid', {}) ?? 'Preview grid',
+          'settings.subcategories.rendering' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.rendering', {}) ?? 'Rendering',
+          'settings.subcategories.additionalInterface' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.additionalInterface', {}) ?? 'Additional',
+          'settings.subcategories.loadingPreloading' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.loadingPreloading', {}) ?? 'Loading and preloading',
+          'settings.subcategories.toolbar' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.toolbar', {}) ?? 'Toolbar',
+          'settings.subcategories.viewerBehavior' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.viewerBehavior', {}) ?? 'Viewer behavior',
+          'settings.subcategories.slideshow' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.slideshow', {}) ?? 'Slideshow',
+          'settings.subcategories.physicalButtons' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.physicalButtons', {}) ?? 'Physical buttons',
+          'settings.subcategories.playback' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.playback', {}) ?? 'Playback',
+          'settings.subcategories.backend' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.backend', {}) ?? 'Backend',
+          'settings.subcategories.mpv' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.mpv', {}) ?? 'MPV',
+          'settings.subcategories.theme' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.theme', {}) ?? 'Theme',
+          'settings.subcategories.textAndDrawer' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.textAndDrawer', {}) ?? 'Text and drawer',
+          'settings.subcategories.cache' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.cache', {}) ?? 'Cache',
+          'settings.subcategories.downloads' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.downloads', {}) ?? 'Downloads',
+          'settings.subcategories.storage' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.storage', {}) ?? 'Storage',
+          'settings.subcategories.cacheStats' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.cacheStats', {}) ?? 'Cache stats',
+          'settings.subcategories.backup' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.backup', {}) ?? 'Backup',
+          'settings.subcategories.database' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.database', {}) ?? 'Database',
+          'settings.subcategories.security' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.security', {}) ?? 'Security',
+          'settings.subcategories.proxy' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.proxy', {}) ?? 'Proxy',
+          'settings.subcategories.requests' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.requests', {}) ?? 'Requests',
+          'settings.subcategories.sync' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.sync', {}) ?? 'Sync',
+          'settings.subcategories.activeFilters' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.activeFilters', {}) ?? 'Active filters',
+          'settings.subcategories.tagLists' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.tagLists', {}) ?? 'Tag lists',
+          'settings.subcategories.appLock' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.appLock', {}) ?? 'App lock',
+          'settings.subcategories.privacy' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.privacy', {}) ?? 'Privacy',
+          'settings.subcategories.defaults' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.defaults', {}) ?? 'Defaults',
+          'settings.subcategories.devicePerformance' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.devicePerformance', {}) ?? 'Device performance',
+          'settings.subcategories.previewPerformance' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.previewPerformance', {}) ?? 'Preview performance',
+          'settings.subcategories.viewerPerformance' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.viewerPerformance', {}) ?? 'Viewer performance',
+          'settings.subcategories.videoPerformance' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.videoPerformance', {}) ?? 'Video performance',
+          'settings.subcategories.language' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.language', {}) ?? 'Language',
+          'settings.subcategories.logs' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.logs', {}) ?? 'Logs',
+          'settings.subcategories.debugMode' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.debugMode', {}) ?? 'Debug mode',
+          'settings.subcategories.overlays' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.overlays', {}) ?? 'Overlays',
+          'settings.subcategories.logging' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.logging', {}) ?? 'Logging',
           'settings.language.title' => TranslationOverrides.string(_root.$meta, 'settings.language.title', {}) ?? 'Language',
           'settings.language.system' => TranslationOverrides.string(_root.$meta, 'settings.language.system', {}) ?? 'System',
           'settings.language.helpUsTranslate' =>
@@ -5749,6 +5932,9 @@ extension on Translations {
           'settings.theme.theme' => TranslationOverrides.string(_root.$meta, 'settings.theme.theme', {}) ?? 'Theme',
           'settings.theme.primaryColor' => TranslationOverrides.string(_root.$meta, 'settings.theme.primaryColor', {}) ?? 'Primary color',
           'settings.theme.secondaryColor' => TranslationOverrides.string(_root.$meta, 'settings.theme.secondaryColor', {}) ?? 'Secondary color',
+          'settings.theme.colors' => TranslationOverrides.string(_root.$meta, 'settings.theme.colors', {}) ?? 'Colors',
+          'settings.theme.blackAndWhite' => TranslationOverrides.string(_root.$meta, 'settings.theme.blackAndWhite', {}) ?? 'Black/white',
+          'settings.theme.wheel' => TranslationOverrides.string(_root.$meta, 'settings.theme.wheel', {}) ?? 'Wheel',
           'settings.theme.enableDrawerMascot' =>
             TranslationOverrides.string(_root.$meta, 'settings.theme.enableDrawerMascot', {}) ?? 'Enable drawer mascot',
           'settings.theme.setCustomMascot' => TranslationOverrides.string(_root.$meta, 'settings.theme.setCustomMascot', {}) ?? 'Set custom mascot',
@@ -5819,6 +6005,9 @@ extension on Translations {
           'settings.viewer.atLeast4ButtonsVisibleOnToolbar' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.atLeast4ButtonsVisibleOnToolbar', {}) ??
                 'At least 4 buttons from this list will be always visible on Toolbar.',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.viewer.otherButtonsWillGoIntoOverflow' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.otherButtonsWillGoIntoOverflow', {}) ??
                 'Other buttons will go into overflow (three dots) menu.',
@@ -5905,9 +6094,6 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonPositionValues.left', {}) ?? 'Left',
           'settings.viewer.buttonPositionValues.right' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonPositionValues.right', {}) ?? 'Right',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.viewer.shareActionValues.ask' => TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionValues.ask', {}) ?? 'Ask',
           'settings.viewer.shareActionValues.postUrl' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionValues.postUrl', {}) ?? 'Post URL',
@@ -6788,6 +6974,9 @@ extension on Translations {
           'tagView.copiedFileURL' => TranslationOverrides.string(_root.$meta, 'tagView.copiedFileURL', {}) ?? 'Copied file URL to clipboard',
           'tagView.tagPreviews' => TranslationOverrides.string(_root.$meta, 'tagView.tagPreviews', {}) ?? 'Tag previews',
           'tagView.currentState' => TranslationOverrides.string(_root.$meta, 'tagView.currentState', {}) ?? 'Current state',
+          _ => null,
+        } ??
+        switch (path) {
           'tagView.history' => TranslationOverrides.string(_root.$meta, 'tagView.history', {}) ?? 'History',
           'tagView.failedToLoadPreviewPage' =>
             TranslationOverrides.string(_root.$meta, 'tagView.failedToLoadPreviewPage', {}) ?? 'Failed to load preview page',
@@ -6852,9 +7041,6 @@ extension on Translations {
           'searchBar.copiedTagToClipboard' =>
             ({required String tag}) =>
                 TranslationOverrides.string(_root.$meta, 'searchBar.copiedTagToClipboard', {'tag': tag}) ?? 'Copied «${tag}» to clipboard',
-          _ => null,
-        } ??
-        switch (path) {
           'searchBar.prefix' => TranslationOverrides.string(_root.$meta, 'searchBar.prefix', {}) ?? 'Prefix',
           'searchBar.exclude' => TranslationOverrides.string(_root.$meta, 'searchBar.exclude', {}) ?? 'Exclude (—)',
           'searchBar.booruNumberPrefix' => TranslationOverrides.string(_root.$meta, 'searchBar.booruNumberPrefix', {}) ?? 'Booru (N#)',

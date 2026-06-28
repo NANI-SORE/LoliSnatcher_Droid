@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:auto_size_text_plus/auto_size_text_plus.dart';
 import 'package:get/get.dart';
+import 'package:lolisnatcher/src/boorus/booru_type.dart';
 
 import 'package:lolisnatcher/src/boorus/mergebooru_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
@@ -13,6 +14,7 @@ import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
+import 'package:lolisnatcher/src/pages/settings/booru_overrides_page.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
@@ -296,6 +298,14 @@ class TabSelector extends StatelessWidget {
 
                             dropdown.showDialog(context);
                           },
+                          onLongPress: BooruType.saveable.contains(searchHandler.currentBooru.type)
+                              ? () {
+                                  SettingsPageOpen(
+                                    context: context,
+                                    page: (_) => BooruOverridesPage(booru: searchHandler.currentBooru),
+                                  ).open();
+                                }
+                              : null,
                           child: Padding(
                             padding: const EdgeInsets.only(
                               top: 12,

@@ -52,6 +52,7 @@ SettingDef<bool> boolSetting({
   required bool Function() getDefaultValue,
   required SettingLocalization localization,
   List<SettingCategory> categories = const [],
+  List<SettingSubcategory> subcategories = const [],
   bool isDeviceSpecific = false,
   bool supportsPerBooru = false,
   bool isTransient = false,
@@ -68,6 +69,7 @@ SettingDef<bool> boolSetting({
     getDefaultValue: getDefaultValue,
     localization: localization,
     categories: categories,
+    subcategories: subcategories,
     isDeviceSpecific: isDeviceSpecific,
     supportsPerBooru: supportsPerBooru,
     isTransient: isTransient,
@@ -94,7 +96,8 @@ SettingDef<bool> boolSetting({
           title: localization.title(ctx),
           subtitle: localization.subtitle != null ? Text(localization.subtitle!(ctx)) : null,
           value: s.scopedValue(ctx),
-          defaultValue: s.defaultValue,
+          defaultValue: s.resetValue(ctx),
+          onReset: () => s.resetScoped(ctx),
           onChanged: (newValue) => s.setScopedValue(ctx, newValue),
           enabled: enabledWhen?.call() ?? true,
           leadingIcon: widgetConfig?.leadingIcon,
@@ -119,6 +122,7 @@ SettingDef<int> intSetting({
   required int max,
   int step = 1,
   List<SettingCategory> categories = const [],
+  List<SettingSubcategory> subcategories = const [],
   bool isDeviceSpecific = false,
   bool supportsPerBooru = false,
   bool isSearchable = true,
@@ -137,6 +141,7 @@ SettingDef<int> intSetting({
     getDefaultValue: getDefaultValue,
     localization: localization,
     categories: categories,
+    subcategories: subcategories,
     isDeviceSpecific: isDeviceSpecific,
     supportsPerBooru: supportsPerBooru,
     isSearchable: isSearchable,
@@ -181,6 +186,7 @@ SettingDef<double> doubleSetting({
   required double max,
   double step = 0.1,
   List<SettingCategory> categories = const [],
+  List<SettingSubcategory> subcategories = const [],
   bool isDeviceSpecific = false,
   bool supportsPerBooru = false,
   bool isSearchable = true,
@@ -198,6 +204,7 @@ SettingDef<double> doubleSetting({
     getDefaultValue: getDefaultValue,
     localization: localization,
     categories: categories,
+    subcategories: subcategories,
     isDeviceSpecific: isDeviceSpecific,
     supportsPerBooru: supportsPerBooru,
     isSearchable: isSearchable,
@@ -244,6 +251,7 @@ SettingDef<String> stringSetting({
   required String Function() getDefaultValue,
   required SettingLocalization localization,
   List<SettingCategory> categories = const [],
+  List<SettingSubcategory> subcategories = const [],
   bool isDeviceSpecific = false,
   bool supportsPerBooru = false,
   bool isSearchable = true,
@@ -263,6 +271,7 @@ SettingDef<String> stringSetting({
     getDefaultValue: getDefaultValue,
     localization: localization,
     categories: categories,
+    subcategories: subcategories,
     isDeviceSpecific: isDeviceSpecific,
     supportsPerBooru: supportsPerBooru,
     isSearchable: isSearchable,
@@ -313,6 +322,7 @@ SettingDef<T> enumSetting<T extends Enum>({
   Widget? Function(BuildContext context, T? value)? itemLeadingBuilder,
   EnumDisplayMode displayMode = EnumDisplayMode.dropdown,
   List<SettingCategory> categories = const [],
+  List<SettingSubcategory> subcategories = const [],
   bool isDeviceSpecific = false,
   bool supportsPerBooru = false,
   bool isSearchable = true,
@@ -340,6 +350,7 @@ SettingDef<T> enumSetting<T extends Enum>({
     getDefaultValue: getDefaultValue,
     localization: augmentedLocalization,
     categories: categories,
+    subcategories: subcategories,
     isDeviceSpecific: isDeviceSpecific,
     supportsPerBooru: supportsPerBooru,
     isSearchable: isSearchable,
@@ -380,6 +391,7 @@ SettingDef<T> enumSetting<T extends Enum>({
                 onChanged: (newValue) {
                   if (newValue != null) s.setScopedValue(ctx, newValue);
                 },
+                onReset: scopedVal != s.resetValue(ctx) ? () => s.resetScoped(ctx) : null,
                 trailingIcon: trailingIcon,
               );
             case EnumDisplayMode.optionsList:
@@ -393,6 +405,7 @@ SettingDef<T> enumSetting<T extends Enum>({
                 onChanged: (newValue) {
                   if (newValue != null) s.setScopedValue(ctx, newValue);
                 },
+                onReset: scopedVal != s.resetValue(ctx) ? () => s.resetScoped(ctx) : null,
                 trailingIcon: trailingIcon,
               );
             case EnumDisplayMode.segmented:
@@ -401,7 +414,8 @@ SettingDef<T> enumSetting<T extends Enum>({
                 subtitle: localization.subtitle != null ? Text(localization.subtitle!(ctx)) : null,
                 value: scopedVal,
                 values: values,
-                defaultValue: s.defaultValue,
+                defaultValue: s.resetValue(ctx),
+                onReset: () => s.resetScoped(ctx),
                 itemTitleBuilder: (item) => enumLocName(ctx, item),
                 onChanged: (newValue) => s.setScopedValue(ctx, newValue),
               );
@@ -423,6 +437,7 @@ SettingDef<Duration> durationSetting({
   required String Function(BuildContext context, Duration value) durationLocName,
   List<Duration>? options,
   List<SettingCategory> categories = const [],
+  List<SettingSubcategory> subcategories = const [],
   bool isDeviceSpecific = false,
   bool isSearchable = true,
   bool Function()? visibleWhen,
@@ -436,6 +451,7 @@ SettingDef<Duration> durationSetting({
     getDefaultValue: getDefaultValue,
     localization: localization,
     categories: categories,
+    subcategories: subcategories,
     isDeviceSpecific: isDeviceSpecific,
     isSearchable: isSearchable,
     visibleWhen: visibleWhen,
@@ -462,6 +478,7 @@ SettingDef<Duration> durationSetting({
                 onChanged: (newValue) {
                   if (newValue != null) s.setScopedValue(ctx, newValue);
                 },
+                onReset: s.scopedValue(ctx) != s.resetValue(ctx) ? () => s.resetScoped(ctx) : null,
               ),
             );
           }
@@ -483,6 +500,7 @@ SettingDef<List<String>> stringListSetting({
   Widget Function()? navigateTo,
   Object? icon,
   List<SettingCategory> categories = const [],
+  List<SettingSubcategory> subcategories = const [],
   bool isDeviceSpecific = false,
   bool supportsPerBooru = false,
   bool isSearchable = true,
@@ -498,6 +516,7 @@ SettingDef<List<String>> stringListSetting({
     localization: localization,
     legacyJsonKeys: legacyJsonKeys,
     categories: categories,
+    subcategories: subcategories,
     isDeviceSpecific: isDeviceSpecific,
     supportsPerBooru: supportsPerBooru,
     isSearchable: isSearchable,
@@ -605,7 +624,8 @@ class _IntSettingWidgetState extends State<_IntSettingWidget> {
       numberStep: widget.step.toDouble(),
       numberMin: widget.min.toDouble(),
       numberMax: widget.max.toDouble(),
-      resetText: () => widget.state.defaultValue.toString(),
+      resetText: () => widget.state.resetValue(context).toString(),
+      onReset: () => widget.state.resetScoped(context),
       onChanged: (newValue) {
         final parsed = int.tryParse(newValue);
         if (parsed != null) widget.state.setScopedValue(context, parsed, debounceSave: true);
@@ -680,7 +700,8 @@ class _DoubleSettingWidgetState extends State<_DoubleSettingWidget> {
           _buildHelpDialogButton(context, widget.localization, widget.widgetConfig) ??
           _buildHelpButton(context, widget.localization),
       inputType: const TextInputType.numberWithOptions(decimal: true),
-      resetText: () => widget.state.defaultValue.toString(),
+      resetText: () => widget.state.resetValue(context).toString(),
+      onReset: () => widget.state.resetScoped(context),
       onChanged: (newValue) {
         final parsed = double.tryParse(newValue);
         if (parsed != null) widget.state.setScopedValue(context, parsed, debounceSave: true);
@@ -760,7 +781,8 @@ class _StringSettingWidgetState extends State<_StringSettingWidget> {
       obscureable: widget.obscureable,
       copyable: widget.copyable,
       pasteable: widget.pasteable,
-      resetText: () => widget.state.defaultValue,
+      resetText: () => widget.state.resetValue(context),
+      onReset: () => widget.state.resetScoped(context),
       onChanged: (newValue) => widget.state.setScopedValue(context, newValue, debounceSave: true),
     );
   }
@@ -776,6 +798,7 @@ SettingDef<bool> widgetSlot({
   required SettingKey key,
   required List<SettingCategory> categories,
   required Widget Function(BuildContext context) builder,
+  List<SettingSubcategory> subcategories = const [],
   List<SettingKey>? dependsOn,
   bool Function()? visibleWhen,
   bool Function([BuildContext? context])? enabledWhen,
@@ -787,6 +810,7 @@ SettingDef<bool> widgetSlot({
     valueToJson: (_) => null,
     valueFromJson: (_) => false,
     categories: categories,
+    subcategories: subcategories,
     isWidgetSlot: true,
     visibleWhen: visibleWhen,
     dependsOn: dependsOn,

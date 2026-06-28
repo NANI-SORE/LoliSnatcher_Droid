@@ -36,14 +36,12 @@ class _BooruPageState extends State<BooruPage> {
   final SearchHandler searchHandler = SearchHandler.instance;
 
   final defaultTagsController = TextEditingController();
-  final limitController = TextEditingController();
   Booru? selectedBooru, initPrefBooru;
 
   @override
   void initState() {
     super.initState();
     defaultTagsController.text = SX.defTags.value;
-    limitController.text = SX.limit.value.toString();
 
     if (SX.prefBooru.value.isNotEmpty) {
       selectedBooru = settingsHandler.booruList.firstWhereOrNull(
@@ -59,7 +57,6 @@ class _BooruPageState extends State<BooruPage> {
   @override
   void dispose() {
     defaultTagsController.dispose();
-    limitController.dispose();
     super.dispose();
   }
 
@@ -75,11 +72,6 @@ class _BooruPageState extends State<BooruPage> {
 
   Future<void> _onPopInvoked(_, _) async {
     SX.defTags.state.value = defaultTagsController.text;
-    if (int.parse(limitController.text) > 100) {
-      limitController.text = '100';
-    } else if (int.parse(limitController.text) < 10) {
-      limitController.text = '10';
-    }
 
     if (selectedBooru == null && settingsHandler.booruList.isNotEmpty) {
       selectedBooru = settingsHandler.booruList[0];
@@ -94,7 +86,6 @@ class _BooruPageState extends State<BooruPage> {
 
       SX.prefBooru.state.value = (res == true ? selectedBooru?.name : initPrefBooru?.name) ?? '';
     }
-    SX.limit.state.value = int.parse(limitController.text);
     await settingsHandler.saveSettings(restate: false);
     await settingsHandler.sortBooruList();
   }
@@ -450,33 +441,7 @@ class _BooruPageState extends State<BooruPage> {
                 clearable: true,
                 // resetText: () => 'rating:safe', // TODO
               ),
-              SettingsTextInput(
-                controller: limitController,
-                title: context.loc.settings.booru.itemsPerPage,
-                hintText: context.loc.settings.booru.itemsPerPagePlaceholder,
-                subtitle: Text(context.loc.settings.booru.itemsPerPageTip),
-                inputType: TextInputType.number,
-                inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
-                resetText: () => SX.limit.state.defaultValue.toString(),
-                numberButtons: true,
-                numberStep: 10,
-                numberMin: 10,
-                numberMax: 100,
-                validator: (String? value) {
-                  final int? parse = int.tryParse(value ?? '');
-                  if (value == null || value.isEmpty) {
-                    return context.loc.validationErrors.required;
-                  } else if (parse == null) {
-                    return context.loc.validationErrors.invalid;
-                  } else if (parse < 10) {
-                    return context.loc.validationErrors.tooSmall(min: 10);
-                  } else if (parse > 100) {
-                    return context.loc.validationErrors.tooBig(max: 100);
-                  } else {
-                    return null;
-                  }
-                },
-              ),
+              SX.limit.state.buildWidget(context),
               const SettingsButton(name: '', enabled: false),
               addFromClipboardButton(),
               addButton(),

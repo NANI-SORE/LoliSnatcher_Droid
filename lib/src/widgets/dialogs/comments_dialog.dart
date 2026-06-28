@@ -634,6 +634,7 @@ class _CommentEntry extends StatelessWidget {
                     child: ParsedText(
                       text: _normalizeContent(comment.content),
                       style: const TextStyle(fontSize: 16),
+                      scrollPhysics: const NeverScrollableScrollPhysics(),
                     ),
                   ),
                 ],
