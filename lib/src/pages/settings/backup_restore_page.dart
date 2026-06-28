@@ -35,6 +35,31 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
   bool inProgress = false;
   int progress = 0, total = 0;
 
+  void createInitialTabIfNeeded() {
+    if (searchHandler.tabs.isNotEmpty || settingsHandler.booruList.isEmpty) {
+      return;
+    }
+
+    final Booru booru = settingsHandler.booruList.firstWhere(
+      (booru) => booru.name == SX.prefBooru.value,
+      orElse: () => settingsHandler.booruList.first,
+    );
+    final String defaultText = booru.defTags?.isNotEmpty == true ? booru.defTags! : SX.defTags.value;
+
+    searchHandler.addTabByString(
+      defaultText,
+      customBooru: booru,
+    );
+    unawaited(searchHandler.runSearch());
+  }
+
+  Future<void> restoreDbAccessAfterFailedRestore() async {
+    if (settingsHandler.dbHandler.db == null && SX.dbEnabled.value) {
+      await settingsHandler.loadDatabase((_) {});
+    }
+    searchHandler.canBackup.value = true;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -539,6 +564,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                                   }
                                 }
                                 await settingsHandler.loadBoorus();
+                                createInitialTabIfNeeded();
                                 showSnackbar(
                                   context.loc.settings.backupAndRestore.boorusRestored,
                                   isError: false,
@@ -623,7 +649,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                               context.loc.settings.backupAndRestore.restoreDatabaseError,
                               isError: true,
                             );
-                            searchHandler.canBackup.value = true;
+                            await restoreDbAccessAfterFailedRestore();
                             inProgress = false;
                             setState(() {});
                             return;
@@ -635,7 +661,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                               context.loc.settings.backupAndRestore.restoreDatabaseError,
                               isError: true,
                             );
-                            searchHandler.canBackup.value = true;
+                            await restoreDbAccessAfterFailedRestore();
                             inProgress = false;
                             setState(() {});
                             return;
@@ -658,7 +684,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                             LogTypes.exception,
                             s: s,
                           );
-                          searchHandler.canBackup.value = true;
+                          await restoreDbAccessAfterFailedRestore();
                         }
                         inProgress = false;
                         setState(() {});
