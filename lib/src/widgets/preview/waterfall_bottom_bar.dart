@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:get/get.dart';
+
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_bar.dart';
@@ -72,6 +74,10 @@ class WaterfallBottomBarState extends State<WaterfallBottomBar> with TickerProvi
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          _WaterfallSelectionButtons(
+            animation: animation,
+            showSearchBar: showSearchBar,
+          ),
           // loading/error text, retry button (goes down with scroll, maybe shrinks to a small version for better fullscreen experience?)
           // + grid scroll buttons on the side (fixed vertical position, if present - change width of loading/error text)
           AnimatedBuilder(
@@ -129,5 +135,94 @@ class WaterfallBottomBarState extends State<WaterfallBottomBar> with TickerProvi
         ],
       ),
     );
+  }
+}
+
+class _WaterfallSelectionButtons extends StatelessWidget {
+  const _WaterfallSelectionButtons({
+    required this.animation,
+    required this.showSearchBar,
+  });
+
+  final Animation<double> animation;
+  final bool showSearchBar;
+
+  double get animValue => animation.value;
+  double get reverseAnimValue => 1 - animValue;
+
+  void selectAll(SearchHandler searchHandler) {
+    searchHandler.currentTab.selected.assignAll(searchHandler.currentFetched);
+  }
+
+  void deselectAll(SearchHandler searchHandler) {
+    searchHandler.currentTab.selected.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final searchHandler = SearchHandler.instance;
+    final double bottomPadding = MediaQuery.viewPaddingOf(context).bottom;
+
+    return Obx(() {
+      final int selectedCount = searchHandler.currentSelected.length;
+      final bool hasFetched = searchHandler.currentFetched.isNotEmpty;
+      final bool hasSelected = selectedCount > 0;
+
+      if (!hasFetched && !hasSelected) {
+        return const SizedBox.shrink();
+      }
+
+      return AnimatedBuilder(
+        animation: animation,
+        builder: (context, child) {
+          return Transform.translate(
+            offset: Offset(
+              0,
+              showSearchBar ? (MainSearchBar.height + bottomPadding) * animValue : bottomPadding * animValue,
+            ),
+            child: IgnorePointer(
+              ignoring: animValue > 0.95,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 120),
+                opacity: reverseAnimValue,
+                child: child,
+              ),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.82),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Tooltip(
+                    message: context.loc.selectAll,
+                    child: IconButton(
+                      icon: const Icon(Icons.select_all),
+                      onPressed: hasFetched ? () => selectAll(searchHandler) : null,
+                    ),
+                  ),
+                  Tooltip(
+                    message: context.loc.settings.downloads.clearSelected,
+                    child: IconButton(
+                      icon: const Icon(Icons.deselect),
+                      onPressed: hasSelected ? () => deselectAll(searchHandler) : null,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    });
   }
 }

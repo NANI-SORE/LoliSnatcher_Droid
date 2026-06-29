@@ -57,8 +57,10 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   bool isDragSelecting = false;
   double dragAutoScrollDelta = 0;
   int? dragAnchorIndex;
+  int? dragCurrentHitIndex;
   bool? dragSelectAdds;
-  final Set<BooruItem> dragInitialSelectedItems = Set<BooruItem>.identity();
+  final List<BooruItem> dragInitialSelectedItems = [];
+  final Set<BooruItem> dragInitialSelectedSet = Set<BooruItem>.identity();
   final Set<BooruItem> dragCurrentRangeItems = Set<BooruItem>.identity();
 
   @override
@@ -352,10 +354,14 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
     isDragSelecting = true;
     latestDragGlobalPosition = details.globalPosition;
     dragAnchorIndex = null;
+    dragCurrentHitIndex = null;
     dragSelectAdds = null;
     dragInitialSelectedItems
       ..clear()
       ..addAll(searchHandler.currentSelected);
+    dragInitialSelectedSet
+      ..clear()
+      ..addAll(dragInitialSelectedItems);
     dragCurrentRangeItems.clear();
 
     final hit = dragSelectController.hitTest(details.globalPosition);
@@ -365,7 +371,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
     }
 
     dragAnchorIndex = hit.index;
-    dragSelectAdds = !dragInitialSelectedItems.contains(hit.item);
+    dragSelectAdds = !dragInitialSelectedSet.contains(hit.item);
     await ServiceHandler.vibrate();
     applyDragSelectionRange(hit.index);
     updateDragAutoScroll();
@@ -401,6 +407,9 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
     if (anchorIndex == null || selectAdds == null) {
       return;
     }
+    if (dragCurrentHitIndex == hitIndex) {
+      return;
+    }
 
     final currentFetched = searchHandler.currentFetched;
     if (currentFetched.isEmpty) {
@@ -409,42 +418,46 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
 
     final startIndex = min(anchorIndex, hitIndex).clamp(0, currentFetched.length - 1);
     final endIndex = max(anchorIndex, hitIndex).clamp(0, currentFetched.length - 1);
+    final nextRangeList = <BooruItem>[];
     final nextRangeItems = Set<BooruItem>.identity();
 
-    for (int i = startIndex; i <= endIndex; i++) {
-      nextRangeItems.add(currentFetched[i]);
+    if (hitIndex >= anchorIndex) {
+      for (int i = startIndex; i <= endIndex; i++) {
+        nextRangeList.add(currentFetched[i]);
+      }
+    } else {
+      for (int i = endIndex; i >= startIndex; i--) {
+        nextRangeList.add(currentFetched[i]);
+      }
     }
 
+    nextRangeItems.addAll(nextRangeList);
+
+    final selectedAfterDrag = <BooruItem>[];
+    final selectedAfterDragSet = Set<BooruItem>.identity();
+
     if (selectAdds) {
-      for (final item in dragCurrentRangeItems) {
-        if (!nextRangeItems.contains(item) &&
-            !dragInitialSelectedItems.contains(item) &&
-            searchHandler.currentSelected.contains(item)) {
-          searchHandler.currentTab.selected.remove(item);
+      for (final item in dragInitialSelectedItems) {
+        if (selectedAfterDragSet.add(item)) {
+          selectedAfterDrag.add(item);
         }
       }
 
-      for (final item in nextRangeItems) {
-        if (!searchHandler.currentSelected.contains(item)) {
-          searchHandler.currentTab.selected.add(item);
+      for (final item in nextRangeList) {
+        if (!dragInitialSelectedSet.contains(item) && selectedAfterDragSet.add(item)) {
+          selectedAfterDrag.add(item);
         }
       }
     } else {
-      for (final item in dragCurrentRangeItems) {
-        if (!nextRangeItems.contains(item) &&
-            dragInitialSelectedItems.contains(item) &&
-            !searchHandler.currentSelected.contains(item)) {
-          searchHandler.currentTab.selected.add(item);
-        }
-      }
-
-      for (final item in nextRangeItems) {
-        if (searchHandler.currentSelected.contains(item)) {
-          searchHandler.currentTab.selected.remove(item);
+      for (final item in dragInitialSelectedItems) {
+        if (!nextRangeItems.contains(item) && selectedAfterDragSet.add(item)) {
+          selectedAfterDrag.add(item);
         }
       }
     }
 
+    searchHandler.currentTab.selected.assignAll(selectedAfterDrag);
+    dragCurrentHitIndex = hitIndex;
     dragCurrentRangeItems
       ..clear()
       ..addAll(nextRangeItems);
@@ -465,7 +478,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
     }
 
     final localPosition = renderObject.globalToLocal(globalPosition);
-    const double edgeSize = 72;
+    final double edgeSize = min(220, max(128, renderObject.size.height * 0.18));
     const double maxDelta = 24;
 
     if (localPosition.dy < edgeSize) {
@@ -529,8 +542,10 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
     isDragSelecting = false;
     latestDragGlobalPosition = null;
     dragAnchorIndex = null;
+    dragCurrentHitIndex = null;
     dragSelectAdds = null;
     dragInitialSelectedItems.clear();
+    dragInitialSelectedSet.clear();
     dragCurrentRangeItems.clear();
     stopDragAutoScroll();
   }
