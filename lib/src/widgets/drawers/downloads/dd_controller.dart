@@ -11,6 +11,7 @@ import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
+import 'package:lolisnatcher/src/services/gallery_share_service.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/kaomoji.dart';
 
@@ -22,6 +23,7 @@ class DownloadsDrawerController {
   final SnatchHandler snatchHandler = SnatchHandler.instance;
   final SettingsHandler settingsHandler = SettingsHandler.instance;
   final SearchHandler searchHandler = SearchHandler.instance;
+  final GalleryShareService galleryShareService = GalleryShareService();
 
   final RxBool updating = false.obs;
   late final ScrollController scrollController;
@@ -82,6 +84,73 @@ class DownloadsDrawerController {
         ),
       );
     }
+  }
+
+  Future<void> onShareSelected(BuildContext context) async {
+    if (searchHandler.currentSelected.isEmpty) {
+      FlashElements.showSnackbar(
+        context: context,
+        title: Text(
+          context.loc.settings.downloads.noItemsSelected,
+          style: const TextStyle(fontSize: 20),
+        ),
+        overrideLeadingIconWidget: const Kaomoji(
+          category: KaomojiCategory.dissatisfaction,
+          style: TextStyle(fontSize: 18),
+        ),
+      );
+      return;
+    }
+
+    if (snatchHandler.currentShare.value != null) {
+      FlashElements.showSnackbar(
+        context: context,
+        title: Text(context.loc.viewer.appBar.shareFile, style: const TextStyle(fontSize: 20)),
+        content: Text(context.loc.viewer.appBar.alreadyDownloadingFile, style: const TextStyle(fontSize: 16)),
+        leadingIcon: Icons.warning_amber,
+        leadingIconColor: Colors.yellow,
+        sideColor: Colors.yellow,
+      );
+      return;
+    }
+
+    FlashElements.showSnackbar(
+      context: context,
+      title: Text(context.loc.gallery.loadingFile, style: const TextStyle(fontSize: 20)),
+      content: Text(context.loc.gallery.loadingFileMessage, style: const TextStyle(fontSize: 16)),
+      overrideLeadingIconWidget: const SizedBox(
+        width: 50,
+        height: 50,
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      sideColor: Colors.yellow,
+    );
+
+    final success = await galleryShareService.shareFiles(
+      items: [...searchHandler.currentSelected],
+      booru: searchHandler.currentBooru,
+      context: context,
+    );
+
+    if (!success) {
+      FlashElements.showSnackbar(
+        context: context,
+        title: Text(context.loc.viewer.appBar.error, style: const TextStyle(fontSize: 20)),
+        content: Text(
+          context.loc.viewer.appBar.savingFileError,
+          style: const TextStyle(fontSize: 16),
+        ),
+        leadingIcon: Icons.warning_amber,
+        leadingIconColor: Colors.red,
+        sideColor: Colors.red,
+      );
+      return;
+    }
+
+    searchHandler.currentTab.selected.clear();
   }
 
   Future<void> onRetryFailedItem(

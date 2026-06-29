@@ -44,17 +44,30 @@ class SnatchHandler {
   final RxInt received = 0.obs;
   final RxInt total = 0.obs;
 
+  final Rx<ShareItem?> currentShare = Rx<ShareItem?>(null);
+  final RxInt shareProgress = 0.obs;
+  final Rxn<BooruItem> shareActiveItem = Rxn<BooruItem>();
+  final RxInt shareReceived = 0.obs;
+  final RxInt shareTotal = 0.obs;
+
   final RxList<({BooruItem item, Booru booru})> existsItems = RxList([]);
   final RxList<({BooruItem item, Booru booru})> failedItems = RxList([]);
   final RxList<({BooruItem item, Booru booru})> cancelledItems = RxList([]);
 
   CancelToken? cancelToken;
+  CancelToken? shareCancelToken;
   Timer? _progressStuckTimer;
   bool _retryCurrentRequested = false;
+  int _shareOperationId = 0;
 
   double get currentProgress {
     if (total.value == 0) return 0;
     return received.value / total.value;
+  }
+
+  double get currentShareProgress {
+    if (shareTotal.value == 0) return 0;
+    return shareReceived.value / shareTotal.value;
   }
 
   final RxList<SnatchItem> queuedList = RxList<SnatchItem>([]);
@@ -179,6 +192,55 @@ class SnatchHandler {
     _stopProgressStuckTimer();
     _retryCurrentRequested = false;
     cancelToken?.cancel();
+  }
+
+  int onShareStart(
+    List<BooruItem> booruItems,
+    Booru booru,
+  ) {
+    _shareOperationId++;
+    currentShare.value = ShareItem(booruItems, booru);
+    shareProgress.value = 0;
+    shareActiveItem.value = booruItems.isEmpty ? null : booruItems.first;
+    shareReceived.value = 0;
+    shareTotal.value = 0;
+    return _shareOperationId;
+  }
+
+  void onShareProgress({
+    required int operationId,
+    required BooruItem item,
+    required int itemIndex,
+    required int received,
+    required int total,
+  }) {
+    if (operationId != _shareOperationId) return;
+
+    shareProgress.value = itemIndex;
+    shareActiveItem.value = item;
+    shareReceived.value = received;
+    shareTotal.value = total;
+  }
+
+  void onShareCancel() {
+    shareCancelToken?.cancel();
+  }
+
+  void onShareCancelTokenCreate(CancelToken token, int operationId) {
+    if (operationId != _shareOperationId) return;
+
+    shareCancelToken = token;
+  }
+
+  void onShareDone(int operationId) {
+    if (operationId != _shareOperationId) return;
+
+    shareCancelToken = null;
+    currentShare.value = null;
+    shareProgress.value = 0;
+    shareActiveItem.value = null;
+    shareReceived.value = 0;
+    shareTotal.value = 0;
   }
 
   void onRetryCurrent() {
@@ -484,6 +546,7 @@ class SnatchHandler {
 
   void dispose() {
     _stopProgressStuckTimer();
+    shareCancelToken?.cancel();
     queuedList.removeListener(queuedListListener);
   }
 }
@@ -500,4 +563,14 @@ class SnatchItem {
   final int cooldown;
   final Booru booru;
   final bool ignoreExists;
+}
+
+class ShareItem {
+  ShareItem(
+    this.booruItems,
+    this.booru,
+  );
+
+  final List<BooruItem> booruItems;
+  final Booru booru;
 }

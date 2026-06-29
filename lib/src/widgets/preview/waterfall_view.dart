@@ -18,6 +18,7 @@ import 'package:lolisnatcher/src/widgets/common/long_press_repeater.dart';
 import 'package:lolisnatcher/src/widgets/preview/grid_builder.dart';
 import 'package:lolisnatcher/src/widgets/preview/shimmer_builder.dart';
 import 'package:lolisnatcher/src/widgets/preview/staggered_builder.dart';
+import 'package:lolisnatcher/src/widgets/preview/thumbnail_drag_select.dart';
 import 'package:lolisnatcher/src/widgets/preview/waterfall_bottom_bar.dart';
 import 'package:lolisnatcher/src/widgets/root/main_appbar.dart';
 
@@ -48,6 +49,17 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   Timer? viewedItemCleanupTimer;
   int viewedItemCleanupCount = 0;
   final Set<BooruItem> viewedItems = {};
+
+  final ThumbnailDragSelectController dragSelectController = ThumbnailDragSelectController();
+  final GlobalKey dragSelectViewportKey = GlobalKey(debugLabel: 'drag-select-viewport');
+  Timer? dragAutoScrollTimer;
+  Offset? latestDragGlobalPosition;
+  bool isDragSelecting = false;
+  double dragAutoScrollDelta = 0;
+  int? dragAnchorIndex;
+  bool? dragSelectAdds;
+  final Set<BooruItem> dragInitialSelectedItems = Set<BooruItem>.identity();
+  final Set<BooruItem> dragCurrentRangeItems = Set<BooruItem>.identity();
 
   @override
   void initState() {
@@ -180,6 +192,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   @override
   void dispose() {
     viewedItemCleanupTimer?.cancel();
+    stopDragAutoScroll();
     NavigationHandler.instance.routeObserver.unsubscribe(this);
     searchHandler.index.removeListener(tabIndexListener);
     searchHandler.tabId.removeListener(tabIdListener);
@@ -335,6 +348,193 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
     }
   }
 
+  Future<void> onDragSelectStart(LongPressStartDetails details) async {
+    isDragSelecting = true;
+    latestDragGlobalPosition = details.globalPosition;
+    dragAnchorIndex = null;
+    dragSelectAdds = null;
+    dragInitialSelectedItems
+      ..clear()
+      ..addAll(searchHandler.currentSelected);
+    dragCurrentRangeItems.clear();
+
+    final hit = dragSelectController.hitTest(details.globalPosition);
+    if (hit == null) {
+      endDragSelection();
+      return;
+    }
+
+    dragAnchorIndex = hit.index;
+    dragSelectAdds = !dragInitialSelectedItems.contains(hit.item);
+    await ServiceHandler.vibrate();
+    applyDragSelectionRange(hit.index);
+    updateDragAutoScroll();
+  }
+
+  void onDragSelectMove(LongPressMoveUpdateDetails details) {
+    if (!isDragSelecting) {
+      return;
+    }
+
+    latestDragGlobalPosition = details.globalPosition;
+    applyDragSelectionRangeAt(details.globalPosition);
+    updateDragAutoScroll();
+  }
+
+  void applyDragSelectionRangeAt(Offset globalPosition) {
+    final anchorIndex = dragAnchorIndex;
+    if (anchorIndex == null) {
+      return;
+    }
+
+    final hit = dragSelectController.hitTest(globalPosition);
+    if (hit == null) {
+      return;
+    }
+
+    applyDragSelectionRange(hit.index);
+  }
+
+  void applyDragSelectionRange(int hitIndex) {
+    final anchorIndex = dragAnchorIndex;
+    final selectAdds = dragSelectAdds;
+    if (anchorIndex == null || selectAdds == null) {
+      return;
+    }
+
+    final currentFetched = searchHandler.currentFetched;
+    if (currentFetched.isEmpty) {
+      return;
+    }
+
+    final startIndex = min(anchorIndex, hitIndex).clamp(0, currentFetched.length - 1);
+    final endIndex = max(anchorIndex, hitIndex).clamp(0, currentFetched.length - 1);
+    final nextRangeItems = Set<BooruItem>.identity();
+
+    for (int i = startIndex; i <= endIndex; i++) {
+      nextRangeItems.add(currentFetched[i]);
+    }
+
+    if (selectAdds) {
+      for (final item in dragCurrentRangeItems) {
+        if (!nextRangeItems.contains(item) &&
+            !dragInitialSelectedItems.contains(item) &&
+            searchHandler.currentSelected.contains(item)) {
+          searchHandler.currentTab.selected.remove(item);
+        }
+      }
+
+      for (final item in nextRangeItems) {
+        if (!searchHandler.currentSelected.contains(item)) {
+          searchHandler.currentTab.selected.add(item);
+        }
+      }
+    } else {
+      for (final item in dragCurrentRangeItems) {
+        if (!nextRangeItems.contains(item) &&
+            dragInitialSelectedItems.contains(item) &&
+            !searchHandler.currentSelected.contains(item)) {
+          searchHandler.currentTab.selected.add(item);
+        }
+      }
+
+      for (final item in nextRangeItems) {
+        if (searchHandler.currentSelected.contains(item)) {
+          searchHandler.currentTab.selected.remove(item);
+        }
+      }
+    }
+
+    dragCurrentRangeItems
+      ..clear()
+      ..addAll(nextRangeItems);
+  }
+
+  void updateDragAutoScroll() {
+    final globalPosition = latestDragGlobalPosition;
+    final viewportContext = dragSelectViewportKey.currentContext;
+    if (!isDragSelecting || globalPosition == null || viewportContext == null) {
+      stopDragAutoScroll();
+      return;
+    }
+
+    final renderObject = viewportContext.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize || !searchHandler.gridScrollController.hasClients) {
+      stopDragAutoScroll();
+      return;
+    }
+
+    final localPosition = renderObject.globalToLocal(globalPosition);
+    const double edgeSize = 72;
+    const double maxDelta = 24;
+
+    if (localPosition.dy < edgeSize) {
+      dragAutoScrollDelta = -maxDelta * ((edgeSize - localPosition.dy) / edgeSize).clamp(0, 1);
+    } else if (localPosition.dy > renderObject.size.height - edgeSize) {
+      dragAutoScrollDelta =
+          maxDelta * ((localPosition.dy - (renderObject.size.height - edgeSize)) / edgeSize).clamp(0, 1);
+    } else {
+      dragAutoScrollDelta = 0;
+    }
+
+    if (dragAutoScrollDelta == 0) {
+      stopDragAutoScroll();
+      return;
+    }
+
+    dragAutoScrollTimer ??= Timer.periodic(
+      const Duration(milliseconds: 16),
+      (_) => dragAutoScrollTick(),
+    );
+  }
+
+  void dragAutoScrollTick() {
+    final globalPosition = latestDragGlobalPosition;
+    if (!isDragSelecting ||
+        globalPosition == null ||
+        dragAutoScrollDelta == 0 ||
+        !searchHandler.gridScrollController.hasClients) {
+      stopDragAutoScroll();
+      return;
+    }
+
+    final scrollController = searchHandler.gridScrollController;
+    final position = scrollController.position;
+    final nextOffset = (scrollController.offset + dragAutoScrollDelta).clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+
+    if (nextOffset == scrollController.offset) {
+      stopDragAutoScroll();
+      return;
+    }
+
+    scrollController.jumpTo(nextOffset);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (isDragSelecting && latestDragGlobalPosition != null) {
+        applyDragSelectionRangeAt(latestDragGlobalPosition!);
+        updateDragAutoScroll();
+      }
+    });
+  }
+
+  void stopDragAutoScroll() {
+    dragAutoScrollTimer?.cancel();
+    dragAutoScrollTimer = null;
+    dragAutoScrollDelta = 0;
+  }
+
+  void endDragSelection() {
+    isDragSelecting = false;
+    latestDragGlobalPosition = null;
+    dragAnchorIndex = null;
+    dragSelectAdds = null;
+    dragInitialSelectedItems.clear();
+    dragCurrentRangeItems.clear();
+    stopDragAutoScroll();
+  }
+
   Future<void> onSecondaryTap(int index, BuildContext context) async {
     final BooruItem item = searchHandler.currentFetched[index];
     await ClipboardUtils.copyImageToClipboard(item);
@@ -429,38 +629,60 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
                         });
                       }
 
-                      return CustomScrollView(
-                        key: ValueKey('CustomScrollView-${searchHandler.currentTabId}'),
-                        controller: searchHandler.gridScrollController,
-                        physics: isLoadingAndNoItems
-                            ? const NeverScrollableScrollPhysics()
-                            : AlwaysScrollableScrollPhysics(
-                                parent: ScrollConfiguration.of(context).getScrollPhysics(context),
-                              ),
-                        shrinkWrap: false,
-                        scrollCacheExtent: settingsHandler.shitDevice ? const .viewport(0.5) : const .viewport(1),
-                        slivers: [
-                          const MainAppBar(),
-                          SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(10, 16, 10, 180),
-                            sliver: Builder(
-                              builder: (context) {
-                                if (isLoadingAndNoItems) {
-                                  if (settingsHandler.shitDevice) {
-                                    return const SliverToBoxAdapter(
-                                      child: Center(
-                                        child: CircularProgressIndicator(),
+                      return GestureDetector(
+                        key: dragSelectViewportKey,
+                        behavior: HitTestBehavior.translucent,
+                        onLongPressStart: onDragSelectStart,
+                        onLongPressMoveUpdate: onDragSelectMove,
+                        onLongPressEnd: (_) => endDragSelection(),
+                        onLongPressCancel: endDragSelection,
+                        child: CustomScrollView(
+                          key: ValueKey('CustomScrollView-${searchHandler.currentTabId}'),
+                          controller: searchHandler.gridScrollController,
+                          physics: isLoadingAndNoItems
+                              ? const NeverScrollableScrollPhysics()
+                              : AlwaysScrollableScrollPhysics(
+                                  parent: ScrollConfiguration.of(context).getScrollPhysics(context),
+                                ),
+                          shrinkWrap: false,
+                          scrollCacheExtent: settingsHandler.shitDevice ? const .viewport(0.5) : const .viewport(1),
+                          slivers: [
+                            const MainAppBar(),
+                            SliverPadding(
+                              padding: const EdgeInsets.fromLTRB(10, 16, 10, 180),
+                              sliver: Builder(
+                                builder: (context) {
+                                  if (isLoadingAndNoItems) {
+                                    if (settingsHandler.shitDevice) {
+                                      return const SliverToBoxAdapter(
+                                        child: Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      );
+                                    }
+
+                                    return const ThumbnailsShimmerList();
+                                  }
+
+                                  if (isStaggered) {
+                                    return Obx(
+                                      () => StaggeredBuilder(
+                                        key: ValueKey('StaggeredBuilder-${searchHandler.currentTabId}'),
+                                        tab: searchHandler.currentTab,
+                                        scrollController: searchHandler.gridScrollController,
+                                        onTap: onTap,
+                                        onDoubleTap: onDoubleTap,
+                                        onLongPress: onLongPress,
+                                        onSecondaryTap: (i) => onSecondaryTap(i, context),
+                                        onSelected: onLongPress,
+                                        dragSelectController: dragSelectController,
                                       ),
                                     );
                                   }
 
-                                  return const ThumbnailsShimmerList();
-                                }
-
-                                if (isStaggered) {
                                   return Obx(
-                                    () => StaggeredBuilder(
-                                      key: ValueKey('StaggeredBuilder-${searchHandler.currentTabId}'),
+                                    () => GridBuilder(
+                                      key: ValueKey('GridBuilder-${searchHandler.currentTabId}'),
                                       tab: searchHandler.currentTab,
                                       scrollController: searchHandler.gridScrollController,
                                       onTap: onTap,
@@ -468,26 +690,14 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
                                       onLongPress: onLongPress,
                                       onSecondaryTap: (i) => onSecondaryTap(i, context),
                                       onSelected: onLongPress,
+                                      dragSelectController: dragSelectController,
                                     ),
                                   );
-                                }
-
-                                return Obx(
-                                  () => GridBuilder(
-                                    key: ValueKey('GridBuilder-${searchHandler.currentTabId}'),
-                                    tab: searchHandler.currentTab,
-                                    scrollController: searchHandler.gridScrollController,
-                                    onTap: onTap,
-                                    onDoubleTap: onDoubleTap,
-                                    onLongPress: onLongPress,
-                                    onSecondaryTap: (i) => onSecondaryTap(i, context),
-                                    onSelected: onLongPress,
-                                  ),
-                                );
-                              },
+                                },
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       );
                     }),
                   ),

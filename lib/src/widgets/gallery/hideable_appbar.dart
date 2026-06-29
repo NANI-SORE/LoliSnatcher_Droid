@@ -6,7 +6,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import 'package:dio/dio.dart';
 import 'package:external_video_player_launcher/external_video_player_launcher.dart';
 import 'package:get/get.dart' hide FirstWhereOrNullExt;
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -26,12 +25,9 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
+import 'package:lolisnatcher/src/services/gallery_share_service.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
-import 'package:lolisnatcher/src/services/image_writer.dart';
-import 'package:lolisnatcher/src/utils/clipboard.dart';
-import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/timed_progress_controller.dart';
-import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/animated_progress_indicator.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
@@ -42,7 +38,7 @@ import 'package:lolisnatcher/src/widgets/gallery/snatched_status_icon.dart';
 import 'package:lolisnatcher/src/widgets/gallery/toolbar_action.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_build.dart';
 
-// TODO decouple share and autoscroll stuff into separate widgets
+// TODO decouple autoscroll stuff into separate widgets
 
 class HideableAppBar extends StatefulWidget implements PreferredSizeWidget {
   const HideableAppBar({
@@ -76,12 +72,8 @@ class _HideableAppBarState extends State<HideableAppBar> {
 
   final ValueNotifier<int> page = ValueNotifier(0);
 
-  ImageWriter imageWriter = ImageWriter();
+  final GalleryShareService galleryShareService = GalleryShareService();
 
-  BooruItem? sharedItem;
-  double shareProgress = 0;
-  int shareProgressLastTick = 0;
-  CancelToken? shareCancelToken;
   bool isOnTop = true;
 
   ////////// Auto Scroll Stuff ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -487,16 +479,28 @@ class _HideableAppBarState extends State<HideableAppBar> {
         }
         break;
       case .share:
-        if (sharedItem != null && shareProgress != 0) {
+        return Obx(() {
+          final currentShare = snatchHandler.currentShare.value;
+          if (currentShare == null) {
+            return const SizedBox.shrink();
+          }
+
+          final itemCount = currentShare.booruItems.length;
+          final progress = itemCount == 0
+              ? 0.0
+              : (snatchHandler.shareProgress.value + snatchHandler.currentShareProgress) / itemCount;
+          if (progress == 0) {
+            return const SizedBox.shrink();
+          }
+
           return AnimatedProgressIndicator(
-            value: shareProgress,
+            value: progress,
             animationDuration: const Duration(milliseconds: 50),
             indicatorStyle: IndicatorStyle.circular,
             valueColor: Theme.of(context).progressIndicatorTheme.color?.withValues(alpha: 0.66),
             minHeight: 4,
           );
-        }
-        break;
+        });
 
       //
 
@@ -799,11 +803,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
   }
 
   void shareTextAction(String text) {
-    if (PlatformExt.isDesktop) {
-      ClipboardUtils.copyTextToClipboard(text);
-    } else if (Platform.isAndroid) {
-      ServiceHandler.loadShareTextIntent(text);
-    }
+    unawaited(galleryShareService.shareText(text));
   }
 
   Future<void> shareHydrusAction(BooruItem item) async {
@@ -866,8 +866,10 @@ class _HideableAppBarState extends State<HideableAppBar> {
   Future<void> shareFileAction({String? text}) async {
     final BooruItem item = widget.tab.booruHandler.filteredFetched[page.value];
 
-    final bool alreadyLoading = sharedItem != null;
-    final bool alreadyLoadingSame = alreadyLoading && sharedItem == item;
+    final currentShare = snatchHandler.currentShare.value;
+    final sharedItem = snatchHandler.shareActiveItem.value;
+    final bool alreadyLoading = currentShare != null && sharedItem != null;
+    final bool alreadyLoadingSame = alreadyLoading && currentShare.booruItems.length == 1 && sharedItem == item;
 
     if (alreadyLoading) {
       final double thumbWidth = MediaQuery.sizeOf(context).shortestSide * (alreadyLoadingSame ? 0.3 : 0.2);
@@ -898,7 +900,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
                           width: thumbWidth,
                           height: thumbHeight,
                           child: ThumbnailBuild(
-                            item: sharedItem!,
+                            item: sharedItem,
                             handler: widget.tab.booruHandler,
                             selectable: false,
                           ),
@@ -952,11 +954,12 @@ class _HideableAppBarState extends State<HideableAppBar> {
       );
 
       if (dialogRes == 'new' || dialogRes == 'abort') {
-        shareCancelToken?.cancel();
-        shareProgress = 0;
-        sharedItem = null;
-        setState(() {});
-        await imageWriter.deleteFileFromCache(item.fileURL, 'media', fileNameExtras: item.fileNameExtras);
+        galleryShareService.cancel();
+        await galleryShareService.imageWriter.deleteFileFromCache(
+          item.fileURL,
+          'media',
+          fileNameExtras: item.fileNameExtras,
+        );
       }
 
       if (dialogRes == 'abort' || dialogRes == null) {
@@ -966,126 +969,40 @@ class _HideableAppBarState extends State<HideableAppBar> {
 
     //
 
-    if (PlatformExt.isDesktop) {
-      shareCancelToken?.cancel();
-      shareCancelToken = CancelToken();
-      shareProgress = 0;
-      sharedItem = item;
+    FlashElements.showSnackbar(
+      context: context,
+      title: Text(context.loc.gallery.loadingFile, style: const TextStyle(fontSize: 20)),
+      content: Text(context.loc.gallery.loadingFileMessage, style: const TextStyle(fontSize: 16)),
+      overrideLeadingIconWidget: const SizedBox(
+        width: 50,
+        height: 50,
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      sideColor: Colors.yellow,
+    );
 
-      await ClipboardUtils.copyImageToClipboard(
-        item,
-        cancelToken: shareCancelToken,
-        onReceiveProgress: (int received, int? total) {
-          if (total != null && total > 0) {
-            shareProgress = received / total;
-            if ((DateTime.now().millisecondsSinceEpoch - shareProgressLastTick) > 100) {
-              setState(() {});
-              shareProgressLastTick = DateTime.now().millisecondsSinceEpoch;
-            }
-          }
-        },
+    final success = await galleryShareService.shareFiles(
+      items: [item],
+      booru: widget.tab.booruHandler.booru,
+      context: context,
+      text: text,
+    );
+
+    if (!success) {
+      FlashElements.showSnackbar(
+        context: context,
+        title: Text(context.loc.viewer.appBar.error, style: const TextStyle(fontSize: 20)),
+        content: Text(
+          context.loc.viewer.appBar.savingFileError,
+          style: const TextStyle(fontSize: 16),
+        ),
+        leadingIcon: Icons.warning_amber,
+        leadingIconColor: Colors.red,
+        sideColor: Colors.red,
       );
-
-      shareProgress = 0;
-      shareCancelToken = null;
-      sharedItem = null;
-      setState(() {});
-    } else {
-      String? path = await imageWriter.getCachePath(item.fileURL, 'media', fileNameExtras: item.fileNameExtras);
-
-      // TODO delete from cache after share window closes
-
-      if (path != null) {
-        if (Platform.isAndroid) {
-          // File is already in cache - share from there
-          await ServiceHandler.loadShareFileIntent(
-            path,
-            '${item.mediaType.value.isVideo ? 'video' : 'image'}/${item.fileExt!}',
-            text: text,
-          );
-        }
-      } else {
-        // File not in cache - load from network, share, delete from cache afterwards
-        FlashElements.showSnackbar(
-          context: context,
-          title: Text(context.loc.gallery.loadingFile, style: const TextStyle(fontSize: 20)),
-          content: Text(context.loc.gallery.loadingFileMessage, style: const TextStyle(fontSize: 16)),
-          overrideLeadingIconWidget: const SizedBox(
-            width: 50,
-            height: 50,
-            child: Padding(
-              padding: EdgeInsets.all(12),
-              child: CircularProgressIndicator(),
-            ),
-          ),
-          sideColor: Colors.yellow,
-        );
-
-        shareCancelToken?.cancel();
-        shareCancelToken = CancelToken();
-        shareProgress = 0;
-        sharedItem = item;
-
-        final String cacheFilePath = await imageWriter.getCachePathString(
-          item.fileURL,
-          'media',
-          clearName: true,
-          fileNameExtras: item.fileNameExtras,
-        );
-        await DioNetwork.download(
-          item.fileURL,
-          cacheFilePath,
-          cancelToken: shareCancelToken,
-          headers: await Tools.getFileCustomHeaders(
-            widget.tab.booruHandler.booru,
-            item: item,
-            checkForReferer: true,
-          ),
-          onReceiveProgress: (int received, int total) {
-            if (total > 0) {
-              shareProgress = received / total;
-              if ((DateTime.now().millisecondsSinceEpoch - shareProgressLastTick) > 100) {
-                setState(() {});
-                shareProgressLastTick = DateTime.now().millisecondsSinceEpoch;
-              }
-            }
-          },
-        );
-
-        final File cacheFile = File(
-          await imageWriter.getCachePath(item.fileURL, 'media', fileNameExtras: item.fileNameExtras) ?? '',
-        );
-        if (await cacheFile.exists()) {
-          path = cacheFile.path;
-          if (Platform.isAndroid) {
-            await ServiceHandler.loadShareFileIntent(
-              path,
-              '${item.mediaType.value.isVideo ? 'video' : 'image'}/${item.fileExt!}',
-              text: text,
-            );
-          }
-        } else {
-          FlashElements.showSnackbar(
-            context: context,
-            title: Text(context.loc.viewer.appBar.error, style: const TextStyle(fontSize: 20)),
-            content: Text(
-              context.loc.viewer.appBar.savingFileError,
-              style: const TextStyle(fontSize: 16),
-            ),
-            leadingIcon: Icons.warning_amber,
-            leadingIconColor: Colors.red,
-            sideColor: Colors.red,
-          );
-        }
-
-        shareProgress = 0;
-        shareCancelToken = null;
-        sharedItem = null;
-        setState(() {});
-
-        // TODO: find a way to detect when share menu was closed, orherwise this is triggered immediately and file is deleted before sending to another app
-        // imageWriter.deleteFileFromCache(path, 'media');
-      }
     }
   }
 
@@ -1318,62 +1235,48 @@ class _HideableAppBarState extends State<HideableAppBar> {
   Widget build(BuildContext context) {
     final double extraPadding = isOnTop ? 0 : MediaQuery.paddingOf(context).bottom;
 
-    return PopScope(
-      onPopInvokedWithResult: (_, _) {
-        // clear currently loading item from cache to avoid creating broken files
-        // TODO move sharing download routine to somewhere in global context?
-        shareCancelToken?.cancel();
-        if (sharedItem != null) {
-          imageWriter.deleteFileFromCache(
-            sharedItem!.fileURL,
-            'media',
-            fileNameExtras: sharedItem!.fileNameExtras,
-          );
-        }
-      },
-      child: Material(
+    return Material(
+      color: Colors.transparent,
+      elevation: 1,
+      clipBehavior: Clip.antiAlias,
+      shadowColor: Colors.black54,
+      surfaceTintColor: Colors.transparent,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.linear,
         color: Colors.transparent,
-        elevation: 1,
-        clipBehavior: Clip.antiAlias,
-        shadowColor: Colors.black54,
-        surfaceTintColor: Colors.transparent,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.linear,
-          color: Colors.transparent,
-          height: viewerHandler.displayAppbar.value ? (isOnTop ? null : (widget.defaultHeight + extraPadding)) : 0,
-          padding: isOnTop ? null : EdgeInsets.only(bottom: extraPadding),
-          child: ListenableBuilder(
-            listenable: Listenable.merge([page, widget.tab.booruHandler.filteredFetched]),
-            builder: (context, _) {
-              final pageVal = page.value;
-              final fetched = widget.tab.booruHandler.filteredFetched.value;
-              final String formattedViewedIndex = (pageVal + 1).toString();
-              final String formattedTotal = fetched.length.toString();
+        height: viewerHandler.displayAppbar.value ? (isOnTop ? null : (widget.defaultHeight + extraPadding)) : 0,
+        padding: isOnTop ? null : EdgeInsets.only(bottom: extraPadding),
+        child: ListenableBuilder(
+          listenable: Listenable.merge([page, widget.tab.booruHandler.filteredFetched]),
+          builder: (context, _) {
+            final pageVal = page.value;
+            final fetched = widget.tab.booruHandler.filteredFetched.value;
+            final String formattedViewedIndex = (pageVal + 1).toString();
+            final String formattedTotal = fetched.length.toString();
 
-              return AppBar(
-                // toolbarHeight: widget.defaultHeight,
-                elevation: 0,
-                backgroundColor: Colors.transparent,
-                foregroundColor: Colors.white,
-                shadowColor: Colors.transparent,
-                surfaceTintColor: Colors.transparent,
-                leading: IconButton(
-                  // to ignore icon change
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.of(context).pop(),
+            return AppBar(
+              // toolbarHeight: widget.defaultHeight,
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              shadowColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              leading: IconButton(
+                // to ignore icon change
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              title: FittedBox(
+                fit: BoxFit.fitWidth,
+                child: Text(
+                  '$formattedViewedIndex/$formattedTotal',
+                  style: const TextStyle(color: Colors.white),
                 ),
-                title: FittedBox(
-                  fit: BoxFit.fitWidth,
-                  child: Text(
-                    '$formattedViewedIndex/$formattedTotal',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-                actions: getActions(),
-              );
-            },
-          ),
+              ),
+              actions: getActions(),
+            );
+          },
         ),
       ),
     );

@@ -11,6 +11,7 @@ import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_controller.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_empty_state.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_queued_item.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_retryable_item.dart';
+import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_share_item.dart';
 
 class DDContent extends StatelessWidget {
   const DDContent({
@@ -26,10 +27,13 @@ class DDContent extends StatelessWidget {
 
     return Obx(() {
       final int queuesLength = snatchHandler.queuedList.length;
+      final int shareActiveLength = snatchHandler.currentShare.value != null
+          ? snatchHandler.currentShare.value!.booruItems.length - snatchHandler.shareProgress.value
+          : 0;
       final int activeLength = snatchHandler.current.value != null
           ? snatchHandler.current.value!.booruItems.length - snatchHandler.queueProgress.value
           : 0;
-      final int totalActiveAmount = queuesLength + activeLength;
+      final int totalActiveAmount = shareActiveLength + queuesLength + activeLength;
 
       final int existsLength = snatchHandler.existsItems.length;
       final int failedLength = snatchHandler.failedItems.length;
@@ -45,6 +49,7 @@ class DDContent extends StatelessWidget {
       return DDCombinedList(
         controller: controller,
         snatchHandler: snatchHandler,
+        shareActiveLength: shareActiveLength,
         activeLength: activeLength,
         queuesLength: queuesLength,
         existsLength: existsLength,
@@ -59,6 +64,7 @@ class DDCombinedList extends StatelessWidget {
   const DDCombinedList({
     required this.controller,
     required this.snatchHandler,
+    required this.shareActiveLength,
     required this.activeLength,
     required this.queuesLength,
     required this.existsLength,
@@ -69,6 +75,7 @@ class DDCombinedList extends StatelessWidget {
 
   final DownloadsDrawerController controller;
   final SnatchHandler snatchHandler;
+  final int shareActiveLength;
   final int activeLength;
   final int queuesLength;
   final int existsLength;
@@ -77,7 +84,7 @@ class DDCombinedList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalActiveAmount = activeLength + queuesLength;
+    final totalActiveAmount = shareActiveLength + activeLength + queuesLength;
     final totalRetryableAmount = existsLength + failedLength + cancelledLength;
     final totalItems = totalActiveAmount + totalRetryableAmount;
 
@@ -87,20 +94,38 @@ class DDCombinedList extends StatelessWidget {
       itemCount: totalItems,
       itemExtent: 200,
       itemBuilder: (BuildContext context, int index) {
+        // Active shares (currently preparing files to share)
+        if (shareActiveLength != 0 && index < shareActiveLength) {
+          return _buildShareItem(index);
+        }
+
         // Active items (currently downloading)
-        if (activeLength != 0 && index < activeLength) {
-          return _buildActiveItem(index);
+        if (activeLength != 0 && index < shareActiveLength + activeLength) {
+          return _buildActiveItem(index - shareActiveLength);
         }
 
         // Queued items
         if (index < totalActiveAmount) {
-          return _buildQueuedItem(index - activeLength);
+          return _buildQueuedItem(index - shareActiveLength - activeLength);
         }
 
         // Retryable items (exists, failed, cancelled)
         final retryableIndex = index - totalActiveAmount;
         return _buildRetryableItem(retryableIndex);
       },
+    );
+  }
+
+  Widget _buildShareItem(int index) {
+    final currentShare = snatchHandler.currentShare.value!;
+    final item = currentShare.booruItems[snatchHandler.shareProgress.value + index];
+    return DDShareItem(
+      item: item,
+      handler: controller.getHandler(currentShare.booru),
+      index: index,
+      isFirst: index == 0,
+      shareProgress: snatchHandler.shareProgress.value,
+      totalItems: currentShare.booruItems.length,
     );
   }
 

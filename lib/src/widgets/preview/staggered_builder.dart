@@ -10,6 +10,7 @@ import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
+import 'package:lolisnatcher/src/widgets/preview/thumbnail_drag_select.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_card_build.dart';
 
 class StaggeredBuilder extends StatelessWidget {
@@ -21,6 +22,7 @@ class StaggeredBuilder extends StatelessWidget {
     this.onLongPress,
     this.onSecondaryTap,
     this.onSelected,
+    this.dragSelectController,
     super.key,
   });
 
@@ -31,6 +33,7 @@ class StaggeredBuilder extends StatelessWidget {
   final void Function(int)? onLongPress;
   final void Function(int)? onSecondaryTap;
   final void Function(int)? onSelected;
+  final ThumbnailDragSelectController? dragSelectController;
 
   @override
   Widget build(BuildContext context) {
@@ -79,20 +82,34 @@ class StaggeredBuilder extends StatelessWidget {
                   height: possibleHeight,
                   width: possibleWidth,
                   child: Obx(
-                    () => ThumbnailCardBuild(
-                      index: index,
-                      item: item,
-                      handler: tab.booruHandler,
-                      scrollController: scrollController,
-                      isHighlighted: ViewerHandler.instance.current.value?.key == item.key,
-                      selectable: true,
-                      selectedIndex: isSelected ? selectedIndex : null,
-                      onSelected: hasSelected ? onSelected : null,
-                      onTap: onTap,
-                      onDoubleTap: onDoubleTap,
-                      onLongPress: onLongPress,
-                      onSecondaryTap: onSecondaryTap,
-                    ),
+                    () {
+                      final controller = dragSelectController;
+                      final thumbnail = ThumbnailCardBuild(
+                        index: index,
+                        item: item,
+                        handler: tab.booruHandler,
+                        scrollController: scrollController,
+                        isHighlighted: ViewerHandler.instance.current.value?.key == item.key,
+                        selectable: true,
+                        selectedIndex: isSelected ? selectedIndex : null,
+                        onSelected: hasSelected ? onSelected : null,
+                        onTap: onTap,
+                        onDoubleTap: onDoubleTap,
+                        onLongPress: controller == null ? onLongPress : null,
+                        onSecondaryTap: onSecondaryTap,
+                      );
+
+                      if (controller == null) {
+                        return thumbnail;
+                      }
+
+                      return ThumbnailDragSelectRegistrant(
+                        controller: controller,
+                        index: index,
+                        item: item,
+                        child: thumbnail,
+                      );
+                    },
                   ),
                 );
               });

@@ -44,6 +44,12 @@ class DDSelectionActions extends StatelessWidget {
               onLongPress: () => controller.onStartSnatching(context, true),
               drawTopBorder: true,
             ),
+            if (selected.length <= 100)
+              SettingsButton(
+                name: '${context.loc.galleryButtons.share} (${selected.length.toFormattedString()})',
+                icon: const Icon(Icons.share),
+                action: () => controller.onShareSelected(context),
+              ),
             if (hasDownloadsSelected)
               SettingsButton(
                 name:
