@@ -74,8 +74,8 @@ class GalleryShareService {
       );
     }
 
-    final paths = <String>[];
     try {
+      final paths = <String>[];
       for (int i = 0; i < items.length; i++) {
         final item = items[i];
         final path = await _getOrDownloadCachePath(
@@ -91,27 +91,27 @@ class GalleryShareService {
         }
         paths.add(path);
       }
+
+      if (paths.isEmpty) return false;
+
+      final box = context?.findRenderObject() as RenderBox?;
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            for (int i = 0; i < paths.length; i++)
+              XFile(
+                paths[i],
+                mimeType: _mimeType(items[i]),
+              ),
+          ],
+          text: text,
+          sharePositionOrigin: box == null ? null : box.localToGlobal(Offset.zero) & box.size,
+        ),
+      );
+      return true;
     } finally {
       snatchHandler.onShareDone(operationId);
     }
-
-    if (paths.isEmpty) return false;
-
-    final box = context?.findRenderObject() as RenderBox?;
-    await SharePlus.instance.share(
-      ShareParams(
-        files: [
-          for (int i = 0; i < paths.length; i++)
-            XFile(
-              paths[i],
-              mimeType: _mimeType(items[i]),
-            ),
-        ],
-        text: text,
-        sharePositionOrigin: box == null ? null : box.localToGlobal(Offset.zero) & box.size,
-      ),
-    );
-    return true;
   }
 
   Future<bool> _copySingleImageToClipboard({
