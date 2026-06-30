@@ -168,7 +168,7 @@ class _WaterfallSelectionButtons extends StatelessWidget {
       final bool hasFetched = searchHandler.currentFetched.isNotEmpty;
       final bool hasSelected = selectedCount > 0;
 
-      if (!hasFetched && !hasSelected) {
+      if (!hasSelected) {
         return const SizedBox.shrink();
       }
 
