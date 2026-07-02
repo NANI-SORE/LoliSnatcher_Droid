@@ -61,13 +61,13 @@ A minor update to fix some issues.
 
 -------------------
 
-Known issues:
-- on Gelbooru images may blink/flicker and return error 503, which will be fixed after retrying to load the image. This could be caused by their rate limiting becoming too aggressive or some problems from their provider, as a temporary workaround - set [Interface - Preview quality] to [Thumbnail] to reduce flicker and [Boorus and Search - Items fetched per page] to 20 to reduce the chance of being rate limited
+[Known issues]:
+- on Gelbooru images may blink/flicker and/or fail with various error codes (503, 429, 404...), which may be fixed after retrying to load the image. This is probably caused by them enabling aggressive rate limiting rules, as a temporary workaround until they lift the resctrictions - set [Interface - Preview quality] to [Thumbnail] and [Boorus and Search - Items fetched per page] to 20 to reduce flicker and chance of being rate limited
 - German translations are incorrect, will be fixed in the future release after new contributor will be able to update them
 
 -------------------
 
-Hotfix 1 - 2.5.1+5214 (14.06.2026):
+Hotfix 1 - 2.5.1+5214 (15.06.2026):
 
 - Fixed inkbunny parsing (Thanks to Split50)
 - Added a Retry button to currently downloading item to quickly restart it without moving it to the end of the queue, useful if item is stuck for some reason (also stuck download items will now auto retry after 10 seconds of inactivity)
