@@ -8,6 +8,7 @@ import 'package:material_color_utilities/material_color_utilities.dart';
 import 'package:lolisnatcher/src/data/theme_item.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
+import 'package:lolisnatcher/src/widgets/root/full_width_cupertino_page_transition.dart';
 import 'package:lolisnatcher/src/widgets/root/predictive_back_transition.dart';
 
 class ThemeHandler {
@@ -264,6 +265,7 @@ class ThemeHandler {
     iconTheme: IconThemeData(
       color: primaryIsDark ? Colors.white : Colors.black,
     ),
+    centerTitle: false,
     titleSpacing: 8,
     systemOverlayStyle: SystemUiOverlayStyle(
       statusBarColor: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.25),
@@ -356,7 +358,7 @@ class ThemeHandler {
       TargetPlatform.android: SettingsHandler.instance.usePredictiveBack
           ? const CustomPredictiveBackPageTransitionsBuilder()
           : const ZoomPageTransitionsBuilder(),
-      TargetPlatform.iOS: const CupertinoPageTransitionsBuilder(),
+      TargetPlatform.iOS: const FullWidthCupertinoPageTransitionsBuilder(),
       TargetPlatform.fuchsia: const ZoomPageTransitionsBuilder(),
       TargetPlatform.linux: const ZoomPageTransitionsBuilder(),
       TargetPlatform.macOS: const CupertinoPageTransitionsBuilder(),
