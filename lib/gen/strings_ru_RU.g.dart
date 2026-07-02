@@ -838,7 +838,7 @@ class _Translations$history$ru_RU extends Translations$history$en {
         other: 'Ты уверен, что хочешь удалить ${count} элементов?',
       );
   @override
-  String get clearSelection => TranslationOverrides.string(_root.$meta, 'history.clearSelection', {}) ?? 'Очистить выбор';
+  String get clearSelection => TranslationOverrides.string(_root.$meta, 'history.clearSelection', {}) ?? 'Сбросить выбор';
   @override
   String deleteItems({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'history.deleteItems', {'count': count}) ??
@@ -1051,7 +1051,7 @@ class _Translations$tagsManager$ru_RU extends Translations$tagsManager$en {
   @override
   String get deleteTagsTitle => TranslationOverrides.string(_root.$meta, 'tagsManager.deleteTagsTitle', {}) ?? 'Удалить теги';
   @override
-  String get clearSelection => TranslationOverrides.string(_root.$meta, 'tagsManager.clearSelection', {}) ?? 'Очистить выбор';
+  String get clearSelection => TranslationOverrides.string(_root.$meta, 'tagsManager.clearSelection', {}) ?? 'Сбросить выбор';
 }
 
 // Path: lockscreen
@@ -1392,7 +1392,7 @@ class _Translations$mobileHome$ru_RU extends Translations$mobileHome$en {
       'Скачанные ранее, неудачные или отменённые элементы';
   @override
   String get clearAllRetryableItems =>
-      TranslationOverrides.string(_root.$meta, 'mobileHome.clearAllRetryableItems', {}) ?? 'Очистить все элементы для повтора';
+      TranslationOverrides.string(_root.$meta, 'mobileHome.clearAllRetryableItems', {}) ?? 'Сбросить все элементы, которые можно повторить';
 }
 
 // Path: desktopHome
@@ -2401,7 +2401,7 @@ class _Translations$settings$downloads$ru_RU extends Translations$settings$downl
   String get unfavouriteSelected =>
       TranslationOverrides.string(_root.$meta, 'settings.downloads.unfavouriteSelected', {}) ?? 'Удалить выбранные из избранного';
   @override
-  String get clearSelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.clearSelected', {}) ?? 'Очистить выбранные';
+  String get clearSelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.clearSelected', {}) ?? 'Сбросить выбранные';
   @override
   String get updatingData => TranslationOverrides.string(_root.$meta, 'settings.downloads.updatingData', {}) ?? 'Обновление данных…';
 }
@@ -2496,10 +2496,10 @@ class _Translations$settings$database$ru_RU extends Translations$settings$databa
       TranslationOverrides.string(_root.$meta, 'settings.database.appRestartRequired', {}) ?? 'Требуется перезапуск приложения!';
   @override
   String get clearSnatchedItems =>
-      TranslationOverrides.string(_root.$meta, 'settings.database.clearSnatchedItems', {}) ?? 'Очистить загруженные элементы';
+      TranslationOverrides.string(_root.$meta, 'settings.database.clearSnatchedItems', {}) ?? 'Сбросить загруженные элементы';
   @override
   String get clearAllSnatchedConfirm =>
-      TranslationOverrides.string(_root.$meta, 'settings.database.clearAllSnatchedConfirm', {}) ?? 'Очистить все загруженные элементы?';
+      TranslationOverrides.string(_root.$meta, 'settings.database.clearAllSnatchedConfirm', {}) ?? 'Сбросить все загруженные элементы?';
   @override
   String get snatchedItemsCleared =>
       TranslationOverrides.string(_root.$meta, 'settings.database.snatchedItemsCleared', {}) ?? 'Скачанные элементы очищены';
@@ -2508,17 +2508,17 @@ class _Translations$settings$database$ru_RU extends Translations$settings$databa
       TranslationOverrides.string(_root.$meta, 'settings.database.appRestartMayBeRequired', {}) ?? 'Может потребоваться перезапуск приложения!';
   @override
   String get clearFavouritedItems =>
-      TranslationOverrides.string(_root.$meta, 'settings.database.clearFavouritedItems', {}) ?? 'Очистить избранные элементы';
+      TranslationOverrides.string(_root.$meta, 'settings.database.clearFavouritedItems', {}) ?? 'Сбросить избранные элементы';
   @override
   String get clearAllFavouritedConfirm =>
-      TranslationOverrides.string(_root.$meta, 'settings.database.clearAllFavouritedConfirm', {}) ?? 'Очистить все избранные элементы?';
+      TranslationOverrides.string(_root.$meta, 'settings.database.clearAllFavouritedConfirm', {}) ?? 'Сбросить все избранные элементы?';
   @override
   String get favouritesCleared => TranslationOverrides.string(_root.$meta, 'settings.database.favouritesCleared', {}) ?? 'Избранное очищено';
   @override
-  String get clearSearchHistory => TranslationOverrides.string(_root.$meta, 'settings.database.clearSearchHistory', {}) ?? 'Очистить историю поиска';
+  String get clearSearchHistory => TranslationOverrides.string(_root.$meta, 'settings.database.clearSearchHistory', {}) ?? 'Сбросить историю поиска';
   @override
   String get clearSearchHistoryConfirm =>
-      TranslationOverrides.string(_root.$meta, 'settings.database.clearSearchHistoryConfirm', {}) ?? 'Очистить историю поиска?';
+      TranslationOverrides.string(_root.$meta, 'settings.database.clearSearchHistoryConfirm', {}) ?? 'Сбросить историю поиска?';
   @override
   String get searchHistoryCleared =>
       TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryCleared', {}) ?? 'История поиска очищена';
@@ -2575,7 +2575,7 @@ class _Translations$settings$database$ru_RU extends Translations$settings$databa
   String get pressToStop => TranslationOverrides.string(_root.$meta, 'settings.database.pressToStop', {}) ?? 'Нажми здесь, чтобы остановить';
   @override
   String purgeFailedItems({required int count}) =>
-      TranslationOverrides.string(_root.$meta, 'settings.database.purgeFailedItems', {'count': count}) ?? 'Очистить неудачные элементы (${count})';
+      TranslationOverrides.string(_root.$meta, 'settings.database.purgeFailedItems', {'count': count}) ?? 'Сбросить неудачные элементы (${count})';
   @override
   String retryFailedItems({required int count}) =>
       TranslationOverrides.string(_root.$meta, 'settings.database.retryFailedItems', {'count': count}) ?? 'Повторить неудачные элементы (${count})';
@@ -3539,6 +3539,8 @@ class _Translations$viewer$appBar$ru_RU extends Translations$viewer$appBar$en {
   String get hydrus => TranslationOverrides.string(_root.$meta, 'viewer.appBar.hydrus', {}) ?? 'Hydrus';
   @override
   String get selectTags => TranslationOverrides.string(_root.$meta, 'viewer.appBar.selectTags', {}) ?? 'Выбрать теги';
+  @override
+  String get rememberMyChoice => TranslationOverrides.string(_root.$meta, 'viewer.appBar.rememberMyChoice', {}) ?? 'Запомнить мой выбор';
 }
 
 // Path: viewer.notes
@@ -4356,7 +4358,7 @@ extension on TranslationsRuRu {
                   many: 'Ты уверен, что хочешь удалить ${count} элементов?',
                   other: 'Ты уверен, что хочешь удалить ${count} элементов?',
                 ),
-          'history.clearSelection' => TranslationOverrides.string(_root.$meta, 'history.clearSelection', {}) ?? 'Очистить выбор',
+          'history.clearSelection' => TranslationOverrides.string(_root.$meta, 'history.clearSelection', {}) ?? 'Сбросить выбор',
           'history.deleteItems' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'history.deleteItems', {'count': count}) ??
@@ -4897,7 +4899,7 @@ extension on TranslationsRuRu {
           'settings.downloads.unfavouriteSelected' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.unfavouriteSelected', {}) ?? 'Удалить выбранные из избранного',
           'settings.downloads.clearSelected' =>
-            TranslationOverrides.string(_root.$meta, 'settings.downloads.clearSelected', {}) ?? 'Очистить выбранные',
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.clearSelected', {}) ?? 'Сбросить выбранные',
           'settings.downloads.updatingData' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.updatingData', {}) ?? 'Обновление данных…',
           'settings.database.title' => TranslationOverrides.string(_root.$meta, 'settings.database.title', {}) ?? 'База данных',
@@ -4964,23 +4966,23 @@ extension on TranslationsRuRu {
           'settings.database.appRestartRequired' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.appRestartRequired', {}) ?? 'Требуется перезапуск приложения!',
           'settings.database.clearSnatchedItems' =>
-            TranslationOverrides.string(_root.$meta, 'settings.database.clearSnatchedItems', {}) ?? 'Очистить загруженные элементы',
+            TranslationOverrides.string(_root.$meta, 'settings.database.clearSnatchedItems', {}) ?? 'Сбросить загруженные элементы',
           'settings.database.clearAllSnatchedConfirm' =>
-            TranslationOverrides.string(_root.$meta, 'settings.database.clearAllSnatchedConfirm', {}) ?? 'Очистить все загруженные элементы?',
+            TranslationOverrides.string(_root.$meta, 'settings.database.clearAllSnatchedConfirm', {}) ?? 'Сбросить все загруженные элементы?',
           'settings.database.snatchedItemsCleared' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.snatchedItemsCleared', {}) ?? 'Скачанные элементы очищены',
           'settings.database.appRestartMayBeRequired' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.appRestartMayBeRequired', {}) ?? 'Может потребоваться перезапуск приложения!',
           'settings.database.clearFavouritedItems' =>
-            TranslationOverrides.string(_root.$meta, 'settings.database.clearFavouritedItems', {}) ?? 'Очистить избранные элементы',
+            TranslationOverrides.string(_root.$meta, 'settings.database.clearFavouritedItems', {}) ?? 'Сбросить избранные элементы',
           'settings.database.clearAllFavouritedConfirm' =>
-            TranslationOverrides.string(_root.$meta, 'settings.database.clearAllFavouritedConfirm', {}) ?? 'Очистить все избранные элементы?',
+            TranslationOverrides.string(_root.$meta, 'settings.database.clearAllFavouritedConfirm', {}) ?? 'Сбросить все избранные элементы?',
           'settings.database.favouritesCleared' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.favouritesCleared', {}) ?? 'Избранное очищено',
           'settings.database.clearSearchHistory' =>
-            TranslationOverrides.string(_root.$meta, 'settings.database.clearSearchHistory', {}) ?? 'Очистить историю поиска',
+            TranslationOverrides.string(_root.$meta, 'settings.database.clearSearchHistory', {}) ?? 'Сбросить историю поиска',
           'settings.database.clearSearchHistoryConfirm' =>
-            TranslationOverrides.string(_root.$meta, 'settings.database.clearSearchHistoryConfirm', {}) ?? 'Очистить историю поиска?',
+            TranslationOverrides.string(_root.$meta, 'settings.database.clearSearchHistoryConfirm', {}) ?? 'Сбросить историю поиска?',
           'settings.database.searchHistoryCleared' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryCleared', {}) ?? 'История поиска очищена',
           'settings.database.sankakuFavouritesUpdate' =>
@@ -5028,7 +5030,7 @@ extension on TranslationsRuRu {
           'settings.database.purgeFailedItems' =>
             ({required int count}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.database.purgeFailedItems', {'count': count}) ??
-                'Очистить неудачные элементы (${count})',
+                'Сбросить неудачные элементы (${count})',
           'settings.database.retryFailedItems' =>
             ({required int count}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.database.retryFailedItems', {'count': count}) ??
@@ -5622,7 +5624,7 @@ extension on TranslationsRuRu {
                   other: 'Удалить ${count} тегов',
                 ),
           'tagsManager.deleteTagsTitle' => TranslationOverrides.string(_root.$meta, 'tagsManager.deleteTagsTitle', {}) ?? 'Удалить теги',
-          'tagsManager.clearSelection' => TranslationOverrides.string(_root.$meta, 'tagsManager.clearSelection', {}) ?? 'Очистить выбор',
+          'tagsManager.clearSelection' => TranslationOverrides.string(_root.$meta, 'tagsManager.clearSelection', {}) ?? 'Сбросить выбор',
           'lockscreen.tapToAuthenticate' => TranslationOverrides.string(_root.$meta, 'lockscreen.tapToAuthenticate', {}) ?? 'Нажми для входа',
           'lockscreen.devUnlock' => TranslationOverrides.string(_root.$meta, 'lockscreen.devUnlock', {}) ?? 'РАЗБЛОКИРОВАТЬ (ОТЛАДКА)',
           'lockscreen.testingMessage' =>
@@ -5795,7 +5797,7 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'mobileHome.existingFailedOrCancelledItems', {}) ??
                 'Скачанные ранее, неудачные или отменённые элементы',
           'mobileHome.clearAllRetryableItems' =>
-            TranslationOverrides.string(_root.$meta, 'mobileHome.clearAllRetryableItems', {}) ?? 'Очистить все элементы для повтора',
+            TranslationOverrides.string(_root.$meta, 'mobileHome.clearAllRetryableItems', {}) ?? 'Сбросить все элементы, которые можно повторить',
           'desktopHome.snatcher' => TranslationOverrides.string(_root.$meta, 'desktopHome.snatcher', {}) ?? 'Загрузчик',
           'desktopHome.addBoorusInSettings' =>
             TranslationOverrides.string(_root.$meta, 'desktopHome.addBoorusInSettings', {}) ?? 'Добавь сайт в настройках',
@@ -5875,6 +5877,7 @@ extension on TranslationsRuRu {
           'viewer.appBar.fileWithTags' => TranslationOverrides.string(_root.$meta, 'viewer.appBar.fileWithTags', {}) ?? 'Файл с тегами',
           'viewer.appBar.hydrus' => TranslationOverrides.string(_root.$meta, 'viewer.appBar.hydrus', {}) ?? 'Hydrus',
           'viewer.appBar.selectTags' => TranslationOverrides.string(_root.$meta, 'viewer.appBar.selectTags', {}) ?? 'Выбрать теги',
+          'viewer.appBar.rememberMyChoice' => TranslationOverrides.string(_root.$meta, 'viewer.appBar.rememberMyChoice', {}) ?? 'Запомнить мой выбор',
           'viewer.notes.note' => TranslationOverrides.string(_root.$meta, 'viewer.notes.note', {}) ?? 'Заметка',
           'viewer.notes.notes' => TranslationOverrides.string(_root.$meta, 'viewer.notes.notes', {}) ?? 'Заметки',
           'viewer.notes.coordinates' =>

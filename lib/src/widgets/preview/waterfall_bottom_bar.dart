@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
+import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_controller.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_bar.dart';
 import 'package:lolisnatcher/src/widgets/preview/waterfall_error_buttons.dart';
 
@@ -138,7 +140,7 @@ class WaterfallBottomBarState extends State<WaterfallBottomBar> with TickerProvi
   }
 }
 
-class _WaterfallSelectionButtons extends StatelessWidget {
+class _WaterfallSelectionButtons extends StatefulWidget {
   const _WaterfallSelectionButtons({
     required this.animation,
     required this.showSearchBar,
@@ -147,8 +149,21 @@ class _WaterfallSelectionButtons extends StatelessWidget {
   final Animation<double> animation;
   final bool showSearchBar;
 
-  double get animValue => animation.value;
+  @override
+  State<_WaterfallSelectionButtons> createState() => _WaterfallSelectionButtonsState();
+}
+
+class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> {
+  final DownloadsDrawerController downloadsController = DownloadsDrawerController();
+
+  double get animValue => widget.animation.value;
   double get reverseAnimValue => 1 - animValue;
+
+  @override
+  void dispose() {
+    downloadsController.dispose();
+    super.dispose();
+  }
 
   void selectAll(SearchHandler searchHandler) {
     searchHandler.currentTab.selected.assignAll(searchHandler.currentFetched);
@@ -173,12 +188,12 @@ class _WaterfallSelectionButtons extends StatelessWidget {
       }
 
       return AnimatedBuilder(
-        animation: animation,
+        animation: widget.animation,
         builder: (context, child) {
           return Transform.translate(
             offset: Offset(
               0,
-              showSearchBar ? (MainSearchBar.height + bottomPadding) * animValue : bottomPadding * animValue,
+              widget.showSearchBar ? (MainSearchBar.height + bottomPadding) * animValue : bottomPadding * animValue,
             ),
             child: IgnorePointer(
               ignoring: animValue > 0.95,
@@ -203,6 +218,27 @@ class _WaterfallSelectionButtons extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Tooltip(
+                    message: '${context.loc.settings.downloads.snatchSelected} (${selectedCount.toFormattedString()})',
+                    child: GestureDetector(
+                      onLongPress: () => downloadsController.onStartSnatching(context, true),
+                      child: IconButton(
+                        icon: const Icon(Icons.download_sharp),
+                        onPressed: () => downloadsController.onStartSnatching(context, false),
+                      ),
+                    ),
+                  ),
+                  if (selectedCount <= 100)
+                    Tooltip(
+                      message: '${context.loc.galleryButtons.share} (${selectedCount.toFormattedString()})',
+                      child: GestureDetector(
+                        onLongPress: () => downloadsController.onShareSelectedLongPress(context),
+                        child: IconButton(
+                          icon: const Icon(Icons.share),
+                          onPressed: () => downloadsController.onShareSelected(context),
+                        ),
+                      ),
+                    ),
                   Tooltip(
                     message: context.loc.selectAll,
                     child: IconButton(

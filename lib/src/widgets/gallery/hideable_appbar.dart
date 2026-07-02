@@ -34,6 +34,7 @@ import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
 import 'package:lolisnatcher/src/widgets/common/restartable_progress_indicator.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/gallery/image_search_dialog.dart';
+import 'package:lolisnatcher/src/widgets/gallery/share_action_dialog.dart';
 import 'package:lolisnatcher/src/widgets/gallery/snatched_status_icon.dart';
 import 'package:lolisnatcher/src/widgets/gallery/toolbar_action.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_build.dart';
@@ -649,7 +650,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
         return () async {
           await ServiceHandler.vibrate();
           // Ignore share setting on long press
-          showShareDialog(showTip: false);
+          showShareDialog();
         };
       case .snatch:
         return () async {
@@ -734,72 +735,8 @@ class _HideableAppBarState extends State<HideableAppBar> {
   }
 
   Future<void> onShareClick() async {
-    final shareSetting = settingsHandler.shareAction;
     final item = widget.tab.booruHandler.filteredFetched[page.value];
-
-    switch (shareSetting) {
-      case .postUrl:
-        if (item.postURL.isEmpty) {
-          FlashElements.showSnackbar(
-            context: context,
-            title: Text(context.loc.gallery.noPostUrl, style: const TextStyle(fontSize: 20)),
-            leadingIcon: Icons.warning_amber,
-            leadingIconColor: Colors.red,
-            sideColor: Colors.red,
-          );
-          return;
-        }
-
-        shareTextAction(item.postURL);
-        break;
-      case .postUrlWithTags:
-        if (item.postURL.isEmpty) {
-          FlashElements.showSnackbar(
-            context: context,
-            title: Text(context.loc.gallery.noPostUrl, style: const TextStyle(fontSize: 20)),
-            leadingIcon: Icons.warning_amber,
-            leadingIconColor: Colors.red,
-            sideColor: Colors.red,
-          );
-          return;
-        }
-
-        final tags = await showSelectTagsDialog(context, item.tagsList);
-        if (tags.isNotEmpty) {
-          shareTextAction('${item.postURL} \n ${tags.join(' ')}');
-        } else {
-          shareTextAction(item.postURL);
-        }
-        break;
-      case .fileUrl:
-        shareTextAction(item.fileURL);
-        break;
-      case .fileUrlWithTags:
-        final tags = await showSelectTagsDialog(context, item.tagsList);
-        if (tags.isNotEmpty) {
-          shareTextAction('${item.fileURL} \n ${tags.join(' ')}');
-        } else {
-          shareTextAction(item.fileURL);
-        }
-        break;
-      case .file:
-        await shareFileAction();
-        break;
-      case .fileWithTags:
-        final tags = await showSelectTagsDialog(context, item.tagsList);
-        if (tags.isNotEmpty) {
-          await shareFileAction(text: tags.join(' '));
-        } else {
-          await shareFileAction();
-        }
-        break;
-      case .hydrus:
-        await shareHydrusAction(item);
-        break;
-      case .ask:
-        showShareDialog();
-        break;
-    }
+    await shareActionController(item, context).run(settingsHandler.shareAction, context);
   }
 
   void shareTextAction(String text) {
@@ -1006,186 +943,63 @@ class _HideableAppBarState extends State<HideableAppBar> {
     }
   }
 
-  void showShareDialog({bool showTip = true}) {
+  void showShareDialog() {
     final item = widget.tab.booruHandler.filteredFetched[page.value];
+    shareActionController(item, context).showDialog(context);
+  }
 
-    // TODO change layout so the buttons set their width automatically, without padding stuff
-    showDialog(
-      context: context,
-      builder: (context) {
-        return SettingsDialog(
-          title: Text(context.loc.viewer.appBar.whatToShare),
-          contentItems: [
-            const SizedBox(height: 15),
-            Column(
-              children: [
-                if (item.postURL.isNotEmpty) ...[
-                  ListTile(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(
-                        color: Theme.of(context).colorScheme.secondary,
-                        width: settingsHandler.shareAction.isPostUrl ? 3 : 1,
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      shareTextAction(item.postURL);
-                    },
-                    leading: const Icon(CupertinoIcons.link),
-                    title: Text(context.loc.viewer.appBar.postURL),
-                  ),
-
-                  const SizedBox(height: 15),
-                  ListTile(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(
-                        color: Theme.of(context).colorScheme.secondary,
-                        width: settingsHandler.shareAction.isPostUrlWithTags ? 3 : 1,
-                      ),
-                    ),
-                    onTap: () async {
-                      Navigator.of(context).pop();
-                      final tags = await showSelectTagsDialog(context, item.tagsList);
-                      if (tags.isNotEmpty) {
-                        shareTextAction('${item.postURL} \n ${tags.join(' ')}');
-                      } else {
-                        shareTextAction(item.postURL);
-                      }
-                    },
-                    leading: const Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Icon(CupertinoIcons.link),
-                        Positioned(
-                          bottom: -10,
-                          right: -10,
-                          child: Icon(CupertinoIcons.tag, size: 14),
-                        ),
-                      ],
-                    ),
-                    title: Text(context.loc.viewer.appBar.postURLWithTags),
-                  ),
-                  const SizedBox(height: 15),
-                ],
-                ListTile(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    side: BorderSide(
-                      color: Theme.of(context).colorScheme.secondary,
-                      width: settingsHandler.shareAction.isFileUrl ? 3 : 1,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    shareTextAction(item.fileURL);
-                  },
-                  leading: const Icon(CupertinoIcons.link),
-                  title: Text(context.loc.viewer.appBar.fileURL),
-                ),
-                const SizedBox(height: 15),
-                ListTile(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    side: BorderSide(
-                      color: Theme.of(context).colorScheme.secondary,
-                      width: settingsHandler.shareAction.isFileUrlWithTags ? 3 : 1,
-                    ),
-                  ),
-                  onTap: () async {
-                    Navigator.of(context).pop();
-                    final tags = await showSelectTagsDialog(context, item.tagsList);
-                    if (tags.isNotEmpty) {
-                      shareTextAction('${item.fileURL} \n ${tags.join(' ')}');
-                    } else {
-                      shareTextAction(item.fileURL);
-                    }
-                  },
-                  leading: const Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Icon(CupertinoIcons.link),
-                      Positioned(
-                        bottom: -10,
-                        right: -10,
-                        child: Icon(CupertinoIcons.tag, size: 14),
-                      ),
-                    ],
-                  ),
-                  title: Text(context.loc.viewer.appBar.fileURLWithTags),
-                ),
-                const SizedBox(height: 15),
-                ListTile(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    side: BorderSide(
-                      color: Theme.of(context).colorScheme.secondary,
-                      width: settingsHandler.shareAction.isFile ? 3 : 1,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    shareFileAction();
-                  },
-                  leading: const Icon(Icons.file_present),
-                  title: Text(context.loc.viewer.appBar.file),
-                ),
-                const SizedBox(height: 15),
-                ListTile(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    side: BorderSide(
-                      color: Theme.of(context).colorScheme.secondary,
-                      width: settingsHandler.shareAction.isFileWithTags ? 3 : 1,
-                    ),
-                  ),
-                  onTap: () async {
-                    Navigator.of(context).pop();
-                    final tags = await showSelectTagsDialog(context, item.tagsList);
-                    if (tags.isNotEmpty) {
-                      await shareFileAction(text: tags.join(' '));
-                    } else {
-                      await shareFileAction();
-                    }
-                  },
-                  leading: const Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Icon(Icons.file_present),
-                      Positioned(
-                        bottom: -10,
-                        right: -10,
-                        child: Icon(CupertinoIcons.tag, size: 14),
-                      ),
-                    ],
-                  ),
-                  title: Text(context.loc.viewer.appBar.fileWithTags),
-                ),
-                const SizedBox(height: 15),
-                if (settingsHandler.hasHydrus && widget.tab.booruHandler.booru.type?.isHydrus != true)
-                  ListTile(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(
-                        color: Theme.of(context).colorScheme.secondary,
-                        width: settingsHandler.shareAction.isHydrus ? 3 : 1,
-                      ),
-                    ),
-                    onTap: () async {
-                      await shareHydrusAction(item);
-                      Navigator.of(context).pop();
-                    },
-                    leading: const Icon(Icons.file_present),
-                    title: Text(context.loc.viewer.appBar.hydrus),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 15),
-            Text(showTip ? '[Tip]: You can set default action in settings' : ''),
-          ],
+  ShareActionController shareActionController(BooruItem item, BuildContext actionContext) {
+    Future<void> ensurePostUrlAndShare(FutureOr<void> Function() action) async {
+      if (item.postURL.isEmpty) {
+        FlashElements.showSnackbar(
+          context: actionContext,
+          title: Text(actionContext.loc.gallery.noPostUrl, style: const TextStyle(fontSize: 20)),
+          leadingIcon: Icons.warning_amber,
+          leadingIconColor: Colors.red,
+          sideColor: Colors.red,
         );
+        return;
+      }
+
+      await action();
+    }
+
+    return ShareActionController(
+      currentAction: settingsHandler.shareAction,
+      showPostUrlOptions: item.postURL.isNotEmpty,
+      showHydrusOption: settingsHandler.hasHydrus && widget.tab.booruHandler.booru.type?.isHydrus != true,
+      onRememberAction: (action) async {
+        settingsHandler.shareAction = action;
+        await settingsHandler.saveSettings(restate: false);
       },
+      postUrl: () => ensurePostUrlAndShare(() => shareTextAction(item.postURL)),
+      postUrlWithTags: () => ensurePostUrlAndShare(() async {
+        final tags = await showSelectTagsDialog(actionContext, item.tagsList);
+        if (tags.isNotEmpty) {
+          shareTextAction('${item.postURL} \n ${tags.join(' ')}');
+        } else {
+          shareTextAction(item.postURL);
+        }
+      }),
+      fileUrl: () => shareTextAction(item.fileURL),
+      fileUrlWithTags: () async {
+        final tags = await showSelectTagsDialog(actionContext, item.tagsList);
+        if (tags.isNotEmpty) {
+          shareTextAction('${item.fileURL} \n ${tags.join(' ')}');
+        } else {
+          shareTextAction(item.fileURL);
+        }
+      },
+      file: shareFileAction,
+      fileWithTags: () async {
+        final tags = await showSelectTagsDialog(actionContext, item.tagsList);
+        if (tags.isNotEmpty) {
+          await shareFileAction(text: tags.join(' '));
+        } else {
+          await shareFileAction();
+        }
+      },
+      hydrus: () => shareHydrusAction(item),
     );
   }
 

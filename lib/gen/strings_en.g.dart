@@ -4448,6 +4448,9 @@ class Translations$viewer$appBar$en {
 
   /// en: 'Select tags'
   String get selectTags => TranslationOverrides.string(_root.$meta, 'viewer.appBar.selectTags', {}) ?? 'Select tags';
+
+  /// en: 'Remember my choice'
+  String get rememberMyChoice => TranslationOverrides.string(_root.$meta, 'viewer.appBar.rememberMyChoice', {}) ?? 'Remember my choice';
 }
 
 // Path: viewer.notes
@@ -6782,6 +6785,7 @@ extension on Translations {
           'viewer.appBar.fileWithTags' => TranslationOverrides.string(_root.$meta, 'viewer.appBar.fileWithTags', {}) ?? 'File with tags',
           'viewer.appBar.hydrus' => TranslationOverrides.string(_root.$meta, 'viewer.appBar.hydrus', {}) ?? 'Hydrus',
           'viewer.appBar.selectTags' => TranslationOverrides.string(_root.$meta, 'viewer.appBar.selectTags', {}) ?? 'Select tags',
+          'viewer.appBar.rememberMyChoice' => TranslationOverrides.string(_root.$meta, 'viewer.appBar.rememberMyChoice', {}) ?? 'Remember my choice',
           'viewer.notes.note' => TranslationOverrides.string(_root.$meta, 'viewer.notes.note', {}) ?? 'Note',
           'viewer.notes.notes' => TranslationOverrides.string(_root.$meta, 'viewer.notes.notes', {}) ?? 'Notes',
           'viewer.notes.coordinates' =>

@@ -49,6 +49,7 @@ class DDSelectionActions extends StatelessWidget {
                 name: '${context.loc.galleryButtons.share} (${selected.length.toFormattedString()})',
                 icon: const Icon(Icons.share),
                 action: () => controller.onShareSelected(context),
+                onLongPress: () => controller.onShareSelectedLongPress(context),
               ),
             if (hasDownloadsSelected)
               SettingsButton(
@@ -71,7 +72,7 @@ class DDSelectionActions extends StatelessWidget {
               ),
             SettingsButton(
               name: context.loc.settings.downloads.clearSelected,
-              icon: const Icon(Icons.delete_forever),
+              icon: const Icon(Icons.deselect),
               action: () => searchHandler.currentTab.selected.clear(),
             ),
           ],

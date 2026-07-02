@@ -1263,7 +1263,8 @@
             "file": "File",
             "fileWithTags": "File with tags",
             "hydrus": "Hydrus",
-            "selectTags": "Select tags"
+            "selectTags": "Select tags",
+            "rememberMyChoice": "Remember my choice"
         },
         "notes": {
             "note": "Note",

@@ -338,7 +338,7 @@
             "many": "Ты уверен, что хочешь удалить ${count} элементов?",
             "other": "Ты уверен, что хочешь удалить ${count} элементов?"
         },
-        "clearSelection": "Очистить выбор",
+        "clearSelection": "Сбросить выбор",
         "deleteItems(param=count)": {
             "one": "Удалить ${count} элемент",
             "few": "Удалить ${count} элемента",
@@ -662,7 +662,7 @@
             "removeSnatchedStatusFromSelected": "Удалить статус скачивания у выбранных",
             "favouriteSelected": "Добавить выбранные в избранное",
             "unfavouriteSelected": "Удалить выбранные из избранного",
-            "clearSelected": "Очистить выбранные",
+            "clearSelected": "Сбросить выбранные",
             "updatingData": "Обновление данных…"
         },
         "database": {
@@ -695,15 +695,15 @@
             "deleteDatabaseConfirm": "Удалить базу данных?",
             "databaseDeleted": "База данных удалена!",
             "appRestartRequired": "Требуется перезапуск приложения!",
-            "clearSnatchedItems": "Очистить загруженные элементы",
-            "clearAllSnatchedConfirm": "Очистить все загруженные элементы?",
+            "clearSnatchedItems": "Сбросить загруженные элементы",
+            "clearAllSnatchedConfirm": "Сбросить все загруженные элементы?",
             "snatchedItemsCleared": "Скачанные элементы очищены",
             "appRestartMayBeRequired": "Может потребоваться перезапуск приложения!",
-            "clearFavouritedItems": "Очистить избранные элементы",
-            "clearAllFavouritedConfirm": "Очистить все избранные элементы?",
+            "clearFavouritedItems": "Сбросить избранные элементы",
+            "clearAllFavouritedConfirm": "Сбросить все избранные элементы?",
             "favouritesCleared": "Избранное очищено",
-            "clearSearchHistory": "Очистить историю поиска",
-            "clearSearchHistoryConfirm": "Очистить историю поиска?",
+            "clearSearchHistory": "Сбросить историю поиска",
+            "clearSearchHistoryConfirm": "Сбросить историю поиска?",
             "searchHistoryCleared": "История поиска очищена",
             "sankakuFavouritesUpdate": "Обновление избранного из Sankaku",
             "sankakuFavouritesUpdateStarted": "Обновление избранного из Sankaku начато",
@@ -722,7 +722,7 @@
             "skipCurrentItem": "Нажми здесь, чтобы пропустить текущий элемент",
             "useIfStuck": "Используй, если элемент завис",
             "pressToStop": "Нажми здесь, чтобы остановить",
-            "purgeFailedItems(param=count)": "Очистить неудачные элементы (${count: int})",
+            "purgeFailedItems(param=count)": "Сбросить неудачные элементы (${count: int})",
             "retryFailedItems(param=count)": "Повторить неудачные элементы (${count: int})"
         },
         "backupAndRestore": {
@@ -1064,7 +1064,7 @@
             "other": "Удалить ${count} тегов"
         },
         "deleteTagsTitle": "Удалить теги",
-        "clearSelection": "Очистить выбор"
+        "clearSelection": "Сбросить выбор"
     },
     "lockscreen": {
         "tapToAuthenticate": "Нажми для входа",
@@ -1201,7 +1201,7 @@
         "skip": "Пропустить",
         "retryAll(param=count)": "Повторить все (${count: int})",
         "existingFailedOrCancelledItems": "Скачанные ранее, неудачные или отменённые элементы",
-        "clearAllRetryableItems": "Очистить все элементы для повтора"
+        "clearAllRetryableItems": "Сбросить все элементы, которые можно повторить"
     },
     "desktopHome": {
         "snatcher": "Загрузчик",
@@ -1263,7 +1263,8 @@
             "file": "Файл",
             "fileWithTags": "Файл с тегами",
             "hydrus": "Hydrus",
-            "selectTags": "Выбрать теги"
+            "selectTags": "Выбрать теги",
+            "rememberMyChoice": "Запомнить мой выбор"
         },
         "notes": {
             "note": "Заметка",
