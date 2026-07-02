@@ -57,7 +57,9 @@ class SnatchHandler {
   CancelToken? cancelToken;
   CancelToken? shareCancelToken;
   Timer? _progressStuckTimer;
+  Timer? _shareProgressStuckTimer;
   bool _retryCurrentRequested = false;
+  bool _retryCurrentShareRequested = false;
   int _shareOperationId = 0;
 
   double get currentProgress {
@@ -116,6 +118,17 @@ class SnatchHandler {
     existsItems.clear();
     failedItems.clear();
     cancelledItems.clear();
+  }
+
+  void onAddRetryableItems({
+    required Booru booru,
+    List<BooruItem> exists = const [],
+    List<BooruItem> failed = const [],
+    List<BooruItem> cancelled = const [],
+  }) {
+    existsItems.addAll(exists.map((e) => (booru: booru, item: e)));
+    failedItems.addAll(failed.map((e) => (booru: booru, item: e)));
+    cancelledItems.addAll(cancelled.map((e) => (booru: booru, item: e)));
   }
 
   Future<void> onRetryAll({
@@ -199,6 +212,7 @@ class SnatchHandler {
     Booru booru,
   ) {
     _shareOperationId++;
+    _retryCurrentShareRequested = false;
     currentShare.value = ShareItem(booruItems, booru);
     shareProgress.value = 0;
     shareActiveItem.value = booruItems.isEmpty ? null : booruItems.first;
@@ -220,9 +234,14 @@ class SnatchHandler {
     shareActiveItem.value = item;
     shareReceived.value = received;
     shareTotal.value = total;
+    if (shareCancelToken != null && !shareCancelToken!.isCancelled) {
+      _restartShareProgressStuckTimer();
+    }
   }
 
   void onShareCancel() {
+    _stopShareProgressStuckTimer();
+    _retryCurrentShareRequested = false;
     shareCancelToken?.cancel();
   }
 
@@ -230,17 +249,39 @@ class SnatchHandler {
     if (operationId != _shareOperationId) return;
 
     shareCancelToken = token;
+    _restartShareProgressStuckTimer();
   }
 
   void onShareDone(int operationId) {
     if (operationId != _shareOperationId) return;
 
+    _stopShareProgressStuckTimer();
+    _retryCurrentShareRequested = false;
     shareCancelToken = null;
     currentShare.value = null;
     shareProgress.value = 0;
     shareActiveItem.value = null;
     shareReceived.value = 0;
     shareTotal.value = 0;
+  }
+
+  void onShareRetryCurrent() {
+    final token = shareCancelToken;
+    if (token == null || token.isCancelled) {
+      return;
+    }
+
+    _stopShareProgressStuckTimer();
+    _retryCurrentShareRequested = true;
+    shareReceived.value = 0;
+    shareTotal.value = 0;
+    token.cancel();
+  }
+
+  bool consumeShareRetryCurrent() {
+    final retryCurrent = _retryCurrentShareRequested;
+    _retryCurrentShareRequested = false;
+    return retryCurrent;
   }
 
   void onRetryCurrent() {
@@ -281,6 +322,22 @@ class SnatchHandler {
   void _stopProgressStuckTimer() {
     _progressStuckTimer?.cancel();
     _progressStuckTimer = null;
+  }
+
+  void _restartShareProgressStuckTimer() {
+    _shareProgressStuckTimer?.cancel();
+    _shareProgressStuckTimer = Timer(
+      const Duration(seconds: 10),
+      () {
+        _shareProgressStuckTimer = null;
+        onShareRetryCurrent();
+      },
+    );
+  }
+
+  void _stopShareProgressStuckTimer() {
+    _shareProgressStuckTimer?.cancel();
+    _shareProgressStuckTimer = null;
   }
 
   Future snatch(SnatchItem item) async {
@@ -393,9 +450,12 @@ class SnatchHandler {
             }
 
             if (isLastMessage) {
-              existsItems.addAll(exists.map((e) => (booru: item.booru, item: e)));
-              failedItems.addAll(failed.map((e) => (booru: item.booru, item: e)));
-              cancelledItems.addAll(cancelled.map((e) => (booru: item.booru, item: e)));
+              onAddRetryableItems(
+                booru: item.booru,
+                exists: exists,
+                failed: failed,
+                cancelled: cancelled,
+              );
             }
 
             _stopProgressStuckTimer();
@@ -546,6 +606,7 @@ class SnatchHandler {
 
   void dispose() {
     _stopProgressStuckTimer();
+    _stopShareProgressStuckTimer();
     shareCancelToken?.cancel();
     queuedList.removeListener(queuedListListener);
   }

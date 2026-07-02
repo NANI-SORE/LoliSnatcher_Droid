@@ -22,6 +22,16 @@ typedef GalleryShareProgressCallback =
       required double progress,
     });
 
+class _ShareCachePathResult {
+  const _ShareCachePathResult({
+    this.path,
+    this.retryCurrent = false,
+  });
+
+  final String? path;
+  final bool retryCurrent;
+}
+
 class GalleryShareService {
   GalleryShareService({
     ImageWriter? imageWriter,
@@ -78,7 +88,7 @@ class GalleryShareService {
       final paths = <String>[];
       for (int i = 0; i < items.length; i++) {
         final item = items[i];
-        final path = await _getOrDownloadCachePath(
+        final result = await _getOrDownloadCachePath(
           item: item,
           booru: booru,
           operationId: operationId,
@@ -86,6 +96,12 @@ class GalleryShareService {
           itemCount: items.length,
           onProgress: onProgress,
         );
+        if (result.retryCurrent) {
+          i--;
+          continue;
+        }
+
+        final path = result.path;
         if (path == null) {
           return false;
         }
@@ -120,40 +136,56 @@ class GalleryShareService {
     required Booru booru,
     GalleryShareProgressCallback? onProgress,
   }) async {
-    final cancelToken = CancelToken();
-    snatchHandler.onShareCancelTokenCreate(cancelToken, operationId);
-
     try {
-      await ClipboardUtils.copyImageToClipboard(
-        item,
-        booru: booru,
-        cancelToken: cancelToken,
-        onReceiveProgress: (received, total) {
-          if (total != null && total > 0) {
-            snatchHandler.onShareProgress(
-              operationId: operationId,
-              item: item,
-              itemIndex: 0,
-              received: received,
-              total: total,
-            );
-            onProgress?.call(
-              item: item,
-              itemIndex: 0,
-              itemCount: 1,
-              progress: received / total,
-            );
-          }
-        },
-      );
+      while (true) {
+        final cancelToken = CancelToken();
+        snatchHandler.onShareCancelTokenCreate(cancelToken, operationId);
 
-      return true;
+        try {
+          await ClipboardUtils.copyImageToClipboard(
+            item,
+            booru: booru,
+            cancelToken: cancelToken,
+            rethrowErrors: true,
+            onReceiveProgress: (received, total) {
+              if (total != null && total > 0) {
+                snatchHandler.onShareProgress(
+                  operationId: operationId,
+                  item: item,
+                  itemIndex: 0,
+                  received: received,
+                  total: total,
+                );
+                onProgress?.call(
+                  item: item,
+                  itemIndex: 0,
+                  itemCount: 1,
+                  progress: received / total,
+                );
+              }
+            },
+          );
+
+          return true;
+        } catch (e) {
+          if (e is DioException && CancelToken.isCancel(e) && snatchHandler.consumeShareRetryCurrent()) {
+            continue;
+          }
+
+          snatchHandler.onAddRetryableItems(
+            booru: booru,
+            failed: e is DioException && CancelToken.isCancel(e) ? const [] : [item],
+            cancelled: e is DioException && CancelToken.isCancel(e) ? [item] : const [],
+          );
+          return false;
+        }
+      }
     } finally {
       snatchHandler.onShareDone(operationId);
     }
   }
 
-  Future<String?> _getOrDownloadCachePath({
+  Future<_ShareCachePathResult> _getOrDownloadCachePath({
     required BooruItem item,
     required Booru booru,
     required int operationId,
@@ -180,57 +212,76 @@ class GalleryShareService {
         itemCount: itemCount,
         progress: 1,
       );
-      return existingPath;
+      return _ShareCachePathResult(path: existingPath);
     }
 
     final cancelToken = CancelToken();
     snatchHandler.onShareCancelTokenCreate(cancelToken, operationId);
 
-    final cacheFilePath = await imageWriter.getCachePathString(
-      item.fileURL,
-      'media',
-      clearName: true,
-      fileNameExtras: item.fileNameExtras,
-    );
-    await DioNetwork.download(
-      item.fileURL,
-      cacheFilePath,
-      cancelToken: cancelToken,
-      headers: await Tools.getFileCustomHeaders(
-        booru,
-        item: item,
-        checkForReferer: true,
-      ),
-      onReceiveProgress: (received, total) {
-        if (total > 0) {
-          snatchHandler.onShareProgress(
-            operationId: operationId,
-            item: item,
-            itemIndex: itemIndex,
-            received: received,
-            total: total,
-          );
-          onProgress?.call(
-            item: item,
-            itemIndex: itemIndex,
-            itemCount: itemCount,
-            progress: received / total,
-          );
-        }
-      },
-    );
+    try {
+      final cacheFilePath = await imageWriter.getCachePathString(
+        item.fileURL,
+        'media',
+        clearName: true,
+        fileNameExtras: item.fileNameExtras,
+      );
+      await DioNetwork.download(
+        item.fileURL,
+        cacheFilePath,
+        cancelToken: cancelToken,
+        headers: await Tools.getFileCustomHeaders(
+          booru,
+          item: item,
+          checkForReferer: true,
+        ),
+        onReceiveProgress: (received, total) {
+          if (total > 0) {
+            snatchHandler.onShareProgress(
+              operationId: operationId,
+              item: item,
+              itemIndex: itemIndex,
+              received: received,
+              total: total,
+            );
+            onProgress?.call(
+              item: item,
+              itemIndex: itemIndex,
+              itemCount: itemCount,
+              progress: received / total,
+            );
+          }
+        },
+      );
 
-    final path = await imageWriter.getCachePath(
-      item.fileURL,
-      'media',
-      fileNameExtras: item.fileNameExtras,
-    );
-    if (path == null) return null;
+      final path = await imageWriter.getCachePath(
+        item.fileURL,
+        'media',
+        fileNameExtras: item.fileNameExtras,
+      );
+      if (path == null) {
+        snatchHandler.onAddRetryableItems(booru: booru, failed: [item]);
+        return const _ShareCachePathResult();
+      }
 
-    final cacheFile = File(path);
-    if (!await cacheFile.exists()) return null;
+      final cacheFile = File(path);
+      if (!await cacheFile.exists()) {
+        snatchHandler.onAddRetryableItems(booru: booru, failed: [item]);
+        return const _ShareCachePathResult();
+      }
 
-    return cacheFile.path;
+      return _ShareCachePathResult(path: cacheFile.path);
+    } catch (e) {
+      if (e is DioException && CancelToken.isCancel(e) && snatchHandler.consumeShareRetryCurrent()) {
+        return const _ShareCachePathResult(retryCurrent: true);
+      }
+
+      snatchHandler.onAddRetryableItems(
+        booru: booru,
+        failed: e is DioException && CancelToken.isCancel(e) ? const [] : [item],
+        cancelled: e is DioException && CancelToken.isCancel(e) ? [item] : const [],
+      );
+      return const _ShareCachePathResult();
+    }
   }
 
   String _mimeType(BooruItem item) {

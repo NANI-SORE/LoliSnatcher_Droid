@@ -46,6 +46,7 @@ class ClipboardUtils {
     Booru? booru,
     bool notify = true,
     bool shouldCache = true,
+    bool rethrowErrors = false,
     CancelToken? cancelToken,
     void Function(int, int?)? onReceiveProgress,
   }) async {
@@ -109,7 +110,7 @@ class ClipboardUtils {
         s: s,
       );
 
-      if (notify) {
+      if (notify && !(e is DioException && CancelToken.isCancel(e))) {
         FlashElements.showSnackbar(
           context: ctx,
           title: Text(ctx.loc.error),
@@ -118,6 +119,10 @@ class ClipboardUtils {
           leadingIconColor: Colors.red,
           duration: const Duration(seconds: 2),
         );
+      }
+
+      if (rethrowErrors) {
+        rethrow;
       }
     }
   }

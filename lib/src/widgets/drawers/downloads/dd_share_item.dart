@@ -8,6 +8,7 @@ import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/animated_progress_indicator.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
+import 'package:lolisnatcher/src/widgets/common/retry_button.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_build.dart';
 
 class DDShareItem extends StatelessWidget {
@@ -79,6 +80,11 @@ class DDShareItem extends StatelessWidget {
                         Text(
                           '${shareProgress + index + 1}/$totalItems',
                           style: const TextStyle(fontSize: 16),
+                        ),
+                      if (isFirst)
+                        RetryButton(
+                          withIcon: true,
+                          onTap: snatchHandler.onShareRetryCurrent,
                         ),
                       if (isFirst)
                         CancelButton(
