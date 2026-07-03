@@ -3046,6 +3046,21 @@ class _Translations$settings$cache$ru_RU extends Translations$settings$cache$en 
   @override
   String get cacheMedia => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheMedia', {}) ?? 'Кэшировать медиа';
   @override
+  String get generateOfflineThumbnails =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.generateOfflineThumbnails', {}) ?? 'Генерировать оффлайн превью';
+  @override
+  String get generateOfflineThumbnailsSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.generateOfflineThumbnailsSubtitle', {}) ??
+      'Создавать превью для сохранённых медиа и отсутствующих превью в избранном/скачанных.';
+  @override
+  String get concurrentOfflineThumbnailGenerations =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.concurrentOfflineThumbnailGenerations', {}) ??
+      'Одновременная генерация оффлайн превью';
+  @override
+  String get concurrentOfflineThumbnailGenerationsSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.concurrentOfflineThumbnailGenerationsSubtitle', {}) ??
+      'Большие значения помогут завершить процесс быстрее, но повышают нагрузку на оперативную память и процессор.';
+  @override
   String get videoCacheMode => TranslationOverrides.string(_root.$meta, 'settings.cache.videoCacheMode', {}) ?? 'Режим кэширования видео';
   @override
   String get videoCacheModesTitle =>
@@ -5471,6 +5486,17 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.cache.resetStorageDirectory', {}) ?? 'Сбросить папку хранилища',
           'settings.cache.cachePreviews' => TranslationOverrides.string(_root.$meta, 'settings.cache.cachePreviews', {}) ?? 'Кэшировать превью',
           'settings.cache.cacheMedia' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheMedia', {}) ?? 'Кэшировать медиа',
+          'settings.cache.generateOfflineThumbnails' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.generateOfflineThumbnails', {}) ?? 'Генерировать оффлайн превью',
+          'settings.cache.generateOfflineThumbnailsSubtitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.generateOfflineThumbnailsSubtitle', {}) ??
+                'Создавать превью для сохранённых медиа и отсутствующих превью в избранном/скачанных.',
+          'settings.cache.concurrentOfflineThumbnailGenerations' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.concurrentOfflineThumbnailGenerations', {}) ??
+                'Одновременная генерация оффлайн превью',
+          'settings.cache.concurrentOfflineThumbnailGenerationsSubtitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.concurrentOfflineThumbnailGenerationsSubtitle', {}) ??
+                'Большие значения помогут завершить процесс быстрее, но повышают нагрузку на оперативную память и процессор.',
           'settings.cache.videoCacheMode' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.videoCacheMode', {}) ?? 'Режим кэширования видео',
           'settings.cache.videoCacheModesTitle' =>
@@ -5929,6 +5955,9 @@ extension on TranslationsRuRu {
           'pinnedTags.unpinTag' => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinTag', {}) ?? 'Открепить тег',
           'pinnedTags.pin' => TranslationOverrides.string(_root.$meta, 'pinnedTags.pin', {}) ?? 'Закрепить',
           'pinnedTags.unpin' => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpin', {}) ?? 'Открепить',
+          _ => null,
+        } ??
+        switch (path) {
           'pinnedTags.pinQuestion' =>
             ({required String tag}) =>
                 TranslationOverrides.string(_root.$meta, 'pinnedTags.pinQuestion', {'tag': tag}) ?? 'Закрепить «${tag}» для быстрого доступа?',
@@ -5938,9 +5967,6 @@ extension on TranslationsRuRu {
           'pinnedTags.onlyForBooru' =>
             ({required String name}) => TranslationOverrides.string(_root.$meta, 'pinnedTags.onlyForBooru', {'name': name}) ?? 'Только для ${name}',
           'pinnedTags.labelsOptional' => TranslationOverrides.string(_root.$meta, 'pinnedTags.labelsOptional', {}) ?? 'Метки (необязательно)',
-          _ => null,
-        } ??
-        switch (path) {
           'pinnedTags.typeAndPressAdd' =>
             TranslationOverrides.string(_root.$meta, 'pinnedTags.typeAndPressAdd', {}) ??
                 'Ввведи и нажми кнопку Добавить для включения метки в список',

@@ -3816,6 +3816,25 @@ class Translations$settings$cache$en {
   /// en: 'Cache media'
   String get cacheMedia => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheMedia', {}) ?? 'Cache media';
 
+  /// en: 'Generate offline thumbnails'
+  String get generateOfflineThumbnails =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.generateOfflineThumbnails', {}) ?? 'Generate offline thumbnails';
+
+  /// en: 'Create thumbnails for saved media and missing favourites/downloads thumbnails.'
+  String get generateOfflineThumbnailsSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.generateOfflineThumbnailsSubtitle', {}) ??
+      'Create thumbnails for saved media and missing favourites/downloads thumbnails.';
+
+  /// en: 'Concurrent offline thumbnail generations'
+  String get concurrentOfflineThumbnailGenerations =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.concurrentOfflineThumbnailGenerations', {}) ??
+      'Concurrent offline thumbnail generations';
+
+  /// en: 'Higher values can finish faster but may increase RAM and CPU load.'
+  String get concurrentOfflineThumbnailGenerationsSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.concurrentOfflineThumbnailGenerationsSubtitle', {}) ??
+      'Higher values can finish faster but may increase RAM and CPU load.';
+
   /// en: 'Video cache mode'
   String get videoCacheMode => TranslationOverrides.string(_root.$meta, 'settings.cache.videoCacheMode', {}) ?? 'Video cache mode';
 
@@ -6436,6 +6455,17 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.cache.resetStorageDirectory', {}) ?? 'Reset storage directory',
           'settings.cache.cachePreviews' => TranslationOverrides.string(_root.$meta, 'settings.cache.cachePreviews', {}) ?? 'Cache previews',
           'settings.cache.cacheMedia' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheMedia', {}) ?? 'Cache media',
+          'settings.cache.generateOfflineThumbnails' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.generateOfflineThumbnails', {}) ?? 'Generate offline thumbnails',
+          'settings.cache.generateOfflineThumbnailsSubtitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.generateOfflineThumbnailsSubtitle', {}) ??
+                'Create thumbnails for saved media and missing favourites/downloads thumbnails.',
+          'settings.cache.concurrentOfflineThumbnailGenerations' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.concurrentOfflineThumbnailGenerations', {}) ??
+                'Concurrent offline thumbnail generations',
+          'settings.cache.concurrentOfflineThumbnailGenerationsSubtitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.concurrentOfflineThumbnailGenerationsSubtitle', {}) ??
+                'Higher values can finish faster but may increase RAM and CPU load.',
           'settings.cache.videoCacheMode' => TranslationOverrides.string(_root.$meta, 'settings.cache.videoCacheMode', {}) ?? 'Video cache mode',
           'settings.cache.videoCacheModesTitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.videoCacheModesTitle', {}) ?? 'Video cache modes',
@@ -6882,6 +6912,9 @@ extension on Translations {
           'pinnedTags.unpinTag' => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinTag', {}) ?? 'Unpin tag',
           'pinnedTags.pin' => TranslationOverrides.string(_root.$meta, 'pinnedTags.pin', {}) ?? 'Pin',
           'pinnedTags.unpin' => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpin', {}) ?? 'Unpin',
+          _ => null,
+        } ??
+        switch (path) {
           'pinnedTags.pinQuestion' =>
             ({required String tag}) =>
                 TranslationOverrides.string(_root.$meta, 'pinnedTags.pinQuestion', {'tag': tag}) ?? 'Pin «${tag}» to quick access?',
@@ -6891,9 +6924,6 @@ extension on Translations {
           'pinnedTags.onlyForBooru' =>
             ({required String name}) => TranslationOverrides.string(_root.$meta, 'pinnedTags.onlyForBooru', {'name': name}) ?? 'Only for ${name}',
           'pinnedTags.labelsOptional' => TranslationOverrides.string(_root.$meta, 'pinnedTags.labelsOptional', {}) ?? 'Labels (optional)',
-          _ => null,
-        } ??
-        switch (path) {
           'pinnedTags.typeAndPressAdd' =>
             TranslationOverrides.string(_root.$meta, 'pinnedTags.typeAndPressAdd', {}) ?? 'Type and press Add button to include a label',
           'pinnedTags.selectExistingLabel' =>

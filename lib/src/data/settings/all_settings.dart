@@ -1249,6 +1249,39 @@ void registerAllSettings() {
   );
 
   registry.register(
+    boolSetting(
+      key: .offlineThumbnailGeneration,
+      getDefaultValue: () => true,
+      categories: [SettingCategory.cache],
+      subcategories: [SettingSubcategory.cache],
+      isDeviceSpecific: true,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.cache.generateOfflineThumbnails,
+        subtitle: (ctx) => ctx.loc.settings.cache.generateOfflineThumbnailsSubtitle,
+      ),
+    ),
+  );
+
+  registry.register(
+    intSetting(
+      key: .offlineThumbnailConcurrentGenerations,
+      getDefaultValue: () => 2,
+      min: 1,
+      max: 8,
+      step: 1,
+      categories: [SettingCategory.cache],
+      subcategories: [SettingSubcategory.cache],
+      isDeviceSpecific: true,
+      dependsOn: [.offlineThumbnailGeneration],
+      enabledWhen: ([BuildContext? context]) => _val<bool>(.offlineThumbnailGeneration, context),
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.cache.concurrentOfflineThumbnailGenerations,
+        subtitle: (ctx) => ctx.loc.settings.cache.concurrentOfflineThumbnailGenerationsSubtitle,
+      ),
+    ),
+  );
+
+  registry.register(
     durationSetting(
       key: .cacheDuration,
       getDefaultValue: () => Duration.zero,

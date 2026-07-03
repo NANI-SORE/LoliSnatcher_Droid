@@ -88,6 +88,8 @@ enum SettingKey {
   // Cache & Storage
   thumbnailCache,
   mediaCache,
+  offlineThumbnailGeneration,
+  offlineThumbnailConcurrentGenerations,
   cacheDuration,
   cacheSize,
   snatchMode,
@@ -272,6 +274,8 @@ abstract class SX {
   // Cache & Storage
   static const thumbnailCache = TypedKey<bool>(SettingKey.thumbnailCache);
   static const mediaCache = TypedKey<bool>(SettingKey.mediaCache);
+  static const offlineThumbnailGeneration = TypedKey<bool>(SettingKey.offlineThumbnailGeneration);
+  static const offlineThumbnailConcurrentGenerations = TypedKey<int>(SettingKey.offlineThumbnailConcurrentGenerations);
   static const cacheDuration = TypedKey<Duration>(SettingKey.cacheDuration);
   static const cacheSize = TypedKey<int>(SettingKey.cacheSize);
   static const snatchMode = TypedKey<ImageQuality>(SettingKey.snatchMode);

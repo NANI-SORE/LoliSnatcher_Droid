@@ -22,7 +22,12 @@ class OfflineThumbnailService {
   final Queue<Completer<void>> _generationQueue = Queue();
   int _activeGenerations = 0;
 
-  static const int _maxConcurrentGenerations = 2;
+  int get _maxConcurrentGenerations {
+    final value = SX.offlineThumbnailConcurrentGenerations.value;
+    return value < 1 ? 1 : (value > 8 ? 8 : value);
+  }
+
+  bool get _isGenerationEnabled => SX.offlineThumbnailGeneration.value;
 
   Future<File?> getOrGenerate(
     BooruItem item,
@@ -43,6 +48,9 @@ class OfflineThumbnailService {
     final target = await _thumbnailFile(sourceBooru, fileName);
     if (await _isUsableFile(target)) {
       return target;
+    }
+    if (!_isGenerationEnabled) {
+      return null;
     }
 
     return _withInProgress(target, () {
@@ -89,7 +97,7 @@ class OfflineThumbnailService {
       return const OfflineThumbnailLookup();
     }
 
-    if (!allowGeneration) {
+    if (!allowGeneration || !_isGenerationEnabled) {
       return const OfflineThumbnailLookup();
     }
 
@@ -110,6 +118,10 @@ class OfflineThumbnailService {
   }
 
   Future<void> generateAfterSave(BooruItem item, Booru booru) async {
+    if (!_isGenerationEnabled) {
+      return;
+    }
+
     final future = Platform.isAndroid && SX.extPathOverride.value.isNotEmpty
         ? generateFromExistingCache(item, booru)
         : getOrGenerate(item, booru);
@@ -131,6 +143,9 @@ class OfflineThumbnailService {
     if (await _isUsableFile(target)) {
       return target;
     }
+    if (!_isGenerationEnabled) {
+      return null;
+    }
 
     return _withInProgress(target, () {
       return _withGenerationSlot(() => _copyExistingNetworkCache(item, target));
@@ -151,6 +166,9 @@ class OfflineThumbnailService {
     final target = await _thumbnailFile(sourceBooru, fileName);
     if (await _isUsableFile(target)) {
       return target;
+    }
+    if (!_isGenerationEnabled) {
+      return null;
     }
 
     return _withInProgress(target, () {
