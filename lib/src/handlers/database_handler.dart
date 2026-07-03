@@ -77,7 +77,9 @@ class DBHandler {
       'postURL TEXT, '
       'mediaType TEXT, '
       'isSnatched INTEGER, '
-      'isFavourite INTEGER '
+      'isFavourite INTEGER, '
+      'serverId TEXT, '
+      'savedFileName TEXT '
       ')',
     );
     await db?.execute(
@@ -130,6 +132,12 @@ class DBHandler {
       }
       if (!await columnExists('Tag', 'updatedAt')) {
         await db?.execute('ALTER TABLE Tag ADD COLUMN updatedAt INTEGER;');
+      }
+      if (!await columnExists('BooruItem', 'serverId')) {
+        await db?.execute('ALTER TABLE BooruItem ADD COLUMN serverId TEXT;');
+      }
+      if (!await columnExists('BooruItem', 'savedFileName')) {
+        await db?.execute('ALTER TABLE BooruItem ADD COLUMN savedFileName TEXT;');
       }
     } catch (e, s) {
       Logger.Inst().log(
@@ -186,7 +194,7 @@ class DBHandler {
     String resultStr = '';
     if (itemID == null || itemID.isEmpty) {
       final result = await db?.rawInsert(
-        'INSERT INTO BooruItem(thumbnailURL, sampleURL, fileURL, postURL, mediaType, isSnatched, isFavourite) VALUES(?,?,?,?,?,?,?)',
+        'INSERT INTO BooruItem(thumbnailURL, sampleURL, fileURL, postURL, mediaType, isSnatched, isFavourite, serverId, savedFileName) VALUES(?,?,?,?,?,?,?,?,?)',
         [
           item.thumbnailURL.replaceFirstMapped(RegExp('(?<!https?:)//'), (m) => '/'),
           item.sampleURL.replaceFirstMapped(RegExp('(?<!https?:)//'), (m) => '/'),
@@ -195,6 +203,8 @@ class DBHandler {
           item.mediaType.toJson(),
           Tools.boolToInt(item.isSnatched.value == true),
           Tools.boolToInt(item.isFavourite.value == true),
+          item.serverId,
+          item.savedFileName,
         ],
       );
       itemID = result?.toString();
@@ -202,17 +212,25 @@ class DBHandler {
       resultStr = 'Inserted';
     } else if (mode == BooruUpdateMode.local) {
       await db?.rawUpdate(
-        'UPDATE BooruItem SET isSnatched = ?, isFavourite = ? WHERE id = ?',
-        [Tools.boolToInt(item.isSnatched.value == true), Tools.boolToInt(item.isFavourite.value == true), itemID],
+        'UPDATE BooruItem SET isSnatched = ?, isFavourite = ?, serverId = COALESCE(?, serverId), savedFileName = COALESCE(?, savedFileName) WHERE id = ?',
+        [
+          Tools.boolToInt(item.isSnatched.value == true),
+          Tools.boolToInt(item.isFavourite.value == true),
+          item.serverId,
+          item.savedFileName,
+          itemID,
+        ],
       );
       resultStr = 'Updated';
     } else if (mode == BooruUpdateMode.urlUpdate) {
       await db?.rawUpdate(
-        'UPDATE BooruItem SET thumbnailURL = ?,sampleURL = ?,fileURL = ? WHERE id = ?',
+        'UPDATE BooruItem SET thumbnailURL = ?,sampleURL = ?,fileURL = ?, serverId = COALESCE(?, serverId), savedFileName = COALESCE(?, savedFileName) WHERE id = ?',
         [
           item.thumbnailURL.replaceFirstMapped(RegExp('(?<!https?:)//'), (m) => '/'),
           item.sampleURL.replaceFirstMapped(RegExp('(?<!https?:)//'), (m) => '/'),
           item.fileURL.replaceFirstMapped(RegExp('(?<!https?:)//'), (m) => '/'),
+          item.serverId,
+          item.savedFileName,
           itemID,
         ],
       );
@@ -235,7 +253,7 @@ class DBHandler {
 
       if (itemID == null || itemID.isEmpty) {
         final result = await db?.rawInsert(
-          'INSERT INTO BooruItem(thumbnailURL, sampleURL, fileURL, postURL, mediaType, isSnatched, isFavourite) VALUES(?,?,?,?,?,?,?)',
+          'INSERT INTO BooruItem(thumbnailURL, sampleURL, fileURL, postURL, mediaType, isSnatched, isFavourite, serverId, savedFileName) VALUES(?,?,?,?,?,?,?,?,?)',
           [
             item.thumbnailURL.replaceFirstMapped(RegExp('(?<!https?:)//'), (m) => '/'),
             item.sampleURL.replaceFirstMapped(RegExp('(?<!https?:)//'), (m) => '/'),
@@ -244,6 +262,8 @@ class DBHandler {
             item.mediaType.toJson(),
             Tools.boolToInt(item.isSnatched.value == true),
             Tools.boolToInt(item.isFavourite.value == true),
+            item.serverId,
+            item.savedFileName,
           ],
         );
         itemID = result?.toString();
@@ -251,16 +271,24 @@ class DBHandler {
         saved++;
       } else if (mode == BooruUpdateMode.local) {
         await db?.rawUpdate(
-          'UPDATE BooruItem SET isSnatched = ?, isFavourite = ? WHERE id = ?',
-          [Tools.boolToInt(item.isSnatched.value == true), Tools.boolToInt(item.isFavourite.value == true), itemID],
+          'UPDATE BooruItem SET isSnatched = ?, isFavourite = ?, serverId = COALESCE(?, serverId), savedFileName = COALESCE(?, savedFileName) WHERE id = ?',
+          [
+            Tools.boolToInt(item.isSnatched.value == true),
+            Tools.boolToInt(item.isFavourite.value == true),
+            item.serverId,
+            item.savedFileName,
+            itemID,
+          ],
         );
       } else if (mode == BooruUpdateMode.urlUpdate) {
         await db?.rawUpdate(
-          'UPDATE BooruItem SET thumbnailURL = ?,sampleURL = ?,fileURL = ? WHERE id = ?',
+          'UPDATE BooruItem SET thumbnailURL = ?,sampleURL = ?,fileURL = ?, serverId = COALESCE(?, serverId), savedFileName = COALESCE(?, savedFileName) WHERE id = ?',
           [
             item.thumbnailURL.replaceFirstMapped(RegExp('(?<!https?:)//'), (m) => '/'),
             item.sampleURL.replaceFirstMapped(RegExp('(?<!https?:)//'), (m) => '/'),
             item.fileURL.replaceFirstMapped(RegExp('(?<!https?:)//'), (m) => '/'),
+            item.serverId,
+            item.savedFileName,
             itemID,
           ],
         );
@@ -322,7 +350,7 @@ class DBHandler {
     }
 
     final List? result = await db?.rawQuery(
-      'SELECT BooruItem.id as ItemID, thumbnailURL, sampleURL, fileURL, postURL, mediaType, isSnatched, isFavourite '
+      'SELECT BooruItem.id as ItemID, thumbnailURL, sampleURL, fileURL, postURL, mediaType, isSnatched, isFavourite, serverId, savedFileName '
       'FROM BooruItem '
       "WHERE postURL like '%${idol ? "idol" : "chan"}.sankakucomplex%' "
       'ORDER BY BooruItem.id DESC;',
@@ -338,6 +366,29 @@ class DBHandler {
       }
     }
     return items;
+  }
+
+  Future<List<BooruItem>> getFavouriteItemsForHost(
+    String host, {
+    int limit = 500,
+    int offset = 0,
+  }) async {
+    final db = this.db;
+    if (db == null || host.isEmpty) return [];
+
+    final hostPattern = '%$host%';
+    final results = await db.rawQuery(
+      'SELECT bi.id as dbid, bi.thumbnailURL, bi.sampleURL, bi.fileURL, bi.postURL, bi.mediaType, '
+      'bi.isSnatched, bi.isFavourite, bi.serverId, bi.savedFileName '
+      'FROM BooruItem AS bi '
+      'WHERE bi.isFavourite = 1 AND (bi.postURL LIKE ? OR bi.fileURL LIKE ? OR bi.sampleURL LIKE ? OR bi.thumbnailURL LIKE ?) '
+      'ORDER BY bi.id DESC LIMIT ? OFFSET ?',
+      [hostPattern, hostPattern, hostPattern, hostPattern, limit, offset],
+    );
+
+    if (results.isEmpty) return [];
+
+    return results.map((row) => BooruItem.fromDBRow(row, const [])).toList();
   }
 
   Future<List<BooruItem>> searchDB(
@@ -388,7 +439,7 @@ class DBHandler {
 
     // --- 2. BUILD MAIN QUERY ---
     final StringBuffer sql = StringBuffer(
-      'SELECT bi.id as dbid, bi.thumbnailURL, bi.sampleURL, bi.fileURL, bi.postURL, bi.mediaType, bi.isSnatched, bi.isFavourite '
+      'SELECT bi.id as dbid, bi.thumbnailURL, bi.sampleURL, bi.fileURL, bi.postURL, bi.mediaType, bi.isSnatched, bi.isFavourite, bi.serverId, bi.savedFileName '
       'FROM BooruItem AS bi ',
     );
     final List<String> whereClauses = [];
@@ -491,7 +542,70 @@ class DBHandler {
     if (results.isEmpty) return [];
 
     // --- 4. FETCH TAGS ---
-    final itemIDs = results.map((r) => r['dbid'] as int).toList();
+    final Map<int, List<String>> tagsMap = {};
+    final itemIDs = results.map((r) => r['dbid']! as int).toList();
+    const int tagChunkSize = 500;
+    for (int start = 0; start < itemIDs.length; start += tagChunkSize) {
+      final chunk = itemIDs.sublist(start, min(start + tagChunkSize, itemIDs.length));
+      final tagPlaceholders = List.filled(chunk.length, '?').join(',');
+      final tagsResult = await db.rawQuery(
+        'SELECT it.booruItemID, t.name '
+        'FROM Tag AS t '
+        'INNER JOIN ImageTag AS it ON t.id = it.tagID '
+        'WHERE it.booruItemID IN ($tagPlaceholders)',
+        chunk,
+      );
+
+      for (final row in tagsResult) {
+        final id = row['booruItemID']! as int;
+        final tagName = row['name'].toString();
+        if (!tagsMap.containsKey(id)) tagsMap[id] = [];
+        tagsMap[id]!.add(tagName);
+      }
+    }
+
+    // --- 5. MAP RESULTS ---
+    // Construct final objects using BooruItem.fromDBRow
+    return results.map((row) {
+      final id = row['dbid']! as int;
+      final itemTags = tagsMap[id] ?? [];
+      return BooruItem.fromDBRow(row, itemTags);
+    }).toList();
+  }
+
+  Future<int?> resolveFlaggedStartId({
+    required bool isDownloads,
+    required int startIndex,
+  }) async {
+    final db = this.db;
+    if (db == null) return null;
+    final flagColumn = isDownloads ? 'isSnatched' : 'isFavourite';
+    final result = await db.rawQuery(
+      'SELECT id FROM BooruItem WHERE $flagColumn = 1 ORDER BY id ASC LIMIT 1 OFFSET ?',
+      [max(0, startIndex)],
+    );
+    if (result.isEmpty) return null;
+    return result.first['id'] as int?;
+  }
+
+  Future<List<BooruItem>> getFlaggedItemsAfterId({
+    required bool isDownloads,
+    required int lastSeenId,
+    required int limit,
+  }) async {
+    final db = this.db;
+    if (db == null) return [];
+    final flagColumn = isDownloads ? 'isSnatched' : 'isFavourite';
+    final results = await db.rawQuery(
+      'SELECT id as dbid, thumbnailURL, sampleURL, fileURL, postURL, mediaType, isSnatched, isFavourite, serverId, savedFileName '
+      'FROM BooruItem '
+      'WHERE $flagColumn = 1 AND id > ? '
+      'ORDER BY id ASC LIMIT ?',
+      [lastSeenId, limit],
+    );
+    if (results.isEmpty) return [];
+
+    final itemIDs = results.map((r) => r['dbid']! as int).toList();
     final tagPlaceholders = List.filled(itemIDs.length, '?').join(',');
     final tagsResult = await db.rawQuery(
       'SELECT it.booruItemID, t.name '
@@ -512,7 +626,7 @@ class DBHandler {
 
     // Construct final objects using BooruItem.fromDBRow
     return results.map((row) {
-      final id = row['dbid'] as int;
+      final id = row['dbid']! as int;
       final itemTags = tagsMap[id] ?? [];
       return BooruItem.fromDBRow(row, itemTags);
     }).toList();

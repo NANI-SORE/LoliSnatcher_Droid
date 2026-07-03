@@ -18,6 +18,7 @@ import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/pulse_widget.dart';
+import 'package:lolisnatcher/src/widgets/gallery/snatched_status_icon.dart';
 import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
 import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
@@ -78,6 +79,10 @@ class ThumbnailBuild extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isFavsOrDls = handler is FavouritesHandler || handler is DownloadsHandler;
+    final Booru? sourceBooru = isFavsOrDls ? _resolveSourceBooru() : null;
+    final Booru? statusBooru = sourceBooru ?? handler?.booru;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: Stack(
@@ -86,14 +91,13 @@ class ThumbnailBuild extends StatelessWidget {
           RepaintBoundary(
             child: Builder(
               builder: (context) {
-                final bool isFavsOrDls = handler is FavouritesHandler || handler is DownloadsHandler;
-                final possibleBooru = isFavsOrDls ? _resolveSourceBooru() : null;
-
                 return Thumbnail(
                   item: item,
-                  booru: possibleBooru ?? handler?.booru,
+                  booru: statusBooru,
                   isStandalone: true,
                   useHero: selectable,
+                  allowOfflineLocalMedia: true,
+                  allowOfflineThumbnailGeneration: isFavsOrDls,
                 );
               },
             ),
@@ -321,7 +325,10 @@ class ThumbnailBuild extends StatelessWidget {
                   ),
                   //
                   Flexible(
-                    child: _ThumbnailBottomRightIcons(item),
+                    child: _ThumbnailBottomRightIcons(
+                      item,
+                      booru: statusBooru,
+                    ),
                   ),
                 ],
               ),
@@ -334,10 +341,12 @@ class ThumbnailBuild extends StatelessWidget {
 
 class _ThumbnailBottomRightIcons extends StatelessWidget {
   const _ThumbnailBottomRightIcons(
-    this.item,
-  );
+    this.item, {
+    this.booru,
+  });
 
   final BooruItem item;
+  final Booru? booru;
 
   @override
   Widget build(BuildContext context) {
@@ -429,7 +438,13 @@ class _ThumbnailBottomRightIcons extends StatelessWidget {
               if (isCurrentlyBeingSnatched || isInQueueToBeSnatched)
                 const PulseWidget(child: snatchedIcon)
               else if (isSnatched)
-                snatchedIcon,
+                booru != null
+                    ? SavedMediaStatusIcon(
+                        item: item,
+                        booru: booru!,
+                        size: 14,
+                      )
+                    : snatchedIcon,
               //
               if (isAi)
                 const FaIcon(

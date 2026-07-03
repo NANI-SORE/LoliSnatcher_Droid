@@ -3102,6 +3102,11 @@ class _Translations$settings$cache$ru_RU extends Translations$settings$cache$en 
   @override
   String get cacheTypeMedia => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeMedia', {}) ?? 'Медиа';
   @override
+  String get cacheTypeOfflineMedia => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeOfflineMedia', {}) ?? 'Оффлайн медиа';
+  @override
+  String get cacheTypeOfflineThumbnails =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeOfflineThumbnails', {}) ?? 'Оффлайн превью';
+  @override
   String get cacheTypeWebView => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeWebView', {}) ?? 'Вебвью';
   @override
   String get cacheCleared => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheCleared', {}) ?? 'Кэш очищен';
@@ -5507,6 +5512,10 @@ extension on TranslationsRuRu {
           'settings.cache.cacheTypeThumbnails' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeThumbnails', {}) ?? 'Превью',
           'settings.cache.cacheTypeSamples' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeSamples', {}) ?? 'Семплы',
           'settings.cache.cacheTypeMedia' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeMedia', {}) ?? 'Медиа',
+          'settings.cache.cacheTypeOfflineMedia' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeOfflineMedia', {}) ?? 'Оффлайн медиа',
+          'settings.cache.cacheTypeOfflineThumbnails' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeOfflineThumbnails', {}) ?? 'Оффлайн превью',
           'settings.cache.cacheTypeWebView' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeWebView', {}) ?? 'Вебвью',
           'settings.cache.cacheCleared' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheCleared', {}) ?? 'Кэш очищен',
           'settings.cache.clearedCacheType' =>
@@ -5929,14 +5938,14 @@ extension on TranslationsRuRu {
           'pinnedTags.onlyForBooru' =>
             ({required String name}) => TranslationOverrides.string(_root.$meta, 'pinnedTags.onlyForBooru', {'name': name}) ?? 'Только для ${name}',
           'pinnedTags.labelsOptional' => TranslationOverrides.string(_root.$meta, 'pinnedTags.labelsOptional', {}) ?? 'Метки (необязательно)',
+          _ => null,
+        } ??
+        switch (path) {
           'pinnedTags.typeAndPressAdd' =>
             TranslationOverrides.string(_root.$meta, 'pinnedTags.typeAndPressAdd', {}) ??
                 'Ввведи и нажми кнопку Добавить для включения метки в список',
           'pinnedTags.selectExistingLabel' =>
             TranslationOverrides.string(_root.$meta, 'pinnedTags.selectExistingLabel', {}) ?? 'Выбери существующую метку',
-          _ => null,
-        } ??
-        switch (path) {
           'pinnedTags.tagPinned' => TranslationOverrides.string(_root.$meta, 'pinnedTags.tagPinned', {}) ?? 'Тег закреплен',
           'pinnedTags.pinnedForBooru' =>
             ({required String name, required String labels}) =>

@@ -418,6 +418,8 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                           item,
                                           booru: possibleBooru ?? widget.tab.booruHandler.booru,
                                           isViewed: pageVal == index,
+                                          allowOfflineLocalMedia: true,
+                                          allowOfflineThumbnailGeneration: isFavsOrDls,
                                           key: item.key,
                                         );
                                       },
@@ -432,6 +434,8 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                             booru: possibleBooru ?? widget.tab.booruHandler.booru,
                                             isViewed: pageVal == index,
                                             enableFullscreen: true,
+                                            allowOfflineLocalMedia: true,
+                                            allowOfflineThumbnailGeneration: isFavsOrDls,
                                             key: item.key,
                                           );
                                         },

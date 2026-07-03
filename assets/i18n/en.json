@@ -908,6 +908,8 @@
             "cacheTypeThumbnails": "Thumbnails",
             "cacheTypeSamples": "Samples",
             "cacheTypeMedia": "Media",
+            "cacheTypeOfflineMedia": "Offline media",
+            "cacheTypeOfflineThumbnails": "Offline thumbnails",
             "cacheTypeWebView": "Webview",
             "cacheCleared": "Cache cleared",
             "clearedCacheType(param=type)": "Cleared ${type: String} cache",

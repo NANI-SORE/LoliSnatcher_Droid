@@ -908,6 +908,8 @@
             "cacheTypeThumbnails": "Превью",
             "cacheTypeSamples": "Семплы",
             "cacheTypeMedia": "Медиа",
+            "cacheTypeOfflineMedia": "Оффлайн медиа",
+            "cacheTypeOfflineThumbnails": "Оффлайн превью",
             "cacheTypeWebView": "Вебвью",
             "cacheCleared": "Кэш очищен",
             "clearedCacheType(param=type)": "Очищен кэш ${type: String}",

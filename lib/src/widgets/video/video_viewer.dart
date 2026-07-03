@@ -21,6 +21,9 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/services/dio_downloader.dart';
+import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/services/network_reachability.dart';
+import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -38,6 +41,8 @@ class VideoViewer extends StatefulWidget {
     required this.booru,
     required this.isViewed,
     this.enableFullscreen = true,
+    this.allowOfflineLocalMedia = false,
+    this.allowOfflineThumbnailGeneration = false,
     super.key,
   });
 
@@ -45,6 +50,8 @@ class VideoViewer extends StatefulWidget {
   final Booru booru;
   final bool isViewed;
   final bool enableFullscreen;
+  final bool allowOfflineLocalMedia;
+  final bool allowOfflineThumbnailGeneration;
 
   @override
   State<VideoViewer> createState() => VideoViewerState();
@@ -85,6 +92,7 @@ class VideoViewerState extends State<VideoViewer> {
   int _loadGeneration = 0;
   bool _fullscreenZoomResetQueued = false;
   bool _fullscreenDismissThresholdReached = false;
+  bool didTryLocalSavedFallback = false;
 
   bool get isVideoInited => videoController.value?.value.isInitialized ?? false;
   bool get isVideoFullscreen => chewieController.value?.isFullScreen ?? false;
@@ -104,6 +112,52 @@ class VideoViewerState extends State<VideoViewer> {
       viewerHandler.setStopped(widget.key, false);
     });
     startedAt.value = DateTime.now().millisecondsSinceEpoch;
+    didTryLocalSavedFallback = false;
+
+    final cachedVideoPath = await ImageWriter().getCachePath(
+      Uri.base.resolve(widget.booruItem.fileURL).toString(),
+      'media',
+      clearName: true,
+      fileNameExtras: widget.booruItem.fileNameExtras,
+    );
+    if (cachedVideoPath != null) {
+      video = File(cachedVideoPath);
+      isFromCache.value = true;
+      try {
+        final fileSize = await video!.length();
+        onBytesAdded(fileSize, fileSize);
+      } catch (_) {}
+      unawaited(initPlayer(loadGeneration: loadGeneration));
+      updateState();
+      return;
+    }
+
+    final hasConnection = await NetworkReachability.instance.hasConnection();
+    final shouldTrySavedBeforeNetwork = widget.allowOfflineLocalMedia;
+    final offlineResolution = shouldTrySavedBeforeNetwork
+        ? await OfflineMediaResolver.instance.resolve(
+            widget.booruItem,
+            widget.booru,
+            allowUntrackedItem: widget.allowOfflineLocalMedia,
+          )
+        : const OfflineMediaResolution.unavailable();
+    if (offlineResolution.isAvailable) {
+      video = offlineResolution.file;
+      isFromCache.value = true;
+      try {
+        final fileSize = await video!.length();
+        onBytesAdded(fileSize, fileSize);
+      } catch (_) {}
+      unawaited(initPlayer(loadGeneration: loadGeneration));
+      updateState();
+      return;
+    } else if (!hasConnection) {
+      stopLoading(
+        reason: ViewerStopReason.error,
+        title: 'No network connection',
+      );
+      return;
+    }
 
     unawaited(getSize(loadGeneration: loadGeneration));
 
@@ -260,22 +314,57 @@ class VideoViewerState extends State<VideoViewer> {
     if (error is DioException && CancelToken.isCancel(error)) {
       // print('Canceled by user: $imageURL | $error');
     } else {
-      if (error is DioException) {
-        stopLoading(
-          reason: ViewerStopReason.error,
-          title: error.type.name,
-          details: (error.response?.statusCode != null)
-              ? '${error.response?.statusCode} - ${error.response?.statusMessage ?? DioNetwork.badResponseExceptionMessage(error.response?.statusCode)}'
-              : null,
-        );
-      } else {
-        stopLoading(
-          reason: ViewerStopReason.error,
-          details: SX.videoBackendMode.value.isNormal ? '\n${context.loc.media.loading.tryChangingVideoBackend}' : null,
-        );
-      }
+      unawaited(_handleVideoError(error));
       // print('Dio request cancelled: $error');
     }
+  }
+
+  Future<void> _handleVideoError(Exception error) async {
+    if (await tryLocalSavedFallback(_loadGeneration)) {
+      return;
+    }
+
+    if (error is DioException) {
+      stopLoading(
+        reason: ViewerStopReason.error,
+        title: error.type.name,
+        details: (error.response?.statusCode != null)
+            ? '${error.response?.statusCode} - ${error.response?.statusMessage ?? DioNetwork.badResponseExceptionMessage(error.response?.statusCode)}'
+            : null,
+      );
+    } else {
+      stopLoading(
+        reason: ViewerStopReason.error,
+        details: SX.videoBackendMode.value.isNormal ? '\n${context.loc.media.loading.tryChangingVideoBackend}' : null,
+      );
+    }
+  }
+
+  Future<bool> tryLocalSavedFallback(int loadGeneration) async {
+    if (didTryLocalSavedFallback || !widget.allowOfflineLocalMedia) {
+      return false;
+    }
+    didTryLocalSavedFallback = true;
+
+    final offlineResolution = await OfflineMediaResolver.instance.resolve(
+      widget.booruItem,
+      widget.booru,
+      allowUntrackedItem: widget.allowOfflineLocalMedia,
+    );
+    if (!_isCurrentLoad(loadGeneration) || !offlineResolution.isAvailable) {
+      return false;
+    }
+
+    disposables();
+    video = offlineResolution.file;
+    isFromCache.value = true;
+    try {
+      final fileSize = await video!.length();
+      onBytesAdded(fileSize, fileSize);
+    } catch (_) {}
+    unawaited(initPlayer(loadGeneration: _loadGeneration));
+    updateState();
+    return true;
   }
 
   @override
@@ -622,10 +711,17 @@ class VideoViewerState extends State<VideoViewer> {
     }
 
     if (!isStopped.value && videoController.value?.value.hasError == true) {
-      stopLoading(
-        reason: ViewerStopReason.videoError,
-        details: videoController.value?.value.errorDescription,
-      );
+      final details = videoController.value?.value.errorDescription;
+      unawaited(() async {
+        if (await tryLocalSavedFallback(_loadGeneration)) {
+          return;
+        }
+        if (!mounted || isStopped.value) return;
+        stopLoading(
+          reason: ViewerStopReason.videoError,
+          details: details,
+        );
+      }());
     }
   }
 
@@ -987,6 +1083,8 @@ class VideoViewerState extends State<VideoViewer> {
                 booru: widget.booru,
                 isStandalone: false,
                 useHero: false,
+                allowOfflineLocalMedia: widget.allowOfflineLocalMedia,
+                allowOfflineThumbnailGeneration: widget.allowOfflineThumbnailGeneration,
               ),
             ),
           ),

@@ -30,6 +30,8 @@ class _CacheStatsWidgetState extends State<CacheStatsWidget> {
     _CacheType(_CacheTypeEnum.thumbnails, 'thumbnails'),
     _CacheType(_CacheTypeEnum.samples, 'samples'),
     _CacheType(_CacheTypeEnum.media, 'media'),
+    _CacheType(_CacheTypeEnum.offlineMedia, 'offline_media'),
+    _CacheType(_CacheTypeEnum.offlineThumbnails, 'offline_thumbnails'),
     _CacheType(_CacheTypeEnum.webView, 'WebView'),
   ];
 
@@ -196,6 +198,8 @@ enum _CacheTypeEnum {
   thumbnails,
   samples,
   media,
+  offlineMedia,
+  offlineThumbnails,
   webView,
   ;
 
@@ -211,6 +215,10 @@ enum _CacheTypeEnum {
         return loc.settings.cache.cacheTypeSamples;
       case media:
         return loc.settings.cache.cacheTypeMedia;
+      case offlineMedia:
+        return loc.settings.cache.cacheTypeOfflineMedia;
+      case offlineThumbnails:
+        return loc.settings.cache.cacheTypeOfflineThumbnails;
       case webView:
         return loc.settings.cache.cacheTypeWebView;
     }

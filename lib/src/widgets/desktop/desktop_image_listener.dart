@@ -49,6 +49,8 @@ class _DesktopImageListenerState extends State<DesktopImageListener> {
           item,
           booru: searchHandler.currentBooru,
           isViewed: ViewerHandler.instance.current.value?.key == item.key,
+          allowOfflineLocalMedia: true,
+          allowOfflineThumbnailGeneration: searchHandler.currentBooru.type?.isFavouritesOrDownloads == true,
           key: item.key,
         ),
       );
@@ -59,6 +61,8 @@ class _DesktopImageListenerState extends State<DesktopImageListener> {
           booru: searchHandler.currentBooru,
           isViewed: ViewerHandler.instance.current.value?.key == item.key,
           enableFullscreen: true,
+          allowOfflineLocalMedia: true,
+          allowOfflineThumbnailGeneration: searchHandler.currentBooru.type?.isFavouritesOrDownloads == true,
           key: item.key,
         ),
       );

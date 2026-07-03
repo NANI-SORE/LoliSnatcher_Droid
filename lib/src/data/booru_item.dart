@@ -30,6 +30,7 @@ class BooruItem extends Equatable {
     this.hasNotes,
     this.hasComments,
     this.serverId,
+    this.savedFileName,
     this.rating, // safe, explicit...
     this.score,
     this.uploaderId,
@@ -78,6 +79,7 @@ class BooruItem extends Equatable {
 
   String? fileExt;
   String? serverId;
+  String? savedFileName;
   String? rating;
   String? score;
   String? uploaderId;
@@ -159,6 +161,7 @@ class BooruItem extends Equatable {
       'isFavourite': isFavourite.value,
       'isSnatched': isSnatched.value,
       'serverId': serverId,
+      'savedFileName': savedFileName,
       'rating': rating,
       'score': score,
       'sources': sources,
@@ -190,6 +193,7 @@ class BooruItem extends Equatable {
     isUpdated,
     fileExt,
     serverId,
+    savedFileName,
     rating,
     score,
     uploaderId,
@@ -237,6 +241,8 @@ class BooruItem extends Equatable {
     );
     item.isFavourite.value = json['isFavourite'].toString() == 'true';
     item.isSnatched.value = json['isSnatched'].toString() == 'true';
+    item.serverId = json['serverId'];
+    item.savedFileName = _nullableString(json['savedFileName']);
     return item;
   }
 
@@ -249,10 +255,19 @@ class BooruItem extends Equatable {
       fileExt: row['fileURL'].toString().contains('Hydrus-Client-API') ? 'extra' : null,
       tagsList: tags.map(Tag.new).toList(),
       postURL: row['postURL'].toString(),
+      serverId: row['serverId'],
+      savedFileName: _nullableString(row['savedFileName']),
     );
     item.isFavourite.value = Tools.intToBool(row['isFavourite']);
     item.isSnatched.value = Tools.intToBool(row['isSnatched']);
     return item;
+  }
+
+  static String? _nullableString(dynamic value) {
+    if (value == null) return null;
+    final str = value.toString();
+    if (str.isEmpty || str == 'null') return null;
+    return str;
   }
 }
 

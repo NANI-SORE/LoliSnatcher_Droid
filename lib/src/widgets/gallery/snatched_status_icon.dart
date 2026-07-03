@@ -6,6 +6,7 @@ import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
 import 'package:lolisnatcher/src/widgets/common/pulse_widget.dart';
 
@@ -24,6 +25,37 @@ class SnatchedStatusIcon extends StatefulWidget {
 }
 
 class _SnatchedStatusIconState extends State<SnatchedStatusIcon> {
+  @override
+  Widget build(BuildContext context) {
+    return SavedMediaStatusIcon(
+      item: widget.item,
+      booru: widget.booru,
+      size: Theme.of(context).buttonTheme.height / 2.1,
+    );
+  }
+}
+
+class SavedMediaStatusIcon extends StatefulWidget {
+  const SavedMediaStatusIcon({
+    required this.item,
+    required this.booru,
+    this.size = 14,
+    this.existsColor = Colors.green,
+    this.missingColor = Colors.white,
+    super.key,
+  });
+
+  final BooruItem item;
+  final Booru booru;
+  final double size;
+  final Color existsColor;
+  final Color missingColor;
+
+  @override
+  State<SavedMediaStatusIcon> createState() => _SavedMediaStatusIconState();
+}
+
+class _SavedMediaStatusIconState extends State<SavedMediaStatusIcon> {
   bool fileExists = false, running = false;
 
   @override
@@ -40,16 +72,47 @@ class _SnatchedStatusIconState extends State<SnatchedStatusIcon> {
       }
     });
 
-    final String extPath = SX.extPathOverride.value;
-    if (extPath.isNotEmpty) {
-      fileExists = await SAFFileCache.instance.existsFile(
-        extPath,
-        ImageWriter().getFilename(widget.item, widget.booru),
-      );
-    } else {
-      fileExists = await File(await ImageWriter().getFilePath(widget.item, widget.booru)).exists();
+    final sourceBooru = OfflineMediaResolver.instance.resolveSourceBooru(
+      widget.item,
+      fallback: widget.booru,
+    );
+    if (sourceBooru == null) {
+      _finishCheck(false);
+      return;
     }
 
+    final imageWriter = ImageWriter();
+    final fileNames = OfflineMediaResolver.instance.filenameCandidates(widget.item, sourceBooru);
+    if (fileNames.isEmpty) {
+      _finishCheck(false);
+      return;
+    }
+
+    final String extPath = SX.extPathOverride.value;
+    if (extPath.isNotEmpty) {
+      fileExists = false;
+      for (final fileName in fileNames) {
+        if (await SAFFileCache.instance.existsFile(extPath, fileName)) {
+          fileExists = true;
+          break;
+        }
+      }
+    } else {
+      await imageWriter.setPaths();
+      fileExists = false;
+      for (final fileName in fileNames) {
+        if (await File('${imageWriter.path}$fileName').exists()) {
+          fileExists = true;
+          break;
+        }
+      }
+    }
+
+    _finishCheck(fileExists);
+  }
+
+  void _finishCheck(bool exists) {
+    fileExists = exists;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         running = false;
@@ -59,10 +122,10 @@ class _SnatchedStatusIconState extends State<SnatchedStatusIcon> {
   }
 
   @override
-  void didUpdateWidget(covariant SnatchedStatusIcon oldWidget) {
+  void didUpdateWidget(covariant SavedMediaStatusIcon oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.item != widget.item) {
+    if (oldWidget.item != widget.item || oldWidget.booru != widget.booru) {
       fileExists = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -79,8 +142,8 @@ class _SnatchedStatusIconState extends State<SnatchedStatusIcon> {
       enabled: running,
       child: Icon(
         Icons.save_alt,
-        size: Theme.of(context).buttonTheme.height / 2.1,
-        color: fileExists ? Colors.green : Colors.white,
+        size: widget.size,
+        color: fileExists ? widget.existsColor : widget.missingColor,
       ),
     );
   }

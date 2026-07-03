@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 import 'dart:ui';
 import 'dart:io';
@@ -21,6 +22,8 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/services/network_reachability.dart';
+import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/media_loading.dart';
@@ -60,18 +63,26 @@ class ImageViewer extends StatefulWidget {
     this.booruItem, {
     required this.booru,
     required this.isViewed,
+    this.allowOfflineLocalMedia = false,
+    this.allowOfflineThumbnailGeneration = false,
     super.key,
   });
 
   final BooruItem booruItem;
   final Booru booru;
   final bool isViewed;
+  final bool allowOfflineLocalMedia;
+  final bool allowOfflineThumbnailGeneration;
 
   @override
   State<ImageViewer> createState() => ImageViewerState();
 }
 
 class ImageViewerState extends State<ImageViewer> {
+  static final Uint8List _transparentPng = base64Decode(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
+  );
+
   final settingsHandler = SettingsHandler.instance;
   final viewerHandler = ViewerHandler.instance;
 
@@ -102,6 +113,8 @@ class ImageViewerState extends State<ImageViewer> {
   int? widthLimit;
   CancelToken? cancelToken;
   CancelToken? loadItemCancelToken;
+  File? localImageFile;
+  bool didTryLocalSavedFallback = false;
 
   static const int kMaxTextureHeight = 4096;
   static const int kMaxTileMemoryBudget = 512 * 1024 * 1024; // max GPU texture memory for all tiles
@@ -380,54 +393,96 @@ class ImageViewerState extends State<ImageViewer> {
 
     final String url = useFullImage ? widget.booruItem.fileURL : widget.booruItem.sampleURL;
     final bool isAvif = url.contains('.avif');
+    localImageFile = null;
+    didTryLocalSavedFallback = false;
 
-    provider = isAvif
-        ? CustomNetworkAvifImage(
-            url,
-            cancelToken: cancelToken,
-            headers: await Tools.getFileCustomHeaders(
-              widget.booru,
-              item: widget.booruItem,
-              checkForReferer: true,
-            ),
-            withCache: SX.mediaCache.value,
-            cacheFolder: imageFolder,
+    final cachedPath = !isAvif
+        ? await ImageWriter().getCachePath(
+            Uri.base.resolve(url).toString(),
+            imageFolder,
+            clearName: imageFolder != 'favicons',
             fileNameExtras: widget.booruItem.fileNameExtras,
-            onError: (error) {
-              if (_isCurrentLoad(loadGeneration)) {
-                onError(error);
-              }
-            },
-            onCacheDetected: (bool didDetectCache) {
-              if (_isCurrentLoad(loadGeneration)) {
-                isFromCache.value = didDetectCache;
-              }
-            },
-            withCaptchaCheck: withCaptchaCheck,
           )
-        : CustomNetworkImage(
-            url,
-            cancelToken: cancelToken,
-            headers: await Tools.getFileCustomHeaders(
+        : null;
+    if (cachedPath != null) {
+      localImageFile = File(cachedPath);
+      isFromCache.value = true;
+      provider = FileImage(localImageFile!);
+    } else {
+      final hasConnection = await NetworkReachability.instance.hasConnection();
+      final shouldTrySavedBeforeNetwork = widget.allowOfflineLocalMedia;
+
+      final offlineResolution = shouldTrySavedBeforeNetwork
+          ? await OfflineMediaResolver.instance.resolve(
+              widget.booruItem,
               widget.booru,
-              item: widget.booruItem,
-              checkForReferer: true,
-            ),
-            withCache: SX.mediaCache.value,
-            cacheFolder: imageFolder,
-            fileNameExtras: widget.booruItem.fileNameExtras,
-            onError: (error) {
-              if (_isCurrentLoad(loadGeneration)) {
-                onError(error);
-              }
-            },
-            onCacheDetected: (bool didDetectCache) {
-              if (_isCurrentLoad(loadGeneration)) {
-                isFromCache.value = didDetectCache;
-              }
-            },
-            withCaptchaCheck: withCaptchaCheck,
-          );
+              allowUntrackedItem: widget.allowOfflineLocalMedia,
+            )
+          : const OfflineMediaResolution.unavailable();
+      if (offlineResolution.isAvailable && !isAvif) {
+        localImageFile = offlineResolution.file;
+        isFromCache.value = true;
+        provider = FileImage(localImageFile!);
+      } else if (!hasConnection) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_isCurrentLoad(loadGeneration)) {
+            stopLoading(
+              reason: .error,
+              title: 'No network connection',
+            );
+          }
+        });
+        provider = MemoryImage(_transparentPng);
+      } else {
+        provider = isAvif
+            ? CustomNetworkAvifImage(
+                url,
+                cancelToken: cancelToken,
+                headers: await Tools.getFileCustomHeaders(
+                  widget.booru,
+                  item: widget.booruItem,
+                  checkForReferer: true,
+                ),
+                withCache: SX.mediaCache.value,
+                cacheFolder: imageFolder,
+                fileNameExtras: widget.booruItem.fileNameExtras,
+                onError: (error) {
+                  if (_isCurrentLoad(loadGeneration)) {
+                    _handleProviderError(error, loadGeneration);
+                  }
+                },
+                onCacheDetected: (bool didDetectCache) {
+                  if (_isCurrentLoad(loadGeneration)) {
+                    isFromCache.value = didDetectCache;
+                  }
+                },
+                withCaptchaCheck: withCaptchaCheck,
+              )
+            : CustomNetworkImage(
+                url,
+                cancelToken: cancelToken,
+                headers: await Tools.getFileCustomHeaders(
+                  widget.booru,
+                  item: widget.booruItem,
+                  checkForReferer: true,
+                ),
+                withCache: SX.mediaCache.value,
+                cacheFolder: imageFolder,
+                fileNameExtras: widget.booruItem.fileNameExtras,
+                onError: (error) {
+                  if (_isCurrentLoad(loadGeneration)) {
+                    _handleProviderError(error, loadGeneration);
+                  }
+                },
+                onCacheDetected: (bool didDetectCache) {
+                  if (_isCurrentLoad(loadGeneration)) {
+                    isFromCache.value = didDetectCache;
+                  }
+                },
+                withCaptchaCheck: withCaptchaCheck,
+              );
+      }
+    }
 
     // scale image only if it's not an animation, scaling is allowed, not on desktop and item is not marked as noScale
     if (!widget.booruItem.mediaType.value.isAnimation &&
@@ -444,6 +499,62 @@ class ImageViewerState extends State<ImageViewer> {
       );
     }
     return provider;
+  }
+
+  void _handleProviderError(Object error, int loadGeneration) {
+    unawaited(() async {
+      if (await tryLocalSavedFallback(loadGeneration)) {
+        return;
+      }
+      if (_isCurrentLoad(loadGeneration)) {
+        onError(error);
+      }
+    }());
+  }
+
+  Future<bool> tryLocalSavedFallback(int loadGeneration) async {
+    if (didTryLocalSavedFallback || !widget.allowOfflineLocalMedia) {
+      return false;
+    }
+    didTryLocalSavedFallback = true;
+
+    final offlineResolution = await OfflineMediaResolver.instance.resolve(
+      widget.booruItem,
+      widget.booru,
+      allowUntrackedItem: widget.allowOfflineLocalMedia,
+    );
+    if (!_isCurrentLoad(loadGeneration) || !offlineResolution.isAvailable) {
+      return false;
+    }
+
+    localImageFile = offlineResolution.file;
+    isFromCache.value = true;
+    final provider = FileImage(localImageFile!);
+    mainProvider.value = provider;
+    _removeImageStreamListener();
+    imageStream = provider.resolve(ImageConfiguration.empty);
+    imageListener = ImageStreamListener(
+      (imageInfo, syncCall) {
+        if (!_isCurrentLoad(loadGeneration)) return;
+        isTilingProcessing.value = false;
+        final prevIsLoaded = isLoaded.value;
+        isLoaded.value = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!_isCurrentLoad(loadGeneration)) return;
+          if (prevIsLoaded == false) {
+            resetZoom();
+          }
+          viewerHandler.setLoaded(widget.key, true);
+        });
+      },
+      onError: (e, stack) {
+        if (_isCurrentLoad(loadGeneration)) {
+          _handleProviderError(e, loadGeneration);
+        }
+      },
+    );
+    imageStream!.addListener(imageListener!);
+    return true;
   }
 
   void stopLoading({
@@ -521,6 +632,7 @@ class ImageViewerState extends State<ImageViewer> {
     }
 
     mainProvider.value = null;
+    localImageFile = null;
 
     widget.booruItem.isNoScale.removeListener(noScaleListener);
     widget.booruItem.toggleQuality.removeListener(toggleQualityListener);
@@ -670,12 +782,14 @@ class ImageViewerState extends State<ImageViewer> {
     try {
       final String url = useFullImage ? widget.booruItem.fileURL : widget.booruItem.sampleURL;
 
-      final String cachePath = await ImageWriter().getCachePathString(
-        Uri.base.resolve(url).toString(),
-        imageFolder,
-        clearName: imageFolder != 'favicons',
-        fileNameExtras: widget.booruItem.fileNameExtras,
-      );
+      final String cachePath =
+          localImageFile?.path ??
+          await ImageWriter().getCachePathString(
+            Uri.base.resolve(url).toString(),
+            imageFolder,
+            clearName: imageFolder != 'favicons',
+            fileNameExtras: widget.booruItem.fileNameExtras,
+          );
 
       final File file = File(cachePath);
       if (!await file.exists()) return;
@@ -834,6 +948,8 @@ class ImageViewerState extends State<ImageViewer> {
               booru: widget.booru,
               isStandalone: false,
               useHero: false,
+              allowOfflineLocalMedia: widget.allowOfflineLocalMedia,
+              allowOfflineThumbnailGeneration: widget.allowOfflineThumbnailGeneration,
             ),
           ),
           //

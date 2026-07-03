@@ -13,6 +13,7 @@ import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/services/offline_thumbnail_service.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
@@ -45,6 +46,7 @@ class ImageWriter {
     // if (fileExists) return null;
     if (!ignoreExists && (fileExists || item.isSnatched.value == true)) {
       item.isSnatched.value = true;
+      item.savedFileName ??= fileName;
       if (SX.dbEnabled.value) {
         await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
       }
@@ -60,9 +62,7 @@ class ImageWriter {
         ...await Tools.getFileCustomHeaders(booru, item: item, checkForReferer: true),
       };
 
-      final String url = ((SX.snatchMode.value.isSample && item.sampleURL.isNotEmpty)
-          ? item.sampleURL
-          : item.fileURL);
+      final String url = ((SX.snatchMode.value.isSample && item.sampleURL.isNotEmpty) ? item.sampleURL : item.fileURL);
 
       final cancelToken = CancelToken();
       if (onCancelTokenCreate != null) {
@@ -97,6 +97,8 @@ class ImageWriter {
           cancelToken: cancelToken,
         );
       }
+
+      item.savedFileName = fileName;
 
       try {
         if (SX.jsonWrite.value) {
@@ -141,6 +143,7 @@ class ImageWriter {
       if (SX.dbEnabled.value) {
         await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
       }
+      unawaited(OfflineThumbnailService.instance.generateAfterSave(item, booru));
 
       try {
         if (Platform.isAndroid) {
@@ -402,11 +405,17 @@ class ImageWriter {
     return {'fileNum': fileNum, 'totalSize': totalSize};
   }
 
-  static const List<String> cleanableFolders = ['thumbnails', 'samples', 'media', 'WebView'];
+  static const List<String> cleanableFolders = [
+    'thumbnails',
+    'samples',
+    'media',
+    'WebView',
+  ];
 
   /// 1. Temp file cleanup (always): removes .temp_* and 0-byte files from ALL folders
   /// 2. Stale cleanup (if cacheDuration > 0): removes old files from cleanable folders
-  /// 3. Size overflow cleanup (if cacheSize > 0): removes oldest files until under limit
+  /// 3. Size overflow cleanup (if cacheSize > 0): removes oldest files from cleanable folders until under limit
+  /// Offline media folders are intentionally excluded from stale/size cleanup.
   Future<void> cleanupCache() async {
     try {
       await setPaths();

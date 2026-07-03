@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
@@ -17,6 +19,9 @@ import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/services/network_reachability.dart';
+import 'package:lolisnatcher/src/services/offline_thumbnail_service.dart';
 import 'package:lolisnatcher/src/utils/debouncer.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
@@ -31,6 +36,8 @@ class Thumbnail extends StatefulWidget {
     this.booru,
     this.isStandalone = false,
     this.useHero = true,
+    this.allowOfflineLocalMedia = false,
+    this.allowOfflineThumbnailGeneration = false,
     super.key,
   });
 
@@ -40,12 +47,18 @@ class Thumbnail extends StatefulWidget {
   /// set to true when used in a list
   final bool isStandalone;
   final bool useHero;
+  final bool allowOfflineLocalMedia;
+  final bool allowOfflineThumbnailGeneration;
 
   @override
   State<Thumbnail> createState() => _ThumbnailState();
 }
 
 class _ThumbnailState extends State<Thumbnail> {
+  static final Uint8List _transparentPng = base64Decode(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
+  );
+
   final ValueNotifier<int> total = ValueNotifier(0), received = ValueNotifier(0), startedAt = ValueNotifier(0);
   int restartedCount = 0;
   final ValueNotifier<bool?> isFromCache = ValueNotifier(null);
@@ -55,7 +68,9 @@ class _ThumbnailState extends State<Thumbnail> {
   final ValueNotifier<bool> isLoadedExtra = ValueNotifier(false);
   final ValueNotifier<bool> useExtra = ValueNotifier(false);
   final ValueNotifier<bool> failedRendering = ValueNotifier(false);
+  final ValueNotifier<bool> isGeneratingOfflineThumbnail = ValueNotifier(false);
   final ValueNotifier<String?> errorCode = ValueNotifier(null);
+  bool didTryOfflineThumbnailFallback = false;
   CancelToken? mainCancelToken, extraCancelToken, loadItemCancelToken;
 
   late String currentUrl;
@@ -107,62 +122,122 @@ class _ThumbnailState extends State<Thumbnail> {
     }
     final String url = isMain ? thumbURL : widget.item.thumbnailURL;
     final bool isAvif = url.contains('.avif');
-    final ImageProvider provider = isAvif
-        ? CustomNetworkAvifImage(
-            url,
-            cancelToken: isMain ? mainCancelToken : extraCancelToken,
-            headers: await Tools.getFileCustomHeaders(
-              widget.booru,
-              item: widget.item,
-              checkForReferer: true,
-            ),
-            withCache: SX.thumbnailCache.value,
-            cacheFolder: isMain ? thumbFolder : 'thumbnails',
-            fileNameExtras: widget.item.fileNameExtras,
-            sendTimeout: widget.isStandalone ? const Duration(seconds: 20) : null,
-            receiveTimeout: widget.isStandalone ? const Duration(seconds: 20) : null,
-            onError: isMain
-                ? (error) {
-                    if (_isCurrentLoad(loadGeneration)) {
-                      onError(error);
-                    }
-                  }
-                : null,
-            onCacheDetected: (bool didDetectCache) {
-              if (isMain && _isCurrentLoad(loadGeneration)) {
-                isFromCache.value = didDetectCache;
-              }
-            },
-            withCaptchaCheck: withCaptchaCheck,
-          )
-        : CustomNetworkImage(
-            url,
-            cancelToken: isMain ? mainCancelToken : extraCancelToken,
-            headers: await Tools.getFileCustomHeaders(
-              widget.booru,
-              item: widget.item,
-              checkForReferer: true,
-            ),
-            withCache: SX.thumbnailCache.value,
-            cacheFolder: isMain ? thumbFolder : 'thumbnails',
-            fileNameExtras: widget.item.fileNameExtras,
-            sendTimeout: widget.isStandalone ? const Duration(seconds: 20) : null,
-            receiveTimeout: widget.isStandalone ? const Duration(seconds: 20) : null,
-            onError: isMain
-                ? (error) {
-                    if (_isCurrentLoad(loadGeneration)) {
-                      onError(error);
-                    }
-                  }
-                : null,
-            onCacheDetected: (bool didDetectCache) {
-              if (isMain && _isCurrentLoad(loadGeneration)) {
-                isFromCache.value = didDetectCache;
-              }
-            },
-            withCaptchaCheck: withCaptchaCheck,
-          );
+    ImageProvider provider;
+    if (isMain) {
+      didTryOfflineThumbnailFallback = false;
+    }
 
+    final cacheFolder = isMain ? thumbFolder : 'thumbnails';
+    final cachedPath = !isAvif
+        ? await ImageWriter().getCachePath(
+            Uri.base.resolve(url).toString(),
+            cacheFolder,
+            clearName: cacheFolder != 'favicons',
+            fileNameExtras: widget.item.fileNameExtras,
+          )
+        : null;
+    if (cachedPath != null) {
+      if (isMain) {
+        isFromCache.value = true;
+        isGeneratingOfflineThumbnail.value = false;
+      }
+      provider = FileImage(File(cachedPath));
+      return _resizeProvider(provider);
+    }
+
+    final hasConnection = await NetworkReachability.instance.hasConnection();
+    final shouldTryOfflineThumbnail = isMain && widget.allowOfflineLocalMedia && widget.booru != null;
+    final offlineThumbnailLookup = shouldTryOfflineThumbnail
+        ? await OfflineThumbnailService.instance.getExistingOrQueue(
+            widget.item,
+            widget.booru!,
+            allowGeneration: widget.allowOfflineThumbnailGeneration,
+          )
+        : const OfflineThumbnailLookup();
+    final offlineThumbnail = offlineThumbnailLookup.file;
+    if (isMain) {
+      isGeneratingOfflineThumbnail.value = offlineThumbnailLookup.isGenerating;
+      _watchOfflineThumbnailGeneration(
+        offlineThumbnailLookup.generation,
+        loadGeneration,
+        markFailedOnNull: !hasConnection,
+      );
+    }
+
+    if (offlineThumbnail != null) {
+      isFromCache.value = true;
+      provider = FileImage(offlineThumbnail);
+    } else if (!hasConnection) {
+      if (isMain && !offlineThumbnailLookup.isGenerating) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_isCurrentLoad(loadGeneration)) {
+            onError(StateError('No network connection'));
+          }
+        });
+      }
+      provider = MemoryImage(_transparentPng);
+    } else {
+      provider = isAvif
+          ? CustomNetworkAvifImage(
+              url,
+              cancelToken: isMain ? mainCancelToken : extraCancelToken,
+              headers: await Tools.getFileCustomHeaders(
+                widget.booru,
+                item: widget.item,
+                checkForReferer: true,
+              ),
+              withCache: SX.thumbnailCache.value,
+              cacheFolder: isMain ? thumbFolder : 'thumbnails',
+              fileNameExtras: widget.item.fileNameExtras,
+              sendTimeout: widget.isStandalone ? const Duration(seconds: 20) : null,
+              receiveTimeout: widget.isStandalone ? const Duration(seconds: 20) : null,
+              onError: isMain
+                  ? (error) {
+                      if (_isCurrentLoad(loadGeneration)) {
+                        _handleProviderError(error, loadGeneration);
+                      }
+                    }
+                  : null,
+              onCacheDetected: (bool didDetectCache) {
+                if (isMain && _isCurrentLoad(loadGeneration)) {
+                  isFromCache.value = didDetectCache;
+                }
+              },
+              withCaptchaCheck: withCaptchaCheck,
+            )
+          : CustomNetworkImage(
+              url,
+              cancelToken: isMain ? mainCancelToken : extraCancelToken,
+              headers: await Tools.getFileCustomHeaders(
+                widget.booru,
+                item: widget.item,
+                checkForReferer: true,
+              ),
+              withCache: SX.thumbnailCache.value,
+              cacheFolder: isMain ? thumbFolder : 'thumbnails',
+              fileNameExtras: widget.item.fileNameExtras,
+              sendTimeout: widget.isStandalone ? const Duration(seconds: 20) : null,
+              receiveTimeout: widget.isStandalone ? const Duration(seconds: 20) : null,
+              onError: isMain
+                  ? (error) {
+                      if (_isCurrentLoad(loadGeneration)) {
+                        _handleProviderError(error, loadGeneration);
+                      }
+                    }
+                  : null,
+              onCacheDetected: (bool didDetectCache) {
+                if (isMain && _isCurrentLoad(loadGeneration)) {
+                  isFromCache.value = didDetectCache;
+                }
+              },
+              withCaptchaCheck: withCaptchaCheck,
+            );
+    }
+
+    return _resizeProvider(provider);
+  }
+
+  ImageProvider _resizeProvider(ImageProvider provider) {
     // on desktop devicePixelRatio is not working?
     final bool shouldResize = (thumbWidth != null || thumbHeight != null) && !PlatformExt.isDesktop;
     final bool shouldPixelate = widget.item.isHidden && SX.shitDevice.value;
@@ -179,6 +254,109 @@ class _ThumbnailState extends State<Thumbnail> {
     }
 
     return provider;
+  }
+
+  void _handleProviderError(Object error, int loadGeneration) {
+    unawaited(() async {
+      if (await tryOfflineThumbnailFallback(loadGeneration)) {
+        return;
+      }
+      if (_isCurrentLoad(loadGeneration)) {
+        onError(error);
+      }
+    }());
+  }
+
+  Future<bool> tryOfflineThumbnailFallback(int loadGeneration) async {
+    if (didTryOfflineThumbnailFallback || !widget.allowOfflineLocalMedia || widget.booru == null) {
+      return false;
+    }
+    didTryOfflineThumbnailFallback = true;
+
+    final lookup = await OfflineThumbnailService.instance.getExistingOrQueue(
+      widget.item,
+      widget.booru!,
+      allowGeneration: widget.allowOfflineThumbnailGeneration,
+    );
+    if (!_isCurrentLoad(loadGeneration)) {
+      return false;
+    }
+
+    isGeneratingOfflineThumbnail.value = lookup.isGenerating;
+    _watchOfflineThumbnailGeneration(
+      lookup.generation,
+      loadGeneration,
+      markFailedOnNull: true,
+    );
+
+    final file = lookup.file;
+    if (file == null) {
+      return lookup.isGenerating;
+    }
+
+    return _applyOfflineThumbnailFile(file, loadGeneration);
+  }
+
+  void _watchOfflineThumbnailGeneration(
+    Future<File?>? generation,
+    int loadGeneration, {
+    bool markFailedOnNull = false,
+  }) {
+    if (generation == null) {
+      return;
+    }
+
+    unawaited(
+      () async {
+        final file = await generation;
+        if (!_isCurrentLoad(loadGeneration)) {
+          return;
+        }
+
+        isGeneratingOfflineThumbnail.value = false;
+        if (file != null) {
+          await _applyOfflineThumbnailFile(file, loadGeneration);
+        } else if (markFailedOnNull) {
+          onError(StateError('Offline thumbnail generation failed'));
+        }
+      }(),
+    );
+  }
+
+  Future<bool> _applyOfflineThumbnailFile(File file, int loadGeneration) async {
+    if (!await _isUsableFile(file) || !_isCurrentLoad(loadGeneration)) {
+      return false;
+    }
+
+    mainProvider.value = _resizeProvider(FileImage(file));
+    isFromCache.value = true;
+    isFailed.value = false;
+    failedRendering.value = false;
+    errorCode.value = null;
+    _removeMainImageStreamListener();
+    mainImageStream = mainProvider.value!.resolve(ImageConfiguration.empty);
+    mainImageListener = ImageStreamListener(
+      (imageInfo, syncCall) {
+        if (_isCurrentLoad(loadGeneration)) {
+          isLoaded.value = true;
+        }
+      },
+      onError: (e, s) {
+        if (_isCurrentLoad(loadGeneration)) {
+          onError(e);
+        }
+      },
+    );
+    mainImageStream!.addListener(mainImageListener!);
+    return true;
+  }
+
+  Future<bool> _isUsableFile(File file) async {
+    try {
+      return await file.exists() && await file.length() > 0;
+    } catch (_) {
+      return false;
+    }
   }
 
   void calcThumbWidth(BoxConstraints constraints) {
@@ -326,7 +504,7 @@ class _ThumbnailState extends State<Thumbnail> {
           LogTypes.imageLoadingError,
           s: s,
         );
-        onError(e);
+        _handleProviderError(e, loadGeneration);
       },
     );
     mainImageStream!.addListener(mainImageListener!);
@@ -506,6 +684,7 @@ class _ThumbnailState extends State<Thumbnail> {
     isLoadedExtra.dispose();
     useExtra.dispose();
     failedRendering.dispose();
+    isGeneratingOfflineThumbnail.dispose();
     errorCode.dispose();
     mainProvider.dispose();
     extraProvider.dispose();
@@ -757,6 +936,35 @@ class _ThumbnailState extends State<Thumbnail> {
                       errorCode: errorCode.value,
                     );
                   },
+                ),
+              ),
+            if (widget.isStandalone)
+              ValueListenableBuilder(
+                valueListenable: isGeneratingOfflineThumbnail,
+                builder: (context, isGenerating, child) {
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: isGenerating ? child : const SizedBox.shrink(),
+                  );
+                },
+                child: Align(
+                  alignment: Alignment.topLeft,
+                  child: Container(
+                    margin: const EdgeInsets.all(4),
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.72),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                    ),
+                  ),
                 ),
               ),
           ],

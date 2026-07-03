@@ -142,14 +142,39 @@ class MainActivity: FlutterFragmentActivity() {
                     "makeVidThumb" -> {
                         val videoURL = call.argument<String>("videoURL")
                         if (videoURL != null) {
-                            val retriever = MediaMetadataRetriever()
-                            retriever.setDataSource(videoURL, HashMap())
-                            val image = retriever.getFrameAtTime(2000000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
-                            val stream = ByteArrayOutputStream()
-                            image?.compress(Bitmap.CompressFormat.PNG, 100, stream)
-                            val byteArray = stream.toByteArray()
-                            image?.recycle()
-                            result.success(byteArray)
+                            Executors.newSingleThreadExecutor().execute {
+                                val retriever = MediaMetadataRetriever()
+                                var inputStream: FileInputStream? = null
+                                try {
+                                    val localPath = if (videoURL.startsWith("file://")) Uri.parse(videoURL).path else videoURL
+                                    val localFile = localPath?.let { File(it) }
+                                    if (localFile?.exists() == true && localFile.isFile) {
+                                        inputStream = FileInputStream(localFile)
+                                        retriever.setDataSource(inputStream.fd)
+                                    } else {
+                                        retriever.setDataSource(videoURL, HashMap())
+                                    }
+
+                                    val image = retriever.getFrameAtTime(2000000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                                    val stream = ByteArrayOutputStream()
+                                    image?.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                                    val byteArray = if (image != null) stream.toByteArray() else null
+                                    image?.recycle()
+                                    runOnUiThread { result.success(byteArray) }
+                                } catch (e: Exception) {
+                                    Log.e("MainActivity", "Error creating video thumbnail: $videoURL", e)
+                                    runOnUiThread { result.success(null) }
+                                } finally {
+                                    try {
+                                        inputStream?.close()
+                                    } catch (_: Exception) {
+                                    }
+                                    try {
+                                        retriever.release()
+                                    } catch (_: Exception) {
+                                    }
+                                }
+                            }
                         } else {
                             result.error("INVALID_ARGUMENT", "videoURL is null", null)
                         }

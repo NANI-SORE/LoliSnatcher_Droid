@@ -3892,6 +3892,13 @@ class Translations$settings$cache$en {
   /// en: 'Media'
   String get cacheTypeMedia => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeMedia', {}) ?? 'Media';
 
+  /// en: 'Offline media'
+  String get cacheTypeOfflineMedia => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeOfflineMedia', {}) ?? 'Offline media';
+
+  /// en: 'Offline thumbnails'
+  String get cacheTypeOfflineThumbnails =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeOfflineThumbnails', {}) ?? 'Offline thumbnails';
+
   /// en: 'Webview'
   String get cacheTypeWebView => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeWebView', {}) ?? 'Webview';
 
@@ -6468,6 +6475,10 @@ extension on Translations {
           'settings.cache.cacheTypeThumbnails' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeThumbnails', {}) ?? 'Thumbnails',
           'settings.cache.cacheTypeSamples' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeSamples', {}) ?? 'Samples',
           'settings.cache.cacheTypeMedia' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeMedia', {}) ?? 'Media',
+          'settings.cache.cacheTypeOfflineMedia' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeOfflineMedia', {}) ?? 'Offline media',
+          'settings.cache.cacheTypeOfflineThumbnails' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeOfflineThumbnails', {}) ?? 'Offline thumbnails',
           'settings.cache.cacheTypeWebView' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeWebView', {}) ?? 'Webview',
           'settings.cache.cacheCleared' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheCleared', {}) ?? 'Cache cleared',
           'settings.cache.clearedCacheType' =>
@@ -6880,13 +6891,13 @@ extension on Translations {
           'pinnedTags.onlyForBooru' =>
             ({required String name}) => TranslationOverrides.string(_root.$meta, 'pinnedTags.onlyForBooru', {'name': name}) ?? 'Only for ${name}',
           'pinnedTags.labelsOptional' => TranslationOverrides.string(_root.$meta, 'pinnedTags.labelsOptional', {}) ?? 'Labels (optional)',
+          _ => null,
+        } ??
+        switch (path) {
           'pinnedTags.typeAndPressAdd' =>
             TranslationOverrides.string(_root.$meta, 'pinnedTags.typeAndPressAdd', {}) ?? 'Type and press Add button to include a label',
           'pinnedTags.selectExistingLabel' =>
             TranslationOverrides.string(_root.$meta, 'pinnedTags.selectExistingLabel', {}) ?? 'Select existing label',
-          _ => null,
-        } ??
-        switch (path) {
           'pinnedTags.tagPinned' => TranslationOverrides.string(_root.$meta, 'pinnedTags.tagPinned', {}) ?? 'Tag pinned',
           'pinnedTags.pinnedForBooru' =>
             ({required String name, required String labels}) =>
