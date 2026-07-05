@@ -25,59 +25,7 @@ class DDSelectionActions extends StatelessWidget {
 
     return Obx(() {
       final selected = searchHandler.currentSelected;
-      if (selected.isNotEmpty) {
-        final int favSelectedCount = selected.where((item) => item.isFavourite.value == true).length;
-        final int unfavSelectedCount = selected.where((item) => item.isFavourite.value == false).length;
-        final bool hasFavsSelected = favSelectedCount > 0;
-        final bool isAllSelectedFavs = selected.length == favSelectedCount;
-
-        final int downloadsSelectedCount = selected.where((item) => item.isSnatched.value == true).length;
-        final bool hasDownloadsSelected = downloadsSelectedCount > 0;
-
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SettingsButton(
-              name: '${context.loc.settings.downloads.snatchSelected} (${selected.length.toFormattedString()})',
-              icon: const Icon(Icons.download_sharp),
-              action: () => controller.onStartSnatching(context, false),
-              onLongPress: () => controller.onStartSnatching(context, true),
-              drawTopBorder: true,
-            ),
-            if (selected.length <= 100)
-              SettingsButton(
-                name: '${context.loc.galleryButtons.share} (${selected.length.toFormattedString()})',
-                icon: const Icon(Icons.share),
-                action: () => controller.onShareSelected(context),
-                onLongPress: () => controller.onShareSelectedLongPress(context),
-              ),
-            if (hasDownloadsSelected)
-              SettingsButton(
-                name:
-                    '${context.loc.settings.downloads.removeSnatchedStatusFromSelected} (${downloadsSelectedCount.toFormattedString()})',
-                icon: const Icon(Icons.file_download_off_outlined),
-                action: controller.removeSnatchedStatusFromSelected,
-              ),
-            if (!isAllSelectedFavs)
-              SettingsButton(
-                name: '${context.loc.settings.downloads.favouriteSelected} (${unfavSelectedCount.toFormattedString()})',
-                icon: const Icon(Icons.favorite, color: Colors.red),
-                action: controller.favouriteSelected,
-              ),
-            if (hasFavsSelected)
-              SettingsButton(
-                name: '${context.loc.settings.downloads.unfavouriteSelected} (${favSelectedCount.toFormattedString()})',
-                icon: const Icon(Icons.favorite_border),
-                action: controller.unfavouriteSelected,
-              ),
-            SettingsButton(
-              name: context.loc.settings.downloads.clearSelected,
-              icon: const Icon(Icons.deselect),
-              action: () => searchHandler.currentTab.selected.clear(),
-            ),
-          ],
-        );
-      } else {
+      if (selected.isEmpty) {
         return SettingsButton(
           name: context.loc.selectAll,
           icon: const Icon(Icons.select_all),
@@ -87,6 +35,8 @@ class DDSelectionActions extends StatelessWidget {
           drawTopBorder: true,
         );
       }
+
+      return const SizedBox.shrink();
     });
   }
 }

@@ -480,6 +480,7 @@ class SearchHandler {
   Rxn<List<Booru>?> get currentSecondaryBoorus => currentTab.secondaryBoorus;
   RxList<BooruItem> get currentSelected => currentTab.selected;
   RxList<BooruItem> get currentFetched => currentBooruHandler.filteredFetched;
+  RxBool selectionControlsBlocked = false.obs;
   void filterCurrentFetched() {
     if (tabs.isNotEmpty) {
       currentBooruHandler.filterFetched();
@@ -1248,13 +1249,26 @@ class SearchTab {
   double scrollPosition = 0;
   RxList<BooruItem> selected = RxList<BooruItem>.from([]);
   final OrderedSelectionIndex<BooruItem> _selectedIndices = OrderedSelectionIndex();
+  final Set<BooruItem> _lastSelectedItems = Set<BooruItem>.identity();
 
   int? selectedIndexOf(BooruItem item) => _selectedIndices.indexOf(item);
 
   bool get hasSelectedItems => _selectedIndices.isNotEmpty;
 
   void _updateSelectedIndices() {
+    final nextSelectedItems = Set<BooruItem>.identity()..addAll(selected);
+    final selectionChanged =
+        nextSelectedItems.length != _lastSelectedItems.length ||
+        nextSelectedItems.any((item) => !_lastSelectedItems.contains(item));
+
     _selectedIndices.update(selected);
+
+    if (selectionChanged) {
+      _lastSelectedItems
+        ..clear()
+        ..addAll(nextSelectedItems);
+      unawaited(ServiceHandler.vibrate());
+    }
   }
 
   BooruItem? itemWithKey(Key? key) {

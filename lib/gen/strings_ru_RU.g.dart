@@ -2403,6 +2403,9 @@ class _Translations$settings$downloads$ru_RU extends Translations$settings$downl
   @override
   String get clearSelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.clearSelected', {}) ?? 'Сбросить выбранные';
   @override
+  String fileShareLimit({required int max}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.downloads.fileShareLimit', {'max': max}) ?? 'Отправка файлов ограничена: ${max} шт.';
+  @override
   String get updatingData => TranslationOverrides.string(_root.$meta, 'settings.downloads.updatingData', {}) ?? 'Обновление данных…';
 }
 
@@ -4900,6 +4903,10 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.downloads.unfavouriteSelected', {}) ?? 'Удалить выбранные из избранного',
           'settings.downloads.clearSelected' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.clearSelected', {}) ?? 'Сбросить выбранные',
+          'settings.downloads.fileShareLimit' =>
+            ({required int max}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.downloads.fileShareLimit', {'max': max}) ??
+                'Отправка файлов ограничена: ${max} шт.',
           'settings.downloads.updatingData' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.updatingData', {}) ?? 'Обновление данных…',
           'settings.database.title' => TranslationOverrides.string(_root.$meta, 'settings.database.title', {}) ?? 'База данных',
@@ -5802,10 +5809,10 @@ extension on TranslationsRuRu {
           'desktopHome.addBoorusInSettings' =>
             TranslationOverrides.string(_root.$meta, 'desktopHome.addBoorusInSettings', {}) ?? 'Добавь сайт в настройках',
           'desktopHome.settings' => TranslationOverrides.string(_root.$meta, 'desktopHome.settings', {}) ?? 'Настройки',
-          'desktopHome.save' => TranslationOverrides.string(_root.$meta, 'desktopHome.save', {}) ?? 'Сохранить',
           _ => null,
         } ??
         switch (path) {
+          'desktopHome.save' => TranslationOverrides.string(_root.$meta, 'desktopHome.save', {}) ?? 'Сохранить',
           'desktopHome.noItemsSelected' => TranslationOverrides.string(_root.$meta, 'desktopHome.noItemsSelected', {}) ?? 'Ничего не выбрано',
           'galleryView.noItems' => TranslationOverrides.string(_root.$meta, 'galleryView.noItems', {}) ?? 'Нет элементов',
           'galleryView.noItemSelected' => TranslationOverrides.string(_root.$meta, 'galleryView.noItemSelected', {}) ?? 'Нет выбранного элемента',

@@ -56,9 +56,15 @@ class GalleryShareService {
     );
   }
 
-  Future<void> shareText(String text) async {
+  Future<void> shareText(
+    String text, {
+    String? subtitle,
+  }) async {
     if (PlatformExt.isDesktop) {
-      await ClipboardUtils.copyTextToClipboard(text);
+      await ClipboardUtils.copyTextToClipboard(
+        text,
+        subtitle: subtitle,
+      );
     } else if (Platform.isAndroid) {
       await ServiceHandler.loadShareTextIntent(text);
     }
@@ -75,7 +81,12 @@ class GalleryShareService {
 
     final operationId = snatchHandler.onShareStart(items, booru);
 
-    if (PlatformExt.isDesktop && items.length == 1 && items.single.mediaType.value.isImageOrAnimation) {
+    if (PlatformExt.isDesktop) {
+      if (items.length != 1 || !items.single.mediaType.value.isImageOrAnimation) {
+        snatchHandler.onShareDone(operationId);
+        return false;
+      }
+
       return _copySingleImageToClipboard(
         operationId: operationId,
         item: items.single,
@@ -137,6 +148,39 @@ class GalleryShareService {
     GalleryShareProgressCallback? onProgress,
   }) async {
     try {
+      if (Platform.isWindows) {
+        while (true) {
+          final result = await _getOrDownloadCachePath(
+            item: item,
+            booru: booru,
+            operationId: operationId,
+            itemIndex: 0,
+            itemCount: 1,
+            onProgress: onProgress,
+          );
+          if (result.retryCurrent) {
+            continue;
+          }
+
+          final path = result.path;
+          if (path == null) {
+            return false;
+          }
+
+          try {
+            await ClipboardUtils.copyImageFileToClipboard(
+              path,
+              item,
+              rethrowErrors: true,
+            );
+            return true;
+          } catch (_) {
+            snatchHandler.onAddRetryableItems(booru: booru, failed: [item]);
+            return false;
+          }
+        }
+      }
+
       while (true) {
         final cancelToken = CancelToken();
         snatchHandler.onShareCancelTokenCreate(cancelToken, operationId);

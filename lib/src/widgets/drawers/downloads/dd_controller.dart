@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide FirstWhereOrNullExt;
 
 import 'package:lolisnatcher/src/boorus/hydrus_handler.dart';
-import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/settings/share_action.dart';
-import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
+import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
-import 'package:lolisnatcher/src/services/get_perms.dart';
 import 'package:lolisnatcher/src/services/gallery_share_service.dart';
+import 'package:lolisnatcher/src/services/get_perms.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/kaomoji.dart';
 import 'package:lolisnatcher/src/widgets/gallery/share_action_dialog.dart';
@@ -146,12 +147,30 @@ class DownloadsDrawerController {
       return;
     }
 
-    await galleryShareService.shareText(lines.join('\n\n'));
+    await galleryShareService.shareText(
+      lines.join('\n\n'),
+      subtitle: '',
+    );
   }
 
   Future<void> shareSelectedFiles(BuildContext context, {String? text}) async {
     final selected = [...searchHandler.currentSelected];
     if (selected.isEmpty) {
+      return;
+    }
+
+    final maxFilesToShare = PlatformExt.isDesktop ? 1 : 100;
+    if (selected.length > maxFilesToShare) {
+      FlashElements.showSnackbar(
+        context: context,
+        title: Text(
+          context.loc.settings.downloads.fileShareLimit(max: maxFilesToShare),
+          style: const TextStyle(fontSize: 20),
+        ),
+        leadingIcon: Icons.warning_amber,
+        leadingIconColor: Colors.yellow,
+        sideColor: Colors.yellow,
+      );
       return;
     }
 

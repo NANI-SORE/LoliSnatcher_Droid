@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
+import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_controller.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_bar.dart';
 import 'package:lolisnatcher/src/widgets/preview/waterfall_error_buttons.dart';
@@ -76,10 +77,7 @@ class WaterfallBottomBarState extends State<WaterfallBottomBar> with TickerProvi
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _WaterfallSelectionButtons(
-            animation: animation,
-            showSearchBar: showSearchBar,
-          ),
+          const _WaterfallSelectionButtons(),
           // loading/error text, retry button (goes down with scroll, maybe shrinks to a small version for better fullscreen experience?)
           // + grid scroll buttons on the side (fixed vertical position, if present - change width of loading/error text)
           AnimatedBuilder(
@@ -141,13 +139,7 @@ class WaterfallBottomBarState extends State<WaterfallBottomBar> with TickerProvi
 }
 
 class _WaterfallSelectionButtons extends StatefulWidget {
-  const _WaterfallSelectionButtons({
-    required this.animation,
-    required this.showSearchBar,
-  });
-
-  final Animation<double> animation;
-  final bool showSearchBar;
+  const _WaterfallSelectionButtons();
 
   @override
   State<_WaterfallSelectionButtons> createState() => _WaterfallSelectionButtonsState();
@@ -155,9 +147,6 @@ class _WaterfallSelectionButtons extends StatefulWidget {
 
 class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> {
   final DownloadsDrawerController downloadsController = DownloadsDrawerController();
-
-  double get animValue => widget.animation.value;
-  double get reverseAnimValue => 1 - animValue;
 
   @override
   void dispose() {
@@ -173,92 +162,175 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
     searchHandler.currentTab.selected.clear();
   }
 
+  void showOverflowDialog(
+    BuildContext context, {
+    required int selectedCount,
+    required int downloadsSelectedCount,
+    required int favSelectedCount,
+    required int unfavSelectedCount,
+    required bool hasDownloadsSelected,
+    required bool hasFavsSelected,
+    required bool isAllSelectedFavs,
+  }) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return SettingsDialog(
+          title: Text('${context.loc.galleryButtons.select} (${selectedCount.toFormattedString()})'),
+          contentItems: [
+            if (hasDownloadsSelected)
+              SettingsButton(
+                name:
+                    '${context.loc.settings.downloads.removeSnatchedStatusFromSelected} (${downloadsSelectedCount.toFormattedString()})',
+                icon: const Icon(Icons.file_download_off_outlined),
+                action: () {
+                  Navigator.of(dialogContext).pop();
+                  downloadsController.removeSnatchedStatusFromSelected();
+                },
+                drawTopBorder: true,
+              ),
+            if (!isAllSelectedFavs)
+              SettingsButton(
+                name: '${context.loc.settings.downloads.favouriteSelected} (${unfavSelectedCount.toFormattedString()})',
+                icon: const Icon(Icons.favorite, color: Colors.red),
+                action: () {
+                  Navigator.of(dialogContext).pop();
+                  downloadsController.favouriteSelected();
+                },
+                drawTopBorder: !hasDownloadsSelected,
+              ),
+            if (hasFavsSelected)
+              SettingsButton(
+                name: '${context.loc.settings.downloads.unfavouriteSelected} (${favSelectedCount.toFormattedString()})',
+                icon: const Icon(Icons.favorite_border),
+                action: () {
+                  Navigator.of(dialogContext).pop();
+                  downloadsController.unfavouriteSelected();
+                },
+                drawTopBorder: !hasDownloadsSelected && isAllSelectedFavs,
+                drawBottomBorder: false,
+              ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final searchHandler = SearchHandler.instance;
-    final double bottomPadding = MediaQuery.viewPaddingOf(context).bottom;
 
     return Obx(() {
-      final int selectedCount = searchHandler.currentSelected.length;
+      final selected = searchHandler.currentSelected;
+      final int selectedCount = selected.length;
       final bool hasFetched = searchHandler.currentFetched.isNotEmpty;
       final bool hasSelected = selectedCount > 0;
 
-      if (!hasSelected) {
-        return const SizedBox.shrink();
-      }
+      final bool controlsBlocked = searchHandler.selectionControlsBlocked.value;
+      final int favSelectedCount = selected.where((item) => item.isFavourite.value == true).length;
+      final int unfavSelectedCount = selected.where((item) => item.isFavourite.value == false).length;
+      final bool hasFavsSelected = favSelectedCount > 0;
+      final bool isAllSelectedFavs = selectedCount == favSelectedCount;
+      final int downloadsSelectedCount = selected.where((item) => item.isSnatched.value == true).length;
+      final bool hasDownloadsSelected = downloadsSelectedCount > 0;
 
-      return AnimatedBuilder(
-        animation: widget.animation,
-        builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(
-              0,
-              widget.showSearchBar ? (MainSearchBar.height + bottomPadding) * animValue : bottomPadding * animValue,
-            ),
-            child: IgnorePointer(
-              ignoring: animValue > 0.95,
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 120),
-                opacity: reverseAnimValue,
-                child: child,
-              ),
-            ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.82),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Tooltip(
-                    message: '${context.loc.settings.downloads.snatchSelected} (${selectedCount.toFormattedString()})',
-                    child: GestureDetector(
-                      onLongPress: () => downloadsController.onStartSnatching(context, true),
-                      child: IconButton(
-                        icon: const Icon(Icons.download_sharp),
-                        onPressed: () => downloadsController.onStartSnatching(context, false),
-                      ),
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 600),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: _selectionControlsTransition,
+        child: hasSelected
+            ? Padding(
+                key: const ValueKey('selection-controls-visible'),
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Material(
+                  color: Colors.transparent,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.82),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  ),
-                  if (selectedCount <= 100)
-                    Tooltip(
-                      message: '${context.loc.galleryButtons.share} (${selectedCount.toFormattedString()})',
-                      child: GestureDetector(
-                        onLongPress: () => downloadsController.onShareSelectedLongPress(context),
-                        child: IconButton(
-                          icon: const Icon(Icons.share),
-                          onPressed: () => downloadsController.onShareSelected(context),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Tooltip(
+                          message:
+                              '${context.loc.settings.downloads.snatchSelected} (${selectedCount.toFormattedString()})',
+                          child: GestureDetector(
+                            onLongPress: controlsBlocked
+                                ? null
+                                : () => downloadsController.onStartSnatching(context, true),
+                            child: IconButton(
+                              icon: const Icon(Icons.download_sharp),
+                              onPressed: controlsBlocked
+                                  ? null
+                                  : () => downloadsController.onStartSnatching(context, false),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  Tooltip(
-                    message: context.loc.selectAll,
-                    child: IconButton(
-                      icon: const Icon(Icons.select_all),
-                      onPressed: hasFetched ? () => selectAll(searchHandler) : null,
+                        Tooltip(
+                          message: '${context.loc.galleryButtons.share} (${selectedCount.toFormattedString()})',
+                          child: GestureDetector(
+                            onLongPress: controlsBlocked
+                                ? null
+                                : () => downloadsController.onShareSelectedLongPress(context),
+                            child: IconButton(
+                              icon: const Icon(Icons.share),
+                              onPressed: controlsBlocked ? null : () => downloadsController.onShareSelected(context),
+                            ),
+                          ),
+                        ),
+                        Tooltip(
+                          message: context.loc.selectAll,
+                          child: IconButton(
+                            icon: const Icon(Icons.select_all),
+                            onPressed: hasFetched && !controlsBlocked ? () => selectAll(searchHandler) : null,
+                          ),
+                        ),
+                        Tooltip(
+                          message: context.loc.settings.downloads.clearSelected,
+                          child: IconButton(
+                            icon: const Icon(Icons.deselect),
+                            onPressed: !controlsBlocked ? () => deselectAll(searchHandler) : null,
+                          ),
+                        ),
+                        Tooltip(
+                          message: context.loc.searchBar.more,
+                          child: IconButton(
+                            icon: const Icon(Icons.more_vert),
+                            onPressed: controlsBlocked
+                                ? null
+                                : () => showOverflowDialog(
+                                    context,
+                                    selectedCount: selectedCount,
+                                    downloadsSelectedCount: downloadsSelectedCount,
+                                    favSelectedCount: favSelectedCount,
+                                    unfavSelectedCount: unfavSelectedCount,
+                                    hasDownloadsSelected: hasDownloadsSelected,
+                                    hasFavsSelected: hasFavsSelected,
+                                    isAllSelectedFavs: isAllSelectedFavs,
+                                  ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Tooltip(
-                    message: context.loc.settings.downloads.clearSelected,
-                    child: IconButton(
-                      icon: const Icon(Icons.deselect),
-                      onPressed: hasSelected ? () => deselectAll(searchHandler) : null,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+                ),
+              )
+            : const SizedBox.shrink(key: ValueKey('selection-controls-hidden')),
       );
     });
+  }
+
+  Widget _selectionControlsTransition(Widget child, Animation<double> animation) {
+    return SizeTransition(
+      sizeFactor: animation,
+      alignment: Alignment.topCenter,
+      child: FadeTransition(
+        opacity: animation,
+        child: child,
+      ),
+    );
   }
 }

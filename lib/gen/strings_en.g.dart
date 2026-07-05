@@ -2990,6 +2990,10 @@ class Translations$settings$downloads$en {
   /// en: 'Clear selected'
   String get clearSelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.clearSelected', {}) ?? 'Clear selected';
 
+  /// en: 'File sharing is limited to ${max: int} item(s)'
+  String fileShareLimit({required int max}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.downloads.fileShareLimit', {'max': max}) ?? 'File sharing is limited to ${max} item(s)';
+
   /// en: 'Updating data…'
   String get updatingData => TranslationOverrides.string(_root.$meta, 'settings.downloads.updatingData', {}) ?? 'Updating data…';
 }
@@ -5848,6 +5852,10 @@ extension on Translations {
           'settings.downloads.unfavouriteSelected' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.unfavouriteSelected', {}) ?? 'Unfavorite selected',
           'settings.downloads.clearSelected' => TranslationOverrides.string(_root.$meta, 'settings.downloads.clearSelected', {}) ?? 'Clear selected',
+          'settings.downloads.fileShareLimit' =>
+            ({required int max}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.downloads.fileShareLimit', {'max': max}) ??
+                'File sharing is limited to ${max} item(s)',
           'settings.downloads.updatingData' => TranslationOverrides.string(_root.$meta, 'settings.downloads.updatingData', {}) ?? 'Updating data…',
           'settings.database.title' => TranslationOverrides.string(_root.$meta, 'settings.database.title', {}) ?? 'Database',
           'settings.database.indexingDatabase' =>
@@ -6714,10 +6722,10 @@ extension on Translations {
           'desktopHome.addBoorusInSettings' =>
             TranslationOverrides.string(_root.$meta, 'desktopHome.addBoorusInSettings', {}) ?? 'Add boorus in settings',
           'desktopHome.settings' => TranslationOverrides.string(_root.$meta, 'desktopHome.settings', {}) ?? 'Settings',
-          'desktopHome.save' => TranslationOverrides.string(_root.$meta, 'desktopHome.save', {}) ?? 'Save',
           _ => null,
         } ??
         switch (path) {
+          'desktopHome.save' => TranslationOverrides.string(_root.$meta, 'desktopHome.save', {}) ?? 'Save',
           'desktopHome.noItemsSelected' => TranslationOverrides.string(_root.$meta, 'desktopHome.noItemsSelected', {}) ?? 'No items selected',
           'galleryView.noItems' => TranslationOverrides.string(_root.$meta, 'galleryView.noItems', {}) ?? 'No items',
           'galleryView.noItemSelected' => TranslationOverrides.string(_root.$meta, 'galleryView.noItemSelected', {}) ?? 'No item selected',

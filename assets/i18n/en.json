@@ -663,6 +663,7 @@
             "favouriteSelected": "Favorite selected",
             "unfavouriteSelected": "Unfavorite selected",
             "clearSelected": "Clear selected",
+            "fileShareLimit(param=max)": "File sharing is limited to ${max: int} item(s)",
             "updatingData": "Updating data…"
         },
         "database": {

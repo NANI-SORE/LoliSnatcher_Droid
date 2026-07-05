@@ -663,6 +663,7 @@
             "favouriteSelected": "Добавить выбранные в избранное",
             "unfavouriteSelected": "Удалить выбранные из избранного",
             "clearSelected": "Сбросить выбранные",
+            "fileShareLimit(param=max)": "Отправка файлов ограничена: ${max: int} шт.",
             "updatingData": "Обновление данных…"
         },
         "database": {

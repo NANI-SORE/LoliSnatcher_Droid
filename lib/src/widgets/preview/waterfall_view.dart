@@ -53,6 +53,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   final ThumbnailDragSelectController dragSelectController = ThumbnailDragSelectController();
   final GlobalKey dragSelectViewportKey = GlobalKey(debugLabel: 'drag-select-viewport');
   Timer? dragAutoScrollTimer;
+  Timer? dragControlsUnblockTimer;
   Offset? latestDragGlobalPosition;
   bool isDragSelecting = false;
   double dragAutoScrollDelta = 0;
@@ -195,6 +196,8 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   void dispose() {
     viewedItemCleanupTimer?.cancel();
     stopDragAutoScroll();
+    dragControlsUnblockTimer?.cancel();
+    searchHandler.selectionControlsBlocked.value = false;
     NavigationHandler.instance.routeObserver.unsubscribe(this);
     searchHandler.index.removeListener(tabIndexListener);
     searchHandler.tabId.removeListener(tabIdListener);
@@ -341,7 +344,6 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
 
   Future<void> onLongPress(int index) async {
     final BooruItem item = searchHandler.currentFetched[index];
-    await ServiceHandler.vibrate();
 
     if (searchHandler.currentSelected.contains(item)) {
       searchHandler.currentTab.selected.remove(item);
@@ -351,6 +353,8 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   }
 
   Future<void> onDragSelectStart(LongPressStartDetails details) async {
+    dragControlsUnblockTimer?.cancel();
+    searchHandler.selectionControlsBlocked.value = true;
     isDragSelecting = true;
     latestDragGlobalPosition = details.globalPosition;
     dragAnchorIndex = null;
@@ -372,7 +376,6 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
 
     dragAnchorIndex = hit.index;
     dragSelectAdds = !dragInitialSelectedSet.contains(hit.item);
-    await ServiceHandler.vibrate();
     applyDragSelectionRange(hit.index);
     updateDragAutoScroll();
   }
@@ -548,6 +551,10 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
     dragInitialSelectedSet.clear();
     dragCurrentRangeItems.clear();
     stopDragAutoScroll();
+    dragControlsUnblockTimer?.cancel();
+    dragControlsUnblockTimer = Timer(const Duration(milliseconds: 450), () {
+      searchHandler.selectionControlsBlocked.value = false;
+    });
   }
 
   Future<void> onSecondaryTap(int index, BuildContext context) async {
