@@ -300,6 +300,15 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
         switchInCurve: Curves.easeOutCubic,
         switchOutCurve: Curves.easeInCubic,
         transitionBuilder: _selectionControlsTransition,
+        layoutBuilder: (currentChild, previousChildren) {
+          return Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
+              ...previousChildren,
+              ?currentChild,
+            ],
+          );
+        },
         child: hasSelected
             ? Padding(
                 key: const ValueKey('selection-controls-visible'),
@@ -387,11 +396,13 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
   }
 
   Widget _selectionControlsTransition(Widget child, Animation<double> animation) {
-    return SizeTransition(
-      sizeFactor: animation,
-      alignment: Alignment.topCenter,
-      child: FadeTransition(
-        opacity: animation,
+    return FadeTransition(
+      opacity: animation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 1),
+          end: Offset.zero,
+        ).animate(animation),
         child: child,
       ),
     );

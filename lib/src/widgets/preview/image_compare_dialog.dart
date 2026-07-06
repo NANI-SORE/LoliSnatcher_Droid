@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/image/custom_network_image.dart';
 
@@ -23,6 +24,19 @@ enum _DifferenceColorMode {
   raw,
   warm,
   luma,
+}
+
+bool get _isHeatmapModeSupported => ui.ImageFilter.isShaderFilterSupported;
+
+List<_ImageCompareMode> get _availableCompareModes {
+  return [
+    _ImageCompareMode.split,
+    _ImageCompareMode.slider,
+    _ImageCompareMode.fade,
+    _ImageCompareMode.flicker,
+    _ImageCompareMode.difference,
+    if (_isHeatmapModeSupported) _ImageCompareMode.heatmap,
+  ];
 }
 
 Future<void> showImageCompareDialog(
@@ -99,7 +113,9 @@ class _ImageComparePageState extends State<_ImageComparePage> {
 
   void _syncController(TransformationController source, TransformationController target) {
     if (!syncZoom || syncingControllers || mode != _ImageCompareMode.split) {
-      if (source == firstController && mode == _ImageCompareMode.slider && mounted) {
+      if (source == firstController &&
+          (mode == _ImageCompareMode.slider || mode == _ImageCompareMode.split) &&
+          mounted) {
         setState(() {});
       }
       return;
@@ -112,6 +128,10 @@ class _ImageComparePageState extends State<_ImageComparePage> {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveMode = mode == _ImageCompareMode.heatmap && !_isHeatmapModeSupported
+        ? _ImageCompareMode.difference
+        : mode;
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.black,
@@ -124,7 +144,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
       body: Stack(
         children: [
           Positioned.fill(
-            child: switch (mode) {
+            child: switch (effectiveMode) {
               _ImageCompareMode.split => _sideBySideView(context),
               _ImageCompareMode.slider => _stackView(context),
               _ImageCompareMode.fade => _opacityView(context),
@@ -140,7 +160,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
             child: SafeArea(
               top: false,
               child: _CompareControls(
-                mode: mode,
+                mode: effectiveMode,
                 syncZoom: syncZoom,
                 stackOpacity: stackOpacity,
                 flickerIntervalMs: flickerIntervalMs,
@@ -154,6 +174,9 @@ class _ImageComparePageState extends State<_ImageComparePage> {
                 },
                 onModeChanged: (value) {
                   setState(() {
+                    if (value == _ImageCompareMode.heatmap && !_isHeatmapModeSupported) {
+                      return;
+                    }
                     mode = value;
                     _resetTransforms();
                     _syncFlickerTimer();
@@ -265,23 +288,30 @@ class _ImageComparePageState extends State<_ImageComparePage> {
   }
 
   Widget _sideBySideView(BuildContext context) {
-    return Row(
+    final first = Expanded(
+      child: _InteractiveCompareImage(
+        item: firstItem,
+        booru: firstBooru,
+        controller: firstController,
+      ),
+    );
+    final second = Expanded(
+      child: _InteractiveCompareImage(
+        item: secondItem,
+        booru: secondBooru,
+        controller: secondController,
+      ),
+    );
+    final divider = stackAxis == Axis.horizontal
+        ? VerticalDivider(width: 1, color: Theme.of(context).dividerColor)
+        : Divider(height: 1, color: Theme.of(context).dividerColor);
+
+    return Flex(
+      direction: stackAxis,
       children: [
-        Expanded(
-          child: _InteractiveCompareImage(
-            item: firstItem,
-            booru: firstBooru,
-            controller: firstController,
-          ),
-        ),
-        VerticalDivider(width: 1, color: Theme.of(context).dividerColor),
-        Expanded(
-          child: _InteractiveCompareImage(
-            item: secondItem,
-            booru: secondBooru,
-            controller: secondController,
-          ),
-        ),
+        first,
+        divider,
+        second,
       ],
     );
   }
@@ -545,48 +575,22 @@ class _CompareControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final availableModes = _availableCompareModes;
+    final selectedMode = availableModes.contains(mode) ? mode : availableModes.first;
+
     return Material(
       color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.86),
-      child: SizedBox(
-        height: 64,
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 520;
+          final primaryControls = Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(
-                width: 190,
-                height: 48,
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<_ImageCompareMode>(
-                      value: mode,
-                      isExpanded: true,
-                      icon: const Icon(Icons.arrow_drop_down),
-                      selectedItemBuilder: (context) {
-                        return _ImageCompareMode.values.map((mode) {
-                          return _CompareModeDropdownItem(mode: mode);
-                        }).toList();
-                      },
-                      items: _ImageCompareMode.values.map((mode) {
-                        return DropdownMenuItem(
-                          value: mode,
-                          child: _CompareModeDropdownItem(mode: mode),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          onModeChanged(value);
-                        }
-                      },
-                    ),
-                  ),
-                ),
+              _ModeDropdown(
+                mode: selectedMode,
+                modes: availableModes,
+                width: isCompact ? 190 : 190,
+                onModeChanged: onModeChanged,
               ),
               const SizedBox(width: 12),
               IconButton(
@@ -599,40 +603,76 @@ class _CompareControls extends StatelessWidget {
                 icon: const Icon(Icons.swap_horiz),
                 onPressed: onSwapImages,
               ),
-              const SizedBox(width: 12),
-              SizedBox(
-                width: 240,
-                height: 48,
-                child: Center(child: _secondaryControl(context)),
-              ),
             ],
-          ),
-        ),
+          );
+          final secondaryControls = SizedBox(
+            width: _secondaryControlWidth(context, isCompact),
+            height: 48,
+            child: Center(child: _secondaryControl(context)),
+          );
+
+          return SizedBox(
+            height: isCompact ? 112 : 64,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: isCompact
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        primaryControls,
+                        const SizedBox(height: 4),
+                        secondaryControls,
+                      ],
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        primaryControls,
+                        const SizedBox(width: 12),
+                        secondaryControls,
+                      ],
+                    ),
+            ),
+          );
+        },
       ),
     );
   }
 
+  double _secondaryControlWidth(BuildContext context, bool isCompact) {
+    return switch (mode) {
+      _ImageCompareMode.split => 240,
+      _ImageCompareMode.slider => 140,
+      _ImageCompareMode.fade => isCompact ? context.width - 24 : 220,
+      _ImageCompareMode.flicker => isCompact ? context.width - 24 : 220,
+      _ImageCompareMode.difference => 220,
+      _ImageCompareMode.heatmap => 0,
+    };
+  }
+
   Widget _secondaryControl(BuildContext context) {
     return switch (mode) {
-      _ImageCompareMode.split => FilterChip(
-        selected: syncZoom,
-        tooltip: context.loc.settings.downloads.compareZoomSync,
-        label: const Icon(Icons.zoom_in),
-        onSelected: onSyncZoomChanged,
-      ),
-      _ImageCompareMode.slider => SegmentedButton<Axis>(
-        segments: const [
-          ButtonSegment(
-            value: Axis.horizontal,
-            icon: Icon(Icons.swap_horiz),
+      _ImageCompareMode.split => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FilterChip(
+            selected: syncZoom,
+            tooltip: context.loc.settings.downloads.compareZoomSync,
+            label: const Icon(Icons.zoom_in),
+            onSelected: onSyncZoomChanged,
           ),
-          ButtonSegment(
-            value: Axis.vertical,
-            icon: Icon(Icons.swap_vert),
+          const SizedBox(width: 8),
+          _AxisToggle(
+            selected: stackAxis,
+            onChanged: onStackAxisChanged,
           ),
         ],
-        selected: {stackAxis},
-        onSelectionChanged: (value) => onStackAxisChanged(value.first),
+      ),
+      _ImageCompareMode.slider => _AxisToggle(
+        selected: stackAxis,
+        onChanged: onStackAxisChanged,
       ),
       _ImageCompareMode.fade => Slider(
         value: stackOpacity,
@@ -675,6 +715,85 @@ class _CompareControls extends StatelessWidget {
       ),
       _ImageCompareMode.heatmap => const SizedBox.shrink(),
     };
+  }
+}
+
+class _ModeDropdown extends StatelessWidget {
+  const _ModeDropdown({
+    required this.mode,
+    required this.modes,
+    required this.width,
+    required this.onModeChanged,
+  });
+
+  final _ImageCompareMode mode;
+  final List<_ImageCompareMode> modes;
+  final double width;
+  final ValueChanged<_ImageCompareMode> onModeChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      height: 48,
+      child: InputDecorator(
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        ),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<_ImageCompareMode>(
+            value: mode,
+            isExpanded: true,
+            icon: const Icon(Icons.arrow_drop_down),
+            selectedItemBuilder: (context) {
+              return modes.map((mode) {
+                return _CompareModeDropdownItem(mode: mode);
+              }).toList();
+            },
+            items: modes.map((mode) {
+              return DropdownMenuItem(
+                value: mode,
+                child: _CompareModeDropdownItem(mode: mode),
+              );
+            }).toList(),
+            onChanged: (value) {
+              if (value != null) {
+                onModeChanged(value);
+              }
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AxisToggle extends StatelessWidget {
+  const _AxisToggle({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final Axis selected;
+  final ValueChanged<Axis> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<Axis>(
+      segments: const [
+        ButtonSegment(
+          value: Axis.horizontal,
+          icon: Icon(Icons.swap_horiz),
+        ),
+        ButtonSegment(
+          value: Axis.vertical,
+          icon: Icon(Icons.swap_vert),
+        ),
+      ],
+      selected: {selected},
+      onSelectionChanged: (value) => onChanged(value.first),
+    );
   }
 }
 
