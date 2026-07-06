@@ -582,6 +582,7 @@ class SettingsDropdown<T> extends StatelessWidget {
     this.subtitle,
     this.drawTopBorder = false,
     this.drawBottomBorder = true,
+    this.leadingIcon,
     this.trailingIcon,
     this.contentPadding,
     this.itemBuilder,
@@ -607,6 +608,7 @@ class SettingsDropdown<T> extends StatelessWidget {
   final Widget? subtitle;
   final bool drawTopBorder;
   final bool drawBottomBorder;
+  final Widget? leadingIcon;
   final Widget? trailingIcon;
   final EdgeInsets? contentPadding;
   final Widget Function(T?)? itemBuilder;
@@ -678,7 +680,18 @@ class SettingsDropdown<T> extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: _settingsTitleRow(
                   context: context,
-                  title: Text(title),
+                  title: Row(
+                    children: [
+                      if (leadingIcon != null)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: leadingIcon,
+                        ),
+                      Expanded(
+                        child: Text(title),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             LoliDropdown(
@@ -847,6 +860,7 @@ class SettingsOptionsList<T> extends StatelessWidget {
     this.subtitle,
     this.drawTopBorder = false,
     this.drawBottomBorder = true,
+    this.leadingIcon,
     this.trailingIcon,
     this.itemBuilder,
     this.itemLeadingBuilder,
@@ -864,6 +878,7 @@ class SettingsOptionsList<T> extends StatelessWidget {
   final Widget? subtitle;
   final bool drawTopBorder;
   final bool drawBottomBorder;
+  final Widget? leadingIcon;
   final Widget? trailingIcon;
   final Widget Function(T?)? itemBuilder;
   final Widget? Function(T?)? itemLeadingBuilder;
@@ -909,7 +924,18 @@ class SettingsOptionsList<T> extends StatelessWidget {
           ListTile(
             title: _settingsTitleRow(
               context: context,
-              title: Text(title),
+              title: Row(
+                children: [
+                  if (leadingIcon != null)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: leadingIcon,
+                    ),
+                  Expanded(
+                    child: Text(title),
+                  ),
+                ],
+              ),
             ),
             subtitle: _settingsSubtitle(context, subtitle),
             trailing: _settingsTrailingActions(

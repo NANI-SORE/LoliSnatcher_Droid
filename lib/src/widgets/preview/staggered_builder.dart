@@ -250,7 +250,6 @@ class _StaggeredBuilderState extends State<StaggeredBuilder> {
 
     final rows = <_StaggeredRow>[];
     final currentRow = <_StaggeredRowItem>[];
-    var currentPage = currentFetched.first.fetchedPage;
 
     void flushRow() {
       if (currentRow.isEmpty) {
@@ -268,11 +267,7 @@ class _StaggeredBuilderState extends State<StaggeredBuilder> {
 
     for (var index = 0; index < currentFetched.length; index++) {
       final item = currentFetched[index];
-      final isFirstOfPage = index == 0 || item.fetchedPage != currentPage;
-      if (isFirstOfPage && index != 0) {
-        flushRow();
-        currentPage = item.fetchedPage;
-      }
+      final isFirstOfPage = index == 0 || item.fetchedPage != currentFetched[index - 1].fetchedPage;
 
       currentRow.add(
         _StaggeredRowItem(

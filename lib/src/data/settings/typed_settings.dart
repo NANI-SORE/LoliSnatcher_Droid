@@ -376,6 +376,7 @@ SettingDef<T> enumSetting<T extends Enum>({
         setting: s,
         builder: (ctx, value) {
           final scopedVal = s.scopedValue(ctx);
+          final leadingIcon = widgetConfig?.leadingIcon;
           final trailingIcon =
               widgetConfig?.trailingIcon ??
               _buildHelpDialogButton(ctx, augmentedLocalization, widgetConfig) ??
@@ -392,6 +393,7 @@ SettingDef<T> enumSetting<T extends Enum>({
                   if (newValue != null) s.setScopedValue(ctx, newValue);
                 },
                 onReset: scopedVal != s.resetValue(ctx) ? () => s.resetScoped(ctx) : null,
+                leadingIcon: leadingIcon,
                 trailingIcon: trailingIcon,
               );
             case EnumDisplayMode.optionsList:
@@ -406,6 +408,7 @@ SettingDef<T> enumSetting<T extends Enum>({
                   if (newValue != null) s.setScopedValue(ctx, newValue);
                 },
                 onReset: scopedVal != s.resetValue(ctx) ? () => s.resetScoped(ctx) : null,
+                leadingIcon: leadingIcon,
                 trailingIcon: trailingIcon,
               );
             case EnumDisplayMode.segmented:

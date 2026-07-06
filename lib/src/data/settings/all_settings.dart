@@ -292,6 +292,9 @@ void registerAllSettings() {
         title: (ctx) => ctx.loc.settings.interface.previewDisplayFallback,
         subtitle: (ctx) => ctx.loc.settings.interface.previewDisplayFallbackHelp,
       ),
+      widgetConfig: const SettingWidgetConfig(
+        leadingIcon: Icon(Icons.dashboard_outlined),
+      ),
     ),
   );
 
@@ -364,6 +367,9 @@ void registerAllSettings() {
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.staggeredPageBoundaries,
         subtitle: (ctx) => ctx.loc.settings.interface.staggeredPageBoundariesHelp,
+      ),
+      widgetConfig: const SettingWidgetConfig(
+        leadingIcon: Icon(Icons.dashboard_outlined),
       ),
     ),
   );
