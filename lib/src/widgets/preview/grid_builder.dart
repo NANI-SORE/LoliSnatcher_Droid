@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
+import 'package:lolisnatcher/src/widgets/preview/page_indicator.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
 import 'package:lolisnatcher/src/data/booru_item.dart';
@@ -39,6 +40,7 @@ class GridBuilder extends StatelessWidget {
         : SX.previewDisplay.value;
 
     final int columnCount = context.isPortrait ? SX.portraitColumns.value : SX.landscapeColumns.value;
+    SearchHandler.instance.currentColumnCount = columnCount;
 
     return ValueListenableBuilder(
       valueListenable: tab.booruHandler.filteredFetched,
@@ -57,25 +59,39 @@ class GridBuilder extends StatelessWidget {
             child: Obx(() {
               final BooruItem item = currentFetched[index];
 
+              final bool isFirstOfPage = index == 0 || item.fetchedPage != currentFetched[index - 1].fetchedPage;
+
               final bool hasSelected = tab.selected.isNotEmpty && tab.hasSelectedItems;
               final selectedIndex = tab.selectedIndexOf(item);
               final bool isSelected = selectedIndex != null;
               final bool isHighlighted = ViewerHandler.instance.current.value?.key == item.key;
               final controller = dragSelectController;
 
-              final thumbnail = ThumbnailCardBuild(
-                index: index,
-                item: item,
-                handler: tab.booruHandler,
-                scrollController: scrollController,
-                isHighlighted: isHighlighted,
-                selectable: true,
-                selectedIndex: isSelected ? selectedIndex : null,
-                onSelected: hasSelected ? onSelected : null,
-                onTap: onTap,
-                onDoubleTap: onDoubleTap,
-                onLongPress: controller == null ? onLongPress : null,
-                onSecondaryTap: onSecondaryTap,
+              final thumbnail = Stack(
+                children: [
+                  ThumbnailCardBuild(
+                    index: index,
+                    item: item,
+                    handler: tab.booruHandler,
+                    scrollController: scrollController,
+                    isHighlighted: isHighlighted,
+                    selectable: true,
+                    selectedIndex: isSelected ? selectedIndex : null,
+                    onSelected: hasSelected ? onSelected : null,
+                    onTap: onTap,
+                    onDoubleTap: onDoubleTap,
+                    onLongPress: controller == null ? onLongPress : null,
+                    onSecondaryTap: onSecondaryTap,
+                  ),
+                  if (isFirstOfPage && item.fetchedPage > -1)
+                    Positioned(
+                      top: 2,
+                      left: 2,
+                      child: IgnorePointer(
+                        child: GridPageIndicator(item.fetchedPage),
+                      ),
+                    ),
+                ],
               );
 
               if (controller == null) {

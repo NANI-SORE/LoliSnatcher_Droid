@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
+import 'package:lolisnatcher/src/widgets/preview/page_indicator.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:waterfall_flow/waterfall_flow.dart';
 
@@ -58,94 +59,157 @@ class _StaggeredBuilderState extends State<StaggeredBuilder> {
   int? _cachedLength;
   int? _cachedColumnCount;
   double? _cachedItemMaxWidth;
-  List<_StaggeredRow>? _cachedRows;
+  List<_StaggeredRowItem>? _cachedRowItems;
 
   @override
   Widget build(BuildContext context) {
     final int columnCount = context.isPortrait ? SX.portraitColumns.value : SX.landscapeColumns.value;
+    SearchHandler.instance.currentColumnCount = columnCount;
 
     return ValueListenableBuilder(
       valueListenable: tab.booruHandler.filteredFetched,
-      builder: (context, currentFetched, child) => SliverWaterfallFlow(
-        gridDelegate: SliverWaterfallFlowDelegateWithFixedCrossAxisCount(
-          crossAxisCount: columnCount,
-          mainAxisSpacing: 4,
-          crossAxisSpacing: 4,
-        ),
-        delegate: SliverChildBuilderDelegate(
-          addAutomaticKeepAlives: false,
-          addRepaintBoundaries: false, // ThumbnailCardBuild has its own RepaintBoundary
-          childCount: currentFetched.length,
-          (context, index) => LayoutBuilder(
+      builder: (context, currentFetched, child) {
+        if (SX.staggeredPageBoundaries.value) {
+          return SliverLayoutBuilder(
             builder: (context, constraints) {
-              return Obx(() {
-                final BooruItem item = currentFetched[index];
+              final itemMaxWidth =
+                  max(
+                    0,
+                    constraints.crossAxisExtent - (_crossAxisSpacing * (columnCount - 1)),
+                  ) /
+                  columnCount;
+              final rowItems = _rowBoundedEntriesFor(
+                currentFetched: currentFetched,
+                columnCount: columnCount,
+                itemMaxWidth: itemMaxWidth,
+              );
 
-                final bool isFirstOfPage = index == 0 || item.fetchedPage != currentFetched[index - 1].fetchedPage;
-
-                final double itemMaxWidth = constraints.maxWidth;
-                final double possibleWidth = itemMaxWidth;
-                final double possibleHeight = _itemHeight(item, itemMaxWidth);
-
-                final bool hasSelected = tab.selected.isNotEmpty && tab.hasSelectedItems;
-                final selectedIndex = tab.selectedIndexOf(item);
-                final bool isSelected = selectedIndex != null;
-
-                return Stack(
-                  children: [
-                    SizedBox(
-                      height: possibleHeight,
-                      width: possibleWidth,
-                      child: Obx(
-                        () {
-                          final controller = dragSelectController;
-                          final thumbnail = ThumbnailCardBuild(
-                            index: index,
-                            item: item,
-                            handler: tab.booruHandler,
-                            scrollController: scrollController,
-                            isHighlighted: ViewerHandler.instance.current.value?.key == item.key,
-                            selectable: true,
-                            selectedIndex: isSelected ? selectedIndex : null,
-                            onSelected: hasSelected ? onSelected : null,
-                            onTap: onTap,
-                            onDoubleTap: onDoubleTap,
-                            onLongPress: controller == null ? onLongPress : null,
-                            onSecondaryTap: onSecondaryTap,
-                          );
-
-                          if (controller == null) {
-                            return thumbnail;
-                          }
-
-                          return ThumbnailDragSelectRegistrant(
-                            controller: controller,
-                            index: index,
-                            item: item,
-                            child: thumbnail,
-                          );
-                        },
-                      ),
-                    ),
-                    if (isFirstOfPage && item.fetchedPage > -1)
-                      Positioned(
-                        top: 2,
-                        left: 2,
-                        child: IgnorePointer(
-                          child: GridPageIndicator(item.fetchedPage),
-                        ),
-                      ),
-                  ],
-                );
-              });
+              return _buildWaterfallSliver(
+                columnCount: columnCount,
+                itemCount: rowItems.length,
+                itemBuilder: (context, entryIndex) {
+                  final entry = rowItems[entryIndex];
+                  return _buildItem(
+                    context: context,
+                    currentFetched: currentFetched,
+                    index: entry.index,
+                    dragHitHeight: entry.rowHeight,
+                  );
+                },
+              );
             },
+          );
+        }
+
+        return _buildWaterfallSliver(
+          columnCount: columnCount,
+          itemCount: currentFetched.length,
+          itemBuilder: (context, index) => _buildItem(
+            context: context,
+            currentFetched: currentFetched,
+            index: index,
           ),
-        ),
+        );
+      },
+    );
+  }
+
+  Widget _buildWaterfallSliver({
+    required int columnCount,
+    required int itemCount,
+    required NullableIndexedWidgetBuilder itemBuilder,
+  }) {
+    return SliverWaterfallFlow(
+      gridDelegate: SliverWaterfallFlowDelegateWithFixedCrossAxisCount(
+        crossAxisCount: columnCount,
+        mainAxisSpacing: _mainAxisSpacing,
+        crossAxisSpacing: _crossAxisSpacing,
+      ),
+      delegate: SliverChildBuilderDelegate(
+        addAutomaticKeepAlives: false,
+        addRepaintBoundaries: false, // ThumbnailCardBuild has its own RepaintBoundary
+        childCount: itemCount,
+        itemBuilder,
       ),
     );
   }
 
-  List<_StaggeredRow> _buildRowBoundedEntries({
+  Widget _buildItem({
+    required BuildContext context,
+    required List<BooruItem> currentFetched,
+    required int index,
+    double? dragHitHeight,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Obx(() {
+          final BooruItem item = currentFetched[index];
+
+          final bool isFirstOfPage = index == 0 || item.fetchedPage != currentFetched[index - 1].fetchedPage;
+
+          final double itemMaxWidth = constraints.maxWidth;
+          final double possibleWidth = itemMaxWidth;
+          final double possibleHeight = _itemHeight(item, itemMaxWidth);
+
+          final bool hasSelected = tab.selected.isNotEmpty && tab.hasSelectedItems;
+          final selectedIndex = tab.selectedIndexOf(item);
+          final bool isSelected = selectedIndex != null;
+          final bool isHighlighted = ViewerHandler.instance.current.value?.key == item.key;
+          final controller = dragSelectController;
+
+          final thumbnail = Stack(
+            children: [
+              ThumbnailCardBuild(
+                index: index,
+                item: item,
+                handler: tab.booruHandler,
+                scrollController: scrollController,
+                isHighlighted: isHighlighted,
+                selectable: true,
+                selectedIndex: isSelected ? selectedIndex : null,
+                onSelected: hasSelected ? onSelected : null,
+                onTap: onTap,
+                onDoubleTap: onDoubleTap,
+                onLongPress: controller == null ? onLongPress : null,
+                onSecondaryTap: onSecondaryTap,
+              ),
+              if (isFirstOfPage && item.fetchedPage > -1)
+                Positioned(
+                  top: 2,
+                  left: 2,
+                  child: IgnorePointer(
+                    child: GridPageIndicator(item.fetchedPage),
+                  ),
+                ),
+            ],
+          );
+
+          final tile = SizedBox(
+            height: possibleHeight,
+            width: possibleWidth,
+            child: thumbnail,
+          );
+
+          if (controller == null) {
+            return tile;
+          }
+
+          return SizedBox(
+            height: dragHitHeight ?? possibleHeight,
+            width: possibleWidth,
+            child: ThumbnailDragSelectRegistrant(
+              controller: controller,
+              index: index,
+              item: item,
+              child: tile,
+            ),
+          );
+        });
+      },
+    );
+  }
+
+  List<_StaggeredRowItem> _buildRowBoundedEntries({
     required List<BooruItem> currentFetched,
     required int columnCount,
     required double itemMaxWidth,
@@ -154,37 +218,29 @@ class _StaggeredBuilderState extends State<StaggeredBuilder> {
       return const [];
     }
 
-    final rows = <_StaggeredRow>[];
+    final rowItems = <_StaggeredRowItem>[];
     final currentRow = <_StaggeredRowItem>[];
-    var currentPage = currentFetched.first.fetchedPage;
 
     void flushRow() {
       if (currentRow.isEmpty) {
         return;
       }
 
-      rows.add(
-        _StaggeredRow(
-          items: List.unmodifiable(currentRow),
-          height: currentRow.map((item) => item.height).reduce(max),
-        ),
-      );
+      final rowHeight = currentRow.map((item) => item.height).reduce(max);
+      for (final item in currentRow) {
+        rowItems.add(item.copyWith(rowHeight: rowHeight));
+      }
       currentRow.clear();
     }
 
     for (var index = 0; index < currentFetched.length; index++) {
       final item = currentFetched[index];
-      final isFirstOfPage = index == 0 || item.fetchedPage != currentPage;
-      if (isFirstOfPage && index != 0) {
-        flushRow();
-        currentPage = item.fetchedPage;
-      }
 
       currentRow.add(
         _StaggeredRowItem(
           index: index,
-          isFirstOfPage: isFirstOfPage,
           height: _itemHeight(item, itemMaxWidth),
+          rowHeight: 0,
         ),
       );
 
@@ -194,28 +250,28 @@ class _StaggeredBuilderState extends State<StaggeredBuilder> {
     }
 
     flushRow();
-    return rows;
+    return rowItems;
   }
 
-  List<_StaggeredRow> _rowBoundedEntriesFor({
+  List<_StaggeredRowItem> _rowBoundedEntriesFor({
     required List<BooruItem> currentFetched,
     required int columnCount,
     required double itemMaxWidth,
   }) {
     final firstKey = currentFetched.firstOrNull?.key;
     final lastKey = currentFetched.lastOrNull?.key;
-    final cachedRows = _cachedRows;
-    if (cachedRows != null &&
+    final cachedRowItems = _cachedRowItems;
+    if (cachedRowItems != null &&
         identical(_cachedFetched, currentFetched) &&
         _cachedLength == currentFetched.length &&
         _cachedFirstKey == firstKey &&
         _cachedLastKey == lastKey &&
         _cachedColumnCount == columnCount &&
         _cachedItemMaxWidth == itemMaxWidth) {
-      return cachedRows;
+      return cachedRowItems;
     }
 
-    final rows = _buildRowBoundedEntries(
+    final rowItems = _buildRowBoundedEntries(
       currentFetched: currentFetched,
       columnCount: columnCount,
       itemMaxWidth: itemMaxWidth,
@@ -226,8 +282,8 @@ class _StaggeredBuilderState extends State<StaggeredBuilder> {
     _cachedLastKey = lastKey;
     _cachedColumnCount = columnCount;
     _cachedItemMaxWidth = itemMaxWidth;
-    _cachedRows = rows;
-    return rows;
+    _cachedRowItems = rowItems;
+    return rowItems;
   }
 
   double _itemHeight(BooruItem item, double itemMaxWidth) {
@@ -247,24 +303,24 @@ class _StaggeredBuilderState extends State<StaggeredBuilder> {
   }
 }
 
-class _StaggeredRow {
-  const _StaggeredRow({
-    required this.items,
-    required this.height,
-  });
-
-  final List<_StaggeredRowItem> items;
-  final double height;
-}
-
 class _StaggeredRowItem {
   const _StaggeredRowItem({
     required this.index,
-    required this.isFirstOfPage,
     required this.height,
+    required this.rowHeight,
   });
 
   final int index;
-  final bool isFirstOfPage;
   final double height;
+  final double rowHeight;
+
+  _StaggeredRowItem copyWith({
+    double? rowHeight,
+  }) {
+    return _StaggeredRowItem(
+      index: index,
+      height: height,
+      rowHeight: rowHeight ?? this.rowHeight,
+    );
+  }
 }

@@ -176,7 +176,7 @@ class TranslationsRuRu extends Translations with BaseTranslations<AppLocale, Tra
   @override
   String get page => TranslationOverrides.string(_root.$meta, 'page', {}) ?? 'Страница';
   @override
-  String get pageNumber => TranslationOverrides.string(_root.$meta, 'pageNumber', {}) ?? 'Страница №';
+  String get pageNumber => TranslationOverrides.string(_root.$meta, 'pageNumber', {}) ?? 'Страница #';
   @override
   String get tags => TranslationOverrides.string(_root.$meta, 'tags', {}) ?? 'Теги';
   @override
@@ -431,6 +431,10 @@ class _Translations$searchHandler$ru_RU extends Translations$searchHandler$en {
         many: 'Восстановлено ${count} вкладок из предыдущей сессии',
         other: 'Восстановлено ${count} вкладок из предыдущей сессии',
       );
+  @override
+  String get restoringPage => TranslationOverrides.string(_root.$meta, 'searchHandler.restoringPage', {}) ?? 'Восстановление страницы';
+  @override
+  String get pageRestoreMode => TranslationOverrides.string(_root.$meta, 'searchHandler.pageRestoreMode', {}) ?? 'Режим восстановления страницы';
   @override
   String get someRestoredTabsHadIssues =>
       TranslationOverrides.string(_root.$meta, 'searchHandler.someRestoredTabsHadIssues', {}) ??
@@ -991,7 +995,7 @@ class _Translations$pageChanger$ru_RU extends Translations$pageChanger$en {
   @override
   String get title => TranslationOverrides.string(_root.$meta, 'pageChanger.title', {}) ?? 'Переключатель страниц';
   @override
-  String get pageLabel => TranslationOverrides.string(_root.$meta, 'pageChanger.pageLabel', {}) ?? 'Страница №';
+  String get pageLabel => TranslationOverrides.string(_root.$meta, 'pageChanger.pageLabel', {}) ?? 'Страница #';
   @override
   String get delayBetweenLoadings =>
       TranslationOverrides.string(_root.$meta, 'pageChanger.delayBetweenLoadings', {}) ?? 'Задержка между загрузками (мс)';
@@ -999,17 +1003,43 @@ class _Translations$pageChanger$ru_RU extends Translations$pageChanger$en {
   String get delayInMs => TranslationOverrides.string(_root.$meta, 'pageChanger.delayInMs', {}) ?? 'Задержка в мс';
   @override
   String currentPage({required int number}) =>
-      TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? 'Текущая страница №${number}';
+      TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? 'Текущая страница #${number}';
+  @override
+  String currentPageShort({required int number}) =>
+      TranslationOverrides.string(_root.$meta, 'pageChanger.currentPageShort', {'number': number}) ?? 'Текущая: ${number}';
   @override
   String possibleMaxPage({required int number}) =>
-      TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? 'Возможная макс. страница №~${number}';
+      TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? 'Возможная макс. страница #~${number}';
+  @override
+  String possibleMaxPageShort({required int number}) =>
+      TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPageShort', {'number': number}) ?? 'Максимум: ~${number}';
   @override
   String get searchCurrentlyRunning =>
       TranslationOverrides.string(_root.$meta, 'pageChanger.searchCurrentlyRunning', {}) ?? 'В данный момент выполняется поиск!';
   @override
+  String get scrollToFetchedPage =>
+      TranslationOverrides.string(_root.$meta, 'pageChanger.scrollToFetchedPage', {}) ?? 'Прокрутить до загруженной страницы';
+  @override
+  String get saveViewedPage => TranslationOverrides.string(_root.$meta, 'pageChanger.saveViewedPage', {}) ?? 'Сохранять просмотренную страницу';
+  @override
   String get jumpToPage => TranslationOverrides.string(_root.$meta, 'pageChanger.jumpToPage', {}) ?? 'Перейти на страницу';
   @override
   String get searchUntilPage => TranslationOverrides.string(_root.$meta, 'pageChanger.searchUntilPage', {}) ?? 'Поиск до страницы';
+  @override
+  String get scrollToPage => TranslationOverrides.string(_root.$meta, 'pageChanger.scrollToPage', {}) ?? 'Прокрутить до страницы';
+  @override
+  String get restoreLastViewedPage =>
+      TranslationOverrides.string(_root.$meta, 'pageChanger.restoreLastViewedPage', {}) ?? 'Восстановить последнюю просмотренную страницу?';
+  @override
+  String browsedToPageLastTime({required int page}) =>
+      TranslationOverrides.string(_root.$meta, 'pageChanger.browsedToPageLastTime', {'page': page}) ??
+      'В последний раз просмотрено до страницы: #${page}';
+  @override
+  String get tooManyPagesToRestoreWarning =>
+      TranslationOverrides.string(_root.$meta, 'pageChanger.tooManyPagesToRestoreWarning', {}) ??
+      'Восстановление слишком большого количества страниц сразу или слишком быстро может привести к временной блокировке доступа к сайту';
+  @override
+  String get rememberMyChoice => TranslationOverrides.string(_root.$meta, 'pageChanger.rememberMyChoice', {}) ?? 'Запомнить мой выбор';
   @override
   String get stopSearching => TranslationOverrides.string(_root.$meta, 'pageChanger.stopSearching', {}) ?? 'Остановить поиск';
 }
@@ -2124,11 +2154,11 @@ class _Translations$settings$interface$ru_RU extends Translations$settings$inter
       'Это будет использоваться, когда опция Шахматный невозможна';
   @override
   String get staggeredPageBoundaries =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.staggeredPageBoundaries', {}) ?? 'Шахматная сетка слева направо';
+      TranslationOverrides.string(_root.$meta, 'settings.interface.staggeredPageBoundaries', {}) ?? 'Шахматная сетка строками слева направо';
   @override
   String get staggeredPageBoundariesHelp =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.staggeredPageBoundariesHelp', {}) ??
-      'Группировать превью в шахматной сетке в строки слева направо и разделять загруженные страницы';
+      'Группировать превью в шахматной сетке в строки слева направо вместо размещения в самый короткий столбец';
   @override
   String get dontScaleImages => TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImages', {}) ?? 'Не масштабировать изображения';
   @override
@@ -2168,6 +2198,18 @@ class _Translations$settings$interface$ru_RU extends Translations$settings$inter
   late final _Translations$settings$interface$appModeValues$ru_RU appModeValues = _Translations$settings$interface$appModeValues$ru_RU._(_root);
   @override
   late final _Translations$settings$interface$handSideValues$ru_RU handSideValues = _Translations$settings$interface$handSideValues$ru_RU._(_root);
+  @override
+  String get tabPageRestoreMode =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreMode', {}) ?? 'Режим восстановления страниц во вкладках';
+  @override
+  String get applyToAllTabs => TranslationOverrides.string(_root.$meta, 'settings.interface.applyToAllTabs', {}) ?? 'Применить ко всем вкладкам?';
+  @override
+  String get saveTabViewedPageByDefault =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.saveTabViewedPageByDefault', {}) ??
+      'Сохранять просмотренную страницу по умолчанию';
+  @override
+  late final _Translations$settings$interface$tabPageRestoreModeValues$ru_RU tabPageRestoreModeValues =
+      _Translations$settings$interface$tabPageRestoreModeValues$ru_RU._(_root);
 }
 
 // Path: settings.theme
@@ -3828,7 +3870,7 @@ class _Translations$preview$error$ru_RU extends Translations$preview$error$en {
       'Загружено страниц: ${pageNum}\nНажми здесь, чтобы перезагрузить последнюю страницу';
   @override
   String loadingPage({required int pageNum}) =>
-      TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? 'Загрузка страницы №${pageNum}…';
+      TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? 'Загрузка страницы #${pageNum}…';
   @override
   String startedAgo({required num seconds}) =>
       TranslationOverrides.plural(_root.$meta, 'preview.error.startedAgo', {'seconds': seconds}) ??
@@ -3845,7 +3887,7 @@ class _Translations$preview$error$ru_RU extends Translations$preview$error$en {
       'Нажми чтобы попробовать снова, если запрос застрял или идет слишком долго';
   @override
   String errorLoadingPage({required int pageNum}) =>
-      TranslationOverrides.string(_root.$meta, 'preview.error.errorLoadingPage', {'pageNum': pageNum}) ?? 'Ошибка при загрузке страницы №${pageNum}';
+      TranslationOverrides.string(_root.$meta, 'preview.error.errorLoadingPage', {'pageNum': pageNum}) ?? 'Ошибка при загрузке страницы #${pageNum}';
   @override
   String get errorWithMessage => TranslationOverrides.string(_root.$meta, 'preview.error.errorWithMessage', {}) ?? 'Нажми здесь для повтора';
   @override
@@ -3907,6 +3949,32 @@ class _Translations$settings$interface$handSideValues$ru_RU extends Translations
   String get left => TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.left', {}) ?? 'Левая';
   @override
   String get right => TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.right', {}) ?? 'Правая';
+}
+
+// Path: settings.interface.tabPageRestoreModeValues
+class _Translations$settings$interface$tabPageRestoreModeValues$ru_RU extends Translations$settings$interface$tabPageRestoreModeValues$en {
+  _Translations$settings$interface$tabPageRestoreModeValues$ru_RU._(TranslationsRuRu root) : this._root = root, super.internal(root);
+
+  final TranslationsRuRu _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get ask => TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.ask', {}) ?? 'Всегда спрашивать';
+  @override
+  String get fetchAndScroll =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.fetchAndScroll', {}) ??
+      'Загрузить и прокрутить до страницы';
+  @override
+  String get fetchNoScroll =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.fetchNoScroll', {}) ??
+      'Загрузить до страницы, не прокручивать';
+  @override
+  String get fetchOnlyPage =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.fetchOnlyPage', {}) ??
+      'Загрузить только сохраненную страницу';
+  @override
+  String get ignore =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.ignore', {}) ?? 'Игнорировать сохраненную страницу';
 }
 
 // Path: settings.viewer.imageQualityValues
@@ -4142,7 +4210,7 @@ extension on TranslationsRuRu {
           'filter' => TranslationOverrides.string(_root.$meta, 'filter', {}) ?? 'Фильтр',
           'or' => TranslationOverrides.string(_root.$meta, 'or', {}) ?? 'Или (~)',
           'page' => TranslationOverrides.string(_root.$meta, 'page', {}) ?? 'Страница',
-          'pageNumber' => TranslationOverrides.string(_root.$meta, 'pageNumber', {}) ?? 'Страница №',
+          'pageNumber' => TranslationOverrides.string(_root.$meta, 'pageNumber', {}) ?? 'Страница #',
           'tags' => TranslationOverrides.string(_root.$meta, 'tags', {}) ?? 'Теги',
           'type' => TranslationOverrides.string(_root.$meta, 'type', {}) ?? 'Тип',
           'name' => TranslationOverrides.string(_root.$meta, 'name', {}) ?? 'Имя',
@@ -4244,6 +4312,9 @@ extension on TranslationsRuRu {
                   many: 'Восстановлено ${count} вкладок из предыдущей сессии',
                   other: 'Восстановлено ${count} вкладок из предыдущей сессии',
                 ),
+          'searchHandler.restoringPage' => TranslationOverrides.string(_root.$meta, 'searchHandler.restoringPage', {}) ?? 'Восстановление страницы',
+          'searchHandler.pageRestoreMode' =>
+            TranslationOverrides.string(_root.$meta, 'searchHandler.pageRestoreMode', {}) ?? 'Режим восстановления страницы',
           'searchHandler.someRestoredTabsHadIssues' =>
             TranslationOverrides.string(_root.$meta, 'searchHandler.someRestoredTabsHadIssues', {}) ??
                 'Некоторые восстановленные вкладки были для неизвестных сайтов или содержали повреждённые символы.',
@@ -4832,10 +4903,10 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayFallbackHelp', {}) ??
                 'Это будет использоваться, когда опция Шахматный невозможна',
           'settings.interface.staggeredPageBoundaries' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.staggeredPageBoundaries', {}) ?? 'Шахматная сетка слева направо',
+            TranslationOverrides.string(_root.$meta, 'settings.interface.staggeredPageBoundaries', {}) ?? 'Шахматная сетка строками слева направо',
           'settings.interface.staggeredPageBoundariesHelp' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.staggeredPageBoundariesHelp', {}) ??
-                'Группировать превью в шахматной сетке в строки слева направо и разделять загруженные страницы',
+                'Группировать превью в шахматной сетке в строки слева направо вместо размещения в самый короткий столбец',
           'settings.interface.dontScaleImages' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImages', {}) ?? 'Не масштабировать изображения',
           'settings.interface.dontScaleImagesSubtitle' =>
@@ -4875,6 +4946,26 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.left', {}) ?? 'Левая',
           'settings.interface.handSideValues.right' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.right', {}) ?? 'Правая',
+          'settings.interface.tabPageRestoreMode' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreMode', {}) ?? 'Режим восстановления страниц во вкладках',
+          'settings.interface.applyToAllTabs' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.applyToAllTabs', {}) ?? 'Применить ко всем вкладкам?',
+          'settings.interface.saveTabViewedPageByDefault' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.saveTabViewedPageByDefault', {}) ??
+                'Сохранять просмотренную страницу по умолчанию',
+          'settings.interface.tabPageRestoreModeValues.ask' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.ask', {}) ?? 'Всегда спрашивать',
+          'settings.interface.tabPageRestoreModeValues.fetchAndScroll' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.fetchAndScroll', {}) ??
+                'Загрузить и прокрутить до страницы',
+          'settings.interface.tabPageRestoreModeValues.fetchNoScroll' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.fetchNoScroll', {}) ??
+                'Загрузить до страницы, не прокручивать',
+          'settings.interface.tabPageRestoreModeValues.fetchOnlyPage' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.fetchOnlyPage', {}) ??
+                'Загрузить только сохраненную страницу',
+          'settings.interface.tabPageRestoreModeValues.ignore' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.ignore', {}) ?? 'Игнорировать сохраненную страницу',
           'settings.theme.title' => TranslationOverrides.string(_root.$meta, 'settings.theme.title', {}) ?? 'Темы',
           'settings.theme.themeMode' => TranslationOverrides.string(_root.$meta, 'settings.theme.themeMode', {}) ?? 'Режим темы',
           'settings.theme.blackBg' => TranslationOverrides.string(_root.$meta, 'settings.theme.blackBg', {}) ?? 'Чёрный фон',
@@ -4958,6 +5049,9 @@ extension on TranslationsRuRu {
           'settings.viewer.toolbarButtonsOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.toolbarButtonsOrder', {}) ?? 'Порядок кнопок панели инструментов',
           'settings.viewer.buttonsOrder' => TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonsOrder', {}) ?? 'Порядок кнопок',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.viewer.longPressToChangeItemOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.longPressToChangeItemOrder', {}) ??
                 'Длительное нажатие для изменения порядка элементов.',
@@ -4979,9 +5073,6 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionsAsk', {}) ?? '- Спросить - всегда спрашивать, как поделиться',
           'settings.viewer.shareActionsPostURL' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionsPostURL', {}) ?? '- Ссылка на пост',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.viewer.shareActionsFileURL' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionsFileURL', {}) ??
                 '- Ссылка на файл - делиться прямой ссылкой на оригинальный файл (может не работать с некоторыми сайтами)',
@@ -5861,20 +5952,41 @@ extension on TranslationsRuRu {
           'comments.noBooruAPIForComments' =>
             TranslationOverrides.string(_root.$meta, 'comments.noBooruAPIForComments', {}) ?? 'У этого сайта нет комментариев или API для них',
           'pageChanger.title' => TranslationOverrides.string(_root.$meta, 'pageChanger.title', {}) ?? 'Переключатель страниц',
-          'pageChanger.pageLabel' => TranslationOverrides.string(_root.$meta, 'pageChanger.pageLabel', {}) ?? 'Страница №',
+          'pageChanger.pageLabel' => TranslationOverrides.string(_root.$meta, 'pageChanger.pageLabel', {}) ?? 'Страница #',
           'pageChanger.delayBetweenLoadings' =>
             TranslationOverrides.string(_root.$meta, 'pageChanger.delayBetweenLoadings', {}) ?? 'Задержка между загрузками (мс)',
           'pageChanger.delayInMs' => TranslationOverrides.string(_root.$meta, 'pageChanger.delayInMs', {}) ?? 'Задержка в мс',
           'pageChanger.currentPage' =>
             ({required int number}) =>
-                TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? 'Текущая страница №${number}',
+                TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? 'Текущая страница #${number}',
+          'pageChanger.currentPageShort' =>
+            ({required int number}) =>
+                TranslationOverrides.string(_root.$meta, 'pageChanger.currentPageShort', {'number': number}) ?? 'Текущая: ${number}',
           'pageChanger.possibleMaxPage' =>
             ({required int number}) =>
-                TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? 'Возможная макс. страница №~${number}',
+                TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? 'Возможная макс. страница #~${number}',
+          'pageChanger.possibleMaxPageShort' =>
+            ({required int number}) =>
+                TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPageShort', {'number': number}) ?? 'Максимум: ~${number}',
           'pageChanger.searchCurrentlyRunning' =>
             TranslationOverrides.string(_root.$meta, 'pageChanger.searchCurrentlyRunning', {}) ?? 'В данный момент выполняется поиск!',
+          'pageChanger.scrollToFetchedPage' =>
+            TranslationOverrides.string(_root.$meta, 'pageChanger.scrollToFetchedPage', {}) ?? 'Прокрутить до загруженной страницы',
+          'pageChanger.saveViewedPage' =>
+            TranslationOverrides.string(_root.$meta, 'pageChanger.saveViewedPage', {}) ?? 'Сохранять просмотренную страницу',
           'pageChanger.jumpToPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.jumpToPage', {}) ?? 'Перейти на страницу',
           'pageChanger.searchUntilPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.searchUntilPage', {}) ?? 'Поиск до страницы',
+          'pageChanger.scrollToPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.scrollToPage', {}) ?? 'Прокрутить до страницы',
+          'pageChanger.restoreLastViewedPage' =>
+            TranslationOverrides.string(_root.$meta, 'pageChanger.restoreLastViewedPage', {}) ?? 'Восстановить последнюю просмотренную страницу?',
+          'pageChanger.browsedToPageLastTime' =>
+            ({required int page}) =>
+                TranslationOverrides.string(_root.$meta, 'pageChanger.browsedToPageLastTime', {'page': page}) ??
+                'В последний раз просмотрено до страницы: #${page}',
+          'pageChanger.tooManyPagesToRestoreWarning' =>
+            TranslationOverrides.string(_root.$meta, 'pageChanger.tooManyPagesToRestoreWarning', {}) ??
+                'Восстановление слишком большого количества страниц сразу или слишком быстро может привести к временной блокировке доступа к сайту',
+          'pageChanger.rememberMyChoice' => TranslationOverrides.string(_root.$meta, 'pageChanger.rememberMyChoice', {}) ?? 'Запомнить мой выбор',
           'pageChanger.stopSearching' => TranslationOverrides.string(_root.$meta, 'pageChanger.stopSearching', {}) ?? 'Остановить поиск',
           'tagsFiltersDialogs.emptyInput' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.emptyInput', {}) ?? 'Пустой ввод!',
           'tagsFiltersDialogs.addNewFilter' =>
@@ -5966,6 +6078,9 @@ extension on TranslationsRuRu {
           'tagView.score' => TranslationOverrides.string(_root.$meta, 'tagView.score', {}) ?? 'Оценка',
           'tagView.noTagsFound' => TranslationOverrides.string(_root.$meta, 'tagView.noTagsFound', {}) ?? 'Теги не найдены',
           'tagView.copy' => TranslationOverrides.string(_root.$meta, 'tagView.copy', {}) ?? 'Копировать',
+          _ => null,
+        } ??
+        switch (path) {
           'tagView.removeFromSearch' => TranslationOverrides.string(_root.$meta, 'tagView.removeFromSearch', {}) ?? 'Удалить из поиска',
           'tagView.addToSearch' => TranslationOverrides.string(_root.$meta, 'tagView.addToSearch', {}) ?? 'Добавить в поиск',
           'tagView.addedToSearchBar' => TranslationOverrides.string(_root.$meta, 'tagView.addedToSearchBar', {}) ?? 'Добавлено в строку поиска:',
@@ -5988,9 +6103,6 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'tagView.copiedFileURL', {}) ?? 'Ссылка на файл скопирована в буфер обмена',
           'tagView.tagPreviews' => TranslationOverrides.string(_root.$meta, 'tagView.tagPreviews', {}) ?? 'Предпросмотры тегов',
           'tagView.currentState' => TranslationOverrides.string(_root.$meta, 'tagView.currentState', {}) ?? 'Текущее состояние',
-          _ => null,
-        } ??
-        switch (path) {
           'tagView.history' => TranslationOverrides.string(_root.$meta, 'tagView.history', {}) ?? 'История',
           'tagView.failedToLoadPreviewPage' =>
             TranslationOverrides.string(_root.$meta, 'tagView.failedToLoadPreviewPage', {}) ?? 'Не удалось загрузить страницу предпросмотра',
@@ -6271,7 +6383,7 @@ extension on TranslationsRuRu {
                 'Загружено страниц: ${pageNum}\nНажми здесь, чтобы перезагрузить последнюю страницу',
           'preview.error.loadingPage' =>
             ({required int pageNum}) =>
-                TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? 'Загрузка страницы №${pageNum}…',
+                TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? 'Загрузка страницы #${pageNum}…',
           'preview.error.startedAgo' =>
             ({required num seconds}) =>
                 TranslationOverrides.plural(_root.$meta, 'preview.error.startedAgo', {'seconds': seconds}) ??
@@ -6288,7 +6400,7 @@ extension on TranslationsRuRu {
           'preview.error.errorLoadingPage' =>
             ({required int pageNum}) =>
                 TranslationOverrides.string(_root.$meta, 'preview.error.errorLoadingPage', {'pageNum': pageNum}) ??
-                'Ошибка при загрузке страницы №${pageNum}',
+                'Ошибка при загрузке страницы #${pageNum}',
           'preview.error.errorWithMessage' =>
             TranslationOverrides.string(_root.$meta, 'preview.error.errorWithMessage', {}) ?? 'Нажми здесь для повтора',
           'preview.error.errorNoResultsLoaded' =>

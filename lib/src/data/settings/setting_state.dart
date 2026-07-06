@@ -71,6 +71,9 @@ class SettingState<T> {
     final validated = def.validate?.call(newValue) ?? newValue;
     final oldValue = _globalValue.value;
     _globalValue.value = validated;
+    if (oldValue != validated) {
+      def.onScopedChanged?.call(oldValue, validated, null);
+    }
     if (!def.supportsPerBooru && oldValue != validated) {
       def.onChanged?.call(oldValue, validated);
     }
@@ -87,6 +90,9 @@ class SettingState<T> {
     final validated = def.validate?.call(newValue) ?? newValue;
     final oldValue = _globalValue.value;
     _globalValue.value = validated;
+    if (oldValue != validated) {
+      def.onScopedChanged?.call(oldValue, validated, null);
+    }
     if (!def.supportsPerBooru && oldValue != validated) {
       def.onChanged?.call(oldValue, validated);
     }
@@ -156,7 +162,7 @@ class SettingState<T> {
     bool debounceSave = false,
   }) {
     final validated = def.validate?.call(val) ?? val;
-    final oldValue = _booruOverrides.value[booruName];
+    final oldValue = _booruOverrides.value[booruName] ?? _globalValue.value;
     final map = Map<String, T>.from(_booruOverrides.value);
     map[booruName] = validated;
     _booruOverrides.value = map; // Triggers notification

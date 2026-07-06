@@ -15,6 +15,7 @@ import 'package:lolisnatcher/src/data/settings/scroll_direction.dart';
 import 'package:lolisnatcher/src/data/settings/setting_state.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/data/settings/share_action.dart';
+import 'package:lolisnatcher/src/data/settings/tab_page_restore_mode.dart';
 import 'package:lolisnatcher/src/data/settings/vertical_position.dart';
 import 'package:lolisnatcher/src/data/settings/video_backend_mode.dart';
 import 'package:lolisnatcher/src/data/settings/video_cache_mode.dart';
@@ -33,6 +34,8 @@ enum SettingKey {
   previewDisplay,
   previewDisplayFallback,
   staggeredPageBoundaries,
+  tabPageRestoreMode,
+  defaultSavePageEnabled,
   appMode,
   handSide,
   showBottomSearchbar,
@@ -218,6 +221,8 @@ abstract class SX {
   static const previewDisplay = TypedKey<PreviewDisplayMode>(SettingKey.previewDisplay);
   static const previewDisplayFallback = TypedKey<PreviewDisplayMode>(SettingKey.previewDisplayFallback);
   static const staggeredPageBoundaries = TypedKey<bool>(SettingKey.staggeredPageBoundaries);
+  static const tabPageRestoreMode = TypedKey<TabPageRestoreMode>(SettingKey.tabPageRestoreMode);
+  static const defaultSavePageEnabled = TypedKey<bool>(SettingKey.defaultSavePageEnabled);
   static const appMode = TypedKey<AppMode>(SettingKey.appMode);
   static const handSide = TypedKey<HandSide>(SettingKey.handSide);
   static const showBottomSearchbar = TypedKey<bool>(SettingKey.showBottomSearchbar);

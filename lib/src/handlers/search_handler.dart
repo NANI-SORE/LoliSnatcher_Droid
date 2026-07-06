@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +24,9 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
+import 'package:lolisnatcher/src/data/settings/tab_page_restore_mode.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
+import 'package:lolisnatcher/src/widgets/dialogs/tab_restore_dialog.dart';
 import 'package:lolisnatcher/src/utils/ordered_selection_index.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
@@ -91,6 +94,7 @@ class SearchHandler {
       secondaryBoorus,
       searchText,
     );
+    newTab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
     if (customPage != null) {
       newTab.booruHandler.pageNum = customPage;
     }
@@ -175,6 +179,7 @@ class SearchHandler {
       searchTextController.text = defaultText;
 
       final SearchTab newTab = SearchTab(currentBooru, null, defaultText);
+      newTab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
       tabs[0] = newTab;
       changeTabIndex(0);
     }
@@ -207,6 +212,7 @@ class SearchHandler {
       searchTextController.text = defaultText;
 
       final SearchTab newTab = SearchTab(currentBooru, null, defaultText);
+      newTab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
       tabs.value[0] = newTab;
       changeTabIndex(0);
     } else {
@@ -264,15 +270,80 @@ class SearchHandler {
   AutoScrollController gridScrollController =
       AutoScrollController(); // will be overwritten on the first render because there is hasClients check
   RxDouble scrollOffset = 0.0.obs;
+
+  /// The current page number based on scroll position (first visible item's page)
+  RxInt currentScrollPage = 0.obs;
+
+  /// Last known column count, updated by the grid builders
+  int currentColumnCount = 2;
+
   // stream that will notify it's listeners about scroll events of the grid controller
   StreamController<ScrollNotification>? _scrollStream;
   Stream<ScrollNotification>? get scrollStream => _scrollStream?.stream;
+  bool _scrollPageUpdateScheduled = false;
 
   void sendToScrollStream(ScrollNotification notification) {
     _scrollStream?.sink.add(notification);
 
     scrollOffset.value = gridScrollController.offset;
     currentTab.scrollPosition = gridScrollController.offset;
+
+    if (!_scrollPageUpdateScheduled) {
+      _scrollPageUpdateScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollPageUpdateScheduled = false;
+        _updateCurrentScrollPage();
+      });
+    }
+  }
+
+  void _updateCurrentScrollPage() {
+    if (currentTab.pageRestored == false) return;
+    if (currentFetched.isEmpty) return;
+    if (!gridScrollController.hasClients) return;
+
+    final tagMap = gridScrollController.tagMap;
+    if (tagMap.isEmpty) return;
+
+    final double viewportHeight = gridScrollController.position.viewportDimension;
+
+    // Collect visible items with their vertical positions
+    double? topRowTop;
+    int highestPageOnTopRow = -1;
+
+    for (final entry in tagMap.entries) {
+      final RenderObject? renderObj = entry.value.context.findRenderObject();
+      if (renderObj is! RenderBox || !renderObj.hasSize) continue;
+
+      final double itemTop =
+          renderObj.localToGlobal(Offset.zero).dy - gridScrollController.viewportBoundaryGetter().top;
+      final double itemBottom = itemTop + renderObj.size.height;
+
+      // Skip items outside the viewport
+      if (itemBottom <= 0 || itemTop >= viewportHeight) continue;
+
+      if (entry.key < 0 || entry.key >= currentFetched.length) continue;
+
+      final int page = currentFetched[entry.key].fetchedPage;
+      if (page <= -1) continue;
+
+      // Identify the topmost row: items sharing roughly the same top position (within 8px tolerance for staggered)
+      if (topRowTop == null || itemTop < topRowTop - 8) {
+        // New topmost row found.
+        topRowTop = itemTop;
+        highestPageOnTopRow = page;
+      } else if ((itemTop - topRowTop).abs() <= 8) {
+        // Same row - pick the highest page number (new page wins)
+        if (page > highestPageOnTopRow) {
+          highestPageOnTopRow = page;
+        }
+      }
+    }
+
+    if (highestPageOnTopRow > -1 && currentScrollPage.value != highestPageOnTopRow) {
+      currentTab.scrollPage = highestPageOnTopRow;
+      currentScrollPage.value = highestPageOnTopRow;
+    }
   }
 
   // search box text controller
@@ -306,11 +377,11 @@ class SearchHandler {
   final GlobalKey mainDrawerKey = GlobalKey();
 
   // switch to tab #index
-  void changeTabIndex(
+  Future<void> changeTabIndex(
     int i, {
     bool switchOnly = false,
     bool ignoreSameIndexCheck = false,
-  }) {
+  }) async {
     // change only if new index != current index
     // final int oldIndex = currentIndex;
     int newIndex = i;
@@ -344,6 +415,7 @@ class SearchHandler {
     pageNum.value = currentBooruHandler.pageNum;
     isLastPage.value = currentBooruHandler.locked;
     errorString.value = currentBooruHandler.errorString;
+    currentScrollPage.value = 0;
 
     if (switchOnly) {
       // only used when we need to switch tabs around, but don't trigger new search call (e.g. when removing tabs)
@@ -358,18 +430,24 @@ class SearchHandler {
     // print('isNEW: $isNewSearch ${currentIndex}');
     // trigger search if there are items inside booruHandler
     if (isNewSearch) {
-      runSearch().then((_) {
-        tabId.value = tabs[currentIndex].id;
-      });
+      final startId = tabs[currentIndex].id;
+      await runSearch();
+      tabId.value = tabs[currentIndex].id;
+      if (startId == currentTabId && errorString.value.isEmpty && _pendingPageRestores.containsKey(newIndex)) {
+        unawaited(tryRestoreTabPage(newIndex));
+      }
     } else {
       tabId.value = tabs[currentIndex].id;
+      if (errorString.value.isEmpty && _pendingPageRestores.containsKey(newIndex)) {
+        unawaited(tryRestoreTabPage(newIndex));
+      }
     }
 
     // print('changed index from $oldIndex to $newIndex');
   }
 
   // recreate current tab with custom starting page number
-  void changeCurrentTabPageNumber(int newPageNum) {
+  Future<void> changeCurrentTabPageNumber(int newPageNum) async {
     final SearchTab newTab = SearchTab(
       currentBooru,
       currentSecondaryBoorus.value,
@@ -377,40 +455,10 @@ class SearchHandler {
     );
     newTab.booruHandler.pageNum = newPageNum;
     pageNum.value = newPageNum;
+    newTab.savePageEnabled.value = tabs[currentIndex].savePageEnabled.value;
     tabs[currentIndex] = newTab;
 
-    changeTabIndex(currentIndex, ignoreSameIndexCheck: true);
-  }
-
-  RxBool isRunningAutoSearch = false.obs;
-  // search on the current tab until we reach given page number or there is an error
-  Future<void> searchCurrentTabUntilPageNumber(
-    int newPageNum, {
-    int? customDelay,
-  }) async {
-    if (isRunningAutoSearch.value) {
-      return;
-    }
-    isRunningAutoSearch.value = true;
-
-    if (newPageNum > pageNum.value) {
-      int tempNum = pageNum.value;
-      while (isRunningAutoSearch.value && tempNum < newPageNum) {
-        if (!isLoading.value) {
-          await runSearch();
-          tempNum++;
-          // print('search num $tempNum ${pageNum.value}');
-
-          if (errorString.value.isNotEmpty) {
-            break;
-          }
-
-          await Future.delayed(Duration(milliseconds: customDelay ?? 200));
-        }
-      }
-    }
-
-    isRunningAutoSearch.value = false;
+    await changeTabIndex(currentIndex, ignoreSameIndexCheck: true);
   }
 
   HasTabWithTagResult hasTabWithTag(String tag, {Booru? customBooru}) {
@@ -482,7 +530,18 @@ class SearchHandler {
   RxBool selectionControlsBlocked = false.obs;
   void filterCurrentFetched() {
     if (tabs.isNotEmpty) {
-      currentBooruHandler.filterFetched();
+      currentBooruHandler.refilterAll();
+    }
+  }
+
+  void invalidateSavedPages({String? booruName}) {
+    for (final tab in tabs) {
+      if (booruName != null && tab.selectedBooru.value.name != booruName) {
+        continue;
+      }
+      tab
+        ..pageRestored = true
+        ..scrollPage = null;
     }
   }
 
@@ -504,7 +563,10 @@ class SearchHandler {
           currentSecondaryBoorus.value,
           text,
         );
+        newTab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
         tabs.add(newTab);
+      } else {
+        return;
       }
     } else {
       final SearchTab newTab = SearchTab(
@@ -512,13 +574,14 @@ class SearchHandler {
         currentSecondaryBoorus.value,
         text,
       );
+      newTab.savePageEnabled.value = tabs[currentIndex].savePageEnabled.value;
       tabs[currentIndex] = newTab;
     }
 
     unawaited(searchReactions(text, newBooru ?? currentBooru));
 
     // run search
-    changeTabIndex(currentIndex, ignoreSameIndexCheck: true);
+    await changeTabIndex(currentIndex, ignoreSameIndexCheck: true);
 
     // write to history
     if (text != '' && SX.searchHistoryEnabled.value) {
@@ -604,6 +667,7 @@ class SearchHandler {
     final List<Booru>? secondary = canAddSecondary ? secondaryBoorus : null;
 
     final SearchTab newTab = SearchTab(currentBooru, secondary, currentTab.tags);
+    newTab.savePageEnabled.value = tabs[currentIndex].savePageEnabled.value;
     tabs[currentIndex] = newTab;
 
     // run search
@@ -674,6 +738,7 @@ class SearchHandler {
     currentBooruHandler.pageNum--;
     pageNum--;
     await runSearch();
+    isRunningAutoSearch.value = false;
     return;
   }
 
@@ -796,7 +861,7 @@ class SearchHandler {
       );
 
       tabs.value = restoredGlobals;
-      changeTabIndex(newIndex);
+      await changeTabIndex(newIndex);
     } else {
       Booru defaultBooru = Booru.unknown();
       // Set the default booru and tags at the start
@@ -807,11 +872,10 @@ class SearchHandler {
       if (defaultBooru.type != null) {
         final SearchTab newTab = SearchTab(defaultBooru, null, defaultText);
         tabs.add(newTab);
-        changeTabIndex(0);
+        await changeTabIndex(0);
       }
       searchTextController.text = defaultText;
     }
-    return;
   }
 
   @Deprecated('Switched to new json format. Remove this after a few versions')
@@ -926,6 +990,12 @@ class SearchHandler {
           );
         }
 
+        // Track page restore for this tab
+        if (tabBackup.pageNum != null && tabBackup.pageNum! > -1) {
+          _pendingPageRestores[restoredTabs.length - 1] = tabBackup.pageNum!;
+          restoredTabs.last.pageRestored = newTab.selectedBooru.value.name == null;
+        }
+
         // get index of selected tab
         // newSelectedIndex == 0 check is to ensure that the first tab with selected:true is used
         if (newSelectedIndex == 0 && tabBackup.selected) {
@@ -976,20 +1046,20 @@ class SearchHandler {
       );
 
       tabs.value = restoredTabs;
-      changeTabIndex(newSelectedIndex);
+      await changeTabIndex(newSelectedIndex);
     } else {
       Booru defaultBooru = Booru.unknown();
       if (settingsHandler.booruList.isNotEmpty) {
         defaultBooru = settingsHandler.booruList[0];
       }
       final String defaultText = defaultBooru.defTags?.isNotEmpty == true ? defaultBooru.defTags! : SX.defTags.value;
-      if (defaultBooru.type != null) {
-        tabs.add(
-          SearchTab(defaultBooru, null, defaultText),
-        );
-        changeTabIndex(0);
-      }
       searchTextController.text = defaultText;
+      if (defaultBooru.type != null) {
+        final defaultTab = SearchTab(defaultBooru, null, defaultText);
+        defaultTab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
+        tabs.add(defaultTab);
+        await changeTabIndex(0);
+      }
     }
     return;
   }
@@ -1074,12 +1144,17 @@ class SearchHandler {
             tab.secondaryBoorus.value?.map((b) => b.name ?? 'unknown').toList() ?? [];
         final bool selected = tab == tabs[tabIndex];
 
+        // Save page number only if enabled for this tab
+        final int? savedPageNum = tab.savePageEnabled.value ? (_getTabCurrentPage(tab) ?? tab.scrollPage) : null;
+
         return jsonEncode(
           TabBackup(
             tags: tags,
             booru: booruName,
             secondaryBoorus: secondaryBoorusNames,
             selected: selected,
+            pageNum: savedPageNum,
+            savePageEnabled: tab.savePageEnabled.value,
           ).toJson(),
         );
       }).toList();
@@ -1088,6 +1163,21 @@ class SearchHandler {
     } else {
       return null;
     }
+  }
+
+  /// Gets the current page for a specific tab based on its scroll position
+  int? _getTabCurrentPage(SearchTab tab) {
+    if (tab == currentTab && currentScrollPage.value > -1) {
+      if (tab.pageRestored == false) {
+        // keep backup page number while page restore is in progress
+        return null;
+      }
+      return currentScrollPage.value;
+    }
+    if (tab.booruHandler.filteredFetched.isNotEmpty) {
+      return tab.scrollPage;
+    }
+    return null;
   }
 
   SearchTab parseTabFromBackup(TabBackup backup) {
@@ -1109,11 +1199,14 @@ class SearchHandler {
         .toList();
     secondaryBoorus = secondaryBoorus.map(handleFavDlsNameChange).where((b) => b.name != null).toList();
 
-    return SearchTab(
+    final tab = SearchTab(
       selectedBooru,
       secondaryBoorus.isEmpty ? null : secondaryBoorus,
       backup.tags,
     );
+    tab.savePageEnabled.value = backup.savePageEnabled;
+    tab.scrollPage = backup.pageNum;
+    return tab;
   }
 
   Booru handleFavDlsNameChange(Booru booru) {
@@ -1161,13 +1254,14 @@ class SearchHandler {
         defaultBooru = settingsHandler.booruList[0];
       }
       final String defaultText = defaultBooru.defTags?.isNotEmpty == true ? defaultBooru.defTags! : SX.defTags.value;
+      searchTextController.text = defaultText;
       if (defaultBooru.type != null) {
         final SearchTab newTab = SearchTab(defaultBooru, null, defaultText);
+        newTab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
         tabs.clear();
         tabs.add(newTab);
-        changeTabIndex(0);
+        await changeTabIndex(0);
       }
-      searchTextController.text = defaultText;
     }
 
     // allow backup only after restoring to avoid long operations (i.e. database fixes) delaying restore and therefore causing backup to run before tabs were restored
@@ -1208,6 +1302,159 @@ class SearchHandler {
 
     lastBackupTime = DateTime.now();
   }
+
+  // --- Page restore logic ---
+
+  /// Map of tab index -> saved page number for pending page restores.
+  final Map<int, int> _pendingPageRestores = {};
+
+  /// Attempts to restore the page for the given tab index.
+  /// Called when a tab is switched to for the first time after restore.
+  Future<void> tryRestoreTabPage(int tabIndex) async {
+    final SearchTab tab = tabs[tabIndex];
+    if (tab.pageRestored || isRunningAutoSearch.value) return;
+
+    final int? savedPage = _pendingPageRestores[tabIndex];
+    if (savedPage == null || savedPage <= 2) {
+      tab.pageRestored = true;
+      return;
+    }
+
+    final SettingsHandler settingsHandler = SettingsHandler.instance;
+    TabPageRestoreMode mode = SX.tabPageRestoreMode.value;
+    int delay = 200;
+
+    if (mode.isIgnore) {
+      tab.pageRestored = true;
+      _pendingPageRestores.remove(tabIndex);
+      return;
+    }
+
+    // force scroll page to saved page whild dialog is running to avoid losing page when backup is written in background
+    final tempPage = tab.scrollPage;
+    tab.scrollPage = savedPage;
+
+    final context = NavigationHandler.instance.navContext;
+    if (mode.isAsk) {
+      final res = await showDialog<TabRestoreDialogResult>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => TabRestoreDialog(
+          pageNum: savedPage,
+          tab: tab,
+        ),
+      );
+
+      if (res == null) {
+        // Dialog dismissed - don't mark as restored, ask again on next switch
+        // Should not actually happen, because we block barrier dismiss and back button on dialog, but added just in case
+        tab.pageRestored = true;
+        return;
+      }
+
+      if (res.rememberChoice) {
+        SX.tabPageRestoreMode.state.value = res.selectedMode;
+        await settingsHandler.saveSettings(restate: false);
+      }
+      mode = res.selectedMode;
+      delay = res.delay;
+
+      if (mode.isIgnore) {
+        tab.pageRestored = true;
+        _pendingPageRestores.remove(tabIndex);
+        tab.scrollPage = tempPage;
+        return;
+      }
+    } else {
+      FlashElements.showSnackbar(
+        context: context,
+        title: Text('${context.loc.searchHandler.restoringPage}: $savedPage'),
+        content: Text('${context.loc.searchHandler.pageRestoreMode} ${mode.locName}'),
+      );
+    }
+
+    tab.pageRestored = true;
+    _pendingPageRestores.remove(tabIndex);
+
+    if (mode.isFetchMultiplePages) {
+      tab.scrollPage = tempPage;
+    }
+
+    await executePageRestore(
+      tab,
+      savedPage - 1,
+      mode,
+      customDelay: mode.isFetchMultiplePages ? delay : null,
+    );
+  }
+
+  RxBool isRunningAutoSearch = false.obs;
+
+  /// Executes the page restore for a tab with the given mode.
+  Future<void> executePageRestore(
+    SearchTab tab,
+    int targetPage,
+    TabPageRestoreMode mode, {
+    int? customDelay,
+  }) async {
+    try {
+      if (mode.isFetchOnlyPage) {
+        // Jump to target page directly
+        await changeCurrentTabPageNumber(targetPage);
+      } else if (mode.isFetchMultiplePages) {
+        if (isRunningAutoSearch.value) return;
+        isRunningAutoSearch.value = true;
+
+        bool isError = false;
+
+        // Fetch pages sequentially until we reach the target page
+        while (isRunningAutoSearch.value && tab.booruHandler.pageNum < targetPage && !tab.booruHandler.locked) {
+          tab.booruHandler.pageNum++;
+          pageNum.value = tab.booruHandler.pageNum;
+          isLoading.value = true;
+
+          await tab.booruHandler.search(tab.tags, null);
+          if (errorString.value.isNotEmpty) {
+            isError = true;
+            break;
+          }
+
+          await Future.delayed(Duration(milliseconds: max(customDelay ?? 200, 200)));
+          isLoading.value = false;
+        }
+
+        if (isError) {
+          isRunningAutoSearch.value = false;
+          return;
+        }
+
+        if (isRunningAutoSearch.value && mode.isFetchAndScroll) {
+          // Scroll to first item of target page
+          final int targetIndex = tab.booruHandler.filteredFetched.indexWhere(
+            (item) => item.fetchedPage == targetPage,
+          );
+          if (targetIndex >= 0) {
+            await Future.delayed(const Duration(milliseconds: 200));
+            if (gridScrollController.hasClients) {
+              await gridScrollController.scrollToIndex(
+                targetIndex,
+                duration: const Duration(milliseconds: 10),
+                preferPosition: AutoScrollPosition.begin,
+              );
+              // Small jump to align with same page from backup
+              gridScrollController.jumpTo(
+                gridScrollController.position.pixels + 10,
+              );
+            }
+          }
+        }
+
+        isRunningAutoSearch.value = false;
+      }
+    } catch (_) {
+      isRunningAutoSearch.value = false;
+    }
+  }
 }
 
 class SearchTab {
@@ -1238,6 +1485,7 @@ class SearchTab {
   late final BooruHandler booruHandler;
 
   double scrollPosition = 0;
+  int? scrollPage;
   RxList<BooruItem> selected = RxList<BooruItem>.from([]);
   final OrderedSelectionIndex<BooruItem> _selectedIndices = OrderedSelectionIndex();
   final Set<BooruItem> _lastSelectedItems = Set<BooruItem>.identity();
@@ -1261,6 +1509,12 @@ class SearchTab {
       unawaited(ServiceHandler.vibrate());
     }
   }
+
+  /// Whether to save page position during tab backup.
+  RxBool savePageEnabled = true.obs;
+
+  /// Whether page restore has already been applied for this tab in this session.
+  bool pageRestored = true;
 
   BooruItem? itemWithKey(Key? key) {
     return booruHandler.filteredFetched.firstWhereOrNull((item) => item.key == key);
@@ -1315,7 +1569,7 @@ class SearchTab {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         // update filtered items list in case user has favourites filter enabled
         await Future.delayed(const Duration(milliseconds: 200));
-        booruHandler.filterFetched();
+        booruHandler.refilterAll();
       });
     }
     return item.isFavourite.value;
@@ -1348,7 +1602,7 @@ class SearchTab {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // update filtered items list in case user has favourites filter enabled
       await Future.delayed(const Duration(milliseconds: 200));
-      booruHandler.filterFetched();
+      booruHandler.refilterAll();
     });
   }
 
@@ -1364,11 +1618,15 @@ class TabBackup {
     required this.booru,
     this.secondaryBoorus = const [],
     this.selected = false,
+    this.pageNum,
+    this.savePageEnabled = false,
   });
   final String tags;
   final String booru;
   final List<String> secondaryBoorus;
   final bool selected;
+  final int? pageNum;
+  final bool savePageEnabled;
 
   Map<String, dynamic> toJson() {
     return {
@@ -1376,6 +1634,8 @@ class TabBackup {
       'b': booru,
       if (secondaryBoorus.isNotEmpty) 'sb': secondaryBoorus,
       if (selected) 's': selected, // only true matters, don't include on false
+      if (pageNum != null) 'p': pageNum,
+      if (savePageEnabled) 'sp': savePageEnabled,
     };
   }
 
@@ -1386,6 +1646,8 @@ class TabBackup {
         booru: json['b'] as String,
         secondaryBoorus: (json['sb'] as List<dynamic>?)?.map((e) => e as String).toList() ?? const [],
         selected: (json['s'] as bool?) ?? false,
+        pageNum: json['p'] as int?,
+        savePageEnabled: (json['sp'] as bool?) ?? false,
       );
     } catch (_) {
       try {
@@ -1421,12 +1683,16 @@ class TabBackup {
     String? booru,
     List<String>? secondaryBoorus,
     bool? selected,
+    int? pageNum,
+    bool? savePageEnabled,
   }) {
     return TabBackup(
       tags: tags ?? this.tags,
       booru: booru ?? this.booru,
       secondaryBoorus: secondaryBoorus ?? this.secondaryBoorus,
       selected: selected ?? this.selected,
+      pageNum: pageNum ?? this.pageNum,
+      savePageEnabled: savePageEnabled ?? this.savePageEnabled,
     );
   }
 }

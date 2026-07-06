@@ -18,13 +18,23 @@ class PageNumberDialog extends StatefulWidget {
 class _PageNumberDialogState extends State<PageNumberDialog> {
   final SearchHandler searchHandler = SearchHandler.instance;
 
-  final TextEditingController pageNumberController = TextEditingController(), delayController = TextEditingController();
+  final pageNumberController = TextEditingController(), delayController = TextEditingController();
+
+  bool scrollToFetchedPage = false;
+
+  int get pageNumber {
+    final int? parsedNumber = int.tryParse(pageNumberController.text);
+
+    return parsedNumber != null ? parsedNumber - 1 : 0;
+  }
+
+  int get delay => int.tryParse(delayController.text) ?? 200;
 
   @override
   void initState() {
     super.initState();
 
-    pageNumberController.text = searchHandler.currentBooruHandler.pageNum.toString();
+    pageNumberController.text = searchHandler.currentScrollPage.value.toString();
     delayController.text = 200.toString();
   }
 
@@ -39,6 +49,7 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
   Widget build(BuildContext context) {
     final int total = searchHandler.currentBooruHandler.totalCount.value;
     final int possibleMaxPageNum = total != 0 ? (total / SX.limit.value).round() : 0;
+    final bool isPageBelowCurrentLoaded = pageNumber <= searchHandler.currentBooruHandler.pageNum;
 
     return SettingsBottomSheet(
       title: Text(
@@ -56,8 +67,9 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
           inputType: TextInputType.number,
           numberButtons: true,
           numberStep: 1,
-          numberMin: -1,
+          numberMin: 0,
           numberMax: double.infinity,
+          onChanged: (_) => setState(() {}),
           validator: (value) {
             if (value == null || value.isEmpty) {
               return context.loc.validationErrors.invalidNumber;
@@ -66,6 +78,11 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
             }
             return null;
           },
+        ),
+        Divider(
+          color: Theme.of(context).dividerColor,
+          thickness: 1,
+          height: 1,
         ),
         SettingsTextInput(
           title: context.loc.pageChanger.delayBetweenLoadings,
@@ -77,31 +94,83 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
           inputType: TextInputType.number,
           numberButtons: true,
           numberStep: 100,
-          numberMin: 0,
+          numberMin: 100,
           numberMax: 10000,
           validator: (value) {
             if (value == null || value.isEmpty) {
               return context.loc.validationErrors.invalidNumber;
             } else if (int.tryParse(value) == null) {
               return context.loc.validationErrors.invalidNumericValue;
+            } else if (int.tryParse(value)! < 100 || int.tryParse(value)! > 10000) {
+              return context.loc.validationErrors.invalidNumber;
             }
             return null;
           },
         ),
-        SettingsButton(
-          name: context.loc.pageChanger.currentPage(number: searchHandler.pageNum.value),
-          action: () {
-            pageNumberController.text = searchHandler.pageNum.value.toString();
-          },
-          drawTopBorder: true,
-        ),
-        if (possibleMaxPageNum != 0)
-          SettingsButton(
-            name: context.loc.pageChanger.possibleMaxPage(number: possibleMaxPageNum),
-            action: () {
-              pageNumberController.text = possibleMaxPageNum.toString();
-            },
+        IgnorePointer(
+          ignoring: isPageBelowCurrentLoaded,
+          child: Opacity(
+            opacity: isPageBelowCurrentLoaded ? 0.66 : 1,
+            child: SettingsToggle(
+              value: isPageBelowCurrentLoaded || scrollToFetchedPage,
+              onChanged: (newValue) {
+                setState(() {
+                  scrollToFetchedPage = newValue;
+                });
+              },
+              title: context.loc.pageChanger.scrollToFetchedPage,
+              drawTopBorder: true,
+            ),
           ),
+        ),
+        SettingsToggle(
+          value: searchHandler.currentTab.savePageEnabled.value,
+          onChanged: (newValue) async {
+            setState(() {
+              searchHandler.currentTab.savePageEnabled.value = newValue;
+            });
+            await searchHandler.backupTabs();
+          },
+          title: context.loc.pageChanger.saveViewedPage,
+          leadingIcon: Icon(
+            searchHandler.currentTab.savePageEnabled.value ? Icons.bookmark : Icons.bookmark_border,
+            color: Theme.of(context).iconTheme.color,
+          ),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: SettingsButton(
+                name: possibleMaxPageNum == 0
+                    ? context.loc.pageChanger.currentPage(number: searchHandler.currentBooruHandler.pageNum)
+                    : context.loc.pageChanger.currentPageShort(number: searchHandler.currentBooruHandler.pageNum),
+                action: () {
+                  pageNumberController.text = searchHandler.currentScrollPage.value.toString();
+                },
+              ),
+            ),
+            //
+            if (possibleMaxPageNum != 0)
+              Expanded(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        width: 1,
+                        color: Theme.of(context).dividerColor,
+                      ),
+                    ),
+                  ),
+                  child: SettingsButton(
+                    name: context.loc.pageChanger.possibleMaxPageShort(number: possibleMaxPageNum),
+                    action: () {
+                      pageNumberController.text = possibleMaxPageNum.toString();
+                    },
+                  ),
+                ),
+              ),
+          ],
+        ),
         Obx(
           () => searchHandler.isRunningAutoSearch.value
               ? SettingsButton(
@@ -115,45 +184,70 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
                 )
               : const SizedBox.shrink(),
         ),
-      ],
-      actionButtons: [
-        ElevatedButton.icon(
-          icon: const Icon(Icons.subdirectory_arrow_right_rounded),
-          label: Text(context.loc.pageChanger.jumpToPage),
-          onPressed: () {
-            if (pageNumberController.text.isNotEmpty) {
-              searchHandler.changeCurrentTabPageNumber((int.tryParse(pageNumberController.text) ?? 0) - 1);
-              Navigator.of(context).pop();
-            }
-          },
-        ),
-        Obx(
-          () => ElevatedButton.icon(
-            icon: const Icon(Icons.search_rounded),
-            label: Text(context.loc.pageChanger.searchUntilPage),
-            onPressed: searchHandler.isRunningAutoSearch.value
-                ? null
-                : () {
-                    if (pageNumberController.text.isNotEmpty) {
-                      searchHandler.searchCurrentTabUntilPageNumber(
-                        (int.tryParse(pageNumberController.text) ?? 0) - 1,
-                        customDelay: int.tryParse(delayController.text) ?? 200,
-                      );
-                      Navigator.of(context).pop();
-                    }
-                  },
-          ),
-        ),
-        Obx(
-          () => searchHandler.isRunningAutoSearch.value
-              ? ElevatedButton.icon(
-                  icon: const Icon(Icons.cancel_outlined),
-                  label: Text(context.loc.pageChanger.stopSearching),
-                  onPressed: () {
-                    searchHandler.isRunningAutoSearch.value = false;
-                  },
-                )
-              : const SizedBox.shrink(),
+        //
+        const SizedBox(height: 12),
+        Column(
+          mainAxisSize: .min,
+          mainAxisAlignment: .spaceEvenly,
+          crossAxisAlignment: .stretch,
+          children: [
+            Obx(
+              () => searchHandler.isRunningAutoSearch.value
+                  ? Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.cancel_outlined),
+                        label: Text(context.loc.pageChanger.stopSearching),
+                        onPressed: () {
+                          searchHandler.isRunningAutoSearch.value = false;
+                        },
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+            Obx(
+              () => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.subdirectory_arrow_right_rounded),
+                  label: Text(context.loc.pageChanger.jumpToPage),
+                  onPressed: searchHandler.isRunningAutoSearch.value
+                      ? null
+                      : () {
+                          if (pageNumberController.text.isNotEmpty) {
+                            searchHandler.changeCurrentTabPageNumber(pageNumber);
+                            Navigator.of(context).pop();
+                          }
+                        },
+                ),
+              ),
+            ),
+            Obx(() {
+              return ElevatedButton.icon(
+                icon: Icon(
+                  isPageBelowCurrentLoaded ? Icons.swipe_up : Icons.search_rounded,
+                ),
+                label: Text(
+                  isPageBelowCurrentLoaded
+                      ? context.loc.pageChanger.scrollToPage
+                      : context.loc.pageChanger.searchUntilPage,
+                ),
+                onPressed: searchHandler.isRunningAutoSearch.value
+                    ? null
+                    : () {
+                        if (pageNumberController.text.isNotEmpty) {
+                          searchHandler.executePageRestore(
+                            searchHandler.currentTab,
+                            pageNumber,
+                            (isPageBelowCurrentLoaded || scrollToFetchedPage) ? .fetchAndScroll : .fetchNoScroll,
+                            customDelay: delay,
+                          );
+                          Navigator.of(context).pop();
+                        }
+                      },
+              );
+            }),
+          ],
         ),
       ],
     );

@@ -10,6 +10,7 @@ import 'package:lolisnatcher/src/data/settings/preview_quality.dart';
 import 'package:lolisnatcher/src/data/settings/proxy_type.dart';
 import 'package:lolisnatcher/src/data/settings/scroll_direction.dart';
 import 'package:lolisnatcher/src/data/settings/share_action.dart';
+import 'package:lolisnatcher/src/data/settings/tab_page_restore_mode.dart';
 import 'package:lolisnatcher/src/data/settings/vertical_position.dart';
 import 'package:lolisnatcher/src/data/settings/video_backend_mode.dart';
 import 'package:lolisnatcher/src/data/settings/video_cache_mode.dart';
@@ -144,6 +145,10 @@ void initSettingsEnumRegistry() {
   SettingsEnumRegistry.register<AppAlias>(
     typeName: 'appAlias',
     fromString: AppAlias.fromString,
+  );
+  SettingsEnumRegistry.register<TabPageRestoreMode>(
+    typeName: 'tabPageRestoreMode',
+    fromString: TabPageRestoreMode.fromString,
   );
 }
 

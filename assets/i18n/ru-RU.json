@@ -63,7 +63,7 @@
     "filter": "Фильтр",
     "or": "Или (~)",
     "page": "Страница",
-    "pageNumber": "Страница №",
+    "pageNumber": "Страница #",
     "tags": "Теги",
     "type": "Тип",
     "name": "Имя",
@@ -130,6 +130,8 @@
             "many": "Восстановлено ${count} вкладок из предыдущей сессии",
             "other": "Восстановлено ${count} вкладок из предыдущей сессии"
         },
+        "restoringPage": "Восстановление страницы",
+        "pageRestoreMode": "Режим восстановления страницы",
         "someRestoredTabsHadIssues": "Некоторые восстановленные вкладки были для неизвестных сайтов или содержали повреждённые символы.",
         "theyWereSetToDefaultOrIgnored": "Им были установлены значения по умолчанию или они были проигнорированы.",
         "listOfBrokenTabs": "Список повреждённых вкладок:",
@@ -517,8 +519,8 @@
             "previewDisplay": "Отображение превью",
             "previewDisplayFallback": "Резервное отображение превью",
             "previewDisplayFallbackHelp": "Это будет использоваться, когда опция Шахматный невозможна",
-            "staggeredPageBoundaries": "Шахматная сетка слева направо",
-            "staggeredPageBoundariesHelp": "Группировать превью в шахматной сетке в строки слева направо и разделять загруженные страницы",
+            "staggeredPageBoundaries": "Шахматная сетка строками слева направо",
+            "staggeredPageBoundariesHelp": "Группировать превью в шахматной сетке в строки слева направо вместо размещения в самый короткий столбец",
             "dontScaleImages": "Не масштабировать изображения",
             "dontScaleImagesSubtitle": "Может снизить производительность",
             "dontScaleImagesWarningTitle": "Предупреждение",
@@ -545,6 +547,16 @@
             "handSideValues": {
                 "left": "Левая",
                 "right": "Правая"
+            },
+            "tabPageRestoreMode": "Режим восстановления страниц во вкладках",
+            "applyToAllTabs": "Применить ко всем вкладкам?",
+            "saveTabViewedPageByDefault": "Сохранять просмотренную страницу по умолчанию",
+            "tabPageRestoreModeValues": {
+                "ask": "Всегда спрашивать",
+                "fetchAndScroll": "Загрузить и прокрутить до страницы",
+                "fetchNoScroll": "Загрузить до страницы, не прокручивать",
+                "fetchOnlyPage": "Загрузить только сохраненную страницу",
+                "ignore": "Игнорировать сохраненную страницу"
             }
         },
         "theme": {
@@ -1098,14 +1110,23 @@
     },
     "pageChanger": {
         "title": "Переключатель страниц",
-        "pageLabel": "Страница №",
+        "pageLabel": "Страница #",
         "delayBetweenLoadings": "Задержка между загрузками (мс)",
         "delayInMs": "Задержка в мс",
-        "currentPage(param=number)": "Текущая страница №${number: int}",
-        "possibleMaxPage(param=number)": "Возможная макс. страница №~${number: int}",
+        "currentPage(param=number)": "Текущая страница #${number: int}",
+        "currentPageShort(param=number)": "Текущая: ${number: int}",
+        "possibleMaxPage(param=number)": "Возможная макс. страница #~${number: int}",
+        "possibleMaxPageShort(param=number)": "Максимум: ~${number: int}",
         "searchCurrentlyRunning": "В данный момент выполняется поиск!",
+        "scrollToFetchedPage": "Прокрутить до загруженной страницы",
+        "saveViewedPage": "Сохранять просмотренную страницу",
         "jumpToPage": "Перейти на страницу",
         "searchUntilPage": "Поиск до страницы",
+        "scrollToPage": "Прокрутить до страницы",
+        "restoreLastViewedPage": "Восстановить последнюю просмотренную страницу?",
+        "browsedToPageLastTime(param=page)": "В последний раз просмотрено до страницы: #${page: int}",
+        "tooManyPagesToRestoreWarning": "Восстановление слишком большого количества страниц сразу или слишком быстро может привести к временной блокировке доступа к сайту",
+        "rememberMyChoice": "Запомнить мой выбор",
         "stopSearching": "Остановить поиск"
     },
     "tagsFiltersDialogs": {
@@ -1421,7 +1442,7 @@
             "noResultsSubtitle": "Измени поисковый запрос или нажми чтобы попробовать снова",
             "reachedEnd": "Ты достиг конца",
             "reachedEndSubtitle(param=pageNum)": "Загружено страниц: ${pageNum: int}\nНажми здесь, чтобы перезагрузить последнюю страницу",
-            "loadingPage(param=pageNum)": "Загрузка страницы №${pageNum: int}…",
+            "loadingPage(param=pageNum)": "Загрузка страницы #${pageNum: int}…",
             "startedAgo(param=seconds)": {
                 "one": "Начато ${seconds} секунду назад",
                 "few": "Начато ${seconds} секунды назад",
@@ -1429,7 +1450,7 @@
                 "other": "Начато ${seconds} секунд назад"
             },
             "tapToRetryIfStuck": "Нажми чтобы попробовать снова, если запрос застрял или идет слишком долго",
-            "errorLoadingPage(param=pageNum)": "Ошибка при загрузке страницы №${pageNum: int}",
+            "errorLoadingPage(param=pageNum)": "Ошибка при загрузке страницы #${pageNum: int}",
             "errorWithMessage": "Нажми здесь для повтора",
             "errorNoResultsLoaded": "Ошибка, результаты не загружены",
             "tapToRetry": "Нажми здесь для повтора"

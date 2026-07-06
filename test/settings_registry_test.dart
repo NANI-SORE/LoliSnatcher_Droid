@@ -325,6 +325,32 @@ void main() {
     state.loadFromJson(true);
     expect(changes, hasLength(2));
   });
+
+  test('scoped side effects identify global and per-booru changes', () {
+    final changes = <(int, int, String?)>[];
+    final state = SettingState<int>(
+      SettingDef<int>(
+        key: SettingKey.limit,
+        getDefaultValue: () => 10,
+        localization: const SettingLocalization(title: _testTitle),
+        valueToJson: (value) => value,
+        valueFromJson: (json) => json is int ? json : 10,
+        supportsPerBooru: true,
+        onScopedChanged: (oldValue, newValue, booruName) => changes.add((oldValue, newValue, booruName)),
+      ),
+    );
+
+    state.value = 20;
+    state.setOverrideFor('A', 30);
+    state.setOverrideFor('A', 30);
+    state.removeOverrideFor('A');
+
+    expect(changes, [
+      (10, 20, null),
+      (20, 30, 'A'),
+      (30, 20, 'A'),
+    ]);
+  });
 }
 
 String _testTitle(_) => 'Test';

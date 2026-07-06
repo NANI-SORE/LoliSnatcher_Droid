@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
-import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
 import 'package:lolisnatcher/src/data/booru_item.dart';
@@ -14,8 +13,10 @@ import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/pages/gallery_view_page.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/widgets/common/long_press_repeater.dart';
 import 'package:lolisnatcher/src/widgets/preview/grid_builder.dart';
+import 'package:lolisnatcher/src/widgets/preview/page_indicator.dart';
 import 'package:lolisnatcher/src/widgets/preview/shimmer_builder.dart';
 import 'package:lolisnatcher/src/widgets/preview/staggered_builder.dart';
 import 'package:lolisnatcher/src/widgets/preview/thumbnail_drag_select.dart';
@@ -127,13 +128,17 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
     // print('tabChanged: ${searchHandler.currentTab.scrollPosition} ${searchHandler.gridScrollController.hasClients}');
 
     // postpone scroll updates until the current render is done, since this is called after the global restate after exiting settings
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       // restore scroll position on tab change
       if (searchHandler.gridScrollController.hasClients) {
         searchHandler.gridScrollController.jumpTo(searchHandler.currentTab.scrollPosition);
+        await Future.delayed(const Duration(milliseconds: 50));
+        // workaround to force update scrollPage
+        searchHandler.gridScrollController.jumpTo(searchHandler.gridScrollController.position.pixels + 1);
       } else {
         // if (searchHandler.currentTab.scrollPosition != 0) {
         // TODO reset the controller when appMode changes
+        searchHandler.gridScrollController.dispose();
         searchHandler.gridScrollController = AutoScrollController(
           initialScrollOffset: searchHandler.currentTab.scrollPosition,
           viewportBoundaryGetter: () => Rect.fromLTRB(
@@ -785,8 +790,21 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
                 }
               }
             }
+            if (notif is ScrollEndNotification) {
+              searchHandler.sendToScrollStream(notif);
+            }
             return true;
           },
+        ),
+        Positioned(
+          top: isMobile ? (MediaQuery.paddingOf(context).top + kToolbarHeight + 12) : 12,
+          right: 12,
+          child: GridPageNumberOverlay(
+            key: ValueKey(
+              // recreate when controller is recreated
+              'gridController${searchHandler.gridScrollController.hashCode}',
+            ),
+          ),
         ),
         //
         RepaintBoundary(

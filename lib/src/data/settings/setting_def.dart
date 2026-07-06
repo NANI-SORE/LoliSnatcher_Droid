@@ -36,6 +36,7 @@ class SettingDef<T> {
     this.dependsOn,
     this.enabledWhen,
     this.onChanged,
+    this.onScopedChanged,
   });
 
   /// Type-safe enum key used for registration and lookup.
@@ -124,6 +125,12 @@ class SettingDef<T> {
   /// Called after the value changes. Use for side effects like rebuilding the
   /// theme, switching locale, or toggling the database.
   final void Function(T oldValue, T newValue)? onChanged;
+
+  /// Called after stored global or per-booru values change.
+  ///
+  /// [booruName] is null for global changes and identifies the affected booru
+  /// for override changes.
+  final void Function(T oldValue, T newValue, String? booruName)? onScopedChanged;
 
   /// JSON key for serialization (delegates to the enum).
   String get jsonKey => key.jsonKey;

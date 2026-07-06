@@ -29,12 +29,14 @@ import 'package:lolisnatcher/src/data/settings/settings_enum.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/data/settings/share_action.dart';
 import 'package:lolisnatcher/src/data/settings/special_settings.dart';
+import 'package:lolisnatcher/src/data/settings/tab_page_restore_mode.dart';
 import 'package:lolisnatcher/src/data/settings/typed_settings.dart';
 import 'package:lolisnatcher/src/data/settings/vertical_position.dart';
 import 'package:lolisnatcher/src/data/settings/video_backend_mode.dart';
 import 'package:lolisnatcher/src/data/settings/video_cache_mode.dart';
 import 'package:lolisnatcher/src/data/theme_item.dart';
 import 'package:lolisnatcher/src/handlers/local_auth_handler.dart';
+import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/pages/settings/tags_filters_page.dart';
@@ -289,6 +291,62 @@ void registerAllSettings() {
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.previewDisplayFallback,
         subtitle: (ctx) => ctx.loc.settings.interface.previewDisplayFallbackHelp,
+      ),
+    ),
+  );
+
+  registry.register(
+    settingsEnumSetting(
+      key: .tabPageRestoreMode,
+      getDefaultValue: () => TabPageRestoreMode.defaultValue,
+      values: TabPageRestoreMode.values,
+      fromString: TabPageRestoreMode.fromString,
+      categories: [SettingCategory.interface],
+      isDeviceSpecific: true,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.interface.tabPageRestoreMode,
+      ),
+    ),
+  );
+
+  registry.register(
+    boolSetting(
+      key: .defaultSavePageEnabled,
+      getDefaultValue: () => false,
+      categories: [SettingCategory.interface],
+      isDeviceSpecific: true,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.interface.saveTabViewedPageByDefault,
+      ),
+    ),
+  );
+
+  registry.register(
+    settingsEnumSetting<AppMode>(
+      key: .appMode,
+      getDefaultValue: () => AppMode.defaultValue,
+      values: AppMode.values,
+      fromString: AppMode.fromString,
+      // categories: [SettingCategory.interface], // TODO reenable when desktop is redesigned
+      categories: [],
+      isDeviceSpecific: true,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.interface.appUIMode,
+      ),
+    ),
+  );
+
+  registry.register(
+    settingsEnumSetting<HandSide>(
+      key: .handSide,
+      getDefaultValue: () => HandSide.defaultValue,
+      values: HandSide.values,
+      fromString: HandSide.fromString,
+      categories: [SettingCategory.interface],
+      isDeviceSpecific: true,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.interface.handSide,
+        helpText: (ctx) => ctx.loc.settings.interface.handSideHelp,
       ),
     ),
   );
@@ -1745,6 +1803,23 @@ void registerAllSettings() {
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.booru.itemsPerPage,
         subtitle: (ctx) => ctx.loc.settings.booru.itemsPerPageTip,
+      ),
+      onScopedChanged: (oldV, newV, booruName) {
+        if (oldV != newV) {
+          SearchHandler.instance.invalidateSavedPages(booruName: booruName);
+        }
+      },
+    ),
+  );
+
+  registry.register(
+    boolSetting(
+      key: .loadingGif,
+      getDefaultValue: () => false,
+      categories: [SettingCategory.interface],
+      isDeviceSpecific: true,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.viewer.kannaLoadingGif,
       ),
     ),
   );
