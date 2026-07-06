@@ -89,6 +89,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
   Axis stackAxis = Axis.horizontal;
   _DifferenceColorMode differenceColorMode = _DifferenceColorMode.raw;
   bool imagesSwapped = false;
+  bool controlsVisible = true;
   bool flickerShowSecond = false;
   Timer? flickerTimer;
 
@@ -141,6 +142,17 @@ class _ImageComparePageState extends State<_ImageComparePage> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            tooltip: controlsVisible ? context.loc.hide : context.loc.show,
+            icon: Icon(controlsVisible ? Icons.visibility_off : Icons.visibility),
+            onPressed: () {
+              setState(() {
+                controlsVisible = !controlsVisible;
+              });
+            },
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -158,60 +170,74 @@ class _ImageComparePageState extends State<_ImageComparePage> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: SafeArea(
-              top: false,
-              child: _CompareControls(
-                mode: effectiveMode,
-                syncZoom: syncZoom,
-                stackOpacity: stackOpacity,
-                flickerIntervalMs: flickerIntervalMs,
-                stackAxis: stackAxis,
-                differenceColorMode: differenceColorMode,
-                onResetView: _resetViewAndControls,
-                onSwapImages: () {
-                  setState(() {
-                    imagesSwapped = !imagesSwapped;
-                  });
-                },
-                onModeChanged: (value) {
-                  setState(() {
-                    if (value == _ImageCompareMode.heatmap && !_isHeatmapModeSupported) {
-                      return;
-                    }
-                    mode = value;
-                    _resetTransforms();
-                    _syncFlickerTimer();
-                  });
-                },
-                onSyncZoomChanged: (value) {
-                  setState(() {
-                    syncZoom = value;
-                    if (syncZoom) {
-                      _syncSecondControllerToFirst();
-                    }
-                  });
-                },
-                onStackOpacityChanged: (value) {
-                  setState(() {
-                    stackOpacity = value;
-                  });
-                },
-                onFlickerIntervalChanged: (value) {
-                  setState(() {
-                    flickerIntervalMs = value;
-                    _syncFlickerTimer();
-                  });
-                },
-                onStackAxisChanged: (value) {
-                  setState(() {
-                    stackAxis = value;
-                  });
-                },
-                onDifferenceColorModeChanged: (value) {
-                  setState(() {
-                    differenceColorMode = value;
-                  });
-                },
+            child: AnimatedSlide(
+              offset: controlsVisible ? Offset.zero : const Offset(0, 1),
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeInOutCubic,
+              child: AnimatedOpacity(
+                opacity: controlsVisible ? 1 : 0,
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeInOutCubic,
+                child: IgnorePointer(
+                  ignoring: !controlsVisible,
+                  child: SafeArea(
+                    top: false,
+                    child: _CompareControls(
+                      mode: effectiveMode,
+                      syncZoom: syncZoom,
+                      stackOpacity: stackOpacity,
+                      flickerIntervalMs: flickerIntervalMs,
+                      stackAxis: stackAxis,
+                      differenceColorMode: differenceColorMode,
+                      onResetView: _resetViewAndControls,
+                      onSwapImages: () {
+                        setState(() {
+                          imagesSwapped = !imagesSwapped;
+                        });
+                      },
+                      onModeChanged: (value) {
+                        setState(() {
+                          if (value == _ImageCompareMode.heatmap && !_isHeatmapModeSupported) {
+                            return;
+                          }
+                          mode = value;
+                          _resetTransforms();
+                          _resetModeControls();
+                          _syncFlickerTimer();
+                        });
+                      },
+                      onSyncZoomChanged: (value) {
+                        setState(() {
+                          syncZoom = value;
+                          if (syncZoom) {
+                            _syncSecondControllerToFirst();
+                          }
+                        });
+                      },
+                      onStackOpacityChanged: (value) {
+                        setState(() {
+                          stackOpacity = value;
+                        });
+                      },
+                      onFlickerIntervalChanged: (value) {
+                        setState(() {
+                          flickerIntervalMs = value;
+                          _syncFlickerTimer();
+                        });
+                      },
+                      onStackAxisChanged: (value) {
+                        setState(() {
+                          stackAxis = value;
+                        });
+                      },
+                      onDifferenceColorModeChanged: (value) {
+                        setState(() {
+                          differenceColorMode = value;
+                        });
+                      },
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -223,14 +249,24 @@ class _ImageComparePageState extends State<_ImageComparePage> {
   void _resetViewAndControls() {
     setState(() {
       _resetTransforms();
-      syncZoom = true;
-      stackSplit = 0.5;
-      stackOpacity = 1;
-      flickerIntervalMs = 500;
-      flickerShowSecond = false;
-      stackAxis = Axis.horizontal;
-      differenceColorMode = _DifferenceColorMode.raw;
+      _resetModeControls();
       _syncFlickerTimer();
+    });
+  }
+
+  void _resetModeControls() {
+    syncZoom = true;
+    stackSplit = 0.5;
+    stackOpacity = 1;
+    flickerIntervalMs = 500;
+    flickerShowSecond = false;
+    stackAxis = Axis.horizontal;
+    differenceColorMode = _DifferenceColorMode.raw;
+  }
+
+  void _toggleControls() {
+    setState(() {
+      controlsVisible = !controlsVisible;
     });
   }
 
@@ -288,12 +324,27 @@ class _ImageComparePageState extends State<_ImageComparePage> {
     firstController.value = matrix;
   }
 
+  double _topOverlayInset(BuildContext context) {
+    return MediaQuery.paddingOf(context).top + 8;
+  }
+
+  double _bottomControlsInset(BuildContext context) {
+    if (!controlsVisible) {
+      return MediaQuery.paddingOf(context).bottom;
+    }
+
+    final isCompact = MediaQuery.sizeOf(context).width < _CompareControls.compactWidthBreakpoint;
+    return MediaQuery.paddingOf(context).bottom +
+        (isCompact ? _CompareControls.compactHeight : _CompareControls.height);
+  }
+
   Widget _sideBySideView(BuildContext context) {
     final first = Expanded(
       child: _InteractiveCompareImage(
         item: firstItem,
         booru: firstBooru,
         controller: firstController,
+        onTap: _toggleControls,
       ),
     );
     final second = Expanded(
@@ -301,6 +352,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
         item: secondItem,
         booru: secondBooru,
         controller: secondController,
+        onTap: _toggleControls,
       ),
     );
     final divider = stackAxis == Axis.horizontal
@@ -322,6 +374,10 @@ class _ImageComparePageState extends State<_ImageComparePage> {
       builder: (context, constraints) {
         final isHorizontal = stackAxis == Axis.horizontal;
         final mainExtent = isHorizontal ? constraints.maxWidth : constraints.maxHeight;
+        final topInset = _topOverlayInset(context).clamp(0.0, constraints.maxHeight);
+        final bottomInset = _bottomControlsInset(context).clamp(0.0, constraints.maxHeight);
+        final safeTop = math.min(topInset, constraints.maxHeight);
+        final safeBottom = math.max(safeTop, constraints.maxHeight - bottomInset);
         final childHandleOffset = mainExtent * stackSplit;
         final transformedHandleOffset = isHorizontal
             ? MatrixUtils.transformPoint(firstController.value, Offset(childHandleOffset, 0)).dx
@@ -351,6 +407,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
           children: [
             _DoubleTapInteractiveViewer(
               controller: firstController,
+              onTap: _toggleControls,
               child: SizedBox(
                 width: constraints.maxWidth,
                 height: constraints.maxHeight,
@@ -395,6 +452,8 @@ class _ImageComparePageState extends State<_ImageComparePage> {
               _StackHandleOffscreenMarker(
                 axis: stackAxis,
                 isBeforeViewport: isHandleBeforeViewport,
+                topInset: safeTop,
+                bottomInset: constraints.maxHeight - safeBottom,
                 onTap: () {
                   _centerStackHandle(
                     isHorizontal: isHorizontal,
@@ -405,9 +464,9 @@ class _ImageComparePageState extends State<_ImageComparePage> {
               ),
             Positioned(
               left: isHorizontal ? transformedHandleOffset : 0,
-              top: isHorizontal ? 0 : transformedHandleOffset,
+              top: isHorizontal ? safeTop : transformedHandleOffset,
               right: isHorizontal ? null : 0,
-              bottom: isHorizontal ? 0 : null,
+              bottom: isHorizontal ? constraints.maxHeight - safeBottom : null,
               child: SizedBox(
                 width: isHorizontal ? 1 : null,
                 height: isHorizontal ? null : 1,
@@ -418,9 +477,9 @@ class _ImageComparePageState extends State<_ImageComparePage> {
             ),
             Positioned(
               left: isHorizontal ? transformedHandleOffset - 48 : 0,
-              top: isHorizontal ? 0 : transformedHandleOffset - 48,
+              top: isHorizontal ? safeTop : transformedHandleOffset - 48,
               right: isHorizontal ? null : 0,
-              bottom: isHorizontal ? 0 : null,
+              bottom: isHorizontal ? constraints.maxHeight - safeBottom : null,
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onTapDown: (details) => updateSplitFromGlobal(details.globalPosition),
@@ -465,6 +524,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
       builder: (context, constraints) {
         return _DoubleTapInteractiveViewer(
           controller: firstController,
+          onTap: _toggleControls,
           child: SizedBox(
             width: constraints.maxWidth,
             height: constraints.maxHeight,
@@ -494,6 +554,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
       builder: (context, constraints) {
         return _DoubleTapInteractiveViewer(
           controller: firstController,
+          onTap: _toggleControls,
           child: SizedBox(
             width: constraints.maxWidth,
             height: constraints.maxHeight,
@@ -523,6 +584,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
       builder: (context, constraints) {
         return _DoubleTapInteractiveViewer(
           controller: firstController,
+          onTap: _toggleControls,
           child: SizedBox(
             width: constraints.maxWidth,
             height: constraints.maxHeight,
@@ -559,6 +621,10 @@ class _CompareControls extends StatelessWidget {
     required this.onDifferenceColorModeChanged,
   });
 
+  static const double height = 64;
+  static const double compactHeight = 112;
+  static const double compactWidthBreakpoint = 520;
+
   final _ImageCompareMode mode;
   final bool syncZoom;
   final double stackOpacity;
@@ -583,7 +649,7 @@ class _CompareControls extends StatelessWidget {
       color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.86),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isCompact = constraints.maxWidth < 520;
+          final isCompact = constraints.maxWidth < compactWidthBreakpoint;
           final primaryControls = Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -613,7 +679,7 @@ class _CompareControls extends StatelessWidget {
           );
 
           return SizedBox(
-            height: isCompact ? 112 : 64,
+            height: isCompact ? compactHeight : height,
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -857,11 +923,15 @@ class _StackHandleOffscreenMarker extends StatelessWidget {
   const _StackHandleOffscreenMarker({
     required this.axis,
     required this.isBeforeViewport,
+    required this.topInset,
+    required this.bottomInset,
     required this.onTap,
   });
 
   final Axis axis;
   final bool isBeforeViewport;
+  final double topInset;
+  final double bottomInset;
   final VoidCallback onTap;
 
   @override
@@ -872,10 +942,10 @@ class _StackHandleOffscreenMarker extends StatelessWidget {
         : (isBeforeViewport ? Icons.keyboard_double_arrow_up : Icons.keyboard_double_arrow_down);
 
     return Positioned(
-      left: isHorizontal && isBeforeViewport ? 12 : null,
-      right: isHorizontal && !isBeforeViewport ? 12 : null,
-      top: isHorizontal ? 0 : (isBeforeViewport ? 12 : null),
-      bottom: isHorizontal ? 0 : (!isBeforeViewport ? 96 : null),
+      left: isHorizontal ? (isBeforeViewport ? 12 : null) : 0,
+      right: isHorizontal ? (!isBeforeViewport ? 12 : null) : 0,
+      top: isHorizontal ? topInset : (isBeforeViewport ? topInset + 12 : null),
+      bottom: isHorizontal ? bottomInset : (!isBeforeViewport ? bottomInset + 12 : null),
       child: Center(
         child: Material(
           color: Colors.black.withValues(alpha: 0.42),
@@ -899,10 +969,12 @@ class _DoubleTapInteractiveViewer extends StatefulWidget {
   const _DoubleTapInteractiveViewer({
     required this.controller,
     required this.child,
+    required this.onTap,
   });
 
   final TransformationController controller;
   final Widget child;
+  final VoidCallback onTap;
 
   @override
   State<_DoubleTapInteractiveViewer> createState() => _DoubleTapInteractiveViewerState();
@@ -931,6 +1003,7 @@ class _DoubleTapInteractiveViewerState extends State<_DoubleTapInteractiveViewer
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
+      onTap: widget.onTap,
       onDoubleTapDown: (details) {
         doubleTapPosition = details.localPosition;
       },
@@ -951,11 +1024,13 @@ class _InteractiveCompareImage extends StatelessWidget {
     required this.item,
     required this.booru,
     required this.controller,
+    required this.onTap,
   });
 
   final BooruItem item;
   final Booru booru;
   final TransformationController controller;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -963,6 +1038,7 @@ class _InteractiveCompareImage extends StatelessWidget {
       builder: (context, constraints) {
         return _DoubleTapInteractiveViewer(
           controller: controller,
+          onTap: onTap,
           child: SizedBox(
             width: constraints.maxWidth,
             height: constraints.maxHeight,
@@ -1010,7 +1086,7 @@ class _RenderedCompareViewState extends State<_RenderedCompareView> {
         oldWidget.firstBooru != widget.firstBooru ||
         oldWidget.secondItem != widget.secondItem ||
         oldWidget.secondBooru != widget.secondBooru ||
-        (oldWidget.mode != widget.mode && widget.mode == _RenderedCompareMode.heatmap)) {
+        oldWidget.mode != widget.mode) {
       imagesFuture = _loadImages();
     }
   }
@@ -1081,9 +1157,29 @@ class _RenderedComparePainter extends CustomPainter {
 
     switch (mode) {
       case _RenderedCompareMode.difference:
-        canvas.saveLayer(bounds, _differenceLayerPaint(differenceColorMode));
-        _drawContainedImage(canvas, first, size, Paint());
-        _drawContainedImage(canvas, second, size, Paint()..blendMode = BlendMode.difference);
+        final firstDestination = _containedDestination(first, size);
+        final secondDestination = _containedDestination(second, size);
+        final comparisonBounds = firstDestination.intersect(secondDestination);
+        if (comparisonBounds.isEmpty) {
+          return;
+        }
+
+        canvas.saveLayer(comparisonBounds, _differenceLayerPaint(differenceColorMode));
+        canvas.clipRect(comparisonBounds);
+        _drawImageToDestination(
+          canvas,
+          first,
+          firstDestination,
+          Paint()..filterQuality = FilterQuality.high,
+        );
+        _drawImageToDestination(
+          canvas,
+          second,
+          secondDestination,
+          Paint()
+            ..filterQuality = FilterQuality.high
+            ..blendMode = BlendMode.difference,
+        );
         canvas.restore();
       case _RenderedCompareMode.heatmap:
         final heatmapImage = heatmap;
@@ -1099,14 +1195,32 @@ class _RenderedComparePainter extends CustomPainter {
     }
   }
 
-  void _drawContainedImage(Canvas canvas, ui.Image image, Size size, Paint paint) {
-    final source = Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
+  void _drawContainedImage(
+    Canvas canvas,
+    ui.Image image,
+    Size size,
+    Paint paint,
+  ) {
+    _drawImageToDestination(
+      canvas,
+      image,
+      _containedDestination(image, size),
+      paint,
+    );
+  }
+
+  Rect _containedDestination(ui.Image image, Size size) {
     final fitted = applyBoxFit(
       BoxFit.contain,
       Size(image.width.toDouble(), image.height.toDouble()),
       size,
     );
-    final destination = Alignment.center.inscribe(fitted.destination, Offset.zero & size);
+
+    return Alignment.center.inscribe(fitted.destination, Offset.zero & size);
+  }
+
+  void _drawImageToDestination(Canvas canvas, ui.Image image, Rect destination, Paint paint) {
+    final source = Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
 
     canvas.drawImageRect(image, source, destination, paint);
   }
@@ -1182,15 +1296,13 @@ Future<ui.Image> _buildHeatmapImage(ui.Image first, ui.Image second) async {
     throw StateError('Unable to read image pixels for heatmap comparison');
   }
 
-  const maxSide = 2048;
-  final sourceWidth = math.max(first.width, second.width);
-  final sourceHeight = math.max(first.height, second.height);
-  final scale = math.min(1, maxSide / math.max(sourceWidth, sourceHeight));
-  final width = math.max(1, (sourceWidth * scale).round());
-  final height = math.max(1, (sourceHeight * scale).round());
+  final (:width, :height, :firstList, :secondList) = _comparisonPixelData(
+    first: first,
+    second: second,
+    firstBytes: firstBytes,
+    secondBytes: secondBytes,
+  );
   final output = Uint8List(width * height * 4);
-  final firstList = firstBytes.buffer.asUint8List();
-  final secondList = secondBytes.buffer.asUint8List();
 
   for (var y = 0; y < height; y++) {
     final firstY = ((y + 0.5) * first.height / height) - 0.5;
@@ -1224,6 +1336,34 @@ Future<ui.Image> _buildHeatmapImage(ui.Image first, ui.Image second) async {
   }
 
   return ui.decodeImageFromPixelsSync(output, width, height, ui.PixelFormat.rgba8888);
+}
+
+({
+  int width,
+  int height,
+  Uint8List firstList,
+  Uint8List secondList,
+})
+_comparisonPixelData({
+  required ui.Image first,
+  required ui.Image second,
+  required ByteData firstBytes,
+  required ByteData secondBytes,
+}) {
+  const maxSide = 4096;
+  const maxPixels = 6 * 1024 * 1024;
+  final sourceWidth = math.max(first.width, second.width);
+  final sourceHeight = math.max(first.height, second.height);
+  final sideScale = maxSide / math.max(sourceWidth, sourceHeight);
+  final pixelScale = math.sqrt(maxPixels / (sourceWidth * sourceHeight));
+  final scale = math.min(1, math.min(sideScale, pixelScale));
+
+  return (
+    width: math.max(1, (sourceWidth * scale).round()),
+    height: math.max(1, (sourceHeight * scale).round()),
+    firstList: firstBytes.buffer.asUint8List(),
+    secondList: secondBytes.buffer.asUint8List(),
+  );
 }
 
 (double, double, double, double) _sampleRgbaBilinear(Uint8List pixels, int width, int height, double x, double y) {
