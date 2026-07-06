@@ -3231,8 +3231,8 @@ class Translations$settings$downloads$en {
   String get reverseSelectedOrder =>
       TranslationOverrides.string(_root.$meta, 'settings.downloads.reverseSelectedOrder', {}) ?? 'Reverse selected order';
 
-  /// en: 'Hide selected'
-  String get hideSelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Hide selected';
+  /// en: 'Hide selected temporarily'
+  String get hideSelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Hide selected temporarily';
 
   /// en: 'Refresh selected metadata'
   String get refreshSelectedMetadata =>
@@ -6268,7 +6268,8 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.downloads.invertSelection', {}) ?? 'Invert selection',
           'settings.downloads.reverseSelectedOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.reverseSelectedOrder', {}) ?? 'Reverse selected order',
-          'settings.downloads.hideSelected' => TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Hide selected',
+          'settings.downloads.hideSelected' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Hide selected temporarily',
           'settings.downloads.refreshSelectedMetadata' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.refreshSelectedMetadata', {}) ?? 'Refresh selected metadata',
           'settings.downloads.refreshDelayTitle' =>

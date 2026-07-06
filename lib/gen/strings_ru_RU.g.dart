@@ -2585,7 +2585,7 @@ class _Translations$settings$downloads$ru_RU extends Translations$settings$downl
   String get reverseSelectedOrder =>
       TranslationOverrides.string(_root.$meta, 'settings.downloads.reverseSelectedOrder', {}) ?? 'Обратить порядок выбранных';
   @override
-  String get hideSelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Скрыть выбранное';
+  String get hideSelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Скрыть выбранное (временно)';
   @override
   String get refreshSelectedMetadata =>
       TranslationOverrides.string(_root.$meta, 'settings.downloads.refreshSelectedMetadata', {}) ?? 'Обновить метаданные выбранных';
@@ -5255,7 +5255,8 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.downloads.invertSelection', {}) ?? 'Инвертировать выделение',
           'settings.downloads.reverseSelectedOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.reverseSelectedOrder', {}) ?? 'Обратить порядок выбранных',
-          'settings.downloads.hideSelected' => TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Скрыть выбранное',
+          'settings.downloads.hideSelected' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Скрыть выбранное (временно)',
           'settings.downloads.refreshSelectedMetadata' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.refreshSelectedMetadata', {}) ?? 'Обновить метаданные выбранных',
           'settings.downloads.refreshDelayTitle' =>

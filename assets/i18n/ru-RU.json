@@ -732,7 +732,7 @@
             "fileShareLimit(param=max)": "Отправка файлов ограничена: ${max: int} шт.",
             "invertSelection": "Инвертировать выделение",
             "reverseSelectedOrder": "Обратить порядок выбранных",
-            "hideSelected": "Скрыть выбранное",
+            "hideSelected": "Скрыть выбранное (временно)",
             "refreshSelectedMetadata": "Обновить метаданные выбранных",
             "refreshDelayTitle": "Обновить метаданные",
             "refreshDelayMessage": "Задержка между элементами (мс)",
