@@ -147,11 +147,32 @@ class BackupPackageService {
         'archivePath': manifestFileName,
       });
 
-      await compute(_encodeBackupPackageFile, {
+      final encodeData = {
         'outputPath': outputFile.path,
         'files': files,
-      });
-      if (!await outputFile.exists()) {
+      };
+      await compute(_encodeBackupPackageFile, encodeData);
+      if (!await _waitForPackageFile(outputFile)) {
+        final retryFile = File('${outputFile.path}.retry');
+        if (await retryFile.exists()) {
+          await retryFile.delete();
+        }
+        BackupTransferLogger.info(
+          'File package encoder returned without output, retrying in worker isolate output=${outputFile.path}',
+          'BackupPackageService',
+          'exportPackageFile',
+        );
+        await compute(_encodeBackupPackageFile, {
+          ...encodeData,
+          'outputPath': retryFile.path,
+        });
+        if (await _waitForPackageFile(retryFile)) {
+          await _replaceFile(retryFile, outputFile);
+        } else if (await retryFile.exists()) {
+          await retryFile.delete();
+        }
+      }
+      if (!await _waitForPackageFile(outputFile)) {
         throw FileSystemException('Backup package encoder did not create output file', outputFile.path);
       }
       BackupTransferLogger.info(
@@ -162,6 +183,28 @@ class BackupPackageService {
       return outputFile;
     } finally {
       unawaited(tempDir.delete(recursive: true).catchError((_) => tempDir));
+    }
+  }
+
+  Future<bool> _waitForPackageFile(File file) async {
+    for (var attempt = 0; attempt < 20; attempt++) {
+      if (await file.exists() && await file.length() > 0) {
+        return true;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+    return false;
+  }
+
+  Future<void> _replaceFile(File source, File destination) async {
+    if (await destination.exists()) {
+      await destination.delete();
+    }
+    try {
+      await source.rename(destination.path);
+    } on FileSystemException {
+      await source.copy(destination.path);
+      await source.delete();
     }
   }
 

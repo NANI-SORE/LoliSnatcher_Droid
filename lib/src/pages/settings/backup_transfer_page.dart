@@ -271,12 +271,12 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
                                 ),
                         ),
                         subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 12),
+                          padding: const EdgeInsets.only(top: 12, bottom: 36),
                           child: Row(
                             children: [
                               SizedBox(
                                 height: 36,
-                                child: FilledButton(
+                                child: ElevatedButton(
                                   onPressed: autoConfig.location.isEmpty ? null : _backupNow,
                                   child: Text(context.loc.settings.backupAndTransfer.backupNow),
                                 ),
