@@ -5,23 +5,13 @@ import 'package:flutter_socks_proxy/socks_proxy.dart';
 import 'package:http_proxy/http_proxy.dart';
 
 import 'package:lolisnatcher/src/data/settings/proxy_type.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 
 String systemProxyAddress = '';
 bool addedRootCert = false;
 
 Future<void> initProxy() async {
-  final settingsHandler = SettingsHandler.instance;
-  final proxyType = settingsHandler.proxyType;
-
-  if (proxyType.isSystem && PlatformExt.isMobile) {
-    final HttpProxy httpProxy = await HttpProxy.createHttpProxy();
-    if (httpProxy.host?.isNotEmpty == true && httpProxy.port?.isNotEmpty == true) {
-      systemProxyAddress = '${httpProxy.host}:${httpProxy.port}';
-    }
-  }
-
   if (Platform.isAndroid && !addedRootCert) {
     final List<int> cert = ascii.encode(_kIsrgRootX1);
     // add newer root certificate for older devices
@@ -32,34 +22,53 @@ Future<void> initProxy() async {
 
   SocksProxy.initProxy(
     onCreate: (client) => client.badCertificateCallback = (_, _, _) {
-      return settingsHandler.allowSelfSignedCerts;
+      return SX.allowSelfSignedCerts.value;
     },
-    findProxy: (_) {
-      final configAddress = getProxyConfigAddress();
-
-      switch (proxyType) {
-        case ProxyType.direct:
-          return 'DIRECT';
-        case ProxyType.system:
-          return systemProxyAddress.isEmpty ? 'DIRECT' : 'PROXY $systemProxyAddress; DIRECT';
-        case ProxyType.http:
-          return configAddress.isEmpty ? 'DIRECT' : 'PROXY $configAddress; DIRECT';
-        case ProxyType.socks5:
-          return configAddress.isEmpty ? 'DIRECT' : 'SOCKS5 $configAddress; DIRECT';
-        case ProxyType.socks4:
-          return configAddress.isEmpty ? 'DIRECT' : 'SOCKS4 $configAddress; DIRECT';
-      }
-    },
+    findProxy: (_) => getProxyDirective(),
   );
+
+  if (SX.proxyType.value.isSystem && PlatformExt.isMobile) {
+    final HttpProxy httpProxy = await HttpProxy.createHttpProxy();
+    if (httpProxy.host?.isNotEmpty == true && httpProxy.port?.isNotEmpty == true) {
+      systemProxyAddress = '${httpProxy.host}:${httpProxy.port}';
+    } else {
+      systemProxyAddress = '';
+    }
+  }
+}
+
+/// Resolves the proxy from the current effective settings.
+///
+/// This is intentionally evaluated for every new HTTP client instead of being
+/// captured by [initProxy]. Changing tabs can switch the active booru and its
+/// proxy overrides immediately before a request starts.
+String getProxyDirective() {
+  final proxyType = SX.proxyType.value;
+  final configAddress = getProxyConfigAddress();
+
+  switch (proxyType) {
+    case ProxyType.direct:
+      return 'DIRECT';
+    case ProxyType.system:
+      return systemProxyAddress.isEmpty ? 'DIRECT' : 'PROXY $systemProxyAddress; DIRECT';
+    case ProxyType.http:
+      return configAddress.isEmpty ? 'DIRECT' : 'PROXY $configAddress; DIRECT';
+    case ProxyType.socks5:
+      return configAddress.isEmpty ? 'DIRECT' : 'SOCKS5 $configAddress; DIRECT';
+    case ProxyType.socks4:
+      return configAddress.isEmpty ? 'DIRECT' : 'SOCKS4 $configAddress; DIRECT';
+  }
 }
 
 String getProxyConfigAddress() {
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
-  if (settingsHandler.proxyAddress.isNotEmpty) {
-    if (settingsHandler.proxyUsername.isEmpty && settingsHandler.proxyPassword.isEmpty) {
-      return settingsHandler.proxyAddress;
+  final proxyAddress = SX.proxyAddress.value;
+  if (proxyAddress.isNotEmpty) {
+    final proxyUsername = SX.proxyUsername.value;
+    final proxyPassword = SX.proxyPassword.value;
+    if (proxyUsername.isEmpty && proxyPassword.isEmpty) {
+      return proxyAddress;
     } else {
-      return '${settingsHandler.proxyUsername}:${settingsHandler.proxyPassword}@${settingsHandler.proxyAddress}';
+      return '$proxyUsername:$proxyPassword@$proxyAddress';
     }
   } else {
     return '';

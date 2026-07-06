@@ -15,6 +15,7 @@ import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
@@ -32,12 +33,7 @@ class _DatabasePageState extends State<DatabasePage> {
   final SearchHandler searchHandler = SearchHandler.instance;
   final ScrollController scrollController = ScrollController();
 
-  bool dbEnabled = true,
-      indexesEnabled = true,
-      changingIndexes = false,
-      searchHistoryEnabled = true,
-      isUpdating = false,
-      tagTypeFetchEnabled = true;
+  bool changingIndexes = false, isUpdating = false;
   int updatingFailed = 0, updatingDone = 0;
   BooruType? sankakuType;
   CancelToken? cancelToken;
@@ -47,11 +43,6 @@ class _DatabasePageState extends State<DatabasePage> {
   @override
   void initState() {
     super.initState();
-
-    dbEnabled = settingsHandler.dbEnabled;
-    indexesEnabled = settingsHandler.indexesEnabled;
-    searchHistoryEnabled = settingsHandler.searchHistoryEnabled;
-    tagTypeFetchEnabled = settingsHandler.tagTypeFetchEnabled;
 
     final List<Booru> sankakuBoorus = getSankakuBoorus();
     if (sankakuBoorus.isNotEmpty) {
@@ -92,12 +83,6 @@ class _DatabasePageState extends State<DatabasePage> {
       );
       return;
     }
-
-    settingsHandler.dbEnabled = dbEnabled;
-    settingsHandler.indexesEnabled = indexesEnabled;
-    settingsHandler.searchHistoryEnabled = searchHistoryEnabled;
-    settingsHandler.tagTypeFetchEnabled = tagTypeFetchEnabled;
-    await settingsHandler.saveSettings(restate: false);
   }
 
   List<Booru> getSankakuBoorus() {
@@ -268,10 +253,10 @@ class _DatabasePageState extends State<DatabasePage> {
   }
 
   Future<void> changeIndexes(bool newValue) async {
-    changingIndexes = true;
-    setState(() {});
-
-    indexesEnabled = newValue;
+    setState(() {
+      changingIndexes = true;
+      SX.indexesEnabled.state.value = newValue;
+    });
 
     if (newValue) {
       await settingsHandler.dbHandler.createIndexes();
@@ -298,10 +283,10 @@ class _DatabasePageState extends State<DatabasePage> {
             controller: scrollController,
             children: [
               SettingsToggle(
-                value: dbEnabled,
+                value: SX.dbEnabled.state.value,
                 onChanged: (newValue) {
                   setState(() {
-                    dbEnabled = newValue;
+                    SX.dbEnabled.state.value = newValue;
                   });
                 },
                 title: context.loc.settings.database.enableDatabase,
@@ -323,7 +308,7 @@ class _DatabasePageState extends State<DatabasePage> {
                   },
                 ),
               ),
-              if (dbEnabled) ...[
+              if (SX.dbEnabled.state.value) ...[
                 Stack(
                   children: [
                     IgnorePointer(
@@ -331,7 +316,7 @@ class _DatabasePageState extends State<DatabasePage> {
                       child: Column(
                         children: [
                           SettingsToggle(
-                            value: indexesEnabled,
+                            value: SX.indexesEnabled.state.value,
                             onChanged: changeIndexes,
                             title: context.loc.settings.database.enableIndexing,
                             trailingIcon: IconButton(
@@ -353,7 +338,7 @@ class _DatabasePageState extends State<DatabasePage> {
                               },
                             ),
                           ),
-                          if (settingsHandler.isDebug.value) ...[
+                          if (SX.isDebug.value) ...[
                             SettingsButton(
                               name: context.loc.settings.database.createIndexesDebug,
                               icon: const Icon(Icons.create_new_folder_rounded),
@@ -404,10 +389,10 @@ class _DatabasePageState extends State<DatabasePage> {
                   ],
                 ),
                 SettingsToggle(
-                  value: searchHistoryEnabled,
+                  value: SX.searchHistoryEnabled.state.value,
                   onChanged: (newValue) {
                     setState(() {
-                      searchHistoryEnabled = newValue;
+                      SX.searchHistoryEnabled.state.value = newValue;
                     });
                   },
                   title: context.loc.settings.database.enableSearchHistory,
@@ -434,10 +419,10 @@ class _DatabasePageState extends State<DatabasePage> {
                   ),
                 ),
                 SettingsToggle(
-                  value: tagTypeFetchEnabled,
+                  value: SX.tagTypeFetchEnabled.state.value,
                   onChanged: (newValue) {
                     setState(() {
-                      tagTypeFetchEnabled = newValue;
+                      SX.tagTypeFetchEnabled.state.value = newValue;
                     });
                   },
                   title: context.loc.settings.database.enableTagTypeFetching,
@@ -670,7 +655,7 @@ class _DatabasePageState extends State<DatabasePage> {
                               hintText: context.loc.settings.database.searchQueryOptional,
                               clearable: true,
                               pasteable: true,
-                              enableIMEPersonalizedLearning: !settingsHandler.incognitoKeyboard,
+                              enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
                             ),
                             SettingsButton(
                               name: context.loc.settings.database.updateSankakuUrls,

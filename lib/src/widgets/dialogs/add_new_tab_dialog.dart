@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
@@ -67,7 +68,7 @@ class _AddNewTabDialogState extends State<AddNewTabDialog> {
     final usedBooru = booru ?? searchHandler.currentBooru;
     switch (queryMode) {
       case _Querymode.defaultTags:
-        return usedBooru.defTags?.isNotEmpty == true ? usedBooru.defTags! : settingsHandler.defTags;
+        return usedBooru.defTags?.isNotEmpty == true ? usedBooru.defTags! : SX.defTags.value;
 
       case _Querymode.currentInput:
         return searchHandler.searchTextController.text;

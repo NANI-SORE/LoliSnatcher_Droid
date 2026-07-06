@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import 'package:path_provider/path_provider.dart';
 
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -412,8 +413,7 @@ class ServiceHandler {
   }
 
   static void disableSleep({bool force = false}) {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
-    if (Platform.isAndroid && (settingsHandler.wakeLockEnabled || force)) {
+    if (Platform.isAndroid && (SX.wakeLockEnabled.value || force)) {
       platform.invokeMethod('disableSleep');
     }
   }
@@ -527,7 +527,7 @@ class ServiceHandler {
   }
 
   static Future<void> vibrate() async {
-    if (SettingsHandler.instance.disableVibration) {
+    if (SX.disableVibration.value) {
       return;
     }
 

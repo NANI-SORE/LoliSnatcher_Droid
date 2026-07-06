@@ -14,6 +14,7 @@ import 'package:lolisnatcher/src/data/tag_suggestion.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -409,10 +410,8 @@ class QueryEditorKeyboardActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settingsHandler = SettingsHandler.instance;
-
     return KeyboardActions(
-      enable: settingsHandler.showSearchbarQuickActions && PlatformExt.isMobile,
+      enable: SX.showSearchbarQuickActions.value && PlatformExt.isMobile,
       config: buildConfig(context),
       autoScroll: false,
       overscroll: 0,

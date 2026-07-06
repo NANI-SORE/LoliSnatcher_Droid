@@ -9,8 +9,9 @@ import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/settings/share_action.dart';
-import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
+import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -67,10 +68,10 @@ class DownloadsDrawerController {
       snatchHandler.queue(
         [...searchHandler.currentSelected],
         searchHandler.currentBooru,
-        settingsHandler.snatchCooldown,
+        SX.snatchCooldown.value,
         isLongTap,
       );
-      if (settingsHandler.favouriteOnSnatch) {
+      if (SX.favouriteOnSnatch.value) {
         await searchHandler.currentTab.updateFavForMultipleItems(
           searchHandler.currentSelected,
           newValue: true,
@@ -95,7 +96,7 @@ class DownloadsDrawerController {
   }
 
   Future<void> onShareSelected(BuildContext context) async {
-    await onShareSelectedWithAction(context, settingsHandler.shareAction);
+    await onShareSelectedWithAction(context, SX.shareAction.value);
   }
 
   void onShareSelectedLongPress(BuildContext context) {
@@ -400,11 +401,11 @@ class DownloadsDrawerController {
 
   ShareActionController shareActionController(BuildContext context) {
     return ShareActionController(
-      currentAction: settingsHandler.shareAction,
+      currentAction: SX.shareAction.value,
       showTagOptions: false,
       showHydrusOption: settingsHandler.hasHydrus && searchHandler.currentBooru.type?.isHydrus != true,
       onRememberAction: (action) async {
-        settingsHandler.shareAction = _shareActionWithoutTags(action);
+        SX.shareAction.state.value = _shareActionWithoutTags(action);
         await settingsHandler.saveSettings(restate: false);
       },
       postUrl: () => shareSelectedText(
@@ -535,7 +536,7 @@ class DownloadsDrawerController {
     }
     snatchHandler.onRetryItem(
       record,
-      cooldown: settingsHandler.snatchCooldown,
+      cooldown: SX.snatchCooldown.value,
       ignoreExists: isExists || isLongTap,
     );
 
@@ -546,7 +547,7 @@ class DownloadsDrawerController {
     updating.value = true;
 
     await snatchHandler.onRetryAll(
-      cooldown: settingsHandler.snatchCooldown,
+      cooldown: SX.snatchCooldown.value,
       ignoreExists: isLongTap,
     );
 

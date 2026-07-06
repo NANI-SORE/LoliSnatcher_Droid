@@ -26,8 +26,8 @@ import 'package:lolisnatcher/src/boorus/szurubooru_handler.dart';
 import 'package:lolisnatcher/src/boorus/wildcritters_handler.dart';
 import 'package:lolisnatcher/src/boorus/worldxyz_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 
 class BooruHandlerFactory {
   late BooruHandler booruHandler;
@@ -37,7 +37,7 @@ class BooruHandlerFactory {
     List<Booru> boorus,
     int? customLimit,
   ) {
-    final int limit = customLimit ?? SettingsHandler.instance.itemLimit;
+    final int limit = customLimit ?? SX.limit.value;
 
     if (boorus.length == 1) {
       final Booru booru = boorus.first;

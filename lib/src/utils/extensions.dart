@@ -6,7 +6,7 @@ import 'package:duration/duration.dart';
 import 'package:duration/locale.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 
 extension BuildContextExtras on BuildContext {
   MediaQueryData get mediaQuery => MediaQuery.of(this);
@@ -121,7 +121,7 @@ extension BoolExtras on bool {
 String formatNumber(num number) {
   try {
     final formatter = NumberFormat.decimalPattern(
-      SettingsHandler.instance.locale.value?.languageCode ?? PlatformDispatcher.instance.locale.languageCode,
+      SX.locale.value?.languageCode ?? PlatformDispatcher.instance.locale.languageCode,
     );
     return formatter.format(number);
   } catch (_) {
@@ -133,7 +133,7 @@ String formatNumber(num number) {
 
 String formatNumberShort(num number) {
   final formatter = NumberFormat.compact(
-    locale: SettingsHandler.instance.locale.value?.languageCode ?? PlatformDispatcher.instance.locale.languageCode,
+    locale: SX.locale.value?.languageCode ?? PlatformDispatcher.instance.locale.languageCode,
   );
   return formatter.format(number);
 }
@@ -178,7 +178,7 @@ extension DurationExts on Duration {
   }) {
     final durLoc =
         DurationLocale.fromLanguageCode(
-          SettingsHandler.instance.locale.value?.languageCode ?? PlatformDispatcher.instance.locale.languageCode,
+          SX.locale.value?.languageCode ?? PlatformDispatcher.instance.locale.languageCode,
         ) ??
         englishLocale;
 

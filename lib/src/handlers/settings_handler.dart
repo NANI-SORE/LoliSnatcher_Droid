@@ -16,32 +16,15 @@ import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
-import 'package:lolisnatcher/src/data/settings/app_alias.dart';
 import 'package:lolisnatcher/src/data/settings/app_mode.dart';
-import 'package:lolisnatcher/src/data/settings/button_position.dart';
-import 'package:lolisnatcher/src/data/settings/gallery_button.dart';
-import 'package:lolisnatcher/src/data/settings/hand_side.dart';
-import 'package:lolisnatcher/src/data/settings/image_quality.dart';
-import 'package:lolisnatcher/src/data/settings/mpv_hardware_decoding.dart';
-import 'package:lolisnatcher/src/data/settings/mpv_video_output.dart';
-import 'package:lolisnatcher/src/data/settings/preview_display_mode.dart';
-import 'package:lolisnatcher/src/data/settings/preview_quality.dart';
-import 'package:lolisnatcher/src/data/settings/proxy_type.dart';
-import 'package:lolisnatcher/src/data/settings/scroll_direction.dart';
-import 'package:lolisnatcher/src/data/settings/settings_enum.dart';
-import 'package:lolisnatcher/src/data/settings/share_action.dart';
-import 'package:lolisnatcher/src/data/settings/vertical_position.dart';
 import 'package:lolisnatcher/src/data/settings/video_backend_mode.dart';
-import 'package:lolisnatcher/src/data/settings/video_cache_mode.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
-import 'package:lolisnatcher/src/data/theme_item.dart';
 import 'package:lolisnatcher/src/data/update_info.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/secure_storage_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
-import 'package:lolisnatcher/src/pages/settings/language_page.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
@@ -50,6 +33,10 @@ import 'package:lolisnatcher/src/utils/http_overrides.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
+import 'package:lolisnatcher/src/data/settings/all_settings.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/data/settings/setting_state.dart';
+import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/video/media_kit_video_player.dart';
 
@@ -58,6 +45,10 @@ export 'package:lolisnatcher/gen/strings.g.dart';
 
 /// This class is used loading from and writing settings to files
 class SettingsHandler {
+  SettingsHandler() {
+    setSettingsSaveScheduler(scheduleSettingsSave);
+  }
+
   static SettingsHandler get instance => GetIt.instance<SettingsHandler>();
 
   static SettingsHandler register() {
@@ -89,873 +80,40 @@ class SettingsHandler {
   final RxString discordURL = RxString(Constants.discordURL);
 
   // debug toggles
-  final RxBool isDebug = (kDebugMode || false).obs;
-  final RxBool showFps = false.obs;
-  final RxBool showPerf = false.obs;
-  final RxBool showImageStats = false.obs;
-  final RxBool showVideoStats = false.obs;
-  final RxBool useImageLogging = false.obs;
   bool blurImages = kDebugMode ? Constants.blurImagesDefaultDev : false;
 
   ////////////////////////////////////////////////////
 
-  // saveable settings vars
-  AppAlias appAlias = AppAlias.defaultValue;
-  String defTags = 'rating:safe';
-  PreviewQuality previewMode = PreviewQuality.defaultValue;
-  VideoCacheMode videoCacheMode = VideoCacheMode.defaultValue;
-  String prefBooru = '';
-  PreviewDisplayMode previewDisplay = PreviewDisplayMode.defaultValue;
-  PreviewDisplayMode previewDisplayFallback = PreviewDisplayMode.defaultValue;
-  ImageQuality galleryMode = ImageQuality.defaultValue;
-  ImageQuality snatchMode = ImageQuality.defaultValue;
-  ShareAction shareAction = ShareAction.defaultValue;
-  final Rx<AppMode> appMode = AppMode.defaultValue.obs;
-  final Rx<HandSide> handSide = HandSide.defaultValue.obs;
-  VerticalPosition galleryBarPosition = VerticalPosition.defaultValue;
-  ScrollDirection galleryScrollDirection = ScrollDirection.defaultValue;
-  String extPathOverride = '';
-  String drawerMascotPathOverride = '';
-  String backupPath = '';
-  ButtonPosition zoomButtonPosition = ButtonPosition.defaultValue;
-  ButtonPosition changePageButtonsPosition = ButtonPosition.defaultValueDesktopOnly;
-  ButtonPosition scrollGridButtonsPosition = ButtonPosition.defaultValueDesktopOnly;
-  String lastSyncIp = '';
-  String lastSyncPort = '';
-  // TODO move it to boorus themselves to have different user agents for different boorus?
-  String customUserAgent = '';
-  ProxyType proxyType = ProxyType.defaultValue;
-  String proxyAddress = '';
-  String proxyUsername = '';
-  String proxyPassword = '';
-  VideoBackendMode videoBackendMode = VideoBackendMode.defaultValue;
-  MpvVideoOutput altVideoPlayerVO = MpvVideoOutput.defaultValue;
-  MpvHardwareDecoding altVideoPlayerHWDEC = MpvHardwareDecoding.defaultValue;
+  final RxList<Booru> booruList = RxList<Booru>([]);
 
-  Set<String> hiddenTags = {};
-  Set<String> markedTags = {};
   int tagsFiltersMetadataVersion = 0;
-
-  int itemLimit = Constants.defaultItemLimit;
-  int portraitColumns = 2;
-  int landscapeColumns = 4;
-  int preloadCount = 1;
-  int preloadHeight = 4096 * 4;
-  int snatchCooldown = 250;
-  int volumeButtonsScrollSpeed = 200;
-  int galleryAutoScrollTime = 4000;
-  int cacheSize = 3;
-  int autoLockTimeout = 120;
-
-  double mousewheelScrollSpeed = 10;
-  double preloadSizeLimit = 0.2;
+  int booruListVersion = 0;
+  final Map<String, Timer> _settingsSaveDebounceTimers = {};
 
   int currentColumnCount(BuildContext context) {
-    return context.isPortrait ? portraitColumns : landscapeColumns;
+    return context.isPortrait ? SX.portraitColumns.value : SX.landscapeColumns.value;
   }
 
-  Duration cacheDuration = Duration.zero;
-
-  List<GalleryButton> buttonOrder = [...GalleryButton.values];
-  List<GalleryButton> disabledButtons = [];
-
-  bool jsonWrite = false;
-  bool autoPlayEnabled = true;
-  bool loadingGif = false;
-  bool thumbnailCache = true;
-  bool mediaCache = true;
-  bool autoHideImageBar = false;
-  bool dbEnabled = true;
-  bool indexesEnabled = false;
-  bool searchHistoryEnabled = true;
-  bool filterHated = false;
-  bool filterMarked = false;
-  bool filterFavourites = false;
-  bool filterSnatched = false;
-  bool filterAi = false;
-  bool useVolumeButtonsForScroll = false;
-  bool shitDevice = false;
-  bool disableVideo = false;
-  bool enableDrawerMascot = false;
-  bool allowSelfSignedCerts = false;
-  bool wakeLockEnabled = true;
-  bool tagTypeFetchEnabled = true;
-  bool downloadNotifications = true;
-  bool allowRotation = false;
-  bool enableHeroTransitions = true;
-  bool disableCustomPageTransitions = false;
-  bool incognitoKeyboard = false;
-  bool hideNotes = false;
-  bool startVideosMuted = false;
-  bool snatchOnFavourite = false;
-  bool favouriteOnSnatch = false;
-  bool disableVibration = false;
-  bool altVideoPlayerHwAccel = true;
-  bool disableImageScaling = false;
-  bool gifsAsThumbnails = false;
-  bool desktopListsDrag = false;
-  bool captureLogcat = false;
-  bool showBottomSearchbar = true;
-  bool useTopSearchbarInput = false;
-  bool showSearchbarQuickActions = false;
-  bool autofocusSearchbar = true;
-  bool expandDetails = false;
-  bool usePredictiveBack = true;
-  final RxBool useLockscreen = false.obs;
-  final RxBool blurOnLeave = false.obs;
-  final RxList<Booru> booruList = RxList<Booru>([]);
-  int booruListVersion = 0;
-  ////////////////////////////////////////////////////
-
-  // themes wip
-  final Rx<ThemeItem> theme = ThemeItem(
-    name: 'Pink',
-    primary: Colors.pink[200],
-    accent: Colors.pink[600],
-  ).obs;
-
-  final Rx<Color?> customPrimaryColor = Colors.pink[200]!.obs;
-  final Rx<Color?> customAccentColor = Colors.pink[600]!.obs;
-
-  final Rx<ThemeMode> themeMode = ThemeMode.dark.obs; // system, light, dark
-  final RxBool useDynamicColor = false.obs;
-  final RxBool isAmoled = false.obs;
-
-  final Rx<String> fontFamily = 'System'.obs;
-
-  final Rxn<AppLocale> locale = Rxn<AppLocale>(null);
-  ////////////////////////////////////////////////////
-
-  // list of setting names which shouldnt be synced with other devices
-  List<String> deviceSpecificSettings = [
-    'shitDevice',
-    'disableVideo',
-    'thumbnailCache',
-    'mediaCache',
-    'dbEnabled',
-    'indexesEnabled',
-    'searchHistoryEnabled',
-    'useVolumeButtonsForScroll',
-    'volumeButtonsScrollSpeed',
-    'mousewheelScrollSpeed',
-    'prefBooru',
-    'appMode',
-    'handSide',
-    'extPathOverride',
-    'backupPath',
-    'lastSyncIp',
-    'lastSyncPort',
-    'customUserAgent',
-    'proxyType',
-    'proxyAddress',
-    'proxyUsername',
-    'proxyPassword',
-    'videoBackendMode',
-    'altVideoPlayerVO',
-    'altVideoPlayerHWDEC',
-    'altVideoPlayerHwAccel',
-    'theme',
-    'themeMode',
-    'isAmoled',
-    'fontFamily',
-    'locale',
-    'useDynamicColor',
-    'customPrimaryColor',
-    'customAccentColor',
-    'version',
-    'disableImageScaling',
-    'gifsAsThumbnails',
-    'cacheDuration',
-    'cacheSize',
-    'autoLockTimeout',
-    'enableDrawerMascot',
-    'drawerMascotPathOverride',
-    'allowSelfSignedCerts',
-    'showFps',
-    'showPerf',
-    'showImageStats',
-    'showVideoStats',
-    'isDebug',
-    'desktopListsDrag',
-    'captureLogcat',
-    'incognitoKeyboard',
-    'appAlias',
-    'showBottomSearchbar',
-    'useTopSearchbarInput',
-    'showSearchbarQuickActions',
-    'autofocusSearchbar',
-    'expandDetails',
-    'usePredictiveBack',
-    'useLockscreen',
-    'blurOnLeave',
-  ];
-
-  // default values and possible options map for validation
-  // TODO build settings widgets from this map, need to add Label/Description/other options required for the input element
-  // TODO move it in another file?
-  Map<String, Map<String, dynamic>> get map => {
-    // enums
-    'previewMode': {
-      'type': 'previewQuality',
-      'default': PreviewQuality.defaultValue,
-      'options': PreviewQuality.values,
-    },
-    'previewDisplay': {
-      'type': 'previewDisplayMode',
-      'default': PreviewDisplayMode.defaultValue,
-      'options': PreviewDisplayMode.values,
-    },
-    'previewDisplayFallback': {
-      'type': 'previewDisplayMode',
-      'default': PreviewDisplayMode.defaultValue,
-      'options': PreviewDisplayMode.values.where((e) => e != PreviewDisplayMode.staggered).toList(),
-    },
-    'shareAction': {
-      'type': 'shareAction',
-      'default': ShareAction.defaultValue,
-      'options': ShareAction.values,
-    },
-    'videoCacheMode': {
-      'type': 'videoCacheMode',
-      'default': VideoCacheMode.defaultValue,
-      'options': VideoCacheMode.values,
-    },
-    'galleryMode': {
-      'type': 'imageQuality',
-      'default': ImageQuality.defaultValue,
-      'options': ImageQuality.values,
-    },
-    'snatchMode': {
-      'type': 'imageQuality',
-      'default': ImageQuality.defaultValue,
-      'options': ImageQuality.values,
-    },
-    'galleryScrollDirection': {
-      'type': 'scrollDirection',
-      'default': ScrollDirection.defaultValue,
-      'options': ScrollDirection.values,
-    },
-    'galleryBarPosition': {
-      'type': 'verticalPosition',
-      'default': VerticalPosition.defaultValue,
-      'options': VerticalPosition.values,
-    },
-    'zoomButtonPosition': {
-      'type': 'buttonPosition',
-      'default': ButtonPosition.defaultValue,
-      'options': ButtonPosition.values,
-    },
-    'changePageButtonsPosition': {
-      'type': 'buttonPosition',
-      'default': ButtonPosition.defaultValueDesktopOnly,
-      'options': ButtonPosition.values,
-    },
-    'scrollGridButtonsPosition': {
-      'type': 'buttonPosition',
-      'default': ButtonPosition.defaultValueDesktopOnly,
-      'options': ButtonPosition.values,
-    },
-    'videoBackendMode': {
-      'type': 'videoBackendMode',
-      'default': VideoBackendMode.defaultValue,
-      'options': VideoBackendMode.allowedValues,
-    },
-    'altVideoPlayerVO': {
-      'type': 'mpvVideoOutput',
-      'default': MpvVideoOutput.defaultValue,
-      'options': MpvVideoOutput.values,
-    },
-    'altVideoPlayerHWDEC': {
-      'type': 'mpvHardwareDecoding',
-      'default': MpvHardwareDecoding.defaultValue,
-      'options': MpvHardwareDecoding.values,
-    },
-    'proxyType': {
-      'type': 'proxyType',
-      'default': ProxyType.defaultValue,
-      'options': ProxyType.values,
-    },
-
-    // string
-    'defTags': {
-      'type': 'string',
-      'default': 'rating:safe',
-    },
-    'prefBooru': {
-      'type': 'string',
-      'default': '',
-    },
-    'extPathOverride': {
-      'type': 'string',
-      'default': '',
-    },
-    'drawerMascotPathOverride': {
-      'type': 'string',
-      'default': '',
-    },
-    'backupPath': {
-      'type': 'string',
-      'default': '',
-    },
-    'lastSyncIp': {
-      'type': 'string',
-      'default': '',
-    },
-    'lastSyncPort': {
-      'type': 'string',
-      'default': '',
-    },
-    'customUserAgent': {
-      'type': 'string',
-      'default': '',
-    },
-    'proxyAddress': {
-      'type': 'string',
-      'default': '',
-    },
-    'proxyUsername': {
-      'type': 'string',
-      'default': '',
-    },
-    'proxyPassword': {
-      'type': 'string',
-      'default': '',
-    },
-
-    // stringList
-    'hatedTags': {
-      'type': 'stringList',
-      'default': <String>[],
-    },
-    'hiddenTags': {
-      'type': 'stringList',
-      'default': <String>[],
-    },
-    'lovedTags': {
-      'type': 'stringList',
-      'default': <String>[],
-    },
-    'markedTags': {
-      'type': 'stringList',
-      'default': <String>[],
-    },
-
-    // int
-    'limit': {
-      'type': 'int',
-      'default': Constants.defaultItemLimit,
-      'step': 10,
-      'upperLimit': 100,
-      'lowerLimit': 10,
-    },
-    'portraitColumns': {
-      'type': 'int',
-      'default': 2,
-      'step': 1,
-      'upperLimit': 100,
-      'lowerLimit': 1,
-    },
-    'landscapeColumns': {
-      'type': 'int',
-      'default': 4,
-      'step': 1,
-      'upperLimit': 100,
-      'lowerLimit': 1,
-    },
-    'preloadCount': {
-      'type': 'int',
-      'default': 1,
-      'step': 1,
-      'upperLimit': 4,
-      'lowerLimit': 0,
-    },
-    'preloadHeight': {
-      'type': 'int',
-      'default': 4096 * 4,
-      'step': 1024,
-      'upperLimit': 2_000_000_000,
-      'lowerLimit': 0,
-    },
-    'snatchCooldown': {
-      'type': 'int',
-      'default': 250,
-      'step': 50,
-      'upperLimit': 10000,
-      'lowerLimit': 0,
-    },
-    'volumeButtonsScrollSpeed': {
-      'type': 'int',
-      'default': 200,
-      'step': 10,
-      'upperLimit': 1000000,
-      'lowerLimit': 0,
-    },
-    'galleryAutoScrollTime': {
-      'type': 'int',
-      'default': 4000,
-      'step': 100,
-      'upperLimit': 100000,
-      'lowerLimit': 100,
-    },
-    'cacheSize': {
-      'type': 'int',
-      'default': 3,
-      'step': 1,
-      'upperLimit': 50,
-      'lowerLimit': 0,
-    },
-    'autoLockTimeout': {
-      'type': 'int',
-      'default': 120,
-      'step': 10,
-      'upperLimit': double.infinity,
-      'lowerLimit': 0,
-    },
-
-    // double
-    'mousewheelScrollSpeed': {
-      'type': 'double',
-      'default': 10.0,
-      'upperLimit': 100.0,
-      'lowerLimit': 0.1,
-      'step': 0.5,
-    },
-    'preloadSizeLimit': {
-      'type': 'double',
-      'default': 0.2,
-      'upperLimit': double.infinity,
-      'lowerLimit': 0.0,
-      'step': 0.1,
-    },
-
-    // bool
-    'jsonWrite': {
-      'type': 'bool',
-      'default': false,
-    },
-    'autoPlayEnabled': {
-      'type': 'bool',
-      'default': true,
-    },
-    'loadingGif': {
-      'type': 'bool',
-      'default': false,
-    },
-    'thumbnailCache': {
-      'type': 'bool',
-      'default': true,
-    },
-    'mediaCache': {
-      'type': 'bool',
-      'default': true,
-    },
-    'autoHideImageBar': {
-      'type': 'bool',
-      'default': false,
-    },
-    'dbEnabled': {
-      'type': 'bool',
-      'default': true,
-    },
-    'indexesEnabled': {
-      'type': 'bool',
-      'default': false,
-    },
-    'searchHistoryEnabled': {
-      'type': 'bool',
-      'default': true,
-    },
-    'filterHated': {
-      'type': 'bool',
-      'default': false,
-    },
-    'filterMarked': {
-      'type': 'bool',
-      'default': false,
-    },
-    'filterFavourites': {
-      'type': 'bool',
-      'default': false,
-    },
-    'filterSnatched': {
-      'type': 'bool',
-      'default': false,
-    },
-    'filterAi': {
-      'type': 'bool',
-      'default': false,
-    },
-    'useVolumeButtonsForScroll': {
-      'type': 'bool',
-      'default': false,
-    },
-    'shitDevice': {
-      'type': 'bool',
-      'default': false,
-    },
-    'disableVideo': {
-      'type': 'bool',
-      'default': false,
-    },
-    'enableDrawerMascot': {
-      'type': 'bool',
-      'default': false,
-    },
-    'allowSelfSignedCerts': {
-      'type': 'bool',
-      'default': false,
-    },
-    'disableImageScaling': {
-      'type': 'bool',
-      'default': false,
-    },
-    'gifsAsThumbnails': {
-      'type': 'bool',
-      'default': false,
-    },
-    'desktopListsDrag': {
-      'type': 'bool',
-      'default': false,
-    },
-    'captureLogcat': {
-      'type': 'bool',
-      'default': false,
-    },
-    'wakeLockEnabled': {
-      'type': 'bool',
-      'default': true,
-    },
-    'tagTypeFetchEnabled': {
-      'type': 'bool',
-      'default': true,
-    },
-    'downloadNotifications': {
-      'type': 'bool',
-      'default': true,
-    },
-    'allowRotation': {
-      'type': 'bool',
-      'default': false,
-    },
-    'enableHeroTransitions': {
-      'type': 'bool',
-      'default': true,
-    },
-    'disableCustomPageTransitions': {
-      'type': 'bool',
-      'default': false,
-    },
-    'incognitoKeyboard': {
-      'type': 'bool',
-      'default': false,
-    },
-    'appAlias': {
-      'type': 'appAlias',
-      'default': AppAlias.defaultValue,
-      'options': AppAlias.values,
-    },
-    'hideNotes': {
-      'type': 'bool',
-      'default': false,
-    },
-    'startVideosMuted': {
-      'type': 'bool',
-      'default': false,
-    },
-    'snatchOnFavourite': {
-      'type': 'bool',
-      'default': false,
-    },
-    'favouriteOnSnatch': {
-      'type': 'bool',
-      'default': false,
-    },
-    'disableVibration': {
-      'type': 'bool',
-      'default': false,
-    },
-    'altVideoPlayerHwAccel': {
-      'type': 'bool',
-      'default': true,
-    },
-    'showBottomSearchbar': {
-      'type': 'bool',
-      'default': true,
-    },
-    'useTopSearchbarInput': {
-      'type': 'bool',
-      'default': false,
-    },
-    'showSearchbarQuickActions': {
-      'type': 'bool',
-      'default': false,
-    },
-    'autofocusSearchbar': {
-      'type': 'bool',
-      'default': true,
-    },
-    'expandDetails': {
-      'type': 'bool',
-      'default': false,
-    },
-    'usePredictiveBack': {
-      'type': 'bool',
-      'default': true,
-    },
-    'useLockscreen': {
-      'type': 'bool',
-      'default': false,
-    },
-    'blurOnLeave': {
-      'type': 'bool',
-      'default': false,
-    },
-
-    // other
-    'buttonOrder': {
-      'type': 'galleryButtonList',
-      'default': <GalleryButton>[...GalleryButton.values],
-    },
-    'disabledButtons': {
-      'type': 'galleryButtonList',
-      'default': <GalleryButton>[],
-      'options': [...GalleryButton.disableable],
-    },
-    'cacheDuration': {
-      'type': 'duration',
-      'default': Duration.zero,
-      'options': <Duration>[
-        Duration.zero,
-        const Duration(minutes: 30),
-        const Duration(hours: 1),
-        const Duration(hours: 6),
-        const Duration(hours: 12),
-        const Duration(days: 1),
-        const Duration(days: 2),
-        const Duration(days: 7),
-        const Duration(days: 30),
-      ],
-    },
-
-    // theme
-    'appMode': {
-      'type': 'appMode',
-      'default': AppMode.defaultValue,
-      'options': AppMode.values,
-    },
-    'handSide': {
-      'type': 'handSide',
-      'default': HandSide.defaultValue,
-      'options': HandSide.values,
-    },
-    'theme': {
-      'type': 'theme',
-      'default': ThemeItem(name: 'Pink', primary: Colors.pink[200], accent: Colors.pink[600]),
-      'options': <ThemeItem>[
-        ThemeItem(name: 'Pink', primary: Colors.pink[200], accent: Colors.pink[600]),
-        ThemeItem(name: 'Purple', primary: Colors.deepPurple[600], accent: Colors.deepPurple[800]),
-        ThemeItem(name: 'Blue', primary: Colors.lightBlue, accent: Colors.lightBlue[600]),
-        ThemeItem(name: 'Teal', primary: Colors.teal, accent: Colors.teal[600]),
-        ThemeItem(name: 'Red', primary: Colors.red[700], accent: Colors.red[800]),
-        ThemeItem(name: 'Green', primary: Colors.green, accent: Colors.green[700]),
-        ThemeItem(name: 'Halloween', primary: const Color(0xFF0B192C), accent: const Color(0xFFEB5E28)),
-        ThemeItem(name: 'Custom', primary: null, accent: null),
-      ],
-    },
-    'themeMode': {
-      'type': 'themeMode',
-      'default': ThemeMode.dark,
-      'options': ThemeMode.values,
-    },
-    'useDynamicColor': {
-      'type': 'bool',
-      'default': false,
-    },
-    'isAmoled': {
-      'type': 'bool',
-      'default': false,
-    },
-    'fontFamily': {
-      'type': 'string',
-      'default': 'System',
-    },
-    'locale': {
-      'type': 'locale',
-      'default': null,
-    },
-    'customPrimaryColor': {
-      'type': 'color',
-      'default': Colors.pink[200],
-    },
-    'customAccentColor': {
-      'type': 'color',
-      'default': Colors.pink[600],
-    },
-  };
-
-  dynamic validateValue(String name, dynamic value, {bool toJSON = false}) {
-    final Map<String, dynamic>? settingParams = map[name];
-
-    if (toJSON) {
-      value = getByString(name);
-    }
-
-    if (value is Rx) {
-      value = value.value;
-    }
-
-    if (settingParams == null) {
-      if (toJSON) {
-        return value.toString();
-      } else {
-        return value;
-      }
-    }
-
+  Future<bool> loadFromJSON(String jsonString, bool setMissingKeys) async {
+    Map<String, dynamic> json = {};
     try {
-      final String type = settingParams['type'];
-
-      // Check if this is a registered SettingsEnum type - handles all enums generically
-      if (SettingsEnumRegistry.isRegistered(type)) {
-        return SettingsEnumRegistry.validate(
-          type,
-          value,
-          settingParams['default'],
-          toJSON: toJSON,
-        );
-      }
-
-      switch (type) {
-        case 'stringFromList':
-          final String validValue = List<String>.from(
-            settingParams['options']!,
-          ).firstWhere((el) => el == value, orElse: () => '');
-          if (validValue != '') {
-            return validValue;
-          } else {
-            return settingParams['default'];
-          }
-
-        case 'string':
-          if (value is! String) {
-            throw Exception('value "$value" for $name is not a String');
-          } else {
-            return value;
-          }
-
-        case 'int':
-          final int? parse = (value is String) ? int.tryParse(value) : (value is int ? value : null);
-          if (parse == null) {
-            throw Exception('value "$value" of type ${value.runtimeType} for $name is not an int');
-          } else if (parse < settingParams['lowerLimit'] || parse > settingParams['upperLimit']) {
-            if (toJSON) {
-              // force default value when not passing validation when saving
-              setByString(name, settingParams['default']);
-            }
-            return settingParams['default'];
-          } else {
-            return parse;
-          }
-
-        case 'bool':
-          if (value is! bool) {
-            if (value is String && (value == 'true' || value == 'false')) {
-              return value == 'true';
-            } else {
-              throw Exception('value "$value" for $name is not a bool');
-            }
-          } else {
-            return value;
-          }
-
-        // Special types with custom handling
-        case 'theme':
-          if (toJSON) {
-            return (value as ThemeItem).name;
-          } else {
-            if (value is String) {
-              final ThemeItem findTheme = List<ThemeItem>.from(
-                settingParams['options']!,
-              ).firstWhere((el) => el.name == value, orElse: () => settingParams['default']);
-              return findTheme;
-            } else {
-              return settingParams['default'];
-            }
-          }
-
-        case 'themeMode':
-          if (toJSON) {
-            return (value as ThemeMode).name; // ThemeMode.dark => dark
-          } else {
-            if (value is String) {
-              final List<ThemeMode> findMode = ThemeMode.values
-                  .where((element) => element.toString() == 'ThemeMode.$value')
-                  .toList();
-              if (findMode.isNotEmpty) {
-                // if theme mode is present
-                return findMode[0];
-              } else {
-                // if not theme mode with given name
-                return settingParams['default'];
-              }
-            } else {
-              return settingParams['default'];
-            }
-          }
-
-        case 'color':
-          if (toJSON) {
-            // TODO replace value with toARGB32() in the next flutter release
-            // ignore: deprecated_member_use
-            return (value as Color?)?.value ?? Colors.pink.value; // Color => int
-          } else {
-            if (value is int) {
-              return Color(value);
-            } else {
-              return settingParams['default'];
-            }
-          }
-
-        case 'duration':
-          if (toJSON) {
-            return (value as Duration).inSeconds; // Duration => int
-          } else {
-            if (value is Duration) {
-              return value;
-            } else if (value is int) {
-              // int to Duration
-              return Duration(seconds: value);
-            } else {
-              return settingParams['default'];
-            }
-          }
-
-        case 'locale':
-          if (toJSON) {
-            return (value as AppLocale?)?.name;
-          } else {
-            if (value is String) {
-              return AppLocaleExt.allowedValues.firstWhereOrNull((e) => e.name == value);
-            } else {
-              return settingParams['default'];
-            }
-          }
-
-        // case 'stringList':
-        default:
-          return value;
-      }
+      json = jsonDecode(jsonString);
     } catch (e, s) {
-      // return default value on exceptions
       Logger.Inst().log(
-        'value validation error: $e',
+        'Failed to parse settings config $e',
         'SettingsHandler',
-        'validateValue',
-        null,
+        'loadFromJSON',
+        LogTypes.exception,
         s: s,
       );
-      return settingParams['default'];
     }
+
+    SettingsRegistry.instance.loadFromJson(json);
+
+    // Force mobile app mode until desktop UI is redone
+    SX.appMode.state.value = AppMode.Mobile;
+
+    return true;
   }
 
   Future<bool> loadSettings() async {
@@ -964,6 +122,11 @@ class SettingsHandler {
     }
     if (cachePath == '') {
       cachePath = await ServiceHandler.getCacheDir();
+    }
+
+    // Register all setting definitions in the new registry (idempotent if already registered)
+    if (SettingsRegistry.instance.isEmpty) {
+      registerAllSettings();
     }
 
     if (await checkForSettings()) {
@@ -977,7 +140,7 @@ class SettingsHandler {
   Future<bool> loadDatabase(ValueChanged<String> onStatusUpdate) async {
     try {
       if (!Tools.isTestMode) {
-        if (dbEnabled) {
+        if (SX.dbEnabled.value) {
           await dbHandler.dbConnect(
             path,
             onStatusUpdate: onStatusUpdate,
@@ -1002,8 +165,8 @@ class SettingsHandler {
   Future<bool> indexDatabase() async {
     try {
       if (!Tools.isTestMode) {
-        if (dbEnabled) {
-          if (indexesEnabled) {
+        if (SX.dbEnabled.value) {
+          if (SX.indexesEnabled.value) {
             postInitMessage.value = '${loc.settings.database.indexingDatabase}...\n${loc.thisMayTakeSomeTime}';
             await dbHandler.createIndexes();
           } else {
@@ -1033,748 +196,7 @@ class SettingsHandler {
   Future<void> loadSettingsJson() async {
     final File settingsFile = File('${path}settings.json');
     final String settings = await settingsFile.readAsString();
-    // print('loadJSON $settings');
     await loadFromJSON(settings, true);
-    return;
-  }
-
-  dynamic getByString(String varName) {
-    switch (varName) {
-      case 'defTags':
-        return defTags;
-      case 'previewMode':
-        return previewMode;
-      case 'videoCacheMode':
-        return videoCacheMode;
-      case 'previewDisplay':
-        return previewDisplay;
-      case 'previewDisplayFallback':
-        return previewDisplayFallback;
-      case 'galleryMode':
-        return galleryMode;
-      case 'snatchMode':
-        return snatchMode;
-      case 'shareAction':
-        return shareAction;
-      case 'limit':
-        return itemLimit;
-      case 'portraitColumns':
-        return portraitColumns;
-      case 'landscapeColumns':
-        return landscapeColumns;
-      case 'preloadCount':
-        return preloadCount;
-      case 'preloadHeight':
-        return preloadHeight;
-      case 'snatchCooldown':
-        return snatchCooldown;
-      case 'galleryBarPosition':
-        return galleryBarPosition;
-      case 'galleryScrollDirection':
-        return galleryScrollDirection;
-      case 'buttonOrder':
-        return buttonOrder;
-      case 'disabledButtons':
-        return disabledButtons;
-      case 'hatedTags':
-      case 'hiddenTags':
-        return hiddenTags;
-      case 'lovedTags':
-      case 'markedTags':
-        return markedTags;
-      case 'autoPlayEnabled':
-        return autoPlayEnabled;
-      case 'loadingGif':
-        return loadingGif;
-      case 'thumbnailCache':
-        return thumbnailCache;
-      case 'mediaCache':
-        return mediaCache;
-      case 'autoHideImageBar':
-        return autoHideImageBar;
-      case 'dbEnabled':
-        return dbEnabled;
-      case 'indexesEnabled':
-        return indexesEnabled;
-      case 'searchHistoryEnabled':
-        return searchHistoryEnabled;
-      case 'filterHated':
-        return filterHated;
-      case 'filterMarked':
-        return filterMarked;
-      case 'filterFavourites':
-        return filterFavourites;
-      case 'filterSnatched':
-        return filterSnatched;
-      case 'filterAi':
-        return filterAi;
-      case 'useVolumeButtonsForScroll':
-        return useVolumeButtonsForScroll;
-      case 'volumeButtonsScrollSpeed':
-        return volumeButtonsScrollSpeed;
-      case 'mousewheelScrollSpeed':
-        return mousewheelScrollSpeed;
-      case 'preloadSizeLimit':
-        return preloadSizeLimit;
-      case 'disableVideo':
-        return disableVideo;
-      case 'shitDevice':
-        return shitDevice;
-      case 'galleryAutoScrollTime':
-        return galleryAutoScrollTime;
-      case 'jsonWrite':
-        return jsonWrite;
-      case 'zoomButtonPosition':
-        return zoomButtonPosition;
-      case 'changePageButtonsPosition':
-        return changePageButtonsPosition;
-      case 'scrollGridButtonsPosition':
-        return scrollGridButtonsPosition;
-      case 'disableImageScaling':
-        return disableImageScaling;
-      case 'gifsAsThumbnails':
-        return gifsAsThumbnails;
-      case 'desktopListsDrag':
-        return desktopListsDrag;
-      case 'captureLogcat':
-        return captureLogcat;
-      case 'cacheDuration':
-        return cacheDuration;
-      case 'cacheSize':
-        return cacheSize;
-      case 'autoLockTimeout':
-        return autoLockTimeout;
-      case 'allowSelfSignedCerts':
-        return allowSelfSignedCerts;
-      case 'showBottomSearchbar':
-        return showBottomSearchbar;
-      case 'useTopSearchbarInput':
-        return useTopSearchbarInput;
-      case 'showSearchbarQuickActions':
-        return showSearchbarQuickActions;
-      case 'autofocusSearchbar':
-        return autofocusSearchbar;
-      case 'expandDetails':
-        return expandDetails;
-      case 'usePredictiveBack':
-        return usePredictiveBack;
-      case 'useLockscreen':
-        return useLockscreen;
-      case 'blurOnLeave':
-        return blurOnLeave;
-
-      case 'prefBooru':
-        return prefBooru;
-      case 'extPathOverride':
-        return extPathOverride;
-      case 'drawerMascotPathOverride':
-        return drawerMascotPathOverride;
-      case 'backupPath':
-        return backupPath;
-      case 'enableDrawerMascot':
-        return enableDrawerMascot;
-      case 'lastSyncIp':
-        return lastSyncIp;
-      case 'lastSyncPort':
-        return lastSyncPort;
-      case 'customUserAgent':
-        return customUserAgent;
-      case 'proxyType':
-        return proxyType;
-      case 'proxyAddress':
-        return proxyAddress;
-      case 'proxyUsername':
-        return proxyUsername;
-      case 'proxyPassword':
-        return proxyPassword;
-      case 'wakeLockEnabled':
-        return wakeLockEnabled;
-      case 'tagTypeFetchEnabled':
-        return tagTypeFetchEnabled;
-      case 'downloadNotifications':
-        return downloadNotifications;
-      case 'allowRotation':
-        return allowRotation;
-      case 'enableHeroTransitions':
-        return enableHeroTransitions;
-      case 'disableCustomPageTransitions':
-        return disableCustomPageTransitions;
-      case 'incognitoKeyboard':
-        return incognitoKeyboard;
-      case 'appAlias':
-        return appAlias;
-      case 'hideNotes':
-        return hideNotes;
-      case 'startVideosMuted':
-        return startVideosMuted;
-      case 'snatchOnFavourite':
-        return snatchOnFavourite;
-      case 'favouriteOnSnatch':
-        return favouriteOnSnatch;
-      case 'disableVibration':
-        return disableVibration;
-      case 'videoBackendMode':
-        return videoBackendMode;
-      case 'altVideoPlayerHwAccel':
-        return altVideoPlayerHwAccel;
-      case 'altVideoPlayerVO':
-        return altVideoPlayerVO;
-      case 'altVideoPlayerHWDEC':
-        return altVideoPlayerHWDEC;
-      // theme stuff
-      case 'appMode':
-        return appMode;
-      case 'handSide':
-        return handSide;
-      case 'theme':
-        return theme;
-      case 'themeMode':
-        return themeMode;
-      case 'useDynamicColor':
-        return useDynamicColor;
-      case 'isAmoled':
-        return isAmoled;
-      case 'fontFamily':
-        return fontFamily;
-      case 'customPrimaryColor':
-        return customPrimaryColor;
-      case 'customAccentColor':
-        return customAccentColor;
-      case 'locale':
-        return locale;
-      default:
-        return null;
-    }
-  }
-
-  dynamic setByString(String varName, dynamic value) {
-    final dynamic validatedValue = validateValue(varName, value);
-    //Could this just be replaced with getByString(varName) = validatedValue?
-    switch (varName) {
-      case 'defTags':
-        defTags = validatedValue;
-        break;
-      case 'previewMode':
-        previewMode = validatedValue;
-        break;
-      case 'videoCacheMode':
-        videoCacheMode = validatedValue;
-        break;
-      case 'previewDisplay':
-        previewDisplay = validatedValue;
-        break;
-      case 'previewDisplayFallback':
-        previewDisplayFallback = validatedValue;
-        break;
-      case 'galleryMode':
-        galleryMode = validatedValue;
-        break;
-      case 'snatchMode':
-        snatchMode = validatedValue;
-        break;
-      case 'shareAction':
-        shareAction = validatedValue;
-        break;
-      case 'limit':
-        itemLimit = validatedValue;
-        break;
-      case 'portraitColumns':
-        portraitColumns = validatedValue;
-        break;
-      case 'landscapeColumns':
-        landscapeColumns = validatedValue;
-        break;
-      case 'preloadCount':
-        preloadCount = validatedValue;
-        break;
-      case 'preloadHeight':
-        preloadHeight = validatedValue;
-        break;
-      case 'snatchCooldown':
-        snatchCooldown = validatedValue;
-        break;
-      case 'galleryBarPosition':
-        galleryBarPosition = validatedValue;
-        break;
-      case 'galleryScrollDirection':
-        galleryScrollDirection = validatedValue;
-        break;
-
-      case 'buttonOrder':
-        buttonOrder = validatedValue;
-        break;
-      case 'disabledButtons':
-        disabledButtons = validatedValue;
-        break;
-      // case 'hatedTags':
-      //   hatedTags = validatedValue;
-      //   break;
-      // case 'lovedTags':
-      //   lovedTags = validatedValue;
-      //   break;
-      case 'autoPlayEnabled':
-        autoPlayEnabled = validatedValue;
-        break;
-      case 'loadingGif':
-        loadingGif = validatedValue;
-        break;
-      case 'thumbnailCache':
-        thumbnailCache = validatedValue;
-        break;
-      case 'mediaCache':
-        mediaCache = validatedValue;
-        break;
-      case 'autoHideImageBar':
-        autoHideImageBar = validatedValue;
-        break;
-      case 'dbEnabled':
-        dbEnabled = validatedValue;
-        break;
-      case 'indexesEnabled':
-        indexesEnabled = validatedValue;
-        break;
-      case 'searchHistoryEnabled':
-        searchHistoryEnabled = validatedValue;
-        break;
-      case 'filterHated':
-        filterHated = validatedValue;
-        break;
-      case 'filterMarked':
-        filterMarked = validatedValue;
-        break;
-      case 'filterFavourites':
-        filterFavourites = validatedValue;
-        break;
-      case 'filterSnatched':
-        filterSnatched = validatedValue;
-        break;
-      case 'filterAi':
-        filterAi = validatedValue;
-        break;
-      case 'useVolumeButtonsForScroll':
-        useVolumeButtonsForScroll = validatedValue;
-        break;
-      case 'volumeButtonsScrollSpeed':
-        volumeButtonsScrollSpeed = validatedValue;
-        break;
-      case 'mousewheelScrollSpeed':
-        mousewheelScrollSpeed = validatedValue;
-        break;
-      case 'preloadSizeLimit':
-        preloadSizeLimit = validatedValue;
-        break;
-      case 'disableVideo':
-        disableVideo = validatedValue;
-        break;
-      case 'shitDevice':
-        shitDevice = validatedValue;
-        break;
-      case 'galleryAutoScrollTime':
-        galleryAutoScrollTime = validatedValue;
-        break;
-      case 'jsonWrite':
-        jsonWrite = validatedValue;
-        break;
-      case 'zoomButtonPosition':
-        zoomButtonPosition = validatedValue;
-        break;
-      case 'changePageButtonsPosition':
-        changePageButtonsPosition = validatedValue;
-        break;
-      case 'scrollGridButtonsPosition':
-        scrollGridButtonsPosition = validatedValue;
-        break;
-      case 'disableImageScaling':
-        disableImageScaling = validatedValue;
-        break;
-      case 'gifsAsThumbnails':
-        gifsAsThumbnails = validatedValue;
-        break;
-      case 'desktopListsDrag':
-        desktopListsDrag = validatedValue;
-        break;
-      case 'captureLogcat':
-        captureLogcat = validatedValue;
-        break;
-      case 'cacheDuration':
-        cacheDuration = validatedValue;
-        break;
-      case 'cacheSize':
-        cacheSize = validatedValue;
-        break;
-      case 'autoLockTimeout':
-        autoLockTimeout = validatedValue;
-        break;
-      case 'prefBooru':
-        prefBooru = validatedValue;
-        break;
-      case 'extPathOverride':
-        extPathOverride = validatedValue;
-        SAFFileCache.instance.invalidate();
-        break;
-      case 'backupPath':
-        backupPath = validatedValue;
-        break;
-      case 'lastSyncIp':
-        lastSyncIp = validatedValue;
-        break;
-      case 'lastSyncPort':
-        lastSyncPort = validatedValue;
-        break;
-      case 'customUserAgent':
-        customUserAgent = validatedValue;
-        break;
-      case 'proxyType':
-        proxyType = validatedValue;
-        break;
-      case 'proxyAddress':
-        proxyAddress = validatedValue;
-        break;
-      case 'proxyUsername':
-        proxyUsername = validatedValue;
-        break;
-      case 'proxyPassword':
-        proxyPassword = validatedValue;
-        break;
-      case 'allowSelfSignedCerts':
-        allowSelfSignedCerts = validatedValue;
-        break;
-      case 'wakeLockEnabled':
-        wakeLockEnabled = validatedValue;
-        break;
-      case 'tagTypeFetchEnabled':
-        tagTypeFetchEnabled = validatedValue;
-        break;
-      case 'downloadNotifications':
-        downloadNotifications = validatedValue;
-        break;
-      case 'allowRotation':
-        allowRotation = validatedValue;
-        break;
-      case 'enableHeroTransitions':
-        enableHeroTransitions = validatedValue;
-        break;
-      case 'disableCustomPageTransitions':
-        disableCustomPageTransitions = validatedValue;
-        break;
-      case 'incognitoKeyboard':
-        incognitoKeyboard = validatedValue;
-        break;
-      case 'appAlias':
-        appAlias = validatedValue;
-        break;
-      case 'hideNotes':
-        hideNotes = validatedValue;
-        break;
-      case 'startVideosMuted':
-        startVideosMuted = validatedValue;
-        break;
-      case 'snatchOnFavourite':
-        snatchOnFavourite = validatedValue;
-        break;
-      case 'favouriteOnSnatch':
-        favouriteOnSnatch = validatedValue;
-        break;
-      case 'disableVibration':
-        disableVibration = validatedValue;
-        break;
-      case 'videoBackendMode':
-        videoBackendMode = validatedValue;
-        break;
-      case 'altVideoPlayerHwAccel':
-        altVideoPlayerHwAccel = validatedValue;
-        break;
-      case 'altVideoPlayerVO':
-        altVideoPlayerVO = validatedValue;
-        break;
-      case 'altVideoPlayerHWDEC':
-        altVideoPlayerHWDEC = validatedValue;
-        break;
-      case 'showBottomSearchbar':
-        showBottomSearchbar = validatedValue;
-        break;
-      case 'useTopSearchbarInput':
-        useTopSearchbarInput = validatedValue;
-        break;
-      case 'showSearchbarQuickActions':
-        showSearchbarQuickActions = validatedValue;
-        break;
-      case 'autofocusSearchbar':
-        autofocusSearchbar = validatedValue;
-        break;
-      case 'expandDetails':
-        expandDetails = validatedValue;
-        break;
-      case 'usePredictiveBack':
-        usePredictiveBack = validatedValue;
-        break;
-      case 'useLockscreen':
-        useLockscreen.value = validatedValue;
-        break;
-      case 'blurOnLeave':
-        blurOnLeave.value = validatedValue;
-        break;
-
-      // theme stuff
-      case 'appMode':
-        appMode.value = validatedValue;
-        break;
-      case 'handSide':
-        handSide.value = validatedValue;
-        break;
-      case 'theme':
-        theme.value = validatedValue;
-        break;
-      case 'themeMode':
-        themeMode.value = validatedValue;
-        break;
-      case 'useDynamicColor':
-        useDynamicColor.value = validatedValue;
-        break;
-      case 'isAmoled':
-        isAmoled.value = validatedValue;
-        break;
-      case 'fontFamily':
-        fontFamily.value = validatedValue;
-        break;
-      case 'customPrimaryColor':
-        customPrimaryColor.value = validatedValue;
-        break;
-      case 'customAccentColor':
-        customAccentColor.value = validatedValue;
-        break;
-      case 'drawerMascotPathOverride':
-        drawerMascotPathOverride = validatedValue;
-        break;
-      case 'enableDrawerMascot':
-        enableDrawerMascot = validatedValue;
-        break;
-      case 'locale':
-        locale.value = validatedValue;
-        break;
-      default:
-        break;
-    }
-  }
-
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> json = {};
-
-    // Auto-generate JSON from map keys
-    for (final key in map.keys) {
-      // Special handling for tags (need to be cleaned)
-      if (key == 'hatedTags' || key == 'lovedTags') {
-        // do nothing, legacy key
-      } else if (key == 'hiddenTags') {
-        json[key] = cleanTagsList(hiddenTags.map(Tag.new).toList());
-      } else if (key == 'markedTags') {
-        json[key] = cleanTagsList(markedTags.map(Tag.new).toList());
-      } else {
-        json[key] = validateValue(key, null, toJSON: true);
-      }
-    }
-
-    // Add version info
-    json['version'] = Constants.updateInfo.versionName;
-    json['build'] = Constants.updateInfo.buildNumber;
-
-    return json;
-  }
-
-  Future<bool> loadFromJSON(String jsonString, bool setMissingKeys) async {
-    Map<String, dynamic> json = {};
-    try {
-      json = jsonDecode(jsonString);
-    } catch (e, s) {
-      Logger.Inst().log(
-        'Failed to parse settings config $e',
-        'SettingsHandler',
-        'loadFromJSON',
-        LogTypes.exception,
-        s: s,
-      );
-    }
-
-    // TODO add error handling for invalid values
-    // (don't allow user to exit the page until the value is correct? or just set to default (current behaviour)? mix of both?)
-
-    try {
-      dynamic tempBtnOrder = json['buttonOrder'];
-      if (tempBtnOrder is List) {
-        // print('btnorder is a list');
-      } else if (tempBtnOrder is String) {
-        // print('btnorder is a string');
-        tempBtnOrder = tempBtnOrder.split(',');
-      } else {
-        // print('btnorder is a ${tempBtnOrder.runtimeType} type');
-        tempBtnOrder = [];
-      }
-      final List<GalleryButton> btnOrder = List<GalleryButton?>.from(
-        tempBtnOrder.map((b) => b is String ? GalleryButton.fromString(b) : null),
-      ).where((b) => b != null).toList().cast<GalleryButton>();
-      btnOrder.addAll(
-        GalleryButton.values.where(
-          (b) => !btnOrder.contains(b),
-        ),
-      ); // add all buttons that are not present in the parsed list (future proofing, in case we add more buttons later)
-      buttonOrder = btnOrder;
-    } catch (e, s) {
-      Logger.Inst().log(
-        'Failed to parse button order list $e',
-        'SettingsHandler',
-        'loadFromJSON',
-        LogTypes.exception,
-        s: s,
-      );
-    }
-
-    try {
-      dynamic tempDisabledButtons = json['disabledButtons'];
-      if (tempDisabledButtons is List) {
-        tempDisabledButtons = [
-          ...tempDisabledButtons
-              .map((b) => b is String ? GalleryButton.fromString(b) : null)
-              .where((b) => b != null)
-              .toList()
-              .cast<GalleryButton>(),
-        ];
-
-        final disableableButtons = [...GalleryButton.disableable];
-        for (final button in tempDisabledButtons) {
-          if (disableableButtons.any((e) => e == button)) {
-            // do nothing
-          } else {
-            // remove unknown and not allowed to remove buttons
-            tempDisabledButtons.remove(button);
-          }
-        }
-
-        disabledButtons = [...tempDisabledButtons];
-      } else {
-        disabledButtons = [];
-      }
-    } catch (e, s) {
-      Logger.Inst().log(
-        'Failed to parse button disabled list $e',
-        'SettingsHandler',
-        'loadFromJSON',
-        LogTypes.exception,
-        s: s,
-      );
-    }
-
-    try {
-      dynamic tempHiddenTags = json['hiddenTags'] ?? json['hatedTags'];
-      if (tempHiddenTags is List) {
-        // print('hiddenTags is a list');
-      } else if (tempHiddenTags is String) {
-        // print('hiddenTags is a string');
-        tempHiddenTags = tempHiddenTags.split(',');
-      } else {
-        // print('hiddenTags is a ${tempHiddenTags.runtimeType} type');
-        tempHiddenTags = [];
-      }
-      hiddenTags.clear();
-      final List<String> hideTags = List<String>.from(tempHiddenTags);
-      for (int i = 0; i < hideTags.length; i++) {
-        hiddenTags.add(hideTags.elementAt(i));
-      }
-    } catch (e, s) {
-      Logger.Inst().log(
-        'Failed to parse hidden tags $e',
-        'SettingsHandler',
-        'loadFromJSON',
-        LogTypes.exception,
-        s: s,
-      );
-    }
-
-    try {
-      dynamic tempMarkedTags = json['markedTags'] ?? json['lovedTags'];
-      if (tempMarkedTags is List) {
-        // print('markedTags is a list');
-      } else if (tempMarkedTags is String) {
-        // print('markedTags is a string');
-        tempMarkedTags = tempMarkedTags.split(',');
-      } else {
-        // print('markedTags is a ${tempMarkedTags.runtimeType} type');
-        tempMarkedTags = [];
-      }
-      markedTags.clear();
-      final List<String> markTags = List<String>.from(tempMarkedTags);
-      for (int i = 0; i < markTags.length; i++) {
-        markedTags.add(markTags.elementAt(i));
-      }
-    } catch (e, s) {
-      Logger.Inst().log(
-        'Failed to parse marked tags $e',
-        'SettingsHandler',
-        'loadFromJSON',
-        LogTypes.exception,
-        s: s,
-      );
-    }
-
-    final List<String> leftoverKeys = json.keys
-        .where(
-          (e) => ![
-            'buttonOrder',
-            'disabledButtons',
-            'hiddenTags',
-            'markedTags',
-          ].contains(e),
-        )
-        .toList();
-    for (final String key in leftoverKeys) {
-      try {
-        setByString(key, json[key]);
-      } catch (e, s) {
-        Logger.Inst().log(
-          'Failed to set value for key $key',
-          'SettingsHandler',
-          'loadFromJSON',
-          LogTypes.exception,
-          s: s,
-        );
-      }
-      // print('key $key val ${json[key]} type ${json[key].runtimeType}');
-    }
-
-    if (setMissingKeys) {
-      // find all keys that are missing in the file and set them to default values
-      map.forEach((key, value) {
-        if (!json.keys.contains(key)) {
-          if (map[key] != null) {
-            setByString(key, map[key]!['default']);
-          }
-        }
-      });
-    }
-
-    try {
-      final List<String> legacyKeys = [];
-      for (final String key in legacyKeys) {
-        if (json.keys.contains(key)) {
-          switch (key) {
-            default:
-              break;
-          }
-        }
-      }
-    } catch (e, s) {
-      Logger.Inst().log(
-        'Failed to parse legacy keys $e',
-        'SettingsHandler',
-        'loadFromJSON',
-        LogTypes.exception,
-        s: s,
-      );
-    }
-
-    // force mobile app mode, until we redo UI for desktop and start doing builds again
-    appMode.value = AppMode.Mobile;
-
-    return true;
   }
 
   Future<bool> saveSettings({required bool restate}) async {
@@ -1783,21 +205,64 @@ class SettingsHandler {
       await setConfigDir();
     }
     await Directory(path).create(recursive: true);
+
+    final json = SettingsRegistry.instance.toJson();
+    json['version'] = Constants.updateInfo.versionName;
+    json['build'] = Constants.updateInfo.buildNumber;
+
     final File settingsFile = File('${path}settings.json');
     final writer = settingsFile.openWrite();
-    writer.write(jsonEncode(toJson()));
+    writer.write(jsonEncode(json));
     await writer.close();
 
     if (restate) {
       final searchHandler = SearchHandler.instance;
-      searchHandler.filterCurrentFetched(); // refilter fetched because user could have changed the filtering settings
+      searchHandler.filterCurrentFetched();
       unawaited(
         Future.delayed(const Duration(seconds: 1)).then((_) {
-          searchHandler.rootRestate?.call(); // force global state update to redraw stuff
+          searchHandler.rootRestate?.call();
         }),
       );
     }
     return true;
+  }
+
+  void scheduleSettingsSave({
+    bool debounce = false,
+    bool restate = false,
+    String? booruName,
+  }) {
+    Future<void> save() async {
+      if (booruName != null) {
+        Booru? booru;
+        for (final item in booruList) {
+          if (item.name == booruName) {
+            booru = item;
+            break;
+          }
+        }
+        if (booru != null) {
+          await saveBooru(booru, onlySave: true);
+        }
+        return;
+      }
+      await saveSettings(restate: restate);
+    }
+
+    if (debounce) {
+      final key = booruName ?? '__global__';
+      _settingsSaveDebounceTimers[key]?.cancel();
+      _settingsSaveDebounceTimers[key] = Timer(
+        const Duration(milliseconds: 600),
+        () {
+          _settingsSaveDebounceTimers.remove(key);
+          unawaited(save());
+        },
+      );
+      return;
+    }
+
+    unawaited(save());
   }
 
   Future<bool> loadBoorus() async {
@@ -1834,7 +299,15 @@ class SettingsHandler {
         }
       }
 
-      if (dbEnabled && tempList.isNotEmpty) {
+      // Load per-booru setting overrides into the registry
+      final registry = SettingsRegistry.instance;
+      for (final booru in tempList) {
+        if (booru.name != null && booru.settingOverrides != null) {
+          registry.loadOverridesFromMap(booru.name!, booru.settingOverrides);
+        }
+      }
+
+      if (SX.dbEnabled.value && tempList.isNotEmpty) {
         tempList.add(Booru(loc.favourites, BooruType.Favourites, '', '', ''));
         tempList.add(Booru(loc.downloads, BooruType.Downloads, '', '', ''));
       }
@@ -1869,8 +342,9 @@ class SettingsHandler {
     });
 
     int prefIndex = 0;
+    final pref = SX.prefBooru.value;
     for (int i = 0; i < sorted.length; i++) {
-      if (sorted[i].name == prefBooru && prefBooru.isNotEmpty) {
+      if (sorted[i].name == pref && pref.isNotEmpty) {
         prefIndex = i;
         // print("prefIndex is" + prefIndex.toString());
       }
@@ -1910,6 +384,11 @@ class SettingsHandler {
       await setConfigDir();
     }
 
+    // Sync per-booru setting overrides from registry back to the booru object
+    if (booru.name != null) {
+      booru.settingOverrides = SettingsRegistry.instance.saveOverridesToMap(booru.name!);
+    }
+
     await Directory(boorusPath).create(recursive: true);
     final File booruFile = File('$boorusPath${booru.name}.json');
     final writer = booruFile.openWrite();
@@ -1929,8 +408,14 @@ class SettingsHandler {
   Future<bool> deleteBooru(Booru booru) async {
     final File booruFile = File('$boorusPath${booru.name}.json');
     await booruFile.delete();
-    if (prefBooru == booru.name) {
-      prefBooru = '';
+
+    // Clean up in-memory per-booru setting overrides
+    if (booru.name != null) {
+      SettingsRegistry.instance.removeAllOverridesForBooru(booru.name!, save: false);
+    }
+
+    if (SX.prefBooru.value == booru.name) {
+      SX.prefBooru.state.value = '';
       await saveSettings(restate: true);
     }
     booruList.remove(booru);
@@ -1961,8 +446,10 @@ class SettingsHandler {
 
   TagsListData parseTagsList(List<Tag> itemTags, {bool isCapped = true}) {
     final List<String> cleanItemTags = cleanTagsList(itemTags);
-    List<String> hiddenInItem = cleanItemTags.where(hiddenTags.contains).toList();
-    List<String> markedInItem = cleanItemTags.where(markedTags.contains).toList();
+    final hidden = SX.hiddenTags.value;
+    final marked = SX.markedTags.value;
+    List<String> hiddenInItem = cleanItemTags.where(hidden.contains).toList();
+    List<String> markedInItem = cleanItemTags.where(marked.contains).toList();
     final List<String> soundInItem = soundTags.where(cleanItemTags.contains).toList();
     final List<String> aiInItem = aiTags.where(cleanItemTags.contains).toList();
 
@@ -1979,11 +466,11 @@ class SettingsHandler {
   }
 
   bool containsHidden(List<String> itemTags) {
-    return itemTags.any(hiddenTags.contains);
+    return itemTags.any(SX.hiddenTags.value.contains);
   }
 
   bool containsMarked(List<String> itemTags) {
-    return itemTags.any(markedTags.contains);
+    return itemTags.any(SX.markedTags.value.contains);
   }
 
   bool containsSound(List<String> itemTags) {
@@ -1999,11 +486,13 @@ class SettingsHandler {
     switch (type) {
       case 'hated':
       case 'hidden':
-        changed = hiddenTags.add(tag);
+        changed = true;
+        SX.hiddenTags.state.value = [...SX.hiddenTags.value, tag];
         break;
       case 'loved':
       case 'marked':
-        changed = markedTags.add(tag);
+        changed = true;
+        SX.markedTags.state.value = [...SX.markedTags.value, tag];
         break;
       default:
         break;
@@ -2019,11 +508,13 @@ class SettingsHandler {
     switch (type) {
       case 'hated':
       case 'hidden':
-        changed = hiddenTags.remove(tag);
+        changed = true;
+        SX.hiddenTags.state.value = SX.hiddenTags.value.where((t) => t != tag).toList();
         break;
       case 'loved':
       case 'marked':
-        changed = markedTags.remove(tag);
+        changed = true;
+        SX.markedTags.state.value = SX.markedTags.value.where((t) => t != tag).toList();
         break;
       default:
         break;
@@ -2320,8 +811,8 @@ class SettingsHandler {
     try {
       await getStoragePermission();
       await loadSettings();
-      await Logger.setLogcatCaptureEnabled(captureLogcat);
-      await setLocale(locale.value);
+      await Logger.setLogcatCaptureEnabled(SX.captureLogcat.value);
+      await setLocale(SX.locale.value);
     } catch (e, s) {
       Logger.Inst().log(
         e.toString(),
@@ -2359,8 +850,8 @@ class SettingsHandler {
           : null,
     );
 
-    if (Platform.isAndroid && extPathOverride.isNotEmpty) {
-      unawaited(SAFFileCache.instance.populate(extPathOverride));
+    if (Platform.isAndroid && SX.extPathOverride.value.isNotEmpty) {
+      unawaited(SAFFileCache.instance.populate(SX.extPathOverride.value));
     }
 
     isInit.value = true;
@@ -2376,7 +867,7 @@ class SettingsHandler {
       postInitMessage.value = loc.init.settingUpProxy;
       await initProxy();
 
-      switch (videoBackendMode) {
+      switch (SX.videoBackendMode.value) {
         case VideoBackendMode.normal:
           MediaKitVideoPlayer.registerNative();
           break;

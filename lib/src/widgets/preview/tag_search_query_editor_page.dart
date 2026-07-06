@@ -10,6 +10,7 @@ import 'package:scroll_to_index/scroll_to_index.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/meta_tag.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/tag_suggestion.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -368,7 +369,7 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
                 return Scrollbar(
                   controller: suggestionsScrollController,
                   interactive: true,
-                  scrollbarOrientation: settingsHandler.handSide.value.isLeft
+                  scrollbarOrientation: SX.handSide.value.isLeft
                       ? ScrollbarOrientation.left
                       : ScrollbarOrientation.right,
                   child: RefreshIndicator(
@@ -378,7 +379,7 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
                     onRefresh: queryController.runSearch,
                     child: FadingEdgeScrollView.fromScrollView(
                       child: ListView.builder(
-                        reverse: !settingsHandler.useTopSearchbarInput,
+                        reverse: !SX.useTopSearchbarInput.value,
                         controller: suggestionsScrollController,
                         physics: const AlwaysScrollableScrollPhysics(
                           parent: BouncingScrollPhysics(),
@@ -638,9 +639,9 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
                   onlyInput: true,
                   floatingLabelBehavior: FloatingLabelBehavior.never,
                   textInputAction: TextInputAction.search,
-                  enableIMEPersonalizedLearning: !settingsHandler.incognitoKeyboard,
+                  enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
                   showSubmitButton: (inputText) =>
-                      !settingsHandler.showSearchbarQuickActions &&
+                      !SX.showSearchbarQuickActions.value &&
                       (inputText.isNotEmpty || (widget.allowMultipleTags && tags.isNotEmpty)),
                   submitIcon: widget.allowMultipleTags && tags.isNotEmpty ? Icons.check : null,
                   prefixIcon: IconButton(
@@ -649,9 +650,9 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
                   ),
                 ),
               ),
-              if (settingsHandler.useTopSearchbarInput)
+              if (SX.useTopSearchbarInput.value)
                 const SizedBox(height: 4)
-              else if (settingsHandler.showSearchbarQuickActions && PlatformExt.isMobile)
+              else if (SX.showSearchbarQuickActions.value && PlatformExt.isMobile)
                 KeyboardVisibilityBuilder(
                   builder: (context, isKbVisible) {
                     return AnimatedSize(
@@ -673,9 +674,9 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
       ),
     ];
 
-    if (settingsHandler.useTopSearchbarInput) {
+    if (SX.useTopSearchbarInput.value) {
       widgets = widgets.reversed.toList();
-      if (settingsHandler.showSearchbarQuickActions) {
+      if (SX.showSearchbarQuickActions.value) {
         widgets.add(
           KeyboardVisibilityBuilder(
             builder: (context, isKbVisible) {
@@ -689,8 +690,8 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: SafeArea(
-        top: settingsHandler.useTopSearchbarInput,
-        bottom: settingsHandler.useTopSearchbarInput,
+        top: SX.useTopSearchbarInput.value,
+        bottom: SX.useTopSearchbarInput.value,
         child: Column(
           children: widgets,
         ),

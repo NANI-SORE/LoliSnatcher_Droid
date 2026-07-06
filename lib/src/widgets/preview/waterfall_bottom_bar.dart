@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
 
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -24,7 +25,6 @@ class WaterfallBottomBar extends StatefulWidget {
 
 class WaterfallBottomBarState extends State<WaterfallBottomBar> with TickerProviderStateMixin {
   final SearchHandler searchHandler = SearchHandler.instance;
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
 
   late final AnimationController animationController;
   late final Animation<double> animation;
@@ -70,7 +70,7 @@ class WaterfallBottomBarState extends State<WaterfallBottomBar> with TickerProvi
   Widget build(BuildContext context) {
     final double bottomPadding = MediaQuery.viewPaddingOf(context).bottom;
 
-    final bool showSearchBar = settingsHandler.showBottomSearchbar;
+    final bool showSearchBar = SX.showBottomSearchbar.value;
 
     return Align(
       alignment: Alignment.bottomCenter,
@@ -95,8 +95,8 @@ class WaterfallBottomBarState extends State<WaterfallBottomBar> with TickerProvi
                 child: AnimatedPadding(
                   duration: const Duration(milliseconds: 100),
                   padding: EdgeInsets.only(
-                    left: (settingsHandler.scrollGridButtonsPosition.isLeft ? buttonPadding : 0) + 10,
-                    right: (settingsHandler.scrollGridButtonsPosition.isRight ? buttonPadding : 0) + 10,
+                    left: (SX.scrollGridButtonsPosition.value.isLeft ? buttonPadding : 0) + 10,
+                    right: (SX.scrollGridButtonsPosition.value.isRight ? buttonPadding : 0) + 10,
                   ),
                   child: child,
                 ),

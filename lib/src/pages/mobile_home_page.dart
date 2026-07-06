@@ -2,9 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lolisnatcher/gen/strings.g.dart';
 
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/inner_drawer.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -20,7 +21,6 @@ class MobileHome extends StatefulWidget {
 }
 
 class _MobileHomeState extends State<MobileHome> {
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
   final SearchHandler searchHandler = SearchHandler.instance;
 
   final GlobalKey<ScaffoldState> mainScaffoldKey = GlobalKey<ScaffoldState>();
@@ -127,12 +127,12 @@ class _MobileHomeState extends State<MobileHome> {
           }, // return  true (open) or false (close)
 
           leftChild: RepaintBoundary(
-            child: settingsHandler.handSide.value.isLeft
+            child: SX.handSide.value.isLeft
                 ? const MainDrawer()
                 : DownloadsDrawer(toggleDrawer: () => _toggleDrawer(null)),
           ),
           rightChild: RepaintBoundary(
-            child: settingsHandler.handSide.value.isRight
+            child: SX.handSide.value.isRight
                 ? const MainDrawer()
                 : DownloadsDrawer(toggleDrawer: () => _toggleDrawer(null)),
           ),

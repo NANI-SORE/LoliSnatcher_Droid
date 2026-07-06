@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -50,7 +51,7 @@ class TagsFiltersList extends StatelessWidget {
             clearable: true,
             pasteable: true,
             onChanged: onSearchTextChanged,
-            enableIMEPersonalizedLearning: !SettingsHandler.instance.incognitoKeyboard,
+            enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
           ),
           //
           if (filteredTagsList.isEmpty)

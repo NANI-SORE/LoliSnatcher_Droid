@@ -27,6 +27,7 @@ import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/meta_tag.dart';
 import 'package:lolisnatcher/src/data/pinned_tag.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
@@ -919,7 +920,7 @@ class _TagViewState extends State<TagView> {
                               IconButton(
                                 onPressed: () {
                                   ServiceHandler.vibrate();
-                                  if (settingsHandler.appMode.value.isMobile) {
+                                  if (SX.appMode.value.isMobile) {
                                     Navigator.of(context).popUntil((route) => route.isFirst); // exit viewer
                                   }
                                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -944,7 +945,7 @@ class _TagViewState extends State<TagView> {
                     },
                     onLongPress: () async {
                       await ServiceHandler.vibrate();
-                      if (settingsHandler.appMode.value.isMobile) {
+                      if (SX.appMode.value.isMobile) {
                         Navigator.of(context).popUntil((route) => route.isFirst); // exit viewer
                       }
                       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1077,7 +1078,7 @@ class _TagViewState extends State<TagView> {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  initiallyExpanded: detailsExpanded ?? settingsHandler.expandDetails,
+                  initiallyExpanded: detailsExpanded ?? SX.expandDetails.value,
                   onExpansionChanged: (expanded) {
                     setState(() {
                       detailsExpanded = expanded;
@@ -1088,7 +1089,7 @@ class _TagViewState extends State<TagView> {
                   shape: const Border(),
                   collapsedShape: const Border(),
                   children: [
-                    if (settingsHandler.isDebug.value) infoText(context.loc.tagView.filename, fileName),
+                    if (SX.isDebug.value) infoText(context.loc.tagView.filename, fileName),
                     infoText(context.loc.tagView.url, fileUrl, isLink: true),
                     infoText(context.loc.tagView.extension, fileExt),
                     infoText(context.loc.tagView.resolution, fileRes),
@@ -1140,7 +1141,7 @@ class _TagViewState extends State<TagView> {
                         onChanged: (_) {
                           parseSortGroupTagsWithoutCache();
                         },
-                        enableIMEPersonalizedLearning: !settingsHandler.incognitoKeyboard,
+                        enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
                       ),
                     ),
                   ),
@@ -1558,7 +1559,7 @@ Future<void> showTagDialog({
                                     item.tagType = newValue;
                                     tagHandler.putTag(
                                       item,
-                                      dbEnabled: settingsHandler.dbEnabled,
+                                      dbEnabled: SX.dbEnabled.value,
                                       preferTypeIfNone: false,
                                     );
                                     onUpdate();
@@ -1705,7 +1706,7 @@ class _RelatedTabsDialogState extends State<_RelatedTabsDialog> {
                   originalIndex: tabIndex,
                   onTap: () async {
                     await ServiceHandler.vibrate();
-                    if (SettingsHandler.instance.appMode.value.isMobile) {
+                    if (SX.appMode.value.isMobile) {
                       Navigator.of(context).popUntil((r) => r.isFirst); // exit viewer
                     }
                     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2176,7 +2177,7 @@ class _TagContentPreviewState extends State<TagContentPreview> {
                                               IconButton(
                                                 onPressed: () {
                                                   ServiceHandler.vibrate();
-                                                  if (settingsHandler.appMode.value.isMobile) {
+                                                  if (SX.appMode.value.isMobile) {
                                                     Navigator.of(context).popUntil((r) => r.isFirst); // exit viewer
                                                   }
                                                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2203,7 +2204,7 @@ class _TagContentPreviewState extends State<TagContentPreview> {
                                     },
                                     onLongPress: () async {
                                       await ServiceHandler.vibrate();
-                                      if (settingsHandler.appMode.value.isMobile) {
+                                      if (SX.appMode.value.isMobile) {
                                         Navigator.of(context).popUntil((route) => route.isFirst); // exit viewer
                                       }
                                       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2392,7 +2393,6 @@ class _TagPreviewsListDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewerHandler = ViewerHandler.instance;
     final searchHandler = SearchHandler.instance;
-    final settingsHandler = SettingsHandler.instance;
 
     final list = viewerHandler.tagPreviewsHistory[tabId] ?? [];
     final controllers = List.generate(list.length, (_) => ScrollController());
@@ -2485,8 +2485,8 @@ class _TagPreviewsListDialog extends StatelessWidget {
                                               context: context,
                                               tag: tag,
                                               handler: searchHandler.currentBooruHandler,
-                                              isHidden: settingsHandler.hiddenTags.contains(tag),
-                                              isMarked: settingsHandler.markedTags.contains(tag),
+                                              isHidden: SX.hiddenTags.value.contains(tag),
+                                              isMarked: SX.markedTags.value.contains(tag),
                                               isInSearch:
                                                   searchHandler.searchTextController.text
                                                       .toLowerCase()
@@ -2548,8 +2548,8 @@ class _TagPreviewsListDialog extends StatelessWidget {
                                                       context: context,
                                                       tag: tag,
                                                       handler: searchHandler.currentBooruHandler,
-                                                      isHidden: settingsHandler.hiddenTags.contains(tag),
-                                                      isMarked: settingsHandler.markedTags.contains(tag),
+                                                      isHidden: SX.hiddenTags.value.contains(tag),
+                                                      isMarked: SX.markedTags.value.contains(tag),
                                                       isInSearch:
                                                           searchHandler.searchTextController.text
                                                               .toLowerCase()

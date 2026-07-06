@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
@@ -88,7 +89,7 @@ class _TagsFiltersEditDialogState extends State<TagsFiltersEditDialog> {
             clearable: false,
             resetText: () => widget.tag,
             onSubmitted: onSubmit,
-            enableIMEPersonalizedLearning: !SettingsHandler.instance.incognitoKeyboard,
+            enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
           ),
         ),
       ],

@@ -4,14 +4,15 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import 'package:country_flags/country_flags.dart';
-import 'package:lolisnatcher/src/data/constants.dart';
-import 'package:lolisnatcher/src/handlers/search_handler.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
+import 'package:lolisnatcher/src/data/constants.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
-import 'package:url_launcher/url_launcher_string.dart';
 
 class LanguageSettingsPage extends StatelessWidget {
   const LanguageSettingsPage({super.key});
@@ -66,7 +67,7 @@ class _LanguageDropdownState extends State<LanguageDropdown> {
       setState(() {});
     });
 
-    locale = settingsHandler.locale.value;
+    locale = SX.locale.value;
   }
 
   @override
@@ -82,7 +83,7 @@ class _LanguageDropdownState extends State<LanguageDropdown> {
           onChanged: (newValue) async {
             locale = newValue;
             setState(() {});
-            settingsHandler.locale.value = locale;
+            SX.locale.state.value = locale;
             await settingsHandler.setLocale(locale);
             // load boorus and force tab backup to avoid losing tabs from favs/dls
             await settingsHandler.loadBoorus();

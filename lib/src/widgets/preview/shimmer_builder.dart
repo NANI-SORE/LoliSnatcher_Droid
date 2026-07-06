@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
+import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
 
 class ShimmerWrap extends StatelessWidget {
   const ShimmerWrap({
@@ -17,13 +18,20 @@ class ShimmerWrap extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Shimmer(
-      enabled: true,
-      linearGradient: _shimmerGradient(
-        Color.lerp(colorScheme.surface, colorScheme.onSurface, 0.15)!,
-        Color.lerp(colorScheme.onSurface, colorScheme.surface, 0.75)!,
-        Color.lerp(colorScheme.surface, colorScheme.onSurface, 0.15)!,
-      ),
+    return ValueListenableBuilder(
+      valueListenable: activeWebviews,
+      builder: (context, _, ch) {
+        return Shimmer(
+          // disable shimmer animation if there are active webviews to avoid perfromance problems
+          enabled: enabled && !hasActiveWebviews,
+          linearGradient: _shimmerGradient(
+            Color.lerp(colorScheme.surface, colorScheme.onSurface, 0.15)!,
+            Color.lerp(colorScheme.onSurface, colorScheme.surface, 0.75)!,
+            Color.lerp(colorScheme.surface, colorScheme.onSurface, 0.15)!,
+          ),
+          child: ch,
+        );
+      },
       child: child,
     );
   }
@@ -36,10 +44,9 @@ class ThumbnailsShimmerList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
-    final displayType = settingsHandler.previewDisplay;
-    final int previewCount = settingsHandler.itemLimit;
-    final int columnCount = context.isPortrait ? settingsHandler.portraitColumns : settingsHandler.landscapeColumns;
+    final displayType = SX.previewDisplay.value;
+    final int previewCount = SX.limit.value;
+    final int columnCount = context.isPortrait ? SX.portraitColumns.value : SX.landscapeColumns.value;
 
     return SliverGrid.builder(
       addAutomaticKeepAlives: false,

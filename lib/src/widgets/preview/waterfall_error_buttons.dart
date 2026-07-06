@@ -5,9 +5,10 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_html/flutter_html.dart';
 import 'package:get/get.dart';
+import 'package:lolisnatcher/gen/strings.g.dart';
 
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/html.dart';
 
 class WaterfallErrorButtons extends StatefulWidget {
@@ -26,7 +27,6 @@ class WaterfallErrorButtons extends StatefulWidget {
 
 class _WaterfallErrorButtonsState extends State<WaterfallErrorButtons> {
   final SearchHandler searchHandler = SearchHandler.instance;
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
 
   int _startedAt = 0;
   Timer? checkInterval;
@@ -196,7 +196,7 @@ class _WaterfallErrorButtonsState extends State<WaterfallErrorButtons> {
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: BackdropFilter(
-                    enabled: !settingsHandler.shitDevice,
+                    enabled: !SX.shitDevice.value,
                     filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -238,7 +238,7 @@ class _WaterfallErrorButtonsState extends State<WaterfallErrorButtons> {
                       ),
                     ),
                     child: BackdropFilter(
-                      enabled: !settingsHandler.shitDevice,
+                      enabled: !SX.shitDevice.value,
                       filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                       child: Material(
                         color: Colors.transparent,

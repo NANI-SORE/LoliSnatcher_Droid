@@ -42,6 +42,12 @@ class Booru {
   String? name = '', faviconURL = '', baseURL = '', apiKey = '', userID = '', defTags = '';
   BooruType? type;
 
+  /// Per-booru setting overrides. Stored in each booru's config file.
+  /// Keys are setting JSON keys (matching SettingKey.jsonKey), values are
+  /// JSON-serialized setting values.
+  /// Null or empty means no overrides — all settings use global values.
+  Map<String, dynamic>? settingOverrides;
+
   Map<String, dynamic> toJson() {
     return {
       'name': name,
@@ -51,11 +57,14 @@ class Booru {
       'defTags': defTags,
       'apiKey': apiKey,
       'userID': userID,
+      if (settingOverrides != null && settingOverrides!.isNotEmpty) 'settingOverrides': settingOverrides,
     };
   }
 
   String toLink(bool withSensitiveData) {
     final Map json = toJson();
+    // Never share per-booru setting overrides — they're personal preferences
+    json.remove('settingOverrides');
     if (withSensitiveData == false) {
       json.remove('apiKey');
       json.remove('userID');
@@ -72,6 +81,9 @@ class Booru {
     defTags = json['defTags']?.toString();
     apiKey = json['apiKey']?.toString();
     userID = json['userID']?.toString();
+    settingOverrides = json['settingOverrides'] is Map
+        ? Map<String, dynamic>.from(json['settingOverrides'] as Map)
+        : null;
   }
 
   @override
@@ -87,6 +99,7 @@ class Booru {
     String? defTags,
     String? apiKey,
     String? userID,
+    Map<String, dynamic>? settingOverrides,
   }) {
     return Booru.withKey(
       name ?? this.name,
@@ -96,6 +109,6 @@ class Booru {
       defTags ?? this.defTags,
       apiKey ?? this.apiKey,
       userID ?? this.userID,
-    );
+    )..settingOverrides = settingOverrides ?? this.settingOverrides;
   }
 }

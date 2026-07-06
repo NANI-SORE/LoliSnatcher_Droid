@@ -11,6 +11,7 @@ import 'package:lolisnatcher/src/boorus/mergebooru_handler.dart';
 import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
@@ -48,7 +49,8 @@ class ThumbnailBuild extends StatelessWidget {
   final void Function()? onSelected;
   final bool simple;
 
-  Booru? _resolveSourceBooru(SettingsHandler settingsHandler) {
+  Booru? _resolveSourceBooru() {
+    final settingsHandler = SettingsHandler.instance;
     final cached = _sourceCache[item];
     if (cached?.version == settingsHandler.booruListVersion) {
       return cached?.booru;
@@ -76,18 +78,16 @@ class ThumbnailBuild extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
-
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: Stack(
-        alignment: settingsHandler.previewDisplay.isSquare ? .center : .bottomCenter,
+        alignment: SX.previewDisplay.value.isSquare ? .center : .bottomCenter,
         children: [
           RepaintBoundary(
             child: Builder(
               builder: (context) {
                 final bool isFavsOrDls = handler is FavouritesHandler || handler is DownloadsHandler;
-                final possibleBooru = isFavsOrDls ? _resolveSourceBooru(settingsHandler) : null;
+                final possibleBooru = isFavsOrDls ? _resolveSourceBooru() : null;
 
                 return Thumbnail(
                   item: item,
@@ -116,7 +116,7 @@ class ThumbnailBuild extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (settingsHandler.isDebug.value == true)
+                  if (SX.isDebug.value == true)
                     InkWell(
                       onTap: () {
                         ClipboardUtils.copyTextToClipboard(
@@ -176,7 +176,7 @@ class ThumbnailBuild extends StatelessWidget {
                           mergeSource?.booru.type?.isFavouritesOrDownloads == true;
                       if (isFavsOrDls) {
                         final itemPostHost = Uri.tryParse(item.postURL)?.host;
-                        final possibleBooru = _resolveSourceBooru(settingsHandler);
+                        final possibleBooru = _resolveSourceBooru();
                         final possibleFaviconUrl =
                             possibleBooru?.faviconURL ??
                             (itemPostHost != null ? 'https://$itemPostHost/favicon.ico' : null);
@@ -341,7 +341,6 @@ class _ThumbnailBottomRightIcons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
     final SnatchHandler snatchHandler = SnatchHandler.instance;
 
     final bool isSound = item.isSound;
@@ -399,7 +398,7 @@ class _ThumbnailBottomRightIcons extends StatelessWidget {
                 crossFadeState: isFavOrMarked ? CrossFadeState.showFirst : CrossFadeState.showSecond,
                 firstChild: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 200),
-                  child: (settingsHandler.dbEnabled && isFav == null)
+                  child: (SX.dbEnabled.value && isFav == null)
                       ? const SizedBox(
                           height: 14,
                           width: 14,

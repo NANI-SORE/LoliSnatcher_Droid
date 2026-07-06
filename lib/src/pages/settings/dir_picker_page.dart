@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
@@ -177,7 +178,7 @@ class _DirPickerState extends State<DirPicker> {
                               path += snapshot.data[index];
                               print(path);
                             }
-                            settingsHandler.extPathOverride = '$path/';
+                            SX.extPathOverride.state.value = '$path/';
                           });
                         },
                         child: SizedBox(
@@ -197,7 +198,7 @@ class _DirPickerState extends State<DirPicker> {
                               path += '/0';
                               print(path);
                             }
-                            settingsHandler.extPathOverride = '$path/';
+                            SX.extPathOverride.state.value = '$path/';
                           });
                         },
                         child: const SizedBox(

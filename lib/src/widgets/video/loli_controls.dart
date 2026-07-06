@@ -15,17 +15,19 @@ import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:video_player/video_player.dart';
 
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 
 class LoliControls extends StatefulWidget {
   const LoliControls({
     this.useLongTapFastForward = true,
+    this.onControlsVisibilityChanged,
     super.key,
   });
 
   final bool useLongTapFastForward;
+  final ValueChanged<bool>? onControlsVisibilityChanged;
 
   @override
   State<StatefulWidget> createState() {
@@ -146,6 +148,13 @@ class _LoliControlsState extends State<LoliControls> {
   }
 
   @override
+  void setState(VoidCallback fn) {
+    final bool wasVisible = !_hideStuff;
+    super.setState(fn);
+    notifyControlsVisibilityChanged(previousVisible: wasVisible);
+  }
+
+  @override
   void dispose() {
     _dispose();
     super.dispose();
@@ -194,6 +203,16 @@ class _LoliControlsState extends State<LoliControls> {
     if (oldWidget.useLongTapFastForward != widget.useLongTapFastForward) {
       _dispose();
       _initialize();
+    }
+  }
+
+  void notifyControlsVisibilityChanged({
+    bool? previousVisible,
+    bool force = false,
+  }) {
+    final bool isVisible = !_hideStuff;
+    if (force || previousVisible != isVisible) {
+      widget.onControlsVisibilityChanged?.call(isVisible);
     }
   }
 
@@ -424,7 +443,7 @@ class _LoliControlsState extends State<LoliControls> {
         valueListenable: viewerHandler.displayAppbar,
         builder: (context, displayAppbar, child) {
           final bool isFullScreen = chewieController.isFullScreen || !displayAppbar;
-          final bool isTopAppbar = SettingsHandler.instance.galleryBarPosition.isTop;
+          final bool isTopAppbar = SX.galleryBarPosition.value.isTop;
 
           return Container(
             // color: Colors.yellow.withValues(alpha: 0.66),
@@ -478,7 +497,7 @@ class _LoliControlsState extends State<LoliControls> {
   }
 
   Widget _buildDebugInfo() {
-    if (SettingsHandler.instance.showVideoStats.value) {
+    if (SX.showVideoStats.value) {
       return Positioned(
         left: 8,
         top: MediaQuery.paddingOf(context).top + 32,
@@ -731,6 +750,7 @@ class _LoliControlsState extends State<LoliControls> {
     controller.addListener(_updateState);
 
     _updateState();
+    notifyControlsVisibilityChanged(force: true);
 
     if (controller.value.isPlaying || chewieController.autoPlay) {
       _startHideTimer();
@@ -771,7 +791,7 @@ class _LoliControlsState extends State<LoliControls> {
         ServiceHandler.disableSleep(force: true);
       } else {
         // re-enable sleep only if related setting is disabled
-        if (!SettingsHandler.instance.wakeLockEnabled) {
+        if (!SX.wakeLockEnabled.value) {
           ServiceHandler.enableSleep();
         }
         // resotre system ui visibility state

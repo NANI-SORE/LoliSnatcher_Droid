@@ -15,6 +15,7 @@ import 'package:image/image.dart' as img;
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -124,9 +125,8 @@ class ImageViewerState extends State<ImageViewer> {
 
   void onSize(int? size) {
     // TODO find a way to stop loading based on size when caching is enabled
-    final int? maxSize = settingsHandler.preloadSizeLimit == 0
-        ? null
-        : (1024 * 1024 * settingsHandler.preloadSizeLimit * 1000).round();
+    final preloadSizeLimit = SX.preloadSizeLimit.value;
+    final int? maxSize = preloadSizeLimit == 0 ? null : (1024 * 1024 * preloadSizeLimit * 1000).toInt();
     if (size != null && size > 0) {
       widget.booruItem.fileSize = size;
     }
@@ -150,13 +150,13 @@ class ImageViewerState extends State<ImageViewer> {
     }
 
     if (widget.booruItem.fileHeight != null &&
-        widget.booruItem.fileHeight! > settingsHandler.preloadHeight &&
+        widget.booruItem.fileHeight! > SX.preloadHeight.value &&
         !blockPreloadState.isIgnore) {
       stopLoading(
         reason: .tooBig,
         details:
             '${context.loc.media.loading.fileSize(size: '${widget.booruItem.fileWidth?.toFormattedString()}x${widget.booruItem.fileHeight?.toFormattedString()}')}\n'
-            '${context.loc.media.loading.sizeLimit(limit: '...x${settingsHandler.preloadHeight.toFormattedString()}')}',
+            '${context.loc.media.loading.sizeLimit(limit: '...x${SX.preloadHeight.value.toFormattedString()}')}',
       );
       return;
     }
@@ -233,9 +233,8 @@ class ImageViewerState extends State<ImageViewer> {
     }
   }
 
-  bool get useFullImage => settingsHandler.galleryMode.isFullRes
-      ? !widget.booruItem.toggleQuality.value
-      : widget.booruItem.toggleQuality.value;
+  bool get useFullImage =>
+      SX.galleryMode.value.isFullRes ? !widget.booruItem.toggleQuality.value : widget.booruItem.toggleQuality.value;
 
   Future<void> initViewer(
     bool ignoreTagsCheck, {
@@ -272,7 +271,7 @@ class ImageViewerState extends State<ImageViewer> {
     startedAt.value = DateTime.now().millisecondsSinceEpoch;
 
     final mQuery = MediaQuery.of(NavigationHandler.instance.navContext);
-    widthLimit = settingsHandler.disableImageScaling ? null : (mQuery.size.width * mQuery.devicePixelRatio * 2).round();
+    widthLimit = SX.disableImageScaling.value ? null : (mQuery.size.width * mQuery.devicePixelRatio * 2).round();
 
     final ImageProvider newProvider = await getImageProvider(
       loadGeneration: loadGeneration,
@@ -290,7 +289,7 @@ class ImageViewerState extends State<ImageViewer> {
       (imageInfo, syncCall) async {
         if (!_isCurrentLoad(loadGeneration)) return;
 
-        if (imageInfo.image.height >= settingsHandler.preloadHeight) {
+        if (imageInfo.image.height >= SX.preloadHeight.value) {
           await checkAndPrepareTiles(loadGeneration: loadGeneration);
         } else {
           isTilingProcessing.value = false;
@@ -346,7 +345,7 @@ class ImageViewerState extends State<ImageViewer> {
       return;
     }
 
-    widthLimit = settingsHandler.disableImageScaling
+    widthLimit = SX.disableImageScaling.value
         ? null
         : (maxWidth * MediaQuery.devicePixelRatioOf(NavigationHandler.instance.navContext) * 2).round();
   }
@@ -355,7 +354,7 @@ class ImageViewerState extends State<ImageViewer> {
     required int loadGeneration,
     bool withCaptchaCheck = false,
   }) async {
-    if ((settingsHandler.galleryMode.isSample &&
+    if ((SX.galleryMode.value.isSample &&
             widget.booruItem.sampleURL.isNotEmpty &&
             widget.booruItem.sampleURL != widget.booruItem.thumbnailURL) ||
         widget.booruItem.sampleURL == widget.booruItem.fileURL) {
@@ -391,7 +390,7 @@ class ImageViewerState extends State<ImageViewer> {
               item: widget.booruItem,
               checkForReferer: true,
             ),
-            withCache: settingsHandler.mediaCache,
+            withCache: SX.mediaCache.value,
             cacheFolder: imageFolder,
             fileNameExtras: widget.booruItem.fileNameExtras,
             onError: (error) {
@@ -414,7 +413,7 @@ class ImageViewerState extends State<ImageViewer> {
               item: widget.booruItem,
               checkForReferer: true,
             ),
-            withCache: settingsHandler.mediaCache,
+            withCache: SX.mediaCache.value,
             cacheFolder: imageFolder,
             fileNameExtras: widget.booruItem.fileNameExtras,
             onError: (error) {
@@ -432,7 +431,7 @@ class ImageViewerState extends State<ImageViewer> {
 
     // scale image only if it's not an animation, scaling is allowed, not on desktop and item is not marked as noScale
     if (!widget.booruItem.mediaType.value.isAnimation &&
-        !settingsHandler.disableImageScaling &&
+        !SX.disableImageScaling.value &&
         !PlatformExt.isDesktop &&
         !widget.booruItem.isNoScale.value &&
         (widthLimit ?? 0) > 0) {
@@ -510,8 +509,7 @@ class ImageViewerState extends State<ImageViewer> {
     isTilingProcessing.value = null;
     tiledSize = null;
 
-    if (imageFolder == 'media' ||
-        (!widget.booruItem.mediaType.value.isAnimation || !settingsHandler.gifsAsThumbnails)) {
+    if (imageFolder == 'media' || (!widget.booruItem.mediaType.value.isAnimation || !SX.gifsAsThumbnails.value)) {
       mainProvider.value?.evict();
       // mainProvider.value?.evict().then((bool success) {
       //   if(success) {
@@ -693,7 +691,7 @@ class ImageViewerState extends State<ImageViewer> {
 
       final size = Size(descriptor.width.toDouble(), descriptor.height.toDouble());
 
-      final heightLimit = settingsHandler.preloadHeight;
+      final heightLimit = SX.preloadHeight.value;
       // block loading if image is too long
       if (heightLimit != 0 && descriptor.height >= heightLimit && !blockPreloadState.isIgnore) {
         stopLoading(
@@ -898,13 +896,13 @@ class ImageViewerState extends State<ImageViewer> {
                 listenable: Listenable.merge([isLoaded, isTilingProcessing, mainProvider]),
                 builder: (context, _) {
                   return AnimatedOpacity(
-                    opacity: (settingsHandler.shitDevice || isLoaded.value) ? 1 : 0,
+                    opacity: (SX.shitDevice.value || isLoaded.value) ? 1 : 0,
                     duration: Duration(
-                      milliseconds: (settingsHandler.appMode.value.isDesktop || isViewed.value) ? 50 : 300,
+                      milliseconds: (SX.appMode.value.isDesktop || isViewed.value) ? 50 : 300,
                     ),
                     child: AnimatedSwitcher(
                       duration: Duration(
-                        milliseconds: (settingsHandler.appMode.value.isDesktop || isViewed.value) ? 50 : 300,
+                        milliseconds: (SX.appMode.value.isDesktop || isViewed.value) ? 50 : 300,
                       ),
                       child: !isProviderLoaded
                           ? const SizedBox.shrink()
@@ -916,7 +914,7 @@ class ImageViewerState extends State<ImageViewer> {
                                     minScale: PhotoViewComputedScale.contained,
                                     maxScale: PhotoViewComputedScale.covered * 8,
                                     initialScale: PhotoViewComputedScale.contained,
-                                    enableRotation: settingsHandler.allowRotation,
+                                    enableRotation: SX.allowRotation.value,
                                     basePosition: Alignment.center,
                                     controller: viewController,
                                     scaleStateController: scaleController,
@@ -956,7 +954,7 @@ class ImageViewerState extends State<ImageViewer> {
                                     minScale: PhotoViewComputedScale.contained,
                                     maxScale: PhotoViewComputedScale.covered * 8,
                                     initialScale: PhotoViewComputedScale.contained,
-                                    enableRotation: settingsHandler.allowRotation,
+                                    enableRotation: SX.allowRotation.value,
                                     basePosition: Alignment.center,
                                     controller: viewController,
                                     scaleStateController: scaleController,

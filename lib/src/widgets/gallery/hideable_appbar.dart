@@ -16,6 +16,7 @@ import 'package:lolisnatcher/src/boorus/hydrus_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/settings/gallery_button.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
@@ -88,7 +89,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
 
   void setScrollTimer() {
     autoScrollProgressController?.restart();
-    autoScrollTimer = Timer.periodic(Duration(milliseconds: settingsHandler.galleryAutoScrollTime), (timer) {
+    autoScrollTimer = Timer.periodic(Duration(milliseconds: SX.galleryAutoScrollTime.value), (timer) {
       scrollToNextPage();
       autoScrollProgressController?.restart();
     });
@@ -160,8 +161,10 @@ class _HideableAppBarState extends State<HideableAppBar> {
   ////////// Toolbar Stuff ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   List<Widget> getActions() {
-    final disabled = [...settingsHandler.disabledButtons];
-    final filteredButtonOrder = settingsHandler.buttonOrder.where((button) {
+    final disabled = SX.disabledButtons.value.map(GalleryButton.fromString).whereType<GalleryButton>().toList();
+    final filteredButtonOrder = SX.buttonOrder.value.map(GalleryButton.fromString).whereType<GalleryButton>().where((
+      button,
+    ) {
       if (page.value == -1 || widget.tab.booruHandler.filteredFetched.isEmpty) {
         return false;
       }
@@ -183,9 +186,9 @@ class _HideableAppBarState extends State<HideableAppBar> {
         case .snatch:
           return !widget.readOnly;
         case .favourite:
-          return settingsHandler.dbEnabled && !widget.readOnly;
+          return SX.dbEnabled.value && !widget.readOnly;
         case .reloadnoscale:
-          return isImage && !settingsHandler.disableImageScaling;
+          return isImage && !SX.disableImageScaling.value;
         case .toggleQuality:
           return isImage && item.sampleURL != item.fileURL;
         case .select:
@@ -401,7 +404,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
         icon = Icons.refresh;
         break;
       case .toggleQuality:
-        final bool isHq = settingsHandler.galleryMode.isFullRes ? !item.toggleQuality.value : item.toggleQuality.value;
+        final bool isHq = SX.galleryMode.value.isFullRes ? !item.toggleQuality.value : item.toggleQuality.value;
         icon = isHq ? Icons.high_quality : Icons.high_quality_outlined;
       case .externalPlayer:
         icon = Icons.exit_to_app;
@@ -543,7 +546,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
         label = item.isNoScale.value ? context.loc.viewer.appBar.reloadWithScaling : defaultLabel;
         break;
       case .toggleQuality:
-        final bool isHq = settingsHandler.galleryMode.isFullRes ? !item.toggleQuality.value : item.toggleQuality.value;
+        final bool isHq = SX.galleryMode.value.isFullRes ? !item.toggleQuality.value : item.toggleQuality.value;
         label = isHq ? context.loc.viewer.appBar.loadSampleQuality : context.loc.viewer.appBar.loadHighQuality;
         break;
       default:
@@ -581,10 +584,10 @@ class _HideableAppBarState extends State<HideableAppBar> {
           snatchHandler.queue(
             [item],
             widget.tab.booruHandler.booru,
-            settingsHandler.snatchCooldown,
+            SX.snatchCooldown.value,
             false,
           );
-          if (settingsHandler.favouriteOnSnatch) {
+          if (SX.favouriteOnSnatch.value) {
             await widget.tab.toggleItemFavourite(
               page.value,
               forcedValue: true,
@@ -694,10 +697,10 @@ class _HideableAppBarState extends State<HideableAppBar> {
                         snatchHandler.queue(
                           [item],
                           widget.tab.booruHandler.booru,
-                          settingsHandler.snatchCooldown,
+                          SX.snatchCooldown.value,
                           true,
                         );
-                        if (settingsHandler.favouriteOnSnatch) {
+                        if (SX.favouriteOnSnatch.value) {
                           await widget.tab.toggleItemFavourite(
                             page.value,
                             forcedValue: true,
@@ -735,8 +738,9 @@ class _HideableAppBarState extends State<HideableAppBar> {
   }
 
   Future<void> onShareClick() async {
+    final shareSetting = SX.shareAction.value;
     final item = widget.tab.booruHandler.filteredFetched[page.value];
-    await shareActionController(item, context).run(settingsHandler.shareAction, context);
+    await shareActionController(item, context).run(shareSetting, context);
   }
 
   void shareTextAction(String text) {
@@ -965,11 +969,11 @@ class _HideableAppBarState extends State<HideableAppBar> {
     }
 
     return ShareActionController(
-      currentAction: settingsHandler.shareAction,
+      currentAction: SX.shareAction.value,
       showPostUrlOptions: item.postURL.isNotEmpty,
       showHydrusOption: settingsHandler.hasHydrus && widget.tab.booruHandler.booru.type?.isHydrus != true,
       onRememberAction: (action) async {
-        settingsHandler.shareAction = action;
+        SX.shareAction.state.value = action;
         await settingsHandler.saveSettings(restate: false);
       },
       postUrl: () => ensurePostUrlAndShare(() => shareTextAction(item.postURL)),
@@ -1012,10 +1016,10 @@ class _HideableAppBarState extends State<HideableAppBar> {
   void initState() {
     super.initState();
 
-    isOnTop = settingsHandler.galleryBarPosition.isTop;
+    isOnTop = SX.galleryBarPosition.value.isTop;
 
-    ServiceHandler.setSystemUiVisibility(!settingsHandler.autoHideImageBar);
-    viewerHandler.displayAppbar.value = !settingsHandler.autoHideImageBar;
+    ServiceHandler.setSystemUiVisibility(!SX.autoHideImageBar.value);
+    viewerHandler.displayAppbar.value = !SX.autoHideImageBar.value;
 
     viewerHandler.displayAppbar.addListener(appbarListener);
 
@@ -1025,7 +1029,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
     widget.pageController.addListener(pageListener);
 
     autoScrollProgressController = TimedProgressController(
-      duration: Duration(milliseconds: settingsHandler.galleryAutoScrollTime),
+      duration: Duration(milliseconds: SX.galleryAutoScrollTime.value),
     );
   }
 
@@ -1062,7 +1066,12 @@ class _HideableAppBarState extends State<HideableAppBar> {
         height: viewerHandler.displayAppbar.value ? (isOnTop ? null : (widget.defaultHeight + extraPadding)) : 0,
         padding: isOnTop ? null : EdgeInsets.only(bottom: extraPadding),
         child: ListenableBuilder(
-          listenable: Listenable.merge([page, widget.tab.booruHandler.filteredFetched]),
+          listenable: Listenable.merge([
+            page,
+            widget.tab.booruHandler.filteredFetched,
+            SX.buttonOrder.state.effectiveNotifier,
+            SX.disabledButtons.state.effectiveNotifier,
+          ]),
           builder: (context, _) {
             final pageVal = page.value;
             final fetched = widget.tab.booruHandler.filteredFetched.value;

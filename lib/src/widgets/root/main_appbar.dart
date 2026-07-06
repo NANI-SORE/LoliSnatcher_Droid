@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
 
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/handlers/theme_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
@@ -32,7 +32,6 @@ class MainAppBar extends StatefulWidget implements PreferredSizeWidget {
 }
 
 class _MainAppBarState extends State<MainAppBar> {
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
   final SearchHandler searchHandler = SearchHandler.instance;
   final SnatchHandler snatchHandler = SnatchHandler.instance;
   final ViewerHandler viewerHandler = ViewerHandler.instance;
@@ -104,19 +103,19 @@ class _MainAppBarState extends State<MainAppBar> {
                   icon: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      if (settingsHandler.handSide.value.isLeft)
+                      if (SX.handSide.value.isLeft)
                         Icon(
                           Icons.save,
                           color: Theme.of(context).appBarTheme.iconTheme?.color,
                         ),
                       Transform.rotate(
-                        angle: settingsHandler.handSide.value.isRight ? 0 : pi,
+                        angle: SX.handSide.value.isRight ? 0 : pi,
                         child: Icon(
                           Icons.keyboard_double_arrow_left_rounded,
                           color: Theme.of(context).appBarTheme.iconTheme?.color,
                         ),
                       ),
-                      if (settingsHandler.handSide.value.isRight)
+                      if (SX.handSide.value.isRight)
                         Icon(
                           Icons.save,
                           color: Theme.of(context).appBarTheme.iconTheme?.color,
@@ -166,7 +165,7 @@ class _MainAppBarState extends State<MainAppBar> {
     return Theme(
       data: Theme.of(context).copyWith(
         appBarTheme: AppBarTheme.of(context).copyWith(
-          backgroundColor: backgroundColor.withValues(alpha: settingsHandler.shitDevice ? 1 : 0.66),
+          backgroundColor: backgroundColor.withValues(alpha: SX.shitDevice.value ? 1 : 0.66),
           foregroundColor: foregroundColor,
           iconTheme: AppBarTheme.of(context).iconTheme?.copyWith(color: foregroundColor),
           actionsIconTheme: AppBarTheme.of(context).actionsIconTheme?.copyWith(color: foregroundColor),
@@ -188,12 +187,12 @@ class _MainAppBarState extends State<MainAppBar> {
             NavigationHandler.instance.bottomBarKey.currentState?.hide();
           }
         },
-        leading: settingsHandler.handSide.value.isLeft
+        leading: SX.handSide.value.isLeft
             ? menuButton(InnerDrawerDirection.start)
             : snatcherButton(InnerDrawerDirection.start),
         title: const ActiveTitle(),
         toolbarHeight: MainAppBar.height,
-        flexibleSpace: settingsHandler.shitDevice
+        flexibleSpace: SX.shitDevice.value
             ? null
             : ClipRect(
                 child: BackdropFilter(
@@ -206,7 +205,7 @@ class _MainAppBarState extends State<MainAppBar> {
                 ),
               ),
         actions: [
-          if (settingsHandler.handSide.value.isRight)
+          if (SX.handSide.value.isRight)
             menuButton(InnerDrawerDirection.end)
           else
             snatcherButton(InnerDrawerDirection.end),
