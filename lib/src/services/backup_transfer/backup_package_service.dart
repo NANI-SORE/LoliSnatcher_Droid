@@ -88,6 +88,10 @@ class BackupPackageService {
       'BackupPackageService',
       'exportPackageFile',
     );
+    await outputFile.parent.create(recursive: true);
+    if (await outputFile.exists()) {
+      await outputFile.delete();
+    }
     final tempDir = Directory('${outputFile.path}.parts');
     if (await tempDir.exists()) {
       await tempDir.delete(recursive: true);
@@ -147,8 +151,11 @@ class BackupPackageService {
         'outputPath': outputFile.path,
         'files': files,
       });
+      if (!await outputFile.exists()) {
+        throw FileSystemException('Backup package encoder did not create output file', outputFile.path);
+      }
       BackupTransferLogger.info(
-        'Finished file package output=${outputFile.path} entries=${entries.length} bytes=${await outputFile.length()}',
+        'Finished file package output=${outputFile.path} entries=${entries.length}',
         'BackupPackageService',
         'exportPackageFile',
       );

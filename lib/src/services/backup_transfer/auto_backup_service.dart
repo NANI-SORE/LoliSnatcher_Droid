@@ -147,12 +147,19 @@ class AutoBackupService {
     final currentBuild = Constants.updateInfo.buildNumber;
     if (config.lastUpdateBackupBuild == currentBuild) return false;
     await beforeStart?.call();
+    final markedConfig = config.copyWith(lastUpdateBackupBuild: currentBuild);
+    await saveConfig(markedConfig);
     BackupTransferLogger.info(
       'After-update backup is due for build $currentBuild',
       'AutoBackupService',
       'runAfterUpdateIfDue',
     );
-    await _run(config, kind: _AutoBackupKind.update);
+    BackupTransferLogger.info(
+      'Marked after-update backup build $currentBuild as handled before starting backup',
+      'AutoBackupService',
+      'runAfterUpdateIfDue',
+    );
+    await _run(markedConfig, kind: _AutoBackupKind.update);
     return true;
   }
 
