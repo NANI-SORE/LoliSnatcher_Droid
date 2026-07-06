@@ -105,6 +105,8 @@ class InnerDrawerState extends State<InnerDrawer> with SingleTickerProviderState
 
   final GlobalKey _drawerKey = GlobalKey(debugLabel: 'InnerDrawer');
   bool _previouslyOpened = false;
+  final Set<int> _activePointers = {};
+  bool _multiPointerDragActive = false;
 
   @override
   void initState() {
@@ -212,6 +214,10 @@ class InnerDrawerState extends State<InnerDrawer> with SingleTickerProviderState
   }
 
   void _handleDragDown(DragDownDetails details) {
+    if (_multiPointerDragActive || _activePointers.length > 1) {
+      return;
+    }
+
     _controller.stop();
     // _ensureHistoryEntry();
   }
@@ -232,6 +238,10 @@ class InnerDrawerState extends State<InnerDrawer> with SingleTickerProviderState
   }
 
   void _move(DragUpdateDetails details) {
+    if (_multiPointerDragActive || _activePointers.length > 1) {
+      return;
+    }
+
     double delta = details.primaryDelta! / _width;
 
     if (delta > 0 && _controller.value == 1 && _leftChild != null) {
@@ -277,6 +287,12 @@ class InnerDrawerState extends State<InnerDrawer> with SingleTickerProviderState
   }
 
   void _settle(DragEndDetails details) {
+    if (_multiPointerDragActive || _activePointers.length > 1) {
+      _multiPointerDragActive = false;
+      close();
+      return;
+    }
+
     if (_controller.isDismissed) return;
     if (details.velocity.pixelsPerSecond.dx.abs() >= _kMinFlingVelocity) {
       double visualVelocity = (details.velocity.pixelsPerSecond.dx + _velocity) / _width;
@@ -319,6 +335,17 @@ class InnerDrawerState extends State<InnerDrawer> with SingleTickerProviderState
     } else {
       open(direction: direction);
     }
+  }
+
+  void _handlePointerDown(PointerDownEvent event) {
+    _activePointers.add(event.pointer);
+    if (_activePointers.length > 1) {
+      _multiPointerDragActive = true;
+    }
+  }
+
+  void _handlePointerUp(PointerEvent event) {
+    _activePointers.remove(event.pointer);
   }
 
   AlignmentDirectional get _drawerOuterAlignment {
@@ -382,193 +409,198 @@ class InnerDrawerState extends State<InnerDrawer> with SingleTickerProviderState
       _updateWidth(size.width);
     }
 
-    return Container(
-      decoration:
-          widget.backgroundDecoration ??
-          BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-          ),
-      child: ValueListenableBuilder(
-        valueListenable: _direction,
-        builder: (context, _, _) {
-          return Stack(
-            alignment: _drawerInnerAlignment,
-            children: [
-              FocusScope(
-                node: _focusScopeNode,
-                child: ValueListenableBuilder(
-                  valueListenable: _direction,
-                  builder: (context, position, _) {
-                    return AnimatedBuilder(
-                      animation: _controller,
-                      builder: (context, _) {
-                        Widget child = IndexedStack(
-                          index: position.isStart ? 0 : 1,
-                          children: [
-                            _leftChild ?? const SizedBox.shrink(),
-                            _rightChild ?? const SizedBox.shrink(),
-                          ],
-                        );
-                        child = SizedBox(
-                          width: widget.proportionalChildArea ? _width - _widthWithOffset : _width,
-                          height: size.height,
-                          child: _swipeChild
-                              ? GestureDetector(
-                                  onHorizontalDragUpdate: _move,
-                                  onHorizontalDragEnd: _settle,
-                                  child: child,
-                                )
-                              : child,
-                        );
-
-                        switch (_animationType) {
-                          case InnerDrawerAnimation.linear:
-                            return Align(
-                              alignment: _drawerOuterAlignment,
-                              widthFactor: 1 - (_controller.value),
-                              child: child,
-                            );
-                          case InnerDrawerAnimation.quadratic:
-                            return Align(
-                              alignment: _drawerOuterAlignment,
-                              widthFactor: 1 - (_controller.value / 2),
-                              child: child,
-                            );
-                          default:
-                            return child;
-                        }
-                      },
-                    );
-                  },
-                ),
-              ),
-              GestureDetector(
-                onTap: () {},
-                onHorizontalDragDown: _swipe ? _handleDragDown : null,
-                onHorizontalDragUpdate: _swipe ? _move : null,
-                onHorizontalDragEnd: _swipe ? _settle : null,
-                excludeFromSemantics: true,
-                child: RepaintBoundary(
-                  child: Stack(
-                    children: [
-                      AnimatedBuilder(
+    return Listener(
+      onPointerDown: _handlePointerDown,
+      onPointerUp: _handlePointerUp,
+      onPointerCancel: _handlePointerUp,
+      child: Container(
+        decoration:
+            widget.backgroundDecoration ??
+            BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+            ),
+        child: ValueListenableBuilder(
+          valueListenable: _direction,
+          builder: (context, _, _) {
+            return Stack(
+              alignment: _drawerInnerAlignment,
+              children: [
+                FocusScope(
+                  node: _focusScopeNode,
+                  child: ValueListenableBuilder(
+                    valueListenable: _direction,
+                    builder: (context, position, _) {
+                      return AnimatedBuilder(
                         animation: _controller,
                         builder: (context, _) {
-                          return Container(
-                            width: _controller.value == 0 || _animationType == InnerDrawerAnimation.linear ? 0 : null,
-                            color: _colorTransitionChild.evaluate(_controller),
+                          Widget child = IndexedStack(
+                            index: position.isStart ? 0 : 1,
+                            children: [
+                              _leftChild ?? const SizedBox.shrink(),
+                              _rightChild ?? const SizedBox.shrink(),
+                            ],
                           );
-                        },
-                      ),
-                      ValueListenableBuilder(
-                        valueListenable: _direction,
-                        builder: (context, _, child) {
-                          return AnimatedBuilder(
-                            animation: _controller,
-                            builder: (context, _) {
-                              final double offset = 0.5 - _offset * 0.5;
-                              final double wFactor = (_controller.value * (1 - offset)) + offset;
+                          child = SizedBox(
+                            width: widget.proportionalChildArea ? _width - _widthWithOffset : _width,
+                            height: size.height,
+                            child: _swipeChild
+                                ? GestureDetector(
+                                    onHorizontalDragUpdate: _move,
+                                    onHorizontalDragEnd: _settle,
+                                    child: child,
+                                  )
+                                : child,
+                          );
 
+                          switch (_animationType) {
+                            case InnerDrawerAnimation.linear:
                               return Align(
                                 alignment: _drawerOuterAlignment,
-                                child: Align(
-                                  alignment: _drawerInnerAlignment,
-                                  widthFactor: wFactor,
-                                  child: child,
-                                ),
+                                widthFactor: 1 - (_controller.value),
+                                child: child,
                               );
-                            },
-                          );
+                            case InnerDrawerAnimation.quadratic:
+                              return Align(
+                                alignment: _drawerOuterAlignment,
+                                widthFactor: 1 - (_controller.value / 2),
+                                child: child,
+                              );
+                            default:
+                              return child;
+                          }
                         },
-                        child: RepaintBoundary(
-                          child: ValueListenableBuilder(
-                            valueListenable: _direction,
-                            builder: (context, _, _) {
-                              return AnimatedBuilder(
-                                animation: _controller,
-                                builder: (context, child) {
-                                  final Widget? invisibleCover =
-                                      (_controller.value != 1.0 && !widget.tapScaffoldEnabled)
-                                      ? BlockSemantics(
-                                          child: GestureDetector(
-                                            // On Android, the back button is used to dismiss a modal.
-                                            excludeFromSemantics: defaultTargetPlatform == TargetPlatform.android,
-                                            onTap: widget.onTapClose || !_swipe ? close : null,
-                                            child: Semantics(
-                                              label: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-                                              child: Container(
-                                                color: _colorTransitionScaffold.evaluate(_controller),
-                                              ),
-                                            ),
-                                          ),
-                                        )
-                                      : null;
-
-                                  final Widget scaffoldChild = Stack(
-                                    children: [
-                                      ?child,
-                                      ?invisibleCover,
-                                    ],
-                                  );
-
-                                  Widget container = Container(
-                                    key: _drawerKey,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(
-                                        widget.borderRadius * (1 - _controller.value),
-                                      ),
-                                      boxShadow:
-                                          widget.boxShadow ??
-                                          [
-                                            BoxShadow(
-                                              color: Colors.black.withValues(alpha: 0.5),
-                                              blurRadius: 5,
-                                            ),
-                                          ],
-                                    ),
-                                    child: widget.borderRadius != 0
-                                        ? ClipRRect(
-                                            borderRadius: BorderRadius.circular(
-                                              (1 - _controller.value) * widget.borderRadius,
-                                            ),
-                                            child: scaffoldChild,
-                                          )
-                                        : scaffoldChild,
-                                  );
-
-                                  if (_scaleFactor < 1) {
-                                    container = Transform.scale(
-                                      alignment: _drawerInnerAlignment,
-                                      scale: ((1 - _scaleFactor) * _controller.value) + _scaleFactor,
-                                      child: container,
-                                    );
-                                  }
-
-                                  if (widget.offset.top > 0 || widget.offset.bottom > 0) {
-                                    final double translateY =
-                                        size.height *
-                                        (widget.offset.top > 0 ? -widget.offset.top : widget.offset.bottom);
-                                    container = Transform.translate(
-                                      offset: Offset(0, translateY * (1 - _controller.value)),
-                                      child: container,
-                                    );
-                                  }
-
-                                  return container;
-                                },
-                                child: widget.scaffold,
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+                GestureDetector(
+                  onTap: () {},
+                  onHorizontalDragDown: _swipe ? _handleDragDown : null,
+                  onHorizontalDragUpdate: _swipe ? _move : null,
+                  onHorizontalDragEnd: _swipe ? _settle : null,
+                  excludeFromSemantics: true,
+                  child: RepaintBoundary(
+                    child: Stack(
+                      children: [
+                        AnimatedBuilder(
+                          animation: _controller,
+                          builder: (context, _) {
+                            return Container(
+                              width: _controller.value == 0 || _animationType == InnerDrawerAnimation.linear ? 0 : null,
+                              color: _colorTransitionChild.evaluate(_controller),
+                            );
+                          },
+                        ),
+                        ValueListenableBuilder(
+                          valueListenable: _direction,
+                          builder: (context, _, child) {
+                            return AnimatedBuilder(
+                              animation: _controller,
+                              builder: (context, _) {
+                                final double offset = 0.5 - _offset * 0.5;
+                                final double wFactor = (_controller.value * (1 - offset)) + offset;
+
+                                return Align(
+                                  alignment: _drawerOuterAlignment,
+                                  child: Align(
+                                    alignment: _drawerInnerAlignment,
+                                    widthFactor: wFactor,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                          child: RepaintBoundary(
+                            child: ValueListenableBuilder(
+                              valueListenable: _direction,
+                              builder: (context, _, _) {
+                                return AnimatedBuilder(
+                                  animation: _controller,
+                                  builder: (context, child) {
+                                    final Widget? invisibleCover =
+                                        (_controller.value != 1.0 && !widget.tapScaffoldEnabled)
+                                        ? BlockSemantics(
+                                            child: GestureDetector(
+                                              // On Android, the back button is used to dismiss a modal.
+                                              excludeFromSemantics: defaultTargetPlatform == TargetPlatform.android,
+                                              onTap: widget.onTapClose || !_swipe ? close : null,
+                                              child: Semantics(
+                                                label: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+                                                child: Container(
+                                                  color: _colorTransitionScaffold.evaluate(_controller),
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                        : null;
+
+                                    final Widget scaffoldChild = Stack(
+                                      children: [
+                                        ?child,
+                                        ?invisibleCover,
+                                      ],
+                                    );
+
+                                    Widget container = Container(
+                                      key: _drawerKey,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(
+                                          widget.borderRadius * (1 - _controller.value),
+                                        ),
+                                        boxShadow:
+                                            widget.boxShadow ??
+                                            [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(alpha: 0.5),
+                                                blurRadius: 5,
+                                              ),
+                                            ],
+                                      ),
+                                      child: widget.borderRadius != 0
+                                          ? ClipRRect(
+                                              borderRadius: BorderRadius.circular(
+                                                (1 - _controller.value) * widget.borderRadius,
+                                              ),
+                                              child: scaffoldChild,
+                                            )
+                                          : scaffoldChild,
+                                    );
+
+                                    if (_scaleFactor < 1) {
+                                      container = Transform.scale(
+                                        alignment: _drawerInnerAlignment,
+                                        scale: ((1 - _scaleFactor) * _controller.value) + _scaleFactor,
+                                        child: container,
+                                      );
+                                    }
+
+                                    if (widget.offset.top > 0 || widget.offset.bottom > 0) {
+                                      final double translateY =
+                                          size.height *
+                                          (widget.offset.top > 0 ? -widget.offset.top : widget.offset.bottom);
+                                      container = Transform.translate(
+                                        offset: Offset(0, translateY * (1 - _controller.value)),
+                                        child: container,
+                                      );
+                                    }
+
+                                    return container;
+                                  },
+                                  child: widget.scaffold,
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
