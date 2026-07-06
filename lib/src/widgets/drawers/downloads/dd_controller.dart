@@ -305,7 +305,8 @@ class DownloadsDrawerController {
     final selectedItems = Set<BooruItem>.identity()..addAll(searchHandler.currentSelected);
     final handler = searchHandler.currentTab.booruHandler;
     handler.fetched.removeWhere(selectedItems.contains);
-    handler.filterFetched();
+    searchHandler.filterCurrentFetched();
+    searchHandler.rootRestate?.call();
     searchHandler.currentTab.selected.clear();
   }
 

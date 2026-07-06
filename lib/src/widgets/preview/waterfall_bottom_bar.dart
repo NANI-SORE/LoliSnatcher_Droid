@@ -171,11 +171,14 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
     required bool hasDownloadsSelected,
     required bool hasFavsSelected,
     required bool isAllSelectedFavs,
+    required bool canReverseOrder,
     required bool canCompareSelected,
     required bool canRefreshSelected,
   }) {
     showModalBottomSheet(
       context: context,
+      isDismissible: true,
+      enableDrag: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
@@ -183,90 +186,98 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
         final width = MediaQuery.sizeOf(sheetContext).width;
         final maxSheetWidth = width < 720 ? width : (width * 0.62).clamp(480.0, 680.0);
 
-        return Align(
-          alignment: Alignment.bottomCenter,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxSheetWidth),
-            child: SettingsBottomSheet(
-              title: Text('${context.loc.galleryButtons.select} (${selectedCount.toFormattedString()})'),
-              contentPadding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
-              contentItems: [
-                SettingsButton(
-                  name: context.loc.settings.downloads.invertSelection,
-                  icon: const Icon(Icons.flip_to_back),
-                  action: () {
-                    Navigator.of(sheetContext).pop();
-                    downloadsController.invertSelection();
-                  },
-                  drawTopBorder: !canCompareSelected,
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.of(sheetContext).pop(),
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: GestureDetector(
+              onTap: () {},
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxSheetWidth),
+                child: SettingsBottomSheet(
+                  title: Text('${context.loc.galleryButtons.select} (${selectedCount.toFormattedString()})'),
+                  contentPadding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
+                  contentItems: [
+                    SettingsButton(
+                      name: context.loc.settings.downloads.invertSelection,
+                      icon: const Icon(Icons.flip_to_back),
+                      action: () {
+                        Navigator.of(sheetContext).pop();
+                        downloadsController.invertSelection();
+                      },
+                      drawTopBorder: true,
+                    ),
+                    if (canReverseOrder)
+                      SettingsButton(
+                        name: context.loc.settings.downloads.reverseSelectedOrder,
+                        icon: const Icon(Icons.swap_vert),
+                        action: () {
+                          Navigator.of(sheetContext).pop();
+                          downloadsController.reverseSelectedOrder();
+                        },
+                      ),
+                    if (canCompareSelected)
+                      SettingsButton(
+                        name: context.loc.settings.downloads.compareSelected,
+                        icon: const Icon(Icons.compare),
+                        action: () {
+                          Navigator.of(sheetContext).pop();
+                          downloadsController.compareSelected(context);
+                        },
+                        drawTopBorder: true,
+                      ),
+                    SettingsButton(
+                      name: context.loc.settings.downloads.hideSelected,
+                      icon: const Icon(Icons.visibility_off_outlined),
+                      action: () {
+                        Navigator.of(sheetContext).pop();
+                        downloadsController.hideSelected();
+                      },
+                    ),
+                    if (canRefreshSelected)
+                      SettingsButton(
+                        name: context.loc.settings.downloads.refreshSelectedMetadata,
+                        icon: const Icon(Icons.refresh),
+                        action: () {
+                          Navigator.of(sheetContext).pop();
+                          downloadsController.refreshSelectedMetadata(context);
+                        },
+                      ),
+                    if (hasDownloadsSelected)
+                      SettingsButton(
+                        name:
+                            '${context.loc.settings.downloads.removeSnatchedStatusFromSelected} (${downloadsSelectedCount.toFormattedString()})',
+                        icon: const Icon(Icons.file_download_off_outlined),
+                        action: () {
+                          Navigator.of(sheetContext).pop();
+                          downloadsController.removeSnatchedStatusFromSelected();
+                        },
+                      ),
+                    if (!isAllSelectedFavs)
+                      SettingsButton(
+                        name:
+                            '${context.loc.settings.downloads.favouriteSelected} (${unfavSelectedCount.toFormattedString()})',
+                        icon: const Icon(Icons.favorite, color: Colors.red),
+                        action: () {
+                          Navigator.of(sheetContext).pop();
+                          downloadsController.favouriteSelected();
+                        },
+                      ),
+                    if (hasFavsSelected)
+                      SettingsButton(
+                        name:
+                            '${context.loc.settings.downloads.unfavouriteSelected} (${favSelectedCount.toFormattedString()})',
+                        icon: const Icon(Icons.favorite_border),
+                        action: () {
+                          Navigator.of(sheetContext).pop();
+                          downloadsController.unfavouriteSelected();
+                        },
+                        drawBottomBorder: false,
+                      ),
+                  ],
                 ),
-                SettingsButton(
-                  name: context.loc.settings.downloads.reverseSelectedOrder,
-                  icon: const Icon(Icons.swap_vert),
-                  action: () {
-                    Navigator.of(sheetContext).pop();
-                    downloadsController.reverseSelectedOrder();
-                  },
-                ),
-                if (canCompareSelected)
-                  SettingsButton(
-                    name: context.loc.settings.downloads.compareSelected,
-                    icon: const Icon(Icons.compare),
-                    action: () {
-                      Navigator.of(sheetContext).pop();
-                      downloadsController.compareSelected(context);
-                    },
-                    drawTopBorder: true,
-                  ),
-                SettingsButton(
-                  name: context.loc.settings.downloads.hideSelected,
-                  icon: const Icon(Icons.visibility_off_outlined),
-                  action: () {
-                    Navigator.of(sheetContext).pop();
-                    downloadsController.hideSelected();
-                  },
-                ),
-                if (canRefreshSelected)
-                  SettingsButton(
-                    name: context.loc.settings.downloads.refreshSelectedMetadata,
-                    icon: const Icon(Icons.refresh),
-                    action: () {
-                      Navigator.of(sheetContext).pop();
-                      downloadsController.refreshSelectedMetadata(context);
-                    },
-                  ),
-                if (hasDownloadsSelected)
-                  SettingsButton(
-                    name:
-                        '${context.loc.settings.downloads.removeSnatchedStatusFromSelected} (${downloadsSelectedCount.toFormattedString()})',
-                    icon: const Icon(Icons.file_download_off_outlined),
-                    action: () {
-                      Navigator.of(sheetContext).pop();
-                      downloadsController.removeSnatchedStatusFromSelected();
-                    },
-                  ),
-                if (!isAllSelectedFavs)
-                  SettingsButton(
-                    name:
-                        '${context.loc.settings.downloads.favouriteSelected} (${unfavSelectedCount.toFormattedString()})',
-                    icon: const Icon(Icons.favorite, color: Colors.red),
-                    action: () {
-                      Navigator.of(sheetContext).pop();
-                      downloadsController.favouriteSelected();
-                    },
-                  ),
-                if (hasFavsSelected)
-                  SettingsButton(
-                    name:
-                        '${context.loc.settings.downloads.unfavouriteSelected} (${favSelectedCount.toFormattedString()})',
-                    icon: const Icon(Icons.favorite_border),
-                    action: () {
-                      Navigator.of(sheetContext).pop();
-                      downloadsController.unfavouriteSelected();
-                    },
-                    drawBottomBorder: false,
-                  ),
-              ],
+              ),
             ),
           ),
         );
@@ -291,6 +302,7 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
       final bool isAllSelectedFavs = selectedCount == favSelectedCount;
       final int downloadsSelectedCount = selected.where((item) => item.isSnatched.value == true).length;
       final bool hasDownloadsSelected = downloadsSelectedCount > 0;
+      final bool canReverseOrder = selectedCount > 1;
       final bool canCompareSelected =
           selectedCount == 2 && selected.every((item) => item.mediaType.value.isImageOrAnimation);
       final bool canRefreshSelected = searchHandler.currentBooru.type?.isFavouritesOrDownloads == true;
@@ -380,6 +392,7 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
                                     hasDownloadsSelected: hasDownloadsSelected,
                                     hasFavsSelected: hasFavsSelected,
                                     isAllSelectedFavs: isAllSelectedFavs,
+                                    canReverseOrder: canReverseOrder,
                                     canCompareSelected: canCompareSelected,
                                     canRefreshSelected: canRefreshSelected,
                                   ),

@@ -368,7 +368,10 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
       ..addAll(dragInitialSelectedItems);
     dragCurrentRangeItems.clear();
 
-    final hit = dragSelectController.hitTest(details.globalPosition);
+    final hit = dragSelectController.hitTest(
+      details.globalPosition,
+      lastIndex: searchHandler.currentFetched.length - 1,
+    );
     if (hit == null) {
       endDragSelection();
       return;
@@ -396,7 +399,10 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
       return;
     }
 
-    final hit = dragSelectController.hitTest(globalPosition);
+    final hit = dragSelectController.hitTest(
+      globalPosition,
+      lastIndex: searchHandler.currentFetched.length - 1,
+    );
     if (hit == null) {
       return;
     }
