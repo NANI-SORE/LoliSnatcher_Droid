@@ -2441,6 +2441,8 @@ class _Translations$settings$downloads$ru_RU extends Translations$settings$downl
   @override
   String get compareHeatmap => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareHeatmap', {}) ?? 'Тепловая карта';
   @override
+  String get compareData => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareData', {}) ?? 'Данные';
+  @override
   String get updatingData => TranslationOverrides.string(_root.$meta, 'settings.downloads.updatingData', {}) ?? 'Обновление данных…';
 }
 
@@ -4967,6 +4969,7 @@ extension on TranslationsRuRu {
           'settings.downloads.compareDifference' => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareDifference', {}) ?? 'Разница',
           'settings.downloads.compareHeatmap' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.compareHeatmap', {}) ?? 'Тепловая карта',
+          'settings.downloads.compareData' => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareData', {}) ?? 'Данные',
           'settings.downloads.updatingData' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.updatingData', {}) ?? 'Обновление данных…',
           'settings.database.title' => TranslationOverrides.string(_root.$meta, 'settings.database.title', {}) ?? 'База данных',
@@ -5847,10 +5850,10 @@ extension on TranslationsRuRu {
           'searchBar.range' => TranslationOverrides.string(_root.$meta, 'searchBar.range', {}) ?? 'Диапазон',
           'searchBar.popular' => TranslationOverrides.string(_root.$meta, 'searchBar.popular', {}) ?? 'Популярное',
           'searchBar.selectDate' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDate', {}) ?? 'Выбери дату',
-          'searchBar.selectDatesRange' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDatesRange', {}) ?? 'Выбери диапазон дат',
           _ => null,
         } ??
         switch (path) {
+          'searchBar.selectDatesRange' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDatesRange', {}) ?? 'Выбери диапазон дат',
           'searchBar.history' => TranslationOverrides.string(_root.$meta, 'searchBar.history', {}) ?? 'История',
           'searchBar.more' => TranslationOverrides.string(_root.$meta, 'searchBar.more', {}) ?? '…',
           'mobileHome.selectBooruForWebview' =>

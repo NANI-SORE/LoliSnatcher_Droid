@@ -3043,6 +3043,9 @@ class Translations$settings$downloads$en {
   /// en: 'Heatmap'
   String get compareHeatmap => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareHeatmap', {}) ?? 'Heatmap';
 
+  /// en: 'Data'
+  String get compareData => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareData', {}) ?? 'Data';
+
   /// en: 'Updating data…'
   String get updatingData => TranslationOverrides.string(_root.$meta, 'settings.downloads.updatingData', {}) ?? 'Updating data…';
 }
@@ -5928,6 +5931,7 @@ extension on Translations {
           'settings.downloads.compareDifference' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.compareDifference', {}) ?? 'Difference',
           'settings.downloads.compareHeatmap' => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareHeatmap', {}) ?? 'Heatmap',
+          'settings.downloads.compareData' => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareData', {}) ?? 'Data',
           'settings.downloads.updatingData' => TranslationOverrides.string(_root.$meta, 'settings.downloads.updatingData', {}) ?? 'Updating data…',
           'settings.database.title' => TranslationOverrides.string(_root.$meta, 'settings.database.title', {}) ?? 'Database',
           'settings.database.indexingDatabase' =>
@@ -6773,10 +6777,10 @@ extension on Translations {
           'searchBar.range' => TranslationOverrides.string(_root.$meta, 'searchBar.range', {}) ?? 'Range',
           'searchBar.popular' => TranslationOverrides.string(_root.$meta, 'searchBar.popular', {}) ?? 'Popular',
           'searchBar.selectDate' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDate', {}) ?? 'Select date',
-          'searchBar.selectDatesRange' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDatesRange', {}) ?? 'Select dates range',
           _ => null,
         } ??
         switch (path) {
+          'searchBar.selectDatesRange' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDatesRange', {}) ?? 'Select dates range',
           'searchBar.history' => TranslationOverrides.string(_root.$meta, 'searchBar.history', {}) ?? 'History',
           'searchBar.more' => TranslationOverrides.string(_root.$meta, 'searchBar.more', {}) ?? '…',
           'mobileHome.selectBooruForWebview' =>

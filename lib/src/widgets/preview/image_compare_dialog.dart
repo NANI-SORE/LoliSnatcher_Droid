@@ -7,7 +7,10 @@ import 'package:flutter/material.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/tag.dart';
+import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/image/custom_network_image.dart';
 
@@ -18,6 +21,7 @@ enum _ImageCompareMode {
   flicker,
   difference,
   heatmap,
+  data,
 }
 
 enum _DifferenceColorMode {
@@ -46,6 +50,7 @@ List<_ImageCompareMode> get _availableCompareModes {
     _ImageCompareMode.flicker,
     _ImageCompareMode.difference,
     if (_isHeatmapModeSupported) _ImageCompareMode.heatmap,
+    _ImageCompareMode.data,
   ];
 }
 
@@ -101,6 +106,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
   _DifferenceColorMode differenceColorMode = _DifferenceColorMode.raw;
   _CompareBackground compareBackground = _CompareBackground.black;
   _RenderedPreviewSide? renderedPreviewSide;
+  bool dataOnlyDifferences = false;
   bool imagesSwapped = false;
   bool controlsVisible = true;
   bool flickerShowSecond = false;
@@ -150,7 +156,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
     final effectiveMode = mode == _ImageCompareMode.heatmap && !_isHeatmapModeSupported
         ? _ImageCompareMode.difference
         : mode;
-    final appBarForeground = _foregroundForCompareBackground(effectiveMode, compareBackground);
+    final appBarForeground = _foregroundForCompareBackground(context, effectiveMode, compareBackground);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -192,6 +198,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
               _ImageCompareMode.flicker => _flickerView(context),
               _ImageCompareMode.difference => _renderedCompareView(context, _RenderedCompareMode.difference),
               _ImageCompareMode.heatmap => _renderedCompareView(context, _RenderedCompareMode.heatmap),
+              _ImageCompareMode.data => _dataCompareView(context),
             },
           ),
           Positioned(
@@ -210,6 +217,10 @@ class _ImageComparePageState extends State<_ImageComparePage> {
                   ignoring: !controlsVisible,
                   child: _CompareControls(
                     mode: effectiveMode,
+                    firstItem: firstItem,
+                    firstBooru: firstBooru,
+                    secondItem: secondItem,
+                    secondBooru: secondBooru,
                     syncZoom: syncZoom,
                     stackOpacity: stackOpacity,
                     flickerIntervalMs: flickerIntervalMs,
@@ -217,6 +228,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
                     stackAxis: stackAxis,
                     differenceColorMode: differenceColorMode,
                     compareBackground: compareBackground,
+                    dataOnlyDifferences: dataOnlyDifferences,
                     onResetView: _resetViewAndControls,
                     onSwapImages: () {
                       setState(() {
@@ -268,6 +280,11 @@ class _ImageComparePageState extends State<_ImageComparePage> {
                         compareBackground = value;
                       });
                     },
+                    onDataOnlyDifferencesChanged: (value) {
+                      setState(() {
+                        dataOnlyDifferences = value;
+                      });
+                    },
                   ),
                 ),
               ),
@@ -296,6 +313,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
     differenceColorMode = _DifferenceColorMode.raw;
     compareBackground = _CompareBackground.black;
     renderedPreviewSide = null;
+    dataOnlyDifferences = false;
   }
 
   void _toggleControls() {
@@ -687,11 +705,67 @@ class _ImageComparePageState extends State<_ImageComparePage> {
       },
     );
   }
+
+  Widget _dataCompareView(BuildContext context) {
+    final topPadding = MediaQuery.paddingOf(context).top + kToolbarHeight + 12;
+    final bottomPadding = _bottomControlsInset(context) + 16;
+    final firstDetails = _ItemDataDetails(item: firstItem, booru: firstBooru);
+    final secondDetails = _ItemDataDetails(item: secondItem, booru: secondBooru);
+
+    return ColoredBox(
+      color: Theme.of(context).colorScheme.surface,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= 720;
+          final metadata = _MetadataComparison(
+            first: firstDetails,
+            second: secondDetails,
+            onlyDifferences: dataOnlyDifferences,
+          );
+          final tags = _TagsComparison(
+            first: firstItem,
+            second: secondItem,
+            onlyDifferences: dataOnlyDifferences,
+          );
+
+          return SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(12, topPadding, 12, bottomPadding),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1100),
+                child: isWide
+                    ? Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: metadata),
+                          const SizedBox(width: 12),
+                          Expanded(child: tags),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          metadata,
+                          const SizedBox(height: 12),
+                          tags,
+                        ],
+                      ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
 
 class _CompareControls extends StatelessWidget {
   const _CompareControls({
     required this.mode,
+    required this.firstItem,
+    required this.firstBooru,
+    required this.secondItem,
+    required this.secondBooru,
     required this.syncZoom,
     required this.stackOpacity,
     required this.flickerIntervalMs,
@@ -699,6 +773,7 @@ class _CompareControls extends StatelessWidget {
     required this.stackAxis,
     required this.differenceColorMode,
     required this.compareBackground,
+    required this.dataOnlyDifferences,
     required this.onResetView,
     required this.onSwapImages,
     required this.onModeChanged,
@@ -708,6 +783,7 @@ class _CompareControls extends StatelessWidget {
     required this.onStackAxisChanged,
     required this.onDifferenceColorModeChanged,
     required this.onCompareBackgroundChanged,
+    required this.onDataOnlyDifferencesChanged,
   });
 
   static const double height = 64;
@@ -715,6 +791,10 @@ class _CompareControls extends StatelessWidget {
   static const double compactWidthBreakpoint = 520;
 
   final _ImageCompareMode mode;
+  final BooruItem firstItem;
+  final Booru firstBooru;
+  final BooruItem secondItem;
+  final Booru secondBooru;
   final bool syncZoom;
   final double stackOpacity;
   final double flickerIntervalMs;
@@ -722,6 +802,7 @@ class _CompareControls extends StatelessWidget {
   final Axis stackAxis;
   final _DifferenceColorMode differenceColorMode;
   final _CompareBackground compareBackground;
+  final bool dataOnlyDifferences;
   final VoidCallback onResetView;
   final VoidCallback onSwapImages;
   final ValueChanged<_ImageCompareMode> onModeChanged;
@@ -731,6 +812,7 @@ class _CompareControls extends StatelessWidget {
   final ValueChanged<Axis> onStackAxisChanged;
   final ValueChanged<_DifferenceColorMode> onDifferenceColorModeChanged;
   final ValueChanged<_CompareBackground> onCompareBackgroundChanged;
+  final ValueChanged<bool> onDataOnlyDifferencesChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -759,8 +841,11 @@ class _CompareControls extends StatelessWidget {
                 onPressed: onResetView,
               ),
               const SizedBox(width: 4),
-              IconButton(
-                icon: const Icon(Icons.swap_horiz),
+              _SwapImagesButton(
+                firstItem: firstItem,
+                firstBooru: firstBooru,
+                secondItem: secondItem,
+                secondBooru: secondBooru,
                 onPressed: onSwapImages,
               ),
             ],
@@ -775,28 +860,33 @@ class _CompareControls extends StatelessWidget {
             height: (isCompact ? compactHeight : height) + bottomPadding,
             child: Padding(
               padding: EdgeInsets.only(bottom: bottomPadding),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: isCompact
-                    ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          primaryControls,
-                          const SizedBox(height: 4),
-                          secondaryControls,
-                        ],
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          primaryControls,
-                          const SizedBox(width: 12),
-                          secondaryControls,
-                        ],
-                      ),
-              ),
+              child: isCompact
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _ScrollableControls(child: primaryControls),
+                        const SizedBox(height: 4),
+                        _ScrollableControls(child: secondaryControls),
+                      ],
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: _ScrollableControls(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                primaryControls,
+                                const SizedBox(width: 12),
+                                secondaryControls,
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
             ),
           );
         },
@@ -804,7 +894,11 @@ class _CompareControls extends StatelessWidget {
     );
   }
 
-  double _secondaryControlWidth(BuildContext context, bool isCompact, double availableWidth) {
+  double _secondaryControlWidth(
+    BuildContext context,
+    bool isCompact,
+    double availableWidth,
+  ) {
     return switch (mode) {
       _ImageCompareMode.split => 240,
       _ImageCompareMode.slider => 140,
@@ -812,6 +906,7 @@ class _CompareControls extends StatelessWidget {
       _ImageCompareMode.flicker => isCompact ? availableWidth - 24 : 220,
       _ImageCompareMode.difference => isCompact ? availableWidth - 24 : 450,
       _ImageCompareMode.heatmap => 210,
+      _ImageCompareMode.data => 64,
     };
   }
 
@@ -898,8 +993,605 @@ class _CompareControls extends StatelessWidget {
         selected: compareBackground,
         onChanged: onCompareBackgroundChanged,
       ),
+      _ImageCompareMode.data => FilterChip(
+        selected: dataOnlyDifferences,
+        tooltip: 'Differences only',
+        label: const Icon(Icons.filter_alt),
+        onSelected: onDataOnlyDifferencesChanged,
+      ),
     };
   }
+}
+
+class _ScrollableControls extends StatelessWidget {
+  const _ScrollableControls({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: child,
+    );
+  }
+}
+
+class _SwapImagesButton extends StatelessWidget {
+  const _SwapImagesButton({
+    required this.firstItem,
+    required this.firstBooru,
+    required this.secondItem,
+    required this.secondBooru,
+    required this.onPressed,
+  });
+
+  final BooruItem firstItem;
+  final Booru firstBooru;
+  final BooruItem secondItem;
+  final Booru secondBooru;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'Swap',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onPressed,
+          child: SizedBox(
+            width: 82,
+            height: 48,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Positioned(
+                  left: 5,
+                  child: _CompareOrderThumbnail(
+                    item: firstItem,
+                    booru: firstBooru,
+                  ),
+                ),
+                Positioned(
+                  right: 5,
+                  child: _CompareOrderThumbnail(
+                    item: secondItem,
+                    booru: secondBooru,
+                  ),
+                ),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.86),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Theme.of(context).dividerColor),
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.all(3),
+                    child: Icon(Icons.swap_horiz, size: 18),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CompareOrderThumbnail extends StatefulWidget {
+  const _CompareOrderThumbnail({
+    required this.item,
+    required this.booru,
+  });
+
+  final BooruItem item;
+  final Booru booru;
+
+  @override
+  State<_CompareOrderThumbnail> createState() => _CompareOrderThumbnailState();
+}
+
+class _CompareOrderThumbnailState extends State<_CompareOrderThumbnail> {
+  late Future<ImageProvider> providerFuture = _buildCompareThumbnailProvider(widget.item, widget.booru);
+
+  @override
+  void didUpdateWidget(covariant _CompareOrderThumbnail oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.item != widget.item || oldWidget.booru != widget.booru) {
+      providerFuture = _buildCompareThumbnailProvider(widget.item, widget.booru);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(5),
+      child: SizedBox(
+        width: 30,
+        height: 38,
+        child: FutureBuilder<ImageProvider>(
+          future: providerFuture,
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return ColoredBox(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                child: const Center(
+                  child: SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              );
+            }
+
+            return Image(
+              image: snapshot.data!,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return ColoredBox(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: const Icon(Icons.broken_image, size: 16),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _ItemDataDetails {
+  const _ItemDataDetails({
+    required this.item,
+    required this.booru,
+  });
+
+  final BooruItem item;
+  final Booru booru;
+
+  List<({String label, String? value})> get rows {
+    return [
+      (label: 'Booru', value: booru.name),
+      (label: 'Server ID', value: item.serverId),
+      (label: 'Post URL', value: item.postURL),
+      (label: 'File URL', value: item.fileURL),
+      (label: 'Sample URL', value: item.sampleURL),
+      (label: 'Thumbnail URL', value: item.thumbnailURL),
+      (label: 'File type', value: item.fileExt),
+      (label: 'Media type', value: item.mediaType.value.name),
+      (label: 'File size', value: item.fileSize == null ? null : Tools.formatBytes(item.fileSize!, 2)),
+      (label: 'File resolution', value: _formatDimensions(item.fileWidth, item.fileHeight)),
+      (label: 'Sample resolution', value: _formatDimensions(item.sampleWidth, item.sampleHeight)),
+      (label: 'Preview resolution', value: _formatDimensions(item.previewWidth, item.previewHeight)),
+      (label: 'Rating', value: item.rating),
+      (label: 'Score', value: item.score),
+      (label: 'Uploader ID', value: item.uploaderId),
+      (label: 'Uploader', value: item.uploaderName),
+      (label: 'Post date', value: item.postDate),
+      (label: 'MD5', value: item.md5String),
+      (label: 'Sources', value: item.sources?.where((source) => source.trim().isNotEmpty).join('\n')),
+      (label: 'Description', value: item.description),
+      (label: 'Notes', value: item.hasNotes?.toString()),
+      (label: 'Comments', value: item.hasComments?.toString()),
+    ];
+  }
+}
+
+class _MetadataComparison extends StatelessWidget {
+  const _MetadataComparison({
+    required this.first,
+    required this.second,
+    required this.onlyDifferences,
+  });
+
+  final _ItemDataDetails first;
+  final _ItemDataDetails second;
+  final bool onlyDifferences;
+
+  @override
+  Widget build(BuildContext context) {
+    final firstRows = first.rows;
+    final secondRows = second.rows;
+    final visibleIndexes = [
+      for (var i = 0; i < firstRows.length; i++)
+        if (!onlyDifferences ||
+            _normalizeCompareValue(firstRows[i].value) != _normalizeCompareValue(secondRows[i].value))
+          i,
+    ];
+
+    return _CompareDataPanel(
+      title: 'Item data',
+      child: Column(
+        children: [
+          if (visibleIndexes.isEmpty)
+            const _EmptyCompareText()
+          else
+            for (final i in visibleIndexes)
+              _MetadataComparisonRow(
+                label: firstRows[i].label,
+                first: firstRows[i].value,
+                second: secondRows[i].value,
+              ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetadataComparisonRow extends StatelessWidget {
+  const _MetadataComparisonRow({
+    required this.label,
+    required this.first,
+    required this.second,
+  });
+
+  final String label;
+  final String? first;
+  final String? second;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalizedFirst = _normalizeCompareValue(first);
+    final normalizedSecond = _normalizeCompareValue(second);
+    final isSame = normalizedFirst == normalizedSecond;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.45)),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                Icon(
+                  isSame ? Icons.check : Icons.compare_arrows,
+                  size: 18,
+                  color: isSame ? colorScheme.primary : colorScheme.error,
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _MetadataValue(value: normalizedFirst, isDifferent: !isSame),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _MetadataValue(value: normalizedSecond, isDifferent: !isSame),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MetadataValue extends StatelessWidget {
+  const _MetadataValue({
+    required this.value,
+    required this.isDifferent,
+  });
+
+  final String value;
+  final bool isDifferent;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: isDifferent ? colorScheme.errorContainer.withValues(alpha: 0.32) : colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: SelectableText(
+          value,
+          minLines: 1,
+          style: TextStyle(
+            color: isDifferent ? colorScheme.onErrorContainer : colorScheme.onSurfaceVariant,
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TagsComparison extends StatelessWidget {
+  const _TagsComparison({
+    required this.first,
+    required this.second,
+    required this.onlyDifferences,
+  });
+
+  final BooruItem first;
+  final BooruItem second;
+  final bool onlyDifferences;
+
+  @override
+  Widget build(BuildContext context) {
+    final comparison = _compareTags(first, second);
+    final hasDifferences = comparison.onlyFirst.isNotEmpty || comparison.onlySecond.isNotEmpty;
+
+    return _CompareDataPanel(
+      title: 'Tags',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (onlyDifferences && !hasDifferences)
+            const _EmptyCompareText()
+          else ...[
+            if (!onlyDifferences) ...[
+              _TagGroup(title: 'Common (${comparison.common.length})', tags: comparison.common),
+              const SizedBox(height: 12),
+            ],
+            _TagGroup(title: 'Only first (${comparison.onlyFirst.length})', tags: comparison.onlyFirst),
+            const SizedBox(height: 12),
+            _TagGroup(title: 'Only second (${comparison.onlySecond.length})', tags: comparison.onlySecond),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyCompareText extends StatelessWidget {
+  const _EmptyCompareText();
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      'None',
+      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+    );
+  }
+}
+
+class _TagGroup extends StatelessWidget {
+  const _TagGroup({
+    required this.title,
+    required this.tags,
+  });
+
+  final String title;
+  final List<_ComparableTag> tags;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 6),
+        if (tags.isEmpty)
+          Text(
+            'None',
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+          )
+        else
+          ..._groupTagsByType(tags).entries.map(
+            (entry) => _TagTypeGroup(
+              type: entry.key,
+              tags: entry.value,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _TagTypeGroup extends StatelessWidget {
+  const _TagTypeGroup({
+    required this.type,
+    required this.tags,
+  });
+
+  final TagType type;
+  final List<_ComparableTag> tags;
+
+  @override
+  Widget build(BuildContext context) {
+    final typeColor = type.getColour();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            '${type.locName} (${tags.length})',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: typeColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final tag in tags)
+                Chip(
+                  label: Text(tag.name),
+                  labelStyle: TextStyle(
+                    color: tag.color,
+                    fontSize: 12,
+                    fontWeight: tag.color == null ? FontWeight.normal : FontWeight.w600,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                  backgroundColor: tag.color?.withValues(alpha: 0.16),
+                  side: BorderSide(color: tag.color ?? Theme.of(context).dividerColor),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompareDataPanel extends StatelessWidget {
+  const _CompareDataPanel({
+    required this.title,
+    required this.child,
+  });
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ComparableTag {
+  const _ComparableTag({
+    required this.name,
+    required this.type,
+    required this.color,
+  });
+
+  final String name;
+  final TagType type;
+  final Color? color;
+}
+
+({List<_ComparableTag> common, List<_ComparableTag> onlyFirst, List<_ComparableTag> onlySecond}) _compareTags(
+  BooruItem first,
+  BooruItem second,
+) {
+  final firstTags = _tagMap(first);
+  final secondTags = _tagMap(second);
+  final firstKeys = firstTags.keys.toSet();
+  final secondKeys = secondTags.keys.toSet();
+
+  List<_ComparableTag> selectTags(Iterable<String> keys, Map<String, _ComparableTag> source) {
+    return keys.map((key) => source[key]!).toList()..sort(_compareComparableTags);
+  }
+
+  return (
+    common: selectTags(firstKeys.intersection(secondKeys), firstTags),
+    onlyFirst: selectTags(firstKeys.difference(secondKeys), firstTags),
+    onlySecond: selectTags(secondKeys.difference(firstKeys), secondTags),
+  );
+}
+
+Map<String, _ComparableTag> _tagMap(BooruItem item) {
+  final tagHandler = TagHandler.instance;
+  return {
+    for (final tag in item.tagsList) tag.fullString.toLowerCase(): _comparableTag(tag, tagHandler),
+  };
+}
+
+_ComparableTag _comparableTag(Tag tag, TagHandler tagHandler) {
+  final cachedType = tag.tagType.isNone ? tagHandler.getTag(tag.fullString).tagType : tag.tagType;
+  final type = tag.tagType.isNone && !cachedType.isNone ? cachedType : tag.tagType;
+
+  return _ComparableTag(
+    name: tag.fullString,
+    type: type,
+    color: type.getColour(),
+  );
+}
+
+int _compareComparableTags(_ComparableTag a, _ComparableTag b) {
+  final typeComparison = _tagTypeSortOrder(a.type).compareTo(_tagTypeSortOrder(b.type));
+  if (typeComparison != 0) {
+    return typeComparison;
+  }
+
+  return a.name.compareTo(b.name);
+}
+
+Map<TagType, List<_ComparableTag>> _groupTagsByType(List<_ComparableTag> tags) {
+  final grouped = <TagType, List<_ComparableTag>>{};
+  for (final tag in tags) {
+    grouped.putIfAbsent(tag.type, () => []).add(tag);
+  }
+
+  final sortedEntries = grouped.entries.toList()
+    ..sort((a, b) => _tagTypeSortOrder(a.key).compareTo(_tagTypeSortOrder(b.key)));
+
+  return {
+    for (final entry in sortedEntries) entry.key: entry.value..sort(_compareComparableTags),
+  };
+}
+
+int _tagTypeSortOrder(TagType type) {
+  return switch (type) {
+    TagType.artist => 0,
+    TagType.character => 1,
+    TagType.copyright => 2,
+    TagType.species => 3,
+    TagType.meta => 4,
+    TagType.none => 5,
+  };
+}
+
+String _normalizeCompareValue(String? value) {
+  final normalized = value?.trim();
+  if (normalized == null || normalized.isEmpty || normalized == 'null') {
+    return '-';
+  }
+
+  return normalized;
+}
+
+String? _formatDimensions(double? width, double? height) {
+  if (width == null || height == null || width <= 0 || height <= 0) {
+    return null;
+  }
+
+  return '${width.round()}x${height.round()}';
 }
 
 class _DifferenceModeSwatch extends StatelessWidget {
@@ -1062,6 +1754,7 @@ class _CompareModeDropdownItem extends StatelessWidget {
       _ImageCompareMode.flicker => Icons.bolt,
       _ImageCompareMode.difference => Icons.difference,
       _ImageCompareMode.heatmap => Icons.local_fire_department,
+      _ImageCompareMode.data => Icons.dataset,
     };
   }
 
@@ -1073,6 +1766,7 @@ class _CompareModeDropdownItem extends StatelessWidget {
       _ImageCompareMode.flicker => context.loc.settings.downloads.compareFlicker,
       _ImageCompareMode.difference => context.loc.settings.downloads.compareDifference,
       _ImageCompareMode.heatmap => context.loc.settings.downloads.compareHeatmap,
+      _ImageCompareMode.data => context.loc.settings.downloads.compareData,
     };
   }
 }
@@ -1219,7 +1913,11 @@ class _ImageCompareResolutionTitle extends StatelessWidget {
   }
 }
 
-Color _foregroundForCompareBackground(_ImageCompareMode mode, _CompareBackground background) {
+Color _foregroundForCompareBackground(BuildContext context, _ImageCompareMode mode, _CompareBackground background) {
+  if (mode == _ImageCompareMode.data) {
+    return Theme.of(context).colorScheme.onSurface;
+  }
+
   final isRenderedMode = mode == _ImageCompareMode.difference || mode == _ImageCompareMode.heatmap;
   if (isRenderedMode && background == _CompareBackground.white) {
     return Colors.black;
@@ -1920,6 +2618,28 @@ Future<ImageProvider> _buildCompareImageProvider(BooruItem item, Booru booru) as
           fileNameExtras: item.fileNameExtras,
           withCaptchaCheck: true,
         );
+}
+
+Future<ImageProvider> _buildCompareThumbnailProvider(BooruItem item, Booru booru) async {
+  final url = item.thumbnailURL.isNotEmpty ? item.thumbnailURL : item.sampleURL;
+  if (url.trim().isEmpty) {
+    throw StateError('No thumbnail URL found for selected item');
+  }
+
+  final headers = await Tools.getFileCustomHeaders(
+    booru,
+    item: item,
+    checkForReferer: true,
+  );
+
+  return CustomNetworkImage(
+    url,
+    headers: headers,
+    withCache: SettingsHandler.instance.thumbnailCache,
+    cacheFolder: 'thumbnails',
+    fileNameExtras: item.fileNameExtras,
+    withCaptchaCheck: true,
+  );
 }
 
 class _CompareImageError extends StatelessWidget {

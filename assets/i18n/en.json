@@ -679,6 +679,7 @@
             "compareFlicker": "Flicker",
             "compareDifference": "Difference",
             "compareHeatmap": "Heatmap",
+            "compareData": "Data",
             "updatingData": "Updating data…"
         },
         "database": {

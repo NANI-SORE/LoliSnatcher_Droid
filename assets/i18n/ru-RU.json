@@ -679,6 +679,7 @@
             "compareFlicker": "Мигание",
             "compareDifference": "Разница",
             "compareHeatmap": "Тепловая карта",
+            "compareData": "Данные",
             "updatingData": "Обновление данных…"
         },
         "database": {
