@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -1089,7 +1090,12 @@ class _RenderedComparePainter extends CustomPainter {
         if (heatmapImage == null) {
           return;
         }
-        _drawContainedImage(canvas, heatmapImage, size, Paint()..filterQuality = FilterQuality.none);
+        _drawContainedImage(
+          canvas,
+          heatmapImage,
+          size,
+          Paint()..filterQuality = FilterQuality.high,
+        );
     }
   }
 
@@ -1176,31 +1182,31 @@ Future<ui.Image> _buildHeatmapImage(ui.Image first, ui.Image second) async {
     throw StateError('Unable to read image pixels for heatmap comparison');
   }
 
-  const maxSide = 1024;
-  final firstAspect = first.width / first.height;
-  final secondAspect = second.width / second.height;
-  final comparisonAspect = (firstAspect + secondAspect) / 2;
-  final width = comparisonAspect >= 1 ? maxSide : (maxSide * comparisonAspect).round().clamp(1, maxSide);
-  final height = comparisonAspect >= 1 ? (maxSide / comparisonAspect).round().clamp(1, maxSide) : maxSide;
+  const maxSide = 2048;
+  final sourceWidth = math.max(first.width, second.width);
+  final sourceHeight = math.max(first.height, second.height);
+  final scale = math.min(1, maxSide / math.max(sourceWidth, sourceHeight));
+  final width = math.max(1, (sourceWidth * scale).round());
+  final height = math.max(1, (sourceHeight * scale).round());
   final output = Uint8List(width * height * 4);
   final firstList = firstBytes.buffer.asUint8List();
   final secondList = secondBytes.buffer.asUint8List();
 
   for (var y = 0; y < height; y++) {
-    final firstY = ((y + 0.5) * first.height / height).floor().clamp(0, first.height - 1);
-    final secondY = ((y + 0.5) * second.height / height).floor().clamp(0, second.height - 1);
+    final firstY = ((y + 0.5) * first.height / height) - 0.5;
+    final secondY = ((y + 0.5) * second.height / height) - 0.5;
 
     for (var x = 0; x < width; x++) {
-      final firstX = ((x + 0.5) * first.width / width).floor().clamp(0, first.width - 1);
-      final secondX = ((x + 0.5) * second.width / width).floor().clamp(0, second.width - 1);
-      final firstOffset = (firstY * first.width + firstX) * 4;
-      final secondOffset = (secondY * second.width + secondX) * 4;
+      final firstX = ((x + 0.5) * first.width / width) - 0.5;
+      final secondX = ((x + 0.5) * second.width / width) - 0.5;
+      final firstPixel = _sampleRgbaBilinear(firstList, first.width, first.height, firstX, firstY);
+      final secondPixel = _sampleRgbaBilinear(secondList, second.width, second.height, secondX, secondY);
       final outputOffset = (y * width + x) * 4;
 
-      final redDelta = (firstList[firstOffset] - secondList[secondOffset]).abs();
-      final greenDelta = (firstList[firstOffset + 1] - secondList[secondOffset + 1]).abs();
-      final blueDelta = (firstList[firstOffset + 2] - secondList[secondOffset + 2]).abs();
-      final alphaDelta = (firstList[firstOffset + 3] - secondList[secondOffset + 3]).abs();
+      final redDelta = (firstPixel.$1 - secondPixel.$1).abs();
+      final greenDelta = (firstPixel.$2 - secondPixel.$2).abs();
+      final blueDelta = (firstPixel.$3 - secondPixel.$3).abs();
+      final alphaDelta = (firstPixel.$4 - secondPixel.$4).abs();
       final distance =
           ((redDelta * redDelta * 0.299) +
               (greenDelta * greenDelta * 0.587) +
@@ -1218,6 +1224,33 @@ Future<ui.Image> _buildHeatmapImage(ui.Image first, ui.Image second) async {
   }
 
   return ui.decodeImageFromPixelsSync(output, width, height, ui.PixelFormat.rgba8888);
+}
+
+(double, double, double, double) _sampleRgbaBilinear(Uint8List pixels, int width, int height, double x, double y) {
+  final x0 = x.floor().clamp(0, width - 1);
+  final y0 = y.floor().clamp(0, height - 1);
+  final x1 = (x0 + 1).clamp(0, width - 1);
+  final y1 = (y0 + 1).clamp(0, height - 1);
+  final tx = (x - x0).clamp(0.0, 1.0);
+  final ty = (y - y0).clamp(0.0, 1.0);
+
+  final topLeft = (y0 * width + x0) * 4;
+  final topRight = (y0 * width + x1) * 4;
+  final bottomLeft = (y1 * width + x0) * 4;
+  final bottomRight = (y1 * width + x1) * 4;
+
+  double channel(int offset) {
+    final top = pixels[topLeft + offset] * (1 - tx) + pixels[topRight + offset] * tx;
+    final bottom = pixels[bottomLeft + offset] * (1 - tx) + pixels[bottomRight + offset] * tx;
+    return top * (1 - ty) + bottom * ty;
+  }
+
+  return (
+    channel(0),
+    channel(1),
+    channel(2),
+    channel(3),
+  );
 }
 
 (int, int, int) _heatmapColor(double intensity) {
@@ -1338,8 +1371,8 @@ Future<ImageProvider> _buildCompareImageProvider(BooruItem item, Booru booru) as
     item: item,
     checkForReferer: true,
   );
-  final settingsHandler = SettingsHandler.instance;
   final isAvif = url.contains('.avif');
+  final SettingsHandler settingsHandler = SettingsHandler.instance;
 
   return isAvif
       ? CustomNetworkAvifImage(
