@@ -295,6 +295,23 @@ void registerAllSettings() {
 
   registry.register(
     boolSetting(
+      key: .staggeredPageBoundaries,
+      getDefaultValue: () => false,
+      categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.previewGrid],
+      supportsPerBooru: true,
+      dependsOn: [.previewDisplay],
+      enabledWhen: ([BuildContext? context]) =>
+          _val<PreviewDisplayMode>(.previewDisplay, context) == PreviewDisplayMode.staggered,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.interface.staggeredPageBoundaries,
+        subtitle: (ctx) => ctx.loc.settings.interface.staggeredPageBoundariesHelp,
+      ),
+    ),
+  );
+
+  registry.register(
+    boolSetting(
       key: .showBottomSearchbar,
       getDefaultValue: () => true,
       categories: [SettingCategory.interface],

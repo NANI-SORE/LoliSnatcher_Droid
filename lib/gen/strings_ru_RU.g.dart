@@ -2121,7 +2121,14 @@ class _Translations$settings$interface$ru_RU extends Translations$settings$inter
   @override
   String get previewDisplayFallbackHelp =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayFallbackHelp', {}) ??
-      'Это будет использоваться, когда опция Ступенчатый невозможна';
+      'Это будет использоваться, когда опция Шахматный невозможна';
+  @override
+  String get staggeredPageBoundaries =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.staggeredPageBoundaries', {}) ?? 'Шахматная сетка слева направо';
+  @override
+  String get staggeredPageBoundariesHelp =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.staggeredPageBoundariesHelp', {}) ??
+      'Группировать превью в шахматной сетке в строки слева направо и разделять загруженные страницы';
   @override
   String get dontScaleImages => TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImages', {}) ?? 'Не масштабировать изображения';
   @override
@@ -4823,7 +4830,12 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayFallback', {}) ?? 'Резервное отображение превью',
           'settings.interface.previewDisplayFallbackHelp' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayFallbackHelp', {}) ??
-                'Это будет использоваться, когда опция Ступенчатый невозможна',
+                'Это будет использоваться, когда опция Шахматный невозможна',
+          'settings.interface.staggeredPageBoundaries' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.staggeredPageBoundaries', {}) ?? 'Шахматная сетка слева направо',
+          'settings.interface.staggeredPageBoundariesHelp' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.staggeredPageBoundariesHelp', {}) ??
+                'Группировать превью в шахматной сетке в строки слева направо и разделять загруженные страницы',
           'settings.interface.dontScaleImages' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImages', {}) ?? 'Не масштабировать изображения',
           'settings.interface.dontScaleImagesSubtitle' =>
@@ -4967,15 +4979,15 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionsAsk', {}) ?? '- Спросить - всегда спрашивать, как поделиться',
           'settings.viewer.shareActionsPostURL' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionsPostURL', {}) ?? '- Ссылка на пост',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.viewer.shareActionsFileURL' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionsFileURL', {}) ??
                 '- Ссылка на файл - делиться прямой ссылкой на оригинальный файл (может не работать с некоторыми сайтами)',
           'settings.viewer.shareActionsPostURLFileURLFileWithTags' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionsPostURLFileURLFileWithTags', {}) ??
                 '- Ссылка на пост/Ссылка на файл/Файл с тегами - делиться ссылкой/файлом и тегами, которые ты выберешь',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.viewer.shareActionsFile' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionsFile', {}) ??
                 '- Файл - делиться самим файлом, может занять некоторое время для загрузки, прогресс будет показан на кнопке Поделиться',
@@ -5976,6 +5988,9 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'tagView.copiedFileURL', {}) ?? 'Ссылка на файл скопирована в буфер обмена',
           'tagView.tagPreviews' => TranslationOverrides.string(_root.$meta, 'tagView.tagPreviews', {}) ?? 'Предпросмотры тегов',
           'tagView.currentState' => TranslationOverrides.string(_root.$meta, 'tagView.currentState', {}) ?? 'Текущее состояние',
+          _ => null,
+        } ??
+        switch (path) {
           'tagView.history' => TranslationOverrides.string(_root.$meta, 'tagView.history', {}) ?? 'История',
           'tagView.failedToLoadPreviewPage' =>
             TranslationOverrides.string(_root.$meta, 'tagView.failedToLoadPreviewPage', {}) ?? 'Не удалось загрузить страницу предпросмотра',
@@ -6006,9 +6021,6 @@ extension on TranslationsRuRu {
                 'Ввведи и нажми кнопку Добавить для включения метки в список',
           'pinnedTags.selectExistingLabel' =>
             TranslationOverrides.string(_root.$meta, 'pinnedTags.selectExistingLabel', {}) ?? 'Выбери существующую метку',
-          _ => null,
-        } ??
-        switch (path) {
           'pinnedTags.tagPinned' => TranslationOverrides.string(_root.$meta, 'pinnedTags.tagPinned', {}) ?? 'Тег закреплен',
           'pinnedTags.pinnedForBooru' =>
             ({required String name, required String labels}) =>
@@ -6057,9 +6069,6 @@ extension on TranslationsRuRu {
           'searchBar.range' => TranslationOverrides.string(_root.$meta, 'searchBar.range', {}) ?? 'Диапазон',
           'searchBar.popular' => TranslationOverrides.string(_root.$meta, 'searchBar.popular', {}) ?? 'Популярное',
           'searchBar.selectDate' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDate', {}) ?? 'Выбери дату',
-          _ => null,
-        } ??
-        switch (path) {
           'searchBar.selectDatesRange' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDatesRange', {}) ?? 'Выбери диапазон дат',
           'searchBar.history' => TranslationOverrides.string(_root.$meta, 'searchBar.history', {}) ?? 'История',
           'searchBar.more' => TranslationOverrides.string(_root.$meta, 'searchBar.more', {}) ?? '…',

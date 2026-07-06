@@ -32,6 +32,7 @@ enum SettingKey {
   previewMode,
   previewDisplay,
   previewDisplayFallback,
+  staggeredPageBoundaries,
   appMode,
   handSide,
   showBottomSearchbar,
@@ -216,6 +217,7 @@ abstract class SX {
   static const previewMode = TypedKey<PreviewQuality>(SettingKey.previewMode);
   static const previewDisplay = TypedKey<PreviewDisplayMode>(SettingKey.previewDisplay);
   static const previewDisplayFallback = TypedKey<PreviewDisplayMode>(SettingKey.previewDisplayFallback);
+  static const staggeredPageBoundaries = TypedKey<bool>(SettingKey.staggeredPageBoundaries);
   static const appMode = TypedKey<AppMode>(SettingKey.appMode);
   static const handSide = TypedKey<HandSide>(SettingKey.handSide);
   static const showBottomSearchbar = TypedKey<bool>(SettingKey.showBottomSearchbar);

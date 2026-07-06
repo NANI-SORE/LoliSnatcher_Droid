@@ -517,6 +517,8 @@
             "previewDisplay": "Preview display",
             "previewDisplayFallback": "Preview display fallback",
             "previewDisplayFallbackHelp": "This will be used when Staggered option is not possible",
+            "staggeredPageBoundaries": "Left-to-right staggered pages",
+            "staggeredPageBoundariesHelp": "Group staggered thumbnails into left-to-right rows and keep each fetched page separated",
             "dontScaleImages": "Don't scale images",
             "dontScaleImagesSubtitle": "May reduce performance",
             "dontScaleImagesWarningTitle": "Warning",

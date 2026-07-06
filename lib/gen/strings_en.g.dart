@@ -2649,6 +2649,15 @@ class Translations$settings$interface$en {
       TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayFallbackHelp', {}) ??
       'This will be used when Staggered option is not possible';
 
+  /// en: 'Left-to-right staggered pages'
+  String get staggeredPageBoundaries =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.staggeredPageBoundaries', {}) ?? 'Left-to-right staggered pages';
+
+  /// en: 'Group staggered thumbnails into left-to-right rows and keep each fetched page separated'
+  String get staggeredPageBoundariesHelp =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.staggeredPageBoundariesHelp', {}) ??
+      'Group staggered thumbnails into left-to-right rows and keep each fetched page separated';
+
   /// en: 'Don't scale images'
   String get dontScaleImages => TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImages', {}) ?? 'Don\'t scale images';
 
@@ -5843,6 +5852,11 @@ extension on Translations {
           'settings.interface.previewDisplayFallbackHelp' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayFallbackHelp', {}) ??
                 'This will be used when Staggered option is not possible',
+          'settings.interface.staggeredPageBoundaries' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.staggeredPageBoundaries', {}) ?? 'Left-to-right staggered pages',
+          'settings.interface.staggeredPageBoundariesHelp' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.staggeredPageBoundariesHelp', {}) ??
+                'Group staggered thumbnails into left-to-right rows and keep each fetched page separated',
           'settings.interface.dontScaleImages' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImages', {}) ?? 'Don\'t scale images',
           'settings.interface.dontScaleImagesSubtitle' =>
@@ -5979,15 +5993,15 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionsAsk', {}) ?? '- Ask - always ask what to share',
           'settings.viewer.shareActionsPostURL' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionsPostURL', {}) ?? '- Post URL',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.viewer.shareActionsFileURL' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionsFileURL', {}) ??
                 '- File URL - shares direct link to the original file (may not work with some sites)',
           'settings.viewer.shareActionsPostURLFileURLFileWithTags' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionsPostURLFileURLFileWithTags', {}) ??
                 '- Post URL/File URL/File with tags - shares url/file and tags which you select',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.viewer.shareActionsFile' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionsFile', {}) ??
                 '- File - shares the file itself, may take some time to load, progress will be shown on the Share button',
@@ -6942,6 +6956,9 @@ extension on Translations {
           'tagView.copiedFileURL' => TranslationOverrides.string(_root.$meta, 'tagView.copiedFileURL', {}) ?? 'Copied file URL to clipboard',
           'tagView.tagPreviews' => TranslationOverrides.string(_root.$meta, 'tagView.tagPreviews', {}) ?? 'Tag previews',
           'tagView.currentState' => TranslationOverrides.string(_root.$meta, 'tagView.currentState', {}) ?? 'Current state',
+          _ => null,
+        } ??
+        switch (path) {
           'tagView.history' => TranslationOverrides.string(_root.$meta, 'tagView.history', {}) ?? 'History',
           'tagView.failedToLoadPreviewPage' =>
             TranslationOverrides.string(_root.$meta, 'tagView.failedToLoadPreviewPage', {}) ?? 'Failed to load preview page',
@@ -6971,9 +6988,6 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'pinnedTags.typeAndPressAdd', {}) ?? 'Type and press Add button to include a label',
           'pinnedTags.selectExistingLabel' =>
             TranslationOverrides.string(_root.$meta, 'pinnedTags.selectExistingLabel', {}) ?? 'Select existing label',
-          _ => null,
-        } ??
-        switch (path) {
           'pinnedTags.tagPinned' => TranslationOverrides.string(_root.$meta, 'pinnedTags.tagPinned', {}) ?? 'Tag pinned',
           'pinnedTags.pinnedForBooru' =>
             ({required String name, required String labels}) =>
@@ -7022,9 +7036,6 @@ extension on Translations {
           'searchBar.range' => TranslationOverrides.string(_root.$meta, 'searchBar.range', {}) ?? 'Range',
           'searchBar.popular' => TranslationOverrides.string(_root.$meta, 'searchBar.popular', {}) ?? 'Popular',
           'searchBar.selectDate' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDate', {}) ?? 'Select date',
-          _ => null,
-        } ??
-        switch (path) {
           'searchBar.selectDatesRange' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDatesRange', {}) ?? 'Select dates range',
           'searchBar.history' => TranslationOverrides.string(_root.$meta, 'searchBar.history', {}) ?? 'History',
           'searchBar.more' => TranslationOverrides.string(_root.$meta, 'searchBar.more', {}) ?? '…',
