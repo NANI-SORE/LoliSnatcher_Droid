@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
-import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/image/custom_network_image.dart';
 
@@ -30,7 +29,6 @@ enum _DifferenceColorMode {
 enum _CompareBackground {
   black,
   white,
-  checkered,
 }
 
 enum _RenderedPreviewSide {
@@ -90,6 +88,8 @@ class _ImageComparePage extends StatefulWidget {
 class _ImageComparePageState extends State<_ImageComparePage> {
   final TransformationController firstController = TransformationController();
   final TransformationController secondController = TransformationController();
+  late final Future<ImageProvider> _firstProviderFuture;
+  late final Future<ImageProvider> _secondProviderFuture;
 
   _ImageCompareMode mode = _ImageCompareMode.split;
   bool syncZoom = true;
@@ -110,10 +110,14 @@ class _ImageComparePageState extends State<_ImageComparePage> {
   BooruItem get secondItem => imagesSwapped ? widget.first : widget.second;
   Booru get firstBooru => imagesSwapped ? widget.secondBooru : widget.firstBooru;
   Booru get secondBooru => imagesSwapped ? widget.firstBooru : widget.secondBooru;
+  Future<ImageProvider> get firstProviderFuture => imagesSwapped ? _secondProviderFuture : _firstProviderFuture;
+  Future<ImageProvider> get secondProviderFuture => imagesSwapped ? _firstProviderFuture : _secondProviderFuture;
 
   @override
   void initState() {
     super.initState();
+    _firstProviderFuture = _buildCompareImageProvider(widget.first, widget.firstBooru);
+    _secondProviderFuture = _buildCompareImageProvider(widget.second, widget.secondBooru);
     firstController.addListener(() => _syncController(firstController, secondController));
     secondController.addListener(() => _syncController(secondController, firstController));
   }
@@ -146,6 +150,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
     final effectiveMode = mode == _ImageCompareMode.heatmap && !_isHeatmapModeSupported
         ? _ImageCompareMode.difference
         : mode;
+    final appBarForeground = _foregroundForCompareBackground(effectiveMode, compareBackground);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -154,11 +159,21 @@ class _ImageComparePageState extends State<_ImageComparePage> {
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.white,
+        foregroundColor: appBarForeground,
+        iconTheme: IconThemeData(color: appBarForeground),
+        actionsIconTheme: IconThemeData(color: appBarForeground),
+        title: _ImageCompareResolutionTitle(
+          first: firstItem,
+          second: secondItem,
+          color: appBarForeground,
+        ),
         actions: [
           IconButton(
             tooltip: controlsVisible ? context.loc.hide : context.loc.show,
-            icon: Icon(controlsVisible ? Icons.visibility_off : Icons.visibility),
+            icon: Icon(
+              controlsVisible ? Icons.visibility_off : Icons.visibility,
+              color: appBarForeground,
+            ),
             onPressed: () {
               setState(() {
                 controlsVisible = !controlsVisible;
@@ -362,6 +377,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
       child: _InteractiveCompareImage(
         item: firstItem,
         booru: firstBooru,
+        providerFuture: firstProviderFuture,
         controller: firstController,
         onTap: _toggleControls,
       ),
@@ -370,6 +386,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
       child: _InteractiveCompareImage(
         item: secondItem,
         booru: secondBooru,
+        providerFuture: secondProviderFuture,
         controller: secondController,
         onTap: _toggleControls,
       ),
@@ -436,6 +453,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
                     _CompareImage(
                       item: secondItem,
                       booru: secondBooru,
+                      providerFuture: secondProviderFuture,
                     ),
                     Positioned(
                       left: 0,
@@ -457,6 +475,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
                             child: _CompareImage(
                               item: firstItem,
                               booru: firstBooru,
+                              providerFuture: firstProviderFuture,
                               drawBackground: false,
                             ),
                           ),
@@ -483,9 +502,9 @@ class _ImageComparePageState extends State<_ImageComparePage> {
               ),
             Positioned(
               left: isHorizontal ? transformedHandleOffset : 0,
-              top: isHorizontal ? safeTop : transformedHandleOffset,
+              top: isHorizontal ? 0 : transformedHandleOffset,
               right: isHorizontal ? null : 0,
-              bottom: isHorizontal ? constraints.maxHeight - safeBottom : null,
+              bottom: isHorizontal ? 0 : null,
               child: SizedBox(
                 width: isHorizontal ? 1 : null,
                 height: isHorizontal ? null : 1,
@@ -553,10 +572,12 @@ class _ImageComparePageState extends State<_ImageComparePage> {
                 _CompareImage(
                   item: firstItem,
                   booru: firstBooru,
+                  providerFuture: firstProviderFuture,
                 ),
                 _CompareImage(
                   item: secondItem,
                   booru: secondBooru,
+                  providerFuture: secondProviderFuture,
                   opacity: stackOpacity,
                   drawBackground: false,
                 ),
@@ -583,10 +604,12 @@ class _ImageComparePageState extends State<_ImageComparePage> {
                 _CompareImage(
                   item: firstItem,
                   booru: firstBooru,
+                  providerFuture: firstProviderFuture,
                 ),
                 _CompareImage(
                   item: secondItem,
                   booru: secondBooru,
+                  providerFuture: secondProviderFuture,
                   opacity: flickerShowSecond ? 1 : 0,
                   drawBackground: false,
                 ),
@@ -635,8 +658,10 @@ class _ImageComparePageState extends State<_ImageComparePage> {
                       _RenderedCompareView(
                         firstItem: firstItem,
                         firstBooru: firstBooru,
+                        firstProviderFuture: firstProviderFuture,
                         secondItem: secondItem,
                         secondBooru: secondBooru,
+                        secondProviderFuture: secondProviderFuture,
                         mode: renderMode,
                         differenceColorMode: differenceColorMode,
                         background: compareBackground,
@@ -647,6 +672,9 @@ class _ImageComparePageState extends State<_ImageComparePage> {
                           child: _CompareImage(
                             item: renderedPreviewSide == _RenderedPreviewSide.first ? firstItem : secondItem,
                             booru: renderedPreviewSide == _RenderedPreviewSide.first ? firstBooru : secondBooru,
+                            providerFuture: renderedPreviewSide == _RenderedPreviewSide.first
+                                ? firstProviderFuture
+                                : secondProviderFuture,
                           ),
                         ),
                     ],
@@ -738,9 +766,9 @@ class _CompareControls extends StatelessWidget {
             ],
           );
           final secondaryControls = SizedBox(
-            width: _secondaryControlWidth(context, isCompact),
+            width: _secondaryControlWidth(context, isCompact, constraints.maxWidth),
             height: 48,
-            child: Center(child: _secondaryControl(context)),
+            child: Center(child: _secondaryControl(context, isCompact)),
           );
 
           return SizedBox(
@@ -776,18 +804,18 @@ class _CompareControls extends StatelessWidget {
     );
   }
 
-  double _secondaryControlWidth(BuildContext context, bool isCompact) {
+  double _secondaryControlWidth(BuildContext context, bool isCompact, double availableWidth) {
     return switch (mode) {
       _ImageCompareMode.split => 240,
       _ImageCompareMode.slider => 140,
-      _ImageCompareMode.fade => isCompact ? context.width - 24 : 220,
-      _ImageCompareMode.flicker => isCompact ? context.width - 24 : 220,
-      _ImageCompareMode.difference => isCompact ? context.width - 24 : 450,
+      _ImageCompareMode.fade => isCompact ? availableWidth - 24 : 220,
+      _ImageCompareMode.flicker => isCompact ? availableWidth - 24 : 220,
+      _ImageCompareMode.difference => isCompact ? availableWidth - 24 : 450,
       _ImageCompareMode.heatmap => 210,
     };
   }
 
-  Widget _secondaryControl(BuildContext context) {
+  Widget _secondaryControl(BuildContext context, bool isCompact) {
     return switch (mode) {
       _ImageCompareMode.split => Row(
         mainAxisSize: MainAxisSize.min,
@@ -917,11 +945,6 @@ class _BackgroundToggle extends StatelessWidget {
           value: _CompareBackground.white,
           tooltip: 'White',
           icon: Icon(Icons.light_mode),
-        ),
-        ButtonSegment(
-          value: _CompareBackground.checkered,
-          tooltip: 'Checkered',
-          icon: Icon(Icons.grid_4x4),
         ),
       ],
       selected: {selected},
@@ -1164,16 +1187,69 @@ class _DoubleTapInteractiveViewerState extends State<_DoubleTapInteractiveViewer
   }
 }
 
+class _ImageCompareResolutionTitle extends StatelessWidget {
+  const _ImageCompareResolutionTitle({
+    required this.first,
+    required this.second,
+    required this.color,
+  });
+
+  final BooruItem first;
+  final BooruItem second;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final firstResolution = _formatResolution(first);
+    final secondResolution = _formatResolution(second);
+    if (firstResolution == null && secondResolution == null) {
+      return const SizedBox.shrink();
+    }
+
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(
+        '${firstResolution ?? '?'}  /  ${secondResolution ?? '?'}',
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ).copyWith(color: color),
+      ),
+    );
+  }
+}
+
+Color _foregroundForCompareBackground(_ImageCompareMode mode, _CompareBackground background) {
+  final isRenderedMode = mode == _ImageCompareMode.difference || mode == _ImageCompareMode.heatmap;
+  if (isRenderedMode && background == _CompareBackground.white) {
+    return Colors.black;
+  }
+
+  return Colors.white;
+}
+
+String? _formatResolution(BooruItem item) {
+  final width = item.fileWidth ?? item.sampleWidth ?? item.previewWidth;
+  final height = item.fileHeight ?? item.sampleHeight ?? item.previewHeight;
+  if (width == null || height == null || width <= 0 || height <= 0) {
+    return null;
+  }
+
+  return '${width.round()}x${height.round()}';
+}
+
 class _InteractiveCompareImage extends StatelessWidget {
   const _InteractiveCompareImage({
     required this.item,
     required this.booru,
+    required this.providerFuture,
     required this.controller,
     required this.onTap,
   });
 
   final BooruItem item;
   final Booru booru;
+  final Future<ImageProvider> providerFuture;
   final TransformationController controller;
   final VoidCallback onTap;
 
@@ -1190,6 +1266,7 @@ class _InteractiveCompareImage extends StatelessWidget {
             child: _CompareImage(
               item: item,
               booru: booru,
+              providerFuture: providerFuture,
             ),
           ),
         );
@@ -1204,8 +1281,10 @@ class _RenderedCompareView extends StatefulWidget {
   const _RenderedCompareView({
     required this.firstItem,
     required this.firstBooru,
+    required this.firstProviderFuture,
     required this.secondItem,
     required this.secondBooru,
+    required this.secondProviderFuture,
     required this.mode,
     required this.differenceColorMode,
     required this.background,
@@ -1214,8 +1293,10 @@ class _RenderedCompareView extends StatefulWidget {
 
   final BooruItem firstItem;
   final Booru firstBooru;
+  final Future<ImageProvider> firstProviderFuture;
   final BooruItem secondItem;
   final Booru secondBooru;
+  final Future<ImageProvider> secondProviderFuture;
   final _RenderedCompareMode mode;
   final _DifferenceColorMode differenceColorMode;
   final _CompareBackground background;
@@ -1234,16 +1315,18 @@ class _RenderedCompareViewState extends State<_RenderedCompareView> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.firstItem != widget.firstItem ||
         oldWidget.firstBooru != widget.firstBooru ||
+        oldWidget.firstProviderFuture != widget.firstProviderFuture ||
         oldWidget.secondItem != widget.secondItem ||
         oldWidget.secondBooru != widget.secondBooru ||
+        oldWidget.secondProviderFuture != widget.secondProviderFuture ||
         oldWidget.mode != widget.mode) {
       imagesFuture = _loadImages();
     }
   }
 
   Future<({ui.Image first, ui.Image second, ui.Image? heatmap, double? matchPercent})> _loadImages() async {
-    final firstProvider = await _buildCompareImageProvider(widget.firstItem, widget.firstBooru);
-    final secondProvider = await _buildCompareImageProvider(widget.secondItem, widget.secondBooru);
+    final firstProvider = await widget.firstProviderFuture;
+    final secondProvider = await widget.secondProviderFuture;
     final first = await _resolveImage(firstProvider);
     final second = await _resolveImage(secondProvider);
 
@@ -1339,9 +1422,8 @@ class _RenderedComparePainter extends CustomPainter {
           return;
         }
 
-        canvas.saveLayer(comparisonBounds, Paint()..blendMode = BlendMode.plus);
-        canvas.clipRect(comparisonBounds);
         canvas.saveLayer(comparisonBounds, _differenceLayerPaint(differenceColorMode));
+        canvas.clipRect(comparisonBounds);
         _drawImageToDestination(
           canvas,
           first,
@@ -1356,7 +1438,6 @@ class _RenderedComparePainter extends CustomPainter {
             ..filterQuality = FilterQuality.high
             ..blendMode = BlendMode.difference,
         );
-        canvas.restore();
         canvas.restore();
       case _RenderedCompareMode.heatmap:
         final heatmapImage = heatmap;
@@ -1445,25 +1526,35 @@ void _drawCompareBackground(Canvas canvas, Rect bounds, _CompareBackground backg
       canvas.drawRect(bounds, Paint()..color = Colors.black);
     case _CompareBackground.white:
       canvas.drawRect(bounds, Paint()..color = Colors.white);
-    case _CompareBackground.checkered:
-      canvas.drawRect(bounds, Paint()..color = const Color(0xFFE0E0E0));
-      const tile = 20.0;
-      final paint = Paint()..color = const Color(0xFF9E9E9E);
-      for (var y = bounds.top; y < bounds.bottom; y += tile) {
-        for (var x = bounds.left; x < bounds.right; x += tile) {
-          final row = ((y - bounds.top) / tile).floor();
-          final col = ((x - bounds.left) / tile).floor();
-          if ((row + col).isEven) {
-            canvas.drawRect(Rect.fromLTWH(x, y, tile, tile), paint);
-          }
-        }
-      }
   }
 }
 
 Paint _differenceLayerPaint(_DifferenceColorMode colorMode) {
   return switch (colorMode) {
-    _DifferenceColorMode.raw => Paint(),
+    _DifferenceColorMode.raw =>
+      Paint()
+        ..colorFilter = const ColorFilter.matrix([
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0.299,
+          0.587,
+          0.114,
+          0,
+          0,
+        ]),
     _DifferenceColorMode.warm =>
       Paint()
         ..colorFilter = const ColorFilter.matrix([
@@ -1482,10 +1573,10 @@ Paint _differenceLayerPaint(_DifferenceColorMode colorMode) {
           0.04,
           0,
           0,
+          0.299,
+          0.587,
+          0.114,
           0,
-          0,
-          0,
-          1,
           0,
         ]),
     _DifferenceColorMode.luma =>
@@ -1506,10 +1597,10 @@ Paint _differenceLayerPaint(_DifferenceColorMode colorMode) {
           0.114,
           0,
           0,
+          0.299,
+          0.587,
+          0.114,
           0,
-          0,
-          0,
-          1,
           0,
         ]),
   };
@@ -1718,12 +1809,14 @@ class _CompareImage extends StatefulWidget {
   const _CompareImage({
     required this.item,
     required this.booru,
+    required this.providerFuture,
     this.opacity = 1,
     this.drawBackground = true,
   });
 
   final BooruItem item;
   final Booru booru;
+  final Future<ImageProvider> providerFuture;
   final double opacity;
   final bool drawBackground;
 
@@ -1732,14 +1825,14 @@ class _CompareImage extends StatefulWidget {
 }
 
 class _CompareImageState extends State<_CompareImage> {
-  late Future<ImageProvider> providerFuture = _buildCompareImageProvider(widget.item, widget.booru);
+  late Future<ImageProvider> providerFuture = widget.providerFuture;
 
   @override
   void didUpdateWidget(covariant _CompareImage oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.item != widget.item || oldWidget.booru != widget.booru) {
-      providerFuture = _buildCompareImageProvider(widget.item, widget.booru);
+    if (oldWidget.providerFuture != widget.providerFuture) {
+      providerFuture = widget.providerFuture;
     }
   }
 
@@ -1807,6 +1900,8 @@ Future<ImageProvider> _buildCompareImageProvider(BooruItem item, Booru booru) as
     checkForReferer: true,
   );
   final isAvif = url.contains('.avif');
+
+  final settingsHandler = SettingsHandler.instance;
 
   return isAvif
       ? CustomNetworkAvifImage(
