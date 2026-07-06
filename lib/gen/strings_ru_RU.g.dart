@@ -2408,13 +2408,8 @@ class _Translations$settings$downloads$ru_RU extends Translations$settings$downl
   @override
   String get invertSelection => TranslationOverrides.string(_root.$meta, 'settings.downloads.invertSelection', {}) ?? 'Инвертировать выделение';
   @override
-  String get copySelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.copySelected', {}) ?? 'Копировать выбранное';
-  @override
-  String get copyPostUrls => TranslationOverrides.string(_root.$meta, 'settings.downloads.copyPostUrls', {}) ?? 'Копировать ссылки на посты';
-  @override
-  String get copyFileUrls => TranslationOverrides.string(_root.$meta, 'settings.downloads.copyFileUrls', {}) ?? 'Копировать ссылки на файлы';
-  @override
-  String get copyTags => TranslationOverrides.string(_root.$meta, 'settings.downloads.copyTags', {}) ?? 'Копировать теги';
+  String get reverseSelectedOrder =>
+      TranslationOverrides.string(_root.$meta, 'settings.downloads.reverseSelectedOrder', {}) ?? 'Обратить порядок выбранных';
   @override
   String get hideSelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Скрыть выбранное';
   @override
@@ -4949,13 +4944,8 @@ extension on TranslationsRuRu {
                 'Отправка файлов ограничена: ${max} шт.',
           'settings.downloads.invertSelection' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.invertSelection', {}) ?? 'Инвертировать выделение',
-          'settings.downloads.copySelected' =>
-            TranslationOverrides.string(_root.$meta, 'settings.downloads.copySelected', {}) ?? 'Копировать выбранное',
-          'settings.downloads.copyPostUrls' =>
-            TranslationOverrides.string(_root.$meta, 'settings.downloads.copyPostUrls', {}) ?? 'Копировать ссылки на посты',
-          'settings.downloads.copyFileUrls' =>
-            TranslationOverrides.string(_root.$meta, 'settings.downloads.copyFileUrls', {}) ?? 'Копировать ссылки на файлы',
-          'settings.downloads.copyTags' => TranslationOverrides.string(_root.$meta, 'settings.downloads.copyTags', {}) ?? 'Копировать теги',
+          'settings.downloads.reverseSelectedOrder' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.reverseSelectedOrder', {}) ?? 'Обратить порядок выбранных',
           'settings.downloads.hideSelected' => TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Скрыть выбранное',
           'settings.downloads.refreshSelectedMetadata' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.refreshSelectedMetadata', {}) ?? 'Обновить метаданные выбранных',
@@ -5855,12 +5845,12 @@ extension on TranslationsRuRu {
           'searchBar.free' => TranslationOverrides.string(_root.$meta, 'searchBar.free', {}) ?? 'Бесплатно',
           'searchBar.single' => TranslationOverrides.string(_root.$meta, 'searchBar.single', {}) ?? 'Одиночный',
           'searchBar.range' => TranslationOverrides.string(_root.$meta, 'searchBar.range', {}) ?? 'Диапазон',
-          _ => null,
-        } ??
-        switch (path) {
           'searchBar.popular' => TranslationOverrides.string(_root.$meta, 'searchBar.popular', {}) ?? 'Популярное',
           'searchBar.selectDate' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDate', {}) ?? 'Выбери дату',
           'searchBar.selectDatesRange' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDatesRange', {}) ?? 'Выбери диапазон дат',
+          _ => null,
+        } ??
+        switch (path) {
           'searchBar.history' => TranslationOverrides.string(_root.$meta, 'searchBar.history', {}) ?? 'История',
           'searchBar.more' => TranslationOverrides.string(_root.$meta, 'searchBar.more', {}) ?? '…',
           'mobileHome.selectBooruForWebview' =>

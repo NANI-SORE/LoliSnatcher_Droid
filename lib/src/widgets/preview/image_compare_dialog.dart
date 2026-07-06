@@ -27,6 +27,17 @@ enum _DifferenceColorMode {
   luma,
 }
 
+enum _CompareBackground {
+  black,
+  white,
+  checkered,
+}
+
+enum _RenderedPreviewSide {
+  first,
+  second,
+}
+
 bool get _isHeatmapModeSupported => ui.ImageFilter.isShaderFilterSupported;
 
 List<_ImageCompareMode> get _availableCompareModes {
@@ -88,6 +99,8 @@ class _ImageComparePageState extends State<_ImageComparePage> {
   double flickerIntervalMs = 500;
   Axis stackAxis = Axis.horizontal;
   _DifferenceColorMode differenceColorMode = _DifferenceColorMode.raw;
+  _CompareBackground compareBackground = _CompareBackground.black;
+  _RenderedPreviewSide? renderedPreviewSide;
   bool imagesSwapped = false;
   bool controlsVisible = true;
   bool flickerShowSecond = false;
@@ -180,62 +193,66 @@ class _ImageComparePageState extends State<_ImageComparePage> {
                 curve: Curves.easeInOutCubic,
                 child: IgnorePointer(
                   ignoring: !controlsVisible,
-                  child: SafeArea(
-                    top: false,
-                    child: _CompareControls(
-                      mode: effectiveMode,
-                      syncZoom: syncZoom,
-                      stackOpacity: stackOpacity,
-                      flickerIntervalMs: flickerIntervalMs,
-                      stackAxis: stackAxis,
-                      differenceColorMode: differenceColorMode,
-                      onResetView: _resetViewAndControls,
-                      onSwapImages: () {
-                        setState(() {
-                          imagesSwapped = !imagesSwapped;
-                        });
-                      },
-                      onModeChanged: (value) {
-                        setState(() {
-                          if (value == _ImageCompareMode.heatmap && !_isHeatmapModeSupported) {
-                            return;
-                          }
-                          mode = value;
-                          _resetTransforms();
-                          _resetModeControls();
-                          _syncFlickerTimer();
-                        });
-                      },
-                      onSyncZoomChanged: (value) {
-                        setState(() {
-                          syncZoom = value;
-                          if (syncZoom) {
-                            _syncSecondControllerToFirst();
-                          }
-                        });
-                      },
-                      onStackOpacityChanged: (value) {
-                        setState(() {
-                          stackOpacity = value;
-                        });
-                      },
-                      onFlickerIntervalChanged: (value) {
-                        setState(() {
-                          flickerIntervalMs = value;
-                          _syncFlickerTimer();
-                        });
-                      },
-                      onStackAxisChanged: (value) {
-                        setState(() {
-                          stackAxis = value;
-                        });
-                      },
-                      onDifferenceColorModeChanged: (value) {
-                        setState(() {
-                          differenceColorMode = value;
-                        });
-                      },
-                    ),
+                  child: _CompareControls(
+                    mode: effectiveMode,
+                    syncZoom: syncZoom,
+                    stackOpacity: stackOpacity,
+                    flickerIntervalMs: flickerIntervalMs,
+                    flickerShowSecond: flickerShowSecond,
+                    stackAxis: stackAxis,
+                    differenceColorMode: differenceColorMode,
+                    compareBackground: compareBackground,
+                    onResetView: _resetViewAndControls,
+                    onSwapImages: () {
+                      setState(() {
+                        imagesSwapped = !imagesSwapped;
+                      });
+                    },
+                    onModeChanged: (value) {
+                      setState(() {
+                        if (value == _ImageCompareMode.heatmap && !_isHeatmapModeSupported) {
+                          return;
+                        }
+                        mode = value;
+                        _resetTransforms();
+                        _resetModeControls();
+                        _syncFlickerTimer();
+                      });
+                    },
+                    onSyncZoomChanged: (value) {
+                      setState(() {
+                        syncZoom = value;
+                        if (syncZoom) {
+                          _syncSecondControllerToFirst();
+                        }
+                      });
+                    },
+                    onStackOpacityChanged: (value) {
+                      setState(() {
+                        stackOpacity = value;
+                      });
+                    },
+                    onFlickerIntervalChanged: (value) {
+                      setState(() {
+                        flickerIntervalMs = value;
+                        _syncFlickerTimer();
+                      });
+                    },
+                    onStackAxisChanged: (value) {
+                      setState(() {
+                        stackAxis = value;
+                      });
+                    },
+                    onDifferenceColorModeChanged: (value) {
+                      setState(() {
+                        differenceColorMode = value;
+                      });
+                    },
+                    onCompareBackgroundChanged: (value) {
+                      setState(() {
+                        compareBackground = value;
+                      });
+                    },
                   ),
                 ),
               ),
@@ -262,6 +279,8 @@ class _ImageComparePageState extends State<_ImageComparePage> {
     flickerShowSecond = false;
     stackAxis = Axis.horizontal;
     differenceColorMode = _DifferenceColorMode.raw;
+    compareBackground = _CompareBackground.black;
+    renderedPreviewSide = null;
   }
 
   void _toggleControls() {
@@ -415,8 +434,8 @@ class _ImageComparePageState extends State<_ImageComparePage> {
                   fit: StackFit.expand,
                   children: [
                     _CompareImage(
-                      item: firstItem,
-                      booru: firstBooru,
+                      item: secondItem,
+                      booru: secondBooru,
                     ),
                     Positioned(
                       left: 0,
@@ -436,8 +455,8 @@ class _ImageComparePageState extends State<_ImageComparePage> {
                             width: constraints.maxWidth,
                             height: constraints.maxHeight,
                             child: _CompareImage(
-                              item: secondItem,
-                              booru: secondBooru,
+                              item: firstItem,
+                              booru: firstBooru,
                               drawBackground: false,
                             ),
                           ),
@@ -582,20 +601,59 @@ class _ImageComparePageState extends State<_ImageComparePage> {
   Widget _renderedCompareView(BuildContext context, _RenderedCompareMode renderMode) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        return _DoubleTapInteractiveViewer(
-          controller: firstController,
-          onTap: _toggleControls,
-          child: SizedBox(
-            width: constraints.maxWidth,
-            height: constraints.maxHeight,
-            child: _RenderedCompareView(
-              firstItem: firstItem,
-              firstBooru: firstBooru,
-              secondItem: secondItem,
-              secondBooru: secondBooru,
-              mode: renderMode,
-              differenceColorMode: differenceColorMode,
-            ),
+        return GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onLongPressStart: (details) {
+            setState(() {
+              renderedPreviewSide = details.localPosition.dx < constraints.maxWidth / 2
+                  ? _RenderedPreviewSide.first
+                  : _RenderedPreviewSide.second;
+            });
+          },
+          onLongPressEnd: (_) {
+            setState(() {
+              renderedPreviewSide = null;
+            });
+          },
+          onLongPressCancel: () {
+            setState(() {
+              renderedPreviewSide = null;
+            });
+          },
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _DoubleTapInteractiveViewer(
+                controller: firstController,
+                onTap: _toggleControls,
+                child: SizedBox(
+                  width: constraints.maxWidth,
+                  height: constraints.maxHeight,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _RenderedCompareView(
+                        firstItem: firstItem,
+                        firstBooru: firstBooru,
+                        secondItem: secondItem,
+                        secondBooru: secondBooru,
+                        mode: renderMode,
+                        differenceColorMode: differenceColorMode,
+                        background: compareBackground,
+                        badgeBottomInset: _bottomControlsInset(context),
+                      ),
+                      if (renderedPreviewSide != null)
+                        IgnorePointer(
+                          child: _CompareImage(
+                            item: renderedPreviewSide == _RenderedPreviewSide.first ? firstItem : secondItem,
+                            booru: renderedPreviewSide == _RenderedPreviewSide.first ? firstBooru : secondBooru,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -609,8 +667,10 @@ class _CompareControls extends StatelessWidget {
     required this.syncZoom,
     required this.stackOpacity,
     required this.flickerIntervalMs,
+    required this.flickerShowSecond,
     required this.stackAxis,
     required this.differenceColorMode,
+    required this.compareBackground,
     required this.onResetView,
     required this.onSwapImages,
     required this.onModeChanged,
@@ -619,6 +679,7 @@ class _CompareControls extends StatelessWidget {
     required this.onFlickerIntervalChanged,
     required this.onStackAxisChanged,
     required this.onDifferenceColorModeChanged,
+    required this.onCompareBackgroundChanged,
   });
 
   static const double height = 64;
@@ -629,8 +690,10 @@ class _CompareControls extends StatelessWidget {
   final bool syncZoom;
   final double stackOpacity;
   final double flickerIntervalMs;
+  final bool flickerShowSecond;
   final Axis stackAxis;
   final _DifferenceColorMode differenceColorMode;
+  final _CompareBackground compareBackground;
   final VoidCallback onResetView;
   final VoidCallback onSwapImages;
   final ValueChanged<_ImageCompareMode> onModeChanged;
@@ -639,11 +702,13 @@ class _CompareControls extends StatelessWidget {
   final ValueChanged<double> onFlickerIntervalChanged;
   final ValueChanged<Axis> onStackAxisChanged;
   final ValueChanged<_DifferenceColorMode> onDifferenceColorModeChanged;
+  final ValueChanged<_CompareBackground> onCompareBackgroundChanged;
 
   @override
   Widget build(BuildContext context) {
     final availableModes = _availableCompareModes;
     final selectedMode = availableModes.contains(mode) ? mode : availableModes.first;
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
 
     return Material(
       color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.86),
@@ -679,28 +744,31 @@ class _CompareControls extends StatelessWidget {
           );
 
           return SizedBox(
-            height: isCompact ? compactHeight : height,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: isCompact
-                  ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        primaryControls,
-                        const SizedBox(height: 4),
-                        secondaryControls,
-                      ],
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        primaryControls,
-                        const SizedBox(width: 12),
-                        secondaryControls,
-                      ],
-                    ),
+            height: (isCompact ? compactHeight : height) + bottomPadding,
+            child: Padding(
+              padding: EdgeInsets.only(bottom: bottomPadding),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: isCompact
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          primaryControls,
+                          const SizedBox(height: 4),
+                          secondaryControls,
+                        ],
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          primaryControls,
+                          const SizedBox(width: 12),
+                          secondaryControls,
+                        ],
+                      ),
+              ),
             ),
           );
         },
@@ -714,8 +782,8 @@ class _CompareControls extends StatelessWidget {
       _ImageCompareMode.slider => 140,
       _ImageCompareMode.fade => isCompact ? context.width - 24 : 220,
       _ImageCompareMode.flicker => isCompact ? context.width - 24 : 220,
-      _ImageCompareMode.difference => 220,
-      _ImageCompareMode.heatmap => 0,
+      _ImageCompareMode.difference => isCompact ? context.width - 24 : 450,
+      _ImageCompareMode.heatmap => 210,
     };
   }
 
@@ -748,6 +816,14 @@ class _CompareControls extends StatelessWidget {
       _ImageCompareMode.flicker => Row(
         children: [
           const Icon(Icons.timer_outlined),
+          SizedBox(
+            width: 32,
+            child: Text(
+              flickerShowSecond ? '2' : '1',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
           Expanded(
             child: Slider(
               value: flickerIntervalMs,
@@ -759,29 +835,98 @@ class _CompareControls extends StatelessWidget {
           ),
         ],
       ),
-      _ImageCompareMode.difference => SegmentedButton<_DifferenceColorMode>(
-        segments: const [
-          ButtonSegment(
-            value: _DifferenceColorMode.raw,
-            tooltip: 'Raw',
-            icon: Icon(Icons.tonality),
+      _ImageCompareMode.difference => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SegmentedButton<_DifferenceColorMode>(
+            segments: const [
+              ButtonSegment(
+                value: _DifferenceColorMode.raw,
+                tooltip: 'Raw',
+                icon: _DifferenceModeSwatch(colors: [Colors.red, Colors.green, Colors.blue]),
+              ),
+              ButtonSegment(
+                value: _DifferenceColorMode.warm,
+                tooltip: 'Warm',
+                icon: _DifferenceModeSwatch(colors: [Colors.red, Colors.orange, Colors.yellow]),
+              ),
+              ButtonSegment(
+                value: _DifferenceColorMode.luma,
+                tooltip: 'Luma',
+                icon: _DifferenceModeSwatch(colors: [Colors.black54, Colors.grey, Colors.white]),
+              ),
+            ],
+            selected: {differenceColorMode},
+            onSelectionChanged: (value) => onDifferenceColorModeChanged(value.first),
           ),
-          ButtonSegment(
-            value: _DifferenceColorMode.warm,
-            tooltip: 'Warm',
-            icon: Icon(Icons.gradient),
-          ),
-          ButtonSegment(
-            value: _DifferenceColorMode.luma,
-            tooltip: 'Luma',
-            icon: Icon(Icons.monochrome_photos),
+          const SizedBox(width: 8),
+          _BackgroundToggle(
+            selected: compareBackground,
+            onChanged: onCompareBackgroundChanged,
           ),
         ],
-        selected: {differenceColorMode},
-        onSelectionChanged: (value) => onDifferenceColorModeChanged(value.first),
       ),
-      _ImageCompareMode.heatmap => const SizedBox.shrink(),
+      _ImageCompareMode.heatmap => _BackgroundToggle(
+        selected: compareBackground,
+        onChanged: onCompareBackgroundChanged,
+      ),
     };
+  }
+}
+
+class _DifferenceModeSwatch extends StatelessWidget {
+  const _DifferenceModeSwatch({required this.colors});
+
+  final List<Color> colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 20,
+      height: 20,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: Theme.of(context).dividerColor),
+          gradient: LinearGradient(colors: colors),
+        ),
+      ),
+    );
+  }
+}
+
+class _BackgroundToggle extends StatelessWidget {
+  const _BackgroundToggle({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final _CompareBackground selected;
+  final ValueChanged<_CompareBackground> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<_CompareBackground>(
+      segments: const [
+        ButtonSegment(
+          value: _CompareBackground.black,
+          tooltip: 'Black',
+          icon: Icon(Icons.dark_mode),
+        ),
+        ButtonSegment(
+          value: _CompareBackground.white,
+          tooltip: 'White',
+          icon: Icon(Icons.light_mode),
+        ),
+        ButtonSegment(
+          value: _CompareBackground.checkered,
+          tooltip: 'Checkered',
+          icon: Icon(Icons.grid_4x4),
+        ),
+      ],
+      selected: {selected},
+      onSelectionChanged: (value) => onChanged(value.first),
+    );
   }
 }
 
@@ -1063,6 +1208,8 @@ class _RenderedCompareView extends StatefulWidget {
     required this.secondBooru,
     required this.mode,
     required this.differenceColorMode,
+    required this.background,
+    required this.badgeBottomInset,
   });
 
   final BooruItem firstItem;
@@ -1071,13 +1218,16 @@ class _RenderedCompareView extends StatefulWidget {
   final Booru secondBooru;
   final _RenderedCompareMode mode;
   final _DifferenceColorMode differenceColorMode;
+  final _CompareBackground background;
+  final double badgeBottomInset;
 
   @override
   State<_RenderedCompareView> createState() => _RenderedCompareViewState();
 }
 
 class _RenderedCompareViewState extends State<_RenderedCompareView> {
-  late Future<({ui.Image first, ui.Image second, ui.Image? heatmap})> imagesFuture = _loadImages();
+  late Future<({ui.Image first, ui.Image second, ui.Image? heatmap, double? matchPercent})> imagesFuture =
+      _loadImages();
 
   @override
   void didUpdateWidget(covariant _RenderedCompareView oldWidget) {
@@ -1091,16 +1241,27 @@ class _RenderedCompareViewState extends State<_RenderedCompareView> {
     }
   }
 
-  Future<({ui.Image first, ui.Image second, ui.Image? heatmap})> _loadImages() async {
+  Future<({ui.Image first, ui.Image second, ui.Image? heatmap, double? matchPercent})> _loadImages() async {
     final firstProvider = await _buildCompareImageProvider(widget.firstItem, widget.firstBooru);
     final secondProvider = await _buildCompareImageProvider(widget.secondItem, widget.secondBooru);
     final first = await _resolveImage(firstProvider);
     final second = await _resolveImage(secondProvider);
 
+    if (widget.mode == _RenderedCompareMode.heatmap) {
+      final heatmap = await _buildHeatmapImage(first, second);
+      return (
+        first: first,
+        second: second,
+        heatmap: heatmap.image,
+        matchPercent: heatmap.matchPercent,
+      );
+    }
+
     return (
       first: first,
       second: second,
-      heatmap: widget.mode == _RenderedCompareMode.heatmap ? await _buildHeatmapImage(first, second) : null,
+      heatmap: null,
+      matchPercent: await _calculateMatchPercent(first, second),
     );
   }
 
@@ -1108,7 +1269,7 @@ class _RenderedCompareViewState extends State<_RenderedCompareView> {
   Widget build(BuildContext context) {
     return ColoredBox(
       color: Colors.black,
-      child: FutureBuilder<({ui.Image first, ui.Image second, ui.Image? heatmap})>(
+      child: FutureBuilder<({ui.Image first, ui.Image second, ui.Image? heatmap, double? matchPercent})>(
         future: imagesFuture,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -1120,14 +1281,26 @@ class _RenderedCompareViewState extends State<_RenderedCompareView> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          return CustomPaint(
-            painter: _RenderedComparePainter(
-              first: snapshot.data!.first,
-              second: snapshot.data!.second,
-              heatmap: snapshot.data!.heatmap,
-              mode: widget.mode,
-              differenceColorMode: widget.differenceColorMode,
-            ),
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              CustomPaint(
+                painter: _RenderedComparePainter(
+                  first: snapshot.data!.first,
+                  second: snapshot.data!.second,
+                  heatmap: snapshot.data!.heatmap,
+                  mode: widget.mode,
+                  differenceColorMode: widget.differenceColorMode,
+                  background: widget.background,
+                ),
+              ),
+              if (snapshot.data!.matchPercent != null)
+                Positioned(
+                  left: 16,
+                  bottom: widget.badgeBottomInset + 16,
+                  child: _MatchPercentBadge(matchPercent: snapshot.data!.matchPercent!),
+                ),
+            ],
           );
         },
       ),
@@ -1142,6 +1315,7 @@ class _RenderedComparePainter extends CustomPainter {
     required this.heatmap,
     required this.mode,
     required this.differenceColorMode,
+    required this.background,
   });
 
   final ui.Image first;
@@ -1149,11 +1323,12 @@ class _RenderedComparePainter extends CustomPainter {
   final ui.Image? heatmap;
   final _RenderedCompareMode mode;
   final _DifferenceColorMode differenceColorMode;
+  final _CompareBackground background;
 
   @override
   void paint(Canvas canvas, Size size) {
     final bounds = Offset.zero & size;
-    canvas.drawRect(bounds, Paint()..color = Colors.black);
+    _drawCompareBackground(canvas, bounds, background);
 
     switch (mode) {
       case _RenderedCompareMode.difference:
@@ -1164,8 +1339,9 @@ class _RenderedComparePainter extends CustomPainter {
           return;
         }
 
-        canvas.saveLayer(comparisonBounds, _differenceLayerPaint(differenceColorMode));
+        canvas.saveLayer(comparisonBounds, Paint()..blendMode = BlendMode.plus);
         canvas.clipRect(comparisonBounds);
+        canvas.saveLayer(comparisonBounds, _differenceLayerPaint(differenceColorMode));
         _drawImageToDestination(
           canvas,
           first,
@@ -1180,6 +1356,7 @@ class _RenderedComparePainter extends CustomPainter {
             ..filterQuality = FilterQuality.high
             ..blendMode = BlendMode.difference,
         );
+        canvas.restore();
         canvas.restore();
       case _RenderedCompareMode.heatmap:
         final heatmapImage = heatmap;
@@ -1231,7 +1408,56 @@ class _RenderedComparePainter extends CustomPainter {
         oldDelegate.second != second ||
         oldDelegate.heatmap != heatmap ||
         oldDelegate.mode != mode ||
-        oldDelegate.differenceColorMode != differenceColorMode;
+        oldDelegate.differenceColorMode != differenceColorMode ||
+        oldDelegate.background != background;
+  }
+}
+
+class _MatchPercentBadge extends StatelessWidget {
+  const _MatchPercentBadge({required this.matchPercent});
+
+  final double matchPercent;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.56),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Text(
+          '${matchPercent.toStringAsFixed(1)}%',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+void _drawCompareBackground(Canvas canvas, Rect bounds, _CompareBackground background) {
+  switch (background) {
+    case _CompareBackground.black:
+      canvas.drawRect(bounds, Paint()..color = Colors.black);
+    case _CompareBackground.white:
+      canvas.drawRect(bounds, Paint()..color = Colors.white);
+    case _CompareBackground.checkered:
+      canvas.drawRect(bounds, Paint()..color = const Color(0xFFE0E0E0));
+      const tile = 20.0;
+      final paint = Paint()..color = const Color(0xFF9E9E9E);
+      for (var y = bounds.top; y < bounds.bottom; y += tile) {
+        for (var x = bounds.left; x < bounds.right; x += tile) {
+          final row = ((y - bounds.top) / tile).floor();
+          final col = ((x - bounds.left) / tile).floor();
+          if ((row + col).isEven) {
+            canvas.drawRect(Rect.fromLTWH(x, y, tile, tile), paint);
+          }
+        }
+      }
   }
 }
 
@@ -1289,7 +1515,7 @@ Paint _differenceLayerPaint(_DifferenceColorMode colorMode) {
   };
 }
 
-Future<ui.Image> _buildHeatmapImage(ui.Image first, ui.Image second) async {
+Future<({ui.Image image, double matchPercent})> _buildHeatmapImage(ui.Image first, ui.Image second) async {
   final firstBytes = await first.toByteData(format: ui.ImageByteFormat.rawRgba);
   final secondBytes = await second.toByteData(format: ui.ImageByteFormat.rawRgba);
   if (firstBytes == null || secondBytes == null) {
@@ -1303,6 +1529,7 @@ Future<ui.Image> _buildHeatmapImage(ui.Image first, ui.Image second) async {
     secondBytes: secondBytes,
   );
   final output = Uint8List(width * height * 4);
+  double intensitySum = 0;
 
   for (var y = 0; y < height; y++) {
     final firstY = ((y + 0.5) * first.height / height) - 0.5;
@@ -1326,16 +1553,68 @@ Future<ui.Image> _buildHeatmapImage(ui.Image first, ui.Image second) async {
               (alphaDelta * alphaDelta * 0.25)) /
           (255 * 255 * 1.25);
       final intensity = distance.clamp(0.0, 1.0);
+      intensitySum += intensity;
       final color = _heatmapColor(intensity);
 
       output[outputOffset] = color.$1;
       output[outputOffset + 1] = color.$2;
       output[outputOffset + 2] = color.$3;
-      output[outputOffset + 3] = 255;
+      output[outputOffset + 3] = intensity < 0.015 ? 0 : 255;
+    }
+
+    if (y % 32 == 0) {
+      await Future<void>.delayed(Duration.zero);
     }
   }
 
-  return ui.decodeImageFromPixelsSync(output, width, height, ui.PixelFormat.rgba8888);
+  return (
+    image: ui.decodeImageFromPixelsSync(output, width, height, ui.PixelFormat.rgba8888),
+    matchPercent: (1 - (intensitySum / (width * height))).clamp(0.0, 1.0) * 100,
+  );
+}
+
+Future<double> _calculateMatchPercent(ui.Image first, ui.Image second) async {
+  final firstBytes = await first.toByteData(format: ui.ImageByteFormat.rawRgba);
+  final secondBytes = await second.toByteData(format: ui.ImageByteFormat.rawRgba);
+  if (firstBytes == null || secondBytes == null) {
+    throw StateError('Unable to read image pixels for match comparison');
+  }
+
+  final (:width, :height, :firstList, :secondList) = _comparisonPixelData(
+    first: first,
+    second: second,
+    firstBytes: firstBytes,
+    secondBytes: secondBytes,
+  );
+  double intensitySum = 0;
+
+  for (var y = 0; y < height; y++) {
+    final firstY = ((y + 0.5) * first.height / height) - 0.5;
+    final secondY = ((y + 0.5) * second.height / height) - 0.5;
+
+    for (var x = 0; x < width; x++) {
+      final firstX = ((x + 0.5) * first.width / width) - 0.5;
+      final secondX = ((x + 0.5) * second.width / width) - 0.5;
+      final firstPixel = _sampleRgbaBilinear(firstList, first.width, first.height, firstX, firstY);
+      final secondPixel = _sampleRgbaBilinear(secondList, second.width, second.height, secondX, secondY);
+      final redDelta = (firstPixel.$1 - secondPixel.$1).abs();
+      final greenDelta = (firstPixel.$2 - secondPixel.$2).abs();
+      final blueDelta = (firstPixel.$3 - secondPixel.$3).abs();
+      final alphaDelta = (firstPixel.$4 - secondPixel.$4).abs();
+      intensitySum +=
+          ((redDelta * redDelta * 0.299) +
+              (greenDelta * greenDelta * 0.587) +
+              (blueDelta * blueDelta * 0.114) +
+              (alphaDelta * alphaDelta * 0.25)) /
+          (255 * 255 * 1.25);
+    }
+
+    if (y % 32 == 0) {
+      await Future<void>.delayed(Duration.zero);
+    }
+  }
+
+  return (1 - (intensitySum / (width * height))).clamp(0.0, 1.0) * 100;
 }
 
 ({
@@ -1487,6 +1766,22 @@ class _CompareImageState extends State<_CompareImage> {
               return Image(
                 image: snapshot.data!,
                 fit: BoxFit.contain,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) {
+                    return child;
+                  }
+
+                  final expectedBytes = loadingProgress.expectedTotalBytes;
+                  final progress = expectedBytes == null ? null : loadingProgress.cumulativeBytesLoaded / expectedBytes;
+
+                  return Center(
+                    child: SizedBox(
+                      width: 42,
+                      height: 42,
+                      child: CircularProgressIndicator(value: progress),
+                    ),
+                  );
+                },
                 errorBuilder: (context, error, stackTrace) {
                   return _CompareImageError(
                     details: error.toString(),
@@ -1512,7 +1807,6 @@ Future<ImageProvider> _buildCompareImageProvider(BooruItem item, Booru booru) as
     checkForReferer: true,
   );
   final isAvif = url.contains('.avif');
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
 
   return isAvif
       ? CustomNetworkAvifImage(

@@ -2997,17 +2997,9 @@ class Translations$settings$downloads$en {
   /// en: 'Invert selection'
   String get invertSelection => TranslationOverrides.string(_root.$meta, 'settings.downloads.invertSelection', {}) ?? 'Invert selection';
 
-  /// en: 'Copy selected'
-  String get copySelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.copySelected', {}) ?? 'Copy selected';
-
-  /// en: 'Copy post URLs'
-  String get copyPostUrls => TranslationOverrides.string(_root.$meta, 'settings.downloads.copyPostUrls', {}) ?? 'Copy post URLs';
-
-  /// en: 'Copy file URLs'
-  String get copyFileUrls => TranslationOverrides.string(_root.$meta, 'settings.downloads.copyFileUrls', {}) ?? 'Copy file URLs';
-
-  /// en: 'Copy tags'
-  String get copyTags => TranslationOverrides.string(_root.$meta, 'settings.downloads.copyTags', {}) ?? 'Copy tags';
+  /// en: 'Reverse selected order'
+  String get reverseSelectedOrder =>
+      TranslationOverrides.string(_root.$meta, 'settings.downloads.reverseSelectedOrder', {}) ?? 'Reverse selected order';
 
   /// en: 'Hide selected'
   String get hideSelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Hide selected';
@@ -5915,10 +5907,8 @@ extension on Translations {
                 'File sharing is limited to ${max} item(s)',
           'settings.downloads.invertSelection' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.invertSelection', {}) ?? 'Invert selection',
-          'settings.downloads.copySelected' => TranslationOverrides.string(_root.$meta, 'settings.downloads.copySelected', {}) ?? 'Copy selected',
-          'settings.downloads.copyPostUrls' => TranslationOverrides.string(_root.$meta, 'settings.downloads.copyPostUrls', {}) ?? 'Copy post URLs',
-          'settings.downloads.copyFileUrls' => TranslationOverrides.string(_root.$meta, 'settings.downloads.copyFileUrls', {}) ?? 'Copy file URLs',
-          'settings.downloads.copyTags' => TranslationOverrides.string(_root.$meta, 'settings.downloads.copyTags', {}) ?? 'Copy tags',
+          'settings.downloads.reverseSelectedOrder' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.reverseSelectedOrder', {}) ?? 'Reverse selected order',
           'settings.downloads.hideSelected' => TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Hide selected',
           'settings.downloads.refreshSelectedMetadata' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.refreshSelectedMetadata', {}) ?? 'Refresh selected metadata',
@@ -6781,12 +6771,12 @@ extension on Translations {
           'searchBar.free' => TranslationOverrides.string(_root.$meta, 'searchBar.free', {}) ?? 'Free',
           'searchBar.single' => TranslationOverrides.string(_root.$meta, 'searchBar.single', {}) ?? 'Single',
           'searchBar.range' => TranslationOverrides.string(_root.$meta, 'searchBar.range', {}) ?? 'Range',
-          _ => null,
-        } ??
-        switch (path) {
           'searchBar.popular' => TranslationOverrides.string(_root.$meta, 'searchBar.popular', {}) ?? 'Popular',
           'searchBar.selectDate' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDate', {}) ?? 'Select date',
           'searchBar.selectDatesRange' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDatesRange', {}) ?? 'Select dates range',
+          _ => null,
+        } ??
+        switch (path) {
           'searchBar.history' => TranslationOverrides.string(_root.$meta, 'searchBar.history', {}) ?? 'History',
           'searchBar.more' => TranslationOverrides.string(_root.$meta, 'searchBar.more', {}) ?? '…',
           'mobileHome.selectBooruForWebview' =>

@@ -201,11 +201,11 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
                   drawTopBorder: !canCompareSelected,
                 ),
                 SettingsButton(
-                  name: context.loc.settings.downloads.copySelected,
-                  icon: const Icon(Icons.copy),
+                  name: context.loc.settings.downloads.reverseSelectedOrder,
+                  icon: const Icon(Icons.swap_vert),
                   action: () {
                     Navigator.of(sheetContext).pop();
-                    downloadsController.showCopySelectedDialog(context);
+                    downloadsController.reverseSelectedOrder();
                   },
                 ),
                 if (canCompareSelected)

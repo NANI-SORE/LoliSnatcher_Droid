@@ -20,7 +20,6 @@ import 'package:lolisnatcher/src/services/get_perms.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/kaomoji.dart';
-import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/gallery/share_action_dialog.dart';
 import 'package:lolisnatcher/src/widgets/preview/image_compare_dialog.dart';
 
@@ -291,57 +290,15 @@ class DownloadsDrawerController {
     shareActionController(context).showDialog(context);
   }
 
-  void showCopySelectedDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return SettingsDialog(
-          title: Text(context.loc.settings.downloads.copySelected),
-          contentItems: [
-            SettingsButton(
-              name: context.loc.settings.downloads.copyPostUrls,
-              icon: const Icon(Icons.link),
-              action: () {
-                Navigator.of(dialogContext).pop();
-                shareSelectedText(
-                  context,
-                  (item) => item.postURL,
-                  requirePostUrl: true,
-                );
-              },
-              drawTopBorder: true,
-            ),
-            SettingsButton(
-              name: context.loc.settings.downloads.copyFileUrls,
-              icon: const Icon(Icons.file_present_outlined),
-              action: () {
-                Navigator.of(dialogContext).pop();
-                shareSelectedText(context, (item) => item.fileURL);
-              },
-            ),
-            SettingsButton(
-              name: context.loc.settings.downloads.copyTags,
-              icon: const Icon(Icons.sell_outlined),
-              action: () {
-                Navigator.of(dialogContext).pop();
-                shareSelectedText(
-                  context,
-                  (item) => item.tagsList.map((tag) => tag.fullString).where((tag) => tag.isNotEmpty).join(' '),
-                );
-              },
-              drawBottomBorder: false,
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   void invertSelection() {
     final selectedItems = Set<BooruItem>.identity()..addAll(searchHandler.currentSelected);
     searchHandler.currentTab.selected.assignAll(
       searchHandler.currentFetched.where((item) => !selectedItems.contains(item)),
     );
+  }
+
+  void reverseSelectedOrder() {
+    searchHandler.currentTab.selected.assignAll([...searchHandler.currentSelected.reversed]);
   }
 
   void hideSelected() {
