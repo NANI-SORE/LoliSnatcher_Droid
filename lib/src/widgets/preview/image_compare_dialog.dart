@@ -4,12 +4,13 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:lolisnatcher/gen/strings.g.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/image/custom_network_image.dart';
@@ -2599,13 +2600,11 @@ Future<ImageProvider> _buildCompareImageProvider(BooruItem item, Booru booru) as
   );
   final isAvif = url.contains('.avif');
 
-  final settingsHandler = SettingsHandler.instance;
-
   return isAvif
       ? CustomNetworkAvifImage(
           url,
           headers: headers,
-          withCache: settingsHandler.mediaCache,
+          withCache: SX.mediaCache.value,
           cacheFolder: 'media',
           fileNameExtras: item.fileNameExtras,
           withCaptchaCheck: true,
@@ -2613,7 +2612,7 @@ Future<ImageProvider> _buildCompareImageProvider(BooruItem item, Booru booru) as
       : CustomNetworkImage(
           url,
           headers: headers,
-          withCache: settingsHandler.mediaCache,
+          withCache: SX.mediaCache.value,
           cacheFolder: 'media',
           fileNameExtras: item.fileNameExtras,
           withCaptchaCheck: true,
@@ -2635,7 +2634,7 @@ Future<ImageProvider> _buildCompareThumbnailProvider(BooruItem item, Booru booru
   return CustomNetworkImage(
     url,
     headers: headers,
-    withCache: SettingsHandler.instance.thumbnailCache,
+    withCache: SX.thumbnailCache.value,
     cacheFolder: 'thumbnails',
     fileNameExtras: item.fileNameExtras,
     withCaptchaCheck: true,
