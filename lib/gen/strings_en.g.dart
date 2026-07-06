@@ -2994,6 +2994,63 @@ class Translations$settings$downloads$en {
   String fileShareLimit({required int max}) =>
       TranslationOverrides.string(_root.$meta, 'settings.downloads.fileShareLimit', {'max': max}) ?? 'File sharing is limited to ${max} item(s)';
 
+  /// en: 'Invert selection'
+  String get invertSelection => TranslationOverrides.string(_root.$meta, 'settings.downloads.invertSelection', {}) ?? 'Invert selection';
+
+  /// en: 'Copy selected'
+  String get copySelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.copySelected', {}) ?? 'Copy selected';
+
+  /// en: 'Copy post URLs'
+  String get copyPostUrls => TranslationOverrides.string(_root.$meta, 'settings.downloads.copyPostUrls', {}) ?? 'Copy post URLs';
+
+  /// en: 'Copy file URLs'
+  String get copyFileUrls => TranslationOverrides.string(_root.$meta, 'settings.downloads.copyFileUrls', {}) ?? 'Copy file URLs';
+
+  /// en: 'Copy tags'
+  String get copyTags => TranslationOverrides.string(_root.$meta, 'settings.downloads.copyTags', {}) ?? 'Copy tags';
+
+  /// en: 'Hide selected'
+  String get hideSelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Hide selected';
+
+  /// en: 'Refresh selected metadata'
+  String get refreshSelectedMetadata =>
+      TranslationOverrides.string(_root.$meta, 'settings.downloads.refreshSelectedMetadata', {}) ?? 'Refresh selected metadata';
+
+  /// en: 'Refresh metadata'
+  String get refreshDelayTitle => TranslationOverrides.string(_root.$meta, 'settings.downloads.refreshDelayTitle', {}) ?? 'Refresh metadata';
+
+  /// en: 'Delay between items (ms)'
+  String get refreshDelayMessage =>
+      TranslationOverrides.string(_root.$meta, 'settings.downloads.refreshDelayMessage', {}) ?? 'Delay between items (ms)';
+
+  /// en: 'No selected items can be refreshed'
+  String get refreshSelectedUnavailable =>
+      TranslationOverrides.string(_root.$meta, 'settings.downloads.refreshSelectedUnavailable', {}) ?? 'No selected items can be refreshed';
+
+  /// en: 'Compare selected'
+  String get compareSelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareSelected', {}) ?? 'Compare selected';
+
+  /// en: 'Split'
+  String get compareSplit => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareSplit', {}) ?? 'Split';
+
+  /// en: 'Slider'
+  String get compareSlider => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareSlider', {}) ?? 'Slider';
+
+  /// en: 'Sync zoom'
+  String get compareZoomSync => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareZoomSync', {}) ?? 'Sync zoom';
+
+  /// en: 'Fade'
+  String get compareFade => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareFade', {}) ?? 'Fade';
+
+  /// en: 'Flicker'
+  String get compareFlicker => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareFlicker', {}) ?? 'Flicker';
+
+  /// en: 'Difference'
+  String get compareDifference => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareDifference', {}) ?? 'Difference';
+
+  /// en: 'Heatmap'
+  String get compareHeatmap => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareHeatmap', {}) ?? 'Heatmap';
+
   /// en: 'Updating data…'
   String get updatingData => TranslationOverrides.string(_root.$meta, 'settings.downloads.updatingData', {}) ?? 'Updating data…';
 }
@@ -5856,6 +5913,31 @@ extension on Translations {
             ({required int max}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.downloads.fileShareLimit', {'max': max}) ??
                 'File sharing is limited to ${max} item(s)',
+          'settings.downloads.invertSelection' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.invertSelection', {}) ?? 'Invert selection',
+          'settings.downloads.copySelected' => TranslationOverrides.string(_root.$meta, 'settings.downloads.copySelected', {}) ?? 'Copy selected',
+          'settings.downloads.copyPostUrls' => TranslationOverrides.string(_root.$meta, 'settings.downloads.copyPostUrls', {}) ?? 'Copy post URLs',
+          'settings.downloads.copyFileUrls' => TranslationOverrides.string(_root.$meta, 'settings.downloads.copyFileUrls', {}) ?? 'Copy file URLs',
+          'settings.downloads.copyTags' => TranslationOverrides.string(_root.$meta, 'settings.downloads.copyTags', {}) ?? 'Copy tags',
+          'settings.downloads.hideSelected' => TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Hide selected',
+          'settings.downloads.refreshSelectedMetadata' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.refreshSelectedMetadata', {}) ?? 'Refresh selected metadata',
+          'settings.downloads.refreshDelayTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.refreshDelayTitle', {}) ?? 'Refresh metadata',
+          'settings.downloads.refreshDelayMessage' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.refreshDelayMessage', {}) ?? 'Delay between items (ms)',
+          'settings.downloads.refreshSelectedUnavailable' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.refreshSelectedUnavailable', {}) ?? 'No selected items can be refreshed',
+          'settings.downloads.compareSelected' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.compareSelected', {}) ?? 'Compare selected',
+          'settings.downloads.compareSplit' => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareSplit', {}) ?? 'Split',
+          'settings.downloads.compareSlider' => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareSlider', {}) ?? 'Slider',
+          'settings.downloads.compareZoomSync' => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareZoomSync', {}) ?? 'Sync zoom',
+          'settings.downloads.compareFade' => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareFade', {}) ?? 'Fade',
+          'settings.downloads.compareFlicker' => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareFlicker', {}) ?? 'Flicker',
+          'settings.downloads.compareDifference' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.compareDifference', {}) ?? 'Difference',
+          'settings.downloads.compareHeatmap' => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareHeatmap', {}) ?? 'Heatmap',
           'settings.downloads.updatingData' => TranslationOverrides.string(_root.$meta, 'settings.downloads.updatingData', {}) ?? 'Updating data…',
           'settings.database.title' => TranslationOverrides.string(_root.$meta, 'settings.database.title', {}) ?? 'Database',
           'settings.database.indexingDatabase' =>
@@ -6699,6 +6781,9 @@ extension on Translations {
           'searchBar.free' => TranslationOverrides.string(_root.$meta, 'searchBar.free', {}) ?? 'Free',
           'searchBar.single' => TranslationOverrides.string(_root.$meta, 'searchBar.single', {}) ?? 'Single',
           'searchBar.range' => TranslationOverrides.string(_root.$meta, 'searchBar.range', {}) ?? 'Range',
+          _ => null,
+        } ??
+        switch (path) {
           'searchBar.popular' => TranslationOverrides.string(_root.$meta, 'searchBar.popular', {}) ?? 'Popular',
           'searchBar.selectDate' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDate', {}) ?? 'Select date',
           'searchBar.selectDatesRange' => TranslationOverrides.string(_root.$meta, 'searchBar.selectDatesRange', {}) ?? 'Select dates range',
@@ -6722,9 +6807,6 @@ extension on Translations {
           'desktopHome.addBoorusInSettings' =>
             TranslationOverrides.string(_root.$meta, 'desktopHome.addBoorusInSettings', {}) ?? 'Add boorus in settings',
           'desktopHome.settings' => TranslationOverrides.string(_root.$meta, 'desktopHome.settings', {}) ?? 'Settings',
-          _ => null,
-        } ??
-        switch (path) {
           'desktopHome.save' => TranslationOverrides.string(_root.$meta, 'desktopHome.save', {}) ?? 'Save',
           'desktopHome.noItemsSelected' => TranslationOverrides.string(_root.$meta, 'desktopHome.noItemsSelected', {}) ?? 'No items selected',
           'galleryView.noItems' => TranslationOverrides.string(_root.$meta, 'galleryView.noItems', {}) ?? 'No items',

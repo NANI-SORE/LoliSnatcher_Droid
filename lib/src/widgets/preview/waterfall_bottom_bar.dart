@@ -171,46 +171,104 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
     required bool hasDownloadsSelected,
     required bool hasFavsSelected,
     required bool isAllSelectedFavs,
+    required bool canCompareSelected,
+    required bool canRefreshSelected,
   }) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (dialogContext) {
-        return SettingsDialog(
-          title: Text('${context.loc.galleryButtons.select} (${selectedCount.toFormattedString()})'),
-          contentItems: [
-            if (hasDownloadsSelected)
-              SettingsButton(
-                name:
-                    '${context.loc.settings.downloads.removeSnatchedStatusFromSelected} (${downloadsSelectedCount.toFormattedString()})',
-                icon: const Icon(Icons.file_download_off_outlined),
-                action: () {
-                  Navigator.of(dialogContext).pop();
-                  downloadsController.removeSnatchedStatusFromSelected();
-                },
-                drawTopBorder: true,
-              ),
-            if (!isAllSelectedFavs)
-              SettingsButton(
-                name: '${context.loc.settings.downloads.favouriteSelected} (${unfavSelectedCount.toFormattedString()})',
-                icon: const Icon(Icons.favorite, color: Colors.red),
-                action: () {
-                  Navigator.of(dialogContext).pop();
-                  downloadsController.favouriteSelected();
-                },
-                drawTopBorder: !hasDownloadsSelected,
-              ),
-            if (hasFavsSelected)
-              SettingsButton(
-                name: '${context.loc.settings.downloads.unfavouriteSelected} (${favSelectedCount.toFormattedString()})',
-                icon: const Icon(Icons.favorite_border),
-                action: () {
-                  Navigator.of(dialogContext).pop();
-                  downloadsController.unfavouriteSelected();
-                },
-                drawTopBorder: !hasDownloadsSelected && isAllSelectedFavs,
-                drawBottomBorder: false,
-              ),
-          ],
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final width = MediaQuery.sizeOf(sheetContext).width;
+        final maxSheetWidth = width < 720 ? width : (width * 0.62).clamp(480.0, 680.0);
+
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxSheetWidth),
+            child: SettingsBottomSheet(
+              title: Text('${context.loc.galleryButtons.select} (${selectedCount.toFormattedString()})'),
+              contentPadding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
+              contentItems: [
+                SettingsButton(
+                  name: context.loc.settings.downloads.invertSelection,
+                  icon: const Icon(Icons.flip_to_back),
+                  action: () {
+                    Navigator.of(sheetContext).pop();
+                    downloadsController.invertSelection();
+                  },
+                  drawTopBorder: !canCompareSelected,
+                ),
+                SettingsButton(
+                  name: context.loc.settings.downloads.copySelected,
+                  icon: const Icon(Icons.copy),
+                  action: () {
+                    Navigator.of(sheetContext).pop();
+                    downloadsController.showCopySelectedDialog(context);
+                  },
+                ),
+                if (canCompareSelected)
+                  SettingsButton(
+                    name: context.loc.settings.downloads.compareSelected,
+                    icon: const Icon(Icons.compare),
+                    action: () {
+                      Navigator.of(sheetContext).pop();
+                      downloadsController.compareSelected(context);
+                    },
+                    drawTopBorder: true,
+                  ),
+                SettingsButton(
+                  name: context.loc.settings.downloads.hideSelected,
+                  icon: const Icon(Icons.visibility_off_outlined),
+                  action: () {
+                    Navigator.of(sheetContext).pop();
+                    downloadsController.hideSelected();
+                  },
+                ),
+                if (canRefreshSelected)
+                  SettingsButton(
+                    name: context.loc.settings.downloads.refreshSelectedMetadata,
+                    icon: const Icon(Icons.refresh),
+                    action: () {
+                      Navigator.of(sheetContext).pop();
+                      downloadsController.refreshSelectedMetadata(context);
+                    },
+                  ),
+                if (hasDownloadsSelected)
+                  SettingsButton(
+                    name:
+                        '${context.loc.settings.downloads.removeSnatchedStatusFromSelected} (${downloadsSelectedCount.toFormattedString()})',
+                    icon: const Icon(Icons.file_download_off_outlined),
+                    action: () {
+                      Navigator.of(sheetContext).pop();
+                      downloadsController.removeSnatchedStatusFromSelected();
+                    },
+                  ),
+                if (!isAllSelectedFavs)
+                  SettingsButton(
+                    name:
+                        '${context.loc.settings.downloads.favouriteSelected} (${unfavSelectedCount.toFormattedString()})',
+                    icon: const Icon(Icons.favorite, color: Colors.red),
+                    action: () {
+                      Navigator.of(sheetContext).pop();
+                      downloadsController.favouriteSelected();
+                    },
+                  ),
+                if (hasFavsSelected)
+                  SettingsButton(
+                    name:
+                        '${context.loc.settings.downloads.unfavouriteSelected} (${favSelectedCount.toFormattedString()})',
+                    icon: const Icon(Icons.favorite_border),
+                    action: () {
+                      Navigator.of(sheetContext).pop();
+                      downloadsController.unfavouriteSelected();
+                    },
+                    drawBottomBorder: false,
+                  ),
+              ],
+            ),
+          ),
         );
       },
     );
@@ -233,6 +291,9 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
       final bool isAllSelectedFavs = selectedCount == favSelectedCount;
       final int downloadsSelectedCount = selected.where((item) => item.isSnatched.value == true).length;
       final bool hasDownloadsSelected = downloadsSelectedCount > 0;
+      final bool canCompareSelected =
+          selectedCount == 2 && selected.every((item) => item.mediaType.value.isImageOrAnimation);
+      final bool canRefreshSelected = searchHandler.currentBooru.type?.isFavouritesOrDownloads == true;
 
       return AnimatedSwitcher(
         duration: const Duration(milliseconds: 600),
@@ -310,6 +371,8 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
                                     hasDownloadsSelected: hasDownloadsSelected,
                                     hasFavsSelected: hasFavsSelected,
                                     isAllSelectedFavs: isAllSelectedFavs,
+                                    canCompareSelected: canCompareSelected,
+                                    canRefreshSelected: canRefreshSelected,
                                   ),
                           ),
                         ),

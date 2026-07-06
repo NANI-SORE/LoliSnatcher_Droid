@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'package:get/get.dart' hide FirstWhereOrNullExt;
 
+import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/boorus/hydrus_handler.dart';
+import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
+import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/settings/share_action.dart';
@@ -17,7 +20,9 @@ import 'package:lolisnatcher/src/services/get_perms.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/kaomoji.dart';
+import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/gallery/share_action_dialog.dart';
+import 'package:lolisnatcher/src/widgets/preview/image_compare_dialog.dart';
 
 class DownloadsDrawerController {
   DownloadsDrawerController() {
@@ -286,6 +291,155 @@ class DownloadsDrawerController {
     shareActionController(context).showDialog(context);
   }
 
+  void showCopySelectedDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return SettingsDialog(
+          title: Text(context.loc.settings.downloads.copySelected),
+          contentItems: [
+            SettingsButton(
+              name: context.loc.settings.downloads.copyPostUrls,
+              icon: const Icon(Icons.link),
+              action: () {
+                Navigator.of(dialogContext).pop();
+                shareSelectedText(
+                  context,
+                  (item) => item.postURL,
+                  requirePostUrl: true,
+                );
+              },
+              drawTopBorder: true,
+            ),
+            SettingsButton(
+              name: context.loc.settings.downloads.copyFileUrls,
+              icon: const Icon(Icons.file_present_outlined),
+              action: () {
+                Navigator.of(dialogContext).pop();
+                shareSelectedText(context, (item) => item.fileURL);
+              },
+            ),
+            SettingsButton(
+              name: context.loc.settings.downloads.copyTags,
+              icon: const Icon(Icons.sell_outlined),
+              action: () {
+                Navigator.of(dialogContext).pop();
+                shareSelectedText(
+                  context,
+                  (item) => item.tagsList.map((tag) => tag.fullString).where((tag) => tag.isNotEmpty).join(' '),
+                );
+              },
+              drawBottomBorder: false,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void invertSelection() {
+    final selectedItems = Set<BooruItem>.identity()..addAll(searchHandler.currentSelected);
+    searchHandler.currentTab.selected.assignAll(
+      searchHandler.currentFetched.where((item) => !selectedItems.contains(item)),
+    );
+  }
+
+  void hideSelected() {
+    final selectedItems = Set<BooruItem>.identity()..addAll(searchHandler.currentSelected);
+    final handler = searchHandler.currentTab.booruHandler;
+    handler.fetched.removeWhere(selectedItems.contains);
+    handler.filterFetched();
+    searchHandler.currentTab.selected.clear();
+  }
+
+  void compareSelected(BuildContext context) {
+    final selected = [...searchHandler.currentSelected];
+    if (selected.length != 2 || selected.any((item) => !item.mediaType.value.isImageOrAnimation)) {
+      return;
+    }
+
+    final firstBooru = searchHandler.currentBooru.type?.isFavouritesOrDownloads == true
+        ? _sourceBooruForItem(selected.first) ?? searchHandler.currentBooru
+        : searchHandler.currentBooru;
+    final secondBooru = searchHandler.currentBooru.type?.isFavouritesOrDownloads == true
+        ? _sourceBooruForItem(selected.last) ?? searchHandler.currentBooru
+        : searchHandler.currentBooru;
+
+    showImageCompareDialog(
+      context,
+      selected.first,
+      selected.last,
+      firstBooru: firstBooru,
+      secondBooru: secondBooru,
+    );
+  }
+
+  Future<void> refreshSelectedMetadata(BuildContext context) async {
+    if (searchHandler.currentBooru.type?.isFavouritesOrDownloads != true) {
+      _showNoRefreshableItems(context);
+      return;
+    }
+
+    final selected = [...searchHandler.currentSelected];
+    final refreshableItems = selected
+        .map((item) => (item: item, booru: _sourceBooruForItem(item)))
+        .where((record) => record.booru != null && getHandler(record.booru!).hasLoadItemSupport)
+        .toList();
+
+    if (refreshableItems.isEmpty) {
+      _showNoRefreshableItems(context);
+      return;
+    }
+
+    final delayMs = await _askRefreshDelay(context);
+    if (delayMs == null) {
+      return;
+    }
+
+    updating.value = true;
+    FlashElements.showSnackbar(
+      context: context,
+      title: Text(context.loc.settings.downloads.updatingData, style: const TextStyle(fontSize: 20)),
+      overrideLeadingIconWidget: const SizedBox(
+        width: 50,
+        height: 50,
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      sideColor: Colors.yellow,
+    );
+
+    try {
+      for (int i = 0; i < refreshableItems.length; i++) {
+        final record = refreshableItems[i];
+        final handler = getHandler(record.booru!);
+
+        try {
+          final result = await handler.loadItem(
+            item: record.item,
+            withCapcthaCheck: true,
+          );
+          if (!result.failed && result.item != null) {
+            await settingsHandler.dbHandler.updateBooruItem(
+              result.item!,
+              BooruUpdateMode.urlUpdate,
+            );
+          }
+        } catch (_) {}
+
+        if (delayMs > 0 && i < refreshableItems.length - 1) {
+          await Future.delayed(Duration(milliseconds: delayMs));
+        }
+      }
+    } finally {
+      searchHandler.currentFetched.assignAll([...searchHandler.currentFetched]);
+      searchHandler.currentTab.selected.clear();
+      updating.value = false;
+    }
+  }
+
   ShareActionController shareActionController(BuildContext context) {
     return ShareActionController(
       currentAction: settingsHandler.shareAction,
@@ -330,6 +484,79 @@ class DownloadsDrawerController {
   String? _selectedTagsText() {
     final tags = searchHandler.currentSelected.expand((item) => item.tagsList).toSet().join(' ');
     return tags.isEmpty ? null : tags;
+  }
+
+  Booru? _sourceBooruForItem(BooruItem item) {
+    final itemFileHost = Uri.tryParse(item.fileURL)?.host;
+    final itemPostHost = Uri.tryParse(item.postURL)?.host;
+
+    final booru = settingsHandler.booruList.firstWhereOrNull((booru) {
+      if (booru.type?.isFavouritesOrDownloads == true) {
+        return false;
+      }
+
+      final booruHost = Uri.tryParse(booru.baseURL ?? '')?.host;
+      return (itemPostHost?.isNotEmpty == true &&
+              booruHost?.isNotEmpty == true &&
+              (itemPostHost! == booruHost! ||
+                  switch (booru.type) {
+                    BooruType.IdolSankaku => IdolSankakuHandler.knownUrls.contains(itemPostHost),
+                    BooruType.Sankaku => SankakuHandler.knownPostUrls.contains(itemPostHost),
+                    _ => false,
+                  })) ||
+          (itemFileHost?.isNotEmpty == true && booruHost?.isNotEmpty == true && itemFileHost! == booruHost!);
+    });
+
+    return booru;
+  }
+
+  Future<int?> _askRefreshDelay(BuildContext context) async {
+    final controller = TextEditingController(text: '500');
+    try {
+      return showDialog<int>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: Text(context.loc.settings.downloads.refreshDelayTitle),
+            content: TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: context.loc.settings.downloads.refreshDelayMessage,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(context.loc.cancel),
+              ),
+              TextButton(
+                onPressed: () {
+                  final delay = int.tryParse(controller.text.trim()) ?? 0;
+                  Navigator.of(dialogContext).pop(delay < 0 ? 0 : delay);
+                },
+                child: Text(context.loc.ok),
+              ),
+            ],
+          );
+        },
+      );
+    } finally {
+      controller.dispose();
+    }
+  }
+
+  void _showNoRefreshableItems(BuildContext context) {
+    FlashElements.showSnackbar(
+      context: context,
+      title: Text(
+        context.loc.settings.downloads.refreshSelectedUnavailable,
+        style: const TextStyle(fontSize: 20),
+      ),
+      leadingIcon: Icons.warning_amber,
+      leadingIconColor: Colors.yellow,
+      sideColor: Colors.yellow,
+    );
   }
 
   Future<void> onRetryFailedItem(
