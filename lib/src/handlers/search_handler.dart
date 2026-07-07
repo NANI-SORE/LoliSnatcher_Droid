@@ -14,6 +14,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/server_favorites/server_favorite_models.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
@@ -24,10 +25,12 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
+import 'package:lolisnatcher/src/services/server_favorite_feedback.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/ordered_selection_index.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
+import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
 
 Uuid uuid = const Uuid();
 
@@ -1345,13 +1348,15 @@ class SearchTab {
 
   Future<void> _sendFavouriteToServer(BooruItem item, bool isFavourite) async {
     final settingsHandler = SettingsHandler.instance;
-    final adapter = _serverFavoriteAdapterForItem(item, settingsHandler);
+    final adapter = serverFavoriteAdapterForItem(item, settingsHandler);
     if (adapter == null) return;
 
     final booru = adapter.booru;
     final booruName = booru.name;
     final sendSetting = SX.sendFavouritesToServer.state;
-    final shouldSend = booruName == null ? sendSetting.value : sendSetting.getOverrideFor(booruName) ?? sendSetting.globalValue;
+    final shouldSend = booruName == null
+        ? sendSetting.value
+        : sendSetting.getOverrideFor(booruName) ?? sendSetting.globalValue;
     if (!shouldSend) return;
 
     final capabilities = adapter.capabilities;
@@ -1362,18 +1367,134 @@ class SearchTab {
     if (serverId == null || serverId.isEmpty) return;
     item.serverId = serverId;
 
-    final success = isFavourite ? await adapter.addFavorite(serverId) : await adapter.removeFavorite(serverId);
-    if (!success) {
+    final mutation = isFavourite
+        ? await adapter.addFavoriteResult(serverId)
+        : await adapter.removeFavoriteResult(serverId);
+    ServerFavoriteFeedback.record(
+      action: isFavourite ? ServerFavoriteRequestAction.add : ServerFavoriteRequestAction.remove,
+      status: mutation.success ? ServerFavoriteRequestStatus.success : ServerFavoriteRequestStatus.failed,
+      booruName: adapter.displayName,
+      serverId: serverId,
+      item: item,
+      message: mutation.message,
+      animate: mutation.success,
+    );
+    if (!mutation.success) {
       Logger.Inst().log(
-        'Failed to ${isFavourite ? 'favourite' : 'unfavourite'} server item $serverId for ${booru.name ?? booru.baseURL}',
+        'Failed to ${isFavourite ? 'favourite' : 'unfavourite'} server item $serverId for '
+            '${booru.name ?? booru.baseURL}: ${mutation.message}',
         'SearchTab',
         '_sendFavouriteToServer',
         LogTypes.booruHandlerInfo,
       );
+      _showServerFavoriteWriteFailed(
+        item: item,
+        adapter: adapter,
+        mutation: mutation,
+        isFavourite: isFavourite,
+      );
     }
   }
 
-  ServerFavoriteAdapter? _serverFavoriteAdapterForItem(BooruItem item, SettingsHandler settingsHandler) {
+  void _showServerFavoriteWriteFailed({
+    required BooruItem item,
+    required ServerFavoriteAdapter adapter,
+    required ServerFavoriteMutationResult mutation,
+    required bool isFavourite,
+  }) {
+    final thumbnailUrl = item.thumbnailURL;
+    FlashElements.showSnackbar(
+      key: 'server_favorite_write_failed_${adapter.host}_${item.serverId ?? item.postURL}',
+      isKeyUnique: true,
+      title: Text(loc.serverFavouritesSync.directWriteFailedTitle),
+      content: Text(
+        loc.serverFavouritesSync.directWriteFailedMessage(
+          action: isFavourite ? loc.serverFavouritesSync.favouriteAction : loc.serverFavouritesSync.unfavouriteAction,
+          booru: adapter.displayName,
+          message: mutation.message,
+        ),
+      ),
+      sideColor: Colors.red,
+      leadingIcon: Icons.cloud_off,
+      leadingIconColor: Colors.red,
+      shouldLeadingPulse: false,
+      duration: mutation.canRetryAfterWebview ? const Duration(seconds: 12) : const Duration(seconds: 6),
+      overrideLeadingIconWidget: Padding(
+        padding: const EdgeInsets.all(8),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: thumbnailUrl.isEmpty
+                ? const Icon(Icons.cloud_off, color: Colors.red)
+                : Image.network(
+                    thumbnailUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const Icon(Icons.cloud_off, color: Colors.red),
+                  ),
+          ),
+        ),
+      ),
+      actionsBuilder: (context, controller) {
+        return [
+          if (mutation.canRetryAfterWebview && PlatformExt.hasWebviewSupport)
+            ElevatedButton.icon(
+              onPressed: () {
+                controller.dismiss();
+                unawaited(
+                  _openServerFavoriteWebviewAndRetry(
+                    item: item,
+                    adapter: adapter,
+                    isFavourite: isFavourite,
+                  ),
+                );
+              },
+              icon: const Icon(Icons.public),
+              label: Text(loc.serverFavouritesSync.openWebview),
+            ),
+          ElevatedButton.icon(
+            onPressed: () {
+              controller.dismiss();
+              unawaited(_sendFavouriteToServer(item, isFavourite));
+            },
+            icon: const Icon(Icons.refresh),
+            label: Text(loc.retry),
+          ),
+        ];
+      },
+    );
+  }
+
+  Future<void> _openServerFavoriteWebviewAndRetry({
+    required BooruItem item,
+    required ServerFavoriteAdapter adapter,
+    required bool isFavourite,
+  }) async {
+    await Navigator.push(
+      NavigationHandler.instance.navContext,
+      MaterialPageRoute(
+        builder: (context) => InAppWebviewView(
+          initialUrl: _serverFavoriteWebviewUrl(adapter),
+          title: '${adapter.displayName} captcha',
+          subtitle: loc.serverFavouritesSync.completeCaptchaThenRetry,
+        ),
+      ),
+    );
+
+    await _sendFavouriteToServer(item, isFavourite);
+  }
+
+  String _serverFavoriteWebviewUrl(ServerFavoriteAdapter adapter) {
+    final baseUrl = adapter.booru.baseURL;
+    if (baseUrl?.isNotEmpty == true) return baseUrl!;
+
+    final host = adapter.host;
+    if (host.startsWith('http://') || host.startsWith('https://')) return host;
+    return 'https://$host';
+  }
+
+  ServerFavoriteAdapter? serverFavoriteAdapterForItem(BooruItem item, SettingsHandler settingsHandler) {
     const factory = ServerFavoriteAdapterFactory();
 
     final currentAdapter = factory.adapterFor(booruHandler.booru);
@@ -1391,7 +1512,9 @@ class SearchTab {
     for (final booru in settingsHandler.booruList) {
       final adapter = factory.adapterFor(booru);
       if (adapter == null) continue;
-      final matchesItem = adapter.localHosts.any((host) => host.isNotEmpty && searchableUrls.contains(host.toLowerCase()));
+      final matchesItem = adapter.localHosts.any(
+        (host) => host.isNotEmpty && searchableUrls.contains(host.toLowerCase()),
+      );
       if (!matchesItem) continue;
       if (adapter.serverIdFromItem(item)?.isNotEmpty == true) {
         return adapter;

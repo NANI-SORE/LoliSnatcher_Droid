@@ -103,6 +103,7 @@ enum SettingKey {
   searchHistoryEnabled,
   tagTypeFetchEnabled,
   sendFavouritesToServer,
+  serverFavoriteSuccessAnimation,
 
   // Network
   customUserAgent,
@@ -287,6 +288,7 @@ abstract class SX {
   static const searchHistoryEnabled = TypedKey<bool>(SettingKey.searchHistoryEnabled);
   static const tagTypeFetchEnabled = TypedKey<bool>(SettingKey.tagTypeFetchEnabled);
   static const sendFavouritesToServer = TypedKey<bool>(SettingKey.sendFavouritesToServer);
+  static const serverFavoriteSuccessAnimation = TypedKey<bool>(SettingKey.serverFavoriteSuccessAnimation);
 
   // Network
   static const customUserAgent = TypedKey<String>(SettingKey.customUserAgent);

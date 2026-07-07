@@ -5,10 +5,10 @@ import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
-import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
+import 'package:lolisnatcher/src/pages/settings/server_favorite_requests_page.dart';
 import 'package:lolisnatcher/src/pages/settings/server_favorites_sync_page.dart';
 
 class DatabasePage extends StatefulWidget {
@@ -28,7 +28,8 @@ class _DatabasePageState extends State<DatabasePage> {
       changingIndexes = false,
       searchHistoryEnabled = true,
       tagTypeFetchEnabled = true,
-      sendFavouritesToServer = true;
+      sendFavouritesToServer = true,
+      serverFavoriteSuccessAnimation = true;
 
   @override
   void initState() {
@@ -39,6 +40,7 @@ class _DatabasePageState extends State<DatabasePage> {
     searchHistoryEnabled = SX.searchHistoryEnabled.value;
     tagTypeFetchEnabled = SX.tagTypeFetchEnabled.value;
     sendFavouritesToServer = SX.sendFavouritesToServer.value;
+    serverFavoriteSuccessAnimation = SX.serverFavoriteSuccessAnimation.value;
   }
 
   @override
@@ -64,6 +66,7 @@ class _DatabasePageState extends State<DatabasePage> {
     SX.searchHistoryEnabled.state.value = searchHistoryEnabled;
     SX.tagTypeFetchEnabled.state.value = tagTypeFetchEnabled;
     SX.sendFavouritesToServer.state.value = sendFavouritesToServer;
+    SX.serverFavoriteSuccessAnimation.state.value = serverFavoriteSuccessAnimation;
     await settingsHandler.saveSettings(restate: false);
   }
 
@@ -266,7 +269,19 @@ class _DatabasePageState extends State<DatabasePage> {
                       sendFavouritesToServer = newValue;
                     });
                   },
-                  title: 'Send favourites changes to server'.temploc,
+                  title: context.loc.serverFavouritesSync.sendChangesToServer,
+                ),
+                SettingsToggle(
+                  value: serverFavoriteSuccessAnimation,
+                  onChanged: (newValue) {
+                    if (!sendFavouritesToServer) return;
+                    setState(() {
+                      serverFavoriteSuccessAnimation = newValue;
+                    });
+                  },
+                  enabled: sendFavouritesToServer,
+                  title: context.loc.serverFavouritesSync.successAnimation,
+                  subtitle: Text(context.loc.serverFavouritesSync.successAnimationSubtitle),
                 ),
                 const SettingsButton(name: '', enabled: false),
                 SettingsButton(
@@ -455,10 +470,15 @@ class _DatabasePageState extends State<DatabasePage> {
                 ),
                 const SettingsButton(name: '', enabled: false),
                 SettingsButton(
-                  name: 'Server favorites sync',
-                  subtitle: const Text('Import, export, and compare local favourites with supported booru accounts.'),
+                  name: context.loc.serverFavouritesSync.title,
+                  subtitle: Text(context.loc.serverFavouritesSync.settingsSubtitle),
                   trailingIcon: const Icon(Icons.sync),
                   page: () => const ServerFavoritesSyncPage(),
+                ),
+                SettingsButton(
+                  name: context.loc.serverFavouritesSync.sessionRequests,
+                  trailingIcon: const Icon(Icons.history),
+                  page: () => const ServerFavoriteRequestsPage(),
                 ),
               ],
             ],

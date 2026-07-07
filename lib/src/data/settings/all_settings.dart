@@ -1383,12 +1383,27 @@ void registerAllSettings() {
       dependsOn: [.dbEnabled],
       enabledWhen: ([BuildContext? context]) => _val<bool>(.dbEnabled, context),
       localization: SettingLocalization(
-        title: (_) => 'Send favourites changes to server'.temploc,
-        subtitle: (_) => 'When supported, favourite and unfavourite actions also update the booru account.'.temploc,
-        searchKeywords: (_) => ['server favourites', 'server favorites', 'sync favourites', 'sync favorites'],
+        title: (ctx) => ctx.loc.serverFavouritesSync.sendChangesToServer,
       ),
       widgetConfig: const SettingWidgetConfig(
         trailingIcon: Icon(Icons.cloud_sync),
+      ),
+    ),
+  );
+
+  registry.register(
+    boolSetting(
+      key: .serverFavoriteSuccessAnimation,
+      getDefaultValue: () => true,
+      categories: [SettingCategory.database],
+      dependsOn: [.sendFavouritesToServer],
+      enabledWhen: ([BuildContext? context]) => _val<bool>(.sendFavouritesToServer, context),
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.serverFavouritesSync.successAnimation,
+        subtitle: (ctx) => ctx.loc.serverFavouritesSync.successAnimationSubtitle,
+      ),
+      widgetConfig: const SettingWidgetConfig(
+        trailingIcon: Icon(Icons.favorite),
       ),
     ),
   );

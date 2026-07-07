@@ -15,7 +15,7 @@ import 'package:lolisnatcher/src/handlers/server_favorite_adapter.dart';
 import 'package:lolisnatcher/src/handlers/server_favorites_sync_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
-import 'package:lolisnatcher/src/utils/extensions.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
@@ -72,8 +72,8 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
   Future<void> _onPopInvoked(_, _) async {
     if (isWorking || isUpdatingSankakuUrls) {
       FlashElements.showSnackbar(
-        title: Text('Please wait'.temploc, style: const TextStyle(fontSize: 20)),
-        content: Text('Server favorites sync is still running.'.temploc, style: const TextStyle(fontSize: 16)),
+        title: Text(context.loc.serverFavouritesSync.pleaseWaitTitle, style: const TextStyle(fontSize: 20)),
+        content: Text(context.loc.serverFavouritesSync.stillRunning, style: const TextStyle(fontSize: 16)),
         leadingIcon: Icons.warning_amber,
         leadingIconColor: Colors.yellow,
         sideColor: Colors.yellow,
@@ -105,22 +105,30 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
     }
   }
 
+  List<ServerFavoriteAdapter> get selectedRunnableAdapters =>
+      selectedAdapters.where(_modeSupported).toList(growable: false);
+
+  bool get canPreviewSelected => !isWorking && selectedRunnableAdapters.isNotEmpty;
+
+  bool get canRunSelected =>
+      !isWorking && selectedRunnableAdapters.isNotEmpty && selectedRunnableAdapters.every(previews.containsKey);
+
   Future<bool> _confirmDestructive(BuildContext context) async {
     if (!mode.isDestructive) return true;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => SettingsDialog(
-        title: Text('Confirm destructive sync'.temploc),
+        title: Text(context.loc.serverFavouritesSync.confirmDestructiveSync),
         contentItems: [
-          Text('${mode.title} can remove favorites. Preview the counts before continuing.'.temploc),
+          Text(context.loc.serverFavouritesSync.destructiveSyncWarning(mode: mode.title)),
         ],
         actionButtons: [
           const CancelButton(withIcon: true),
           ElevatedButton.icon(
             onPressed: () => Navigator.of(context).pop(true),
             icon: const Icon(Icons.warning_amber),
-            label: Text('Run'.temploc),
+            label: Text(context.loc.serverFavouritesSync.run),
           ),
         ],
       ),
@@ -166,11 +174,11 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
 
   Future<void> runSelected() async {
     if (isWorking) return;
-    if (!await _confirmDestructive(context)) return;
-    if (previews.isEmpty) {
-      await previewSelected();
-      if (previews.isEmpty || cancelRequested) return;
+    if (!canRunSelected) {
+      _setStatus(context.loc.serverFavouritesSync.previewRequiredBeforeRun);
+      return;
     }
+    if (!await _confirmDestructive(context)) return;
 
     setState(() {
       isWorking = true;
@@ -319,13 +327,13 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
       onPopInvokedWithResult: _onPopInvoked,
       child: Scaffold(
         resizeToAvoidBottomInset: true,
-        appBar: SettingsAppBar(title: 'Server favorites sync'.temploc),
+        appBar: SettingsAppBar(title: context.loc.serverFavouritesSync.title),
         body: ListView(
           controller: scrollController,
           children: [
             if (adapters.isEmpty)
               SettingsButton(
-                name: 'No configured boorus support server favorites yet'.temploc,
+                name: context.loc.serverFavouritesSync.noSupportedBoorus,
                 enabled: false,
                 trailingIcon: const Icon(Icons.favorite_border),
               )
@@ -333,7 +341,7 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
               SettingsDropdown<ServerFavoriteSyncMode>(
                 value: mode,
                 items: ServerFavoriteSyncMode.values,
-                title: 'Sync mode'.temploc,
+                title: context.loc.serverFavouritesSync.syncMode,
                 itemTitleBuilder: (item) => item?.title ?? '',
                 onChanged: isWorking
                     ? null
@@ -346,36 +354,39 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
                         });
                       },
               ),
-              SettingsButton(name: 'Boorus'.temploc, enabled: false),
+              SettingsButton(name: context.loc.serverFavouritesSync.boorus, enabled: false),
               ...adapters.map(_adapterTile),
               SettingsButton(
-                name: 'Preview selected'.temploc,
+                name: context.loc.serverFavouritesSync.previewSelected,
                 icon: const Icon(Icons.manage_search),
-                enabled: !isWorking && selectedAdapters.isNotEmpty,
-                action: !isWorking && selectedAdapters.isNotEmpty ? previewSelected : null,
+                enabled: canPreviewSelected,
+                action: canPreviewSelected ? previewSelected : null,
               ),
               SettingsButton(
-                name: mode.isDestructive ? 'Run selected (removes favorites)'.temploc : 'Run selected'.temploc,
+                name: mode.isDestructive
+                    ? context.loc.serverFavouritesSync.runSelectedRemoves
+                    : context.loc.serverFavouritesSync.runSelected,
+                subtitle: canRunSelected ? null : Text(context.loc.serverFavouritesSync.previewRequiredBeforeRun),
                 icon: Icon(mode.isDestructive ? Icons.warning_amber : Icons.sync),
-                enabled: !isWorking && selectedAdapters.isNotEmpty,
-                action: !isWorking && selectedAdapters.isNotEmpty ? runSelected : null,
+                enabled: canRunSelected,
+                action: canRunSelected ? runSelected : null,
               ),
               if (isWorking)
                 SettingsButton(
-                  name: 'Stop'.temploc,
+                  name: context.loc.serverFavouritesSync.stop,
                   icon: const Icon(Icons.cancel),
                   action: cancelWork,
                 ),
               if (previews.isNotEmpty) ...[
-                SettingsButton(name: 'Preview'.temploc, enabled: false),
+                SettingsButton(name: context.loc.serverFavouritesSync.preview, enabled: false),
                 ...previews.entries.map((entry) => _previewTile(entry.key, entry.value)),
               ],
               if (results.isNotEmpty) ...[
-                SettingsButton(name: 'Result'.temploc, enabled: false),
-                ...results.entries.map((entry) => _resultTile(entry.key, entry.value)),
+                SettingsButton(name: context.loc.serverFavouritesSync.result, enabled: false),
+                ...results.entries.expand((entry) => _resultSection(entry.key, entry.value)),
               ],
               if (logLines.isNotEmpty) ...[
-                SettingsButton(name: 'Log'.temploc, enabled: false),
+                SettingsButton(name: context.loc.serverFavouritesSync.log, enabled: false),
                 Padding(
                   padding: const EdgeInsets.all(12),
                   child: SelectableText(logLines.take(12).join('\n')),
@@ -424,7 +435,7 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
           ),
           if (!supported)
             Text(
-              adapter.capabilities.unsupportedReason ?? 'Selected mode is not supported'.temploc,
+              adapter.capabilities.unsupportedReason ?? context.loc.serverFavouritesSync.selectedModeNotSupported,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
         ],
@@ -439,10 +450,15 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
       name: adapter.displayName,
       enabled: false,
       subtitle: Text(
-        'matched ${preview.matched}, local only ${preview.localOnly}, server only ${preview.serverOnly}\n'
-                'will add local ${preview.addLocal}, add server ${preview.addServer}, '
-                'remove local ${preview.removeLocal}, remove server ${preview.removeServer}'
-            .temploc,
+        context.loc.serverFavouritesSync.previewSummary(
+          matched: preview.matched,
+          localOnly: preview.localOnly,
+          serverOnly: preview.serverOnly,
+          addLocal: preview.addLocal,
+          addServer: preview.addServer,
+          removeLocal: preview.removeLocal,
+          removeServer: preview.removeServer,
+        ),
       ),
       trailingIcon: const Icon(Icons.summarize),
     );
@@ -453,22 +469,117 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
       name: adapter.displayName,
       enabled: false,
       subtitle: Text(
-        'added local ${result.addedLocal}, added server ${result.addedServer}, '
-                'removed local ${result.removedLocal}, removed server ${result.removedServer}, failed ${result.failed}'
-                '${result.errors.isEmpty ? '' : '\n${result.errors.take(4).join('\n')}'}'
-            .temploc,
+        '${context.loc.serverFavouritesSync.resultSummary(
+          addedLocal: result.addedLocal,
+          addedServer: result.addedServer,
+          removedLocal: result.removedLocal,
+          removedServer: result.removedServer,
+          failed: result.failed,
+        )}${result.errors.isEmpty ? '' : '\n${result.errors.take(4).join('\n')}'}',
       ),
       trailingIcon: Icon(result.failed == 0 ? Icons.check : Icons.warning_amber),
     );
+  }
+
+  List<Widget> _resultSection(ServerFavoriteAdapter adapter, ServerFavoritesSyncResult result) {
+    return [
+      _resultTile(adapter, result),
+      if (result.failed > 0) ...[
+        SettingsButton(
+          name: context.loc.serverFavouritesSync.copyFailureLog,
+          icon: const Icon(Icons.copy),
+          dense: true,
+          action: () => _copyFailureLog(adapter, result),
+        ),
+        SettingsButton(
+          name: context.loc.serverFavouritesSync.retryFailedActions,
+          icon: const Icon(Icons.refresh),
+          dense: true,
+          enabled: !isWorking && result.failures.isNotEmpty,
+          action: !isWorking && result.failures.isNotEmpty ? () => retryFailedActions(adapter, result) : null,
+        ),
+      ],
+    ];
+  }
+
+  void _copyFailureLog(ServerFavoriteAdapter adapter, ServerFavoritesSyncResult result) {
+    final summary = context.loc.serverFavouritesSync.resultSummary(
+      addedLocal: result.addedLocal,
+      addedServer: result.addedServer,
+      removedLocal: result.removedLocal,
+      removedServer: result.removedServer,
+      failed: result.failed,
+    );
+    final buffer = StringBuffer()
+      ..writeln(context.loc.serverFavouritesSync.title)
+      ..writeln('Booru: ${adapter.displayName}')
+      ..writeln('Mode: ${result.preview.mode.title}')
+      ..writeln('Generated: ${DateTime.now().toIso8601String()}')
+      ..writeln(summary);
+
+    if (result.failures.isNotEmpty) {
+      buffer
+        ..writeln()
+        ..writeln('Retryable failures:');
+      for (final failure in result.failures) {
+        buffer.writeln(failure.logLine);
+      }
+    }
+
+    if (result.errors.isNotEmpty) {
+      buffer
+        ..writeln()
+        ..writeln('Errors:');
+      for (final error in result.errors) {
+        buffer.writeln(error);
+      }
+    }
+
+    unawaited(
+      ClipboardUtils.copyTextToClipboard(
+        buffer.toString().trim(),
+        subtitle: context.loc.serverFavouritesSync.failureLogCopied,
+      ),
+    );
+  }
+
+  Future<void> retryFailedActions(ServerFavoriteAdapter adapter, ServerFavoritesSyncResult previousResult) async {
+    if (isWorking) return;
+    if (previousResult.failures.isEmpty) {
+      _setStatus('${adapter.displayName}: ${context.loc.serverFavouritesSync.noRetryableFailures}');
+      return;
+    }
+
+    setState(() {
+      isWorking = true;
+      cancelRequested = false;
+    });
+    _setStatus(context.loc.serverFavouritesSync.retryingFailedActions(booru: adapter.displayName));
+
+    try {
+      final retryResult = await ServerFavoritesSyncHandler(adapter: adapter).retryFailures(
+        previousResult,
+        onStatus: _setStatus,
+        shouldCancel: () => cancelRequested,
+      );
+      results[adapter] = retryResult;
+      _setStatus(context.loc.serverFavouritesSync.retryComplete(booru: adapter.displayName));
+    } catch (e) {
+      _setStatus('${adapter.displayName}: sync retry failed - $e');
+    }
+
+    safeSetState(() {
+      isWorking = false;
+    });
   }
 
   List<Widget> _sankakuMaintenance() {
     return [
       const SettingsButton(name: '', enabled: false),
       SettingsButton(
-        name: 'Sankaku favorite URL maintenance'.temploc,
+        name: context.loc.serverFavouritesSync.sankakuMaintenance,
         subtitle: Text(
-          'Refreshes stale local Sankaku favorite URLs. This does not sync server favorite state.'.temploc,
+          context.loc.serverFavouritesSync.sankakuMaintenanceSubtitle,
         ),
         enabled: false,
       ),
@@ -487,18 +598,18 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
                       sankakuType = newValue;
                     });
                   },
-                  title: 'Sankaku type to update'.temploc,
+                  title: context.loc.serverFavouritesSync.sankakuTypeToUpdate,
                 ),
                 SettingsTextInput(
                   controller: sankakuSearchController,
-                  title: 'Search query'.temploc,
-                  hintText: 'Optional'.temploc,
+                  title: context.loc.serverFavouritesSync.searchQuery,
+                  hintText: context.loc.serverFavouritesSync.optional,
                   clearable: true,
                   pasteable: true,
                   enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
                 ),
                 SettingsButton(
-                  name: 'Update Sankaku URLs'.temploc,
+                  name: context.loc.serverFavouritesSync.updateSankakuUrls,
                   trailingIcon: const Icon(Icons.image),
                   action: isUpdatingSankakuUrls ? null : updateSankakuItems,
                 ),
@@ -522,17 +633,21 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Updating: ${updatingItems.length}'),
-              Text('Left: ${max(updatingItems.length - updatingDone - updatingFailed, 0)}'),
-              Text('Done: $updatingDone'),
-              Text('Failed/skipped: $updatingFailed'),
-              Text('Sankaku can rate-limit these requests.'.temploc),
+              Text(context.loc.serverFavouritesSync.updating(count: updatingItems.length)),
+              Text(
+                context.loc.serverFavouritesSync.left(
+                  count: max(updatingItems.length - updatingDone - updatingFailed, 0),
+                ),
+              ),
+              Text(context.loc.serverFavouritesSync.done(count: updatingDone)),
+              Text(context.loc.serverFavouritesSync.failedSkipped(count: updatingFailed)),
+              Text(context.loc.serverFavouritesSync.sankakuRateLimitWarning),
             ],
           ),
         ),
         SettingsButton(
-          name: 'Skip current item'.temploc,
-          subtitle: const Text('Use if s.temploctuck'),
+          name: context.loc.serverFavouritesSync.skipCurrentItem,
+          subtitle: Text(context.loc.serverFavouritesSync.skipCurrentItemHint),
           trailingIcon: const Icon(Icons.skip_next),
           drawTopBorder: true,
           action: () {
@@ -540,7 +655,7 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
           },
         ),
         SettingsButton(
-          name: 'Stop'.temploc,
+          name: context.loc.serverFavouritesSync.stop,
           trailingIcon: const Icon(Icons.cancel),
           drawTopBorder: true,
           action: cancelWork,
@@ -548,13 +663,13 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
       ],
       if (!isUpdatingSankakuUrls && failedItems.isNotEmpty) ...[
         SettingsButton(
-          name: 'Purge failed items (${failedItems.length})'.temploc,
+          name: context.loc.serverFavouritesSync.purgeFailedItems(count: failedItems.length),
           trailingIcon: const Icon(Icons.delete_forever),
           drawTopBorder: true,
           action: purgeFailedSankakuItems,
         ),
         SettingsButton(
-          name: 'Retry failed items (${failedItems.length})'.temploc,
+          name: context.loc.serverFavouritesSync.retryFailedItems(count: failedItems.length),
           trailingIcon: const Icon(Icons.refresh),
           drawTopBorder: true,
           action: () {

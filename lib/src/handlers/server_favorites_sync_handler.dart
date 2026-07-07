@@ -4,7 +4,6 @@ import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/server_favorite_adapter.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
-import 'package:lolisnatcher/src/utils/extensions.dart';
 
 class ServerFavoritesSyncHandler {
   ServerFavoritesSyncHandler({
@@ -95,6 +94,59 @@ class ServerFavoritesSyncHandler {
     return result;
   }
 
+  Future<ServerFavoritesSyncResult> retryFailures(
+    ServerFavoritesSyncResult previousResult, {
+    ValueChanged<String>? onStatus,
+    bool Function()? shouldCancel,
+  }) async {
+    final result = ServerFavoritesSyncResult(preview: previousResult.preview);
+    final failures = previousResult.failures;
+
+    await _addLocal(
+      failures
+          .where((failure) => failure.operation == ServerFavoritesSyncFailureOperation.addLocal)
+          .map((failure) => failure.item)
+          .whereType<BooruItem>()
+          .toList(),
+      result,
+      onStatus: onStatus,
+      shouldCancel: shouldCancel,
+    );
+    await _addServer(
+      failures
+          .where((failure) => failure.operation == ServerFavoritesSyncFailureOperation.addServer)
+          .map((failure) => failure.serverId)
+          .whereType<String>()
+          .toList(),
+      result,
+      onStatus: onStatus,
+      shouldCancel: shouldCancel,
+    );
+    await _removeLocal(
+      failures
+          .where((failure) => failure.operation == ServerFavoritesSyncFailureOperation.removeLocal)
+          .map((failure) => failure.item)
+          .whereType<BooruItem>()
+          .toList(),
+      result,
+      onStatus: onStatus,
+      shouldCancel: shouldCancel,
+    );
+    await _removeServer(
+      failures
+          .where((failure) => failure.operation == ServerFavoritesSyncFailureOperation.removeServer)
+          .map((failure) => failure.serverId)
+          .whereType<String>()
+          .toList(),
+      result,
+      onStatus: onStatus,
+      shouldCancel: shouldCancel,
+    );
+
+    await _refreshOpenTabs();
+    return result;
+  }
+
   Future<Map<String, BooruItem>> _localFavoritesById() async {
     final itemsByPostUrl = <String, BooruItem>{};
     const int pageSize = 500;
@@ -138,7 +190,15 @@ class ServerFavoritesSyncHandler {
         result.addedLocal++;
       } catch (e) {
         result.failed++;
-        result.errors.add('Local add failed: ${item.postURL} - $e');
+        final message = 'Local add failed: ${item.postURL} - $e';
+        result.errors.add(message);
+        result.failures.add(
+          ServerFavoritesSyncFailure(
+            operation: ServerFavoritesSyncFailureOperation.addLocal,
+            item: item,
+            message: message,
+          ),
+        );
       }
     }
   }
@@ -151,18 +211,27 @@ class ServerFavoritesSyncHandler {
   }) async {
     if (!adapter.capabilities.canAdd) {
       result.failed += ids.length;
-      result.errors.add(adapter.capabilities.unsupportedReason ?? 'Server add is not supported'.temploc);
+      result.errors.add(adapter.capabilities.unsupportedReason ?? loc.serverFavouritesSync.serverAddUnsupported);
       return;
     }
 
     for (final id in ids) {
       if (shouldCancel?.call() == true) break;
       onStatus?.call('${adapter.displayName}: adding server $id');
-      if (await adapter.addFavorite(id)) {
+      final mutation = await adapter.addFavoriteResult(id);
+      if (mutation.success) {
         result.addedServer++;
       } else {
         result.failed++;
-        result.errors.add('Server add failed: $id');
+        final message = 'Server add failed: $id - ${mutation.message}';
+        result.errors.add(message);
+        result.failures.add(
+          ServerFavoritesSyncFailure(
+            operation: ServerFavoritesSyncFailureOperation.addServer,
+            serverId: id,
+            message: message,
+          ),
+        );
       }
     }
   }
@@ -183,7 +252,15 @@ class ServerFavoritesSyncHandler {
         result.removedLocal++;
       } catch (e) {
         result.failed++;
-        result.errors.add('Local remove failed: ${item.postURL} - $e');
+        final message = 'Local remove failed: ${item.postURL} - $e';
+        result.errors.add(message);
+        result.failures.add(
+          ServerFavoritesSyncFailure(
+            operation: ServerFavoritesSyncFailureOperation.removeLocal,
+            item: item,
+            message: message,
+          ),
+        );
       }
     }
   }
@@ -196,18 +273,27 @@ class ServerFavoritesSyncHandler {
   }) async {
     if (!adapter.capabilities.canRemove) {
       result.failed += ids.length;
-      result.errors.add(adapter.capabilities.unsupportedReason ?? 'Server remove is not supported'.temploc);
+      result.errors.add(adapter.capabilities.unsupportedReason ?? loc.serverFavouritesSync.serverRemoveUnsupported);
       return;
     }
 
     for (final id in ids) {
       if (shouldCancel?.call() == true) break;
       onStatus?.call('${adapter.displayName}: removing server $id');
-      if (await adapter.removeFavorite(id)) {
+      final mutation = await adapter.removeFavoriteResult(id);
+      if (mutation.success) {
         result.removedServer++;
       } else {
         result.failed++;
-        result.errors.add('Server remove failed: $id');
+        final message = 'Server remove failed: $id - ${mutation.message}';
+        result.errors.add(message);
+        result.failures.add(
+          ServerFavoritesSyncFailure(
+            operation: ServerFavoritesSyncFailureOperation.removeServer,
+            serverId: id,
+            message: message,
+          ),
+        );
       }
     }
   }

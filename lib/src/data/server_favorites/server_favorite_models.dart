@@ -1,5 +1,5 @@
+import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
-import 'package:lolisnatcher/src/utils/extensions.dart';
 
 enum ServerFavoriteSyncMode {
   importServer,
@@ -13,15 +13,15 @@ extension ServerFavoriteSyncModeExt on ServerFavoriteSyncMode {
   String get title {
     switch (this) {
       case ServerFavoriteSyncMode.importServer:
-        return 'Import server to local'.temploc;
+        return loc.serverFavouritesSync.importServerToLocal;
       case ServerFavoriteSyncMode.exportLocal:
-        return 'Export local to server'.temploc;
+        return loc.serverFavouritesSync.exportLocalToServer;
       case ServerFavoriteSyncMode.twoWayMerge:
-        return 'Two-way add/merge'.temploc;
+        return loc.serverFavouritesSync.twoWayAddMerge;
       case ServerFavoriteSyncMode.mirrorServerToLocal:
-        return 'Mirror server to local'.temploc;
+        return loc.serverFavouritesSync.mirrorServerToLocal;
       case ServerFavoriteSyncMode.mirrorLocalToServer:
-        return 'Mirror local to server'.temploc;
+        return loc.serverFavouritesSync.mirrorLocalToServer;
     }
   }
 
@@ -58,6 +58,49 @@ class ServerFavoriteEntry {
 
   final String serverId;
   final BooruItem item;
+}
+
+class ServerFavoriteMutationResult {
+  const ServerFavoriteMutationResult({
+    required this.success,
+    required this.message,
+    this.statusCode,
+    this.canRetryAfterWebview = false,
+  });
+
+  factory ServerFavoriteMutationResult.success({
+    String message = 'OK',
+    int? statusCode,
+  }) {
+    return ServerFavoriteMutationResult(
+      success: true,
+      message: message,
+      statusCode: statusCode,
+    );
+  }
+
+  factory ServerFavoriteMutationResult.failure(
+    String message, {
+    int? statusCode,
+    bool canRetryAfterWebview = false,
+  }) {
+    return ServerFavoriteMutationResult(
+      success: false,
+      message: message,
+      statusCode: statusCode,
+      canRetryAfterWebview: canRetryAfterWebview,
+    );
+  }
+
+  final bool success;
+  final String message;
+  final int? statusCode;
+  final bool canRetryAfterWebview;
+
+  static ServerFavoriteMutationResult get unsupported => ServerFavoriteMutationResult(
+    success: false,
+    message: loc.serverFavouritesSync.serverWriteUnsupported,
+  );
 }
 
 class ServerFavoritesDiff {
@@ -130,4 +173,30 @@ class ServerFavoritesSyncResult {
   int removedServer = 0;
   int failed = 0;
   final List<String> errors = [];
+  final List<ServerFavoritesSyncFailure> failures = [];
+}
+
+enum ServerFavoritesSyncFailureOperation {
+  addLocal,
+  addServer,
+  removeLocal,
+  removeServer,
+}
+
+class ServerFavoritesSyncFailure {
+  const ServerFavoritesSyncFailure({
+    required this.operation,
+    required this.message,
+    this.item,
+    this.serverId,
+  });
+
+  final ServerFavoritesSyncFailureOperation operation;
+  final String message;
+  final BooruItem? item;
+  final String? serverId;
+
+  String get target => serverId ?? item?.serverId ?? item?.postURL ?? '?';
+
+  String get logLine => '${operation.name}: $target - $message';
 }

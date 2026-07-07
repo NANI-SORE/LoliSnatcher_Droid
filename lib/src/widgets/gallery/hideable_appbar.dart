@@ -29,6 +29,7 @@ import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/services/server_favorite_feedback.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/timed_progress_controller.dart';
@@ -720,6 +721,10 @@ class _HideableAppBarState extends State<HideableAppBar> {
       //
 
       case .favourite:
+        return () async {
+          await ServiceHandler.vibrate();
+          await _showServerFavoriteStatusDialog();
+        };
       case .info:
       case .select:
       case .open:
@@ -730,6 +735,163 @@ class _HideableAppBarState extends State<HideableAppBar> {
       case .imageSearch:
         return null;
     }
+  }
+
+  Future<void> _showServerFavoriteStatusDialog() async {
+    final item = widget.tab.booruHandler.filteredFetched[page.value];
+    final adapter = widget.tab.serverFavoriteAdapterForItem(item, settingsHandler);
+    final serverId = adapter?.serverIdFromItem(item);
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        final future = _loadServerFavoriteStatus(item);
+        return SettingsDialog(
+          title: Text(dialogContext.loc.serverFavouritesSync.serverStatusTitle),
+          actionButtons: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(dialogContext.loc.close),
+            ),
+            ElevatedButton.icon(
+              onPressed: adapter?.capabilities.canAdd == true && serverId?.isNotEmpty == true
+                  ? () {
+                      Navigator.of(dialogContext).pop();
+                      unawaited(_addCurrentItemToServerFavorites(item));
+                    }
+                  : null,
+              icon: const Icon(Icons.favorite),
+              label: Text(dialogContext.loc.serverFavouritesSync.serverAddFavourite),
+            ),
+          ],
+          content: FutureBuilder<_ServerFavoriteStatus>(
+            future: future,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 8),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(context.loc.serverFavouritesSync.serverStatusChecking),
+                    if (adapter != null)
+                      Text(context.loc.serverFavouritesSync.serverStatusBooru(booru: adapter.displayName)),
+                    if (serverId?.isNotEmpty == true)
+                      Text(context.loc.serverFavouritesSync.serverStatusServerId(id: serverId!)),
+                  ],
+                );
+              }
+
+              final status = snapshot.data;
+              final error = snapshot.error;
+              final lines = <Widget>[
+                Text(
+                  context.loc.serverFavouritesSync.serverStatusLocal(
+                    value: item.isFavourite.value == true ? context.loc.yes : context.loc.no,
+                  ),
+                ),
+                if (adapter != null)
+                  Text(context.loc.serverFavouritesSync.serverStatusBooru(booru: adapter.displayName)),
+                if (serverId?.isNotEmpty == true)
+                  Text(context.loc.serverFavouritesSync.serverStatusServerId(id: serverId!)),
+                const SizedBox(height: 12),
+              ];
+
+              if (status != null && status.isSupported) {
+                lines.add(
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      status.isFavoriteOnServer ? Icons.favorite : Icons.favorite_border,
+                      color: status.isFavoriteOnServer ? Colors.red : null,
+                    ),
+                    title: Text(
+                      status.isFavoriteOnServer
+                          ? context.loc.serverFavouritesSync.serverStatusPresent
+                          : context.loc.serverFavouritesSync.serverStatusAbsent,
+                    ),
+                  ),
+                );
+              } else if (status != null && !status.isSupported) {
+                lines.add(Text(context.loc.serverFavouritesSync.serverStatusUnsupported));
+              } else if (error != null) {
+                lines.add(Text(context.loc.serverFavouritesSync.serverStatusError(error: error.toString())));
+              } else {
+                lines.add(Text(context.loc.serverFavouritesSync.serverStatusUnsupported));
+              }
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: lines,
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _addCurrentItemToServerFavorites(BooruItem item) async {
+    final adapter = widget.tab.serverFavoriteAdapterForItem(item, settingsHandler);
+    final serverId = adapter?.serverIdFromItem(item);
+    if (adapter == null || serverId == null || serverId.isEmpty || !adapter.capabilities.canAdd) {
+      FlashElements.showSnackbar(
+        context: context,
+        title: Text(context.loc.serverFavouritesSync.directWriteFailedTitle),
+        content: Text(adapter?.capabilities.unsupportedReason ?? context.loc.serverFavouritesSync.serverAddUnsupported),
+        sideColor: Colors.red,
+        leadingIcon: Icons.cloud_off,
+        leadingIconColor: Colors.red,
+      );
+      return;
+    }
+
+    item.serverId = serverId;
+    final mutation = await adapter.addFavoriteResult(serverId);
+    ServerFavoriteFeedback.record(
+      action: ServerFavoriteRequestAction.add,
+      status: mutation.success ? ServerFavoriteRequestStatus.success : ServerFavoriteRequestStatus.failed,
+      booruName: adapter.displayName,
+      serverId: serverId,
+      item: item,
+      message: mutation.message,
+      animate: mutation.success,
+    );
+
+    if (!mounted) return;
+    FlashElements.showSnackbar(
+      context: context,
+      title: Text(
+        mutation.success
+            ? context.loc.serverFavouritesSync.serverAddSucceeded
+            : context.loc.serverFavouritesSync.directWriteFailedTitle,
+      ),
+      content: Text(mutation.message),
+      sideColor: mutation.success ? Colors.green : Colors.red,
+      leadingIcon: mutation.success ? Icons.cloud_done : Icons.cloud_off,
+      leadingIconColor: mutation.success ? Colors.green : Colors.red,
+      shouldLeadingPulse: false,
+    );
+  }
+
+  Future<_ServerFavoriteStatus> _loadServerFavoriteStatus(BooruItem item) async {
+    final adapter = widget.tab.serverFavoriteAdapterForItem(item, settingsHandler);
+    if (adapter == null || !adapter.capabilities.canFetch) {
+      return const _ServerFavoriteStatus(isSupported: false, isFavoriteOnServer: false);
+    }
+
+    final serverId = adapter.serverIdFromItem(item);
+    if (serverId == null || serverId.isEmpty) {
+      return const _ServerFavoriteStatus(isSupported: false, isFavoriteOnServer: false);
+    }
+
+    final entries = await adapter.fetchFavorites();
+    return _ServerFavoriteStatus(
+      isSupported: true,
+      isFavoriteOnServer: entries.any((entry) => entry.serverId == serverId),
+    );
   }
 
   Future<void> onShareClick() async {
@@ -1387,6 +1549,16 @@ class _HideableAppBarState extends State<HideableAppBar> {
       ),
     );
   }
+}
+
+class _ServerFavoriteStatus {
+  const _ServerFavoriteStatus({
+    required this.isSupported,
+    required this.isFavoriteOnServer,
+  });
+
+  final bool isSupported;
+  final bool isFavoriteOnServer;
 }
 
 Future<List<String>> showSelectTagsDialog(
