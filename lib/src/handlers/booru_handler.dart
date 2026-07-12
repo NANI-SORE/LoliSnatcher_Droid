@@ -43,6 +43,7 @@ abstract class BooruHandler {
 
   RxList<BooruItem> fetched = RxList<BooruItem>([]);
   RxList<BooruItem> filteredFetched = RxList<BooruItem>([]);
+  bool Function(BooruItem item)? extraFilter;
 
   /// Tracks which API page numbers have been loaded.
   final Set<int> fetchedPageNumbers = {};
@@ -89,6 +90,10 @@ abstract class BooruHandler {
       }
 
       if (doFilterSnatched && item.isSnatched.value == true) {
+        continue;
+      }
+
+      if (extraFilter?.call(item) == false) {
         continue;
       }
 

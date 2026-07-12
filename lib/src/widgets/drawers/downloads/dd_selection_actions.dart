@@ -25,14 +25,29 @@ class DDSelectionActions extends StatelessWidget {
 
     return Obx(() {
       final selected = searchHandler.currentSelected;
-      if (selected.isEmpty) {
-        return SettingsButton(
-          name: context.loc.selectAll,
-          icon: const Icon(Icons.select_all),
-          action: () => searchHandler.currentTab.selected.addAll(
-            searchHandler.currentFetched,
-          ),
-          drawTopBorder: true,
+      final hiddenCount = searchHandler.currentTab.hiddenItems.length;
+
+      if (selected.isEmpty || hiddenCount > 0) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (hiddenCount > 0)
+              SettingsButton(
+                name: '${context.loc.settings.downloads.unhideHidden} ($hiddenCount)',
+                icon: const Icon(Icons.visibility_outlined),
+                action: controller.unhideItems,
+                drawTopBorder: true,
+              ),
+            if (selected.isEmpty)
+              SettingsButton(
+                name: context.loc.selectAll,
+                icon: const Icon(Icons.select_all),
+                action: () => searchHandler.currentTab.selected.addAll(
+                  searchHandler.currentFetched,
+                ),
+                drawTopBorder: hiddenCount == 0,
+              ),
+          ],
         );
       }
 

@@ -1474,6 +1474,7 @@ class SearchTab {
     final temp = BooruHandlerFactory().getBooruHandler(tempBooruList, null);
     booruHandler = temp.booruHandler;
     booruHandler.pageNum = temp.startingPage;
+    booruHandler.extraFilter = (item) => !hiddenItems.contains(item);
     selected.addListener(_updateSelectedIndices);
   }
   // unique id to use for booru controller
@@ -1487,12 +1488,29 @@ class SearchTab {
   double scrollPosition = 0;
   int? scrollPage;
   RxList<BooruItem> selected = RxList<BooruItem>.from([]);
+  RxList<BooruItem> hiddenItems = RxList<BooruItem>.from([]);
   final OrderedSelectionIndex<BooruItem> _selectedIndices = OrderedSelectionIndex();
   final Set<BooruItem> _lastSelectedItems = Set<BooruItem>.identity();
 
   int? selectedIndexOf(BooruItem item) => _selectedIndices.indexOf(item);
 
   bool get hasSelectedItems => _selectedIndices.isNotEmpty;
+  bool get hasHiddenItems => hiddenItems.isNotEmpty;
+
+  void hideItems(Iterable<BooruItem> items) {
+    for (final item in items) {
+      if (!hiddenItems.contains(item)) {
+        hiddenItems.add(item);
+      }
+    }
+    selected.removeWhere(hiddenItems.contains);
+    booruHandler.refilterAll();
+  }
+
+  void unhideItems() {
+    hiddenItems.clear();
+    booruHandler.refilterAll();
+  }
 
   void _updateSelectedIndices() {
     final nextSelectedItems = Set<BooruItem>.identity()..addAll(selected);

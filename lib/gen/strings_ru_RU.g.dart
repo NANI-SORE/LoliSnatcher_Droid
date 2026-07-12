@@ -2589,7 +2589,9 @@ class _Translations$settings$downloads$ru_RU extends Translations$settings$downl
   String get reverseSelectedOrder =>
       TranslationOverrides.string(_root.$meta, 'settings.downloads.reverseSelectedOrder', {}) ?? 'Обратить порядок выбранных';
   @override
-  String get hideSelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Скрыть выбранное (временно)';
+  String get hideSelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Скрыть выбранное';
+  @override
+  String get unhideHidden => TranslationOverrides.string(_root.$meta, 'settings.downloads.unhideHidden', {}) ?? 'Вернуть скрытые элементы';
   @override
   String get refreshSelectedMetadata =>
       TranslationOverrides.string(_root.$meta, 'settings.downloads.refreshSelectedMetadata', {}) ?? 'Обновить метаданные выбранных';
@@ -5261,8 +5263,9 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.downloads.invertSelection', {}) ?? 'Инвертировать выделение',
           'settings.downloads.reverseSelectedOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.reverseSelectedOrder', {}) ?? 'Обратить порядок выбранных',
-          'settings.downloads.hideSelected' =>
-            TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Скрыть выбранное (временно)',
+          'settings.downloads.hideSelected' => TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Скрыть выбранное',
+          'settings.downloads.unhideHidden' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.unhideHidden', {}) ?? 'Вернуть скрытые элементы',
           'settings.downloads.refreshSelectedMetadata' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.refreshSelectedMetadata', {}) ?? 'Обновить метаданные выбранных',
           'settings.downloads.refreshDelayTitle' =>
@@ -6083,10 +6086,10 @@ extension on TranslationsRuRu {
           'tagView.md5' => TranslationOverrides.string(_root.$meta, 'tagView.md5', {}) ?? 'MD5',
           'tagView.rating' => TranslationOverrides.string(_root.$meta, 'tagView.rating', {}) ?? 'Рейтинг',
           'tagView.score' => TranslationOverrides.string(_root.$meta, 'tagView.score', {}) ?? 'Оценка',
-          'tagView.noTagsFound' => TranslationOverrides.string(_root.$meta, 'tagView.noTagsFound', {}) ?? 'Теги не найдены',
           _ => null,
         } ??
         switch (path) {
+          'tagView.noTagsFound' => TranslationOverrides.string(_root.$meta, 'tagView.noTagsFound', {}) ?? 'Теги не найдены',
           'tagView.copy' => TranslationOverrides.string(_root.$meta, 'tagView.copy', {}) ?? 'Копировать',
           'tagView.removeFromSearch' => TranslationOverrides.string(_root.$meta, 'tagView.removeFromSearch', {}) ?? 'Удалить из поиска',
           'tagView.addToSearch' => TranslationOverrides.string(_root.$meta, 'tagView.addToSearch', {}) ?? 'Добавить в поиск',

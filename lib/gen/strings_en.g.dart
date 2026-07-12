@@ -3236,8 +3236,11 @@ class Translations$settings$downloads$en {
   String get reverseSelectedOrder =>
       TranslationOverrides.string(_root.$meta, 'settings.downloads.reverseSelectedOrder', {}) ?? 'Reverse selected order';
 
-  /// en: 'Hide selected temporarily'
-  String get hideSelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Hide selected temporarily';
+  /// en: 'Hide selected'
+  String get hideSelected => TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Hide selected';
+
+  /// en: 'Unhide hidden items'
+  String get unhideHidden => TranslationOverrides.string(_root.$meta, 'settings.downloads.unhideHidden', {}) ?? 'Unhide hidden items';
 
   /// en: 'Refresh selected metadata'
   String get refreshSelectedMetadata =>
@@ -6275,8 +6278,9 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.downloads.invertSelection', {}) ?? 'Invert selection',
           'settings.downloads.reverseSelectedOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.reverseSelectedOrder', {}) ?? 'Reverse selected order',
-          'settings.downloads.hideSelected' =>
-            TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Hide selected temporarily',
+          'settings.downloads.hideSelected' => TranslationOverrides.string(_root.$meta, 'settings.downloads.hideSelected', {}) ?? 'Hide selected',
+          'settings.downloads.unhideHidden' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.unhideHidden', {}) ?? 'Unhide hidden items',
           'settings.downloads.refreshSelectedMetadata' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.refreshSelectedMetadata', {}) ?? 'Refresh selected metadata',
           'settings.downloads.refreshDelayTitle' =>
@@ -7061,10 +7065,10 @@ extension on Translations {
           'tagView.md5' => TranslationOverrides.string(_root.$meta, 'tagView.md5', {}) ?? 'MD5',
           'tagView.rating' => TranslationOverrides.string(_root.$meta, 'tagView.rating', {}) ?? 'Rating',
           'tagView.score' => TranslationOverrides.string(_root.$meta, 'tagView.score', {}) ?? 'Score',
-          'tagView.noTagsFound' => TranslationOverrides.string(_root.$meta, 'tagView.noTagsFound', {}) ?? 'No tags found',
           _ => null,
         } ??
         switch (path) {
+          'tagView.noTagsFound' => TranslationOverrides.string(_root.$meta, 'tagView.noTagsFound', {}) ?? 'No tags found',
           'tagView.copy' => TranslationOverrides.string(_root.$meta, 'tagView.copy', {}) ?? 'Copy',
           'tagView.removeFromSearch' => TranslationOverrides.string(_root.$meta, 'tagView.removeFromSearch', {}) ?? 'Remove from Search',
           'tagView.addToSearch' => TranslationOverrides.string(_root.$meta, 'tagView.addToSearch', {}) ?? 'Add to Search',

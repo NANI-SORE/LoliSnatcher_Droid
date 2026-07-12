@@ -303,12 +303,13 @@ class DownloadsDrawerController {
   }
 
   void hideSelected() {
-    final selectedItems = Set<BooruItem>.identity()..addAll(searchHandler.currentSelected);
-    final handler = searchHandler.currentTab.booruHandler;
-    handler.fetched.removeWhere(selectedItems.contains);
-    searchHandler.filterCurrentFetched();
+    searchHandler.currentTab.hideItems([...searchHandler.currentSelected]);
     searchHandler.rootRestate?.call();
-    searchHandler.currentTab.selected.clear();
+  }
+
+  void unhideItems() {
+    searchHandler.currentTab.unhideItems();
+    searchHandler.rootRestate?.call();
   }
 
   void compareSelected(BuildContext context) {
