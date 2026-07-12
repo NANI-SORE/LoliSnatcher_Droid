@@ -197,7 +197,7 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
         .toList();
 
     final Widget body = Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       appBar: SettingsAppBar(
         title: context.loc.settings.booruOverridesTitle(
           booru: widget.booru.name ?? '',

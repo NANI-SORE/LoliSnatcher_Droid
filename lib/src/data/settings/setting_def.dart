@@ -190,11 +190,13 @@ class SettingWidgetConfig {
     this.leadingIcon,
     this.trailingIcon,
     this.helpDialog,
+    this.extraWidgets,
   });
 
   final Widget? leadingIcon;
   final Widget? trailingIcon;
   final Widget Function(BuildContext context)? helpDialog;
+  final List<Widget> Function(BuildContext context)? extraWidgets;
 }
 
 /// Categories for organizing settings on pages and in search results.
@@ -314,10 +316,10 @@ enum SettingSubcategory {
   backend(SettingCategory.video, 'backend'),
   mpv(SettingCategory.video, 'mpv'),
   theme(SettingCategory.theme, 'theme'),
-  textAndDrawer(SettingCategory.theme, 'textAndDrawer'),
-  cache(SettingCategory.cache, 'cache'),
-  downloads(SettingCategory.cache, 'downloads'),
+  drawer(SettingCategory.theme, 'drawer'),
   storage(SettingCategory.cache, 'storage'),
+  downloads(SettingCategory.cache, 'downloads'),
+  cache(SettingCategory.cache, 'cache'),
   cacheStats(SettingCategory.cache, 'cacheStats'),
   backup(SettingCategory.backup, 'backup'),
   database(SettingCategory.database, 'database'),
