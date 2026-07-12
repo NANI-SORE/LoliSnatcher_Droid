@@ -545,6 +545,12 @@ class _Translations$serverFavouritesSync$ru_RU extends Translations$serverFavour
   String get serverAddSucceeded =>
       TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverAddSucceeded', {}) ?? 'Добавлено в серверное избранное';
   @override
+  String get serverRemoveFavourite =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverRemoveFavourite', {}) ?? 'Удалить из серверного избранного';
+  @override
+  String get serverRemoveSucceeded =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverRemoveSucceeded', {}) ?? 'Удалено из серверного избранного';
+  @override
   String get settingsSubtitle =>
       TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.settingsSubtitle', {}) ??
       'Импорт, экспорт и сравнение локального избранного с поддерживаемыми аккаунтами сайтов.';
@@ -680,11 +686,14 @@ class _Translations$serverFavouritesSync$ru_RU extends Translations$serverFavour
   String get missingUserIdPassHash =>
       TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.missingUserIdPassHash', {}) ?? 'Нет ID пользователя/pass_hash';
   @override
+  String get missingLoginCookies =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.missingLoginCookies', {}) ?? 'Нет куки авторизации';
+  @override
   String get missingLoginPassword => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.missingLoginPassword', {}) ?? 'Нет логина/пароля';
   @override
-  String get gelbooruNeedsUserIdApiKey =>
-      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.gelbooruNeedsUserIdApiKey', {}) ??
-      'Только чтение: для записи избранного Gelbooru нужны user_id/API ключ';
+  String get serverFavouritesRequireAuth =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverFavouritesRequireAuth', {}) ??
+      'Отправка избранного на сервер требует авторизации';
   @override
   String get idolSankakuWriteUnsupported =>
       TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.idolSankakuWriteUnsupported', {}) ??
@@ -4574,6 +4583,10 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverAddFavourite', {}) ?? 'Добавить в серверное избранное',
           'serverFavouritesSync.serverAddSucceeded' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverAddSucceeded', {}) ?? 'Добавлено в серверное избранное',
+          'serverFavouritesSync.serverRemoveFavourite' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverRemoveFavourite', {}) ?? 'Удалить из серверного избранного',
+          'serverFavouritesSync.serverRemoveSucceeded' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverRemoveSucceeded', {}) ?? 'Удалено из серверного избранного',
           'serverFavouritesSync.settingsSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.settingsSubtitle', {}) ??
                 'Импорт, экспорт и сравнение локального избранного с поддерживаемыми аккаунтами сайтов.',
@@ -4679,11 +4692,13 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.missingUserIdApiKey', {}) ?? 'Нет ID пользователя/API ключа',
           'serverFavouritesSync.missingUserIdPassHash' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.missingUserIdPassHash', {}) ?? 'Нет ID пользователя/pass_hash',
+          'serverFavouritesSync.missingLoginCookies' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.missingLoginCookies', {}) ?? 'Нет куки авторизации',
           'serverFavouritesSync.missingLoginPassword' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.missingLoginPassword', {}) ?? 'Нет логина/пароля',
-          'serverFavouritesSync.gelbooruNeedsUserIdApiKey' =>
-            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.gelbooruNeedsUserIdApiKey', {}) ??
-                'Только чтение: для записи избранного Gelbooru нужны user_id/API ключ',
+          'serverFavouritesSync.serverFavouritesRequireAuth' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverFavouritesRequireAuth', {}) ??
+                'Отправка избранного на сервер требует авторизации',
           'serverFavouritesSync.idolSankakuWriteUnsupported' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.idolSankakuWriteUnsupported', {}) ??
                 'Запись серверного избранного Idol Sankaku не поддерживается',
@@ -5297,6 +5312,9 @@ extension on TranslationsRuRu {
                 '[Примечание]: Качество «Семплы» может заметно снизить производительность, особенно если у тебя слишком много столбцов в сетке превью',
           'settings.interface.previewDisplay' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplay', {}) ?? 'Отображение превью',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.interface.previewDisplayFallback' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayFallback', {}) ?? 'Резервное отображение превью',
           'settings.interface.previewDisplayFallbackHelp' =>
@@ -5304,9 +5322,6 @@ extension on TranslationsRuRu {
                 'Это будет использоваться, когда опция Ступенчатый невозможна',
           'settings.interface.dontScaleImages' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImages', {}) ?? 'Не масштабировать изображения',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.interface.dontScaleImagesSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImagesSubtitle', {}) ?? 'Может снизить производительность',
           'settings.interface.dontScaleImagesWarningTitle' =>
@@ -6324,14 +6339,14 @@ extension on TranslationsRuRu {
           'tagsManager.title' => TranslationOverrides.string(_root.$meta, 'tagsManager.title', {}) ?? 'Теги',
           'tagsManager.addTag' => TranslationOverrides.string(_root.$meta, 'tagsManager.addTag', {}) ?? 'Добавить тег',
           'tagsManager.name' => TranslationOverrides.string(_root.$meta, 'tagsManager.name', {}) ?? 'Имя',
+          _ => null,
+        } ??
+        switch (path) {
           'tagsManager.type' => TranslationOverrides.string(_root.$meta, 'tagsManager.type', {}) ?? 'Тип',
           'tagsManager.add' => TranslationOverrides.string(_root.$meta, 'tagsManager.add', {}) ?? 'Добавить',
           'tagsManager.staleAfter' =>
             ({required String staleText}) =>
                 TranslationOverrides.string(_root.$meta, 'tagsManager.staleAfter', {'staleText': staleText}) ?? 'Устаревает после: ${staleText}',
-          _ => null,
-        } ??
-        switch (path) {
           'tagsManager.addedATab' => TranslationOverrides.string(_root.$meta, 'tagsManager.addedATab', {}) ?? 'Вкладка добавлена',
           'tagsManager.addATab' => TranslationOverrides.string(_root.$meta, 'tagsManager.addATab', {}) ?? 'Добавить вкладку',
           'tagsManager.copy' => TranslationOverrides.string(_root.$meta, 'tagsManager.copy', {}) ?? 'Копировать',

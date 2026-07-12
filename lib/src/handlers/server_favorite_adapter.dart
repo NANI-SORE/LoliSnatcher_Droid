@@ -9,6 +9,9 @@ import 'package:lolisnatcher/src/data/server_favorites/server_favorite_models.da
 import 'package:lolisnatcher/src/data/server_favorites/server_id_parser.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
+import 'package:lolisnatcher/src/utils/tools.dart';
+
+// TODO localization
 
 abstract class ServerFavoriteAdapter {
   ServerFavoriteAdapter(this.booru);
@@ -137,6 +140,20 @@ abstract class ServerFavoriteAdapter {
     return '$siteName $action may be blocked by Cloudflare. Open $siteName in the in-app webview, log in, complete any captcha, then retry.';
   }
 
+  String loginCookiesRequiredMessage(String siteName) {
+    return 'Open $siteName in the in-app webview, log in, then retry. Server favourite writes need valid login cookies.';
+  }
+
+  Future<String> storedCookieHeader() async {
+    if (booru.baseURL?.isNotEmpty != true) return '';
+    return Tools.getCookies(booru.baseURL!);
+  }
+
+  bool hasCookieNames(String cookieHeader, Iterable<String> names) {
+    final lower = cookieHeader.toLowerCase();
+    return names.every((name) => RegExp('(^|;|\\s)${RegExp.escape(name.toLowerCase())}=').hasMatch(lower));
+  }
+
   bool looksCloudflareBlocked(Response response) {
     final body = response.data.toString().toLowerCase();
     return response.statusCode == 403 ||
@@ -144,6 +161,39 @@ abstract class ServerFavoriteAdapter {
         body.contains('cf_clearance') ||
         body.contains('just a moment') ||
         body.contains('checking your browser');
+  }
+
+  Future<void> tryGelbooruStyleLogin({
+    required String login,
+    required String password,
+    String? baseUrl,
+  }) async {
+    final loginBaseUrl = baseUrl ?? booru.baseURL;
+    if (loginBaseUrl?.isNotEmpty != true || login.isEmpty || password.isEmpty) return;
+
+    try {
+      await DioNetwork.post(
+        '$loginBaseUrl/index.php',
+        queryParameters: {
+          'page': 'account',
+          's': 'login',
+          'code': '00',
+        },
+        data: {
+          'user': login,
+          'pass': password,
+          'submit': 'Log in',
+        },
+        options: Options(
+          responseType: ResponseType.plain,
+          contentType: Headers.formUrlEncodedContentType,
+          validateStatus: (_) => true,
+        ),
+        customInterceptor: (dio) => DioNetwork.captchaInterceptor(DioNetwork.cookieInterceptor(dio)),
+      );
+    } catch (_) {
+      // Best effort only. Manual webview cookies may still be valid.
+    }
   }
 }
 
@@ -223,25 +273,24 @@ class DanbooruServerFavoriteAdapter extends ServerFavoriteAdapter {
 class GelbooruServerFavoriteAdapter extends ServerFavoriteAdapter {
   GelbooruServerFavoriteAdapter(super.booru);
 
-  bool get _hasUserId => booru.userID?.isNotEmpty == true;
-  bool get _hasApiKey => booru.apiKey?.isNotEmpty == true;
+  bool get _hasAuthPassword => booru.authPassword?.isNotEmpty == true;
+  String? get _loginPassword => _hasAuthPassword ? booru.authPassword : null;
   bool get _isOfficialGelbooru {
     final host = Uri.tryParse(booru.baseURL ?? '')?.host.toLowerCase();
     return host == 'gelbooru.com' || host == 'www.gelbooru.com';
   }
 
-  bool get _canWrite => _isOfficialGelbooru && _hasUserId && _hasApiKey;
+  bool get _canWrite => _isOfficialGelbooru && booru.baseURL?.isNotEmpty == true;
 
   @override
   ServerFavoriteCapabilities get capabilities => ServerFavoriteCapabilities(
-    canFetch: _hasUserId,
+    canFetch: false,
     canAdd: _canWrite,
     canRemove: _canWrite,
     requiresAuth: true,
     isDestructiveMirrorAllowed: _canWrite,
-    unsupportedReason: _hasUserId
-        ? (_canWrite ? null : loc.serverFavouritesSync.gelbooruNeedsUserIdApiKey)
-        : loc.serverFavouritesSync.missingUserId,
+    canCheckSingle: false,
+    unsupportedReason: _canWrite ? null : loc.serverFavouritesSync.missingLoginCookies,
   );
 
   @override
@@ -249,11 +298,6 @@ class GelbooruServerFavoriteAdapter extends ServerFavoriteAdapter {
 
   @override
   String? serverIdFromUrl(String url) => ServerIdParser.fromUrl(url);
-
-  Map<String, dynamic> get _authQuery => {
-    'user_id': booru.userID,
-    'api_key': booru.apiKey,
-  };
 
   Future<ServerFavoriteMutationResult?> _preflightHost(String action) async {
     try {
@@ -264,14 +308,14 @@ class GelbooruServerFavoriteAdapter extends ServerFavoriteAdapter {
       );
       if (looksCloudflareBlocked(response)) {
         return ServerFavoriteMutationResult.failure(
-          cloudflareBlockedMessage(action, 'Rule34.xxx'),
+          cloudflareBlockedMessage(action, 'Gelbooru'),
           statusCode: response.statusCode,
           canRetryAfterWebview: true,
         );
       }
       if (!_isSuccessStatus(response.statusCode)) {
         return ServerFavoriteMutationResult.failure(
-          'Rule34.xxx host preflight returned HTTP ${response.statusCode}',
+          'Gelbooru host preflight returned HTTP ${response.statusCode}',
           statusCode: response.statusCode,
         );
       }
@@ -294,21 +338,29 @@ class GelbooruServerFavoriteAdapter extends ServerFavoriteAdapter {
     try {
       final preflight = await _preflightHost('add favourite');
       if (preflight != null) return preflight;
+      await _tryLogin();
+      final authFailure = await _validateLoginCookies();
+      if (authFailure != null) return authFailure;
 
       final response = await DioNetwork.get(
         '${booru.baseURL}/public/addfav.php',
-        queryParameters: {
-          ..._authQuery,
-          'id': serverId,
-        },
+        queryParameters: {'id': serverId},
         options: Options(responseType: ResponseType.plain, validateStatus: (_) => true),
+        customInterceptor: (dio) => DioNetwork.captchaInterceptor(DioNetwork.cookieInterceptor(dio)),
       );
       final code = response.data.toString().trim();
+      if (response.statusCode == 200 && code == '2') {
+        return ServerFavoriteMutationResult.failure(
+          loginCookiesRequiredMessage('Gelbooru'),
+          statusCode: response.statusCode,
+          canRetryAfterWebview: true,
+        );
+      }
       return _httpResult(
         response,
-        successMessage: code == '3' ? 'Gelbooru favourite was already present' : 'Gelbooru favourite added',
-        isSuccess: (_) => code == '1' || code == '3',
-        failureMessage: (_) => 'Gelbooru add favourite returned $code',
+        successMessage: code == '1' ? 'Gelbooru favourite: already present' : 'Gelbooru favourite: added',
+        isSuccess: (response) => response.statusCode == 200 && code != '2',
+        failureMessage: (_) => 'Gelbooru add favourite: auth failed',
       );
     } catch (e) {
       return _exceptionResult(e);
@@ -322,6 +374,9 @@ class GelbooruServerFavoriteAdapter extends ServerFavoriteAdapter {
     try {
       final preflight = await _preflightHost('remove favourite');
       if (preflight != null) return preflight;
+      await _tryLogin();
+      final authFailure = await _validateLoginCookies();
+      if (authFailure != null) return authFailure;
 
       final response = await DioNetwork.get(
         '${booru.baseURL}/index.php',
@@ -329,12 +384,12 @@ class GelbooruServerFavoriteAdapter extends ServerFavoriteAdapter {
           'page': 'favorites',
           's': 'delete',
           'id': serverId,
-          ..._authQuery,
         },
         options: Options(
           responseType: ResponseType.plain,
           validateStatus: (_) => true,
         ),
+        customInterceptor: (dio) => DioNetwork.captchaInterceptor(DioNetwork.cookieInterceptor(dio)),
       );
       final body = response.data.toString().toLowerCase();
       final looksAuthFailed =
@@ -342,6 +397,13 @@ class GelbooruServerFavoriteAdapter extends ServerFavoriteAdapter {
           body.contains('sign in') ||
           body.contains('access denied') ||
           body.contains('not authorized');
+      if (looksAuthFailed) {
+        return ServerFavoriteMutationResult.failure(
+          loginCookiesRequiredMessage('Gelbooru'),
+          statusCode: response.statusCode,
+          canRetryAfterWebview: true,
+        );
+      }
       return _httpResult(
         response,
         successMessage: 'Gelbooru favourite removed',
@@ -354,24 +416,50 @@ class GelbooruServerFavoriteAdapter extends ServerFavoriteAdapter {
       return _exceptionResult(e);
     }
   }
+
+  Future<void> _tryLogin() async {
+    final login = booru.authLogin?.isNotEmpty == true ? booru.authLogin : booru.userID;
+    final password = _loginPassword;
+    if (login?.isNotEmpty != true || password?.isNotEmpty != true) return;
+    await tryGelbooruStyleLogin(login: login!, password: password!);
+  }
+
+  Future<ServerFavoriteMutationResult?> _validateLoginCookies() async {
+    final cookies = await storedCookieHeader();
+    if (hasCookieNames(cookies, const ['user_id', 'pass_hash'])) return null;
+    return ServerFavoriteMutationResult.failure(
+      loginCookiesRequiredMessage('Gelbooru'),
+      canRetryAfterWebview: true,
+    );
+  }
 }
 
 class Rule34XxxServerFavoriteAdapter extends ServerFavoriteAdapter {
   Rule34XxxServerFavoriteAdapter(super.booru);
 
-  bool get _hasAuth => booru.userID?.isNotEmpty == true && booru.apiKey?.isNotEmpty == true;
+  bool get _hasBaseUrl => booru.baseURL?.isNotEmpty == true;
+  String? get _loginPassword => booru.authPassword?.isNotEmpty == true ? booru.authPassword : null;
+  String get _siteBaseUrl {
+    final uri = Uri.tryParse(booru.baseURL ?? '');
+    if (uri == null || uri.host.isEmpty) return booru.baseURL ?? '';
+    if (uri.host.toLowerCase() == 'api.rule34.xxx') {
+      return uri.replace(host: 'rule34.xxx', path: '', query: '', fragment: '').toString();
+    }
+    return uri.replace(path: '', query: '', fragment: '').toString();
+  }
 
   @override
   List<String> get localHosts => [host, 'rule34.xxx', 'api.rule34.xxx'];
 
   @override
   ServerFavoriteCapabilities get capabilities => ServerFavoriteCapabilities(
-    canFetch: _hasAuth,
-    canAdd: _hasAuth,
-    canRemove: _hasAuth,
+    canFetch: false,
+    canAdd: _hasBaseUrl,
+    canRemove: _hasBaseUrl,
     requiresAuth: true,
-    isDestructiveMirrorAllowed: _hasAuth,
-    unsupportedReason: _hasAuth ? null : loc.serverFavouritesSync.missingUserIdPassHash,
+    isDestructiveMirrorAllowed: _hasBaseUrl,
+    canCheckSingle: false,
+    unsupportedReason: _hasBaseUrl ? null : loc.serverFavouritesSync.missingLoginCookies,
   );
 
   @override
@@ -379,15 +467,6 @@ class Rule34XxxServerFavoriteAdapter extends ServerFavoriteAdapter {
 
   @override
   String? serverIdFromUrl(String url) => ServerIdParser.fromUrl(url);
-
-  Map<String, dynamic> get _authQuery => {
-    'user_id': booru.userID,
-    'api_key': booru.apiKey,
-  };
-
-  Map<String, dynamic> get _authCookieHeaders => {
-    'Cookie': 'user_id=${booru.userID}; pass_hash=${booru.apiKey}',
-  };
 
   @override
   Future<bool> addFavorite(String serverId) async => (await addFavoriteResult(serverId)).success;
@@ -400,26 +479,36 @@ class Rule34XxxServerFavoriteAdapter extends ServerFavoriteAdapter {
     if (!canMutateServerId(serverId)) return invalidServerIdResult(serverId);
 
     try {
+      await _tryLogin();
+      final authFailure = await _validateLoginCookies();
+      if (authFailure != null) return authFailure;
+
       final response = await DioNetwork.get(
-        '${booru.baseURL}/public/addfav.php',
+        '$_siteBaseUrl/public/addfav.php',
         queryParameters: {'id': serverId},
-        headers: _authCookieHeaders,
         options: Options(responseType: ResponseType.plain, validateStatus: (_) => true),
-        customInterceptor: DioNetwork.captchaInterceptor,
+        customInterceptor: (dio) => DioNetwork.captchaInterceptor(DioNetwork.cookieInterceptor(dio)),
       );
       final body = response.data.toString().trim();
-      if (!(response.statusCode == 200 && (body == '1' || body == '3')) && looksCloudflareBlocked(response)) {
+      if (!(response.statusCode == 200 && body != '2') && looksCloudflareBlocked(response)) {
         return ServerFavoriteMutationResult.failure(
           cloudflareBlockedMessage('add favourite', 'Rule34.xxx'),
           statusCode: response.statusCode,
           canRetryAfterWebview: true,
         );
       }
+      if (response.statusCode == 200 && body == '2') {
+        return ServerFavoriteMutationResult.failure(
+          loginCookiesRequiredMessage('Rule34.xxx'),
+          statusCode: response.statusCode,
+          canRetryAfterWebview: true,
+        );
+      }
       return _httpResult(
         response,
-        successMessage: body == '3' ? 'Rule34.xxx favourite was already present' : 'Rule34.xxx favourite added',
-        isSuccess: (_) => response.statusCode == 200 && (body == '1' || body == '3'),
-        failureMessage: (_) => 'Rule34.xxx add favourite returned HTTP ${response.statusCode}: $body',
+        successMessage: body == '1' ? 'Rule34.xxx favourite was already present' : 'Rule34.xxx favourite added',
+        isSuccess: (_) => response.statusCode == 200 && body != '2',
+        failureMessage: (_) => 'Rule34.xxx add favourite looks unauthenticated',
       );
     } catch (e) {
       return _exceptionResult(e);
@@ -431,17 +520,20 @@ class Rule34XxxServerFavoriteAdapter extends ServerFavoriteAdapter {
     if (!canMutateServerId(serverId)) return invalidServerIdResult(serverId);
 
     try {
+      await _tryLogin();
+      final authFailure = await _validateLoginCookies();
+      if (authFailure != null) return authFailure;
+
       final response = await DioNetwork.get(
-        '${booru.baseURL}/index.php',
+        '$_siteBaseUrl/index.php',
         queryParameters: {
-          ..._authQuery,
           'page': 'favorites',
           's': 'delete',
           'id': serverId,
           'return_pid': '0',
         },
         options: Options(responseType: ResponseType.plain, validateStatus: (_) => true),
-        customInterceptor: DioNetwork.captchaInterceptor,
+        customInterceptor: (dio) => DioNetwork.captchaInterceptor(DioNetwork.cookieInterceptor(dio)),
       );
       final body = response.data.toString().toLowerCase();
       final looksAuthFailed =
@@ -452,6 +544,13 @@ class Rule34XxxServerFavoriteAdapter extends ServerFavoriteAdapter {
       if (!(response.statusCode == 200 && !looksAuthFailed) && looksCloudflareBlocked(response)) {
         return ServerFavoriteMutationResult.failure(
           cloudflareBlockedMessage('remove favourite', 'Rule34.xxx'),
+          statusCode: response.statusCode,
+          canRetryAfterWebview: true,
+        );
+      }
+      if (looksAuthFailed) {
+        return ServerFavoriteMutationResult.failure(
+          loginCookiesRequiredMessage('Rule34.xxx'),
           statusCode: response.statusCode,
           canRetryAfterWebview: true,
         );
@@ -469,6 +568,22 @@ class Rule34XxxServerFavoriteAdapter extends ServerFavoriteAdapter {
     } catch (e) {
       return _exceptionResult(e);
     }
+  }
+
+  Future<void> _tryLogin() async {
+    final login = booru.authLogin;
+    final password = _loginPassword;
+    if (login?.isNotEmpty != true || password?.isNotEmpty != true) return;
+    await tryGelbooruStyleLogin(login: login!, password: password!, baseUrl: _siteBaseUrl);
+  }
+
+  Future<ServerFavoriteMutationResult?> _validateLoginCookies() async {
+    final cookies = await Tools.getCookies(_siteBaseUrl);
+    if (hasCookieNames(cookies, const ['user_id', 'pass_hash'])) return null;
+    return ServerFavoriteMutationResult.failure(
+      loginCookiesRequiredMessage('Rule34.xxx'),
+      canRetryAfterWebview: true,
+    );
   }
 }
 
@@ -490,6 +605,7 @@ class SankakuServerFavoriteAdapter extends ServerFavoriteAdapter {
     canRemove: _hasAuth && !_isIdol,
     requiresAuth: true,
     isDestructiveMirrorAllowed: _hasAuth && !_isIdol,
+    canCheckSingle: false,
     unsupportedReason: !_hasAuth
         ? loc.serverFavouritesSync.missingLoginPassword
         : (_isIdol ? loc.serverFavouritesSync.idolSankakuWriteUnsupported : null),

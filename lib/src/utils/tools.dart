@@ -212,9 +212,7 @@ class Tools {
 
   static final String appUserAgent = 'LoliSnatcher_Droid/${Constants.updateInfo.versionName}';
   static String get browserUserAgent {
-    return (isTestMode || SX.customUserAgent.value.isEmpty)
-        ? appUserAgent
-        : SX.customUserAgent.value;
+    return (isTestMode || SX.customUserAgent.value.isEmpty) ? appUserAgent : SX.customUserAgent.value;
   }
 
   static bool get isTestMode => Platform.environment.containsKey('FLUTTER_TEST');
@@ -222,18 +220,63 @@ class Tools {
   static const String captchaCheckHeader = 'LSCaptchaCheck';
 
   static bool hasCaptchaStrings(String host, String content) {
+    final contentLower = content.toLowerCase();
+
     final Map<String, List<String>> knownCaptchaStrings = {
       // TODO add multiple strings for each, then try to find as much as possible and decide if it's a captcha based on the ratio of found/total
       'booru.allthefallen.moe': ['processChallenge'],
       'derpibooru.org': ['derpi-challenge'],
     };
+    final hasKnownHostCaptcha =
+        knownCaptchaStrings.entries.firstWhereOrNull((e) => host.contains(e.key))?.value.any(content.contains) == true;
+    if (hasKnownHostCaptcha) return true;
 
-    final List<String>? stringsToFind = knownCaptchaStrings.entries
-        .firstWhereOrNull((e) => host.contains(e.key))
-        ?.value;
+    final hasCloudflareChallenge =
+        (contentLower.contains('<title>just a moment') && contentLower.contains('cloudflare')) ||
+        contentLower.contains('cf-challenge') ||
+        contentLower.contains('cf_chl_') ||
+        contentLower.contains('cf-browser-verification') ||
+        contentLower.contains('checking your browser before accessing');
+    if (hasCloudflareChallenge) return true;
 
-    if (stringsToFind == null) return false;
-    return stringsToFind.any((t) => content.contains(t));
+    final hasCaptchaTitle = RegExp(r'<title>\s*captcha\s*</title>', caseSensitive: false).hasMatch(contentLower);
+    final captchaMarkers = [
+      'captcha-box',
+      'h-captcha',
+      'g-recaptcha',
+      'cf-turnstile',
+      'captcha_text',
+      'captcha_guid',
+    ];
+    final hasCaptchaMarker = captchaMarkers.any(contentLower.contains);
+    if (hasCaptchaTitle && hasCaptchaMarker) return true;
+
+    final atfMarkers = [
+      'click the checkbox',
+      'challenge_id',
+      'challenge_generated',
+      'challenge-checkbox',
+      'challenge-container',
+    ];
+    return atfMarkers.where(contentLower.contains).length >= 2;
+  }
+
+  static bool shouldRetryRequest(Response? response) {
+    if (response?.requestOptions.headers.containsKey(captchaCheckHeader) == true) {
+      return false;
+    }
+
+    final method = response?.requestOptions.method.toUpperCase();
+    if (method != 'GET' && method != 'HEAD') return false;
+
+    final statusCode = response?.statusCode;
+    if (statusCode != HttpStatus.forbidden && statusCode != HttpStatus.serviceUnavailable) {
+      return false;
+    }
+
+    final host = response?.realUri.host ?? response?.requestOptions.uri.host ?? '';
+    final content = response?.data.toString() ?? '';
+    return !hasCaptchaStrings(host, content);
   }
 
   static Future<bool> checkForCaptcha(Response? response, Uri uri, {String? customUserAgent}) async {
@@ -245,10 +288,7 @@ class Tools {
 
     final bool hasCaptchaContent = hasCaptchaStrings(host, response?.data.toString() ?? '');
 
-    if (PlatformExt.hasWebviewSupport &&
-        (response?.statusCode == HttpStatus.forbidden ||
-            response?.statusCode == HttpStatus.serviceUnavailable ||
-            hasCaptchaContent)) {
+    if (PlatformExt.hasWebviewSupport && hasCaptchaContent) {
       // delete invalid cloudflare cookie
       final webUri = WebUri('${uri.scheme}://$host');
       final bool res =

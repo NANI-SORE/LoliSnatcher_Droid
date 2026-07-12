@@ -6,9 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:lolisnatcher/src/data/booru_item.dart';
-import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/widgets/gallery/notes_renderer.dart';
@@ -30,7 +28,6 @@ class DesktopImageListener extends StatefulWidget {
 }
 
 class _DesktopImageListenerState extends State<DesktopImageListener> {
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
   final SnatchHandler snatchHandler = SnatchHandler.instance;
   final SearchHandler searchHandler = SearchHandler.instance;
   final ViewerHandler viewerHandler = ViewerHandler.instance;
@@ -165,10 +162,14 @@ class _DesktopImageListenerState extends State<DesktopImageListener> {
                   height: 32,
                   margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
                   child: FloatingActionButton(
-                    onPressed: () {
+                    onPressed: () async {
                       if (item.isFavourite.value != null) {
-                        item.isFavourite.toggle();
-                        settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
+                        final index = widget.searchTab.booruHandler.filteredFetched.indexWhere(
+                          (e) => e.key == item.key,
+                        );
+                        if (index != -1) {
+                          await widget.searchTab.toggleItemFavourite(index);
+                        }
                       }
                     },
                     child: Obx(

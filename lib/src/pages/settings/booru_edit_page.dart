@@ -51,6 +51,8 @@ class _BooruEditState extends State<BooruEdit> {
   final booruFaviconController = TextEditingController();
   final booruAPIKeyController = TextEditingController();
   final booruUserIDController = TextEditingController();
+  final booruAuthLoginController = TextEditingController();
+  final booruAuthPasswordController = TextEditingController();
   final booruDefTagsController = TextEditingController();
 
   BooruType? booruType;
@@ -106,6 +108,8 @@ class _BooruEditState extends State<BooruEdit> {
       booruFaviconController.text = widget.booru.faviconURL ?? '';
       booruAPIKeyController.text = widget.booru.apiKey ?? '';
       booruUserIDController.text = widget.booru.userID ?? '';
+      booruAuthLoginController.text = widget.booru.authLogin ?? '';
+      booruAuthPasswordController.text = widget.booru.authPassword ?? '';
       booruDefTagsController.text = widget.booru.defTags ?? '';
       selectedBooruType = BooruType.values.contains(widget.booru.type) ? widget.booru.type! : selectedBooruType;
     }
@@ -118,6 +122,8 @@ class _BooruEditState extends State<BooruEdit> {
     booruFaviconController.dispose();
     booruAPIKeyController.dispose();
     booruUserIDController.dispose();
+    booruAuthLoginController.dispose();
+    booruAuthPasswordController.dispose();
     booruDefTagsController.dispose();
     super.dispose();
   }
@@ -277,6 +283,29 @@ class _BooruEditState extends State<BooruEdit> {
               obscureable: shouldObscureApiKey(),
               enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
             ),
+            if (showAuthLoginInput)
+              SettingsTextInput(
+                controller: booruAuthLoginController,
+                onChanged: (_) => setState(() {}),
+                title: context.loc.login,
+                hintText: getAuthLoginPlaceholder(),
+                clearable: true,
+                pasteable: true,
+                drawTopBorder: true,
+                enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
+              ),
+            if (showAuthPasswordInput)
+              SettingsTextInput(
+                controller: booruAuthPasswordController,
+                onChanged: (_) => setState(() {}),
+                title: context.loc.password,
+                hintText: getAuthPasswordPlaceholder(),
+                clearable: true,
+                pasteable: true,
+                drawTopBorder: true,
+                obscureable: true,
+                enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
+              ),
             SizedBox(height: MediaQuery.sizeOf(context).height * 0.2),
           ],
         ),
@@ -301,6 +330,24 @@ class _BooruEditState extends State<BooruEdit> {
       default:
         return '';
     }
+  }
+
+  bool get showAuthLoginInput {
+    final host = Uri.tryParse(booruURLController.text)?.host.toLowerCase() ?? booruURLController.text.toLowerCase();
+    return host.contains('gelbooru.com') || host.contains('rule34.xxx');
+  }
+
+  bool get showAuthPasswordInput {
+    final host = Uri.tryParse(booruURLController.text)?.host.toLowerCase() ?? booruURLController.text.toLowerCase();
+    return host.contains('gelbooru.com') || host.contains('rule34.xxx');
+  }
+
+  String getAuthLoginPlaceholder() {
+    return context.loc.login;
+  }
+
+  String getAuthPasswordPlaceholder() {
+    return context.loc.password;
   }
 
   String getInstructions() {
@@ -444,6 +491,8 @@ class _BooruEditState extends State<BooruEdit> {
       booruDefTagsController.text,
       booruAPIKeyController.text.isEmpty ? null : booruAPIKeyController.text,
       booruUserIDController.text.isEmpty ? null : booruUserIDController.text,
+      authLogin: booruAuthLoginController.text.isEmpty ? null : booruAuthLoginController.text,
+      authPassword: booruAuthPasswordController.text.isEmpty ? null : booruAuthPasswordController.text,
     );
 
     isTesting = true;
@@ -537,6 +586,8 @@ class _BooruEditState extends State<BooruEdit> {
       booruDefTagsController.text,
       booruAPIKeyController.text.isEmpty ? null : booruAPIKeyController.text,
       booruUserIDController.text.isEmpty ? null : booruUserIDController.text,
+      authLogin: booruAuthLoginController.text.isEmpty ? null : booruAuthLoginController.text,
+      authPassword: booruAuthPasswordController.text.isEmpty ? null : booruAuthPasswordController.text,
     );
 
     bool booruExists = false;

@@ -36,6 +36,7 @@ class ServerFavoriteCapabilities {
     required this.canRemove,
     required this.requiresAuth,
     required this.isDestructiveMirrorAllowed,
+    this.canCheckSingle = true,
     this.unsupportedReason,
   });
 
@@ -44,6 +45,7 @@ class ServerFavoriteCapabilities {
   final bool canRemove;
   final bool requiresAuth;
   final bool isDestructiveMirrorAllowed;
+  final bool canCheckSingle;
   final String? unsupportedReason;
 
   bool get hasAnySupport => canFetch || canAdd || canRemove;

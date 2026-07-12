@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart' hide MetaTag;
 
 import 'package:dio/dio.dart';
 import 'package:html/dom.dart';
@@ -21,6 +23,7 @@ import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
+import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
 
 // TODO json parser? (add &json=1 to urls)
 // rule34.xxx, safebooru.org
@@ -41,6 +44,15 @@ class GelbooruAlikesHandler extends BooruHandler {
   // because requests to default url are protected by a captcha
   String get baseURL => isR34xxx ? 'https://api.rule34.xxx' : originalBaseUrl;
 
+  String get siteBaseURL {
+    final uri = Uri.tryParse(originalBaseUrl);
+    if (uri == null || uri.host.isEmpty) return originalBaseUrl;
+    if (uri.host.toLowerCase() == 'api.rule34.xxx') {
+      return uri.replace(host: 'rule34.xxx', path: '', query: '', fragment: '').toString();
+    }
+    return uri.replace(path: '', query: '', fragment: '').toString();
+  }
+
   String get apiKeyStr => booru.apiKey?.isNotEmpty == true ? '&api_key=${booru.apiKey}' : '';
 
   String get userIDStr => booru.userID?.isNotEmpty == true ? '&user_id=${booru.userID}' : '';
@@ -58,7 +70,98 @@ class GelbooruAlikesHandler extends BooruHandler {
       '<p><b>You may need to add your User ID and API key. You can get them on <a href="https://rule34.xxx/index.php?page=account&s=options">rule34.xxx settings page</a> under "API Access Credentials" after logging in (enter only the values, without the "&api_key="/"&user_id=").</b></p> '
       '<p><b>Note: Anonymous access (user_id=2) is NOT allowed.</b></p> '
       '<p><b>User ID must be a number, NOT your login.</b></p> '
-      '<p><b>If api_key is empty on the settings page, enable "Generate new key", then press "Save", API key should appear after a page reloads.</b></p>';
+      '<p><b>If api_key is empty on the settings page, enable "Generate new key", then press "Save", API key should appear after a page reloads.</b></p> '
+      '<p><b>Sending favourites to server requires logging in. Open this site in the in-app webview (through the button above) and log in, or fill the optional login/password fields so app can try logging in automatically.</b></p>';
+
+  @override
+  bool get hasSignInSupport => isR34xxx;
+
+  @override
+  Future<bool> canSignIn() async {
+    if (!isR34xxx) return false;
+    return booru.authLogin?.isNotEmpty == true && booru.authPassword?.isNotEmpty == true;
+  }
+
+  @override
+  Future<bool> isSignedIn() async {
+    if (!isR34xxx) return false;
+    final cookies = await Tools.getCookies(siteBaseURL);
+    return _hasRule34XxxLoginCookies(cookies);
+  }
+
+  @override
+  Future<bool> signIn() async {
+    if (!await canSignIn()) return false;
+
+    try {
+      await DioNetwork.post(
+        '$siteBaseURL/index.php',
+        queryParameters: {
+          'page': 'account',
+          's': 'login',
+          'code': '00',
+        },
+        data: {
+          'user': booru.authLogin,
+          'pass': booru.authPassword,
+          'submit': 'Log in',
+        },
+        options: Options(
+          responseType: ResponseType.plain,
+          contentType: Headers.formUrlEncodedContentType,
+          validateStatus: (_) => true,
+        ),
+        headers: await Tools.getFileCustomHeaders(booru),
+        customInterceptor: (dio) => DioNetwork.captchaInterceptor(DioNetwork.cookieInterceptor(dio)),
+      );
+      return isSignedIn();
+    } catch (e, s) {
+      Logger.Inst().log(e.toString(), className, 'signIn', LogTypes.exception, s: s);
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> signOut({bool fromError = false}) async {
+    bool success = fromError;
+    if (!fromError) {
+      try {
+        final response = await DioNetwork.get(
+          '$siteBaseURL/index.php',
+          queryParameters: {
+            'page': 'account',
+            's': 'login',
+            'code': '01',
+          },
+          options: Options(responseType: ResponseType.plain, validateStatus: (_) => true),
+          headers: await Tools.getFileCustomHeaders(booru),
+          customInterceptor: (dio) => DioNetwork.captchaInterceptor(DioNetwork.cookieInterceptor(dio)),
+        );
+        success = response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 400;
+      } catch (e, s) {
+        Logger.Inst().log(e.toString(), className, 'signOut', LogTypes.exception, s: s);
+      }
+    }
+
+    await _deleteRule34XxxLoginCookies();
+    return success;
+  }
+
+  bool _hasRule34XxxLoginCookies(String cookies) {
+    final lower = cookies.toLowerCase();
+    return RegExp(r'(^|;|\s)user_id=').hasMatch(lower) && RegExp(r'(^|;|\s)pass_hash=').hasMatch(lower);
+  }
+
+  Future<void> _deleteRule34XxxLoginCookies() async {
+    if (!PlatformExt.hasWebviewSupport) return;
+    final url = WebUri(siteBaseURL);
+    final cookieManager = CookieManager.instance(webViewEnvironment: webViewEnvironment);
+    await cookieManager.deleteCookie(url: url, name: 'user_id');
+    await cookieManager.deleteCookie(url: url, name: 'pass_hash');
+    if (Platform.isWindows) {
+      globalWindowsCookies[url.host]?.removeWhere((cookie) => cookie.name == 'user_id' || cookie.name == 'pass_hash');
+    }
+  }
 
   @override
   Future<List> parseListFromResponse(dynamic response) async {

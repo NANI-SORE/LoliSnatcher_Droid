@@ -21,8 +21,10 @@ class Booru {
     this.baseURL,
     this.defTags,
     this.apiKey,
-    this.userID,
-  );
+    this.userID, {
+    this.authLogin,
+    this.authPassword,
+  });
 
   Booru.fromJSON(String jsonString) {
     final Map<String, dynamic> json = jsonDecode(jsonString);
@@ -39,7 +41,14 @@ class Booru {
     setFromMap(json);
   }
 
-  String? name = '', faviconURL = '', baseURL = '', apiKey = '', userID = '', defTags = '';
+  String? name = '',
+      faviconURL = '',
+      baseURL = '',
+      apiKey = '',
+      userID = '',
+      authLogin = '',
+      authPassword = '',
+      defTags = '';
   BooruType? type;
 
   /// Per-booru setting overrides. Stored in each booru's config file.
@@ -57,6 +66,8 @@ class Booru {
       'defTags': defTags,
       'apiKey': apiKey,
       'userID': userID,
+      'authLogin': authLogin,
+      'authPassword': authPassword,
       if (settingOverrides != null && settingOverrides!.isNotEmpty) 'settingOverrides': settingOverrides,
     };
   }
@@ -68,6 +79,8 @@ class Booru {
     if (withSensitiveData == false) {
       json.remove('apiKey');
       json.remove('userID');
+      json.remove('authLogin');
+      json.remove('authPassword');
     }
     final String jsonString = jsonEncode(json);
     return 'https://www.loli.snatcher?${base64UrlEncode(jsonString.codeUnits)}';
@@ -81,6 +94,8 @@ class Booru {
     defTags = json['defTags']?.toString();
     apiKey = json['apiKey']?.toString();
     userID = json['userID']?.toString();
+    authLogin = json['authLogin']?.toString();
+    authPassword = json['authPassword']?.toString();
     settingOverrides = json['settingOverrides'] is Map
         ? Map<String, dynamic>.from(json['settingOverrides'] as Map)
         : null;
@@ -88,7 +103,7 @@ class Booru {
 
   @override
   String toString() {
-    return 'Name: $name, Type: $type, BaseURL: $baseURL, FaviconURL: $faviconURL, APIKey: $apiKey, UserID: $userID';
+    return 'Name: $name, Type: $type, BaseURL: $baseURL, FaviconURL: $faviconURL, APIKey: $apiKey, UserID: $userID, authLogin: ${authLogin?.isNotEmpty == true ? '<set>' : '<empty>'}, authPassword: ${authPassword?.isNotEmpty == true ? '<set>' : '<empty>'}';
   }
 
   Booru copyWith({
@@ -99,6 +114,8 @@ class Booru {
     String? defTags,
     String? apiKey,
     String? userID,
+    String? authLogin,
+    String? authPassword,
     Map<String, dynamic>? settingOverrides,
   }) {
     return Booru.withKey(
@@ -109,6 +126,8 @@ class Booru {
       defTags ?? this.defTags,
       apiKey ?? this.apiKey,
       userID ?? this.userID,
+      authLogin: authLogin ?? this.authLogin,
+      authPassword: authPassword ?? this.authPassword,
     )..settingOverrides = settingOverrides ?? this.settingOverrides;
   }
 }

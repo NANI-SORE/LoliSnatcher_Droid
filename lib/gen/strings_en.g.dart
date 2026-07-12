@@ -652,6 +652,14 @@ class Translations$serverFavouritesSync$en {
   String get serverAddSucceeded =>
       TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverAddSucceeded', {}) ?? 'Server favourite added';
 
+  /// en: 'Delete from server favourites'
+  String get serverRemoveFavourite =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverRemoveFavourite', {}) ?? 'Delete from server favourites';
+
+  /// en: 'Server favourite deleted'
+  String get serverRemoveSucceeded =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverRemoveSucceeded', {}) ?? 'Server favourite deleted';
+
   /// en: 'Import, export, and compare local favourites with supported booru accounts.'
   String get settingsSubtitle =>
       TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.settingsSubtitle', {}) ??
@@ -820,14 +828,18 @@ class Translations$serverFavouritesSync$en {
   String get missingUserIdPassHash =>
       TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.missingUserIdPassHash', {}) ?? 'Missing user ID/pass hash';
 
+  /// en: 'Missing login cookies'
+  String get missingLoginCookies =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.missingLoginCookies', {}) ?? 'Missing login cookies';
+
   /// en: 'Missing login/password'
   String get missingLoginPassword =>
       TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.missingLoginPassword', {}) ?? 'Missing login/password';
 
-  /// en: 'Read-only: favourite writes need Gelbooru user_id/API key'
-  String get gelbooruNeedsUserIdApiKey =>
-      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.gelbooruNeedsUserIdApiKey', {}) ??
-      'Read-only: favourite writes need Gelbooru user_id/API key';
+  /// en: 'Sending favourites to server requires logging in'
+  String get serverFavouritesRequireAuth =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverFavouritesRequireAuth', {}) ??
+      'Sending favourites to server requires logging in';
 
   /// en: 'Idol Sankaku server favourite writes are not supported'
   String get idolSankakuWriteUnsupported =>
@@ -5672,6 +5684,10 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverAddFavourite', {}) ?? 'Add to server favourites',
           'serverFavouritesSync.serverAddSucceeded' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverAddSucceeded', {}) ?? 'Server favourite added',
+          'serverFavouritesSync.serverRemoveFavourite' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverRemoveFavourite', {}) ?? 'Delete from server favourites',
+          'serverFavouritesSync.serverRemoveSucceeded' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverRemoveSucceeded', {}) ?? 'Server favourite deleted',
           'serverFavouritesSync.settingsSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.settingsSubtitle', {}) ??
                 'Import, export, and compare local favourites with supported booru accounts.',
@@ -5774,11 +5790,13 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.missingUserIdApiKey', {}) ?? 'Missing user ID/API key',
           'serverFavouritesSync.missingUserIdPassHash' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.missingUserIdPassHash', {}) ?? 'Missing user ID/pass hash',
+          'serverFavouritesSync.missingLoginCookies' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.missingLoginCookies', {}) ?? 'Missing login cookies',
           'serverFavouritesSync.missingLoginPassword' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.missingLoginPassword', {}) ?? 'Missing login/password',
-          'serverFavouritesSync.gelbooruNeedsUserIdApiKey' =>
-            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.gelbooruNeedsUserIdApiKey', {}) ??
-                'Read-only: favourite writes need Gelbooru user_id/API key',
+          'serverFavouritesSync.serverFavouritesRequireAuth' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverFavouritesRequireAuth', {}) ??
+                'Sending favourites to server requires logging in',
           'serverFavouritesSync.idolSankakuWriteUnsupported' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.idolSankakuWriteUnsupported', {}) ??
                 'Idol Sankaku server favourite writes are not supported',
@@ -6366,6 +6384,9 @@ extension on Translations {
                 '[Note]: Sample quality can noticeably degrade performance, especially if you have too many columns in preview grid',
           'settings.interface.previewDisplay' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplay', {}) ?? 'Preview display',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.interface.previewDisplayFallback' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayFallback', {}) ?? 'Preview display fallback',
           'settings.interface.previewDisplayFallbackHelp' =>
@@ -6373,9 +6394,6 @@ extension on Translations {
                 'This will be used when Staggered option is not possible',
           'settings.interface.dontScaleImages' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImages', {}) ?? 'Don\'t scale images',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.interface.dontScaleImagesSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.dontScaleImagesSubtitle', {}) ?? 'May reduce performance',
           'settings.interface.dontScaleImagesWarningTitle' =>
@@ -7344,14 +7362,14 @@ extension on Translations {
           'tagsManager.title' => TranslationOverrides.string(_root.$meta, 'tagsManager.title', {}) ?? 'Tags',
           'tagsManager.addTag' => TranslationOverrides.string(_root.$meta, 'tagsManager.addTag', {}) ?? 'Add tag',
           'tagsManager.name' => TranslationOverrides.string(_root.$meta, 'tagsManager.name', {}) ?? 'Name',
+          _ => null,
+        } ??
+        switch (path) {
           'tagsManager.type' => TranslationOverrides.string(_root.$meta, 'tagsManager.type', {}) ?? 'Type',
           'tagsManager.add' => TranslationOverrides.string(_root.$meta, 'tagsManager.add', {}) ?? 'Add',
           'tagsManager.staleAfter' =>
             ({required String staleText}) =>
                 TranslationOverrides.string(_root.$meta, 'tagsManager.staleAfter', {'staleText': staleText}) ?? 'Stale after: ${staleText}',
-          _ => null,
-        } ??
-        switch (path) {
           'tagsManager.addedATab' => TranslationOverrides.string(_root.$meta, 'tagsManager.addedATab', {}) ?? 'Added a tab',
           'tagsManager.addATab' => TranslationOverrides.string(_root.$meta, 'tagsManager.addATab', {}) ?? 'Add a tab',
           'tagsManager.copy' => TranslationOverrides.string(_root.$meta, 'tagsManager.copy', {}) ?? 'Copy',

@@ -1286,6 +1286,11 @@ class SearchTab {
       }
 
       final bool newValue = forcedValue ?? (item.isFavourite.value == true ? false : true);
+      final serverWriteKey = _serverFavouriteWriteKeyForItem(item, newValue);
+      if (serverWriteKey != null && ServerFavoriteFeedback.isInFlight(serverWriteKey)) {
+        return item.isFavourite.value;
+      }
+
       item.isFavourite.value = newValue;
 
       final SettingsHandler settingsHandler = SettingsHandler.instance;
@@ -1317,25 +1322,31 @@ class SearchTab {
     required bool newValue,
     bool skipSnatching = false,
   }) async {
+    final writableItems = items.where((item) {
+      final serverWriteKey = _serverFavouriteWriteKeyForItem(item, newValue);
+      return serverWriteKey == null || !ServerFavoriteFeedback.isInFlight(serverWriteKey);
+    }).toList();
+    if (writableItems.isEmpty) return;
+
     final SettingsHandler settingsHandler = SettingsHandler.instance;
     if (!skipSnatching && SX.snatchOnFavourite.value && newValue) {
       SnatchHandler.instance.queue(
-        items.where((e) => e.isSnatched.value != true).toList(),
+        writableItems.where((e) => e.isSnatched.value != true).toList(),
         booruHandler.booru,
         SX.snatchCooldown.value,
         false,
       );
     }
 
-    for (final BooruItem item in items) {
+    for (final BooruItem item in writableItems) {
       item.isFavourite.value = newValue;
     }
 
     await settingsHandler.dbHandler.updateMultipleBooruItems(
-      items,
+      writableItems,
       BooruUpdateMode.local,
     );
-    for (final item in items) {
+    for (final item in writableItems) {
       unawaited(_sendFavouriteToServer(item, newValue));
     }
 
@@ -1347,9 +1358,21 @@ class SearchTab {
   }
 
   Future<void> _sendFavouriteToServer(BooruItem item, bool isFavourite) async {
+    final serverWriteKey = _serverFavouriteWriteKeyForItem(item, isFavourite);
+    if (serverWriteKey == null) return;
+    if (!ServerFavoriteFeedback.tryStartRequest(serverWriteKey)) return;
+
+    try {
+      await _sendFavouriteToServerUnlocked(item, isFavourite);
+    } finally {
+      ServerFavoriteFeedback.finishRequest(serverWriteKey);
+    }
+  }
+
+  String? _serverFavouriteWriteKeyForItem(BooruItem item, bool isFavourite) {
     final settingsHandler = SettingsHandler.instance;
     final adapter = serverFavoriteAdapterForItem(item, settingsHandler);
-    if (adapter == null) return;
+    if (adapter == null) return null;
 
     final booru = adapter.booru;
     final booruName = booru.name;
@@ -1357,12 +1380,27 @@ class SearchTab {
     final shouldSend = booruName == null
         ? sendSetting.value
         : sendSetting.getOverrideFor(booruName) ?? sendSetting.globalValue;
-    if (!shouldSend) return;
+    if (!shouldSend) return null;
 
     final capabilities = adapter.capabilities;
-    if (isFavourite && !capabilities.canAdd) return;
-    if (!isFavourite && !capabilities.canRemove) return;
+    if (isFavourite && !capabilities.canAdd) return null;
+    if (!isFavourite && !capabilities.canRemove) return null;
 
+    final serverId = adapter.serverIdFromItem(item);
+    if (serverId == null || serverId.isEmpty) return null;
+
+    return ServerFavoriteFeedback.requestKey(
+      booruName: adapter.displayName,
+      serverId: serverId,
+    );
+  }
+
+  Future<void> _sendFavouriteToServerUnlocked(BooruItem item, bool isFavourite) async {
+    final settingsHandler = SettingsHandler.instance;
+    final adapter = serverFavoriteAdapterForItem(item, settingsHandler);
+    if (adapter == null) return;
+
+    final booru = adapter.booru;
     final serverId = adapter.serverIdFromItem(item);
     if (serverId == null || serverId.isEmpty) return;
     item.serverId = serverId;

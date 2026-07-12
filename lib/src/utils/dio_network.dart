@@ -84,29 +84,17 @@ class DioNetwork {
             customUserAgent: customUserAgent,
           );
           if (!captchaWasDetected) {
+            if (Tools.shouldRetryRequest(response)) {
+              try {
+                final cloneReq = await _retryWithCurrentCookies(client, response.requestOptions);
+                return handler.resolve(cloneReq);
+              } catch (_) {}
+            }
             return handler.next(response);
           }
 
-          final String oldCookie = response.requestOptions.headers['Cookie'] as String? ?? '';
-          final String newCookie = await Tools.getCookies(response.requestOptions.uri.toString());
-          final headers = {
-            ...response.requestOptions.headers,
-            'Cookie': '${oldCookie.replaceAll('cf_clearance', 'cf_clearance_old')} $newCookie'.trim(),
-            Tools.captchaCheckHeader: 'done',
-          };
-
-          final opts = Options(
-            method: response.requestOptions.method,
-            headers: headers,
-          );
-
           try {
-            final cloneReq = await client.request(
-              response.requestOptions.path,
-              options: opts,
-              data: response.requestOptions.data,
-              queryParameters: response.requestOptions.queryParameters,
-            );
+            final cloneReq = await _retryWithCurrentCookies(client, response.requestOptions);
             return handler.resolve(cloneReq);
           } catch (e) {
             return handler.next(response);
@@ -116,29 +104,17 @@ class DioNetwork {
           // print('[error]: ${error.message} ${error.response?.statusCode}');
           final bool captchaWasDetected = await Tools.checkForCaptcha(error.response, error.requestOptions.uri);
           if (!captchaWasDetected) {
+            if (Tools.shouldRetryRequest(error.response)) {
+              try {
+                final cloneReq = await _retryWithCurrentCookies(client, error.requestOptions);
+                return handler.resolve(cloneReq);
+              } catch (_) {}
+            }
             return handler.next(error);
           }
 
-          final String oldCookie = error.requestOptions.headers['Cookie'] as String? ?? '';
-          final String newCookie = await Tools.getCookies(error.requestOptions.uri.toString());
-          final headers = {
-            ...error.requestOptions.headers,
-            'Cookie': '${oldCookie.replaceAll('cf_clearance', 'cf_clearance_old')} $newCookie'.trim(),
-            Tools.captchaCheckHeader: 'done',
-          };
-
-          final opts = Options(
-            method: error.requestOptions.method,
-            headers: headers,
-          );
-
           try {
-            final cloneReq = await client.request(
-              error.requestOptions.path,
-              options: opts,
-              data: error.requestOptions.data,
-              queryParameters: error.requestOptions.queryParameters,
-            );
+            final cloneReq = await _retryWithCurrentCookies(client, error.requestOptions);
             return handler.resolve(cloneReq);
           } catch (e) {
             return handler.next(error);
@@ -147,6 +123,28 @@ class DioNetwork {
       ),
     );
     return client;
+  }
+
+  static Future<Response> _retryWithCurrentCookies(Dio client, RequestOptions requestOptions) async {
+    final String oldCookie = requestOptions.headers['Cookie'] as String? ?? '';
+    final String newCookie = await Tools.getCookies(requestOptions.uri.toString());
+    final headers = {
+      ...requestOptions.headers,
+      'Cookie': '${oldCookie.replaceAll('cf_clearance', 'cf_clearance_old')} $newCookie'.trim(),
+      Tools.captchaCheckHeader: 'done',
+    };
+
+    final opts = Options(
+      method: requestOptions.method,
+      headers: headers,
+    );
+
+    return client.request(
+      requestOptions.path,
+      options: opts,
+      data: requestOptions.data,
+      queryParameters: requestOptions.queryParameters,
+    );
   }
 
   static Dio cookieInterceptor(Dio client) {

@@ -749,19 +749,13 @@ class _HideableAppBarState extends State<HideableAppBar> {
         return SettingsDialog(
           title: Text(dialogContext.loc.serverFavouritesSync.serverStatusTitle),
           actionButtons: [
-            TextButton(
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(dialogContext).colorScheme.surfaceContainerHighest,
+                foregroundColor: Theme.of(dialogContext).colorScheme.onSurface,
+              ),
               onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text(dialogContext.loc.close),
-            ),
-            ElevatedButton.icon(
-              onPressed: adapter?.capabilities.canAdd == true && serverId?.isNotEmpty == true
-                  ? () {
-                      Navigator.of(dialogContext).pop();
-                      unawaited(_addCurrentItemToServerFavorites(item));
-                    }
-                  : null,
-              icon: const Icon(Icons.favorite),
-              label: Text(dialogContext.loc.serverFavouritesSync.serverAddFavourite),
             ),
           ],
           content: FutureBuilder<_ServerFavoriteStatus>(
@@ -821,6 +815,48 @@ class _HideableAppBarState extends State<HideableAppBar> {
                 lines.add(Text(context.loc.serverFavouritesSync.serverStatusUnsupported));
               }
 
+              if (adapter != null &&
+                  (adapter.capabilities.canAdd || adapter.capabilities.canRemove) &&
+                  serverId?.isNotEmpty == true) {
+                final requestKey = ServerFavoriteFeedback.requestKey(
+                  booruName: adapter.displayName,
+                  serverId: serverId!,
+                );
+                lines.add(const SizedBox(height: 12));
+                lines.add(
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.end,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: !adapter.capabilities.canAdd || ServerFavoriteFeedback.isInFlight(requestKey)
+                              ? null
+                              : () {
+                                  Navigator.of(dialogContext).pop();
+                                  unawaited(_mutateCurrentItemServerFavorite(item, add: true));
+                                },
+                          icon: const Icon(Icons.favorite),
+                          label: Text(dialogContext.loc.serverFavouritesSync.serverAddFavourite),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: !adapter.capabilities.canRemove || ServerFavoriteFeedback.isInFlight(requestKey)
+                              ? null
+                              : () {
+                                  Navigator.of(dialogContext).pop();
+                                  unawaited(_mutateCurrentItemServerFavorite(item, add: false));
+                                },
+                          icon: const Icon(Icons.heart_broken),
+                          label: Text(dialogContext.loc.serverFavouritesSync.serverRemoveFavourite),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -833,14 +869,20 @@ class _HideableAppBarState extends State<HideableAppBar> {
     );
   }
 
-  Future<void> _addCurrentItemToServerFavorites(BooruItem item) async {
+  Future<void> _mutateCurrentItemServerFavorite(BooruItem item, {required bool add}) async {
     final adapter = widget.tab.serverFavoriteAdapterForItem(item, settingsHandler);
     final serverId = adapter?.serverIdFromItem(item);
-    if (adapter == null || serverId == null || serverId.isEmpty || !adapter.capabilities.canAdd) {
+    final canMutate = add ? adapter?.capabilities.canAdd == true : adapter?.capabilities.canRemove == true;
+    if (adapter == null || serverId == null || serverId.isEmpty || !canMutate) {
       FlashElements.showSnackbar(
         context: context,
         title: Text(context.loc.serverFavouritesSync.directWriteFailedTitle),
-        content: Text(adapter?.capabilities.unsupportedReason ?? context.loc.serverFavouritesSync.serverAddUnsupported),
+        content: Text(
+          adapter?.capabilities.unsupportedReason ??
+              (add
+                  ? context.loc.serverFavouritesSync.serverAddUnsupported
+                  : context.loc.serverFavouritesSync.serverRemoveUnsupported),
+        ),
         sideColor: Colors.red,
         leadingIcon: Icons.cloud_off,
         leadingIconColor: Colors.red,
@@ -848,37 +890,51 @@ class _HideableAppBarState extends State<HideableAppBar> {
       return;
     }
 
-    item.serverId = serverId;
-    final mutation = await adapter.addFavoriteResult(serverId);
-    ServerFavoriteFeedback.record(
-      action: ServerFavoriteRequestAction.add,
-      status: mutation.success ? ServerFavoriteRequestStatus.success : ServerFavoriteRequestStatus.failed,
+    final requestKey = ServerFavoriteFeedback.requestKey(
       booruName: adapter.displayName,
       serverId: serverId,
-      item: item,
-      message: mutation.message,
-      animate: mutation.success,
     );
+    if (!ServerFavoriteFeedback.tryStartRequest(requestKey)) {
+      return;
+    }
 
-    if (!mounted) return;
-    FlashElements.showSnackbar(
-      context: context,
-      title: Text(
-        mutation.success
-            ? context.loc.serverFavouritesSync.serverAddSucceeded
-            : context.loc.serverFavouritesSync.directWriteFailedTitle,
-      ),
-      content: Text(mutation.message),
-      sideColor: mutation.success ? Colors.green : Colors.red,
-      leadingIcon: mutation.success ? Icons.cloud_done : Icons.cloud_off,
-      leadingIconColor: mutation.success ? Colors.green : Colors.red,
-      shouldLeadingPulse: false,
-    );
+    item.serverId = serverId;
+    try {
+      final mutation = add ? await adapter.addFavoriteResult(serverId) : await adapter.removeFavoriteResult(serverId);
+      ServerFavoriteFeedback.record(
+        action: add ? ServerFavoriteRequestAction.add : ServerFavoriteRequestAction.remove,
+        status: mutation.success ? ServerFavoriteRequestStatus.success : ServerFavoriteRequestStatus.failed,
+        booruName: adapter.displayName,
+        serverId: serverId,
+        item: item,
+        message: mutation.message,
+        animate: mutation.success,
+      );
+
+      if (!mounted) return;
+      FlashElements.showSnackbar(
+        context: context,
+        title: Text(
+          mutation.success
+              ? (add
+                    ? context.loc.serverFavouritesSync.serverAddSucceeded
+                    : context.loc.serverFavouritesSync.serverRemoveSucceeded)
+              : context.loc.serverFavouritesSync.directWriteFailedTitle,
+        ),
+        content: Text(mutation.message),
+        sideColor: mutation.success ? Colors.green : Colors.red,
+        leadingIcon: mutation.success ? (add ? Icons.cloud_done : Icons.cloud_outlined) : Icons.cloud_off,
+        leadingIconColor: mutation.success ? Colors.green : Colors.red,
+        shouldLeadingPulse: false,
+      );
+    } finally {
+      ServerFavoriteFeedback.finishRequest(requestKey);
+    }
   }
 
   Future<_ServerFavoriteStatus> _loadServerFavoriteStatus(BooruItem item) async {
     final adapter = widget.tab.serverFavoriteAdapterForItem(item, settingsHandler);
-    if (adapter == null || !adapter.capabilities.canFetch) {
+    if (adapter == null || !adapter.capabilities.canFetch || !adapter.capabilities.canCheckSingle) {
       return const _ServerFavoriteStatus(isSupported: false, isFavoriteOnServer: false);
     }
 
