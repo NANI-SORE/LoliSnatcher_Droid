@@ -104,6 +104,7 @@ enum SettingKey {
   tagTypeFetchEnabled,
   sendFavouritesToServer,
   serverFavoriteSuccessAnimation,
+  databaseActionsSlot,
 
   // Network
   customUserAgent,
@@ -112,6 +113,7 @@ enum SettingKey {
   proxyUsername,
   proxyPassword,
   allowSelfSignedCerts,
+  cookieManagerSlot,
 
   // Privacy & Filters
   filterHated,

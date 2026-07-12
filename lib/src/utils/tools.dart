@@ -59,6 +59,8 @@ class Tools {
     return ((double.tryParse(bytesStr) ?? 0) * pow(1024, suffixIndex)).round();
   }
 
+  static int gibibytesToBytes(num value) => (value * pow(1024, 3)).round();
+
   static int boolToInt(bool boolean) {
     return boolean ? 1 : 0;
   }

@@ -207,7 +207,7 @@ class VideoViewerState extends State<VideoViewer> {
     // TODO find a way to stop loading based on size when caching is enabled
 
     final preloadSizeLimit = SX.preloadSizeLimit.value;
-    final int? maxSize = preloadSizeLimit == 0 ? null : (1024 * 1024 * preloadSizeLimit * 1000).toInt();
+    final int? maxSize = preloadSizeLimit == 0 ? null : Tools.gibibytesToBytes(preloadSizeLimit);
     // print('onSize: $size $maxSize ${size > maxSize}');
     if (size == 0) {
       stopLoading(
