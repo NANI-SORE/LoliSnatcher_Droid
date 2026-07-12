@@ -303,8 +303,7 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
       final int downloadsSelectedCount = selected.where((item) => item.isSnatched.value == true).length;
       final bool hasDownloadsSelected = downloadsSelectedCount > 0;
       final bool canReverseOrder = selectedCount > 1;
-      final bool canCompareSelected =
-          selectedCount == 2 && selected.every((item) => item.mediaType.value.isImageOrAnimation);
+      final bool canCompareSelected = selectedCount == 2;
       final bool canRefreshSelected = searchHandler.currentBooru.type?.isFavouritesOrDownloads == true;
 
       return AnimatedSwitcher(

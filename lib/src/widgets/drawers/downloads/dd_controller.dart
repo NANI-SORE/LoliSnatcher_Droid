@@ -313,7 +313,7 @@ class DownloadsDrawerController {
 
   void compareSelected(BuildContext context) {
     final selected = [...searchHandler.currentSelected];
-    if (selected.length != 2 || selected.any((item) => !item.mediaType.value.isImageOrAnimation)) {
+    if (selected.length != 2) {
       return;
     }
 
@@ -387,6 +387,8 @@ class DownloadsDrawerController {
             );
           }
         } catch (_) {}
+
+        searchHandler.currentTab.selected.remove(record.item);
 
         if (delayMs > 0 && i < refreshableItems.length - 1) {
           await Future.delayed(Duration(milliseconds: delayMs));
@@ -565,8 +567,8 @@ class DownloadsDrawerController {
         item,
         BooruUpdateMode.local,
       );
+      searchHandler.currentTab.selected.remove(item);
     }
-    searchHandler.currentTab.selected.clear();
 
     updating.value = false;
   }
@@ -576,11 +578,10 @@ class DownloadsDrawerController {
 
     updating.value = true;
 
-    await searchHandler.currentTab.updateFavForMultipleItems(
-      searchHandler.currentFetched.where(onlyUnfavs.contains).toList(),
+    await _updateFavouriteForSelectedItems(
+      onlyUnfavs,
       newValue: true,
     );
-    searchHandler.currentTab.selected.clear();
 
     updating.value = false;
   }
@@ -590,13 +591,40 @@ class DownloadsDrawerController {
 
     updating.value = true;
 
-    await searchHandler.currentTab.updateFavForMultipleItems(
-      searchHandler.currentFetched.where(onlyFavs.contains).toList(),
+    await _updateFavouriteForSelectedItems(
+      onlyFavs,
       newValue: false,
     );
-    searchHandler.currentTab.selected.clear();
 
     updating.value = false;
+  }
+
+  Future<void> _updateFavouriteForSelectedItems(
+    List<BooruItem> items, {
+    required bool newValue,
+  }) async {
+    if (SX.snatchOnFavourite.value && newValue) {
+      snatchHandler.queue(
+        items.where((e) => e.isSnatched.value != true).toList(),
+        searchHandler.currentBooru,
+        SX.snatchCooldown.value,
+        false,
+      );
+    }
+
+    for (final BooruItem item in items) {
+      item.isFavourite.value = newValue;
+      await settingsHandler.dbHandler.updateBooruItem(
+        item,
+        BooruUpdateMode.local,
+      );
+      searchHandler.currentTab.selected.remove(item);
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future.delayed(const Duration(milliseconds: 200));
+      searchHandler.currentTab.booruHandler.refilterAll();
+    });
   }
 
   void dispose() {

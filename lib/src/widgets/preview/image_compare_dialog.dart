@@ -43,7 +43,11 @@ enum _RenderedPreviewSide {
 
 bool get _isHeatmapModeSupported => ui.ImageFilter.isShaderFilterSupported;
 
-List<_ImageCompareMode> get _availableCompareModes {
+List<_ImageCompareMode> _availableCompareModes({required bool imageModesAvailable}) {
+  if (!imageModesAvailable) {
+    return const [_ImageCompareMode.data];
+  }
+
   return [
     _ImageCompareMode.split,
     _ImageCompareMode.slider,
@@ -94,8 +98,8 @@ class _ImageComparePage extends StatefulWidget {
 class _ImageComparePageState extends State<_ImageComparePage> {
   final TransformationController firstController = TransformationController();
   final TransformationController secondController = TransformationController();
-  late final Future<ImageProvider> _firstProviderFuture;
-  late final Future<ImageProvider> _secondProviderFuture;
+  Future<ImageProvider>? _firstProviderFuture;
+  Future<ImageProvider>? _secondProviderFuture;
 
   _ImageCompareMode mode = _ImageCompareMode.split;
   bool syncZoom = true;
@@ -117,14 +121,20 @@ class _ImageComparePageState extends State<_ImageComparePage> {
   BooruItem get secondItem => imagesSwapped ? widget.first : widget.second;
   Booru get firstBooru => imagesSwapped ? widget.secondBooru : widget.firstBooru;
   Booru get secondBooru => imagesSwapped ? widget.firstBooru : widget.secondBooru;
-  Future<ImageProvider> get firstProviderFuture => imagesSwapped ? _secondProviderFuture : _firstProviderFuture;
-  Future<ImageProvider> get secondProviderFuture => imagesSwapped ? _firstProviderFuture : _secondProviderFuture;
+  bool get imageModesAvailable =>
+      widget.first.mediaType.value.isImageOrAnimation && widget.second.mediaType.value.isImageOrAnimation;
+  Future<ImageProvider> get _firstSourceProviderFuture =>
+      _firstProviderFuture ??= _buildCompareImageProvider(widget.first, widget.firstBooru);
+  Future<ImageProvider> get _secondSourceProviderFuture =>
+      _secondProviderFuture ??= _buildCompareImageProvider(widget.second, widget.secondBooru);
+  Future<ImageProvider> get firstProviderFuture =>
+      imagesSwapped ? _secondSourceProviderFuture : _firstSourceProviderFuture;
+  Future<ImageProvider> get secondProviderFuture =>
+      imagesSwapped ? _firstSourceProviderFuture : _secondSourceProviderFuture;
 
   @override
   void initState() {
     super.initState();
-    _firstProviderFuture = _buildCompareImageProvider(widget.first, widget.firstBooru);
-    _secondProviderFuture = _buildCompareImageProvider(widget.second, widget.secondBooru);
     firstController.addListener(() => _syncController(firstController, secondController));
     secondController.addListener(() => _syncController(secondController, firstController));
   }
@@ -154,7 +164,10 @@ class _ImageComparePageState extends State<_ImageComparePage> {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveMode = mode == _ImageCompareMode.heatmap && !_isHeatmapModeSupported
+    final availableModes = _availableCompareModes(imageModesAvailable: imageModesAvailable);
+    final effectiveMode = !availableModes.contains(mode)
+        ? availableModes.first
+        : mode == _ImageCompareMode.heatmap && !_isHeatmapModeSupported
         ? _ImageCompareMode.difference
         : mode;
     final appBarForeground = _foregroundForCompareBackground(context, effectiveMode, compareBackground);
@@ -218,6 +231,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
                   ignoring: !controlsVisible,
                   child: _CompareControls(
                     mode: effectiveMode,
+                    availableModes: availableModes,
                     firstItem: firstItem,
                     firstBooru: firstBooru,
                     secondItem: secondItem,
@@ -237,6 +251,9 @@ class _ImageComparePageState extends State<_ImageComparePage> {
                       });
                     },
                     onModeChanged: (value) {
+                      if (!availableModes.contains(value)) {
+                        return;
+                      }
                       setState(() {
                         if (value == _ImageCompareMode.heatmap && !_isHeatmapModeSupported) {
                           return;
@@ -763,6 +780,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
 class _CompareControls extends StatelessWidget {
   const _CompareControls({
     required this.mode,
+    required this.availableModes,
     required this.firstItem,
     required this.firstBooru,
     required this.secondItem,
@@ -792,6 +810,7 @@ class _CompareControls extends StatelessWidget {
   static const double compactWidthBreakpoint = 520;
 
   final _ImageCompareMode mode;
+  final List<_ImageCompareMode> availableModes;
   final BooruItem firstItem;
   final Booru firstBooru;
   final BooruItem secondItem;
@@ -817,7 +836,6 @@ class _CompareControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final availableModes = _availableCompareModes;
     final selectedMode = availableModes.contains(mode) ? mode : availableModes.first;
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
 
@@ -2525,6 +2543,7 @@ class _CompareImage extends StatefulWidget {
 
 class _CompareImageState extends State<_CompareImage> {
   late Future<ImageProvider> providerFuture = widget.providerFuture;
+  Object? imageLoadError;
 
   @override
   void didUpdateWidget(covariant _CompareImage oldWidget) {
@@ -2532,6 +2551,7 @@ class _CompareImageState extends State<_CompareImage> {
 
     if (oldWidget.providerFuture != widget.providerFuture) {
       providerFuture = widget.providerFuture;
+      imageLoadError = null;
     }
   }
 
@@ -2554,6 +2574,11 @@ class _CompareImageState extends State<_CompareImage> {
               if (!snapshot.hasData) {
                 return const CircularProgressIndicator();
               }
+              if (imageLoadError != null) {
+                return _CompareImageError(
+                  details: imageLoadError.toString(),
+                );
+              }
 
               return Image(
                 image: snapshot.data!,
@@ -2575,6 +2600,13 @@ class _CompareImageState extends State<_CompareImage> {
                   );
                 },
                 errorBuilder: (context, error, stackTrace) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && imageLoadError == null) {
+                      setState(() {
+                        imageLoadError = error;
+                      });
+                    }
+                  });
                   return _CompareImageError(
                     details: error.toString(),
                   );
