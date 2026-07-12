@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
@@ -48,6 +49,9 @@ import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/confirm_button.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/settings/cache_stats_widget.dart';
+import 'package:lolisnatcher/src/widgets/settings/cookie_manager_widget.dart';
+import 'package:lolisnatcher/src/widgets/settings/database_actions_widget.dart';
+import 'package:lolisnatcher/src/widgets/settings/database_page_lock.dart';
 import 'package:lolisnatcher/src/widgets/settings/setting_builder.dart';
 import 'package:lolisnatcher/src/widgets/settings/toolbar_button_order_widget.dart';
 import 'package:lolisnatcher/src/widgets/video/media_kit_video_player.dart';
@@ -944,11 +948,7 @@ void registerAllSettings() {
       displayMode: EnumDisplayMode.optionsList,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.video.videoCacheMode,
-        subtitle: (ctx) =>
-            'Videos on some Boorus may not work correctly (i.e. endless loading) when using Stream video cache mode. '
-                    'In that case try using Cache mode. Otherwise player will retry with Cache mode automatically if video is '
-                    'in initial buffering state for 10+ seconds and video file size is less than 25mb'
-                .temploc,
+        subtitle: (ctx) => ctx.loc.settings.video.videoCacheModeSubtitle,
       ),
     ),
   );
@@ -1118,7 +1118,7 @@ void registerAllSettings() {
       getDefaultValue: () => 'System',
       getOptions: () => ['System'], // Populated dynamically at runtime
       categories: [SettingCategory.theme],
-      subcategories: [SettingSubcategory.textAndDrawer],
+      subcategories: [SettingSubcategory.theme],
       isDeviceSpecific: true,
       supportsPerBooru: true,
       localization: SettingLocalization(
@@ -1132,7 +1132,7 @@ void registerAllSettings() {
       key: .enableDrawerMascot,
       getDefaultValue: () => false,
       categories: [SettingCategory.theme],
-      subcategories: [SettingSubcategory.textAndDrawer],
+      subcategories: [SettingSubcategory.drawer],
       isDeviceSpecific: true,
       supportsPerBooru: true,
       localization: SettingLocalization(
@@ -1146,7 +1146,7 @@ void registerAllSettings() {
       key: .drawerMascotPathOverride,
       getDefaultValue: () => '',
       categories: [SettingCategory.theme],
-      subcategories: [SettingSubcategory.textAndDrawer],
+      subcategories: [SettingSubcategory.drawer],
       isDeviceSpecific: true,
       supportsPerBooru: true,
       visibleWhen: () => Platform.isAndroid,
@@ -1408,6 +1408,15 @@ void registerAllSettings() {
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.database.enableDatabase,
       ),
+      widgetConfig: SettingWidgetConfig(
+        helpDialog: (ctx) => SettingsDialog(
+          title: Text(ctx.loc.settings.database.title),
+          contentItems: [
+            Text(ctx.loc.settings.database.databaseInfo),
+            Text(ctx.loc.settings.database.databaseInfoSnatch),
+          ],
+        ),
+      ),
     ),
   );
 
@@ -1420,8 +1429,24 @@ void registerAllSettings() {
       isDeviceSpecific: true,
       dependsOn: [.dbEnabled],
       enabledWhen: ([BuildContext? context]) => _val<bool>(.dbEnabled, context),
+      onChanged: (_, newValue) {
+        final dbHandler = SettingsHandler.instance.dbHandler;
+        unawaited(
+          DatabasePageLock.run(
+            newValue ? dbHandler.createIndexes : dbHandler.dropIndexes,
+          ),
+        );
+      },
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.database.enableIndexing,
+      ),
+      widgetConfig: SettingWidgetConfig(
+        helpDialog: (ctx) => SettingsDialog(
+          title: Text(ctx.loc.settings.database.enableIndexing),
+          contentItems: [
+            Text(ctx.loc.settings.database.indexingInfo),
+          ],
+        ),
       ),
     ),
   );
@@ -1438,6 +1463,17 @@ void registerAllSettings() {
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.database.enableSearchHistory,
       ),
+      widgetConfig: SettingWidgetConfig(
+        helpDialog: (ctx) => SettingsDialog(
+          title: Text(ctx.loc.settings.database.enableSearchHistory),
+          contentItems: [
+            Text(ctx.loc.settings.database.searchHistoryInfo),
+            Text(ctx.loc.settings.database.searchHistoryRecords(limit: Constants.historyLimit)),
+            Text(ctx.loc.settings.database.searchHistoryTapInfo),
+            Text(ctx.loc.settings.database.searchHistoryFavouritesInfo),
+          ],
+        ),
+      ),
     ),
   );
 
@@ -1452,6 +1488,26 @@ void registerAllSettings() {
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.database.enableTagTypeFetching,
       ),
+      widgetConfig: SettingWidgetConfig(
+        helpDialog: (ctx) => SettingsDialog(
+          title: Text(ctx.loc.settings.database.enableTagTypeFetching),
+          contentItems: [
+            Text(ctx.loc.settings.database.tagTypeFetchingInfo),
+            Text(ctx.loc.settings.database.tagTypeFetchingWarning),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  registry.register(
+    widgetSlot(
+      key: .databaseActionsSlot,
+      categories: [SettingCategory.database],
+      subcategories: [SettingSubcategory.database],
+      dependsOn: [.dbEnabled],
+      enabledWhen: ([BuildContext? context]) => _val<bool>(.dbEnabled, context),
+      builder: (context) => const DatabaseActionsWidget(),
     ),
   );
 
@@ -1576,7 +1632,30 @@ void registerAllSettings() {
             Text(ctx.loc.settings.network.userAgentUsedOnRequests),
           ],
         ),
+        extraWidgets: (ctx) => [
+          SettingBuilder<String>(
+            setting: SX.customUserAgent.state,
+            builder: (ctx, value) {
+              if (value == Constants.defaultBrowserUserAgent) {
+                return const SizedBox.shrink();
+              }
+              return SettingsButton(
+                name: ctx.loc.settings.network.setBrowserUserAgent,
+                action: () => SX.customUserAgent.state.value = Constants.defaultBrowserUserAgent,
+              );
+            },
+          ),
+        ],
       ),
+    ),
+  );
+
+  registry.register(
+    widgetSlot(
+      key: .cookieManagerSlot,
+      categories: [SettingCategory.network],
+      subcategories: [SettingSubcategory.requests],
+      builder: (context) => const CookieManagerWidget(),
     ),
   );
 

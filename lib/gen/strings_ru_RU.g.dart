@@ -1819,7 +1819,7 @@ class _Translations$settings$subcategories$ru_RU extends Translations$settings$s
   @override
   String get theme => TranslationOverrides.string(_root.$meta, 'settings.subcategories.theme', {}) ?? 'Тема';
   @override
-  String get textAndDrawer => TranslationOverrides.string(_root.$meta, 'settings.subcategories.textAndDrawer', {}) ?? 'Текст и боковое меню';
+  String get drawer => TranslationOverrides.string(_root.$meta, 'settings.subcategories.drawer', {}) ?? 'Боковое меню';
   @override
   String get cache => TranslationOverrides.string(_root.$meta, 'settings.subcategories.cache', {}) ?? 'Кэш';
   @override
@@ -2534,6 +2534,10 @@ class _Translations$settings$video$ru_RU extends Translations$settings$video$en 
   String get mpvHWDEC => TranslationOverrides.string(_root.$meta, 'settings.video.mpvHWDEC', {}) ?? 'MPV: HWDEC';
   @override
   String get videoCacheMode => TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheMode', {}) ?? 'Режим кэширования видео';
+  @override
+  String get videoCacheModeSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheModeSubtitle', {}) ??
+      'Видео на некоторых сайтах могут работать некорректно (например, бесконечно загружаться) при использовании потокового режима кэширования видео. В таком случае попробуй режим кэша. Иначе плеер автоматически повторит загрузку в режиме кэша, если видео находится в начальной буферизации 10+ секунд и размер видеофайла меньше 25 МБ';
   @override
   late final _Translations$settings$video$cacheModes$ru_RU cacheModes = _Translations$settings$video$cacheModes$ru_RU._(_root);
   @override
@@ -4687,8 +4691,7 @@ extension on TranslationsRuRu {
           'settings.subcategories.backend' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.backend', {}) ?? 'Бэкенд',
           'settings.subcategories.mpv' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.mpv', {}) ?? 'MPV',
           'settings.subcategories.theme' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.theme', {}) ?? 'Тема',
-          'settings.subcategories.textAndDrawer' =>
-            TranslationOverrides.string(_root.$meta, 'settings.subcategories.textAndDrawer', {}) ?? 'Текст и боковое меню',
+          'settings.subcategories.drawer' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.drawer', {}) ?? 'Боковое меню',
           'settings.subcategories.cache' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.cache', {}) ?? 'Кэш',
           'settings.subcategories.downloads' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.downloads', {}) ?? 'Загрузки',
           'settings.subcategories.storage' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.storage', {}) ?? 'Хранилище',
@@ -5198,6 +5201,9 @@ extension on TranslationsRuRu {
           'settings.video.mpvHWDEC' => TranslationOverrides.string(_root.$meta, 'settings.video.mpvHWDEC', {}) ?? 'MPV: HWDEC',
           'settings.video.videoCacheMode' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheMode', {}) ?? 'Режим кэширования видео',
+          'settings.video.videoCacheModeSubtitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheModeSubtitle', {}) ??
+                'Видео на некоторых сайтах могут работать некорректно (например, бесконечно загружаться) при использовании потокового режима кэширования видео. В таком случае попробуй режим кэша. Иначе плеер автоматически повторит загрузку в режиме кэша, если видео находится в начальной буферизации 10+ секунд и размер видеофайла меньше 25 МБ',
           'settings.video.cacheModes.title' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.cacheModes.title', {}) ?? 'Режимы кэширования видео',
           'settings.video.cacheModes.streamMode' =>
@@ -6078,10 +6084,10 @@ extension on TranslationsRuRu {
           'tagView.rating' => TranslationOverrides.string(_root.$meta, 'tagView.rating', {}) ?? 'Рейтинг',
           'tagView.score' => TranslationOverrides.string(_root.$meta, 'tagView.score', {}) ?? 'Оценка',
           'tagView.noTagsFound' => TranslationOverrides.string(_root.$meta, 'tagView.noTagsFound', {}) ?? 'Теги не найдены',
-          'tagView.copy' => TranslationOverrides.string(_root.$meta, 'tagView.copy', {}) ?? 'Копировать',
           _ => null,
         } ??
         switch (path) {
+          'tagView.copy' => TranslationOverrides.string(_root.$meta, 'tagView.copy', {}) ?? 'Копировать',
           'tagView.removeFromSearch' => TranslationOverrides.string(_root.$meta, 'tagView.removeFromSearch', {}) ?? 'Удалить из поиска',
           'tagView.addToSearch' => TranslationOverrides.string(_root.$meta, 'tagView.addToSearch', {}) ?? 'Добавить в поиск',
           'tagView.addedToSearchBar' => TranslationOverrides.string(_root.$meta, 'tagView.addedToSearchBar', {}) ?? 'Добавлено в строку поиска:',
