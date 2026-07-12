@@ -61,6 +61,7 @@ class DatabaseActionsWidget extends StatelessWidget {
           trailingIcon: const Icon(Icons.history),
           action: () => _confirmClearSearchHistory(context, settingsHandler),
         ),
+        const SettingsButton(enabled: false, name: ''),
       ],
     );
   }

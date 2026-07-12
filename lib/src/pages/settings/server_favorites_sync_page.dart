@@ -53,7 +53,6 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
   void initState() {
     super.initState();
     adapters = adapterFactory.adaptersFor(settingsHandler.booruList);
-    selectedAdapters.addAll(adapters.where((adapter) => adapter.capabilities.canFetch));
 
     final sankakuBoorus = getSankakuBoorus();
     if (sankakuBoorus.isNotEmpty) {
@@ -113,6 +112,12 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
   bool get canRunSelected =>
       !isWorking && selectedRunnableAdapters.isNotEmpty && selectedRunnableAdapters.every(previews.containsKey);
 
+  void _deselectUnsupportedAdaptersForMode() {
+    selectedAdapters.removeWhere((adapter) => !_modeSupported(adapter));
+    previews.removeWhere((adapter, _) => !selectedAdapters.contains(adapter) || !_modeSupported(adapter));
+    results.removeWhere((adapter, _) => !selectedAdapters.contains(adapter) || !_modeSupported(adapter));
+  }
+
   Future<bool> _confirmDestructive(BuildContext context) async {
     if (!mode.isDestructive) return true;
 
@@ -140,6 +145,7 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
     if (isWorking) return;
 
     setState(() {
+      _deselectUnsupportedAdaptersForMode();
       isWorking = true;
       cancelRequested = false;
       previews.clear();
@@ -174,6 +180,7 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
 
   Future<void> runSelected() async {
     if (isWorking) return;
+    setState(_deselectUnsupportedAdaptersForMode);
     if (!canRunSelected) {
       _setStatus(context.loc.serverFavouritesSync.previewRequiredBeforeRun);
       return;
@@ -349,6 +356,7 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
                         if (value == null) return;
                         setState(() {
                           mode = value;
+                          _deselectUnsupportedAdaptersForMode();
                           previews.clear();
                           results.clear();
                         });

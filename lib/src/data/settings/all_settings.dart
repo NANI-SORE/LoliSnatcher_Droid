@@ -1433,7 +1433,7 @@ void registerAllSettings() {
   registry.register(
     boolSetting(
       key: .sendFavouritesToServer,
-      getDefaultValue: () => true,
+      getDefaultValue: () => false,
       categories: [SettingCategory.database],
       supportsPerBooru: true,
       dependsOn: [.dbEnabled],
