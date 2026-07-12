@@ -509,7 +509,7 @@ class _TagViewState extends State<TagView> {
   }
 
   Widget commentsButton() {
-    final bool hasSupport = handler.hasCommentsSupport;
+    final bool hasSupport = (possibleBooruHandler ?? handler).hasCommentsSupport;
     final bool hasComments = item.hasComments == true;
     final IconData icon = hasComments ? CupertinoIcons.text_bubble_fill : CupertinoIcons.text_bubble;
 
@@ -528,7 +528,7 @@ class _TagViewState extends State<TagView> {
           context: context,
           page: (_) => CommentsDialog(
             item: item,
-            handler: handler,
+            handler: possibleBooruHandler ?? handler,
           ),
         ).open();
       },
@@ -537,7 +537,7 @@ class _TagViewState extends State<TagView> {
   }
 
   Widget notesButton() {
-    final bool hasSupport = handler.hasNotesSupport;
+    final bool hasSupport = (possibleBooruHandler ?? handler).hasNotesSupport;
     final bool hasNotes = item.hasNotes == true;
 
     if (!hasSupport || !hasNotes) {
@@ -572,7 +572,7 @@ class _TagViewState extends State<TagView> {
           ),
           action: () async {
             if (item.serverId == null) return;
-            item.notes.value = await handler.getNotes(item.serverId!);
+            item.notes.value = await (possibleBooruHandler ?? handler).getNotes(item.serverId!);
           },
           drawBottomBorder: false,
         );
