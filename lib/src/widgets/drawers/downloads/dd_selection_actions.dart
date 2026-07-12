@@ -24,34 +24,37 @@ class DDSelectionActions extends StatelessWidget {
     final searchHandler = controller.searchHandler;
 
     return Obx(() {
+      final totalItems = searchHandler.currentFetched.length;
       final selected = searchHandler.currentSelected;
       final hiddenCount = searchHandler.currentTab.hiddenItems.length;
 
-      if (selected.isEmpty || hiddenCount > 0) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (hiddenCount > 0)
-              SettingsButton(
-                name: '${context.loc.settings.downloads.unhideHidden} ($hiddenCount)',
-                icon: const Icon(Icons.visibility_outlined),
-                action: controller.unhideItems,
-                drawTopBorder: true,
-              ),
-            if (selected.isEmpty)
-              SettingsButton(
-                name: context.loc.selectAll,
-                icon: const Icon(Icons.select_all),
-                action: () => searchHandler.currentTab.selected.addAll(
-                  searchHandler.currentFetched,
-                ),
-                drawTopBorder: hiddenCount == 0,
-              ),
-          ],
-        );
-      }
-
-      return const SizedBox.shrink();
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (hiddenCount > 0)
+            SettingsButton(
+              name: '${context.loc.settings.downloads.unhideHidden} ($hiddenCount)',
+              icon: const Icon(Icons.visibility_outlined),
+              action: controller.unhideItems,
+              drawTopBorder: true,
+            ),
+          if (selected.length != totalItems)
+            SettingsButton(
+              name: context.loc.selectAll,
+              icon: const Icon(Icons.select_all),
+              action: () => searchHandler.currentTab.selected.addAll(searchHandler.currentFetched),
+              onLongPress: () => controller.selectFetchedByQuery(context),
+              drawTopBorder: hiddenCount == 0,
+            ),
+          if (selected.isNotEmpty)
+            SettingsButton(
+              name: context.loc.history.clearSelection,
+              icon: const Icon(Icons.deselect),
+              action: () => searchHandler.currentTab.selected.clear(),
+              drawTopBorder: hiddenCount == 0 && selected.length == totalItems,
+            ),
+        ],
+      );
     });
   }
 }

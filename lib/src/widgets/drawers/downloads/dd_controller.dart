@@ -8,21 +8,29 @@ import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
 import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
-import 'package:lolisnatcher/src/data/settings/share_action.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
-import 'package:lolisnatcher/src/handlers/booru_handler.dart';
+import 'package:lolisnatcher/src/data/settings/share_action.dart';
+import 'package:lolisnatcher/src/data/tag_type.dart';
+import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
+import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
+import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/services/gallery_share_service.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
+import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
+import 'package:lolisnatcher/src/widgets/common/confirm_button.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/kaomoji.dart';
+import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/gallery/share_action_dialog.dart';
 import 'package:lolisnatcher/src/widgets/preview/image_compare_dialog.dart';
+import 'package:lolisnatcher/src/widgets/preview/tag_search_query_editor_page.dart';
+import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_build.dart';
 
 class DownloadsDrawerController {
   DownloadsDrawerController() {
@@ -93,6 +101,317 @@ class DownloadsDrawerController {
         ),
       );
     }
+  }
+
+  Future<void> selectFetchedByQuery(BuildContext context) async {
+    final controller = TextEditingController();
+    final query = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      enableDrag: true,
+      isDismissible: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return _DismissibleConstrainedBottomSheet(
+          child: SettingsBottomSheet(
+            title: _SelectionSheetTitle('${context.loc.selectAll} (${context.loc.search})'),
+            contentItems: [
+              TagSearchBox(
+                controller: controller,
+                booru: searchHandler.currentBooru,
+                title: context.loc.search,
+                hintText: searchHandler.currentTab.tags,
+                allowMultipleTags: true,
+                drawTopBorder: false,
+                drawBottomBorder: false,
+                margin: EdgeInsets.zero,
+              ),
+            ],
+            actionButtons: [
+              const CancelButton(withIcon: true),
+              ConfirmButton(
+                withIcon: true,
+                label: context.loc.select,
+                action: () => Navigator.of(sheetContext).pop(
+                  controller.text.trim(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    ).whenComplete(controller.dispose);
+
+    if (query == null) {
+      return;
+    }
+
+    searchHandler.currentTab.selected.assignAll(
+      _itemsMatchingTagQuery(searchHandler.currentFetched, query),
+    );
+  }
+
+  void showSelectedPreview(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      enableDrag: true,
+      isDismissible: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return _DismissibleConstrainedBottomSheet(
+          child: DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.66,
+            minChildSize: 0.24,
+            maxChildSize: 0.92,
+            builder: (context, scrollController) => SettingsBottomSheet(
+              title: Obx(
+                () => _SelectionSheetTitle(
+                  '${context.loc.tagView.preview} (${searchHandler.currentSelected.length.toFormattedString()})',
+                ),
+              ),
+              content: Expanded(
+                child: Obx(() {
+                  final selected = [...searchHandler.currentSelected];
+                  if (selected.isEmpty) {
+                    return Center(
+                      child: Text(context.loc.settings.downloads.noItemsSelected),
+                    );
+                  }
+
+                  return ReorderableListView.builder(
+                    scrollController: scrollController,
+                    padding: const EdgeInsets.all(16),
+                    buildDefaultDragHandles: false,
+                    proxyDecorator: (child, index, animation) => child,
+                    itemCount: selected.length,
+                    onReorderItem: (oldIndex, newIndex) {
+                      final reordered = [...searchHandler.currentSelected];
+                      final item = reordered.removeAt(oldIndex);
+                      reordered.insert(newIndex, item);
+                      searchHandler.currentTab.selected.assignAll(reordered);
+                    },
+                    itemBuilder: (context, index) {
+                      final item = selected[index];
+                      final previewTags = _selectedPreviewTags(item);
+
+                      return ReorderableDelayedDragStartListener(
+                        key: ValueKey(item.key),
+                        index: index,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Material(
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(8),
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                              onTap: () => _showSelectedItemInfo(context, item, index),
+                              child: SizedBox(
+                                height: 120,
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 96,
+                                      height: 120,
+                                      child: ThumbnailBuild(
+                                        item: item,
+                                        handler: searchHandler.currentBooruHandler,
+                                        selectedIndex: index,
+                                        onSelected: () => searchHandler.currentTab.selected.remove(item),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 4),
+                                              child: Text(
+                                                '#${index + 1}',
+                                                style: Theme.of(context).textTheme.titleMedium,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Expanded(
+                                              child: LayoutBuilder(
+                                                builder: (context, constraints) {
+                                                  final style = Theme.of(context).textTheme.bodySmall;
+                                                  final fontSize = style?.fontSize ?? 12;
+                                                  final lineHeight = fontSize * (style?.height ?? 1.25);
+                                                  final linesThatFit = (constraints.maxHeight / lineHeight).floor();
+                                                  final maxLines = linesThatFit < 1 ? 1 : linesThatFit;
+
+                                                  return Text.rich(
+                                                    TextSpan(
+                                                      style: style,
+                                                      children: [
+                                                        for (final tag in previewTags)
+                                                          TextSpan(
+                                                            text: '${tag.fullString} ',
+                                                            style: TextStyle(
+                                                              color: tag.tagType.getColour(),
+                                                            ),
+                                                          ),
+                                                      ],
+                                                    ),
+                                                    maxLines: maxLines,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    softWrap: true,
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.drag_handle,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                    const SizedBox(width: 12),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSelectedItemInfo(BuildContext context, BooruItem item, int index) {
+    final tags = _selectedPreviewTags(item);
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      enableDrag: true,
+      isDismissible: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return _DismissibleConstrainedBottomSheet(
+          child: DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.66,
+            minChildSize: 0.33,
+            maxChildSize: 0.92,
+            builder: (context, scrollController) => SettingsBottomSheet(
+              title: _SelectionSheetTitle('${context.loc.item} #${index + 1}'),
+              scrollController: scrollController,
+              contentItems: [
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: 220,
+                      maxHeight: 260,
+                    ),
+                    child: AspectRatio(
+                      aspectRatio: item.previewAspectRatio ?? item.sampleAspectRatio ?? item.fileAspectRatio ?? 0.75,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: ThumbnailBuild(
+                          item: item,
+                          handler: searchHandler.currentBooruHandler,
+                          selectable: false,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final tag in tags)
+                      Chip(
+                        label: Text(tag.fullString),
+                        visualDensity: VisualDensity.compact,
+                        backgroundColor: tag.tagType.getColour()?.withValues(alpha: 0.18),
+                        side: BorderSide(
+                          color: tag.tagType.getColour() ?? Theme.of(context).dividerColor,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+              actionButtons: [
+                IconButton(
+                  tooltip: context.loc.move,
+                  onPressed: () {
+                    _moveSelectedItem(item, 0);
+                    Navigator.of(sheetContext).pop();
+                  },
+                  icon: const Icon(Icons.vertical_align_top),
+                ),
+                IconButton(
+                  tooltip: context.loc.move,
+                  onPressed: () {
+                    _moveSelectedItem(item, searchHandler.currentSelected.length - 1);
+                    Navigator.of(sheetContext).pop();
+                  },
+                  icon: const Icon(Icons.vertical_align_bottom),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _moveSelectedItem(BooruItem item, int targetIndex) {
+    final selected = [...searchHandler.currentSelected];
+    final currentIndex = selected.indexOf(item);
+    if (currentIndex == -1) {
+      return;
+    }
+
+    final clampedTarget = targetIndex.clamp(0, selected.length - 1);
+    selected.removeAt(currentIndex);
+    selected.insert(clampedTarget, item);
+    searchHandler.currentTab.selected.assignAll(selected);
+  }
+
+  List<Tag> _selectedPreviewTags(BooruItem item) {
+    final tagHandler = TagHandler.instance;
+    final tags = item.tagsList.map((tag) {
+      final cachedType = tag.tagType.isNone ? tagHandler.getTag(tag.fullString).tagType : tag.tagType;
+      final type = tag.tagType.isNone && !cachedType.isNone ? cachedType : tag.tagType;
+
+      return Tag(
+        tag.fullString,
+        tagType: type,
+      );
+    }).toList();
+
+    tags.sort((a, b) {
+      final typeComparison = _selectedPreviewTagTypeSortOrder(a.tagType).compareTo(
+        _selectedPreviewTagTypeSortOrder(b.tagType),
+      );
+      if (typeComparison != 0) {
+        return typeComparison;
+      }
+
+      return a.fullString.compareTo(b.fullString);
+    });
+
+    return tags;
   }
 
   Future<void> onShareSelected(BuildContext context) async {
@@ -332,6 +651,80 @@ class DownloadsDrawerController {
       firstBooru: firstBooru,
       secondBooru: secondBooru,
     );
+  }
+
+  List<BooruItem> _itemsMatchingTagQuery(
+    Iterable<BooruItem> items,
+    String rawQuery,
+  ) {
+    final query = rawQuery.trim();
+    if (query.isEmpty) {
+      return items.toList();
+    }
+
+    final groups = query.split('~').map((group) => group.trim()).where((group) => group.isNotEmpty).toList();
+    if (groups.isEmpty) {
+      return items.toList();
+    }
+
+    return items.where((item) {
+      final searchableTags = _searchableTagsForItem(item);
+      return groups.any((group) => _matchesTagQueryGroup(searchableTags, group));
+    }).toList();
+  }
+
+  Set<String> _searchableTagsForItem(BooruItem item) {
+    final tags = item.tagsList.map((tag) => tag.fullString.trim().toLowerCase()).where((tag) => tag.isNotEmpty).toSet();
+
+    void addValue(String key, String? value) {
+      final normalized = value?.trim().toLowerCase();
+      if (normalized?.isNotEmpty == true) {
+        tags.add('$key:$normalized');
+      }
+    }
+
+    addValue('rating', item.rating);
+    addValue('score', item.score);
+    addValue('id', item.serverId);
+    addValue('server_id', item.serverId);
+    addValue('md5', item.md5String);
+    addValue('uploader', item.uploaderName);
+    addValue('uploader_id', item.uploaderId);
+    addValue('ext', item.fileExt);
+
+    return tags;
+  }
+
+  bool _matchesTagQueryGroup(Set<String> searchableTags, String group) {
+    final tokens = group.split(RegExp(r'\s+')).where((token) => token.trim().isNotEmpty);
+
+    for (final rawToken in tokens) {
+      final normalizedToken = rawToken.trim().toLowerCase();
+      final isNegative = normalizedToken.startsWith('-');
+      final token = isNegative ? normalizedToken.substring(1) : normalizedToken;
+      if (token.isEmpty) {
+        continue;
+      }
+
+      final hasTag = _containsQueryTag(searchableTags, token);
+      if (isNegative ? hasTag : !hasTag) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  bool _containsQueryTag(Set<String> searchableTags, String queryTag) {
+    if (!queryTag.contains('*')) {
+      return searchableTags.contains(queryTag);
+    }
+
+    final pattern = RegExp(
+      '^${RegExp.escape(queryTag).replaceAll(r'\*', '.*')}\$',
+      caseSensitive: false,
+    );
+    return searchableTags.any(pattern.hasMatch);
   }
 
   Future<void> refreshSelectedMetadata(BuildContext context) async {
@@ -631,5 +1024,52 @@ class DownloadsDrawerController {
   void dispose() {
     scrollController.dispose();
     _handlerCache.clear();
+  }
+}
+
+int _selectedPreviewTagTypeSortOrder(TagType type) {
+  return TagType.values.indexOf(type);
+}
+
+class _DismissibleConstrainedBottomSheet extends StatelessWidget {
+  const _DismissibleConstrainedBottomSheet({
+    required this.child,
+  });
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final maxSheetWidth = width < 720 ? width : (width * 0.62).clamp(480.0, 680.0);
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => Navigator.of(context).pop(),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: GestureDetector(
+          onTap: () {},
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxSheetWidth),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectionSheetTitle extends StatelessWidget {
+  const _SelectionSheetTitle(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.titleLarge,
+    );
   }
 }

@@ -913,12 +913,37 @@ class _TagSearchBoxState extends State<TagSearchBox> {
                               overflow: TextOverflow.ellipsis,
                             )
                     : (widget.hintText != null
-                          ? Text(
-                              widget.hintText!,
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: Theme.of(context).hintColor,
-                              ),
-                            )
+                          ? widget.allowMultipleTags
+                                ? Opacity(
+                                    opacity: 0.72,
+                                    child: Wrap(
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      alignment: WrapAlignment.start,
+                                      children: widget.hintText!
+                                          .split(' ')
+                                          .where((t) => t.isNotEmpty)
+                                          .map(
+                                            (t) => SizedBox(
+                                              height: 32,
+                                              child: MainSearchTagChip(
+                                                tag: t,
+                                                booru: widget.booru,
+                                                canDelete: false,
+                                              ),
+                                            ),
+                                          )
+                                          .toList(),
+                                    ),
+                                  )
+                                : Text(
+                                    widget.hintText!,
+                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color:
+                                          tagHandler.getTag(widget.hintText!).getColour() ??
+                                          Theme.of(context).hintColor,
+                                    ),
+                                  )
                           : null),
               ),
             ),

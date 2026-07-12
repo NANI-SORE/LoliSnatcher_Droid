@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide ContextExt;
 
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
@@ -196,9 +196,20 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: maxSheetWidth),
                 child: SettingsBottomSheet(
-                  title: Text('${context.loc.galleryButtons.select} (${selectedCount.toFormattedString()})'),
+                  title: Text(
+                    '${context.loc.galleryButtons.select} (${selectedCount.toFormattedString()})',
+                    style: context.textTheme.titleLarge,
+                  ),
                   contentPadding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
                   contentItems: [
+                    SettingsButton(
+                      name: context.loc.tagView.preview,
+                      icon: const Icon(Icons.grid_view),
+                      action: () {
+                        Navigator.of(sheetContext).pop();
+                        downloadsController.showSelectedPreview(context);
+                      },
+                    ),
                     SettingsButton(
                       name: context.loc.settings.downloads.invertSelection,
                       icon: const Icon(Icons.flip_to_back),
@@ -326,79 +337,121 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Material(
                   color: Colors.transparent,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.82),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Tooltip(
-                          message:
-                              '${context.loc.settings.downloads.snatchSelected} (${selectedCount.toFormattedString()})',
-                          child: GestureDetector(
-                            onLongPress: controlsBlocked
-                                ? null
-                                : () => downloadsController.onStartSnatching(context, true),
-                            child: IconButton(
-                              icon: const Icon(Icons.download_sharp),
-                              onPressed: controlsBlocked
-                                  ? null
-                                  : () => downloadsController.onStartSnatching(context, false),
+                  child: Stack(
+                    clipBehavior: .none,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.82),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Tooltip(
+                              message:
+                                  '${context.loc.settings.downloads.snatchSelected} (${selectedCount.toFormattedString()})',
+                              child: GestureDetector(
+                                onLongPress: controlsBlocked
+                                    ? null
+                                    : () => downloadsController.onStartSnatching(context, true),
+                                child: IconButton(
+                                  icon: const Icon(Icons.download_sharp),
+                                  onPressed: controlsBlocked
+                                      ? null
+                                      : () => downloadsController.onStartSnatching(context, false),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        Tooltip(
-                          message: '${context.loc.galleryButtons.share} (${selectedCount.toFormattedString()})',
-                          child: GestureDetector(
-                            onLongPress: controlsBlocked
-                                ? null
-                                : () => downloadsController.onShareSelectedLongPress(context),
-                            child: IconButton(
-                              icon: const Icon(Icons.share),
-                              onPressed: controlsBlocked ? null : () => downloadsController.onShareSelected(context),
+                            Tooltip(
+                              message: '${context.loc.galleryButtons.share} (${selectedCount.toFormattedString()})',
+                              child: GestureDetector(
+                                onLongPress: controlsBlocked
+                                    ? null
+                                    : () => downloadsController.onShareSelectedLongPress(context),
+                                child: IconButton(
+                                  icon: const Icon(Icons.share),
+                                  onPressed: controlsBlocked
+                                      ? null
+                                      : () => downloadsController.onShareSelected(context),
+                                ),
+                              ),
                             ),
-                          ),
+                            Tooltip(
+                              message: context.loc.selectAll,
+                              child: IconButton(
+                                icon: const Icon(Icons.select_all),
+                                onPressed: hasFetched && !controlsBlocked ? () => selectAll(searchHandler) : null,
+                                onLongPress: hasFetched && !controlsBlocked
+                                    ? () => downloadsController.selectFetchedByQuery(context)
+                                    : null,
+                              ),
+                            ),
+                            Tooltip(
+                              message: context.loc.settings.downloads.clearSelected,
+                              child: IconButton(
+                                icon: const Icon(Icons.deselect),
+                                onPressed: !controlsBlocked ? () => deselectAll(searchHandler) : null,
+                              ),
+                            ),
+                            Tooltip(
+                              message: context.loc.searchBar.more,
+                              child: IconButton(
+                                icon: const Icon(Icons.more_vert),
+                                onPressed: controlsBlocked
+                                    ? null
+                                    : () => showOverflowDialog(
+                                        context,
+                                        selectedCount: selectedCount,
+                                        downloadsSelectedCount: downloadsSelectedCount,
+                                        favSelectedCount: favSelectedCount,
+                                        unfavSelectedCount: unfavSelectedCount,
+                                        hasDownloadsSelected: hasDownloadsSelected,
+                                        hasFavsSelected: hasFavsSelected,
+                                        isAllSelectedFavs: isAllSelectedFavs,
+                                        canReverseOrder: canReverseOrder,
+                                        canCompareSelected: canCompareSelected,
+                                        canRefreshSelected: canRefreshSelected,
+                                      ),
+                              ),
+                            ),
+                          ],
                         ),
-                        Tooltip(
-                          message: context.loc.selectAll,
-                          child: IconButton(
-                            icon: const Icon(Icons.select_all),
-                            onPressed: hasFetched && !controlsBlocked ? () => selectAll(searchHandler) : null,
-                          ),
-                        ),
-                        Tooltip(
-                          message: context.loc.settings.downloads.clearSelected,
-                          child: IconButton(
-                            icon: const Icon(Icons.deselect),
-                            onPressed: !controlsBlocked ? () => deselectAll(searchHandler) : null,
-                          ),
-                        ),
-                        Tooltip(
-                          message: context.loc.searchBar.more,
-                          child: IconButton(
-                            icon: const Icon(Icons.more_vert),
-                            onPressed: controlsBlocked
-                                ? null
-                                : () => showOverflowDialog(
-                                    context,
-                                    selectedCount: selectedCount,
-                                    downloadsSelectedCount: downloadsSelectedCount,
-                                    favSelectedCount: favSelectedCount,
-                                    unfavSelectedCount: unfavSelectedCount,
-                                    hasDownloadsSelected: hasDownloadsSelected,
-                                    hasFavsSelected: hasFavsSelected,
-                                    isAllSelectedFavs: isAllSelectedFavs,
-                                    canReverseOrder: canReverseOrder,
-                                    canCompareSelected: canCompareSelected,
-                                    canRefreshSelected: canRefreshSelected,
+                      ),
+                      Positioned(
+                        right: -10,
+                        top: -10,
+                        child: Obx(() {
+                          final selected = searchHandler.currentSelected;
+
+                          if (selected.isNotEmpty) {
+                            return IgnorePointer(
+                              child: Container(
+                                height: 20,
+                                constraints: const BoxConstraints(minWidth: 20),
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.secondary,
+                                  borderRadius: const BorderRadius.all(Radius.circular(4)),
+                                ),
+                                child: Text(
+                                  selected.length.toFormattedString(),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Theme.of(context).colorScheme.onSecondary,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                          ),
-                        ),
-                      ],
-                    ),
+                                ),
+                              ),
+                            );
+                          }
+
+                          return const SizedBox.shrink();
+                        }),
+                      ),
+                    ],
                   ),
                 ),
               )
