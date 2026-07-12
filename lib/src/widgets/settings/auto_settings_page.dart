@@ -57,7 +57,7 @@ class AutoSettingsPage extends StatelessWidget {
         .toList();
 
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       appBar: SettingsAppBar(
         title: category.locName(context),
         actions: [
@@ -159,7 +159,7 @@ class MultiCategorySettingsPage extends StatelessWidget {
     final registry = SettingsRegistry.instance;
 
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       appBar: SettingsAppBar(title: title),
       body: Center(
         child: ListView(

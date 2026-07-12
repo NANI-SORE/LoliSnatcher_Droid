@@ -2260,8 +2260,8 @@ class Translations$settings$subcategories$en {
   /// en: 'Theme'
   String get theme => TranslationOverrides.string(_root.$meta, 'settings.subcategories.theme', {}) ?? 'Theme';
 
-  /// en: 'Text and drawer'
-  String get textAndDrawer => TranslationOverrides.string(_root.$meta, 'settings.subcategories.textAndDrawer', {}) ?? 'Text and drawer';
+  /// en: 'Drawer'
+  String get drawer => TranslationOverrides.string(_root.$meta, 'settings.subcategories.drawer', {}) ?? 'Drawer';
 
   /// en: 'Cache'
   String get cache => TranslationOverrides.string(_root.$meta, 'settings.subcategories.cache', {}) ?? 'Cache';
@@ -3167,6 +3167,11 @@ class Translations$settings$video$en {
 
   /// en: 'Video cache mode'
   String get videoCacheMode => TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheMode', {}) ?? 'Video cache mode';
+
+  /// en: 'Videos on some Boorus may not work correctly (i.e. endless loading) when using Stream video cache mode. In that case try using Cache mode. Otherwise player will retry with Cache mode automatically if video is in initial buffering state for 10+ seconds and video file size is less than 25 MB'
+  String get videoCacheModeSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheModeSubtitle', {}) ??
+      'Videos on some Boorus may not work correctly (i.e. endless loading) when using Stream video cache mode. In that case try using Cache mode. Otherwise player will retry with Cache mode automatically if video is in initial buffering state for 10+ seconds and video file size is less than 25 MB';
 
   late final Translations$settings$video$cacheModes$en cacheModes = Translations$settings$video$cacheModes$en.internal(_root);
   late final Translations$settings$video$cacheModeValues$en cacheModeValues = Translations$settings$video$cacheModeValues$en.internal(_root);
@@ -6075,8 +6080,7 @@ extension on Translations {
           'settings.subcategories.backend' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.backend', {}) ?? 'Backend',
           'settings.subcategories.mpv' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.mpv', {}) ?? 'MPV',
           'settings.subcategories.theme' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.theme', {}) ?? 'Theme',
-          'settings.subcategories.textAndDrawer' =>
-            TranslationOverrides.string(_root.$meta, 'settings.subcategories.textAndDrawer', {}) ?? 'Text and drawer',
+          'settings.subcategories.drawer' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.drawer', {}) ?? 'Drawer',
           'settings.subcategories.cache' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.cache', {}) ?? 'Cache',
           'settings.subcategories.downloads' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.downloads', {}) ?? 'Downloads',
           'settings.subcategories.storage' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.storage', {}) ?? 'Storage',
@@ -6554,6 +6558,9 @@ extension on Translations {
           'settings.video.mpvVO' => TranslationOverrides.string(_root.$meta, 'settings.video.mpvVO', {}) ?? 'MPV: VO',
           'settings.video.mpvHWDEC' => TranslationOverrides.string(_root.$meta, 'settings.video.mpvHWDEC', {}) ?? 'MPV: HWDEC',
           'settings.video.videoCacheMode' => TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheMode', {}) ?? 'Video cache mode',
+          'settings.video.videoCacheModeSubtitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheModeSubtitle', {}) ??
+                'Videos on some Boorus may not work correctly (i.e. endless loading) when using Stream video cache mode. In that case try using Cache mode. Otherwise player will retry with Cache mode automatically if video is in initial buffering state for 10+ seconds and video file size is less than 25 MB',
           'settings.video.cacheModes.title' => TranslationOverrides.string(_root.$meta, 'settings.video.cacheModes.title', {}) ?? 'Video cache modes',
           'settings.video.cacheModes.streamMode' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.cacheModes.streamMode', {}) ??
@@ -7455,11 +7462,11 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.logging.captureLogcatDescription', {}) ??
                 'Record warning and error messages from this app\'s Android process',
           'settings.webview.openWebview' => TranslationOverrides.string(_root.$meta, 'settings.webview.openWebview', {}) ?? 'Open webview',
-          'settings.webview.openWebviewTip' =>
-            TranslationOverrides.string(_root.$meta, 'settings.webview.openWebviewTip', {}) ?? 'to login or obtain cookies',
           _ => null,
         } ??
         switch (path) {
+          'settings.webview.openWebviewTip' =>
+            TranslationOverrides.string(_root.$meta, 'settings.webview.openWebviewTip', {}) ?? 'to login or obtain cookies',
           'settings.dirPicker.directoryName' => TranslationOverrides.string(_root.$meta, 'settings.dirPicker.directoryName', {}) ?? 'Directory name',
           'settings.dirPicker.selectADirectory' =>
             TranslationOverrides.string(_root.$meta, 'settings.dirPicker.selectADirectory', {}) ?? 'Select a directory',

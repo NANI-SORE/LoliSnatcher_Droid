@@ -212,7 +212,7 @@ class SankakuHandler extends BooruHandler {
 
   @override
   String makePostURL(String id) {
-    return 'https://chan.sankakucomplex.com/post/show/$id';
+    return 'https://sankaku.app/posts/$id';
   }
 
   static List<String> knownUrls = [
@@ -226,6 +226,7 @@ class SankakuHandler extends BooruHandler {
   static List<String> knownPostUrls = [
     'chan.sankakucomplex.com',
     'beta.sankakucomplex.com',
+    'sankaku.app',
   ];
 
   String get baseUrl => knownUrls.any(booru.baseURL!.contains) ? 'https://sankakuapi.com' : booru.baseURL!;

@@ -400,7 +400,7 @@
             "backend": "Backend",
             "mpv": "MPV",
             "theme": "Theme",
-            "textAndDrawer": "Text and drawer",
+            "drawer": "Drawer",
             "cache": "Cache",
             "downloads": "Downloads",
             "storage": "Storage",
@@ -698,6 +698,7 @@
             "mpvVO": "MPV: VO",
             "mpvHWDEC": "MPV: HWDEC",
             "videoCacheMode": "Video cache mode",
+            "videoCacheModeSubtitle": "Videos on some Boorus may not work correctly (i.e. endless loading) when using Stream video cache mode. In that case try using Cache mode. Otherwise player will retry with Cache mode automatically if video is in initial buffering state for 10+ seconds and video file size is less than 25 MB",
             "cacheModes": {
                 "title": "Video cache modes",
                 "streamMode": "- Stream - Don't cache, start playing as soon as possible",

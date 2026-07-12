@@ -40,7 +40,7 @@ echo
 
 build_arg="LS_IS_TESTING=true"
 build_desc="Testing"
-build_mode="apk --split-per-abi"
+build_modes=("apk --split-per-abi")
 build_extras="--dart-define-from-file=./config/secrets.json"
 suffix="test"
 case "$menu_result"
@@ -48,11 +48,13 @@ in
     0)
         build_arg="LS_IS_TESTING=true"
         build_desc="Testing"
+        build_modes=("apk --split-per-abi")
         suffix="test"
         ;;
     1)
         build_arg="LS_IS_STORE=false"
         build_desc="Github"
+        build_modes=("apk --split-per-abi")
         suffix="github"
         ;;
     2)
@@ -64,7 +66,7 @@ in
     3)
         build_arg="LS_IS_STORE=true"
         build_desc="Store"
-        build_mode="appbundle"
+        build_modes=("appbundle" "apk --split-per-abi")
         suffix="store"
         ;;
 esac
@@ -102,7 +104,7 @@ suffix="${suffix}${network_suffix}"
 clear
 
 echo "Doing a [$build_desc] build with [$network_desc]"
-echo "Build command: flutter build $build_mode --dart-define=$build_arg --dart-define=$cronet_define $cronet_no_play_define $build_extras"
+echo "Build command: flutter build [$build_modes] --dart-define=$build_arg --dart-define=$cronet_define $cronet_no_play_define $build_extras"
 # Generate empty secret vars config if it's not there
 sh gen_config.sh
 
@@ -167,21 +169,28 @@ EOF
     trap restore_pubspec_overrides EXIT
 fi
 
-flutter_cmd="./.fvm/flutter_sdk/bin/flutter"
-if [ ! -x "$flutter_cmd" ]; then
-    if command -v fvm &> /dev/null; then
-        flutter_cmd="fvm flutter"
-    else
-        flutter_cmd="flutter"
-    fi
+# Prefer the project-pinned FVM SDK, then fall back to fvm/global flutter.
+if [ -x "./.fvm/flutter_sdk/bin/flutter" ]; then
+    flutter_cmd="./.fvm/flutter_sdk/bin/flutter"
+elif command -v fvm &> /dev/null; then
+    flutter_cmd="fvm flutter"
+else
+    flutter_cmd="flutter"
 fi
 
-if $flutter_cmd pub get && $flutter_cmd build $build_mode --release --dart-define=$build_arg --dart-define=$cronet_define $cronet_no_play_define $build_extras ; then
-    echo "Build succeeded"
-else
+if ! $flutter_cmd pub get ; then
     echo "Build failed"
     exit 1
 fi
+
+for mode in "${build_modes[@]}"; do
+    if $flutter_cmd build $mode --release --dart-define=$build_arg --dart-define=$cronet_define $cronet_no_play_define $build_extras ; then
+        echo "Build succeeded"
+    else
+        echo "Build failed"
+        exit 1
+    fi
+done
 
 get_version_and_build() {
     version_and_build=$(grep "version:" pubspec.yaml | awk '{print $2}')
@@ -191,14 +200,27 @@ get_version_and_build() {
 }
 get_version_and_build
 
-if [ "$build_mode" = "appbundle" ]; then
+has_build_mode() {
+    local expected="$1"
+    local mode
+    for mode in "${build_modes[@]}"; do
+        if [ "$mode" = "$expected" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+if has_build_mode "appbundle"; then
     src_aab="build/app/outputs/bundle/release/app-release.aab"
     dest_aab="build/app/outputs/bundle/release/LoliSnatcher_${version}_${build}_appbundle_${suffix}.aab"
     cp "$src_aab" "$dest_aab"
 
     echo
     echo "=> Built AAB: LoliSnatcher_${version}_${build}_appbundle_${suffix}.aab"
-else
+fi
+
+if has_build_mode "apk --split-per-abi"; then
     srcv8_apk="build/app/outputs/flutter-apk/app-arm64-v8a-release.apk"
     destv8_apk="build/app/outputs/flutter-apk/LoliSnatcher_${version}_${build}_arm64-v8a_${suffix}.apk"
     cp "$srcv8_apk" "$destv8_apk"
@@ -215,3 +237,11 @@ else
     echo "=> Built APKs: LoliSnatcher_${version}_${build}_[arch]_${suffix}.apk"
 fi
 
+if has_build_mode "apk"; then
+    src_apk="build/app/outputs/flutter-apk/app-release.apk"
+    dest_apk="build/app/outputs/flutter-apk/LoliSnatcher_${version}_${build}_${suffix}.apk"
+    cp "$src_apk" "$dest_apk"
+
+    echo
+    echo "=> Built APK: LoliSnatcher_${version}_${build}_${suffix}.apk"
+fi
