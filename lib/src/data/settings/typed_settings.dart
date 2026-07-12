@@ -44,6 +44,23 @@ Widget? _buildHelpDialogButton(
   );
 }
 
+Widget _withExtraWidgets(
+  BuildContext context,
+  SettingWidgetConfig? widgetConfig,
+  Widget child,
+) {
+  final extraWidgets = widgetConfig?.extraWidgets?.call(context) ?? const <Widget>[];
+  if (extraWidgets.isEmpty) return child;
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      child,
+      ...extraWidgets,
+    ],
+  );
+}
+
 /// Factory for boolean toggle settings.
 ///
 /// Renders as a [SettingsToggle] widget.
@@ -92,19 +109,23 @@ SettingDef<bool> boolSetting({
       final s = state as SettingState<bool>;
       return SettingBuilder<bool>(
         setting: s,
-        builder: (ctx, value) => SettingsToggle(
-          title: localization.title(ctx),
-          subtitle: localization.subtitle != null ? Text(localization.subtitle!(ctx)) : null,
-          value: s.scopedValue(ctx),
-          defaultValue: s.resetValue(ctx),
-          onReset: () => s.resetScoped(ctx),
-          onChanged: (newValue) => s.setScopedValue(ctx, newValue),
-          enabled: enabledWhen?.call() ?? true,
-          leadingIcon: widgetConfig?.leadingIcon,
-          trailingIcon:
-              widgetConfig?.trailingIcon ??
-              _buildHelpDialogButton(ctx, localization, widgetConfig) ??
-              _buildHelpButton(ctx, localization),
+        builder: (ctx, value) => _withExtraWidgets(
+          ctx,
+          widgetConfig,
+          SettingsToggle(
+            title: localization.title(ctx),
+            subtitle: localization.subtitle != null ? Text(localization.subtitle!(ctx)) : null,
+            value: s.scopedValue(ctx),
+            defaultValue: s.resetValue(ctx),
+            onReset: () => s.resetScoped(ctx),
+            onChanged: (newValue) => s.setScopedValue(ctx, newValue),
+            enabled: enabledWhen?.call() ?? true,
+            leadingIcon: widgetConfig?.leadingIcon,
+            trailingIcon:
+                widgetConfig?.trailingIcon ??
+                _buildHelpDialogButton(ctx, localization, widgetConfig) ??
+                _buildHelpButton(ctx, localization),
+          ),
         ),
       );
     },
@@ -380,42 +401,54 @@ SettingDef<T> enumSetting<T extends Enum>({
               _buildHelpButton(ctx, augmentedLocalization);
           switch (displayMode) {
             case EnumDisplayMode.dropdown:
-              return SettingsDropdown<T>(
-                title: localization.title(ctx),
-                subtitle: localization.subtitle != null ? Text(localization.subtitle!(ctx)) : null,
-                value: scopedVal,
-                items: values,
-                itemTitleBuilder: (item) => item != null ? enumLocName(ctx, item) : '',
-                onChanged: (newValue) {
-                  if (newValue != null) s.setScopedValue(ctx, newValue);
-                },
-                onReset: scopedVal != s.resetValue(ctx) ? () => s.resetScoped(ctx) : null,
-                trailingIcon: trailingIcon,
+              return _withExtraWidgets(
+                ctx,
+                widgetConfig,
+                SettingsDropdown<T>(
+                  title: localization.title(ctx),
+                  subtitle: localization.subtitle != null ? Text(localization.subtitle!(ctx)) : null,
+                  value: scopedVal,
+                  items: values,
+                  itemTitleBuilder: (item) => item != null ? enumLocName(ctx, item) : '',
+                  onChanged: (newValue) {
+                    if (newValue != null) s.setScopedValue(ctx, newValue);
+                  },
+                  onReset: scopedVal != s.resetValue(ctx) ? () => s.resetScoped(ctx) : null,
+                  trailingIcon: trailingIcon,
+                ),
               );
             case EnumDisplayMode.optionsList:
-              return SettingsOptionsList<T>(
-                title: localization.title(ctx),
-                subtitle: localization.subtitle != null ? Text(localization.subtitle!(ctx)) : null,
-                value: scopedVal,
-                items: values,
-                itemTitleBuilder: (item) => item != null ? enumLocName(ctx, item) : '',
-                itemLeadingBuilder: itemLeadingBuilder != null ? (item) => itemLeadingBuilder(ctx, item) : null,
-                onChanged: (newValue) {
-                  if (newValue != null) s.setScopedValue(ctx, newValue);
-                },
-                onReset: scopedVal != s.resetValue(ctx) ? () => s.resetScoped(ctx) : null,
-                trailingIcon: trailingIcon,
+              return _withExtraWidgets(
+                ctx,
+                widgetConfig,
+                SettingsOptionsList<T>(
+                  title: localization.title(ctx),
+                  subtitle: localization.subtitle != null ? Text(localization.subtitle!(ctx)) : null,
+                  value: scopedVal,
+                  items: values,
+                  itemTitleBuilder: (item) => item != null ? enumLocName(ctx, item) : '',
+                  itemLeadingBuilder: itemLeadingBuilder != null ? (item) => itemLeadingBuilder(ctx, item) : null,
+                  onChanged: (newValue) {
+                    if (newValue != null) s.setScopedValue(ctx, newValue);
+                  },
+                  onReset: scopedVal != s.resetValue(ctx) ? () => s.resetScoped(ctx) : null,
+                  trailingIcon: trailingIcon,
+                ),
               );
             case EnumDisplayMode.segmented:
-              return SettingsSegmentedButton<T>(
-                title: localization.title(ctx),
-                subtitle: localization.subtitle != null ? Text(localization.subtitle!(ctx)) : null,
-                value: scopedVal,
-                values: values,
-                defaultValue: s.resetValue(ctx),
-                onReset: () => s.resetScoped(ctx),
-                itemTitleBuilder: (item) => enumLocName(ctx, item),
-                onChanged: (newValue) => s.setScopedValue(ctx, newValue),
+              return _withExtraWidgets(
+                ctx,
+                widgetConfig,
+                SettingsSegmentedButton<T>(
+                  title: localization.title(ctx),
+                  subtitle: localization.subtitle != null ? Text(localization.subtitle!(ctx)) : null,
+                  value: scopedVal,
+                  values: values,
+                  defaultValue: s.resetValue(ctx),
+                  onReset: () => s.resetScoped(ctx),
+                  itemTitleBuilder: (item) => enumLocName(ctx, item),
+                  onChanged: (newValue) => s.setScopedValue(ctx, newValue),
+                ),
               );
           }
         },
@@ -609,25 +642,29 @@ class _IntSettingWidgetState extends State<_IntSettingWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return SettingsTextInput(
-      controller: _controller,
-      title: widget.localization.title(context),
-      subtitle: widget.localization.subtitle != null ? Text(widget.localization.subtitle!(context)) : null,
-      trailingIcon:
-          widget.widgetConfig?.trailingIcon ??
-          _buildHelpDialogButton(context, widget.localization, widget.widgetConfig) ??
-          _buildHelpButton(context, widget.localization),
-      inputType: TextInputType.number,
-      numberButtons: true,
-      numberStep: widget.step.toDouble(),
-      numberMin: widget.min.toDouble(),
-      numberMax: widget.max.toDouble(),
-      resetText: () => widget.state.resetValue(context).toString(),
-      onReset: () => widget.state.resetScoped(context),
-      onChanged: (newValue) {
-        final parsed = int.tryParse(newValue);
-        if (parsed != null) widget.state.setScopedValue(context, parsed, debounceSave: true);
-      },
+    return _withExtraWidgets(
+      context,
+      widget.widgetConfig,
+      SettingsTextInput(
+        controller: _controller,
+        title: widget.localization.title(context),
+        subtitle: widget.localization.subtitle != null ? Text(widget.localization.subtitle!(context)) : null,
+        trailingIcon:
+            widget.widgetConfig?.trailingIcon ??
+            _buildHelpDialogButton(context, widget.localization, widget.widgetConfig) ??
+            _buildHelpButton(context, widget.localization),
+        inputType: TextInputType.number,
+        numberButtons: true,
+        numberStep: widget.step.toDouble(),
+        numberMin: widget.min.toDouble(),
+        numberMax: widget.max.toDouble(),
+        resetText: () => widget.state.resetValue(context).toString(),
+        onReset: () => widget.state.resetScoped(context),
+        onChanged: (newValue) {
+          final parsed = int.tryParse(newValue);
+          if (parsed != null) widget.state.setScopedValue(context, parsed, debounceSave: true);
+        },
+      ),
     );
   }
 }
@@ -689,21 +726,25 @@ class _DoubleSettingWidgetState extends State<_DoubleSettingWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return SettingsTextInput(
-      controller: _controller,
-      title: widget.localization.title(context),
-      subtitle: widget.localization.subtitle != null ? Text(widget.localization.subtitle!(context)) : null,
-      trailingIcon:
-          widget.widgetConfig?.trailingIcon ??
-          _buildHelpDialogButton(context, widget.localization, widget.widgetConfig) ??
-          _buildHelpButton(context, widget.localization),
-      inputType: const TextInputType.numberWithOptions(decimal: true),
-      resetText: () => widget.state.resetValue(context).toString(),
-      onReset: () => widget.state.resetScoped(context),
-      onChanged: (newValue) {
-        final parsed = double.tryParse(newValue);
-        if (parsed != null) widget.state.setScopedValue(context, parsed, debounceSave: true);
-      },
+    return _withExtraWidgets(
+      context,
+      widget.widgetConfig,
+      SettingsTextInput(
+        controller: _controller,
+        title: widget.localization.title(context),
+        subtitle: widget.localization.subtitle != null ? Text(widget.localization.subtitle!(context)) : null,
+        trailingIcon:
+            widget.widgetConfig?.trailingIcon ??
+            _buildHelpDialogButton(context, widget.localization, widget.widgetConfig) ??
+            _buildHelpButton(context, widget.localization),
+        inputType: const TextInputType.numberWithOptions(decimal: true),
+        resetText: () => widget.state.resetValue(context).toString(),
+        onReset: () => widget.state.resetScoped(context),
+        onChanged: (newValue) {
+          final parsed = double.tryParse(newValue);
+          if (parsed != null) widget.state.setScopedValue(context, parsed, debounceSave: true);
+        },
+      ),
     );
   }
 }
@@ -767,21 +808,25 @@ class _StringSettingWidgetState extends State<_StringSettingWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return SettingsTextInput(
-      controller: _controller,
-      title: widget.localization.title(context),
-      subtitle: widget.localization.subtitle != null ? Text(widget.localization.subtitle!(context)) : null,
-      trailingIcon:
-          widget.widgetConfig?.trailingIcon ??
-          _buildHelpDialogButton(context, widget.localization, widget.widgetConfig) ??
-          _buildHelpButton(context, widget.localization),
-      inputType: widget.inputType,
-      obscureable: widget.obscureable,
-      copyable: widget.copyable,
-      pasteable: widget.pasteable,
-      resetText: () => widget.state.resetValue(context),
-      onReset: () => widget.state.resetScoped(context),
-      onChanged: (newValue) => widget.state.setScopedValue(context, newValue, debounceSave: true),
+    return _withExtraWidgets(
+      context,
+      widget.widgetConfig,
+      SettingsTextInput(
+        controller: _controller,
+        title: widget.localization.title(context),
+        subtitle: widget.localization.subtitle != null ? Text(widget.localization.subtitle!(context)) : null,
+        trailingIcon:
+            widget.widgetConfig?.trailingIcon ??
+            _buildHelpDialogButton(context, widget.localization, widget.widgetConfig) ??
+            _buildHelpButton(context, widget.localization),
+        inputType: widget.inputType,
+        obscureable: widget.obscureable,
+        copyable: widget.copyable,
+        pasteable: widget.pasteable,
+        resetText: () => widget.state.resetValue(context),
+        onReset: () => widget.state.resetScoped(context),
+        onChanged: (newValue) => widget.state.setScopedValue(context, newValue, debounceSave: true),
+      ),
     );
   }
 }

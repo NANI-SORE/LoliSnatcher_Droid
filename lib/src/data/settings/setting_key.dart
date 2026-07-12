@@ -102,6 +102,7 @@ enum SettingKey {
   indexesEnabled,
   searchHistoryEnabled,
   tagTypeFetchEnabled,
+  databaseActionsSlot,
 
   // Network
   customUserAgent,
@@ -110,6 +111,7 @@ enum SettingKey {
   proxyUsername,
   proxyPassword,
   allowSelfSignedCerts,
+  cookieManagerSlot,
 
   // Privacy & Filters
   filterHated,
