@@ -103,7 +103,7 @@ class DownloadsDrawerController {
     }
   }
 
-  Future<void> selectFetchedByQuery(BuildContext context) async {
+  Future<bool> selectFetchedByQuery(BuildContext context) async {
     final controller = TextEditingController();
     final query = await showModalBottomSheet<String>(
       context: context,
@@ -144,12 +144,13 @@ class DownloadsDrawerController {
     ).whenComplete(controller.dispose);
 
     if (query == null) {
-      return;
+      return false;
     }
 
     searchHandler.currentTab.selected.assignAll(
       _itemsMatchingTagQuery(searchHandler.currentFetched, query),
     );
+    return true;
   }
 
   void showSelectedPreview(BuildContext context) {

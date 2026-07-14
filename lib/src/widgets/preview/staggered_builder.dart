@@ -59,6 +59,7 @@ class _StaggeredBuilderState extends State<StaggeredBuilder> {
   int? _cachedLength;
   int? _cachedColumnCount;
   double? _cachedItemMaxWidth;
+  double? _cachedItemMaxHeight;
   List<_StaggeredRow>? _cachedRows;
 
   @override
@@ -78,10 +79,12 @@ class _StaggeredBuilderState extends State<StaggeredBuilder> {
                     constraints.crossAxisExtent - (_crossAxisSpacing * (columnCount - 1)),
                   ) /
                   columnCount;
+              final itemMaxHeight = MediaQuery.sizeOf(context).height * 0.4;
               final rows = _rowBoundedEntriesFor(
                 currentFetched: currentFetched,
                 columnCount: columnCount,
                 itemMaxWidth: itemMaxWidth,
+                itemMaxHeight: itemMaxHeight,
               );
 
               return SliverList.builder(
@@ -145,8 +148,13 @@ class _StaggeredBuilderState extends State<StaggeredBuilder> {
           final BooruItem item = currentFetched[index];
 
           final double itemMaxWidth = constraints.maxWidth;
+          final double itemMaxHeight = MediaQuery.sizeOf(context).height * 0.4;
           final double possibleWidth = itemMaxWidth;
-          final double possibleHeight = _itemHeight(item, itemMaxWidth);
+          final double possibleHeight = _itemHeight(
+            item: item,
+            itemMaxWidth: itemMaxWidth,
+            itemMaxHeight: itemMaxHeight,
+          );
 
           final bool hasSelected = tab.selected.isNotEmpty && tab.hasSelectedItems;
           final selectedIndex = tab.selectedIndexOf(item);
@@ -243,6 +251,7 @@ class _StaggeredBuilderState extends State<StaggeredBuilder> {
     required List<BooruItem> currentFetched,
     required int columnCount,
     required double itemMaxWidth,
+    required double itemMaxHeight,
   }) {
     if (currentFetched.isEmpty) {
       return const [];
@@ -273,7 +282,11 @@ class _StaggeredBuilderState extends State<StaggeredBuilder> {
         _StaggeredRowItem(
           index: index,
           isFirstOfPage: isFirstOfPage,
-          height: _itemHeight(item, itemMaxWidth),
+          height: _itemHeight(
+            item: item,
+            itemMaxWidth: itemMaxWidth,
+            itemMaxHeight: itemMaxHeight,
+          ),
         ),
       );
 
@@ -290,6 +303,7 @@ class _StaggeredBuilderState extends State<StaggeredBuilder> {
     required List<BooruItem> currentFetched,
     required int columnCount,
     required double itemMaxWidth,
+    required double itemMaxHeight,
   }) {
     final firstKey = currentFetched.firstOrNull?.key;
     final lastKey = currentFetched.lastOrNull?.key;
@@ -300,7 +314,8 @@ class _StaggeredBuilderState extends State<StaggeredBuilder> {
         _cachedFirstKey == firstKey &&
         _cachedLastKey == lastKey &&
         _cachedColumnCount == columnCount &&
-        _cachedItemMaxWidth == itemMaxWidth) {
+        _cachedItemMaxWidth == itemMaxWidth &&
+        _cachedItemMaxHeight == itemMaxHeight) {
       return cachedRows;
     }
 
@@ -308,6 +323,7 @@ class _StaggeredBuilderState extends State<StaggeredBuilder> {
       currentFetched: currentFetched,
       columnCount: columnCount,
       itemMaxWidth: itemMaxWidth,
+      itemMaxHeight: itemMaxHeight,
     );
     _cachedFetched = currentFetched;
     _cachedLength = currentFetched.length;
@@ -315,24 +331,27 @@ class _StaggeredBuilderState extends State<StaggeredBuilder> {
     _cachedLastKey = lastKey;
     _cachedColumnCount = columnCount;
     _cachedItemMaxWidth = itemMaxWidth;
+    _cachedItemMaxHeight = itemMaxHeight;
     _cachedRows = rows;
     return rows;
   }
 
-  double _itemHeight(BooruItem item, double itemMaxWidth) {
-    final double itemMaxHeight = itemMaxWidth * (16 / 9);
-
-    final double? widthData = item.fileWidth;
-    final double? heightData = item.fileHeight;
+  double _itemHeight({
+    required BooruItem item,
+    required double itemMaxWidth,
+    required double itemMaxHeight,
+  }) {
+    final widthData = item.fileWidth ?? item.sampleWidth ?? item.previewWidth;
+    final heightData = item.fileHeight ?? item.sampleHeight ?? item.previewHeight;
 
     double possibleHeight = itemMaxWidth;
-    final bool hasSizeData = heightData != null && widthData != null;
+    final hasSizeData = heightData != null && widthData != null && widthData > 0 && heightData > 0;
     if (hasSizeData) {
-      final double aspectRatio = widthData / heightData;
-      possibleHeight = itemMaxWidth / aspectRatio;
+      possibleHeight = itemMaxWidth * (heightData / widthData);
     }
-    // force to use minimum 100 px and max 60% of screen height
-    return max(min(itemMaxHeight, possibleHeight), 100);
+
+    final itemMinHeight = min(150, itemMaxHeight);
+    return possibleHeight.clamp(itemMinHeight, itemMaxHeight).toDouble();
   }
 }
 

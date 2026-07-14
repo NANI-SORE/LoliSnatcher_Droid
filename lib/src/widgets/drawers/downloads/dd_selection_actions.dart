@@ -42,8 +42,14 @@ class DDSelectionActions extends StatelessWidget {
             SettingsButton(
               name: context.loc.selectAll,
               icon: const Icon(Icons.select_all),
-              action: () => searchHandler.currentTab.selected.addAll(searchHandler.currentFetched),
-              onLongPress: () => controller.selectFetchedByQuery(context),
+              action: () {
+                searchHandler.currentTab.selected.assignAll(searchHandler.currentFetched);
+                toggleDrawer();
+              },
+              onLongPress: () async {
+                final res = await controller.selectFetchedByQuery(context);
+                if (res) toggleDrawer();
+              },
               drawTopBorder: hiddenCount == 0,
             ),
           if (selected.isNotEmpty)
