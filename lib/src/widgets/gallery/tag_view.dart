@@ -7,12 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:auto_size_text_plus/auto_size_text_plus.dart';
 import 'package:collection/collection.dart';
 import 'package:dio/dio.dart';
-import 'package:fading_edge_scrollview/fading_edge_scrollview.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fpdart/fpdart.dart' show FpdartOnIterable;
 import 'package:get/get.dart' hide ContextExt, FirstWhereOrNullExt;
 import 'package:intl/intl.dart';
-import 'package:lolisnatcher/src/widgets/preview/page_indicator.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:uuid/uuid.dart';
@@ -24,15 +22,15 @@ import 'package:lolisnatcher/src/boorus/favourites_handler.dart';
 import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
 import 'package:lolisnatcher/src/boorus/mergebooru_handler.dart';
 import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
-import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/meta_tag.dart';
 import 'package:lolisnatcher/src/data/pinned_tag.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
-import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
-import 'package:lolisnatcher/src/handlers/booru_handler.dart';
+import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
+import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
@@ -47,6 +45,7 @@ import 'package:lolisnatcher/src/utils/text_parser/rules/url_rule.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/close_dialog_button.dart';
 import 'package:lolisnatcher/src/widgets/common/draggable_overflow_text.dart';
+import 'package:lolisnatcher/src/widgets/common/fading_edge_reorderable_listview.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/kaomoji.dart';
 import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
@@ -59,6 +58,7 @@ import 'package:lolisnatcher/src/widgets/gallery/notes_renderer.dart';
 import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_query_editor_page.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_tag_chip.dart';
+import 'package:lolisnatcher/src/widgets/preview/page_indicator.dart';
 import 'package:lolisnatcher/src/widgets/tabs/tab_selector.dart';
 import 'package:lolisnatcher/src/widgets/tags_manager/tm_list_item_dialog.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_card_build.dart';
@@ -1326,7 +1326,7 @@ Future<void> showTagDialog({
                 controller: controller,
                 thumbVisibility: false,
                 interactive: true,
-                child: FadingEdgeScrollView.fromSingleChildScrollView(
+                child: FadingEdgeScrollView.from(
                   child: SingleChildScrollView(
                     controller: controller,
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -2270,7 +2270,7 @@ class _TagContentPreviewState extends State<TagContentPreview> {
                               thumbVisibility: true,
                               child: Listener(
                                 onPointerSignal: (event) => desktopPointerScroll(scrollController, event),
-                                child: FadingEdgeScrollView.fromScrollView(
+                                child: FadingEdgeScrollView.from(
                                   child: ListView.builder(
                                     controller: scrollController,
                                     shrinkWrap: true,
@@ -2532,7 +2532,7 @@ class _TagPreviewsListDialog extends StatelessWidget {
                             title: SizedBox(
                               height: 40,
                               width: double.maxFinite,
-                              child: FadingEdgeScrollView.fromScrollView(
+                              child: FadingEdgeScrollView.from(
                                 child: ListView(
                                   controller: controllers[entryIndex],
                                   scrollDirection: Axis.horizontal,

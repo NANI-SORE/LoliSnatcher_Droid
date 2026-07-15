@@ -3,17 +3,17 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-import 'package:fading_edge_scrollview/fading_edge_scrollview.dart';
 import 'package:get/get.dart' hide ContextExt, FirstWhereOrNullExt;
-import 'package:lolisnatcher/gen/strings.g.dart';
-import 'package:lolisnatcher/src/widgets/desktop/desktop_scroll.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
+import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
+import 'package:lolisnatcher/src/widgets/common/fading_edge_reorderable_listview.dart';
 import 'package:lolisnatcher/src/widgets/common/transparent_pointer.dart';
+import 'package:lolisnatcher/src/widgets/desktop/desktop_scroll.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_query_editor_page.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_tag_chip.dart';
 
@@ -250,7 +250,7 @@ class _MainSearchBarState extends State<MainSearchBar> {
                     Expanded(
                       child: Listener(
                         onPointerSignal: (event) => desktopPointerScroll(scrollController, event),
-                        child: FadingEdgeScrollView.fromScrollView(
+                        child: FadingEdgeScrollView.from(
                           child: ListView(
                             controller: scrollController,
                             scrollDirection: Axis.horizontal,

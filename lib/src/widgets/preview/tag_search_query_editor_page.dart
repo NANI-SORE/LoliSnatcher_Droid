@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import 'package:fading_edge_scrollview/fading_edge_scrollview.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:intl/intl.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
@@ -17,6 +16,7 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
+import 'package:lolisnatcher/src/widgets/common/fading_edge_reorderable_listview.dart';
 import 'package:lolisnatcher/src/widgets/common/kaomoji.dart';
 import 'package:lolisnatcher/src/widgets/common/marquee_text.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -377,7 +377,7 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
                     strokeWidth: 4,
                     color: context.theme.colorScheme.secondary,
                     onRefresh: queryController.runSearch,
-                    child: FadingEdgeScrollView.fromScrollView(
+                    child: FadingEdgeScrollView.from(
                       child: ListView.builder(
                         reverse: !SX.useTopSearchbarInput.value,
                         controller: suggestionsScrollController,
@@ -560,7 +560,7 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
           ),
           child: Listener(
             onPointerSignal: (event) => desktopPointerScroll(tagsScrollController, event),
-            child: FadingEdgeScrollView.fromScrollView(
+            child: FadingEdgeScrollView.from(
               child: ListView(
                 controller: tagsScrollController,
                 scrollDirection: Axis.horizontal,

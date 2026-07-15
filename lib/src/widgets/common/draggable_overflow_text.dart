@@ -1,8 +1,9 @@
 import 'dart:async';
 
-import 'package:fading_edge_scrollview/fading_edge_scrollview.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+
+import 'package:lolisnatcher/src/widgets/common/fading_edge_reorderable_listview.dart';
 
 /// Text widget that renders normally when text fits and on overflow turns into combination of normal text and scrollable text
 class DraggableOverflowText extends StatefulWidget {
@@ -200,7 +201,7 @@ class _DraggableOverflowTextState extends State<DraggableOverflowText> {
               children: [
                 Opacity(
                   opacity: _isInteracting ? 1 : 0,
-                  child: FadingEdgeScrollView.fromSingleChildScrollView(
+                  child: FadingEdgeScrollView.from(
                     child: SingleChildScrollView(
                       controller: _scrollController,
                       scrollDirection: Axis.horizontal,

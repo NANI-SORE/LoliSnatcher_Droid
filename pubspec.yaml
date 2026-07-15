@@ -32,7 +32,6 @@ dependencies:
   dynamic_color: ^1.8.1
   equatable: ^2.1.0
   external_video_player_launcher: ^0.0.3
-  fading_edge_scrollview: ^4.1.1
   fast_marquee:
     git:
       url: https://github.com/NANI-SORE/fast_marquee.git
