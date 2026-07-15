@@ -1064,6 +1064,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
                                         onLongPress: onLongPress,
                                         onSecondaryTap: (i) => onSecondaryTap(i, context),
                                         onSelected: onLongPress,
+                                        dragSelectController: dragSelectController,
                                       ),
                                     );
                                   },
