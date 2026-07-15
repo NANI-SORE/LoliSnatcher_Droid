@@ -12,6 +12,7 @@ import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/pages/settings_page.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
@@ -127,10 +128,14 @@ class MainDrawer extends StatelessWidget {
                   Obx(() {
                     if (settingsHandler.booruList.isNotEmpty &&
                         searchHandler.tabs.isNotEmpty &&
-                        PlatformExt.hasWebviewSupport) {
+                        PlatformExt.hasWebviewSupport &&
+                        ContentPolicy.canOpenWebview) {
+                      final currentBooru = searchHandler.currentBooruOrNull;
+                      if (currentBooru == null) return const SizedBox.shrink();
+
                       final List<Booru> boorus = [
-                        searchHandler.currentBooru,
-                        ...searchHandler.currentSecondaryBoorus.value ?? <Booru>[],
+                        currentBooru,
+                        ...searchHandler.currentSecondaryBoorusOrNull?.value ?? <Booru>[],
                       ].where((b) => b.baseURL?.isNotEmpty == true && BooruType.saveable.contains(b.type)).toList();
 
                       if (boorus.isEmpty) return const SizedBox.shrink();

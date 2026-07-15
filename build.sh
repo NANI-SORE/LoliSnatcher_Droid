@@ -51,7 +51,7 @@ in
     2)
         build_arg="LS_IS_STORE=true"
         build_desc="Store"
-        build_modes=("appbundle" "apk --split-per-abi")
+        build_modes=("appbundle" "apk")
         suffix="store"
         ;;
 esac

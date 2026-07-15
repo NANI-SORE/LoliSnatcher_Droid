@@ -13,6 +13,7 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/confirm_button.dart';
@@ -475,6 +476,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                     SettingsButton(
                       name: context.loc.settings.backupAndRestore.restoreSettings,
                       icon: const Icon(Icons.settings_backup_restore),
+                      trailingIcon: const Icon(Icons.looks_one),
                       subtitle: const Text('settings.json'),
                       action: () async {
                         final bool res = await confirmRestore(context.loc.settings.backupAndRestore.restoreSettings);
@@ -494,6 +496,9 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                             }
                             await newFile.writeAsBytes(settingsFileBytes);
                             await settingsHandler.loadSettingsJson();
+                            if (SX.expandedSourceCompatibilityEnabled.value) {
+                              await settingsHandler.saveSettings(restate: false);
+                            }
                             showSnackbar(
                               context.loc.settings.backupAndRestore.settingsRestored,
                               isError: false,
@@ -525,6 +530,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                     SettingsButton(
                       name: context.loc.settings.backupAndRestore.restoreBoorus,
                       icon: const Icon(Icons.image_search),
+                      trailingIcon: const Icon(Icons.looks_two),
                       subtitle: const Text('boorus.json'),
                       action: () async {
                         final bool res = await confirmRestore(context.loc.settings.backupAndRestore.restoreBoorus);
@@ -543,13 +549,20 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
 
                             if (boorusJSONString.isNotEmpty) {
                               final List<dynamic> json = jsonDecode(boorusJSONString);
+                              final List<Booru> restoredBoorus = json.map((entry) => Booru.fromMap(entry)).toList();
+                              if (ContentPolicy.isFromStore &&
+                                  !SX.expandedSourceCompatibilityEnabled.value &&
+                                  restoredBoorus.any(ContentPolicy.isKnownRestrictedSource)) {
+                                SX.expandedSourceCompatibilityEnabled.state.value = true;
+                                await settingsHandler.saveSettings(restate: false);
+                              }
+
                               final String configBoorusPath = '${await ServiceHandler.getConfigDir()}boorus/';
                               final Directory configBoorusDir = await Directory(
                                 configBoorusPath,
                               ).create(recursive: true);
-                              if (json.isNotEmpty) {
-                                for (int i = 0; i < json.length; i++) {
-                                  final Booru booru = Booru.fromMap(json[i]);
+                              if (restoredBoorus.isNotEmpty) {
+                                for (final Booru booru in restoredBoorus) {
                                   final bool alreadyExists =
                                       settingsHandler.booruList.indexWhere(
                                         (el) => el.baseURL == booru.baseURL && el.name == booru.name,
@@ -602,6 +615,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                     SettingsButton(
                       name: context.loc.settings.backupAndRestore.restoreDatabase,
                       icon: const Icon(Icons.list_alt),
+                      trailingIcon: const Icon(Icons.looks_3),
                       subtitle: Text('store.db (${context.loc.settings.backupAndRestore.restoreDatabaseInfo})'),
                       action: () async {
                         final bool res = await confirmRestore(context.loc.settings.backupAndRestore.restoreDatabase);
