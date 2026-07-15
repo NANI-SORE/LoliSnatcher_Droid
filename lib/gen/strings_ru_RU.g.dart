@@ -5375,6 +5375,9 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewColumnsPortrait', {}) ?? 'Столбцы превью (портрет)',
           'settings.interface.previewColumnsLandscape' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewColumnsLandscape', {}) ?? 'Столбцы превью (ландшафт)',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.interface.previewQuality' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewQuality', {}) ?? 'Качество превью',
           'settings.interface.previewQualityHelp' =>
@@ -5389,9 +5392,6 @@ extension on TranslationsRuRu {
                 '[Примечание]: Качество «Семплы» может заметно снизить производительность, особенно если у тебя слишком много столбцов в сетке превью',
           'settings.interface.previewDisplay' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplay', {}) ?? 'Отображение превью',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.interface.previewDisplayFallback' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayFallback', {}) ?? 'Резервное отображение превью',
           'settings.interface.previewDisplayFallbackHelp' =>
@@ -5533,9 +5533,6 @@ extension on TranslationsRuRu {
           'settings.viewer.onlyForVideos' => TranslationOverrides.string(_root.$meta, 'settings.viewer.onlyForVideos', {}) ?? 'Только для видео',
           'settings.viewer.thisButtonCannotBeDisabled' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.thisButtonCannotBeDisabled', {}) ?? 'Эта кнопка не может быть отключена',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.viewer.defaultShareAction' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.defaultShareAction', {}) ?? 'Действие при «Поделиться» по умолчанию',
           'settings.viewer.shareActions' => TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActions', {}) ?? 'Поделиться',
@@ -6412,6 +6409,9 @@ extension on TranslationsRuRu {
           'pageChanger.searchUntilPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.searchUntilPage', {}) ?? 'Поиск до страницы',
           'pageChanger.stopSearching' => TranslationOverrides.string(_root.$meta, 'pageChanger.stopSearching', {}) ?? 'Остановить поиск',
           'tagsFiltersDialogs.emptyInput' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.emptyInput', {}) ?? 'Пустой ввод!',
+          _ => null,
+        } ??
+        switch (path) {
           'tagsFiltersDialogs.addNewFilter' =>
             ({required String type}) =>
                 TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.addNewFilter', {'type': type}) ?? '[Добавить новый фильтр: ${type}]',
@@ -6422,9 +6422,6 @@ extension on TranslationsRuRu {
           'tagsFiltersDialogs.editFilter' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.editFilter', {}) ?? 'Изменить фильтр',
           'tagsManager.title' => TranslationOverrides.string(_root.$meta, 'tagsManager.title', {}) ?? 'Теги',
           'tagsManager.addTag' => TranslationOverrides.string(_root.$meta, 'tagsManager.addTag', {}) ?? 'Добавить тег',
-          _ => null,
-        } ??
-        switch (path) {
           'tagsManager.name' => TranslationOverrides.string(_root.$meta, 'tagsManager.name', {}) ?? 'Имя',
           'tagsManager.type' => TranslationOverrides.string(_root.$meta, 'tagsManager.type', {}) ?? 'Тип',
           'tagsManager.add' => TranslationOverrides.string(_root.$meta, 'tagsManager.add', {}) ?? 'Добавить',
@@ -6541,9 +6538,6 @@ extension on TranslationsRuRu {
           'pinnedTags.pinTag' => TranslationOverrides.string(_root.$meta, 'pinnedTags.pinTag', {}) ?? 'Закрепить тег',
           'pinnedTags.unpinTag' => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinTag', {}) ?? 'Открепить тег',
           'pinnedTags.pin' => TranslationOverrides.string(_root.$meta, 'pinnedTags.pin', {}) ?? 'Закрепить',
-          _ => null,
-        } ??
-        switch (path) {
           'pinnedTags.unpin' => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpin', {}) ?? 'Открепить',
           'pinnedTags.pinQuestion' =>
             ({required String tag}) =>

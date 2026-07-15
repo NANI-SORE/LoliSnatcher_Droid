@@ -6464,6 +6464,9 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewColumnsPortrait', {}) ?? 'Preview columns (portrait)',
           'settings.interface.previewColumnsLandscape' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewColumnsLandscape', {}) ?? 'Preview columns (landscape)',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.interface.previewQuality' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewQuality', {}) ?? 'Preview quality',
           'settings.interface.previewQualityHelp' =>
@@ -6478,9 +6481,6 @@ extension on Translations {
                 '[Note]: Sample quality can noticeably degrade performance, especially if you have too many columns in preview grid',
           'settings.interface.previewDisplay' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplay', {}) ?? 'Preview display',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.interface.previewDisplayFallback' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayFallback', {}) ?? 'Preview display fallback',
           'settings.interface.previewDisplayFallbackHelp' =>
@@ -6615,9 +6615,6 @@ extension on Translations {
           'settings.viewer.onlyForVideos' => TranslationOverrides.string(_root.$meta, 'settings.viewer.onlyForVideos', {}) ?? 'Only for videos',
           'settings.viewer.thisButtonCannotBeDisabled' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.thisButtonCannotBeDisabled', {}) ?? 'This button cannot be disabled',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.viewer.defaultShareAction' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.defaultShareAction', {}) ?? 'Default share action',
           'settings.viewer.shareActions' => TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActions', {}) ?? 'Share actions',
@@ -7451,6 +7448,9 @@ extension on Translations {
           'pageChanger.searchUntilPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.searchUntilPage', {}) ?? 'Search until page',
           'pageChanger.stopSearching' => TranslationOverrides.string(_root.$meta, 'pageChanger.stopSearching', {}) ?? 'Stop searching',
           'tagsFiltersDialogs.emptyInput' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.emptyInput', {}) ?? 'Empty input!',
+          _ => null,
+        } ??
+        switch (path) {
           'tagsFiltersDialogs.addNewFilter' =>
             ({required String type}) =>
                 TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.addNewFilter', {'type': type}) ?? '[Add new ${type} filter]',
@@ -7461,9 +7461,6 @@ extension on Translations {
           'tagsFiltersDialogs.editFilter' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.editFilter', {}) ?? 'Edit filter',
           'tagsManager.title' => TranslationOverrides.string(_root.$meta, 'tagsManager.title', {}) ?? 'Tags',
           'tagsManager.addTag' => TranslationOverrides.string(_root.$meta, 'tagsManager.addTag', {}) ?? 'Add tag',
-          _ => null,
-        } ??
-        switch (path) {
           'tagsManager.name' => TranslationOverrides.string(_root.$meta, 'tagsManager.name', {}) ?? 'Name',
           'tagsManager.type' => TranslationOverrides.string(_root.$meta, 'tagsManager.type', {}) ?? 'Type',
           'tagsManager.add' => TranslationOverrides.string(_root.$meta, 'tagsManager.add', {}) ?? 'Add',
@@ -7578,9 +7575,6 @@ extension on Translations {
           'pinnedTags.pinTag' => TranslationOverrides.string(_root.$meta, 'pinnedTags.pinTag', {}) ?? 'Pin tag',
           'pinnedTags.unpinTag' => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinTag', {}) ?? 'Unpin tag',
           'pinnedTags.pin' => TranslationOverrides.string(_root.$meta, 'pinnedTags.pin', {}) ?? 'Pin',
-          _ => null,
-        } ??
-        switch (path) {
           'pinnedTags.unpin' => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpin', {}) ?? 'Unpin',
           'pinnedTags.pinQuestion' =>
             ({required String tag}) =>
