@@ -12,6 +12,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:keyboard_actions/keyboard_actions.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/widgets/desktop/desktop_scroll.dart';
 import 'package:lolisnatcher/src/widgets/preview/tag_search_query_editor_page.dart';
 import 'package:rich_text_controller/rich_text_controller.dart';
@@ -24,6 +25,7 @@ import 'package:lolisnatcher/src/data/history_item.dart';
 import 'package:lolisnatcher/src/data/meta_tag.dart';
 import 'package:lolisnatcher/src/data/pinned_tag.dart';
 import 'package:lolisnatcher/src/data/tag_suggestion.dart';
+import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
@@ -92,7 +94,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
   void initState() {
     super.initState();
 
-    final tags = searchHandler.currentBooruHandler.availableMetaTags();
+    final tags = searchHandler.currentBooruHandlerOrNull?.availableMetaTags() ?? <MetaTag>[];
 
     suggestionTextController = RichTextController(
       text: '',
@@ -168,7 +170,15 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
   Future<void> runSearch({
     bool instant = true,
   }) async {
-    final handler = searchHandler.currentBooruHandler;
+    final handler = searchHandler.currentBooruHandlerOrNull;
+    if (handler == null) {
+      loading = false;
+      failed = false;
+      failedMsg = null;
+      suggestedTags.clear();
+      if (mounted) setState(() {});
+      return;
+    }
     if (suggestionTextControllerCleanedInput.isEmpty) {
       debounce?.cancel();
       cancelToken?.cancel();
@@ -204,7 +214,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
 
         bool isCancelled = false;
 
-        final metaTags = searchHandler.currentBooruHandler.availableMetaTags();
+        final metaTags = handler.availableMetaTags();
         final MetaTag? metaTag = metaTags.firstWhereOrNull(
           (p) => p.keyParser(suggestionTextControllerCleanedInput) != null,
         );
@@ -223,9 +233,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
         } else if (handler.hasTagSuggestions) {
           cancelToken = CancelToken();
           final res = await handler.getTagSuggestions(
-            searchHandler.currentBooruHandler is MergebooruHandler
-                ? suggestionTextController.text
-                : suggestionTextControllerCleanedInput,
+            handler is MergebooruHandler ? suggestionTextController.text : suggestionTextControllerCleanedInput,
             cancelToken: cancelToken,
           );
           res.fold(
@@ -247,7 +255,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
               loading = false;
               failed = false;
               failedMsg = null;
-              suggestedTags = data;
+              suggestedTags = data.where((t) => ContentPolicy.isTagAllowed(t.tag)).toList();
               if (mounted) {
                 setState(() {});
               }
@@ -356,7 +364,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
   }
 
   void onResetTap() {
-    searchHandler.searchTextController.text = searchHandler.currentTab.tags.trim();
+    searchHandler.searchTextController.text = searchHandler.currentTabOrNull?.tags.trim() ?? '';
   }
 
   void onClearTap() {
@@ -484,15 +492,20 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                 Navigator.of(context).pop();
               },
             ),
-            TagContentPreview(
-              tag: tag.tag,
-              boorus: searchHandler.currentBooru.type?.isMerge == true
-                  ? [
-                      ...(searchHandler.currentBooruHandler as MergebooruHandler).booruHandlers.map((e) => e.booru),
-                    ]
-                  : [searchHandler.currentBooru],
-              parentTab: null,
-            ),
+            if (searchHandler.currentBooruOrNull != null)
+              TagContentPreview(
+                tag: tag.tag,
+                boorus:
+                    searchHandler.currentBooruOrNull!.type?.isMerge == true &&
+                        searchHandler.currentBooruHandlerOrNull is MergebooruHandler
+                    ? [
+                        ...(searchHandler.currentBooruHandlerOrNull! as MergebooruHandler).booruHandlers.map(
+                          (e) => e.booru,
+                        ),
+                      ]
+                    : [searchHandler.currentBooruOrNull!],
+                parentTab: null,
+              ),
             ListTile(
               title: Text(context.loc.copy),
               leading: const Icon(Icons.copy),
@@ -509,8 +522,8 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
             FutureBuilder<PinnedTag?>(
               future: settingsHandler.dbHandler.getPinnedTag(
                 tag.tag,
-                booruType: searchHandler.currentBooru.type?.name,
-                booruName: searchHandler.currentBooru.name,
+                booruType: searchHandler.currentBooruOrNull?.type?.name,
+                booruName: searchHandler.currentBooruOrNull?.name,
               ),
               builder: (_, snapshot) {
                 final isPinned = snapshot.data != null || tag.isPinned == true;
@@ -532,7 +545,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                       await showPinTagDialog(
                         context,
                         tag.tag,
-                        searchHandler.currentBooru,
+                        searchHandler.currentBooruOrNull ?? Booru.unknown(),
                         () => onTagPinned(tag),
                       );
                     }
@@ -829,7 +842,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                               return SuggestionsMainContent(
                                 onMetatagSelect: onMetatagSelect,
                                 onTagTap: (tag) => onSuggestionTap(TagSuggestion(tag: tag)),
-                                hidePopular: searchHandler.currentBooru.type?.isFavouritesOrDownloads == true,
+                                hidePopular: searchHandler.currentBooruOrNull?.type?.isFavouritesOrDownloads == true,
                               );
                             }
 
@@ -846,7 +859,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                                       style: TextStyle(fontSize: 36),
                                     ),
                                     Text(
-                                      searchHandler.currentBooruHandler.hasTagSuggestions
+                                      searchHandler.currentBooruHandlerOrNull?.hasTagSuggestions == true
                                           ? context.loc.searchBar.noSuggestionsFound
                                           : context.loc.searchBar.tagSuggestionsNotAvailable,
                                       style: context.theme.textTheme.bodyLarge,
@@ -911,8 +924,8 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                                       FutureBuilder<PinnedTag?>(
                                         future: settingsHandler.dbHandler.getPinnedTag(
                                           tag.tag,
-                                          booruType: searchHandler.currentBooru.type?.name,
-                                          booruName: searchHandler.currentBooru.name,
+                                          booruType: searchHandler.currentBooruOrNull?.type?.name,
+                                          booruName: searchHandler.currentBooruOrNull?.name,
                                         ),
                                         builder: (context, snapshot) {
                                           final isPinned = snapshot.data != null || tag.isPinned == true;
@@ -1215,7 +1228,7 @@ class AddMetatagBottomSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final searchHandler = SearchHandler.instance;
 
-    final metaTags = searchHandler.currentBooruHandler.availableMetaTags();
+    final metaTags = searchHandler.currentBooruHandlerOrNull?.availableMetaTags() ?? <MetaTag>[];
     if (metaTags.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(context).pop();
@@ -1978,7 +1991,8 @@ class _MetatagsBlockState extends State<MetatagsBlock> {
 
   @override
   Widget build(BuildContext context) {
-    List<MetaTag> metaTags = searchHandler.currentBooruHandler.availableMetaTags();
+    final handler = searchHandler.currentBooruHandlerOrNull;
+    List<MetaTag> metaTags = handler?.availableMetaTags() ?? <MetaTag>[];
     bool overflows = false;
     if (metaTags.length > 15) {
       // show only first 15 tags (only danbooru has this much right now) to motivate user to open bottom sheet dialog with full list
@@ -2015,13 +2029,13 @@ class _MetatagsBlockState extends State<MetatagsBlock> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                if (searchHandler.currentBooruHandler.metatagsCheatSheetLink != null)
+                if (handler?.metatagsCheatSheetLink != null)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: IconButton(
                       onPressed: () {
                         launchUrlString(
-                          searchHandler.currentBooruHandler.metatagsCheatSheetLink!,
+                          handler!.metatagsCheatSheetLink!,
                           mode: LaunchMode.externalApplication,
                         );
                       },
@@ -2139,6 +2153,16 @@ class _PopularTagsBlockState extends State<PopularTagsBlock> {
   bool failed = false;
   CancelToken? cancelToken;
 
+  BooruHandler? get currentBooruHandler {
+    if (searchHandler.tabs.isEmpty ||
+        searchHandler.currentIndex < 0 ||
+        searchHandler.currentIndex >= searchHandler.tabs.length) {
+      return null;
+    }
+
+    return searchHandler.currentBooruHandlerOrNull;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -2147,7 +2171,8 @@ class _PopularTagsBlockState extends State<PopularTagsBlock> {
   }
 
   Future<void> loadPopularTags() async {
-    if (!searchHandler.currentBooruHandler.hasTagSuggestions) {
+    final handler = currentBooruHandler;
+    if (handler == null || !handler.hasTagSuggestions) {
       loading = false;
       if (mounted) setState(() {});
       return;
@@ -2161,7 +2186,7 @@ class _PopularTagsBlockState extends State<PopularTagsBlock> {
     // For now, loads results from empty query
     cancelToken?.cancel();
     cancelToken = CancelToken();
-    final res = await searchHandler.currentBooruHandler.getTagSuggestions(
+    final res = await handler.getTagSuggestions(
       '',
       cancelToken: cancelToken,
     );
@@ -2174,7 +2199,7 @@ class _PopularTagsBlockState extends State<PopularTagsBlock> {
       (data) {
         loading = false;
         failed = false;
-        popularTags = data;
+        popularTags = data.where((t) => ContentPolicy.isTagAllowed(t.tag)).toList();
         if (mounted) setState(() {});
 
         for (final tag in popularTags.where((t) => !t.type.isNone)) {
@@ -2193,7 +2218,8 @@ class _PopularTagsBlockState extends State<PopularTagsBlock> {
 
   @override
   Widget build(BuildContext context) {
-    if (!searchHandler.currentBooruHandler.hasTagSuggestions) {
+    final handler = currentBooruHandler;
+    if (handler == null || !handler.hasTagSuggestions) {
       return const SizedBox.shrink();
     }
 
@@ -2337,10 +2363,13 @@ class _PrefixEditDialog extends StatelessWidget {
           final bool isNumberMod = text.startsWith(RegExp(r'\d+#'));
           final int? booruNumber = int.tryParse(isNumberMod ? text.split('#')[0] : '');
           final bool hasBooruNumber = booruNumber != null;
-          final List<Booru> usedBoorus = [
-            searchHandler.currentTab.selectedBooru.value,
-            ...(searchHandler.currentTab.secondaryBoorus.value ?? <Booru>[]),
-          ];
+          final currentTab = searchHandler.currentTabOrNull;
+          final List<Booru> usedBoorus = currentTab == null
+              ? <Booru>[]
+              : [
+                  currentTab.selectedBooru.value,
+                  ...(currentTab.secondaryBoorus.value ?? <Booru>[]),
+                ];
           final bool hasSecondaryBoorus = usedBoorus.length > 1;
           final bool isValidNumberMod =
               hasBooruNumber && booruNumber > 0 && hasSecondaryBoorus && booruNumber <= usedBoorus.length;
@@ -2517,7 +2546,14 @@ class _PinnedTagsBlockState extends State<PinnedTagsBlock> {
     loading = true;
     if (mounted) setState(() {});
 
-    final booru = searchHandler.currentBooru;
+    final booru = searchHandler.currentBooruOrNull;
+    if (booru == null) {
+      allPinnedTags = [];
+      availableLabels = [];
+      loading = false;
+      if (mounted) setState(() {});
+      return;
+    }
     allPinnedTags = await settingsHandler.dbHandler.getPinnedTags(
       booruType: booru.type?.name,
       booruName: booru.name,
@@ -2606,7 +2642,7 @@ class _PinnedTagsBlockState extends State<PinnedTagsBlock> {
 
   @override
   Widget build(BuildContext context) {
-    if (!SX.dbEnabled.value) {
+    if (!SX.dbEnabled.value || searchHandler.currentBooruOrNull == null) {
       return const SizedBox.shrink();
     }
 
@@ -2706,15 +2742,17 @@ class _PinnedTagsBlockState extends State<PinnedTagsBlock> {
                     tooltip: _sortTooltip,
                   ),
                 IconButton(
-                  onPressed: () async {
-                    await showPinnedTagsManagerDialog(
-                      context,
-                      currentBooru: searchHandler.currentBooru,
-                      onTagTap: widget.onTagTap,
-                    );
-                    // Always refresh after closing the dialog since changes might have been made
-                    await init();
-                  },
+                  onPressed: searchHandler.currentBooruOrNull == null
+                      ? null
+                      : () async {
+                          await showPinnedTagsManagerDialog(
+                            context,
+                            currentBooru: searchHandler.currentBooruOrNull!,
+                            onTagTap: widget.onTagTap,
+                          );
+                          // Always refresh after closing the dialog since changes might have been made
+                          await init();
+                        },
                   icon: const Icon(Icons.chevron_right_rounded),
                 ),
               ],
@@ -3357,7 +3395,13 @@ class _PinnedTagsManagerDialogState extends State<PinnedTagsManagerDialog> {
     loading = true;
     if (mounted) setState(() {});
 
-    final booru = searchHandler.currentBooru;
+    final booru = searchHandler.currentBooruOrNull;
+    if (booru == null) {
+      allTags = [];
+      loading = false;
+      if (mounted) setState(() {});
+      return;
+    }
     allTags = await settingsHandler.dbHandler.getPinnedTags(
       booruType: booru.type?.name,
       booruName: booru.name,

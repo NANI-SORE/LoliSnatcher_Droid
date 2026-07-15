@@ -28,6 +28,7 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/http_overrides.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
@@ -285,8 +286,8 @@ class SettingsHandler {
             // print(files[i].toString());
             final File booruFile = files[i] as File;
             final Booru booruFromFile = Booru.fromJSON(await booruFile.readAsString());
-            final bool isAllowed = BooruType.saveable.contains(booruFromFile.type);
-            if (isAllowed) {
+            final bool isSaveable = BooruType.saveable.contains(booruFromFile.type);
+            if (isSaveable) {
               tempList.add(booruFromFile);
             } else {
               await booruFile.delete();
@@ -380,6 +381,10 @@ class SettingsHandler {
   }
 
   Future saveBooru(Booru booru, {bool onlySave = false}) async {
+    if (!ContentPolicy.isBooruAllowed(booru)) {
+      return false;
+    }
+
     if (path == '') {
       await setConfigDir();
     }
@@ -433,12 +438,15 @@ class SettingsHandler {
   ];
 
   static const List<String> aiTags = [
+    'ai_art',
+    'ai-art',
     'ai_assisted',
     'ai-assisted',
     'ai_created',
     'ai-created',
     'ai_generated',
     'ai-generated',
+    'generated_by_ai',
     'novelai',
     'stable_diffusion',
     'stable-diffusion',
@@ -544,12 +552,17 @@ class SettingsHandler {
     // const Map<String, dynamic> = {}; // for tests // full json here
 
     try {
-      const String updateFileName = EnvironmentConfig.isFromStore ? 'update_store.json' : 'update.json';
+      const String updateFileName = EnvironmentConfig.isFromStore ? 'update_store_losn.json' : 'update.json';
       final response = await DioNetwork.get(
         'https://raw.githubusercontent.com/NO-ob/LoliSnatcher_Droid/master/$updateFileName',
       );
-      final json = response.data is String ? jsonDecode(response.data) : (response.data is Map ? response.data : {});
-      if (json is Map && json.isEmpty) {
+      final decodedJson = response.data is String
+          ? jsonDecode(response.data)
+          : (response.data is Map ? response.data : <String, dynamic>{});
+      final Map<String, dynamic> json = decodedJson is Map
+          ? decodedJson.map((key, value) => MapEntry(key.toString(), value))
+          : <String, dynamic>{};
+      if (json.isEmpty) {
         throw Exception('Update file is empty');
       }
 
@@ -562,19 +575,57 @@ class SettingsHandler {
         );
       } catch (_) {}
 
+      String updateString(String key, String fallback) {
+        final value = json[key];
+        if (value == null) {
+          return fallback;
+        }
+
+        final text = value.toString();
+        return text.isEmpty ? fallback : text;
+      }
+
+      int updateInt(String key, int fallback) {
+        final value = json[key];
+        if (value is int) {
+          return value;
+        }
+        if (value is num) {
+          return value.toInt();
+        }
+
+        return int.tryParse(value?.toString() ?? '') ?? fallback;
+      }
+
+      bool updateBool(String key, bool fallback) {
+        final value = json[key];
+        if (value is bool) {
+          return value;
+        }
+        if (value is num) {
+          return value != 0;
+        }
+
+        return switch (value?.toString().trim().toLowerCase()) {
+          'true' || '1' || 'yes' => true,
+          'false' || '0' || 'no' => false,
+          _ => fallback,
+        };
+      }
+
       updateInfo.value = UpdateInfo(
-        versionName: json['version_name'] ?? '0.0.0',
-        buildNumber: json['build_number'] ?? 0,
-        title: json['title'] ?? '...',
-        changelog: json['changelog'] ?? '...',
-        isInStore: json['is_in_store'] ?? false,
-        isImportant: json['is_important'] ?? false,
-        storePackage: json['store_package'] ?? '',
-        githubURL: json['github_url'] ?? 'https://github.com/NO-ob/LoliSnatcher_Droid/releases/latest',
+        versionName: updateString('version_name', '0.0.0'),
+        buildNumber: updateInt('build_number', 0),
+        title: updateString('title', '...'),
+        changelog: updateString('changelog', '...'),
+        isInStore: updateBool('is_in_store', false),
+        isImportant: updateBool('is_important', false),
+        storePackage: updateString('store_package', ''),
+        githubURL: updateString('github_url', 'https://github.com/NO-ob/LoliSnatcher_Droid/releases/latest'),
       );
 
-      final String? discordFromGithub = json['discord_url'];
-      if (discordFromGithub != null && discordFromGithub.isNotEmpty) {
+      final String discordFromGithub = updateString('discord_url', '');
+      if (discordFromGithub.isNotEmpty) {
         // overwrite included discord url if it's not the same as the one in update info
         if (discordFromGithub != discordURL.value) {
           discordURL.value = discordFromGithub;
@@ -834,7 +885,13 @@ class SettingsHandler {
         leadingIconColor: Colors.red,
       );
     }
-    print('isFromStore: ${EnvironmentConfig.isFromStore}');
+
+    Logger.Inst().log(
+      'isFromStore(losn): ${EnvironmentConfig.isFromStore}',
+      'SettingsHandler',
+      'initialize',
+      null,
+    );
 
     // print('=-=-=-=-=-=-=-=-=-=-=-=-=');
     // print(toJSON());

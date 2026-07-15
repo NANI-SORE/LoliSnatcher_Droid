@@ -15,6 +15,7 @@ import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/dialogs/timed_leave_dialog.dart';
@@ -290,7 +291,7 @@ class Tools {
 
     final bool hasCaptchaContent = hasCaptchaStrings(host, response?.data.toString() ?? '');
 
-    if (PlatformExt.hasWebviewSupport && hasCaptchaContent) {
+    if (PlatformExt.hasWebviewSupport && ContentPolicy.canOpenWebview && hasCaptchaContent) {
       // delete invalid cloudflare cookie
       final webUri = WebUri('${uri.scheme}://$host');
       final bool res =

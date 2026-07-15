@@ -10,6 +10,7 @@ import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
 import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/pages/settings/booru_overrides_page.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
@@ -18,6 +19,7 @@ import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -29,6 +31,7 @@ import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
 import 'package:lolisnatcher/src/widgets/preview/tag_search_query_editor_page.dart';
 import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 class BooruEdit extends StatefulWidget {
   const BooruEdit(
@@ -57,6 +60,116 @@ class _BooruEditState extends State<BooruEdit> {
 
   BooruType? booruType;
   BooruType selectedBooruType = BooruType.Autodetect;
+  String? _lastSuccessfulTestSignature;
+
+  String _testSignature({
+    String? url,
+    BooruType? type,
+  }) {
+    return [
+      (url ?? booruURLController.text).trim(),
+      type?.name ?? selectedBooruType.name,
+      booruAPIKeyController.text.trim(),
+      booruUserIDController.text.trim(),
+    ].join('|');
+  }
+
+  void _invalidateTestResult() {
+    if (_lastSuccessfulTestSignature == null || _lastSuccessfulTestSignature == _testSignature()) {
+      return;
+    }
+
+    booruType = null;
+    _lastSuccessfulTestSignature = null;
+  }
+
+  String _normalizedHostOf(String input) {
+    final normalized = input.trim().contains('://') ? input.trim() : 'https://${input.trim()}';
+    return Uri.tryParse(normalized)?.host.toLowerCase().replaceFirst(RegExp(r'^www\.'), '') ?? '';
+  }
+
+  BooruType? _knownBooruTypeForHost(String host) {
+    switch (host) {
+      case 'furry.booru.org':
+      case 'gelbooru.com':
+      case 'rule34.xxx':
+      case 'safebooru.org':
+      case 'tbib.org':
+        return BooruType.Gelbooru;
+
+      case 'xbooru.com':
+        return BooruType.GelbooruV1;
+
+      case 'konachan.com':
+      case 'konachan.net':
+      case 'lolibooru.moe':
+      case 'yande.re':
+        return BooruType.Moebooru;
+
+      case 'bleachbooru.org':
+      case 'booru.allthefallen.moe':
+      case 'danbooru.donmai.us':
+      case 'safebooru.donmai.us':
+      case 'sonohara.donmai.us':
+        return BooruType.Danbooru;
+
+      case 'e621.net':
+      case 'e926.net':
+        return BooruType.e621;
+
+      case 'derpibooru.org':
+      case 'furbooru.org':
+      case 'ponybooru.org':
+      case 'tantabus.ai':
+        return BooruType.Philomena;
+
+      case 'twibooru.org':
+      case 'manebooru.art':
+        return BooruType.BooruOnRails;
+
+      case 'sankaku.app':
+      case 'sankakucomplex.com':
+      case 'chan.sankakucomplex.com':
+        return BooruType.Sankaku;
+
+      case 'idol.sankakucomplex.com':
+        return BooruType.IdolSankaku;
+
+      case 'rule34.paheal.net':
+        return BooruType.Shimmie;
+
+      case 'rule34hentai.net':
+        return BooruType.R34Hentai;
+
+      case 'realbooru.com':
+        return BooruType.Realbooru;
+
+      case 'rule34.us':
+        return BooruType.R34US;
+
+      case 'rule34.world':
+      case 'rule34.xyz':
+      case 'rule34vault.com':
+        return BooruType.World;
+
+      case 'agn.ph':
+        return BooruType.AGNPH;
+
+      case 'inkbunny.net':
+        return BooruType.InkBunny;
+
+      case 'nyanpals.com':
+        return BooruType.NyanPals;
+
+      case 'wildcritters.ws':
+        return BooruType.WildCritters;
+
+      case 'rainbooru.org':
+        return BooruType.Rainbooru;
+    }
+
+    return null;
+  }
 
   // TODO make standalone / move to handlers themselves
   String convertSiteUrlToApiUrl() {
@@ -99,6 +212,46 @@ class _BooruEditState extends State<BooruEdit> {
 
   bool isTesting = false;
 
+  void showSourceUnavailableMessage() {
+    FlashElements.showSnackbar(
+      context: context,
+      key: 'sourceUnavailableCurrentSettings',
+      isKeyUnique: true,
+      title: Text(
+        context.loc.settings.booru.sourceUnavailableCurrentSettings,
+        style: const TextStyle(fontSize: 20),
+      ),
+      duration: null,
+      tapToClose: false,
+      leadingIcon: Icons.warning_amber,
+      leadingIconColor: Colors.yellow,
+      sideColor: Colors.yellow,
+      actionsBuilder: (context, controller) {
+        final colorScheme = Theme.of(context).colorScheme;
+
+        return [
+          TextButton.icon(
+            style: TextButton.styleFrom(
+              foregroundColor: colorScheme.onPrimaryContainer,
+              backgroundColor: colorScheme.primaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () async {
+              await launchUrlString(
+                Constants.booruSourcesWikiURL,
+                mode: LaunchMode.externalApplication,
+              );
+            },
+            icon: const Icon(Icons.open_in_new),
+            label: Text(context.loc.mediaPreviews.booruSourcesArticle),
+          ),
+        ];
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -133,22 +286,27 @@ class _BooruEditState extends State<BooruEdit> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: SettingsAppBar(title: context.loc.settings.booruEditor.title),
+      floatingActionButton: GestureDetector(
+        onLongPress: SX.isDebug.value ? () => onSave(force: true) : null,
+        child: FloatingActionButton.extended(
+          onPressed: onSave,
+          icon: isTesting
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                )
+              : const Icon(Icons.save),
+          label: Text(context.loc.settings.booruEditor.saveBooru),
+        ),
+      ),
       body: Center(
         child: ListView(
+          padding: const EdgeInsets.only(bottom: 96),
           children: [
-            SettingsButton(
-              name: context.loc.settings.booruEditor.saveBooru,
-              icon: isTesting ? const CircularProgressIndicator() : const Icon(Icons.save),
-              action: onSave,
-              onLongPress: SX.isDebug.value ? () => onSave(force: true) : null,
-            ),
-            if (widget.booru.name != 'New')
-              SettingsButton(
-                name: context.loc.settings.perBooruSettings,
-                icon: const Icon(Icons.tune),
-                page: () => BooruOverridesPage(booru: widget.booru, saveOnPop: false),
-              ),
-            const SettingsButton(name: '', enabled: false),
             SettingsTextInput(
               controller: booruNameController,
               title: context.loc.settings.booruEditor.booruName,
@@ -161,6 +319,7 @@ class _BooruEditState extends State<BooruEdit> {
               controller: booruURLController,
               title: context.loc.settings.booruEditor.booruUrl,
               onChanged: (_) {
+                _invalidateTestResult();
                 if (booruURLController.text.isEmpty) {
                   booruFaviconController.text = widget.booru.type == null ? '' : widget.booru.faviconURL ?? '';
                   booruType = widget.booru.type;
@@ -175,7 +334,7 @@ class _BooruEditState extends State<BooruEdit> {
               enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
             ),
             //
-            if (PlatformExt.hasWebviewSupport)
+            if (PlatformExt.hasWebviewSupport && ContentPolicy.canOpenWebview)
               SettingsButton(
                 name: context.loc.settings.webview.openWebview,
                 subtitle: Text(context.loc.settings.webview.openWebviewTip),
@@ -200,6 +359,7 @@ class _BooruEditState extends State<BooruEdit> {
               onChanged: (BooruType? newValue) {
                 setState(() {
                   selectedBooruType = newValue ?? BooruType.values.first;
+                  _invalidateTestResult();
                 });
               },
               title: context.loc.settings.booruEditor.booruType,
@@ -226,6 +386,12 @@ class _BooruEditState extends State<BooruEdit> {
                 ),
               ),
             ),
+            if (widget.booru.name != 'New')
+              SettingsButton(
+                name: context.loc.settings.perBooruSettings,
+                icon: const Icon(Icons.tune),
+                page: () => BooruOverridesPage(booru: widget.booru, saveOnPop: false),
+              ),
             Builder(
               builder: (context) {
                 final bool useNewBooru = !selectedBooruType.isAutodetect && booruURLController.text.isNotEmpty;
@@ -249,13 +415,14 @@ class _BooruEditState extends State<BooruEdit> {
                 );
               },
             ),
-            Container(
-              margin: const EdgeInsets.fromLTRB(10, 16, 10, 16),
-              width: double.infinity,
-              child: LoliHtml(
-                getInstructions(),
+            if (shouldShowInstructions())
+              Container(
+                margin: const EdgeInsets.fromLTRB(10, 16, 10, 16),
+                width: double.infinity,
+                child: LoliHtml(
+                  getInstructions(),
+                ),
               ),
-            ),
             //
             if (selectedBooruType == BooruType.Hydrus)
               _HydrusAccessKeyWidget(
@@ -265,7 +432,10 @@ class _BooruEditState extends State<BooruEdit> {
             //
             SettingsTextInput(
               controller: booruUserIDController,
-              onChanged: (_) => setState(() {}),
+              onChanged: (_) {
+                _invalidateTestResult();
+                setState(() {});
+              },
               title: getUserIDTitle(),
               hintText: getUserIdPlaceholder(),
               clearable: true,
@@ -275,7 +445,10 @@ class _BooruEditState extends State<BooruEdit> {
             ),
             SettingsTextInput(
               controller: booruAPIKeyController,
-              onChanged: (_) => setState(() {}),
+              onChanged: (_) {
+                _invalidateTestResult();
+                setState(() {});
+              },
               title: getApiKeyTitle(),
               pasteable: true,
               hintText: getApiKeyPlaceholder(),
@@ -370,6 +543,27 @@ class _BooruEditState extends State<BooruEdit> {
     return context.loc.settings.booruEditor.booruDefaultInstructions;
   }
 
+  Booru getDraftBooru() {
+    return Booru.withKey(
+      booruNameController.text,
+      selectedBooruType,
+      booruFaviconController.text,
+      booruURLController.text,
+      booruDefTagsController.text,
+      booruAPIKeyController.text.isEmpty ? null : booruAPIKeyController.text,
+      booruUserIDController.text.isEmpty ? null : booruUserIDController.text,
+    );
+  }
+
+  bool shouldShowInstructions() {
+    final String instructions = getInstructions();
+    if (instructions.trim().isEmpty) {
+      return false;
+    }
+
+    return ContentPolicy.isBooruAllowed(getDraftBooru());
+  }
+
   bool shouldObscureApiKey() {
     switch (selectedBooruType) {
       default:
@@ -441,42 +635,25 @@ class _BooruEditState extends State<BooruEdit> {
       booruURLController.text = booruURLController.text.substring(0, booruURLController.text.length - 1);
     }
 
+    if (!ContentPolicy.isBooruTypeAllowed(selectedBooruType)) {
+      showSourceUnavailableMessage();
+      return false;
+    }
+
     // pre-select booru type for popular sites to avoid false positives for autodetect
     if (selectedBooruType.isAutodetect) {
-      final String host = Uri.parse(booruURLController.text).host;
-      switch (host) {
-        case 'gelbooru.com':
-        case 'rule34.xxx':
-        case 'safebooru.org':
-          selectedBooruType = BooruType.Gelbooru;
-          break;
-        case 'danbooru.donmai.us':
-        case 'bleachbooru.org':
-        case 'booru.allthefallen.moe':
-          selectedBooruType = BooruType.Danbooru;
-          break;
-        case 'sankaku.app':
-        case 'sankakucomplex.com':
-        case 'chan.sankakucomplex.com':
-          selectedBooruType = BooruType.Sankaku;
-          break;
-        case 'idol.sankakucomplex.com':
-          selectedBooruType = BooruType.IdolSankaku;
-          break;
-        case 'e621.net':
-          selectedBooruType = BooruType.e621;
-          break;
-        case 'rule34.paheal.net':
-          selectedBooruType = BooruType.Shimmie;
-          break;
-        case 'rule34hentai.net':
-          selectedBooruType = BooruType.R34Hentai;
-          break;
+      final knownType = _knownBooruTypeForHost(_normalizedHostOf(booruURLController.text));
+      if (knownType != null) {
+        selectedBooruType = knownType;
       }
       setState(() {});
     }
 
     booruURLController.text = convertSiteUrlToApiUrl();
+    if (!ContentPolicy.isBooruTypeAllowed(selectedBooruType)) {
+      showSourceUnavailableMessage();
+      return false;
+    }
 
     booruFaviconController.text = booruFaviconController.text.trim().isEmpty
         ? convertSiteUrlToFaviconUrl()
@@ -485,7 +662,7 @@ class _BooruEditState extends State<BooruEdit> {
     //Call the booru test
     final Booru testBooru = Booru.withKey(
       booruNameController.text,
-      booruType,
+      selectedBooruType,
       booruFaviconController.text,
       booruURLController.text,
       booruDefTagsController.text,
@@ -494,6 +671,10 @@ class _BooruEditState extends State<BooruEdit> {
       authLogin: booruAuthLoginController.text.isEmpty ? null : booruAuthLoginController.text,
       authPassword: booruAuthPasswordController.text.isEmpty ? null : booruAuthPasswordController.text,
     );
+    if (!ContentPolicy.isBooruAllowed(testBooru)) {
+      showSourceUnavailableMessage();
+      return false;
+    }
 
     isTesting = true;
     setState(() {});
@@ -509,6 +690,7 @@ class _BooruEditState extends State<BooruEdit> {
     if (testBooruType != null) {
       booruType = testBooruType;
       selectedBooruType = testBooruType;
+      _lastSuccessfulTestSignature = _testSignature(type: testBooruType);
       return true;
     } else {
       FlashElements.showSnackbar(
@@ -559,6 +741,11 @@ class _BooruEditState extends State<BooruEdit> {
       }
     }
 
+    if (booruType != null && _lastSuccessfulTestSignature != _testSignature()) {
+      booruType = null;
+      _lastSuccessfulTestSignature = null;
+    }
+
     if (booruType == null && !force) {
       FlashElements.showSnackbar(
         context: context,
@@ -583,12 +770,19 @@ class _BooruEditState extends State<BooruEdit> {
       booruType,
       booruFaviconController.text,
       booruURLController.text,
-      booruDefTagsController.text,
+      ContentPolicy.safeSearchTagsFor(
+        Booru(booruNameController.text, booruType, booruFaviconController.text, booruURLController.text, ''),
+        booruDefTagsController.text,
+      ),
       booruAPIKeyController.text.isEmpty ? null : booruAPIKeyController.text,
       booruUserIDController.text.isEmpty ? null : booruUserIDController.text,
       authLogin: booruAuthLoginController.text.isEmpty ? null : booruAuthLoginController.text,
       authPassword: booruAuthPasswordController.text.isEmpty ? null : booruAuthPasswordController.text,
     );
+    if (!ContentPolicy.isBooruAllowed(newBooru)) {
+      showSourceUnavailableMessage();
+      return;
+    }
 
     bool booruExists = false;
     String booruExistsReason = '';
