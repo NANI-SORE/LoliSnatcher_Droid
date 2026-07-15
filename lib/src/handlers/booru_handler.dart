@@ -19,6 +19,7 @@ import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -73,6 +74,11 @@ abstract class BooruHandler {
 
     for (int i = _filterWatermark; i < fetched.length; i++) {
       final item = fetched[i];
+
+      if (!ContentPolicy.isItemAllowed(booru, item)) {
+        continue;
+      }
+
       if (doFilterHated && item.isHidden) {
         continue;
       }
@@ -97,7 +103,6 @@ abstract class BooruHandler {
         continue;
       }
 
-      // O(1) duplicate detection via Sets
       if (_seenFileURLs.contains(item.fileURL)) {
         continue;
       }
@@ -106,7 +111,9 @@ abstract class BooruHandler {
         continue;
       }
 
-      _seenFileURLs.add(item.fileURL);
+      if (item.fileURL.isNotEmpty) {
+        _seenFileURLs.add(item.fileURL);
+      }
       if (serverId != null) {
         _seenServerIds.add(serverId);
       }

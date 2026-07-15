@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:keyboard_actions/keyboard_actions.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:rich_text_controller/rich_text_controller.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
@@ -54,13 +55,14 @@ class QueryEditorController {
 
   String _lastSuggestionText = '';
 
-  Booru? get currentBooru => _currentBooru ?? searchHandler.currentBooru;
+  Booru? get currentBooru => _currentBooru ?? searchHandler.currentBooruOrNull;
 
   BooruHandler _getBooruHandler() {
     if (_currentBooru != null) {
       return BooruHandlerFactory().getBooruHandler([_currentBooru!], null).booruHandler;
     }
-    return searchHandler.currentBooruHandler;
+    return searchHandler.currentBooruHandlerOrNull ??
+        BooruHandlerFactory().getBooruHandler([Booru.unknown()], null).booruHandler;
   }
 
   void setBooru(Booru? booru) {
@@ -181,7 +183,7 @@ class QueryEditorController {
               loading = false;
               failed = false;
               failedMsg = null;
-              suggestedTags = data;
+              suggestedTags = data.where((t) => ContentPolicy.isTagAllowed(t.tag)).toList();
               onUpdate();
 
               for (final tag in suggestedTags.where((t) => !t.type.isNone)) {

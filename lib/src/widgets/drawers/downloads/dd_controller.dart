@@ -72,22 +72,29 @@ class DownloadsDrawerController {
       return;
     }
 
-    if (searchHandler.currentSelected.isNotEmpty) {
+    final currentTab = searchHandler.currentTabOrNull;
+    final currentBooru = searchHandler.currentBooruOrNull;
+    final currentSelected = searchHandler.currentSelectedOrNull;
+    if (currentTab == null || currentBooru == null || currentSelected == null) {
+      return;
+    }
+
+    if (currentSelected.isNotEmpty) {
       snatchHandler.queue(
-        [...searchHandler.currentSelected],
-        searchHandler.currentBooru,
+        [...currentSelected],
+        currentBooru,
         SX.snatchCooldown.value,
         isLongTap,
       );
       if (SX.favouriteOnSnatch.value) {
-        await searchHandler.currentTab.updateFavForMultipleItems(
-          searchHandler.currentSelected,
+        await currentTab.updateFavForMultipleItems(
+          currentSelected,
           newValue: true,
           skipSnatching: true,
         );
       }
       await Future.delayed(const Duration(milliseconds: 100));
-      searchHandler.currentTab.selected.clear();
+      currentTab.selected.clear();
     } else {
       FlashElements.showSnackbar(
         context: context,
@@ -952,7 +959,11 @@ class DownloadsDrawerController {
   }
 
   Future<void> removeSnatchedStatusFromSelected() async {
-    final onlySnatched = searchHandler.currentSelected.where((e) => e.isSnatched.value == true).toList();
+    final currentTab = searchHandler.currentTabOrNull;
+    final currentSelected = searchHandler.currentSelectedOrNull;
+    if (currentTab == null || currentSelected == null) return;
+
+    final onlySnatched = currentSelected.where((e) => e.isSnatched.value == true).toList();
 
     updating.value = true;
 
@@ -962,14 +973,20 @@ class DownloadsDrawerController {
         item,
         BooruUpdateMode.local,
       );
-      searchHandler.currentTab.selected.remove(item);
+      currentTab.selected.remove(item);
     }
+    currentTab.selected.clear();
 
     updating.value = false;
   }
 
   Future<void> favouriteSelected() async {
-    final onlyUnfavs = searchHandler.currentSelected.where((e) => e.isFavourite.value == false).toList();
+    final currentTab = searchHandler.currentTabOrNull;
+    final currentFetched = searchHandler.currentFetchedOrNull;
+    final currentSelected = searchHandler.currentSelectedOrNull;
+    if (currentTab == null || currentFetched == null || currentSelected == null) return;
+
+    final onlyUnfavs = currentSelected.where((e) => e.isFavourite.value == false).toList();
 
     updating.value = true;
 
@@ -977,12 +994,18 @@ class DownloadsDrawerController {
       onlyUnfavs,
       newValue: true,
     );
+    currentTab.selected.clear();
 
     updating.value = false;
   }
 
   Future<void> unfavouriteSelected() async {
-    final onlyFavs = searchHandler.currentSelected.where((e) => e.isFavourite.value == true).toList();
+    final currentTab = searchHandler.currentTabOrNull;
+    final currentFetched = searchHandler.currentFetchedOrNull;
+    final currentSelected = searchHandler.currentSelectedOrNull;
+    if (currentTab == null || currentFetched == null || currentSelected == null) return;
+
+    final onlyFavs = currentSelected.where((e) => e.isFavourite.value == true).toList();
 
     updating.value = true;
 
@@ -990,6 +1013,7 @@ class DownloadsDrawerController {
       onlyFavs,
       newValue: false,
     );
+    currentTab.selected.clear();
 
     updating.value = false;
   }

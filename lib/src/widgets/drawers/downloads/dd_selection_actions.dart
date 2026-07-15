@@ -25,7 +25,7 @@ class DDSelectionActions extends StatelessWidget {
 
     return Obx(() {
       final totalItems = searchHandler.currentFetched.length;
-      final selected = searchHandler.currentSelected;
+      final selected = searchHandler.currentSelectedOrNull ?? [];
       final hiddenCount = searchHandler.currentTab.hiddenItems.length;
 
       return Column(
@@ -54,9 +54,9 @@ class DDSelectionActions extends StatelessWidget {
             ),
           if (selected.isNotEmpty)
             SettingsButton(
-              name: context.loc.history.clearSelection,
+              name: context.loc.settings.downloads.clearSelected,
               icon: const Icon(Icons.deselect),
-              action: () => searchHandler.currentTab.selected.clear(),
+              action: () => searchHandler.currentTabOrNull?.selected.clear(),
               drawTopBorder: hiddenCount == 0 && selected.length == totalItems,
             ),
         ],

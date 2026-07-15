@@ -598,6 +598,7 @@ class SettingsDropdown<T> extends StatelessWidget {
     this.expendableByScroll = false,
     this.placeholder,
     this.titleAsLabel = false,
+    this.autoOpen = false,
     super.key,
   });
 
@@ -624,6 +625,7 @@ class SettingsDropdown<T> extends StatelessWidget {
   final bool expendableByScroll;
   final String? placeholder;
   final bool titleAsLabel;
+  final bool autoOpen;
 
   String getTitle(T? value) {
     return itemTitleBuilder?.call(value) ?? value?.toString() ?? placeholder ?? '';
@@ -668,6 +670,35 @@ class SettingsDropdown<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dropdown = LoliDropdown(
+      value: value,
+      onChanged: onChanged ?? (item) {},
+      items: items.where((item) => itemFilter?.call(item) ?? true).toList(),
+      clearable: clearable,
+      searchable: searchable,
+      searchCheck: searchCheck,
+      expandableByScroll: expendableByScroll,
+      itemExtent: itemExtent,
+      itemBuilder: (item) {
+        final bool isCurrent = value == item;
+
+        return Container(
+          padding: const EdgeInsets.only(left: 16, right: 16),
+          constraints: const BoxConstraints(minHeight: kMinInteractiveDimension),
+          alignment: Alignment.centerLeft,
+          decoration: isCurrent
+              ? BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                )
+              : null,
+          child: getItemWidget(item),
+        );
+      },
+      selectedItemBuilder: getSelectedItemWidget,
+      labelBuilder: titleAsLabel ? null : () => const SizedBox.shrink(),
+      labelText: title,
+    );
+
     return Material(
       color: Colors.transparent,
       child: ListTile(
@@ -694,33 +725,9 @@ class SettingsDropdown<T> extends StatelessWidget {
                   ),
                 ),
               ),
-            LoliDropdown(
-              value: value,
-              onChanged: onChanged ?? (item) {},
-              items: items.where((item) => itemFilter?.call(item) ?? true).toList(),
-              clearable: clearable,
-              searchable: searchable,
-              searchCheck: searchCheck,
-              expandableByScroll: expendableByScroll,
-              itemExtent: itemExtent,
-              itemBuilder: (item) {
-                final bool isCurrent = value == item;
-
-                return Container(
-                  padding: const EdgeInsets.only(left: 16, right: 16),
-                  constraints: const BoxConstraints(minHeight: kMinInteractiveDimension),
-                  alignment: Alignment.centerLeft,
-                  decoration: isCurrent
-                      ? BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                        )
-                      : null,
-                  child: getItemWidget(item),
-                );
-              },
-              selectedItemBuilder: getSelectedItemWidget,
-              labelBuilder: titleAsLabel ? null : () => const SizedBox.shrink(),
-              labelText: title,
+            _AutoOpenLoliDropdown(
+              dropdown: dropdown,
+              autoOpen: autoOpen,
             ),
           ],
         ),
@@ -741,6 +748,58 @@ class SettingsDropdown<T> extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _AutoOpenLoliDropdown<T> extends StatefulWidget {
+  const _AutoOpenLoliDropdown({
+    required this.dropdown,
+    required this.autoOpen,
+  });
+
+  final LoliDropdown<T> dropdown;
+  final bool autoOpen;
+
+  @override
+  State<_AutoOpenLoliDropdown<T>> createState() => _AutoOpenLoliDropdownState<T>();
+}
+
+class _AutoOpenLoliDropdownState<T> extends State<_AutoOpenLoliDropdown<T>> {
+  bool hasOpened = false;
+
+  @override
+  void initState() {
+    super.initState();
+    maybeOpen();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AutoOpenLoliDropdown<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.autoOpen && widget.autoOpen) {
+      hasOpened = false;
+      maybeOpen();
+    }
+  }
+
+  void maybeOpen() {
+    if (!widget.autoOpen || hasOpened) {
+      return;
+    }
+
+    hasOpened = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      widget.dropdown.showDialog(context);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.dropdown;
   }
 }
 

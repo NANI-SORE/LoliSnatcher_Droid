@@ -144,72 +144,81 @@ class _StaggeredBuilderState extends State<StaggeredBuilder> {
   }) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        return Obx(() {
-          final BooruItem item = currentFetched[index];
+        return Obx(
+          () {
+            final BooruItem item = currentFetched[index];
 
-          final double itemMaxWidth = constraints.maxWidth;
-          final double itemMaxHeight = MediaQuery.sizeOf(context).height * 0.4;
-          final double possibleWidth = itemMaxWidth;
-          final double possibleHeight = _itemHeight(
-            item: item,
-            itemMaxWidth: itemMaxWidth,
-            itemMaxHeight: itemMaxHeight,
-          );
-
-          final bool hasSelected = tab.selected.isNotEmpty && tab.hasSelectedItems;
-          final selectedIndex = tab.selectedIndexOf(item);
-          final bool isSelected = selectedIndex != null;
-
-          final controller = dragSelectController;
-          final thumbnail = Obx(
-            () => ThumbnailCardBuild(
-              index: index,
+            final double itemMaxWidth = constraints.maxWidth;
+            final double itemMaxHeight = MediaQuery.sizeOf(context).height * 0.4;
+            final double possibleWidth = itemMaxWidth;
+            final double possibleHeight = _itemHeight(
               item: item,
-              handler: tab.booruHandler,
-              scrollController: scrollController,
-              isHighlighted: ViewerHandler.instance.current.value?.key == item.key,
-              selectable: true,
-              selectedIndex: isSelected ? selectedIndex : null,
-              onSelected: hasSelected ? onSelected : null,
-              onTap: onTap,
-              onDoubleTap: onDoubleTap,
-              onLongPress: controller == null ? onLongPress : null,
-              onSecondaryTap: onSecondaryTap,
-            ),
-          );
-          final tile = Stack(
-            children: [
-              SizedBox(
-                height: possibleHeight,
-                width: possibleWidth,
-                child: thumbnail,
-              ),
-              if (isFirstOfPage && item.fetchedPage > -1)
-                Positioned(
-                  top: 2,
-                  left: 2,
-                  child: IgnorePointer(
-                    child: GridPageIndicator(item.fetchedPage),
+              itemMaxWidth: itemMaxWidth,
+              itemMaxHeight: itemMaxHeight,
+            );
+
+            return SizedBox(
+              key: ValueKey(item.key),
+              height: possibleHeight,
+              width: possibleWidth,
+              child: Obx(() {
+                final bool hasSelected = tab.selected.isNotEmpty && tab.hasSelectedItems;
+                final selectedIndex = tab.selectedIndexOf(item);
+                final bool isSelected = selectedIndex != null;
+
+                final controller = dragSelectController;
+                final thumbnail = Obx(
+                  () => ThumbnailCardBuild(
+                    index: index,
+                    item: item,
+                    handler: tab.booruHandler,
+                    scrollController: scrollController,
+                    isHighlighted: ViewerHandler.instance.current.value?.key == item.key,
+                    selectable: true,
+                    selectedIndex: isSelected ? selectedIndex : null,
+                    onSelected: hasSelected ? onSelected : null,
+                    onTap: onTap,
+                    onDoubleTap: onDoubleTap,
+                    onLongPress: controller == null ? onLongPress : null,
+                    onSecondaryTap: onSecondaryTap,
                   ),
-                ),
-            ],
-          );
+                );
+                final tile = Stack(
+                  children: [
+                    SizedBox(
+                      height: possibleHeight,
+                      width: possibleWidth,
+                      child: thumbnail,
+                    ),
+                    if (isFirstOfPage && item.fetchedPage > -1)
+                      Positioned(
+                        top: 2,
+                        left: 2,
+                        child: IgnorePointer(
+                          child: GridPageIndicator(item.fetchedPage),
+                        ),
+                      ),
+                  ],
+                );
 
-          if (controller == null) {
-            return tile;
-          }
+                if (controller == null) {
+                  return tile;
+                }
 
-          return SizedBox(
-            height: dragHitHeight ?? possibleHeight,
-            width: possibleWidth,
-            child: ThumbnailDragSelectRegistrant(
-              controller: controller,
-              index: index,
-              item: item,
-              child: tile,
-            ),
-          );
-        });
+                return SizedBox(
+                  height: dragHitHeight ?? possibleHeight,
+                  width: possibleWidth,
+                  child: ThumbnailDragSelectRegistrant(
+                    controller: controller,
+                    index: index,
+                    item: item,
+                    child: tile,
+                  ),
+                );
+              }),
+            );
+          },
+        );
       },
     );
   }

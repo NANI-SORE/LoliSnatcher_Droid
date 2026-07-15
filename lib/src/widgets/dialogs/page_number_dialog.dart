@@ -34,7 +34,7 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
   void initState() {
     super.initState();
 
-    pageNumberController.text = searchHandler.currentScrollPage.value.toString();
+    pageNumberController.text = (searchHandler.currentBooruHandlerOrNull?.pageNum ?? 0).toString();
     delayController.text = 200.toString();
   }
 
@@ -47,7 +47,7 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final int total = searchHandler.currentBooruHandler.totalCount.value;
+    final int total = searchHandler.currentBooruHandlerOrNull?.totalCount.value ?? 0;
     final int possibleMaxPageNum = total != 0 ? (total / SX.limit.value).round() : 0;
     final bool isPageBelowCurrentLoaded = pageNumber <= searchHandler.currentBooruHandler.pageNum;
 
