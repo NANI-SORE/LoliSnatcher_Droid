@@ -52,7 +52,10 @@ class GridBuilder extends StatelessWidget {
           crossAxisSpacing: 4,
         ),
         itemBuilder: (BuildContext context, int index) {
+          final BooruItem item = currentFetched[index];
+
           return GridTile(
+            key: ValueKey(item.key),
             child: Obx(() {
               final BooruItem item = currentFetched[index];
 

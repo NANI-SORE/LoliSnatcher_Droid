@@ -150,6 +150,7 @@ enum SettingKey {
   usePredictiveBack,
   captureLogcat,
   useImageLogging,
+  expandedSourceCompatibilityEnabled,
 
   // Debug
   shitDevice,
@@ -335,6 +336,7 @@ abstract class SX {
   static const usePredictiveBack = TypedKey<bool>(SettingKey.usePredictiveBack);
   static const captureLogcat = TypedKey<bool>(SettingKey.captureLogcat);
   static const useImageLogging = TypedKey<bool>(SettingKey.useImageLogging);
+  static const expandedSourceCompatibilityEnabled = TypedKey<bool>(SettingKey.expandedSourceCompatibilityEnabled);
 
   // Debug
   static const shitDevice = TypedKey<bool>(SettingKey.shitDevice);

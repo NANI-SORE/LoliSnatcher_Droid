@@ -52,64 +52,69 @@ class StaggeredBuilder extends StatelessWidget {
           childCount: currentFetched.length,
           (context, index) => LayoutBuilder(
             builder: (context, constraints) {
-              return Obx(() {
-                final BooruItem item = currentFetched[index];
+              final BooruItem item = currentFetched[index];
 
-                final bool isFirstOfPage = index == 0 || item.fetchedPage != currentFetched[index - 1].fetchedPage;
+              final bool isFirstOfPage = index == 0 || item.fetchedPage != currentFetched[index - 1].fetchedPage;
 
-                final double itemMaxWidth = constraints.maxWidth;
-                final double itemMaxHeight = itemMaxWidth * (16 / 9);
+              final double itemMaxWidth = constraints.maxWidth;
+              final double itemMaxHeight = itemMaxWidth * (16 / 9);
 
-                final double? widthData = item.fileWidth;
-                final double? heightData = item.fileHeight;
+              final double? widthData = item.fileWidth;
+              final double? heightData = item.fileHeight;
 
-                final double possibleWidth = itemMaxWidth;
-                double possibleHeight = itemMaxWidth;
-                final bool hasSizeData = heightData != null && widthData != null;
-                if (hasSizeData) {
-                  final double aspectRatio = widthData / heightData;
-                  possibleHeight = possibleWidth / aspectRatio;
-                }
-                // force to use minimum 100 px and max 60% of screen height
-                possibleHeight = max(min(itemMaxHeight, possibleHeight), 100);
+              final double possibleWidth = itemMaxWidth;
+              double possibleHeight = itemMaxWidth;
+              final bool hasSizeData = heightData != null && widthData != null;
+              if (hasSizeData) {
+                final double aspectRatio = widthData / heightData;
+                possibleHeight = possibleWidth / aspectRatio;
+              }
+              // force to use minimum 100 px and max 60% of screen height
+              possibleHeight = max(min(itemMaxHeight, possibleHeight), 100);
 
-                final bool hasSelected = tab.selected.isNotEmpty && tab.hasSelectedItems;
-                final selectedIndex = tab.selectedIndexOf(item);
-                final bool isSelected = selectedIndex != null;
+              return SizedBox(
+                key: ValueKey(item.key),
+                height: possibleHeight,
+                width: possibleWidth,
+                child: Obx(() {
+                  final bool hasSelected = tab.selected.isNotEmpty && tab.hasSelectedItems;
+                  final selectedIndex = tab.selectedIndexOf(item);
+                  final bool isSelected = selectedIndex != null;
 
-                return Stack(
-                  children: [
-                    SizedBox(
-                      height: possibleHeight,
-                      width: possibleWidth,
-                      child: Obx(
-                        () => ThumbnailCardBuild(
-                          index: index,
-                          item: item,
-                          handler: tab.booruHandler,
-                          scrollController: scrollController,
-                          isHighlighted: ViewerHandler.instance.current.value?.key == item.key,
-                          selectable: true,
-                          selectedIndex: isSelected ? selectedIndex : null,
-                          onSelected: hasSelected ? onSelected : null,
-                          onTap: onTap,
-                          onDoubleTap: onDoubleTap,
-                          onLongPress: onLongPress,
-                          onSecondaryTap: onSecondaryTap,
+                  return Stack(
+                    children: [
+                      SizedBox(
+                        height: possibleHeight,
+                        width: possibleWidth,
+                        child: Obx(
+                          () => ThumbnailCardBuild(
+                            index: index,
+                            item: item,
+                            handler: tab.booruHandler,
+                            scrollController: scrollController,
+                            isHighlighted: ViewerHandler.instance.current.value?.key == item.key,
+                            selectable: true,
+                            selectedIndex: isSelected ? selectedIndex : null,
+                            onSelected: hasSelected ? onSelected : null,
+                            onTap: onTap,
+                            onDoubleTap: onDoubleTap,
+                            onLongPress: onLongPress,
+                            onSecondaryTap: onSecondaryTap,
+                          ),
                         ),
                       ),
-                    ),
-                    if (isFirstOfPage && item.fetchedPage > -1)
-                      Positioned(
-                        top: 2,
-                        left: 2,
-                        child: IgnorePointer(
-                          child: GridPageIndicator(item.fetchedPage),
+                      if (isFirstOfPage && item.fetchedPage > -1)
+                        Positioned(
+                          top: 2,
+                          left: 2,
+                          child: IgnorePointer(
+                            child: GridPageIndicator(item.fetchedPage),
+                          ),
                         ),
-                      ),
-                  ],
-                );
-              });
+                    ],
+                  );
+                }),
+              );
             },
           ),
         ),
