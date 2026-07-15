@@ -42,6 +42,7 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/pages/settings/tags_filters_page.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/http_overrides.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -2207,6 +2208,18 @@ void registerAllSettings() {
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => 'Use image logging',
+      ),
+    ),
+  );
+
+  registry.register(
+    boolSetting(
+      key: .expandedSourceCompatibilityEnabled,
+      getDefaultValue: () => !ContentPolicy.isFromStore,
+      categories: [SettingCategory.booru],
+      isDeviceSpecific: true,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.booru.expandedSourceCompatibility,
       ),
     ),
   );

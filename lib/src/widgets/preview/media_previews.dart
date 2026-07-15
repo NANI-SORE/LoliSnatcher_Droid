@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 
+import 'package:get/get.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
+import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
-import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
 import 'package:lolisnatcher/src/pages/settings_page.dart';
-import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
+import 'package:lolisnatcher/src/pages/settings/backup_restore_page.dart';
+import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
+import 'package:lolisnatcher/src/pages/settings/language_page.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/preview/waterfall_view.dart';
 
 class MediaPreviews extends StatefulWidget {
@@ -35,15 +40,11 @@ class _MediaPreviewsState extends State<MediaPreviews> {
   }
 
   void booruListener() {
-    if (!booruListFilled.value) {
-      booruListFilled.value = settingsHandler.booruList.isNotEmpty;
-    }
+    booruListFilled.value = settingsHandler.booruList.isNotEmpty;
   }
 
   void tabListener() {
-    if (!tabListFilled.value) {
-      tabListFilled.value = searchHandler.tabs.isNotEmpty;
-    }
+    tabListFilled.value = searchHandler.tabs.isNotEmpty;
   }
 
   @override
@@ -51,6 +52,157 @@ class _MediaPreviewsState extends State<MediaPreviews> {
     settingsHandler.booruList.removeListener(booruListener);
     searchHandler.tabs.removeListener(tabListener);
     super.dispose();
+  }
+
+  void openPage(Widget page) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => page,
+      ),
+    );
+  }
+
+  Future<void> openArticle(String url) async {
+    await launchUrlString(
+      url,
+      mode: LaunchMode.externalApplication,
+    );
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    SX.themeMode.state.value = mode;
+    await settingsHandler.saveSettings(restate: false);
+  }
+
+  Widget buildEmptyState(BuildContext context) {
+    final loc = context.loc.mediaPreviews;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool wide = constraints.maxWidth >= 640;
+
+        return ListView(
+          padding: EdgeInsets.fromLTRB(
+            16,
+            24 + context.padding.top,
+            16,
+            96 + context.padding.bottom,
+          ),
+          children: [
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Icon(
+                            Icons.image_search_rounded,
+                            size: 40,
+                            color: colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      loc.onboardingTitle,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      loc.onboardingSubtitle,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    _ThemeModeToggle(
+                      onChanged: setThemeMode,
+                    ),
+                    const SizedBox(height: 12),
+                    _LanguageSettingsTile(
+                      onTap: () => openPage(const LanguageSettingsPage(openSelectorOnStart: true)),
+                    ),
+                    const SizedBox(height: 28),
+                    _OnboardingActionGrid(
+                      wide: wide,
+                      children: [
+                        _OnboardingActionTile(
+                          title: loc.addBooruAction,
+                          subtitle: loc.addBooruActionSubtitle,
+                          icon: Icons.add_photo_alternate_outlined,
+                          filled: true,
+                          onTap: () => openPage(BooruEdit(Booru('New', null, '', '', ''))),
+                        ),
+                        _OnboardingActionTile(
+                          title: loc.restoreBackupAction,
+                          subtitle: loc.restoreBackupActionSubtitle,
+                          icon: Icons.restore_page_outlined,
+                          onTap: () => openPage(const BackupRestorePage()),
+                        ),
+                        _OnboardingActionTile(
+                          title: loc.openSettingsAction,
+                          subtitle: loc.openSettingsActionSubtitle,
+                          icon: Icons.settings_outlined,
+                          onTap: () => openPage(const SettingsPage()),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: theme.dividerColor),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                            child: Text(
+                              loc.helpSectionTitle,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _ArticleLinkTile(
+                            title: loc.booruSourcesArticle,
+                            subtitle: loc.booruSourcesArticleSubtitle,
+                            onTap: () => openArticle(Constants.booruSourcesWikiURL),
+                          ),
+                          const Divider(height: 1, indent: 16, endIndent: 16),
+                          _ArticleLinkTile(
+                            title: loc.backupRestoreArticle,
+                            subtitle: loc.backupRestoreArticleSubtitle,
+                            onTap: () => openArticle(Constants.backupRestoreWikiURL),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -65,39 +217,7 @@ class _MediaPreviewsState extends State<MediaPreviews> {
 
         // no booru configs
         if (!booruListFilledVal) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                SettingsButton(
-                  name: context.loc.mediaPreviews.noBooruConfigsFound,
-                  icon: const Icon(null),
-                ),
-                SettingsButton(
-                  name: context.loc.mediaPreviews.addNewBooru,
-                  icon: const Icon(Icons.settings),
-                  page: () => BooruEdit(Booru('New', null, '', '', '')),
-                ),
-                SettingsButton(
-                  name: context.loc.mediaPreviews.help,
-                  icon: const Icon(Icons.help_center_outlined),
-                  action: () {
-                    launchUrlString(
-                      'https://github.com/NO-ob/LoliSnatcher_Droid/wiki',
-                      mode: LaunchMode.externalApplication,
-                    );
-                  },
-                  trailingIcon: const Icon(Icons.exit_to_app),
-                ),
-                SettingsButton(
-                  name: context.loc.mediaPreviews.settings,
-                  icon: const Icon(Icons.settings),
-                  page: () => const SettingsPage(),
-                ),
-              ],
-            ),
-          );
+          return buildEmptyState(context);
         }
 
         // temp message while restoring tabs (or for some reason initial tab was not created)
@@ -125,6 +245,362 @@ class _MediaPreviewsState extends State<MediaPreviews> {
         // render thumbnails grid
         return const WaterfallView();
       },
+    );
+  }
+}
+
+class _LanguageSettingsTile extends StatelessWidget {
+  const _LanguageSettingsTile({
+    required this.onTap,
+  });
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 360),
+        child: Obx(
+          () {
+            final AppLocale? locale = SX.locale.value;
+            final AppLocale usedLocale = locale ?? AppLocaleUtils.findDeviceLocale();
+            final String localeTitle = locale == null
+                ? context.loc.settings.language.system
+                : locale == AppLocale.en
+                ? '${locale.localeName} (${locale.localeCode})'
+                : locale.localeName;
+
+            return Material(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: onTap,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  child: Row(
+                    children: [
+                      buildFlag(context, usedLocale),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              context.loc.settings.language.title + (usedLocale == AppLocale.en ? '' : ' / Language'),
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            Text(
+                              localeTitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeModeToggle extends StatelessWidget {
+  const _ThemeModeToggle({
+    required this.onChanged,
+  });
+
+  final ValueChanged<ThemeMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = context.loc.settings.theme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Center(
+      child: Obx(
+        () => Material(
+          color: colorScheme.surfaceContainerHighest,
+          clipBehavior: .antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(color: colorScheme.outline),
+          ),
+          child: SizedBox(
+            height: kMinInteractiveDimension,
+            child: Row(
+              mainAxisSize: .min,
+              children: [
+                _ThemeModeSegmentButton(
+                  icon: Icons.brightness_auto_outlined,
+                  text: loc.system,
+                  selected: SX.themeMode.value.isSystem,
+                  onTap: () => onChanged(.system),
+                ),
+                _ThemeModeDivider(color: colorScheme.outline),
+                _ThemeModeSegmentButton(
+                  icon: Icons.light_mode_outlined,
+                  text: loc.light,
+                  selected: SX.themeMode.value.isLight,
+                  onTap: () => onChanged(.light),
+                ),
+                _ThemeModeDivider(color: colorScheme.outline),
+                _ThemeModeSegmentButton(
+                  icon: Icons.dark_mode_outlined,
+                  text: loc.dark,
+                  selected: SX.themeMode.value.isDark,
+                  onTap: () => onChanged(.dark),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeModeSegmentButton extends StatelessWidget {
+  const _ThemeModeSegmentButton({
+    required this.icon,
+    required this.text,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String text;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final Color foreground = selected ? colorScheme.onSecondaryContainer : colorScheme.onSurfaceVariant;
+
+    return InkWell(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        height: kMinInteractiveDimension,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        color: selected ? colorScheme.secondaryContainer : Colors.transparent,
+        child: IconTheme(
+          data: IconThemeData(color: foreground),
+          child: DefaultTextStyle.merge(
+            style: TextStyle(
+              color: foreground,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            ),
+            child: _ThemeModeSegmentLabel(
+              icon: icon,
+              text: text,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeModeDivider extends StatelessWidget {
+  const _ThemeModeDivider({
+    required this.color,
+  });
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: kMinInteractiveDimension,
+      child: VerticalDivider(
+        width: 1,
+        thickness: 1,
+        color: color,
+      ),
+    );
+  }
+}
+
+class _ThemeModeSegmentLabel extends StatelessWidget {
+  const _ThemeModeSegmentLabel({
+    required this.icon,
+    required this.text,
+  });
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: kMinInteractiveDimension,
+      child: Row(
+        mainAxisSize: .min,
+        mainAxisAlignment: .center,
+        crossAxisAlignment: .center,
+        children: [
+          Icon(icon, size: 18),
+          const SizedBox(width: 6),
+          Text(text),
+        ],
+      ),
+    );
+  }
+}
+
+class _OnboardingActionGrid extends StatelessWidget {
+  const _OnboardingActionGrid({
+    required this.wide,
+    required this.children,
+  });
+
+  final bool wide;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!wide) {
+      return Column(
+        spacing: 12,
+        children: children,
+      );
+    }
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 12,
+        children: [
+          for (final child in children) Expanded(child: child),
+        ],
+      ),
+    );
+  }
+}
+
+class _OnboardingActionTile extends StatelessWidget {
+  const _OnboardingActionTile({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+    this.subtitle,
+    this.filled = false,
+  });
+
+  final String title;
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final String? subtitle;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final Color background = filled ? colorScheme.primaryContainer : colorScheme.surfaceContainerHighest;
+    final Color foreground = filled ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant;
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 72),
+      child: SizedBox(
+        width: double.infinity,
+        child: Material(
+          color: background,
+          borderRadius: BorderRadius.circular(8),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(icon, color: foreground, size: 26),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 4,
+                      children: [
+                        Text(
+                          title,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: foreground,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (subtitle != null)
+                          Text(
+                            subtitle ?? '',
+                            style: theme.textTheme.bodySmall?.copyWith(color: foreground),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Icon(Icons.chevron_right, color: foreground),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ArticleLinkTile extends StatelessWidget {
+  const _ArticleLinkTile({
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+        leading: const Icon(Icons.article_outlined),
+        title: Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 4),
+          child: Text(title),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 8),
+          child: Text(subtitle),
+        ),
+        trailing: const Icon(Icons.open_in_new),
+        onTap: onTap,
+      ),
     );
   }
 }

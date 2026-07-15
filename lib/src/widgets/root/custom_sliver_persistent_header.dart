@@ -1,5 +1,7 @@
 // ignore_for_file: prefer_asserts_with_message
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -93,9 +95,13 @@ class CustomFloatingHeader extends StatefulWidget {
 }
 
 class CustomFloatingHeaderState extends State<CustomFloatingHeader> {
-  ScrollPosition? _position;
+  static const int _directionChangeDebounceMs = 120;
+  static const Duration _snapSettleDelay = Duration(milliseconds: 180);
 
-  int lastToggleTime = 0;
+  ScrollPosition? _position;
+  ScrollDirection _lastUserScrollDirection = ScrollDirection.idle;
+  int _lastUserScrollDirectionChangedAt = 0;
+  Timer? _deferredSnapTimer;
 
   @override
   void didChangeDependencies() {
@@ -120,6 +126,7 @@ class CustomFloatingHeaderState extends State<CustomFloatingHeader> {
 
   @override
   void dispose() {
+    _deferredSnapTimer?.cancel();
     if (_position != null) {
       _position!.isScrollingNotifier.removeListener(_isScrollingListener);
     }
@@ -130,13 +137,92 @@ class CustomFloatingHeaderState extends State<CustomFloatingHeader> {
     return context.findAncestorRenderObjectOfType<RenderSliverFloatingPersistentHeader>();
   }
 
+  bool _setLastUserScrollDirection(
+    ScrollDirection direction, {
+    bool debounce = true,
+  }) {
+    if (direction == ScrollDirection.idle) {
+      return false;
+    }
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final bool directionChanged = _lastUserScrollDirection != direction;
+    final bool shouldIgnoreDirectionChange =
+        debounce && directionChanged && now - _lastUserScrollDirectionChangedAt < _directionChangeDebounceMs;
+
+    if (shouldIgnoreDirectionChange) {
+      return false;
+    }
+
+    _lastUserScrollDirection = direction;
+    _lastUserScrollDirectionChangedAt = now;
+    return true;
+  }
+
+  void _startSnap(ScrollDirection direction) {
+    if (direction == ScrollDirection.idle) {
+      return;
+    }
+
+    final RenderSliverFloatingPersistentHeader? header = _headerRenderer();
+    header?.maybeStartSnapAnimation(direction);
+  }
+
+  void _scheduleSnap(ScrollDirection direction) {
+    _deferredSnapTimer?.cancel();
+    _deferredSnapTimer = Timer(_snapSettleDelay, () {
+      if (!mounted) {
+        return;
+      }
+
+      if (_position?.isScrollingNotifier.value == true) {
+        return;
+      }
+
+      _startSnap(direction);
+    });
+  }
+
+  void _snapOrDefer(ScrollDirection direction) {
+    final RenderSliverFloatingPersistentHeader? header = _headerRenderer();
+    _setLastUserScrollDirection(direction, debounce: false);
+    header?.updateScrollStartDirection(direction);
+
+    if (_position?.isScrollingNotifier.value == true) {
+      header?.maybeStopSnapAnimation(direction);
+      _scheduleSnap(direction);
+    } else {
+      _startSnap(direction);
+    }
+  }
+
+  void handleUserScrollDirection(ScrollDirection direction) {
+    if (!_setLastUserScrollDirection(direction)) {
+      return;
+    }
+
+    final RenderSliverFloatingPersistentHeader? header = _headerRenderer();
+    header?.updateScrollStartDirection(direction);
+    header?.maybeStopSnapAnimation(direction);
+
+    _scheduleSnap(direction);
+
+    widget.onVisibilityChanged?.call(direction == ScrollDirection.forward);
+  }
+
+  void settleUserScrollDirection() {
+    if (_lastUserScrollDirection == ScrollDirection.idle) {
+      return;
+    }
+
+    _scheduleSnap(_lastUserScrollDirection);
+  }
+
   void show() {
     assert(_position != null);
 
-    final RenderSliverFloatingPersistentHeader? header = _headerRenderer();
     if (widget.shrinkOffset != 0) {
-      lastToggleTime = DateTime.now().millisecondsSinceEpoch;
-      header?.maybeStartSnapAnimation(ScrollDirection.forward);
+      _snapOrDefer(ScrollDirection.forward);
       widget.onVisibilityChanged?.call(true);
     }
   }
@@ -144,11 +230,8 @@ class CustomFloatingHeaderState extends State<CustomFloatingHeader> {
   void hide() {
     assert(_position != null);
 
-    final RenderSliverFloatingPersistentHeader? header = _headerRenderer();
     if (widget.shrinkOffset == 0) {
-      lastToggleTime = DateTime.now().millisecondsSinceEpoch;
-      header?.updateScrollStartDirection(ScrollDirection.reverse);
-      header?.maybeStopSnapAnimation(ScrollDirection.reverse);
+      _snapOrDefer(ScrollDirection.reverse);
       widget.onVisibilityChanged?.call(false);
     }
   }
@@ -157,15 +240,15 @@ class CustomFloatingHeaderState extends State<CustomFloatingHeader> {
     assert(_position != null);
 
     final RenderSliverFloatingPersistentHeader? header = _headerRenderer();
-    if ((lastToggleTime + 500) < DateTime.now().millisecondsSinceEpoch) {
-      return;
-    }
     if (_position!.isScrollingNotifier.value) {
-      header?.updateScrollStartDirection(_position!.userScrollDirection);
-      header?.maybeStopSnapAnimation(_position!.userScrollDirection);
+      final direction = _position!.userScrollDirection;
+      _setLastUserScrollDirection(direction);
+      header?.updateScrollStartDirection(_lastUserScrollDirection);
+      header?.maybeStopSnapAnimation(_lastUserScrollDirection);
+      _deferredSnapTimer?.cancel();
       // widget.onVisibilityChanged?.call(_position!.userScrollDirection == ScrollDirection.forward);
-    } else {
-      header?.maybeStartSnapAnimation(_position!.userScrollDirection);
+    } else if (_lastUserScrollDirection != ScrollDirection.idle) {
+      _scheduleSnap(_lastUserScrollDirection);
       // widget.onVisibilityChanged?.call(_position!.userScrollDirection == ScrollDirection.forward);
     }
   }
