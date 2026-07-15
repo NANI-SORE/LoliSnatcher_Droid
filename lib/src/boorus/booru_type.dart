@@ -1,6 +1,7 @@
 // ignore_for_file: constant_identifier_names
 
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 
 enum BooruType {
   Autodetect,
@@ -38,13 +39,15 @@ enum BooruType {
   static List<BooruType> get dropDownValues {
     final isDebug = SX.isDebug.value;
 
-    return [...values]
+    final list = [...values]
       ..remove(BooruType.Downloads)
       ..remove(BooruType.Favourites)
       ..remove(BooruType.Merge)
       ..remove(BooruType.GelbooruAlike)
       ..remove(isDebug ? BooruType.NyanPals : null)
       ..remove(isDebug ? BooruType.WildCritters : null);
+
+    return [...list.where(ContentPolicy.isBooruTypeAllowed)];
   }
 
   bool get isDropDownValue => dropDownValues.contains(this);
