@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:get/get.dart' hide FirstWhereOrNullExt;
 
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
@@ -27,10 +26,10 @@ import 'package:lolisnatcher/src/widgets/common/confirm_button.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/kaomoji.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
+import 'package:lolisnatcher/src/widgets/drawers/downloads/selected_preview_sheet.dart';
 import 'package:lolisnatcher/src/widgets/gallery/share_action_dialog.dart';
 import 'package:lolisnatcher/src/widgets/preview/image_compare_dialog.dart';
 import 'package:lolisnatcher/src/widgets/preview/tag_search_query_editor_page.dart';
-import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_build.dart';
 
 class DownloadsDrawerController {
   DownloadsDrawerController() {
@@ -168,142 +167,21 @@ class DownloadsDrawerController {
       enableDrag: true,
       isDismissible: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return _DismissibleConstrainedBottomSheet(
-          child: DraggableScrollableSheet(
-            expand: false,
-            initialChildSize: 0.66,
-            minChildSize: 0.24,
-            maxChildSize: 0.92,
-            builder: (context, scrollController) => SettingsBottomSheet(
-              title: Obx(
-                () => _SelectionSheetTitle(
-                  '${context.loc.tagView.preview} (${searchHandler.currentSelected.length.toFormattedString()})',
-                ),
-              ),
-              content: Expanded(
-                child: Obx(() {
-                  final selected = [...searchHandler.currentSelected];
-                  if (selected.isEmpty) {
-                    return Center(
-                      child: Text(context.loc.settings.downloads.noItemsSelected),
-                    );
-                  }
-
-                  return ReorderableListView.builder(
-                    scrollController: scrollController,
-                    padding: const EdgeInsets.all(16),
-                    buildDefaultDragHandles: false,
-                    proxyDecorator: (child, index, animation) => child,
-                    itemCount: selected.length,
-                    onReorderItem: (oldIndex, newIndex) {
-                      final reordered = [...searchHandler.currentSelected];
-                      final item = reordered.removeAt(oldIndex);
-                      reordered.insert(newIndex, item);
-                      searchHandler.currentTab.selected.assignAll(reordered);
-                    },
-                    itemBuilder: (context, index) {
-                      final item = selected[index];
-                      final previewTags = _selectedPreviewTags(item);
-
-                      return ReorderableDelayedDragStartListener(
-                        key: ValueKey(item.key),
-                        index: index,
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Material(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(8),
-                            clipBehavior: Clip.antiAlias,
-                            child: InkWell(
-                              onTap: () => _showSelectedItemInfo(context, item, index),
-                              child: SizedBox(
-                                height: 120,
-                                child: Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 96,
-                                      height: 120,
-                                      child: ThumbnailBuild(
-                                        item: item,
-                                        handler: searchHandler.currentBooruHandler,
-                                        selectedIndex: index,
-                                        onSelected: () => searchHandler.currentTab.selected.remove(item),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Padding(
-                                              padding: const EdgeInsets.only(top: 4),
-                                              child: Text(
-                                                '#${index + 1}',
-                                                style: Theme.of(context).textTheme.titleMedium,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Expanded(
-                                              child: LayoutBuilder(
-                                                builder: (context, constraints) {
-                                                  final style = Theme.of(context).textTheme.bodySmall;
-                                                  final fontSize = style?.fontSize ?? 12;
-                                                  final lineHeight = fontSize * (style?.height ?? 1.25);
-                                                  final linesThatFit = (constraints.maxHeight / lineHeight).floor();
-                                                  final maxLines = linesThatFit < 1 ? 1 : linesThatFit;
-
-                                                  return Text.rich(
-                                                    TextSpan(
-                                                      style: style,
-                                                      children: [
-                                                        for (final tag in previewTags)
-                                                          TextSpan(
-                                                            text: '${tag.fullString} ',
-                                                            style: TextStyle(
-                                                              color: tag.tagType.getColour(),
-                                                            ),
-                                                          ),
-                                                      ],
-                                                    ),
-                                                    maxLines: maxLines,
-                                                    overflow: TextOverflow.ellipsis,
-                                                    softWrap: true,
-                                                  );
-                                                },
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    Icon(
-                                      Icons.drag_handle,
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                    ),
-                                    const SizedBox(width: 12),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                }),
-              ),
-            ),
-          ),
-        );
-      },
+      builder: (_) => SelectedPreviewSheet(
+        itemsMatchingTagQuery: _itemsMatchingTagQuery,
+        selectedPreviewTags: _selectedPreviewTags,
+        searchSuggestions: _selectedPreviewSearchSuggestions,
+        onReorderItem: _reorderSelectedPreviewItem,
+        onShowItemInfo: _showSelectedItemInfo,
+        onReverseSelected: reverseSelectedOrder,
+        onStartSnatching: onStartSnatching,
+        onShareSelected: onShareSelected,
+        onShareSelectedLongPress: onShareSelectedLongPress,
+      ),
     );
   }
 
   void _showSelectedItemInfo(BuildContext context, BooruItem item, int index) {
-    final tags = _selectedPreviewTags(item);
-
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -311,75 +189,12 @@ class DownloadsDrawerController {
       enableDrag: true,
       isDismissible: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return _DismissibleConstrainedBottomSheet(
-          child: DraggableScrollableSheet(
-            expand: false,
-            initialChildSize: 0.66,
-            minChildSize: 0.33,
-            maxChildSize: 0.92,
-            builder: (context, scrollController) => SettingsBottomSheet(
-              title: _SelectionSheetTitle('${context.loc.item} #${index + 1}'),
-              scrollController: scrollController,
-              contentItems: [
-                Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: 220,
-                      maxHeight: 260,
-                    ),
-                    child: AspectRatio(
-                      aspectRatio: item.previewAspectRatio ?? item.sampleAspectRatio ?? item.fileAspectRatio ?? 0.75,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: ThumbnailBuild(
-                          item: item,
-                          handler: searchHandler.currentBooruHandler,
-                          selectable: false,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    for (final tag in tags)
-                      Chip(
-                        label: Text(tag.fullString),
-                        visualDensity: VisualDensity.compact,
-                        backgroundColor: tag.tagType.getColour()?.withValues(alpha: 0.18),
-                        side: BorderSide(
-                          color: tag.tagType.getColour() ?? Theme.of(context).dividerColor,
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-              actionButtons: [
-                IconButton(
-                  tooltip: context.loc.move,
-                  onPressed: () {
-                    _moveSelectedItem(item, 0);
-                    Navigator.of(sheetContext).pop();
-                  },
-                  icon: const Icon(Icons.vertical_align_top),
-                ),
-                IconButton(
-                  tooltip: context.loc.move,
-                  onPressed: () {
-                    _moveSelectedItem(item, searchHandler.currentSelected.length - 1);
-                    Navigator.of(sheetContext).pop();
-                  },
-                  icon: const Icon(Icons.vertical_align_bottom),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      builder: (_) => SelectedItemPreviewSheet(
+        initialItem: item,
+        initialIndex: index,
+        selectedPreviewTags: _selectedPreviewTags,
+        onMoveItem: _moveSelectedItem,
+      ),
     );
   }
 
@@ -393,6 +208,34 @@ class DownloadsDrawerController {
     final clampedTarget = targetIndex.clamp(0, selected.length - 1);
     selected.removeAt(currentIndex);
     selected.insert(clampedTarget, item);
+    searchHandler.currentTab.selected.assignAll(selected);
+  }
+
+  void _reorderSelectedPreviewItem({
+    required List<BooruItem> visibleItems,
+    required int oldIndex,
+    required int newIndex,
+  }) {
+    final item = visibleItems[oldIndex];
+    final visibleAfterRemoval = [...visibleItems]..removeAt(oldIndex);
+    final selected = [...searchHandler.currentSelected]..remove(item);
+
+    int insertIndex;
+    if (visibleAfterRemoval.isEmpty) {
+      insertIndex = selected.length;
+    } else if (newIndex >= visibleAfterRemoval.length) {
+      final previousVisibleItem = visibleAfterRemoval.last;
+      insertIndex = selected.indexOf(previousVisibleItem) + 1;
+    } else {
+      final nextVisibleItem = visibleAfterRemoval[newIndex];
+      insertIndex = selected.indexOf(nextVisibleItem);
+    }
+
+    if (insertIndex < 0) {
+      insertIndex = selected.length;
+    }
+
+    selected.insert(insertIndex.clamp(0, selected.length), item);
     searchHandler.currentTab.selected.assignAll(selected);
   }
 
@@ -420,6 +263,58 @@ class DownloadsDrawerController {
     });
 
     return tags;
+  }
+
+  List<Tag> _selectedPreviewSearchSuggestions(String rawToken) {
+    final token = rawToken.trim().toLowerCase();
+    final normalizedToken = token.startsWith('-') ? token.substring(1) : token;
+    final suggestionsByName = <String, Tag>{};
+
+    for (final item in searchHandler.currentSelected) {
+      for (final tag in _selectedPreviewTags(item)) {
+        final name = tag.fullString.trim();
+        if (name.isEmpty) {
+          continue;
+        }
+
+        final key = name.toLowerCase();
+        final existing = suggestionsByName[key];
+        if (existing == null || (existing.tagType.isNone && !tag.tagType.isNone)) {
+          suggestionsByName[key] = tag;
+        }
+      }
+    }
+
+    final suggestions = suggestionsByName.values.where((tag) {
+      if (normalizedToken.isEmpty) {
+        return true;
+      }
+
+      return tag.fullString.toLowerCase().contains(normalizedToken);
+    }).toList();
+
+    suggestions.sort((a, b) {
+      if (normalizedToken.isNotEmpty) {
+        final aName = a.fullString.toLowerCase();
+        final bName = b.fullString.toLowerCase();
+        final aStartsWith = aName.startsWith(normalizedToken);
+        final bStartsWith = bName.startsWith(normalizedToken);
+        if (aStartsWith != bStartsWith) {
+          return aStartsWith ? -1 : 1;
+        }
+      }
+
+      final typeComparison = _selectedPreviewTagTypeSortOrder(a.tagType).compareTo(
+        _selectedPreviewTagTypeSortOrder(b.tagType),
+      );
+      if (typeComparison != 0) {
+        return typeComparison;
+      }
+
+      return a.fullString.compareTo(b.fullString);
+    });
+
+    return suggestions.take(40).toList();
   }
 
   Future<void> onShareSelected(BuildContext context) async {

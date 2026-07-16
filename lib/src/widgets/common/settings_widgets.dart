@@ -1467,10 +1467,14 @@ class SettingsBottomSheet extends StatelessWidget {
     this.actionButtons,
     this.titlePadding,
     this.contentPadding = const EdgeInsets.fromLTRB(16, 0, 16, 16),
-    this.buttonPadding,
+    this.actionPadding = const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    this.actionSpacing = 10,
     this.borderRadius,
     this.backgroundColor,
     this.showCloseButton = true,
+    this.onClose,
+    this.onClosePressed,
+    this.pinActionButtonsToBottom = false,
     this.scrollController,
     super.key,
   });
@@ -1481,10 +1485,14 @@ class SettingsBottomSheet extends StatelessWidget {
   final List<Widget>? actionButtons;
   final EdgeInsets? titlePadding;
   final EdgeInsets contentPadding;
-  final EdgeInsets? buttonPadding;
+  final EdgeInsets actionPadding;
+  final double actionSpacing;
   final BorderRadius? borderRadius;
   final Color? backgroundColor;
   final bool showCloseButton;
+  final VoidCallback? onClose;
+  final VoidCallback? onClosePressed;
+  final bool pinActionButtonsToBottom;
   final ScrollController? scrollController;
 
   @override
@@ -1501,7 +1509,7 @@ class SettingsBottomSheet extends StatelessWidget {
             children: [
               SafeArea(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisSize: pinActionButtonsToBottom ? MainAxisSize.max : MainAxisSize.min,
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1518,9 +1526,12 @@ class SettingsBottomSheet extends StatelessWidget {
                             padding: const EdgeInsets.fromLTRB(0, 12, 16, 0),
                             child: IconButton(
                               icon: const Icon(Icons.close_rounded),
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
+                              onPressed:
+                                  onClosePressed ??
+                                  () {
+                                    onClose?.call();
+                                    Navigator.of(context).pop();
+                                  },
                             ),
                           ),
                       ],
@@ -1528,23 +1539,40 @@ class SettingsBottomSheet extends StatelessWidget {
                     //
                     ?content,
                     //
-                    if (contentItems != null)
-                      Flexible(
-                        child: Padding(
-                          padding: contentPadding,
-                          child: SingleChildScrollView(
-                            controller: scrollController,
-                            child: ListBody(
-                              children: contentItems ?? [],
+                    if (contentItems != null) ...[
+                      if (pinActionButtonsToBottom)
+                        Expanded(
+                          child: Padding(
+                            padding: contentPadding,
+                            child: SingleChildScrollView(
+                              controller: scrollController,
+                              child: ListBody(
+                                children: contentItems ?? [],
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        Flexible(
+                          child: Padding(
+                            padding: contentPadding,
+                            child: SingleChildScrollView(
+                              controller: scrollController,
+                              child: ListBody(
+                                children: contentItems ?? [],
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                    ],
+                    //
+                    if (pinActionButtonsToBottom && content == null && contentItems == null) const Spacer(),
+                    //
                     if (actionButtons != null)
                       Padding(
-                        padding: buttonPadding ?? const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        padding: actionPadding,
                         child: Wrap(
-                          spacing: 10,
+                          spacing: actionSpacing,
                           runSpacing: 10,
                           alignment: WrapAlignment.center,
                           runAlignment: WrapAlignment.center,

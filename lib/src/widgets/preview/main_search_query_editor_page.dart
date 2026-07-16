@@ -1254,7 +1254,7 @@ class AddMetatagBottomSheet extends StatelessWidget {
       ),
       titlePadding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       contentPadding: EdgeInsets.zero,
-      buttonPadding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+      actionPadding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       scrollController: scrollController,
       contentItems: [
         const SizedBox(height: 16),
