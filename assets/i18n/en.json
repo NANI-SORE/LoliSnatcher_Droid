@@ -1441,6 +1441,7 @@
         "copyright": "Copyright",
         "meta": "Meta",
         "species": "Species",
+        "lore": "Lore",
         "none": "None/General"
     }
 }
