@@ -1671,6 +1671,8 @@ class _Translations$tagType$ru_RU extends Translations$tagType$en {
   @override
   String get species => TranslationOverrides.string(_root.$meta, 'tagType.species', {}) ?? 'Раса';
   @override
+  String get lore => TranslationOverrides.string(_root.$meta, 'tagType.lore', {}) ?? 'Лор';
+  @override
   String get none => TranslationOverrides.string(_root.$meta, 'tagType.none', {}) ?? 'Нет/Общее';
 }
 
@@ -6360,6 +6362,7 @@ extension on TranslationsRuRu {
           'tagType.copyright' => TranslationOverrides.string(_root.$meta, 'tagType.copyright', {}) ?? 'Франшиза',
           'tagType.meta' => TranslationOverrides.string(_root.$meta, 'tagType.meta', {}) ?? 'Мета',
           'tagType.species' => TranslationOverrides.string(_root.$meta, 'tagType.species', {}) ?? 'Раса',
+          'tagType.lore' => TranslationOverrides.string(_root.$meta, 'tagType.lore', {}) ?? 'Лор',
           'tagType.none' => TranslationOverrides.string(_root.$meta, 'tagType.none', {}) ?? 'Нет/Общее',
           _ => null,
         };
