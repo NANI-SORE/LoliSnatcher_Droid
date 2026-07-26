@@ -868,6 +868,9 @@
         },
         "performance": {
             "title": "Performance",
+            "crashDetectedTitle": "The app crashed last time",
+            "crashDetectedMessage": "Would you like to open Performance settings? Changing these options may help prevent similar crashes.",
+            "openPerformanceSettings": "Open Performance settings",
             "lowPerformanceMode": "Low performance mode",
             "lowPerformanceModeSubtitle": "Recommended for old devices and devices with low RAM",
             "lowPerformanceModeDialogTitle": "Low performance mode",

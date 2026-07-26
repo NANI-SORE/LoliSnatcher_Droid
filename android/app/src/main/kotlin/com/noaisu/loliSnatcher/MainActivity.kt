@@ -40,6 +40,7 @@ import java.util.concurrent.Executors
 
 class MainActivity: FlutterFragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        CrashDetector.initialize(applicationContext)
         super.onCreate(savedInstanceState)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -64,6 +65,7 @@ class MainActivity: FlutterFragmentActivity() {
         servicesChannel.setMethodCallHandler { call, result ->
             try {
                 when (call.method) {
+                    "consumePreviousCrash" -> result.success(CrashDetector.consumePreviousCrash(applicationContext))
                     "getExtPath" -> result.success(getExtDir())
                     "scanMedia" -> result.success(call.argument<String>("path")?.let { refreshMedia(it) })
                     "shareText" -> {
