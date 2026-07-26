@@ -1,3 +1,7 @@
+import 'dart:ffi';
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -231,6 +235,56 @@ class VersionButton extends StatefulWidget {
 
 class _VersionButtonState extends State<VersionButton> {
   int debugTaps = 0;
+  String? systemDetailsText;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSystemDetails();
+  }
+
+  Future<void> _loadSystemDetails() async {
+    final deviceInfo = DeviceInfoPlugin();
+    final String? details;
+
+    if (Platform.isAndroid) {
+      final androidInfo = await deviceInfo.androidInfo;
+      details =
+          'App: ${_androidAbiName(Abi.current())} / System: A${androidInfo.version.release}, ${androidInfo.supportedAbis.join(', ')}';
+    } else if (Platform.isIOS) {
+      final iosInfo = await deviceInfo.iosInfo;
+      details = '${iosInfo.systemName} ${iosInfo.systemVersion}';
+    } else if (Platform.isWindows) {
+      final windowsInfo = await deviceInfo.windowsInfo;
+      final displayVersion = windowsInfo.displayVersion.isEmpty ? '' : ' ${windowsInfo.displayVersion}';
+      details = '${windowsInfo.productName}$displayVersion (build ${windowsInfo.buildNumber})';
+    } else if (Platform.isLinux) {
+      final linuxInfo = await deviceInfo.linuxInfo;
+      details = linuxInfo.prettyName;
+    } else if (Platform.isMacOS) {
+      final macInfo = await deviceInfo.macOsInfo;
+      details = 'macOS ${macInfo.majorVersion}.${macInfo.minorVersion}.${macInfo.patchVersion}';
+    } else {
+      details = null;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      systemDetailsText = details;
+    });
+  }
+
+  String _androidAbiName(Abi abi) {
+    if (abi == Abi.androidArm) return 'armeabi-v7a';
+    if (abi == Abi.androidArm64) return 'arm64-v8a';
+    if (abi == Abi.androidIA32) return 'x86';
+    if (abi == Abi.androidX64) return 'x86_64';
+    if (abi == Abi.androidRiscv64) return 'riscv64';
+    return abi.toString();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -243,6 +297,7 @@ class _VersionButtonState extends State<VersionButton> {
 
     return SettingsButton(
       name: '$verText $buildTypeText'.trim(),
+      subtitle: systemDetailsText == null ? null : Text(systemDetailsText ?? ''),
       icon: const Icon(null), // to align with other items
       action: () {
         if (SX.isDebug.value) {
