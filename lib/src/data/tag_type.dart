@@ -9,7 +9,8 @@ enum TagType {
   meta,
   species,
   lore,
-  none;
+  none,
+  ;
 
   bool get isArtist => this == TagType.artist;
   bool get isCharacter => this == TagType.character;

@@ -1587,12 +1587,13 @@ Map<TagType, List<_ComparableTag>> _groupTagsByType(List<_ComparableTag> tags) {
 
 int _tagTypeSortOrder(TagType type) {
   return switch (type) {
-    TagType.artist => 0,
-    TagType.character => 1,
-    TagType.copyright => 2,
-    TagType.species => 3,
-    TagType.meta => 4,
-    TagType.none => 5,
+    .artist => 0,
+    .character => 1,
+    .copyright => 2,
+    .meta => 3,
+    .species => 4,
+    .lore => 5,
+    .none => 6,
   };
 }
 
