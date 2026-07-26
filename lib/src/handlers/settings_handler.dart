@@ -60,7 +60,12 @@ class SettingsHandler {
     return instance;
   }
 
-  static void unregister() => GetIt.instance.unregister<SettingsHandler>();
+  static void unregister() {
+    if (GetIt.instance.isRegistered<SettingsHandler>()) {
+      instance.dispose();
+      GetIt.instance.unregister<SettingsHandler>();
+    }
+  }
 
   DBHandler dbHandler = DBHandler();
 
@@ -90,7 +95,28 @@ class SettingsHandler {
 
   int tagsFiltersMetadataVersion = 0;
   int booruListVersion = 0;
-  final Map<String, Timer> _settingsSaveDebounceTimers = {};
+  final Map<String, ({Timer timer, Future<void> Function() save})> _settingsSaveDebounceTimers = {};
+
+  static const Duration updateCheckInterval = Duration(hours: 12);
+  Timer? _updateCheckTimer;
+  Future<void>? _activeUpdateCheck;
+
+  void dispose() {
+    _updateCheckTimer?.cancel();
+    final pendingSaves = _settingsSaveDebounceTimers.values.toList();
+    _settingsSaveDebounceTimers.clear();
+    for (final pendingSave in pendingSaves) {
+      pendingSave.timer.cancel();
+      unawaited(pendingSave.save());
+    }
+  }
+
+  void _startPeriodicUpdateChecks() {
+    _updateCheckTimer?.cancel();
+    _updateCheckTimer = Timer.periodic(updateCheckInterval, (_) {
+      unawaited(checkUpdate());
+    });
+  }
 
   int currentColumnCount(BuildContext context) {
     return context.isPortrait ? SX.portraitColumns.value : SX.landscapeColumns.value;
@@ -253,14 +279,15 @@ class SettingsHandler {
 
     if (debounce) {
       final key = booruName ?? '__global__';
-      _settingsSaveDebounceTimers[key]?.cancel();
-      _settingsSaveDebounceTimers[key] = Timer(
+      _settingsSaveDebounceTimers[key]?.timer.cancel();
+      final timer = Timer(
         const Duration(milliseconds: 600),
         () {
           _settingsSaveDebounceTimers.remove(key);
           unawaited(save());
         },
       );
+      _settingsSaveDebounceTimers[key] = (timer: timer, save: save);
       return;
     }
 
@@ -544,11 +571,26 @@ class SettingsHandler {
     return cleanTags;
   }
 
-  Future<void> checkUpdate({bool withMessage = false}) async {
+  Future<void> checkUpdate({bool withMessage = false}) {
     if (Tools.isTestMode) {
-      return;
+      return Future.value();
     }
 
+    final activeCheck = _activeUpdateCheck;
+    if (activeCheck != null) {
+      return activeCheck;
+    }
+
+    final check = _checkUpdate(withMessage: withMessage);
+    _activeUpdateCheck = check;
+    return check.whenComplete(() {
+      if (identical(_activeUpdateCheck, check)) {
+        _activeUpdateCheck = null;
+      }
+    });
+  }
+
+  Future<void> _checkUpdate({required bool withMessage}) async {
     // const String fakeUpdate = '123'; // for tests // broken string
     // const Map<String, dynamic> = {}; // for tests // full json here
 
@@ -972,7 +1014,8 @@ class SettingsHandler {
       );
     }
 
-    unawaited(checkUpdate(withMessage: false));
+    unawaited(checkUpdate());
+    _startPeriodicUpdateChecks();
 
     isPostInit.value = true;
     postInitMessage.value = '';
