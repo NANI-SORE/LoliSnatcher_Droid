@@ -67,6 +67,11 @@ class _MobileHomeState extends State<MobileHome> {
       return false;
     }
 
+    if (searchHandler.currentSelected.value.isNotEmpty) {
+      searchHandler.currentSelected.clear();
+      return false;
+    }
+
     // ... otherwise, ask to close the app
     final bool? shouldPop = await showModalBottomSheet<bool>(
       context: context,
