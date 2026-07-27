@@ -531,8 +531,10 @@ class _ThumbnailState extends State<Thumbnail> {
         });
 
         // take smallest dimension for hidden icon container
-        final double iconSize =
+        final double iconBgSize =
             (constraints.maxHeight < constraints.maxWidth ? constraints.maxHeight : constraints.maxWidth) * 0.75;
+
+        final double iconSize = min(iconBgSize - 4, 24);
 
         final double blurAmount = (SettingsHandler.instance.blurImages && !widget.isStandalone)
             ? 40
@@ -623,12 +625,6 @@ class _ThumbnailState extends State<Thumbnail> {
                 );
               },
               child: GestureDetector(
-                // TODO reenable after filters rework (when blur/hide will be separate for each filter)
-                // ignore: dead_code
-                onTap: false && (widget.item.isHidden && !SX.shitDevice.value && widget.isStandalone)
-                    // ignore: dead_code
-                    ? () => setState(() => isBlurred = !isBlurred)
-                    : null,
                 child: ImageFiltered(
                   enabled:
                       isBlurred &&
@@ -694,15 +690,22 @@ class _ThumbnailState extends State<Thumbnail> {
             //
             if (widget.isStandalone && widget.item.isHidden)
               Container(
-                alignment: Alignment.center,
+                alignment: .center,
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(iconSize * 0.1),
+                  borderRadius: BorderRadius.circular(iconBgSize * 0.1),
                 ),
-                width: iconSize,
-                height: iconSize,
-                child: const Icon(
-                  CupertinoIcons.eye_slash,
+                width: iconBgSize,
+                height: iconBgSize,
+                child: IconButton(
+                  onPressed: (widget.item.isHidden && !SX.shitDevice.value && widget.isStandalone)
+                      ? () => setState(() => isBlurred = !isBlurred)
+                      : null,
+                  iconSize: iconSize,
+                  icon: Icon(
+                    isBlurred ? CupertinoIcons.eye_slash : CupertinoIcons.eye,
+                    size: iconSize,
+                  ),
                   color: Colors.white,
                 ),
               ),
