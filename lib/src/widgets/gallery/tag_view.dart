@@ -28,6 +28,8 @@ import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/meta_tag.dart';
 import 'package:lolisnatcher/src/data/pinned_tag.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/data/tag_filter.dart';
+import 'package:lolisnatcher/src/data/tag_filter_evaluation.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
@@ -37,6 +39,7 @@ import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
+import 'package:lolisnatcher/src/handlers/tag_filter_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/pages/gallery_view_page.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
@@ -59,14 +62,43 @@ import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_query_editor_page.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_tag_chip.dart';
 import 'package:lolisnatcher/src/widgets/tabs/tab_selector.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_details_sheet.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_editor.dart';
 import 'package:lolisnatcher/src/widgets/tags_manager/tm_list_item_dialog.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_card_build.dart';
 
 class _TagInfoIcon {
-  _TagInfoIcon(this.icon, this.color);
+  _TagInfoIcon(this.icon, this.color, {this.onTap});
 
   final dynamic icon;
   final Color color;
+  final VoidCallback? onTap;
+}
+
+Widget _buildTagInfoIcon(BuildContext context, _TagInfoIcon info) {
+  final visual = switch (info.icon) {
+    FaIconData _ => FaIcon(info.icon, color: info.color, size: 18),
+    IconData _ => Icon(info.icon, color: info.color, size: 20),
+    String _ => Text(
+      info.icon,
+      style: TextStyle(color: info.color, fontSize: 16, fontWeight: FontWeight.w600),
+    ),
+    _ => const SizedBox.shrink(),
+  };
+  final child = SizedBox(
+    width: 28,
+    height: 32,
+    child: Center(child: visual),
+  );
+  if (info.onTap == null) return child;
+  return Material(
+    color: Colors.transparent,
+    child: InkResponse(
+      radius: 18,
+      onTap: info.onTap,
+      child: child,
+    ),
+  );
 }
 
 class TagView extends StatefulWidget {
@@ -89,7 +121,6 @@ class _TagViewState extends State<TagView> {
   final ViewerHandler viewerHandler = ViewerHandler.instance;
   final TagHandler tagHandler = TagHandler.instance;
 
-  TagsListData tagsData = const TagsListData();
   ScrollController scrollController = ScrollController();
 
   late BooruItem item;
@@ -126,6 +157,7 @@ class _TagViewState extends State<TagView> {
     WidgetsBinding.instance.addPostFrameCallback((_) => parseSortGroupTags());
     searchHandler.searchTextController.addListener(parseSortGroupTagsWithoutCache);
     searchFocusNode.addListener(searchFocusListener);
+    TagFilterHandler.instance.revision.addListener(parseSortGroupTagsWithoutCache);
 
     reloadItemData(initial: true).then((_) async {
       await Future.delayed(const Duration(seconds: 3));
@@ -231,6 +263,7 @@ class _TagViewState extends State<TagView> {
     searchHandler.searchTextController.removeListener(parseSortGroupTagsWithoutCache);
     searchController.dispose();
     searchFocusNode.removeListener(searchFocusListener);
+    TagFilterHandler.instance.revision.removeListener(parseSortGroupTagsWithoutCache);
     searchFocusNode.dispose();
     super.dispose();
   }
@@ -282,10 +315,6 @@ class _TagViewState extends State<TagView> {
     if (usedHandler is DanbooruHandler && item.uploaderId?.isNotEmpty == true) {
       item.uploaderName = await usedHandler.getUploaderName(item);
     }
-  }
-
-  void parseTags() {
-    tagsData = settingsHandler.parseTagsList(tags, isCapped: false);
   }
 
   List<Tag> filterTags(List<Tag> tagsToFilter) {
@@ -385,7 +414,6 @@ class _TagViewState extends State<TagView> {
   Future<void> parseSortGroupTags({
     bool updateCache = true,
   }) async {
-    parseTags();
     sortAndGroupTagsList();
     if (updateCache) {
       await cacheTabMatchData();
@@ -408,6 +436,7 @@ class _TagViewState extends State<TagView> {
   }
 
   Widget tagsButton() {
+    final filterEvaluation = handler.filterEvaluationFor(item);
     return SettingsButton(
       name: context.loc.tagView.tags,
       subtitle: Text(searchController.text.isEmpty ? '${tags.length}' : '${filteredTags.length} / ${tags.length}'),
@@ -477,6 +506,15 @@ class _TagViewState extends State<TagView> {
                       ),
                     ),
                 ],
+                if (filterEvaluation.matches.isNotEmpty)
+                  IconButton(
+                    tooltip: context.loc.settings.itemFilters.tapForDetails,
+                    onPressed: () => showTagFilterDetailsSheet(context, filterEvaluation),
+                    icon: Badge(
+                      label: Text('${filterEvaluation.matches.length}'),
+                      child: const Icon(Icons.filter_alt_outlined),
+                    ),
+                  ),
                 //
                 Transform(
                   alignment: Alignment.center,
@@ -721,10 +759,11 @@ class _TagViewState extends State<TagView> {
     final String currentTag = tag.fullString;
     final int tagCount = tag.count;
 
-    final bool isHidden = tagsData.hiddenTags.contains(currentTag);
-    final bool isMarked = tagsData.markedTags.contains(currentTag);
-    final bool isSound = tagsData.soundTags.contains(currentTag);
-    final bool isAi = tagsData.aiTags.contains(currentTag);
+    final evaluation = handler.filterEvaluationFor(item);
+    final currentTagLower = currentTag.toLowerCase();
+    final filterMatches = evaluation.matches.where((match) => match.matchedTags.contains(currentTagLower)).toList();
+    final bool isSound = SettingsHandler.soundTags.contains(currentTag);
+    final bool isAi = SettingsHandler.aiTags.contains(currentTag);
     final bool isInSearch =
         searchHandler.searchTextController.text
             .toLowerCase()
@@ -748,11 +787,43 @@ class _TagViewState extends State<TagView> {
     if (isSound) {
       tagIconAndColor.add(_TagInfoIcon(Icons.volume_up_rounded, Theme.of(context).colorScheme.onSurface));
     }
-    if (isHidden) {
-      tagIconAndColor.add(_TagInfoIcon(CupertinoIcons.eye_slash, Colors.red));
-    }
-    if (isMarked) {
-      tagIconAndColor.add(_TagInfoIcon(Icons.star, Colors.yellow));
+    final displayedEffects = <TagFilterEffect>{};
+    final displayedMarkers = <String>{};
+    for (final match in filterMatches) {
+      switch (match.rule.effect) {
+        case TagFilterEffect.hide:
+          if (!displayedEffects.add(TagFilterEffect.hide)) continue;
+          tagIconAndColor.add(_TagInfoIcon(CupertinoIcons.eye_slash, Colors.red));
+        case TagFilterEffect.blur:
+          if (!displayedEffects.add(TagFilterEffect.blur)) continue;
+          tagIconAndColor.add(_TagInfoIcon(Icons.blur_on, Colors.orange));
+        case TagFilterEffect.mark:
+          final marker = match.rule.marker;
+          final markerKey = TagFilterMarker.stableKeyFor(marker);
+          if (!displayedMarkers.add(markerKey)) continue;
+          final markerMatches = filterMatches
+              .where(
+                (candidate) =>
+                    candidate.rule.effect == TagFilterEffect.mark &&
+                    TagFilterMarker.stableKeyFor(candidate.rule.marker) == markerKey,
+              )
+              .toList(growable: false);
+          tagIconAndColor.add(
+            _TagInfoIcon(
+              marker == null
+                  ? Icons.star
+                  : marker.kind == TagFilterMarkerKind.icon
+                  ? marker.icon!.glyph
+                  : marker.text!,
+              marker == null ? TagFilterMarkerColor.grey.color : marker.effectiveColor,
+              onTap: () => showTagFilterMatchesSheet(
+                context,
+                markerMatches,
+                title: context.loc.settings.itemFilters.relatedFilters,
+              ),
+            ),
+          );
+      }
     }
 
     if (currentTag != '') {
@@ -775,10 +846,9 @@ class _TagViewState extends State<TagView> {
                   context: context,
                   tag: currentTag,
                   handler: handler,
-                  isHidden: isHidden,
-                  isMarked: isMarked,
                   isInSearch: isInSearch,
                   hasTabWithTag: hasTabWithTag,
+                  evaluation: evaluation,
                   onUpdate: parseSortGroupTagsWithoutCache,
                 );
               },
@@ -819,25 +889,7 @@ class _TagViewState extends State<TagView> {
                     ),
                   ),
                   if (tagIconAndColor.isNotEmpty) ...[
-                    ...tagIconAndColor.map(
-                      (t) => switch (t.icon) {
-                        FaIconData _ => Padding(
-                          // add a bit of padding to compensate for some icons being too close to each other
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: FaIcon(
-                            t.icon,
-                            color: t.color,
-                            size: 18,
-                          ),
-                        ),
-                        IconData _ => Icon(
-                          t.icon,
-                          color: t.color,
-                          size: 20,
-                        ),
-                        _ => const SizedBox.shrink(),
-                      },
-                    ),
+                    ...tagIconAndColor.map((info) => _buildTagInfoIcon(context, info)),
                     const SizedBox(width: 5),
                   ],
                   IconButton(
@@ -1197,6 +1249,7 @@ class _TagText extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color color = tag.getColour() ?? Theme.of(context).colorScheme.onSurface;
     final basicStyle = TextStyle(
+      color: color,
       fontSize: 14,
       fontWeight: filterText?.isNotEmpty == true ? FontWeight.w400 : FontWeight.w600,
     );
@@ -1250,15 +1303,28 @@ Future<void> showTagDialog({
   required BuildContext context,
   required String tag,
   required BooruHandler handler,
-  required bool isHidden,
-  required bool isMarked,
   required bool isInSearch,
   required HasTabWithTagResult hasTabWithTag,
   required VoidCallback onUpdate,
+  TagFilterEvaluation evaluation = const TagFilterEvaluation.empty(),
 }) async {
+  final parentContext = context;
   final settingsHandler = SettingsHandler.instance;
   final searchHandler = SearchHandler.instance;
   final tagHandler = TagHandler.instance;
+  final relatedFilterMatches = evaluation.matches
+      .where((match) => match.matchedTags.contains(tag.toLowerCase()))
+      .toList(growable: false);
+
+  Future<void> openRuleEditor(BuildContext dialogContext, TagFilterEffect effect) async {
+    Navigator.of(dialogContext).pop();
+    await Future<void>.delayed(Duration.zero);
+    if (!parentContext.mounted) return;
+    await showTagFilterEditorSheet(
+      parentContext,
+      draft: TagFilterDraft.exactTag(tag, effect),
+    );
+  }
 
   final controller = ScrollController();
 
@@ -1281,7 +1347,7 @@ Future<void> showTagDialog({
                   key: ValueKey(tag),
                   text: tag,
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface,
+                    color: tagHandler.getTag(tag).getColour() ?? Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1417,56 +1483,82 @@ Future<void> showTagDialog({
                           ),
                         ],
                         //
-                        if (!isHidden && !isMarked)
+                        if (relatedFilterMatches.isNotEmpty)
                           ListTile(
-                            leading: const Icon(Icons.star, color: Colors.yellow),
-                            title: Text(context.loc.tagView.addToMarked),
-                            onTap: () {
-                              settingsHandler.addTagToList('marked', tag);
-                              searchHandler.filterCurrentFetched();
-                              handler.filterFetched();
-                              onUpdate();
-                              Navigator.of(context).pop(true);
-                            },
-                          ),
-                        if (!isHidden && !isMarked)
-                          ListTile(
-                            leading: const Icon(CupertinoIcons.eye_slash, color: Colors.red),
-                            title: Text(context.loc.tagView.addToHidden),
-                            onTap: () {
-                              settingsHandler.addTagToList('hidden', tag);
-                              searchHandler.filterCurrentFetched();
-                              handler.filterFetched();
-                              onUpdate();
-                              Navigator.of(context).pop();
-                            },
-                          ),
-                        if (isMarked)
-                          ListTile(
-                            leading: Icon(
-                              Icons.star_border,
-                              color: Theme.of(context).iconTheme.color,
+                            leading: Badge(
+                              label: Text('${relatedFilterMatches.length}'),
+                              child: const Icon(Icons.filter_alt_outlined),
                             ),
-                            title: Text(context.loc.tagView.removeFromMarked),
-                            onTap: () {
-                              settingsHandler.removeTagFromList('marked', tag);
-                              onUpdate();
-                              Navigator.of(context).pop();
-                            },
-                          ),
-                        if (isHidden)
-                          ListTile(
-                            leading: Icon(
-                              CupertinoIcons.eye_slash,
-                              color: Theme.of(context).iconTheme.color,
+                            title: Text(context.loc.settings.itemFilters.relatedFilters),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => showTagFilterMatchesSheet(
+                              context,
+                              relatedFilterMatches,
+                              title: context.loc.settings.itemFilters.relatedFilters,
                             ),
-                            title: Text(context.loc.tagView.removeFromHidden),
-                            onTap: () {
-                              settingsHandler.removeTagFromList('hidden', tag);
-                              onUpdate();
-                              Navigator.of(context).pop();
-                            },
                           ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(
+                                width: 40,
+                                height: 40,
+                                child: Center(child: Icon(Icons.filter_alt_outlined)),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Text(
+                                        context.loc.settings.itemFilters.addRule,
+                                        style: Theme.of(context).textTheme.bodyLarge,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 6,
+                                      children: [
+                                        ActionChip(
+                                          onPressed: () => openRuleEditor(context, TagFilterEffect.mark),
+                                          avatar: Icon(
+                                            Icons.star_outline,
+                                            size: 18,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          ),
+                                          label: Text(context.loc.settings.itemFilters.mark),
+                                        ),
+                                        ActionChip(
+                                          onPressed: () => openRuleEditor(context, TagFilterEffect.blur),
+                                          avatar: Icon(
+                                            Icons.blur_on,
+                                            size: 18,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          ),
+                                          label: Text(context.loc.settings.itemFilters.blur),
+                                        ),
+                                        ActionChip(
+                                          onPressed: () => openRuleEditor(context, TagFilterEffect.hide),
+                                          avatar: Icon(
+                                            Icons.visibility_off_outlined,
+                                            size: 18,
+                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                          ),
+                                          label: Text(context.loc.settings.itemFilters.hide),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                         //
                         FutureBuilder<PinnedTag?>(
                           future: settingsHandler.dbHandler.getPinnedTag(
@@ -1484,10 +1576,9 @@ Future<void> showTagDialog({
                                 context: context,
                                 tag: tag,
                                 handler: handler,
-                                isHidden: isHidden,
-                                isMarked: isMarked,
                                 isInSearch: isInSearch,
                                 hasTabWithTag: hasTabWithTag,
+                                evaluation: evaluation,
                                 onUpdate: onUpdate,
                               );
                             }
@@ -2486,8 +2577,6 @@ class _TagPreviewsListDialog extends StatelessWidget {
                                               context: context,
                                               tag: tag,
                                               handler: currentHandler,
-                                              isHidden: SX.hiddenTags.value.contains(tag),
-                                              isMarked: SX.markedTags.value.contains(tag),
                                               isInSearch:
                                                   searchHandler.searchTextController.text
                                                       .toLowerCase()
@@ -2554,8 +2643,6 @@ class _TagPreviewsListDialog extends StatelessWidget {
                                                       context: context,
                                                       tag: tag,
                                                       handler: currentHandler,
-                                                      isHidden: SX.hiddenTags.value.contains(tag),
-                                                      isMarked: SX.markedTags.value.contains(tag),
                                                       isInSearch:
                                                           searchHandler.searchTextController.text
                                                               .toLowerCase()

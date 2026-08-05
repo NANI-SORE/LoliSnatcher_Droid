@@ -173,7 +173,7 @@ class LoliDropdown<T> extends StatelessWidget {
               const SizedBox(width: 8),
               Icon(
                 Icons.arrow_drop_down,
-                color: theme.iconTheme.color,
+                color: inputDecoration.suffixIconColor ?? theme.colorScheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -448,6 +448,14 @@ class LoliMultiselectDropdown<T> extends StatelessWidget {
     this.hintText,
     this.withBorder = true,
     this.expandableByScroll = false,
+    this.selectionNormalizer,
+    this.showSelectAll = true,
+    this.clearSelection,
+    this.selectAllSelection,
+    this.invertSelection,
+    this.invertSelectionLabel,
+    this.selectionCount,
+    this.showSelectionOrder = true,
     super.key,
   });
 
@@ -463,6 +471,14 @@ class LoliMultiselectDropdown<T> extends StatelessWidget {
   final String? hintText;
   final bool withBorder;
   final bool expandableByScroll;
+  final List<T> Function(List<T> selected, T toggledItem)? selectionNormalizer;
+  final bool showSelectAll;
+  final List<T> Function(List<T> selected)? clearSelection;
+  final List<T> Function(List<T> selected)? selectAllSelection;
+  final List<T> Function(List<T> selected)? invertSelection;
+  final String? invertSelectionLabel;
+  final int Function(List<T> selected)? selectionCount;
+  final bool showSelectionOrder;
 
   Future<bool> showDialog(BuildContext context) async {
     final dynamic res = await showModalBottomSheet(
@@ -491,6 +507,14 @@ class LoliMultiselectDropdown<T> extends StatelessWidget {
                     items: items,
                     itemBuilder: itemBuilder,
                     labelText: labelText,
+                    selectionNormalizer: selectionNormalizer,
+                    showSelectAll: showSelectAll,
+                    clearSelection: clearSelection,
+                    selectAllSelection: selectAllSelection,
+                    invertSelection: invertSelection,
+                    invertSelectionLabel: invertSelectionLabel,
+                    selectionCount: selectionCount,
+                    showSelectionOrder: showSelectionOrder,
                   );
                 },
               ),
@@ -504,6 +528,14 @@ class LoliMultiselectDropdown<T> extends StatelessWidget {
           items: items,
           itemBuilder: itemBuilder,
           labelText: labelText,
+          selectionNormalizer: selectionNormalizer,
+          showSelectAll: showSelectAll,
+          clearSelection: clearSelection,
+          selectAllSelection: selectAllSelection,
+          invertSelection: invertSelection,
+          invertSelectionLabel: invertSelectionLabel,
+          selectionCount: selectionCount,
+          showSelectionOrder: showSelectionOrder,
         );
       },
     );
@@ -581,7 +613,7 @@ class LoliMultiselectDropdown<T> extends StatelessWidget {
               const SizedBox(width: 8),
               Icon(
                 Icons.arrow_drop_down,
-                color: theme.iconTheme.color,
+                color: inputDecoration.suffixIconColor ?? theme.colorScheme.onSurfaceVariant,
               ),
             ],
           ),
@@ -611,6 +643,14 @@ class LoliMultiselectDropdownBottomSheet<T> extends StatefulWidget {
     required this.itemBuilder,
     required this.labelText,
     this.controller,
+    this.selectionNormalizer,
+    this.showSelectAll = true,
+    this.clearSelection,
+    this.selectAllSelection,
+    this.invertSelection,
+    this.invertSelectionLabel,
+    this.selectionCount,
+    this.showSelectionOrder = true,
     super.key,
   });
 
@@ -620,6 +660,14 @@ class LoliMultiselectDropdownBottomSheet<T> extends StatefulWidget {
   final Widget Function(T) itemBuilder;
   final String labelText;
   final ScrollController? controller;
+  final List<T> Function(List<T> selected, T toggledItem)? selectionNormalizer;
+  final bool showSelectAll;
+  final List<T> Function(List<T> selected)? clearSelection;
+  final List<T> Function(List<T> selected)? selectAllSelection;
+  final List<T> Function(List<T> selected)? invertSelection;
+  final String? invertSelectionLabel;
+  final int Function(List<T> selected)? selectionCount;
+  final bool showSelectionOrder;
 
   @override
   State<LoliMultiselectDropdownBottomSheet<T>> createState() => _LoliMultiselectDropdownBottomSheetState();
@@ -627,12 +675,20 @@ class LoliMultiselectDropdownBottomSheet<T> extends StatefulWidget {
 
 class _LoliMultiselectDropdownBottomSheetState<T> extends State<LoliMultiselectDropdownBottomSheet<T>> {
   late final List<T> value;
+  late final ScrollController scrollController;
 
   @override
   void initState() {
     super.initState();
 
     value = [...widget.value];
+    scrollController = widget.controller ?? ScrollController();
+  }
+
+  @override
+  void dispose() {
+    if (widget.controller == null) scrollController.dispose();
+    super.dispose();
   }
 
   void onItemSelect(T item) {
@@ -641,12 +697,31 @@ class _LoliMultiselectDropdownBottomSheetState<T> extends State<LoliMultiselectD
     } else {
       value.add(item);
     }
+    if (widget.selectionNormalizer != null) {
+      final normalized = widget.selectionNormalizer!(List<T>.from(value), item);
+      value
+        ..clear()
+        ..addAll(normalized);
+    }
     setState(() {});
   }
 
+  void _replaceSelection(List<T> selection) {
+    value
+      ..clear()
+      ..addAll(selection);
+    setState(() {});
+  }
+
+  bool _hasSameSelection(List<T> other) => value.length == other.length && value.every(other.contains);
+
   @override
   Widget build(BuildContext context) {
-    final isAllSelected = value.length == widget.items.length;
+    final clearSelection = widget.clearSelection?.call(List<T>.from(value)) ?? <T>[];
+    final selectAllSelection = widget.selectAllSelection?.call(List<T>.from(value)) ?? widget.items;
+    final invertSelection = widget.invertSelection?.call(List<T>.from(value));
+    final selectionCount = widget.selectionCount?.call(value) ?? value.length;
+    final isAllSelected = _hasSameSelection(selectAllSelection);
 
     List<Widget> actions = [
       const ReturnButton(
@@ -655,31 +730,29 @@ class _LoliMultiselectDropdownBottomSheetState<T> extends State<LoliMultiselectD
       ),
       ClearButton(
         withIcon: true,
-        action: () {
-          value.clear();
-          setState(() {});
-        },
+        action: () => _replaceSelection(clearSelection),
       ),
-      ElevatedButton.icon(
-        style: ElevatedButton.styleFrom(
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+      if (invertSelection != null)
+        ElevatedButton.icon(
+          onPressed: _hasSameSelection(invertSelection) ? null : () => _replaceSelection(invertSelection),
+          icon: const Icon(Icons.swap_horiz),
+          label: Text(widget.invertSelectionLabel ?? ''),
         ),
-        onPressed: isAllSelected
-            ? null
-            : () {
-                value.clear();
-                value.addAll(widget.items);
-                setState(() {});
-              },
-        icon: const Icon(Icons.select_all),
-        label: Text(context.loc.selectAll),
-      ),
+      if (widget.showSelectAll)
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          onPressed: isAllSelected ? null : () => _replaceSelection(selectAllSelection),
+          icon: const Icon(Icons.select_all),
+          label: Text(context.loc.selectAll),
+        ),
       OkButton(
         withIcon: true,
-        count: value.isEmpty ? null : value.length,
+        count: selectionCount == 0 ? null : selectionCount,
         action: () {
           widget.onChanged(value);
           Navigator.of(context).pop(true);
@@ -691,6 +764,53 @@ class _LoliMultiselectDropdownBottomSheetState<T> extends State<LoliMultiselectD
     if (isLeftHanded) {
       actions = actions.reversed.toList();
     }
+
+    final list = Scrollbar(
+      controller: scrollController,
+      thumbVisibility: true,
+      child: ListView.builder(
+        controller: scrollController,
+        shrinkWrap: widget.controller == null,
+        itemCount: widget.items.length,
+        itemBuilder: (context, index) {
+          final item = widget.items[index];
+          final int selectedIndex = value.indexOf(item);
+          final bool isSelected = selectedIndex != -1;
+
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => onItemSelect(item),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: widget.itemBuilder(item),
+                  ),
+                  if (isSelected && widget.showSelectionOrder)
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        left: 8,
+                        right: 4,
+                      ),
+                      child: Text((selectedIndex + 1).toString()),
+                    ),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      left: isSelected ? 4 : 8,
+                      right: 16,
+                    ),
+                    child: Checkbox(
+                      value: isSelected,
+                      onChanged: (_) => onItemSelect(item),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
 
     return GestureDetector(
       // required to ignore taps on empty places inside the sheet while also allowing taps on the barrier
@@ -727,53 +847,7 @@ class _LoliMultiselectDropdownBottomSheetState<T> extends State<LoliMultiselectD
               ],
             ),
             const SizedBox(height: 16),
-            Expanded(
-              child: Scrollbar(
-                controller: widget.controller,
-                thumbVisibility: true,
-                child: ListView.builder(
-                  controller: widget.controller,
-                  itemCount: widget.items.length,
-                  itemBuilder: (context, index) {
-                    final item = widget.items[index];
-                    final int selectedIndex = value.indexOf(item);
-                    final bool isSelected = selectedIndex != -1;
-
-                    return Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => onItemSelect(item),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: widget.itemBuilder(item),
-                            ),
-                            if (isSelected)
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 8,
-                                  right: 4,
-                                ),
-                                child: Text((selectedIndex + 1).toString()),
-                              ),
-                            Padding(
-                              padding: EdgeInsets.only(
-                                left: isSelected ? 4 : 8,
-                                right: 16,
-                              ),
-                              child: Checkbox(
-                                value: isSelected,
-                                onChanged: (_) => onItemSelect(item),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
+            if (widget.controller == null) Flexible(child: list) else Expanded(child: list),
             const SizedBox(height: 12),
             Row(
               children: [

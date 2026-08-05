@@ -28,6 +28,7 @@ enum BooruUpdateMode { local, urlUpdate, sync }
 class DBHandler {
   DBHandler();
   Database? db;
+  bool get isOpen => db?.isOpen == true;
 
   Future<void> closeDb() async {
     await db?.close();

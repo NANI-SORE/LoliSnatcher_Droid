@@ -17,6 +17,7 @@ dependencies:
   app_links: ^7.2.1
   auto_size_text_plus: ^3.0.2
   calendar_date_picker2: ^3.0.0
+  characters: ^1.4.1
   chewie: ^1.14.1
   clipboard: # ^3.0.14
     git:

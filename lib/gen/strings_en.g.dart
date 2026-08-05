@@ -207,6 +207,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
   /// en: 'Select all'
   String get selectAll => TranslationOverrides.string(_root.$meta, 'selectAll', {}) ?? 'Select all';
 
+  /// en: 'Start'
+  String get rangeStart => TranslationOverrides.string(_root.$meta, 'rangeStart', {}) ?? 'Start';
+
+  /// en: 'End'
+  String get rangeEnd => TranslationOverrides.string(_root.$meta, 'rangeEnd', {}) ?? 'End';
+
   /// en: 'Reset'
   String get reset => TranslationOverrides.string(_root.$meta, 'reset', {}) ?? 'Reset';
 
@@ -4029,6 +4035,9 @@ class Translations$settings$itemFilters$en {
   /// en: 'Filters'
   String get title => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.title', {}) ?? 'Filters';
 
+  /// en: 'Filtering settings'
+  String get filteringSettings => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filteringSettings', {}) ?? 'Filtering settings';
+
   /// en: 'Hidden'
   String get hidden => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hidden', {}) ?? 'Hidden';
 
@@ -4057,6 +4066,11 @@ class Translations$settings$itemFilters$en {
   String get removeMarked =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarked', {}) ?? 'Completely hide items which match Marked filters';
 
+  /// en: 'Remove items which match filters with Mark effect'
+  String get removeMarkFilteredItems =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarkFilteredItems', {}) ??
+      'Remove items which match filters with Mark effect';
+
   /// en: 'Remove favourited items'
   String get removeFavourited => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeFavourited', {}) ?? 'Remove favourited items';
 
@@ -4065,6 +4079,404 @@ class Translations$settings$itemFilters$en {
 
   /// en: 'Remove AI items'
   String get removeAI => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeAI', {}) ?? 'Remove AI items';
+
+  /// en: 'Filter rules'
+  String get rules => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.rules', {}) ?? 'Filter rules';
+
+  /// en: 'Add filter rule'
+  String get addRule => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.addRule', {}) ?? 'Add filter rule';
+
+  /// en: 'Edit filter rule'
+  String get editRule => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.editRule', {}) ?? 'Edit filter rule';
+
+  /// en: 'Name'
+  String get ruleName => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.ruleName', {}) ?? 'Name';
+
+  /// en: 'optional'
+  String get optional => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.optional', {}) ?? 'optional';
+
+  /// en: 'Use a name to identify a complex rule in lists and match details. If empty - the query is shown instead.'
+  String get emptyNameUsesQuery =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.emptyNameUsesQuery', {}) ??
+      'Use a name to identify a complex rule in lists and match details. If empty - the query is shown instead.';
+
+  /// en: 'Query'
+  String get query => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.query', {}) ?? 'Query';
+
+  /// en: 'How filter queries work'
+  String get queryHelpTitle => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpTitle', {}) ?? 'How filter queries work';
+
+  /// en: 'Separate conditions with spaces. Every condition must match (AND) for filter to work.'
+  String get queryHelpAnd =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpAnd', {}) ??
+      'Separate conditions with spaces. Every condition must match (AND) for filter to work.';
+
+  /// en: 'Prefix a condition with '-' to require that it does not match.'
+  String get queryHelpNegation =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpNegation', {}) ??
+      'Prefix a condition with \'-\' to require that it does not match.';
+
+  /// en: 'Use * inside tags to match zero or more characters.'
+  String get queryHelpWildcards =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpWildcards', {}) ??
+      'Use * inside tags to match zero or more characters.';
+
+  /// en: 'Use score:>=N, rating:safe, rating:questionable, rating:explicit…'
+  String get queryHelpMetadata =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpMetadata', {}) ??
+      'Use score:>=N, rating:safe, rating:questionable, rating:explicit…';
+
+  /// en: 'Put tags containing spaces in quotes.'
+  String get queryHelpQuotes =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpQuotes', {}) ?? 'Put tags containing spaces in quotes.';
+
+  /// en: 'Effect'
+  String get effect => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.effect', {}) ?? 'Effect';
+
+  /// en: 'Scope'
+  String get scope => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.scope', {}) ?? 'Scope';
+
+  /// en: 'Hide'
+  String get hide => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hide', {}) ?? 'Hide';
+
+  /// en: 'Blur'
+  String get blur => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.blur', {}) ?? 'Blur';
+
+  /// en: 'Mark'
+  String get mark => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.mark', {}) ?? 'Mark';
+
+  /// en: 'Enabled'
+  String get enabled => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.enabled', {}) ?? 'Enabled';
+
+  /// en: 'Disabled'
+  String get disabled => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.disabled', {}) ?? 'Disabled';
+
+  /// en: 'Suspended'
+  String get suspended => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.suspended', {}) ?? 'Suspended';
+
+  /// en: 'Invalid query'
+  String get invalidQuery => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.invalidQuery', {}) ?? 'Invalid query';
+
+  /// en: 'Missing source'
+  String get missingSource => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.missingSource', {}) ?? 'Missing source';
+
+  /// en: 'Custom symbol or emoji'
+  String get customMarker => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.customMarker', {}) ?? 'Custom symbol or emoji';
+
+  /// en: 'Marker'
+  String get marker => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.marker', {}) ?? 'Marker';
+
+  /// en: 'Show marker in grid'
+  String get showMarkerInGrid => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.showMarkerInGrid', {}) ?? 'Show marker in grid';
+
+  /// en: 'Turn off to use this mark as a category without adding an icon to preview thumbnails.'
+  String get showMarkerInGridHelp =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.showMarkerInGridHelp', {}) ??
+      'Turn off to use this mark as a category without adding an icon to preview thumbnails.';
+
+  /// en: 'Icons'
+  String get icons => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.icons', {}) ?? 'Icons';
+
+  /// en: 'Emojis'
+  String get popularEmojis => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.popularEmojis', {}) ?? 'Emojis';
+
+  /// en: 'Symbol'
+  String get symbol => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.symbol', {}) ?? 'Symbol';
+
+  /// en: 'All markers'
+  String get allMarkers => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allMarkers', {}) ?? 'All markers';
+
+  /// en: 'Marker color'
+  String get markerColor => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.markerColor', {}) ?? 'Marker color';
+
+  /// en: 'Treat hide filters as blur'
+  String get hideAsBlur => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlur', {}) ?? 'Treat hide filters as blur';
+
+  /// en: 'Temporarily show items matched by hide filters as blurred'
+  String get hideAsBlurHelp =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlurHelp', {}) ??
+      'Temporarily show items matched by hide filters as blurred';
+
+  /// en: 'Import legacy hidden/marked lists'
+  String get importLegacy => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.importLegacy', {}) ?? 'Import legacy hidden/marked lists';
+
+  /// en: 'Imported ${count: int} legacy filters'
+  String legacyImported({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.legacyImported', {'count': count}) ?? 'Imported ${count} legacy filters';
+
+  /// en: 'Your filters have been upgraded'
+  String get migrationNoticeTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.migrationNoticeTitle', {}) ?? 'Your filters have been upgraded';
+
+  /// en: 'Your hidden and marked tag filters were migrated into ${count: int} rules in the new filtering system. You can now combine tags, blur/hide items, customize markers, use wildcards, and choose where each rule is used.'
+  String migrationNoticeMessage({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.migrationNoticeMessage', {'count': count}) ??
+      'Your hidden and marked tag filters were migrated into ${count} rules in the new filtering system. You can now combine tags, blur/hide items, customize markers, use wildcards, and choose where each rule is used.';
+
+  /// en: 'View filters'
+  String get openFilters => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.openFilters', {}) ?? 'View filters';
+
+  /// en: 'Supports spaces for AND, -tag for exclusion, * as a tag wildcard, rating:*, score:>=N…'
+  String get syntaxHelp =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.syntaxHelp', {}) ??
+      'Supports spaces for AND, -tag for exclusion, * as a tag wildcard, rating:*, score:>=N…';
+
+  /// en: 'All effects'
+  String get allEffects => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allEffects', {}) ?? 'All effects';
+
+  /// en: 'All states'
+  String get allStates => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allStates', {}) ?? 'All states';
+
+  /// en: 'All scopes'
+  String get allScopes => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allScopes', {}) ?? 'All scopes';
+
+  /// en: 'Alphabetical (A–Z)'
+  String get sortAlphabetical => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.sortAlphabetical', {}) ?? 'Alphabetical (A–Z)';
+
+  /// en: 'Reverse alphabetical (Z–A)'
+  String get sortReverseAlphabetical =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.sortReverseAlphabetical', {}) ?? 'Reverse alphabetical (Z–A)';
+
+  /// en: 'Effect, then A–Z'
+  String get sortEffect => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.sortEffect', {}) ?? 'Effect, then A–Z';
+
+  /// en: 'Effect, then Z–A'
+  String get sortReverseEffect => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.sortReverseEffect', {}) ?? 'Effect, then Z–A';
+
+  /// en: 'Suspension ending soonest'
+  String get sortSuspensionTime =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.sortSuspensionTime', {}) ?? 'Suspension ending soonest';
+
+  /// en: '${days: int}d ${hours: int}h'
+  String timeLeftDaysHours({required int days, required int hours}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.timeLeftDaysHours', {'days': days, 'hours': hours}) ?? '${days}d ${hours}h';
+
+  /// en: '${hours: int}h ${minutes: int}m'
+  String timeLeftHoursMinutes({required int hours, required int minutes}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.timeLeftHoursMinutes', {'hours': hours, 'minutes': minutes}) ??
+      '${hours}h ${minutes}m';
+
+  /// en: '${minutes: int}m'
+  String timeLeftMinutes({required int minutes}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.timeLeftMinutes', {'minutes': minutes}) ?? '${minutes}m';
+
+  /// en: '<1m'
+  String get timeLeftLessThanMinute => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.timeLeftLessThanMinute', {}) ?? '<1m';
+
+  /// en: 'Time left: ${value: String}'
+  String timeLeft({required String value}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.timeLeft', {'value': value}) ?? 'Time left: ${value}';
+
+  /// en: 'Ends: ${value: String}'
+  String endsAt({required String value}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.endsAt', {'value': value}) ?? 'Ends: ${value}';
+
+  /// en: 'All boorus'
+  String get allBoorus => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allBoorus', {}) ?? 'All boorus';
+
+  /// en: 'Only selected boorus'
+  String get onlySelectedBoorus => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.onlySelectedBoorus', {}) ?? 'Only selected boorus';
+
+  /// en: 'All except selected boorus'
+  String get allExceptSelectedBoorus =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allExceptSelectedBoorus', {}) ?? 'All except selected boorus';
+
+  /// en: 'Invert'
+  String get invertSelection => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.invertSelection', {}) ?? 'Invert';
+
+  /// en: 'Select at least one booru before saving.'
+  String get selectAtLeastOneBooru =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.selectAtLeastOneBooru', {}) ?? 'Select at least one booru before saving.';
+
+  /// en: 'Excluded boorus'
+  String get excludedBoorus => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.excludedBoorus', {}) ?? 'Excluded boorus';
+
+  /// en: 'No excluded boorus'
+  String get noExcludedBoorus => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noExcludedBoorus', {}) ?? 'No excluded boorus';
+
+  /// en: '${count: int} excluded'
+  String excludedBoorusCount({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.excludedBoorusCount', {'count': count}) ?? '${count} excluded';
+
+  /// en: 'Total: ${count: int}'
+  String counterTotal({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterTotal', {'count': count}) ?? 'Total: ${count}';
+
+  /// en: 'Filtered: ${count: int}'
+  String counterShown({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterShown', {'count': count}) ?? 'Filtered: ${count}';
+
+  /// en: 'Hide: ${count: int}'
+  String counterHide({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterHide', {'count': count}) ?? 'Hide: ${count}';
+
+  /// en: 'Blur: ${count: int}'
+  String counterBlur({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterBlur', {'count': count}) ?? 'Blur: ${count}';
+
+  /// en: 'Mark: ${count: int}'
+  String counterMark({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterMark', {'count': count}) ?? 'Mark: ${count}';
+
+  /// en: 'Disable for…'
+  String get disableFor => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.disableFor', {}) ?? 'Disable for…';
+
+  /// en: 'Re-enable'
+  String get reenable => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.reenable', {}) ?? 'Re-enable';
+
+  /// en: '(one) {${count} second} (few) {${count} seconds} (many) {${count} seconds} (other) {${count} seconds}'
+  String secondsPlural({required num count}) =>
+      TranslationOverrides.plural(_root.$meta, 'settings.itemFilters.secondsPlural', {'count': count}) ??
+      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+        count,
+        one: '${count} second',
+        few: '${count} seconds',
+        many: '${count} seconds',
+        other: '${count} seconds',
+      );
+
+  /// en: '(one) {${count} minute} (few) {${count} minutes} (many) {${count} minutes} (other) {${count} minutes}'
+  String minutesPlural({required num count}) =>
+      TranslationOverrides.plural(_root.$meta, 'settings.itemFilters.minutesPlural', {'count': count}) ??
+      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+        count,
+        one: '${count} minute',
+        few: '${count} minutes',
+        many: '${count} minutes',
+        other: '${count} minutes',
+      );
+
+  /// en: '(one) {${count} hour} (few) {${count} hours} (many) {${count} hours} (other) {${count} hours}'
+  String hoursPlural({required num count}) =>
+      TranslationOverrides.plural(_root.$meta, 'settings.itemFilters.hoursPlural', {'count': count}) ??
+      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+        count,
+        one: '${count} hour',
+        few: '${count} hours',
+        many: '${count} hours',
+        other: '${count} hours',
+      );
+
+  /// en: '(one) {${count} day} (few) {${count} days} (many) {${count} days} (other) {${count} days}'
+  String daysPlural({required num count}) =>
+      TranslationOverrides.plural(_root.$meta, 'settings.itemFilters.daysPlural', {'count': count}) ??
+      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+        count,
+        one: '${count} day',
+        few: '${count} days',
+        many: '${count} days',
+        other: '${count} days',
+      );
+
+  /// en: '(one) {${count} week} (few) {${count} weeks} (many) {${count} weeks} (other) {${count} weeks}'
+  String weeksPlural({required num count}) =>
+      TranslationOverrides.plural(_root.$meta, 'settings.itemFilters.weeksPlural', {'count': count}) ??
+      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+        count,
+        one: '${count} week',
+        few: '${count} weeks',
+        many: '${count} weeks',
+        other: '${count} weeks',
+      );
+
+  /// en: '(one) {${count} month} (few) {${count} months} (many) {${count} months} (other) {${count} months}'
+  String monthsPlural({required num count}) =>
+      TranslationOverrides.plural(_root.$meta, 'settings.itemFilters.monthsPlural', {'count': count}) ??
+      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+        count,
+        one: '${count} month',
+        few: '${count} months',
+        many: '${count} months',
+        other: '${count} months',
+      );
+
+  /// en: '(one) {${count} year} (few) {${count} years} (many) {${count} years} (other) {${count} years}'
+  String yearsPlural({required num count}) =>
+      TranslationOverrides.plural(_root.$meta, 'settings.itemFilters.yearsPlural', {'count': count}) ??
+      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+        count,
+        one: '${count} year',
+        few: '${count} years',
+        many: '${count} years',
+        other: '${count} years',
+      );
+
+  /// en: 'Indefinitely'
+  String get indefinitely => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.indefinitely', {}) ?? 'Indefinitely';
+
+  /// en: 'Custom…'
+  String get customDuration => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.customDuration', {}) ?? 'Custom…';
+
+  /// en: 'Filter rules'
+  String get filtersBackup => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filtersBackup', {}) ?? 'Filter rules';
+
+  /// en: 'Filter rules backed up'
+  String get filtersBackedUp => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filtersBackedUp', {}) ?? 'Filter rules backed up';
+
+  /// en: 'Restore filter rules'
+  String get restoreFilters => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.restoreFilters', {}) ?? 'Restore filter rules';
+
+  /// en: 'Filter rules restored'
+  String get filtersRestored => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filtersRestored', {}) ?? 'Filter rules restored';
+
+  /// en: 'Failed to restore filter rules'
+  String get filtersRestoreError =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filtersRestoreError', {}) ?? 'Failed to restore filter rules';
+
+  /// en: 'Failed to back up filter rules'
+  String get filtersBackupError =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filtersBackupError', {}) ?? 'Failed to back up filter rules';
+
+  /// en: 'Send filter rules'
+  String get sendFilters => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.sendFilters', {}) ?? 'Send filter rules';
+
+  /// en: 'Matching filter rules'
+  String get matchingRules => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.matchingRules', {}) ?? 'Matching filter rules';
+
+  /// en: 'Related filters'
+  String get relatedFilters => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.relatedFilters', {}) ?? 'Related filters';
+
+  /// en: 'Tap to view matching filters'
+  String get tapForDetails => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.tapForDetails', {}) ?? 'Tap to view matching filters';
+
+  /// en: 'Select filters'
+  String get selectFilters => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.selectFilters', {}) ?? 'Select filters';
+
+  /// en: '${count: int} selected'
+  String selectedCount({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.selectedCount', {'count': count}) ?? '${count} selected';
+
+  /// en: 'Batch actions'
+  String get batchActions => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.batchActions', {}) ?? 'Batch actions';
+
+  /// en: 'Enable selected (${count: int})'
+  String enableSelected({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.enableSelected', {'count': count}) ?? 'Enable selected (${count})';
+
+  /// en: 'Disable selected (${count: int})'
+  String disableSelected({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.disableSelected', {'count': count}) ?? 'Disable selected (${count})';
+
+  /// en: 'Suspend selected (${count: int})…'
+  String suspendSelected({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.suspendSelected', {'count': count}) ?? 'Suspend selected (${count})…';
+
+  /// en: 'Change to hide (${count: int})'
+  String changeSelectedToHide({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.changeSelectedToHide', {'count': count}) ?? 'Change to hide (${count})';
+
+  /// en: 'Change to blur (${count: int})'
+  String changeSelectedToBlur({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.changeSelectedToBlur', {'count': count}) ?? 'Change to blur (${count})';
+
+  /// en: 'Delete selected (${count: int})'
+  String deleteSelected({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.deleteSelected', {'count': count}) ?? 'Delete selected (${count})';
+
+  /// en: 'Delete ${count: int} selected filters? This cannot be undone.'
+  String deleteSelectedConfirm({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.deleteSelectedConfirm', {'count': count}) ??
+      'Delete ${count} selected filters? This cannot be undone.';
 }
 
 // Path: settings.sync
@@ -5141,8 +5553,11 @@ class Translations$media$loading$stopReasons$en {
   /// en: 'File is too big'
   String get fileIsTooBig => TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.fileIsTooBig', {}) ?? 'File is too big';
 
-  /// en: 'Hidden by filters:'
-  String get hiddenByFilters => TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.hiddenByFilters', {}) ?? 'Hidden by filters:';
+  /// en: 'Hidden by filters'
+  String get hiddenByFilters => TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.hiddenByFilters', {}) ?? 'Hidden by filters';
+
+  /// en: 'Blurred by filters'
+  String get blurredByFilters => TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.blurredByFilters', {}) ?? 'Blurred by filters';
 
   /// en: 'Video error'
   String get videoError => TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.videoError', {}) ?? 'Video error';
@@ -5209,6 +5624,8 @@ extension on Translations {
           'item' => TranslationOverrides.string(_root.$meta, 'item', {}) ?? 'Item',
           'select' => TranslationOverrides.string(_root.$meta, 'select', {}) ?? 'Select',
           'selectAll' => TranslationOverrides.string(_root.$meta, 'selectAll', {}) ?? 'Select all',
+          'rangeStart' => TranslationOverrides.string(_root.$meta, 'rangeStart', {}) ?? 'Start',
+          'rangeEnd' => TranslationOverrides.string(_root.$meta, 'rangeEnd', {}) ?? 'End',
           'reset' => TranslationOverrides.string(_root.$meta, 'reset', {}) ?? 'Reset',
           'open' => TranslationOverrides.string(_root.$meta, 'open', {}) ?? 'Open',
           'openInNewTab' => TranslationOverrides.string(_root.$meta, 'openInNewTab', {}) ?? 'Open in new tab',
@@ -6020,12 +6437,12 @@ extension on Translations {
                 'Other buttons will go into overflow (three dots) menu.',
           'settings.viewer.longPressToMoveItems' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.longPressToMoveItems', {}) ?? 'Long press to move items',
-          'settings.viewer.onlyForVideos' => TranslationOverrides.string(_root.$meta, 'settings.viewer.onlyForVideos', {}) ?? 'Only for videos',
-          'settings.viewer.thisButtonCannotBeDisabled' =>
-            TranslationOverrides.string(_root.$meta, 'settings.viewer.thisButtonCannotBeDisabled', {}) ?? 'This button cannot be disabled',
           _ => null,
         } ??
         switch (path) {
+          'settings.viewer.onlyForVideos' => TranslationOverrides.string(_root.$meta, 'settings.viewer.onlyForVideos', {}) ?? 'Only for videos',
+          'settings.viewer.thisButtonCannotBeDisabled' =>
+            TranslationOverrides.string(_root.$meta, 'settings.viewer.thisButtonCannotBeDisabled', {}) ?? 'This button cannot be disabled',
           'settings.viewer.defaultShareAction' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.defaultShareAction', {}) ?? 'Default share action',
           'settings.viewer.shareActions' => TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActions', {}) ?? 'Share actions',
@@ -6603,6 +7020,8 @@ extension on Translations {
           'settings.cache.notAvailableForPlatform' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.notAvailableForPlatform', {}) ?? 'Currently not available for this platform',
           'settings.itemFilters.title' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.title', {}) ?? 'Filters',
+          'settings.itemFilters.filteringSettings' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filteringSettings', {}) ?? 'Filtering settings',
           'settings.itemFilters.hidden' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hidden', {}) ?? 'Hidden',
           'settings.itemFilters.marked' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.marked', {}) ?? 'Marked',
           'settings.itemFilters.duplicateFilter' =>
@@ -6619,11 +7038,269 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeHidden', {}) ?? 'Completely hide items which match Hidden filters',
           'settings.itemFilters.removeMarked' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarked', {}) ?? 'Completely hide items which match Marked filters',
+          'settings.itemFilters.removeMarkFilteredItems' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarkFilteredItems', {}) ??
+                'Remove items which match filters with Mark effect',
           'settings.itemFilters.removeFavourited' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeFavourited', {}) ?? 'Remove favourited items',
           'settings.itemFilters.removeSnatched' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeSnatched', {}) ?? 'Remove snatched items',
           'settings.itemFilters.removeAI' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeAI', {}) ?? 'Remove AI items',
+          'settings.itemFilters.rules' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.rules', {}) ?? 'Filter rules',
+          'settings.itemFilters.addRule' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.addRule', {}) ?? 'Add filter rule',
+          'settings.itemFilters.editRule' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.editRule', {}) ?? 'Edit filter rule',
+          'settings.itemFilters.ruleName' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.ruleName', {}) ?? 'Name',
+          'settings.itemFilters.optional' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.optional', {}) ?? 'optional',
+          'settings.itemFilters.emptyNameUsesQuery' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.emptyNameUsesQuery', {}) ??
+                'Use a name to identify a complex rule in lists and match details. If empty - the query is shown instead.',
+          'settings.itemFilters.query' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.query', {}) ?? 'Query',
+          'settings.itemFilters.queryHelpTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpTitle', {}) ?? 'How filter queries work',
+          'settings.itemFilters.queryHelpAnd' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpAnd', {}) ??
+                'Separate conditions with spaces. Every condition must match (AND) for filter to work.',
+          'settings.itemFilters.queryHelpNegation' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpNegation', {}) ??
+                'Prefix a condition with \'-\' to require that it does not match.',
+          'settings.itemFilters.queryHelpWildcards' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpWildcards', {}) ??
+                'Use * inside tags to match zero or more characters.',
+          'settings.itemFilters.queryHelpMetadata' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpMetadata', {}) ??
+                'Use score:>=N, rating:safe, rating:questionable, rating:explicit…',
+          'settings.itemFilters.queryHelpQuotes' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpQuotes', {}) ?? 'Put tags containing spaces in quotes.',
+          'settings.itemFilters.effect' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.effect', {}) ?? 'Effect',
+          'settings.itemFilters.scope' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.scope', {}) ?? 'Scope',
+          'settings.itemFilters.hide' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hide', {}) ?? 'Hide',
+          'settings.itemFilters.blur' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.blur', {}) ?? 'Blur',
+          'settings.itemFilters.mark' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.mark', {}) ?? 'Mark',
+          'settings.itemFilters.enabled' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.enabled', {}) ?? 'Enabled',
+          'settings.itemFilters.disabled' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.disabled', {}) ?? 'Disabled',
+          'settings.itemFilters.suspended' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.suspended', {}) ?? 'Suspended',
+          'settings.itemFilters.invalidQuery' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.invalidQuery', {}) ?? 'Invalid query',
+          'settings.itemFilters.missingSource' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.missingSource', {}) ?? 'Missing source',
+          'settings.itemFilters.customMarker' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.customMarker', {}) ?? 'Custom symbol or emoji',
+          'settings.itemFilters.marker' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.marker', {}) ?? 'Marker',
+          'settings.itemFilters.showMarkerInGrid' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.showMarkerInGrid', {}) ?? 'Show marker in grid',
+          'settings.itemFilters.showMarkerInGridHelp' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.showMarkerInGridHelp', {}) ??
+                'Turn off to use this mark as a category without adding an icon to preview thumbnails.',
+          'settings.itemFilters.icons' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.icons', {}) ?? 'Icons',
+          'settings.itemFilters.popularEmojis' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.popularEmojis', {}) ?? 'Emojis',
+          'settings.itemFilters.symbol' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.symbol', {}) ?? 'Symbol',
+          'settings.itemFilters.allMarkers' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allMarkers', {}) ?? 'All markers',
+          'settings.itemFilters.markerColor' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.markerColor', {}) ?? 'Marker color',
+          'settings.itemFilters.hideAsBlur' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlur', {}) ?? 'Treat hide filters as blur',
+          'settings.itemFilters.hideAsBlurHelp' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlurHelp', {}) ??
+                'Temporarily show items matched by hide filters as blurred',
+          'settings.itemFilters.importLegacy' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.importLegacy', {}) ?? 'Import legacy hidden/marked lists',
+          'settings.itemFilters.legacyImported' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.legacyImported', {'count': count}) ??
+                'Imported ${count} legacy filters',
+          'settings.itemFilters.migrationNoticeTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.migrationNoticeTitle', {}) ?? 'Your filters have been upgraded',
+          'settings.itemFilters.migrationNoticeMessage' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.migrationNoticeMessage', {'count': count}) ??
+                'Your hidden and marked tag filters were migrated into ${count} rules in the new filtering system. You can now combine tags, blur/hide items, customize markers, use wildcards, and choose where each rule is used.',
+          'settings.itemFilters.openFilters' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.openFilters', {}) ?? 'View filters',
+          'settings.itemFilters.syntaxHelp' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.syntaxHelp', {}) ??
+                'Supports spaces for AND, -tag for exclusion, * as a tag wildcard, rating:*, score:>=N…',
+          'settings.itemFilters.allEffects' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allEffects', {}) ?? 'All effects',
+          'settings.itemFilters.allStates' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allStates', {}) ?? 'All states',
+          'settings.itemFilters.allScopes' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allScopes', {}) ?? 'All scopes',
+          'settings.itemFilters.sortAlphabetical' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.sortAlphabetical', {}) ?? 'Alphabetical (A–Z)',
+          'settings.itemFilters.sortReverseAlphabetical' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.sortReverseAlphabetical', {}) ?? 'Reverse alphabetical (Z–A)',
+          'settings.itemFilters.sortEffect' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.sortEffect', {}) ?? 'Effect, then A–Z',
+          'settings.itemFilters.sortReverseEffect' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.sortReverseEffect', {}) ?? 'Effect, then Z–A',
+          'settings.itemFilters.sortSuspensionTime' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.sortSuspensionTime', {}) ?? 'Suspension ending soonest',
+          'settings.itemFilters.timeLeftDaysHours' =>
+            ({required int days, required int hours}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.timeLeftDaysHours', {'days': days, 'hours': hours}) ??
+                '${days}d ${hours}h',
+          'settings.itemFilters.timeLeftHoursMinutes' =>
+            ({required int hours, required int minutes}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.timeLeftHoursMinutes', {'hours': hours, 'minutes': minutes}) ??
+                '${hours}h ${minutes}m',
+          'settings.itemFilters.timeLeftMinutes' =>
+            ({required int minutes}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.timeLeftMinutes', {'minutes': minutes}) ?? '${minutes}m',
+          'settings.itemFilters.timeLeftLessThanMinute' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.timeLeftLessThanMinute', {}) ?? '<1m',
+          'settings.itemFilters.timeLeft' =>
+            ({required String value}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.timeLeft', {'value': value}) ?? 'Time left: ${value}',
+          'settings.itemFilters.endsAt' =>
+            ({required String value}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.endsAt', {'value': value}) ?? 'Ends: ${value}',
+          'settings.itemFilters.allBoorus' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allBoorus', {}) ?? 'All boorus',
+          'settings.itemFilters.onlySelectedBoorus' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.onlySelectedBoorus', {}) ?? 'Only selected boorus',
+          'settings.itemFilters.allExceptSelectedBoorus' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allExceptSelectedBoorus', {}) ?? 'All except selected boorus',
+          'settings.itemFilters.invertSelection' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.invertSelection', {}) ?? 'Invert',
+          'settings.itemFilters.selectAtLeastOneBooru' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.selectAtLeastOneBooru', {}) ?? 'Select at least one booru before saving.',
+          'settings.itemFilters.excludedBoorus' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.excludedBoorus', {}) ?? 'Excluded boorus',
+          'settings.itemFilters.noExcludedBoorus' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noExcludedBoorus', {}) ?? 'No excluded boorus',
+          'settings.itemFilters.excludedBoorusCount' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.excludedBoorusCount', {'count': count}) ?? '${count} excluded',
+          'settings.itemFilters.counterTotal' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterTotal', {'count': count}) ?? 'Total: ${count}',
+          'settings.itemFilters.counterShown' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterShown', {'count': count}) ?? 'Filtered: ${count}',
+          'settings.itemFilters.counterHide' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterHide', {'count': count}) ?? 'Hide: ${count}',
+          'settings.itemFilters.counterBlur' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterBlur', {'count': count}) ?? 'Blur: ${count}',
+          'settings.itemFilters.counterMark' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterMark', {'count': count}) ?? 'Mark: ${count}',
+          'settings.itemFilters.disableFor' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.disableFor', {}) ?? 'Disable for…',
+          'settings.itemFilters.reenable' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.reenable', {}) ?? 'Re-enable',
+          'settings.itemFilters.secondsPlural' =>
+            ({required num count}) =>
+                TranslationOverrides.plural(_root.$meta, 'settings.itemFilters.secondsPlural', {'count': count}) ??
+                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                  count,
+                  one: '${count} second',
+                  few: '${count} seconds',
+                  many: '${count} seconds',
+                  other: '${count} seconds',
+                ),
+          'settings.itemFilters.minutesPlural' =>
+            ({required num count}) =>
+                TranslationOverrides.plural(_root.$meta, 'settings.itemFilters.minutesPlural', {'count': count}) ??
+                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                  count,
+                  one: '${count} minute',
+                  few: '${count} minutes',
+                  many: '${count} minutes',
+                  other: '${count} minutes',
+                ),
+          'settings.itemFilters.hoursPlural' =>
+            ({required num count}) =>
+                TranslationOverrides.plural(_root.$meta, 'settings.itemFilters.hoursPlural', {'count': count}) ??
+                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                  count,
+                  one: '${count} hour',
+                  few: '${count} hours',
+                  many: '${count} hours',
+                  other: '${count} hours',
+                ),
+          'settings.itemFilters.daysPlural' =>
+            ({required num count}) =>
+                TranslationOverrides.plural(_root.$meta, 'settings.itemFilters.daysPlural', {'count': count}) ??
+                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                  count,
+                  one: '${count} day',
+                  few: '${count} days',
+                  many: '${count} days',
+                  other: '${count} days',
+                ),
+          'settings.itemFilters.weeksPlural' =>
+            ({required num count}) =>
+                TranslationOverrides.plural(_root.$meta, 'settings.itemFilters.weeksPlural', {'count': count}) ??
+                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                  count,
+                  one: '${count} week',
+                  few: '${count} weeks',
+                  many: '${count} weeks',
+                  other: '${count} weeks',
+                ),
+          'settings.itemFilters.monthsPlural' =>
+            ({required num count}) =>
+                TranslationOverrides.plural(_root.$meta, 'settings.itemFilters.monthsPlural', {'count': count}) ??
+                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                  count,
+                  one: '${count} month',
+                  few: '${count} months',
+                  many: '${count} months',
+                  other: '${count} months',
+                ),
+          'settings.itemFilters.yearsPlural' =>
+            ({required num count}) =>
+                TranslationOverrides.plural(_root.$meta, 'settings.itemFilters.yearsPlural', {'count': count}) ??
+                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                  count,
+                  one: '${count} year',
+                  few: '${count} years',
+                  many: '${count} years',
+                  other: '${count} years',
+                ),
+          'settings.itemFilters.indefinitely' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.indefinitely', {}) ?? 'Indefinitely',
+          'settings.itemFilters.customDuration' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.customDuration', {}) ?? 'Custom…',
+          'settings.itemFilters.filtersBackup' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filtersBackup', {}) ?? 'Filter rules',
+          'settings.itemFilters.filtersBackedUp' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filtersBackedUp', {}) ?? 'Filter rules backed up',
+          'settings.itemFilters.restoreFilters' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.restoreFilters', {}) ?? 'Restore filter rules',
+          'settings.itemFilters.filtersRestored' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filtersRestored', {}) ?? 'Filter rules restored',
+          'settings.itemFilters.filtersRestoreError' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filtersRestoreError', {}) ?? 'Failed to restore filter rules',
+          'settings.itemFilters.filtersBackupError' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filtersBackupError', {}) ?? 'Failed to back up filter rules',
+          'settings.itemFilters.sendFilters' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.sendFilters', {}) ?? 'Send filter rules',
+          'settings.itemFilters.matchingRules' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.matchingRules', {}) ?? 'Matching filter rules',
+          'settings.itemFilters.relatedFilters' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.relatedFilters', {}) ?? 'Related filters',
+          'settings.itemFilters.tapForDetails' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.tapForDetails', {}) ?? 'Tap to view matching filters',
+          'settings.itemFilters.selectFilters' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.selectFilters', {}) ?? 'Select filters',
+          'settings.itemFilters.selectedCount' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.selectedCount', {'count': count}) ?? '${count} selected',
+          'settings.itemFilters.batchActions' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.batchActions', {}) ?? 'Batch actions',
+          'settings.itemFilters.enableSelected' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.enableSelected', {'count': count}) ?? 'Enable selected (${count})',
+          'settings.itemFilters.disableSelected' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.disableSelected', {'count': count}) ?? 'Disable selected (${count})',
+          'settings.itemFilters.suspendSelected' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.suspendSelected', {'count': count}) ?? 'Suspend selected (${count})…',
+          'settings.itemFilters.changeSelectedToHide' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.changeSelectedToHide', {'count': count}) ??
+                'Change to hide (${count})',
+          'settings.itemFilters.changeSelectedToBlur' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.changeSelectedToBlur', {'count': count}) ??
+                'Change to blur (${count})',
+          'settings.itemFilters.deleteSelected' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.deleteSelected', {'count': count}) ?? 'Delete selected (${count})',
+          'settings.itemFilters.deleteSelectedConfirm' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.deleteSelectedConfirm', {'count': count}) ??
+                'Delete ${count} selected filters? This cannot be undone.',
           'settings.sync.title' => TranslationOverrides.string(_root.$meta, 'settings.sync.title', {}) ?? 'Sync',
           'settings.sync.dbError' => TranslationOverrides.string(_root.$meta, 'settings.sync.dbError', {}) ?? 'Database must be enabled to use Sync',
           'settings.sync.errorTitle' => TranslationOverrides.string(_root.$meta, 'settings.sync.errorTitle', {}) ?? 'Error!',
@@ -6842,6 +7519,9 @@ extension on Translations {
           'settings.dirPicker.directoryNotWritable' =>
             TranslationOverrides.string(_root.$meta, 'settings.dirPicker.directoryNotWritable', {}) ?? 'Directory is not writable!',
           'settings.dirPicker.newDirectory' => TranslationOverrides.string(_root.$meta, 'settings.dirPicker.newDirectory', {}) ?? 'New directory',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.dirPicker.create' => TranslationOverrides.string(_root.$meta, 'settings.dirPicker.create', {}) ?? 'Create',
           'settings.version' => TranslationOverrides.string(_root.$meta, 'settings.version', {}) ?? 'Version',
           'comments.title' => TranslationOverrides.string(_root.$meta, 'comments.title', {}) ?? 'Comments',
@@ -6987,9 +7667,6 @@ extension on Translations {
                 'Tabs with only this tag but on a different booru',
           'tagView.tabsContainingTag' => TranslationOverrides.string(_root.$meta, 'tagView.tabsContainingTag', {}) ?? 'Tabs containing this tag',
           'pinnedTags.pinnedTags' => TranslationOverrides.string(_root.$meta, 'pinnedTags.pinnedTags', {}) ?? 'Pinned tags',
-          _ => null,
-        } ??
-        switch (path) {
           'pinnedTags.pinTag' => TranslationOverrides.string(_root.$meta, 'pinnedTags.pinTag', {}) ?? 'Pin tag',
           'pinnedTags.unpinTag' => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinTag', {}) ?? 'Unpin tag',
           'pinnedTags.pin' => TranslationOverrides.string(_root.$meta, 'pinnedTags.pin', {}) ?? 'Pin',
@@ -7226,7 +7903,9 @@ extension on Translations {
           'media.loading.stopReasons.fileIsTooBig' =>
             TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.fileIsTooBig', {}) ?? 'File is too big',
           'media.loading.stopReasons.hiddenByFilters' =>
-            TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.hiddenByFilters', {}) ?? 'Hidden by filters:',
+            TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.hiddenByFilters', {}) ?? 'Hidden by filters',
+          'media.loading.stopReasons.blurredByFilters' =>
+            TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.blurredByFilters', {}) ?? 'Blurred by filters',
           'media.loading.stopReasons.videoError' =>
             TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.videoError', {}) ?? 'Video error',
           'media.loading.fileIsZeroBytes' => TranslationOverrides.string(_root.$meta, 'media.loading.fileIsZeroBytes', {}) ?? 'File is zero bytes',

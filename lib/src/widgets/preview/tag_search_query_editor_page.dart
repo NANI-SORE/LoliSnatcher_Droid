@@ -71,6 +71,8 @@ class TagSearchQueryEditorPage extends StatefulWidget {
     this.showBooruSelector = false,
     this.readOnlyPreview = false,
     this.showPinnedTags = true,
+    this.suggestionInputTransform,
+    this.inputTokenizer,
     this.onTagsSelected,
     super.key,
   });
@@ -91,6 +93,13 @@ class TagSearchQueryEditorPage extends StatefulWidget {
   final bool readOnlyPreview;
 
   final bool showPinnedTags;
+
+  /// Transforms only the text used to fetch suggestions. The original input is
+  /// retained when adding or returning a tag.
+  final String Function(String input)? suggestionInputTransform;
+
+  /// Optional syntax-aware tokenizer used to preserve compound query tokens.
+  final List<String> Function(String input)? inputTokenizer;
 
   /// Optional callback when tags are selected (also returns via Navigator.pop)
   final void Function(String tags, Booru? booru)? onTagsSelected;
@@ -119,7 +128,9 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
 
     selectedBooru = widget.initialBooru ?? SearchHandler.instance.currentBooruOrNull;
     if (widget.initialTags != null && widget.initialTags!.isNotEmpty) {
-      tags = widget.initialTags!.trim().split(' ').where((t) => t.isNotEmpty).toList();
+      tags =
+          widget.inputTokenizer?.call(widget.initialTags!) ??
+          widget.initialTags!.trim().split(' ').where((t) => t.isNotEmpty).toList();
     }
 
     queryController = QueryEditorController(
@@ -129,6 +140,7 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
         }
       },
       booru: selectedBooru,
+      suggestionInputTransform: widget.suggestionInputTransform,
     );
 
     queryController.initialize();
@@ -732,6 +744,9 @@ class TagSearchBox extends StatefulWidget {
     this.readOnlyPreview = false,
     this.titleAsLabel = false,
     this.showPinnedTags = true,
+    this.suggestionInputTransform,
+    this.inputTokenizer,
+    this.suffixActions = const [],
     super.key,
   });
 
@@ -768,6 +783,9 @@ class TagSearchBox extends StatefulWidget {
   final bool readOnlyPreview;
   final bool titleAsLabel;
   final bool showPinnedTags;
+  final String Function(String input)? suggestionInputTransform;
+  final List<String> Function(String input)? inputTokenizer;
+  final List<Widget> suffixActions;
 
   @override
   State<TagSearchBox> createState() => _TagSearchBoxState();
@@ -805,6 +823,8 @@ class _TagSearchBoxState extends State<TagSearchBox> {
           showBooruSelector: widget.showBooruSelector,
           readOnlyPreview: widget.readOnlyPreview,
           showPinnedTags: widget.showPinnedTags,
+          suggestionInputTransform: widget.suggestionInputTransform,
+          inputTokenizer: widget.inputTokenizer,
           onTagsSelected: (tags, booru) {
             setState(() {
               _controller.text = tags;
@@ -834,6 +854,8 @@ class _TagSearchBoxState extends State<TagSearchBox> {
     });
     widget.onChanged?.call('', _selectedBooru);
   }
+
+  List<String> _tokens(String input) => widget.inputTokenizer?.call(input) ?? input.split(' ');
 
   @override
   Widget build(BuildContext context) {
@@ -867,6 +889,7 @@ class _TagSearchBoxState extends State<TagSearchBox> {
                   suffixIcon: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      ...widget.suffixActions,
                       if (widget.clearable && hasText && widget.enabled)
                         IconButton(
                           icon: Icon(
@@ -893,9 +916,8 @@ class _TagSearchBoxState extends State<TagSearchBox> {
                               spacing: 4,
                               runSpacing: 4,
                               alignment: WrapAlignment.start,
-                              children: _controller.text
-                                  .split(' ')
-                                  .where((t) => t.isNotEmpty)
+                              children: _tokens(_controller.text)
+                                  .where((t) => t.trim().isNotEmpty)
                                   .map(
                                     (t) => SizedBox(
                                       height: 32,

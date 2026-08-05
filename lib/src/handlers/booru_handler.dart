@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 import 'dart:math';
 
@@ -7,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:get/get.dart' hide Response;
+import 'package:get_it/get_it.dart';
 import 'package:html/parser.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
@@ -18,9 +20,13 @@ import 'package:lolisnatcher/src/data/response_error.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/data/tag_suggestion.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
+import 'package:lolisnatcher/src/data/tag_filter.dart';
+import 'package:lolisnatcher/src/data/tag_filter_evaluation.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
+import 'package:lolisnatcher/src/handlers/tag_filter_handler.dart';
+import 'package:lolisnatcher/src/utils/booru_source_resolver.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
@@ -46,34 +52,130 @@ abstract class BooruHandler {
 
   RxList<BooruItem> fetched = RxList<BooruItem>([]);
   RxList<BooruItem> filteredFetched = RxList<BooruItem>([]);
+  final Map<
+    BooruItem,
+    ({
+      int revision,
+      List<Tag> tags,
+      String? rating,
+      String? score,
+      String contextKey,
+      TagFilterEvaluation evaluation,
+    })
+  >
+  _filterEvaluationCache = Map.identity();
+  final Map<BooruItem, ({String catalogKey, String fileUrl, String postUrl, FilterContext context})>
+  _filterContextCache = Map.identity();
+
+  FilterContext filterContextFor(BooruItem item) {
+    final source = booru.type?.isFavouritesOrDownloads == true ? BooruSourceResolver.resolve(item) : booru;
+    return FilterContext(viewBooru: booru, sourceBooru: source);
+  }
+
+  FilterContext? get sharedFilterContext =>
+      booru.type?.isFavouritesOrDownloads == true ? null : FilterContext(viewBooru: booru, sourceBooru: booru);
+
+  TagFilterEvaluation filterEvaluationFor(BooruItem item) =>
+      _filterEvaluationCache[item]?.evaluation ?? const TagFilterEvaluation.empty();
+
+  @protected
+  void clearFilterCaches() {
+    _filterEvaluationCache.clear();
+    _filterContextCache.clear();
+  }
+
+  bool _boolSettingForView(TypedKey<bool> setting) {
+    final state = setting.state;
+    final booruName = booru.name;
+    if (booruName == null || booruName.isEmpty) return state.globalValue;
+    return state.getOverrideFor(booruName) ?? state.globalValue;
+  }
+
+  String _filterContextCatalogKey() => SettingsHandler.instance.booruList
+      .where((source) => source.type?.isFavouritesOrDownloads != true)
+      .map((source) => BooruIdentity.fromBooru(source).stableKey)
+      .join('\u0000');
 
   /// Filters the list of fetched items and stores them in filteredFetched
   ///
   /// Should always be called after fetched changed (so don't forget to add it in custom afterParseResponse or search methods)
   /// (See gelbooru of favourites handlers for example)
-  void filterFetched() {
-    final List<BooruItem> itemsBeforeFilter = [...filteredFetched];
+  void filterFetched({bool forceRefresh = false}) {
+    final List<BooruItem> itemsBeforeFilter = filteredFetched;
 
-    final bool doFilterHated = SX.filterHated.value;
-    final bool doFilterMarked = SX.filterMarked.value;
-    final bool doFilterAi = SX.filterAi.value;
-    final bool doFilterFavourites = SX.filterFavourites.value && booru.type?.isFavourites != true;
-    final bool doFilterSnatched = SX.filterSnatched.value && booru.type?.isDownloads != true;
+    final bool doFilterMarked = _boolSettingForView(SX.filterMarked);
+    final bool doFilterAi = _boolSettingForView(SX.filterAi);
+    final bool doFilterFavourites = _boolSettingForView(SX.filterFavourites) && booru.type?.isFavourites != true;
+    final bool doFilterSnatched = _boolSettingForView(SX.filterSnatched) && booru.type?.isDownloads != true;
 
     final List<BooruItem> filteredItems = [];
     final Set<String> seenFileUrls = {};
     final Set<String> seenServerIds = {};
+    final bool hasTagFilterHandler = GetIt.instance.isRegistered<TagFilterHandler>();
+    final filterHandler = hasTagFilterHandler ? TagFilterHandler.instance : null;
+    final sharedContext = hasTagFilterHandler ? sharedFilterContext : null;
+    final contextCatalogKey = hasTagFilterHandler && sharedContext == null ? _filterContextCatalogKey() : '';
+    final activeItems = HashSet<BooruItem>.identity();
 
     for (final item in fetched) {
+      activeItems.add(item);
       if (!ContentPolicy.isItemAllowed(booru, item)) {
         continue;
       }
 
-      if (doFilterHated && item.isHidden) {
+      var context = sharedContext;
+      if (context == null && hasTagFilterHandler) {
+        final cachedContext = _filterContextCache[item];
+        if (cachedContext != null &&
+            cachedContext.catalogKey == contextCatalogKey &&
+            cachedContext.fileUrl == item.fileURL &&
+            cachedContext.postUrl == item.postURL) {
+          context = cachedContext.context;
+        } else {
+          context = filterContextFor(item);
+          _filterContextCache[item] = (
+            catalogKey: contextCatalogKey,
+            fileUrl: item.fileURL,
+            postUrl: item.postURL,
+            context: context,
+          );
+        }
+      }
+      final cachedEvaluation = _filterEvaluationCache[item];
+      final tagsUnchanged = cachedEvaluation != null && identical(cachedEvaluation.tags, item.tagsList);
+      final canReuseEvaluation =
+          filterHandler != null &&
+          context != null &&
+          cachedEvaluation != null &&
+          cachedEvaluation.revision == filterHandler.evaluationRevision &&
+          tagsUnchanged &&
+          cachedEvaluation.rating == item.rating &&
+          cachedEvaluation.score == item.score &&
+          cachedEvaluation.contextKey == context.cacheKey;
+      final evaluation = canReuseEvaluation
+          ? cachedEvaluation.evaluation
+          : filterHandler?.evaluate(
+                  item,
+                  context!,
+                  normalizedTags: filterHandler.normalizeTags(item),
+                ) ??
+                const TagFilterEvaluation.empty();
+      if (filterHandler != null && context != null) {
+        _filterEvaluationCache[item] = (
+          revision: filterHandler.evaluationRevision,
+          tags: item.tagsList,
+          rating: item.rating,
+          score: item.score,
+          contextKey: context.cacheKey,
+          evaluation: evaluation,
+        );
+      }
+
+      if (evaluation.isHidden) {
         continue;
       }
 
-      if (doFilterMarked && item.isMarked) {
+      if (doFilterMarked && evaluation.isMarked) {
         continue;
       }
 
@@ -105,8 +207,12 @@ abstract class BooruHandler {
       filteredItems.add(item);
     }
 
+    _filterEvaluationCache.removeWhere((item, _) => !activeItems.contains(item));
+    _filterContextCache.removeWhere((item, _) => !activeItems.contains(item));
     if (!listEquals(itemsBeforeFilter, filteredItems)) {
       filteredFetched.value = filteredItems;
+    } else if (forceRefresh) {
+      filteredFetched.value = [...filteredItems];
     }
   }
 

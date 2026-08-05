@@ -12,6 +12,7 @@ import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/handlers/tag_filter_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
@@ -307,6 +308,54 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                       drawTopBorder: true,
                     ),
                     SettingsButton(
+                      name: context.loc.settings.itemFilters.filtersBackup,
+                      icon: const Icon(Icons.filter_alt),
+                      action: () async {
+                        inProgress = true;
+                        setState(() {});
+                        try {
+                          if (await ServiceHandler.existsFileFromSAFDirectory(backupPath, 'filters.json')) {
+                            final bool res = await detectedDuplicateFile('filters.json');
+                            if (!res) {
+                              showSnackbar(
+                                context.loc.settings.backupAndRestore.backupCancelled,
+                                isError: true,
+                              );
+                              inProgress = false;
+                              setState(() {});
+                              return;
+                            }
+                          }
+
+                          await ServiceHandler.writeImage(
+                            utf8.encode(await TagFilterHandler.instance.export()),
+                            'filters',
+                            'text/json',
+                            'json',
+                            backupPath,
+                          );
+                          showSnackbar(
+                            context.loc.settings.itemFilters.filtersBackedUp,
+                            isError: false,
+                          );
+                        } catch (e, s) {
+                          showSnackbar(
+                            context.loc.settings.itemFilters.filtersBackupError,
+                            isError: true,
+                          );
+                          Logger.Inst().log(
+                            e.toString(),
+                            'BackupRestorePage',
+                            'backupFilters',
+                            LogTypes.exception,
+                            s: s,
+                          );
+                        }
+                        inProgress = false;
+                        setState(() {});
+                      },
+                    ),
+                    SettingsButton(
                       name: context.loc.settings.backupAndRestore.backupBoorus,
                       icon: const Icon(Icons.image_search),
                       action: () async {
@@ -528,9 +577,55 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                       drawTopBorder: true,
                     ),
                     SettingsButton(
+                      name: context.loc.settings.itemFilters.restoreFilters,
+                      icon: const Icon(Icons.filter_alt),
+                      trailingIcon: const Icon(Icons.looks_two),
+                      subtitle: const Text('filters.json'),
+                      action: () async {
+                        final bool res = await confirmRestore(context.loc.settings.itemFilters.restoreFilters);
+                        if (!res) return;
+
+                        inProgress = true;
+                        setState(() {});
+                        try {
+                          final Uint8List? filterFileBytes = await ServiceHandler.getFileFromSAFDirectory(
+                            backupPath,
+                            'filters.json',
+                          );
+                          if (filterFileBytes != null) {
+                            await TagFilterHandler.instance.replaceFromString(utf8.decode(filterFileBytes));
+                            showSnackbar(
+                              context.loc.settings.itemFilters.filtersRestored,
+                              isError: false,
+                            );
+                          } else {
+                            showSnackbar(
+                              context.loc.settings.backupAndRestore.backupFileNotFound,
+                              isError: true,
+                            );
+                          }
+                        } catch (e, s) {
+                          showSnackbar(
+                            context.loc.settings.itemFilters.filtersRestoreError,
+                            isError: true,
+                          );
+                          Logger.Inst().log(
+                            e.toString(),
+                            'BackupRestorePage',
+                            'restoreFilters',
+                            LogTypes.exception,
+                            s: s,
+                          );
+                        }
+                        inProgress = false;
+                        setState(() {});
+                      },
+                      drawTopBorder: true,
+                    ),
+                    SettingsButton(
                       name: context.loc.settings.backupAndRestore.restoreBoorus,
                       icon: const Icon(Icons.image_search),
-                      trailingIcon: const Icon(Icons.looks_two),
+                      trailingIcon: const Icon(Icons.looks_3),
                       subtitle: const Text('boorus.json'),
                       action: () async {
                         final bool res = await confirmRestore(context.loc.settings.backupAndRestore.restoreBoorus);
@@ -615,7 +710,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                     SettingsButton(
                       name: context.loc.settings.backupAndRestore.restoreDatabase,
                       icon: const Icon(Icons.list_alt),
-                      trailingIcon: const Icon(Icons.looks_3),
+                      trailingIcon: const Icon(Icons.looks_4),
                       subtitle: Text('store.db (${context.loc.settings.backupAndRestore.restoreDatabaseInfo})'),
                       action: () async {
                         final bool res = await confirmRestore(context.loc.settings.backupAndRestore.restoreDatabase);

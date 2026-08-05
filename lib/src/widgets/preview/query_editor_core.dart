@@ -26,6 +26,7 @@ class QueryEditorController {
   QueryEditorController({
     required this.onUpdate,
     Booru? booru,
+    this.suggestionInputTransform,
   }) : _currentBooru = booru;
 
   final SearchHandler searchHandler = SearchHandler.instance;
@@ -33,6 +34,7 @@ class QueryEditorController {
   final TagHandler tagHandler = TagHandler.instance;
 
   final VoidCallback onUpdate;
+  final String Function(String input)? suggestionInputTransform;
   Booru? _currentBooru;
 
   late final RichTextController suggestionTextController;
@@ -41,6 +43,8 @@ class QueryEditorController {
       .replaceAll(RegExp('^~'), '')
       .replaceAll(RegExp(r'^\d+#'), '')
       .trim();
+  String get suggestionSearchInput =>
+      suggestionInputTransform?.call(suggestionTextControllerRawInput) ?? suggestionTextControllerRawInput;
 
   final FocusNode suggestionTextFocusNode = FocusNode();
   final ValueNotifier<bool> suggestionTextFocusNodeHasFocus = ValueNotifier(false);
@@ -119,8 +123,9 @@ class QueryEditorController {
     bool instant = true,
   }) async {
     final handler = _getBooruHandler();
+    final searchInput = suggestionSearchInput;
 
-    if (suggestionTextControllerRawInput.isEmpty) {
+    if (searchInput.isEmpty) {
       debounce?.cancel();
       cancelToken?.cancel();
       loading = false;
@@ -144,12 +149,12 @@ class QueryEditorController {
 
         final metaTags = handler.availableMetaTags();
         final MetaTag? metaTag = metaTags.firstWhereOrNull(
-          (p) => p.keyParser(suggestionTextControllerRawInput) != null,
+          (p) => p.keyParser(searchInput) != null,
         );
 
         if (metaTag != null) {
           if (metaTag.hasAutoComplete) {
-            suggestedTags = await metaTag.getAutoComplete(suggestionTextControllerRawInput);
+            suggestedTags = await metaTag.getAutoComplete(searchInput);
             suggestedTags.sort((a, b) => a.tag.compareTo(b.tag));
           } else {
             suggestedTags.clear();
@@ -162,7 +167,7 @@ class QueryEditorController {
         } else if (handler.hasTagSuggestions) {
           cancelToken = CancelToken();
           final res = await handler.getTagSuggestions(
-            suggestionTextControllerRawInput,
+            searchInput,
             cancelToken: cancelToken,
           );
           res.fold(
@@ -192,7 +197,7 @@ class QueryEditorController {
             },
           );
         } else {
-          final databaseSearch = (await settingsHandler.dbHandler.getTags(suggestionTextControllerRawInput, 10)).map((
+          final databaseSearch = (await settingsHandler.dbHandler.getTags(searchInput, 10)).map((
             tag,
           ) {
             return TagSuggestion(
@@ -202,20 +207,19 @@ class QueryEditorController {
             );
           }).toList();
 
-          final historySearch =
-              (await settingsHandler.dbHandler.getSearchHistoryByInput(suggestionTextControllerRawInput, 10))
-                  .map((tag) {
-                    return TagSuggestion(
-                      tag: tag,
-                      type: tagHandler.getTag(tag).tagType,
-                      icon: const Icon(Icons.history),
-                    );
-                  })
-                  .where(
-                    (htag) =>
-                        !databaseSearch.any((dbtag) => dbtag.tag.trim().toLowerCase() == htag.tag.trim().toLowerCase()),
-                  )
-                  .toList();
+          final historySearch = (await settingsHandler.dbHandler.getSearchHistoryByInput(searchInput, 10))
+              .map((tag) {
+                return TagSuggestion(
+                  tag: tag,
+                  type: tagHandler.getTag(tag).tagType,
+                  icon: const Icon(Icons.history),
+                );
+              })
+              .where(
+                (htag) =>
+                    !databaseSearch.any((dbtag) => dbtag.tag.trim().toLowerCase() == htag.tag.trim().toLowerCase()),
+              )
+              .toList();
 
           loading = false;
           failed = false;

@@ -13,6 +13,7 @@ import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/handlers/tag_filter_handler.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_build.dart';
@@ -475,7 +476,9 @@ class SnatchHandler {
 
     while (count < int.parse(amount) && !booruHandler.locked) {
       booruItems = await booruHandler.search(tags, null) ?? [];
-      booruItems = booruItems.where((e) => !e.isHidden).toList();
+      booruItems = booruItems
+          .where((item) => !TagFilterHandler.instance.evaluate(item, booruHandler.filterContextFor(item)).isHidden)
+          .toList();
       booruHandler.pageNum++;
       count = booruItems.length;
       // TODO error handling?

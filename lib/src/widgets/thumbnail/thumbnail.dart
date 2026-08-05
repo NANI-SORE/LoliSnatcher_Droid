@@ -14,6 +14,7 @@ import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/data/tag_filter_evaluation.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -29,6 +30,7 @@ class Thumbnail extends StatefulWidget {
   const Thumbnail({
     required this.item,
     this.booru,
+    this.filterEvaluation = const TagFilterEvaluation.empty(),
     this.isStandalone = false,
     this.useHero = true,
     super.key,
@@ -36,6 +38,7 @@ class Thumbnail extends StatefulWidget {
 
   final BooruItem item;
   final Booru? booru;
+  final TagFilterEvaluation filterEvaluation;
 
   /// set to true when used in a list
   final bool isStandalone;
@@ -165,7 +168,7 @@ class _ThumbnailState extends State<Thumbnail> {
 
     // on desktop devicePixelRatio is not working?
     final bool shouldResize = (thumbWidth != null || thumbHeight != null) && !PlatformExt.isDesktop;
-    final bool shouldPixelate = widget.item.isHidden && SX.shitDevice.value;
+    final bool shouldPixelate = widget.filterEvaluation.isBlurred && SX.shitDevice.value;
 
     if (shouldResize || shouldPixelate) {
       return ResizeImage(
@@ -272,7 +275,7 @@ class _ThumbnailState extends State<Thumbnail> {
         (!widget.isStandalone && widget.item.fileURL == widget.item.sampleURL);
     thumbURL = isThumbQuality == true ? widget.item.thumbnailURL : widget.item.sampleURL;
     thumbFolder = (isThumbQuality == true || thumbURL == widget.item.thumbnailURL) ? 'thumbnails' : 'samples';
-    useExtra.value = isThumbQuality == false && !widget.item.isHidden && !SX.shitDevice.value;
+    useExtra.value = isThumbQuality == false && !widget.filterEvaluation.isBlurred && !SX.shitDevice.value;
 
     // delay loading a little to improve performance when scrolling fast, ignore delay if it's a standalone widget (i.e. not in a list)
     debounceLoading = Timer(
@@ -571,7 +574,7 @@ class _ThumbnailState extends State<Thumbnail> {
                   );
                 },
                 child: ImageFiltered(
-                  enabled: SettingsHandler.instance.blurImages || widget.item.isHidden,
+                  enabled: SettingsHandler.instance.blurImages || widget.filterEvaluation.isBlurred,
                   imageFilter: ImageFilter.blur(
                     sigmaX: blurAmount,
                     sigmaY: blurAmount,
@@ -628,7 +631,8 @@ class _ThumbnailState extends State<Thumbnail> {
                 child: ImageFiltered(
                   enabled:
                       isBlurred &&
-                      (SettingsHandler.instance.blurImages || (widget.item.isHidden && !SX.shitDevice.value)),
+                      (SettingsHandler.instance.blurImages ||
+                          (widget.filterEvaluation.isBlurred && !SX.shitDevice.value)),
                   imageFilter: ImageFilter.blur(
                     sigmaX: blurAmount,
                     sigmaY: blurAmount,
@@ -688,7 +692,7 @@ class _ThumbnailState extends State<Thumbnail> {
                 },
               ),
             //
-            if (widget.isStandalone && widget.item.isHidden)
+            if (widget.isStandalone && widget.filterEvaluation.isBlurred)
               Container(
                 alignment: .center,
                 decoration: BoxDecoration(
@@ -698,15 +702,17 @@ class _ThumbnailState extends State<Thumbnail> {
                 width: iconBgSize,
                 height: iconBgSize,
                 child: IconButton(
-                  onPressed: (widget.item.isHidden && !SX.shitDevice.value && widget.isStandalone)
+                  onPressed: (widget.filterEvaluation.isBlurred && !SX.shitDevice.value && widget.isStandalone)
                       ? () => setState(() => isBlurred = !isBlurred)
                       : null,
                   iconSize: iconSize,
                   icon: Icon(
-                    isBlurred ? CupertinoIcons.eye_slash : CupertinoIcons.eye,
+                    isBlurred
+                        ? (widget.filterEvaluation.hideAsBlur ? Icons.hide_image_outlined : CupertinoIcons.eye_slash)
+                        : CupertinoIcons.eye,
                     size: iconSize,
                   ),
-                  color: Colors.white,
+                  color: widget.filterEvaluation.hideAsBlur ? Colors.redAccent : Colors.white,
                 ),
               ),
             if (widget.isStandalone)

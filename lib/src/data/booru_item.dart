@@ -101,8 +101,9 @@ class BooruItem extends Equatable {
   double? previewAspectRatio;
   int? fileSize;
 
-  List<Tag>? _cachedMetadataTags;
-  int _cachedTagsMetadataVersion = -1;
+  List<Tag>? _cachedLegacyFilterTags;
+  int _cachedLegacyFiltersVersion = -1;
+  List<Tag>? _cachedContentMetadataTags;
   bool _cachedIsHidden = false;
   bool _cachedIsMarked = false;
   bool _cachedIsSound = false;
@@ -113,39 +114,45 @@ class BooruItem extends Equatable {
   }
 
   bool get isHidden {
-    _updateTagMetadata();
+    _updateLegacyFilterMetadata();
     return _cachedIsHidden;
   }
 
   bool get isMarked {
-    _updateTagMetadata();
+    _updateLegacyFilterMetadata();
     return _cachedIsMarked;
   }
 
   bool get isSound {
-    _updateTagMetadata();
+    _updateContentMetadata();
     return _cachedIsSound;
   }
 
   bool get isAI {
-    _updateTagMetadata();
+    _updateContentMetadata();
     return _cachedIsAI;
   }
 
-  void _updateTagMetadata() {
+  void _updateLegacyFilterMetadata() {
     final settingsHandler = SettingsHandler.instance;
-    if (identical(_cachedMetadataTags, tagsList) &&
-        _cachedTagsMetadataVersion == settingsHandler.tagsFiltersMetadataVersion) {
+    if (identical(_cachedLegacyFilterTags, tagsList) &&
+        _cachedLegacyFiltersVersion == settingsHandler.tagsFiltersMetadataVersion) {
       return;
     }
 
     final cleanTags = settingsHandler.cleanTagsList(tagsList);
-    _cachedMetadataTags = tagsList;
-    _cachedTagsMetadataVersion = settingsHandler.tagsFiltersMetadataVersion;
+    _cachedLegacyFilterTags = tagsList;
+    _cachedLegacyFiltersVersion = settingsHandler.tagsFiltersMetadataVersion;
     _cachedIsHidden = settingsHandler.containsHidden(cleanTags);
     _cachedIsMarked = settingsHandler.containsMarked(cleanTags);
-    _cachedIsSound = settingsHandler.containsSound(cleanTags);
-    _cachedIsAI = settingsHandler.containsAI(cleanTags);
+  }
+
+  void _updateContentMetadata() {
+    if (identical(_cachedContentMetadataTags, tagsList)) return;
+    final cleanTags = SettingsHandler.instance.cleanTagsList(tagsList);
+    _cachedContentMetadataTags = tagsList;
+    _cachedIsSound = SettingsHandler.instance.containsSound(cleanTags);
+    _cachedIsAI = SettingsHandler.instance.containsAI(cleanTags);
   }
 
   Map<String, dynamic> toJson() {

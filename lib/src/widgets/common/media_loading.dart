@@ -3,11 +3,13 @@ import 'package:lolisnatcher/gen/strings.g.dart';
 
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/data/tag_filter_evaluation.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/animated_progress_indicator.dart';
 import 'package:lolisnatcher/src/widgets/common/bordered_text.dart';
 import 'package:lolisnatcher/src/widgets/common/loading_progress.dart';
 import 'package:lolisnatcher/src/widgets/image/image_viewer.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_query_text.dart';
 
 // TODO redesign
 
@@ -27,6 +29,8 @@ class MediaLoading extends StatefulWidget {
     this.isTooBig = false,
     this.stopReason,
     this.stopDetails,
+    this.filterEvaluation = const TagFilterEvaluation.empty(),
+    this.onFilterDetailsTap,
     super.key,
   });
 
@@ -40,6 +44,8 @@ class MediaLoading extends StatefulWidget {
   final bool isStopped;
   final ViewerStopReason? stopReason;
   final String? stopDetails;
+  final TagFilterEvaluation filterEvaluation;
+  final VoidCallback? onFilterDetailsTap;
   final bool isViewed;
 
   final ValueNotifier<int> total;
@@ -61,9 +67,102 @@ class _MediaLoadingState extends State<MediaLoading> {
       ViewerStopReason.error => context.loc.media.loading.stopReasons.loadingError,
       ViewerStopReason.tooBig => context.loc.media.loading.stopReasons.fileIsTooBig,
       ViewerStopReason.hidden => context.loc.media.loading.stopReasons.hiddenByFilters,
+      ViewerStopReason.blurred => context.loc.media.loading.stopReasons.blurredByFilters,
       ViewerStopReason.videoError => context.loc.media.loading.stopReasons.videoError,
       ViewerStopReason.reset => '',
     };
+  }
+
+  Widget _buildStopDescription(BuildContext context) {
+    final blockingMatches = widget.stopReason?.isFiltered == true
+        ? widget.filterEvaluation.blockingMatches.toList(growable: false)
+        : const <TagFilterRuleMatch>[];
+    const visibleRuleLimit = 5;
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: blockingMatches.isNotEmpty ? .start : .center,
+      children: [
+        if (widget.stopReason != null)
+          LoadingText(
+            text: _getStopReasonDescription(context, widget.stopReason),
+            fontSize: 20,
+            withBorder: widget.stopReason?.isFiltered == true,
+          ),
+        if (blockingMatches.isNotEmpty)
+          for (final match in blockingMatches.take(visibleRuleLimit))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: TagFilterQueryText(
+                query: match.rule.query.trim(),
+                prefix: match.rule.hasDistinctName ? '${match.rule.displayName} — ' : '',
+                matchedTags: match.matchedTags,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                ),
+              ),
+            )
+        else if (widget.stopDetails?.isNotEmpty == true)
+          LoadingText(
+            text: widget.stopDetails!,
+            fontSize: 18,
+            withBorder: widget.stopReason?.isFiltered == true,
+          ),
+        if (blockingMatches.length > visibleRuleLimit)
+          LoadingText(
+            text: '+${blockingMatches.length - visibleRuleLimit}',
+            fontSize: 18,
+            withBorder: widget.stopReason?.isFiltered == true,
+          ),
+      ],
+    );
+    if (widget.stopReason?.isFiltered != true || widget.onFilterDetailsTap == null) return content;
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final overlayActionColor = colorScheme.primary.computeLuminance() >= 0.1 ? colorScheme.primary : Colors.white;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Material(
+        color: Colors.black.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: widget.onFilterDetailsTap,
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width * 0.85,
+            ),
+            padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: overlayActionColor.withValues(alpha: 0.85),
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(child: content),
+                const SizedBox(width: 8),
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: overlayActionColor.withValues(alpha: 0.22),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.chevron_right,
+                    size: 20,
+                    color: overlayActionColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   bool isVisible = false;
@@ -160,16 +259,7 @@ class _MediaLoadingState extends State<MediaLoading> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: widget.isStopped
               ? [
-                  if (widget.stopReason != null)
-                    LoadingText(
-                      text: _getStopReasonDescription(context, widget.stopReason),
-                      fontSize: 20,
-                    ),
-                  if (widget.stopDetails != null)
-                    LoadingText(
-                      text: widget.stopDetails ?? '',
-                      fontSize: 18,
-                    ),
+                  _buildStopDescription(context),
                   const SizedBox(height: 10),
                   ElevatedButton.icon(
                     icon: const Icon(
@@ -182,7 +272,7 @@ class _MediaLoadingState extends State<MediaLoading> {
                       fixedSize: const WidgetStatePropertyAll(Size(double.infinity, 54)),
                     ),
                     label: LoadingText(
-                      text: (widget.isTooBig || widget.item.isHidden)
+                      text: (widget.isTooBig || widget.stopReason?.isFiltered == true)
                           ? context.loc.media.loading.loadAnyway
                           : context.loc.media.loading.restartLoading,
                       fontSize: 16,
@@ -295,7 +385,7 @@ class _MediaLoadingState extends State<MediaLoading> {
         ? context.loc.media.loading.startedSecondsAgo(seconds: sinceStartSeconds)
         : '';
 
-    final bool isMovedBelow = SX.previewMode.value.isSample && !widget.item.isHidden;
+    final bool isMovedBelow = SX.previewMode.value.isSample && widget.stopReason?.isFiltered != true;
 
     // print('$percentDone | $percentDoneText');
 
@@ -307,16 +397,7 @@ class _MediaLoadingState extends State<MediaLoading> {
     List<Widget> children = [];
     if (widget.isStopped) {
       children = [
-        if (widget.stopReason != null)
-          LoadingText(
-            text: _getStopReasonDescription(context, widget.stopReason),
-            fontSize: 20,
-          ),
-        if (widget.stopDetails != null)
-          LoadingText(
-            text: widget.stopDetails ?? '',
-            fontSize: 18,
-          ),
+        _buildStopDescription(context),
         const SizedBox(height: 10),
         ElevatedButton.icon(
           icon: const Icon(
@@ -329,7 +410,7 @@ class _MediaLoadingState extends State<MediaLoading> {
             fixedSize: const WidgetStatePropertyAll(Size(double.infinity, 54)),
           ),
           label: LoadingText(
-            text: (widget.isTooBig || widget.item.isHidden)
+            text: (widget.isTooBig || widget.stopReason?.isFiltered == true)
                 ? context.loc.media.loading.loadAnyway
                 : context.loc.media.loading.restartLoading,
             fontSize: 16,
@@ -450,12 +531,14 @@ class LoadingText extends StatelessWidget {
     required this.text,
     required this.fontSize,
     this.color = Colors.white,
+    this.withBorder = true,
     super.key,
   });
 
   final String text;
   final double fontSize;
   final Color color;
+  final bool withBorder;
 
   @override
   Widget build(BuildContext context) {
@@ -463,33 +546,23 @@ class LoadingText extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return BorderedText(
-      key: ValueKey<String>(text),
-      strokeWidth: 3,
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: fontSize,
-          color: color,
-        ),
+    final widget = Text(
+      text,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: fontSize,
+        color: color,
       ),
     );
 
-    // TODO animate text value changes?
-    // return AnimatedSwitcher(
-    //   duration: const Duration(milliseconds: 50),
-    //   child: BorderedText(
-    //     key: ValueKey<String>(text),
-    //     strokeWidth: 3,
-    //     child: Text(
-    //       text,
-    //       style: TextStyle(
-    //         fontSize: fontSize,
-    //         color: color,
-    //       ),
-    //     ),
-    //   ),
-    // );
+    if (withBorder) {
+      return BorderedText(
+        key: ValueKey<String>(text),
+        strokeWidth: 3,
+        child: widget,
+      );
+    }
+
+    return widget;
   }
 }

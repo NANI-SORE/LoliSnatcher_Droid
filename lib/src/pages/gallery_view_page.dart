@@ -417,6 +417,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                         return ImageViewer(
                                           item,
                                           booru: possibleBooru ?? widget.tab.booruHandler.booru,
+                                          filterEvaluation: widget.tab.booruHandler.filterEvaluationFor(item),
                                           isViewed: pageVal == index,
                                           key: item.key,
                                         );
@@ -430,6 +431,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                           return VideoViewer(
                                             item,
                                             booru: possibleBooru ?? widget.tab.booruHandler.booru,
+                                            filterEvaluation: widget.tab.booruHandler.filterEvaluationFor(item),
                                             isViewed: pageVal == index,
                                             enableFullscreen: true,
                                             key: item.key,

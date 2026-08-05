@@ -11,6 +11,7 @@ import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/meta_tag.dart';
 import 'package:lolisnatcher/src/data/response_error.dart';
 import 'package:lolisnatcher/src/data/tag_suggestion.dart';
+import 'package:lolisnatcher/src/data/tag_filter.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -27,6 +28,15 @@ class MergebooruHandler extends BooruHandler {
   final Map<BooruItem, ({Booru booru, int index})> _itemSources = Map.identity();
 
   ({Booru booru, int index})? sourceFor(BooruItem item) => _itemSources[item];
+
+  @override
+  FilterContext filterContextFor(BooruItem item) => FilterContext(
+    viewBooru: booru,
+    sourceBooru: sourceFor(item)?.booru,
+  );
+
+  @override
+  FilterContext? get sharedFilterContext => null;
 
   @override
   bool get hasSizeData => booruHandlers.every((e) => e.hasSizeData);
@@ -103,6 +113,15 @@ class MergebooruHandler extends BooruHandler {
   Future search(String tags, int? pageNumCustom, {bool withCaptchaCheck = true}) async {
     if (pageNumCustom != null) {
       pageNum = pageNumCustom;
+    }
+    tags = tags.trim();
+    if (prevTags != tags) {
+      fetched.value = [];
+      filteredFetched.value = [];
+      clearFilterCaches();
+      fetchedMap.clear();
+      _itemSources.clear();
+      totalCount.value = 0;
     }
     final Map<int, ({Booru booru, List<BooruItem> items})> tmpFetchedMap = {};
     int fetchedMax = 0;
@@ -210,6 +229,7 @@ class MergebooruHandler extends BooruHandler {
 
     await afterParseResponse(newItems);
 
+    prevTags = tags;
     locked = shouldLock();
     return fetched;
   }

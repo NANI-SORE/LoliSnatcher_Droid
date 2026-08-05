@@ -20,6 +20,7 @@ class LoliSyncProgressPage extends StatefulWidget {
     this.snatched = false,
     this.snatchedSkip = 0,
     this.settings = false,
+    this.filters = false,
     this.booru = false,
     this.tabs = false,
     this.tabsMode = TabsMode.merge,
@@ -32,7 +33,7 @@ class LoliSyncProgressPage extends StatefulWidget {
   final TabsMode tabsMode;
   final TagsMode tagsMode;
   final String? ip;
-  final bool favourites, favouritesv2, snatched, settings, booru, tabs, tags;
+  final bool favourites, favouritesv2, snatched, settings, filters, booru, tabs, tags;
   final int favSkip, snatchedSkip;
 
   @override
@@ -77,6 +78,9 @@ class _LoliSyncProgressPageState extends State<LoliSyncProgressPage> {
       }
       if (widget.settings) {
         toSync.add('Settings');
+      }
+      if (widget.filters) {
+        toSync.add('Filters');
       }
       if (widget.booru) {
         toSync.add('Booru');

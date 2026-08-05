@@ -16,6 +16,7 @@ import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/settings/video_cache_mode.dart';
+import 'package:lolisnatcher/src/data/tag_filter_evaluation.dart';
 import 'package:lolisnatcher/src/handlers/local_auth_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -27,6 +28,7 @@ import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/media_loading.dart';
 import 'package:lolisnatcher/src/widgets/common/transparent_pointer.dart';
 import 'package:lolisnatcher/src/widgets/image/image_viewer.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_details_sheet.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
 import 'package:lolisnatcher/src/widgets/video/loli_controls.dart';
 
@@ -37,6 +39,7 @@ class VideoViewer extends StatefulWidget {
     this.booruItem, {
     required this.booru,
     required this.isViewed,
+    this.filterEvaluation = const TagFilterEvaluation.empty(),
     this.enableFullscreen = true,
     super.key,
   });
@@ -45,6 +48,7 @@ class VideoViewer extends StatefulWidget {
   final Booru booru;
   final bool isViewed;
   final bool enableFullscreen;
+  final TagFilterEvaluation filterEvaluation;
 
   @override
   State<VideoViewer> createState() => VideoViewerState();
@@ -307,6 +311,26 @@ class VideoViewerState extends State<VideoViewer> {
         initVideo(false);
         updateState();
       });
+    } else {
+      final oldEvaluation = oldWidget.filterEvaluation;
+      final evaluation = widget.filterEvaluation;
+      final filterChanged =
+          oldEvaluation.isBlurred != evaluation.isBlurred ||
+          oldEvaluation.hideAsBlur != evaluation.hideAsBlur ||
+          oldEvaluation.primaryMatch?.rule.id != evaluation.primaryMatch?.rule.id ||
+          oldEvaluation.primaryMatch?.rule.updatedAt != evaluation.primaryMatch?.rule.updatedAt ||
+          oldEvaluation.loadingFilterDetails != evaluation.loadingFilterDetails;
+      if (filterChanged) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          if (widget.filterEvaluation.isBlurred) {
+            _stopForFilter(widget.filterEvaluation);
+          } else if (oldEvaluation.isBlurred) {
+            initVideo(false);
+          }
+          updateState();
+        });
+      }
     }
 
     if (oldWidget.isViewed != widget.isViewed) {
@@ -335,15 +359,18 @@ class VideoViewerState extends State<VideoViewer> {
 
   Future<void> initVideo(bool ignoreTagsCheck) async {
     final int loadGeneration = ++_loadGeneration;
-    if (widget.booruItem.isHidden && !ignoreTagsCheck) {
-      final tagsData = settingsHandler.parseTagsList(widget.booruItem.tagsList, isCapped: true);
-      stopLoading(
-        reason: ViewerStopReason.hidden,
-        details: tagsData.hiddenTags.join('\n'),
-      );
+    if (widget.filterEvaluation.isBlurred && !ignoreTagsCheck) {
+      _stopForFilter(widget.filterEvaluation);
     } else {
       await downloadVideo(loadGeneration: loadGeneration);
     }
+  }
+
+  void _stopForFilter(TagFilterEvaluation evaluation) {
+    stopLoading(
+      reason: evaluation.hideAsBlur ? ViewerStopReason.hidden : ViewerStopReason.blurred,
+      details: evaluation.loadingFilterDetails,
+    );
   }
 
   void stopLoading({
@@ -1003,6 +1030,7 @@ class VideoViewerState extends State<VideoViewer> {
               child: Thumbnail(
                 item: widget.booruItem,
                 booru: widget.booru,
+                filterEvaluation: widget.filterEvaluation,
                 isStandalone: false,
                 useHero: false,
               ),
@@ -1035,12 +1063,16 @@ class VideoViewerState extends State<VideoViewer> {
                   isStopped: isStopped.value,
                   stopReason: stopReason.value,
                   stopDetails: stopDetails.value,
+                  filterEvaluation: widget.filterEvaluation,
                   isViewed: isViewed.value,
                   total: total,
                   received: received,
                   startedAt: startedAt,
                   onRestart: onManualRestart,
                   onStop: onManualStop,
+                  onFilterDetailsTap: widget.filterEvaluation.matches.isEmpty
+                      ? null
+                      : () => showTagFilterDetailsSheet(context, widget.filterEvaluation),
                 );
               },
             ),
