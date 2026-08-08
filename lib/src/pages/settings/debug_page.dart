@@ -16,6 +16,7 @@ import 'package:lolisnatcher/src/pages/settings/logger_page.dart';
 import 'package:lolisnatcher/src/pages/settings/testing_page.dart';
 import 'package:lolisnatcher/src/pages/settings/text_parser_test_page.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
@@ -195,12 +196,12 @@ class _DebugPageState extends State<DebugPage> {
                 icon: const Icon(Icons.science_outlined),
                 page: () => const TestingPage(),
               ),
-
-              SettingsButton(
-                name: context.loc.settings.debug.webview,
-                icon: const Icon(Icons.public),
-                page: () => const InAppWebviewView(initialUrl: 'gelbooru.com'),
-              ),
+              if (ContentPolicy.canOpenWebview)
+                SettingsButton(
+                  name: context.loc.settings.debug.webview,
+                  icon: const Icon(Icons.public),
+                  page: () => const InAppWebviewView(initialUrl: 'gelbooru.com'),
+                ),
               SettingsButton(
                 name: context.loc.settings.debug.deleteAllCookies,
                 icon: const Icon(Icons.cookie_outlined),

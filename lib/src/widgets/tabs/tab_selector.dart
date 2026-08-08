@@ -17,6 +17,7 @@ import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
+import 'package:lolisnatcher/src/widgets/common/close_dialog_button.dart';
 import 'package:lolisnatcher/src/widgets/common/delete_button.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/kaomoji.dart';
@@ -108,6 +109,18 @@ class _DuplicateTabPreviewGroup {
   final List<SearchTab> tabs;
 }
 
+class _TabSortData {
+  const _TabSortData({
+    required this.index,
+    required this.tags,
+    required this.booruName,
+  });
+
+  final int index;
+  final String tags;
+  final String booruName;
+}
+
 class TabSelector extends StatelessWidget {
   const TabSelector({
     this.withBorder = true,
@@ -141,7 +154,12 @@ class TabSelector extends StatelessWidget {
         );
       }
 
-      final currentTab = searchHandler.currentTab;
+      final currentTab = searchHandler.currentTabOrNull;
+      if (currentTab == null) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      }
       final totalTabs = searchHandler.total;
       final currentTabIndex = searchHandler.currentIndex;
 
@@ -156,7 +174,7 @@ class TabSelector extends StatelessWidget {
       final dropdown = LoliDropdown(
         value: currentTab.selectedBooru.value,
         onChanged: (Booru? newValue) {
-          if (searchHandler.currentBooru != newValue) {
+          if (searchHandler.currentBooruOrNull != newValue) {
             // if not already selected
             searchHandler.searchAction(searchHandler.searchTextController.text, newValue);
           }
@@ -369,7 +387,7 @@ class TabSelector extends StatelessWidget {
                                   child: Column(
                                     mainAxisSize: MainAxisSize.max,
                                     children: [
-                                      BooruFavicon(searchHandler.currentBooru),
+                                      BooruFavicon(currentTab.selectedBooru.value),
                                       Icon(
                                         Icons.arrow_drop_down,
                                         color: color ?? theme.iconTheme.color,
@@ -483,6 +501,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
   final TagHandler tagHandler = TagHandler.instance;
 
   List<SearchTab> tabs = [], filteredTabs = [], selectedTabs = [];
+  Map<SearchTab, _TabSortData> tabSortData = {};
   late final ScrollController scrollController;
 
   final TextEditingController filterTextController = TextEditingController();
@@ -494,13 +513,20 @@ class _TabManagerPageState extends State<TabManagerPage> {
   bool? isMultiBooruMode;
   TabGroupFilter groupFilter = const TabGroupFilterAll();
   bool selectMode = false;
+  bool showScrollbarContext = false;
+  bool isScrollbarContextHeld = false;
+  int scrollbarContextIndex = 0;
+  Timer? scrollbarContextTimer;
 
   static const double tabHeight = 72 + 8;
 
   int get totalTabs => searchHandler.total;
   int get totalFilteredTabs => filteredTabs.length;
   bool get isFilterActive => totalFilteredTabs != totalTabs || filterTextController.text.isNotEmpty || filtersCount > 0;
-  int get currentTabIndex => filteredTabs.indexOf(searchHandler.currentTab);
+  int get currentTabIndex {
+    final currentTab = searchHandler.currentTabOrNull;
+    return currentTab == null ? -1 : filteredTabs.indexOf(currentTab);
+  }
 
   /// Returns the visible tab manager sections in order:
   /// - First: ungrouped tabs (only when there are any in the filtered set).
@@ -559,19 +585,19 @@ class _TabManagerPageState extends State<TabManagerPage> {
 
     // §4.5: Auto-expand the group containing the current tab so the user can
     // see their active tab when entering the manager.
-    final currentTab = searchHandler.currentTab;
-    final currentGroup = searchHandler.groupOf(currentTab);
+    final currentTab = searchHandler.currentTabOrNull;
+    final currentGroup = currentTab == null ? null : searchHandler.groupOf(currentTab);
     if (currentGroup != null && currentGroup.collapsed.value) {
       currentGroup.collapsed.value = false;
       // no backupTabs() — auto-expand is a UI preference, not user intent.
-    } else if (currentGroup == null && searchHandler.ungroupedCollapsed.value) {
+    } else if (currentTab != null && currentGroup == null && searchHandler.ungroupedCollapsed.value) {
       // current tab is ungrouped — auto-expand the ungrouped section too.
       searchHandler.ungroupedCollapsed.value = false;
     }
 
     scrollController = ScrollController(
       initialScrollOffset: _computeJumpOffset(),
-    );
+    )..addListener(updateScrollbarContext);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await jumpToCurrent();
@@ -580,13 +606,168 @@ class _TabManagerPageState extends State<TabManagerPage> {
 
   @override
   void dispose() {
+    scrollbarContextTimer?.cancel();
     scrollController.dispose();
     filterTextController.dispose();
     super.dispose();
   }
 
+  void updateScrollbarContext() {
+    if (!scrollController.hasClients || filteredTabs.isEmpty) {
+      return;
+    }
+
+    final int newIndex = _scrollbarContextIndexForOffset(scrollController.offset);
+
+    if (isScrollbarContextHeld) {
+      scrollbarContextTimer?.cancel();
+    } else {
+      startScrollbarContextTimer();
+    }
+
+    if (!showScrollbarContext || scrollbarContextIndex != newIndex) {
+      setState(() {
+        showScrollbarContext = true;
+        scrollbarContextIndex = newIndex;
+      });
+    }
+  }
+
+  void startScrollbarContextTimer() {
+    scrollbarContextTimer?.cancel();
+    scrollbarContextTimer = Timer(const Duration(milliseconds: 900), () {
+      if (mounted && !isScrollbarContextHeld) {
+        setState(() {
+          showScrollbarContext = false;
+        });
+      }
+    });
+  }
+
+  void holdScrollbarContext() {
+    scrollbarContextTimer?.cancel();
+    if (!isScrollbarContextHeld || !showScrollbarContext) {
+      setState(() {
+        isScrollbarContextHeld = true;
+        showScrollbarContext = true;
+      });
+    }
+  }
+
+  void releaseScrollbarContext() {
+    if (!isScrollbarContextHeld) {
+      return;
+    }
+
+    setState(() {
+      isScrollbarContextHeld = false;
+    });
+    startScrollbarContextTimer();
+  }
+
+  void dragScrollbarContext(double delta, double height) {
+    if (!scrollController.hasClients || height <= 0) {
+      return;
+    }
+
+    final position = scrollController.position;
+    if (position.maxScrollExtent <= 0) {
+      return;
+    }
+
+    final double offsetDelta = delta / height * position.maxScrollExtent;
+    final double newOffset = (scrollController.offset + offsetDelta).clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+
+    scrollController.jumpTo(newOffset);
+  }
+
+  int _scrollbarContextIndexForOffset(double scrollOffset) {
+    double remainingOffset = max(0, scrollOffset);
+    int lastVisibleIndex = 0;
+
+    for (final section in visibleSections) {
+      final tabsInSection = section.tabs;
+      final bool hasUngroupedHeader =
+          section.group == null && tabsInSection.isNotEmpty && searchHandler.tabGroups.isNotEmpty;
+      final double headerHeight = section.group != null
+          ? tabGroupHeaderHeight
+          : hasUngroupedHeader
+          ? _ungroupedHeaderHeight
+          : 0;
+
+      if (tabsInSection.isNotEmpty && remainingOffset < headerHeight) {
+        return filteredTabs.indexOf(tabsInSection.first).clamp(0, filteredTabs.length - 1);
+      }
+      remainingOffset -= headerHeight;
+
+      final bool isCollapsed = section.group != null
+          ? section.group!.collapsed.value
+          : (searchHandler.tabGroups.isNotEmpty && searchHandler.ungroupedCollapsed.value);
+      if (isCollapsed || tabsInSection.isEmpty) {
+        continue;
+      }
+
+      final double sectionHeight = tabsInSection.length * tabHeight;
+      final int firstIndex = filteredTabs.indexOf(tabsInSection.first);
+      if (remainingOffset < sectionHeight) {
+        final int localIndex = (remainingOffset / tabHeight).floor().clamp(0, tabsInSection.length - 1);
+        return (firstIndex + localIndex).clamp(0, filteredTabs.length - 1);
+      }
+
+      remainingOffset -= sectionHeight;
+      lastVisibleIndex = firstIndex + tabsInSection.length - 1;
+    }
+
+    return lastVisibleIndex.clamp(0, filteredTabs.length - 1);
+  }
+
+  String _firstTabLetter(SearchTab tab) {
+    final tagText = tab.tags.trim();
+    if (tagText.isEmpty) {
+      return context.loc.tabs.empty;
+    }
+    return tagText.characters.first.toUpperCase();
+  }
+
+  String scrollbarContextTitle() {
+    if (filteredTabs.isEmpty) {
+      return '';
+    }
+
+    final int index = scrollbarContextIndex.clamp(0, filteredTabs.length - 1);
+    final tab = filteredTabs[index];
+
+    if (sortingMode.isNone) {
+      final int start = (index ~/ 10) * 10;
+      final int end = min(start + 10, filteredTabs.length);
+      return '$start-$end';
+    }
+
+    final firstLetter = _firstTabLetter(tab);
+    if (sortingMode.isAnyBooru) {
+      final booruName = tab.selectedBooru.value.name?.trim() ?? '';
+      if (booruName.isEmpty) {
+        return firstLetter;
+      }
+      return '$booruName | $firstLetter';
+    }
+
+    return firstLetter;
+  }
+
   void getTabs() {
     tabs = searchHandler.tabs;
+    tabSortData = {
+      for (int i = 0; i < tabs.length; i++)
+        tabs[i]: _TabSortData(
+          index: i,
+          tags: tabs[i].tags.toLowerCase().trim(),
+          booruName: tabs[i].selectedBooru.value.name?.toLowerCase().trim() ?? '',
+        ),
+    };
     filteredTabs = tabs;
     filterTabs();
 
@@ -607,7 +788,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
     final sections = visibleSections;
     for (final section in sections) {
       // ungrouped section uses a small header label (only if non-empty)
-      if (section.group == null && section.tabs.isNotEmpty) {
+      if (section.group == null && section.tabs.isNotEmpty && searchHandler.tabGroups.isNotEmpty) {
         offset += _ungroupedHeaderHeight;
       } else if (section.group != null) {
         offset += tabGroupHeaderHeight;
@@ -751,9 +932,9 @@ class _TabManagerPageState extends State<TabManagerPage> {
     }
 
     if (duplicateFilter) {
-      final List<SearchTab> duplicateTabs = getDuplicateTabGroups(
+      final Set<SearchTab> duplicateTabs = getDuplicateTabGroups(
         filteredTabs,
-      ).values.expand<SearchTab>((tabs) => tabs).toList();
+      ).values.expand<SearchTab>((tabs) => tabs).toSet();
       filteredTabs = searchHandler.tabs.where(duplicateTabs.contains).toList();
     }
 
@@ -761,29 +942,26 @@ class _TabManagerPageState extends State<TabManagerPage> {
       // §4.7: Sort within each group bucket (and within the ungrouped bucket)
       // — never across — to preserve the contiguous-block invariant.
       int compare(SearchTab a, SearchTab b) {
-        final cleanAtags = a.tags.toLowerCase().trim();
-        final cleanBtags = b.tags.toLowerCase().trim();
+        final aData = tabSortData[a]!;
+        final bData = tabSortData[b]!;
 
-        final aBooru = a.selectedBooru.value;
-        final bBooru = b.selectedBooru.value;
-
-        if (sortingMode.isAnyBooru && aBooru.name != bBooru.name) {
+        if (sortingMode.isAnyBooru && aData.booruName != bData.booruName) {
           if (sortingMode.isAnyReverse) {
-            return bBooru.name!.compareTo(aBooru.name!);
+            return bData.booruName.compareTo(aData.booruName);
           } else {
-            return aBooru.name!.compareTo(bBooru.name!);
+            return aData.booruName.compareTo(bData.booruName);
           }
         }
 
-        if (cleanAtags != cleanBtags) {
+        if (aData.tags != bData.tags) {
           if (sortingMode.isAnyReverse && !sortingMode.isAnyBooru) {
-            return cleanBtags.compareTo(cleanAtags);
+            return bData.tags.compareTo(aData.tags);
           } else {
-            return cleanAtags.compareTo(cleanBtags);
+            return aData.tags.compareTo(bData.tags);
           }
         }
 
-        return searchHandler.tabs.indexOf(a).compareTo(searchHandler.tabs.indexOf(b));
+        return aData.index.compareTo(bData.index);
       }
 
       // Bucket by group, sort each, concatenate in invariant order.
@@ -886,7 +1064,8 @@ class _TabManagerPageState extends State<TabManagerPage> {
         await showDuplicateTabsDialog();
       }
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (filteredTabs.contains(searchHandler.currentTab) && !duplicateFilter) {
+        final currentTab = searchHandler.currentTabOrNull;
+        if (currentTab != null && filteredTabs.contains(currentTab) && !duplicateFilter) {
           jumpToCurrent();
         } else {
           scrollToTop();
@@ -1210,7 +1389,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
   }
 
   Widget _buildTabRowWidget(BuildContext context, int localIndex, SearchTab tab) {
-    final bool isCurrent = tab == searchHandler.currentTab;
+    final bool isCurrent = tab == searchHandler.currentTabOrNull;
     final bool isSelected = selectedTabs.contains(tab);
     final bool dragHandleEnabled = !selectMode && !isFilterActive && sortingMode.isNone;
 
@@ -1222,7 +1401,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
         tab: tab,
         index: localIndex,
         isFiltered: isFilterActive || !sortingMode.isNone,
-        originalIndex: (isFilterActive || !sortingMode.isNone) ? searchHandler.tabs.indexOf(tab) : null,
+        originalIndex: (isFilterActive || !sortingMode.isNone) ? tabSortData[tab]?.index : null,
         isCurrent: isCurrent,
         filterText: filterTextController.text,
         leadingDragHandle: dragHandleEnabled
@@ -1275,7 +1454,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
               }
             : () {
                 searchHandler.changeTabIndex(
-                  searchHandler.tabs.indexOf(tab),
+                  tabSortData[tab]?.index ?? searchHandler.tabs.indexOf(tab),
                 );
                 Navigator.of(context).pop();
               },
@@ -1310,7 +1489,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
             ? null
             : () {
                 selectedTabs.remove(tab);
-                searchHandler.removeTabAt(tabIndex: searchHandler.tabs.indexOf(tab));
+                searchHandler.removeTabAt(tabIndex: tabSortData[tab]?.index ?? searchHandler.tabs.indexOf(tab));
                 getTabs();
               },
       ),
@@ -1464,7 +1643,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
 
   void showOptionsDialog(int index) {
     final SearchTab tab = filteredTabs[index];
-    final int originalIndex = searchHandler.tabs.indexOf(tab);
+    final int originalIndex = tabSortData[tab]?.index ?? searchHandler.tabs.indexOf(tab);
 
     final Widget optionsDialog = SettingsDialog(
       scrollable: false,
@@ -1501,11 +1680,11 @@ class _TabManagerPageState extends State<TabManagerPage> {
               builder: (BuildContext context) => TabMoveDialog(
                 row: TabManagerItem(
                   tab: tab,
-                  index: searchHandler.tabs.indexOf(tab),
+                  index: tabSortData[tab]?.index ?? searchHandler.tabs.indexOf(tab),
                   isFiltered: false,
                   originalIndex: null,
                 ),
-                index: searchHandler.tabs.indexOf(tab),
+                index: tabSortData[tab]?.index ?? searchHandler.tabs.indexOf(tab),
               ),
             );
             getTabs();
@@ -1557,7 +1736,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
           ),
           onTap: () {
             selectedTabs.remove(tab);
-            searchHandler.removeTabAt(tabIndex: searchHandler.tabs.indexOf(tab));
+            searchHandler.removeTabAt(tabIndex: tabSortData[tab]?.index ?? searchHandler.tabs.indexOf(tab));
             getTabs();
           },
           leading: const Icon(Icons.close, color: Colors.red),
@@ -1591,7 +1770,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
     }
 
     // sort selected tabs in order of appearance in the list instead of order of selection
-    selectedTabs.sort((a, b) => searchHandler.tabs.indexOf(a).compareTo(searchHandler.tabs.indexOf(b)));
+    selectedTabs.sort((a, b) => (tabSortData[a]?.index ?? -1).compareTo(tabSortData[b]?.index ?? -1));
 
     final Widget deleteDialog = SettingsDialog(
       title: Column(
@@ -1620,7 +1799,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
           itemBuilder: (_, index) {
             final item = selectedTabs[index];
 
-            final int itemIndex = searchHandler.tabs.indexOf(item);
+            final int itemIndex = tabSortData[item]?.index ?? searchHandler.tabs.indexOf(item);
 
             return TabManagerItem(
               tab: item,
@@ -1652,193 +1831,198 @@ class _TabManagerPageState extends State<TabManagerPage> {
   }
 
   void showHelpDialog() {
+    Widget helpText(String text, {TextStyle? style}) {
+      return SizedBox(
+        width: double.infinity,
+        child: Text(
+          text,
+          softWrap: true,
+          style: style,
+        ),
+      );
+    }
+
+    Widget helpRichText(List<InlineSpan> children) {
+      return SizedBox(
+        width: double.infinity,
+        child: RichText(
+          softWrap: true,
+          text: TextSpan(
+            style: Theme.of(context).textTheme.bodyMedium,
+            children: children,
+          ),
+        ),
+      );
+    }
+
+    Widget helpRow({
+      required Widget leading,
+      required String text,
+    }) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          leading,
+          const SizedBox(width: 10),
+          Expanded(child: Text(text, softWrap: true)),
+        ],
+      );
+    }
+
     showDialog(
       context: context,
       builder: (context) {
         return SettingsDialog(
           title: Text(context.loc.tabs.tabsManager),
           contentItems: [
-            Text(context.loc.tabs.scrolling),
+            helpText(context.loc.tabs.scrolling),
             const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.subdirectory_arrow_left_outlined),
-                const SizedBox(width: 10),
-                Expanded(child: Text(context.loc.tabs.scrollToCurrent)),
-              ],
+            helpRow(
+              leading: const Icon(Icons.subdirectory_arrow_left_outlined),
+              text: context.loc.tabs.scrollToCurrent,
             ),
             const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.arrow_circle_up),
-                const SizedBox(width: 10),
-                Expanded(child: Text(context.loc.tabs.scrollToTop)),
-              ],
+            helpRow(
+              leading: const Icon(Icons.arrow_circle_up),
+              text: context.loc.tabs.scrollToTop,
             ),
             const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.arrow_circle_down),
-                const SizedBox(width: 10),
-                Expanded(child: Text(context.loc.tabs.scrollToBottom)),
-              ],
+            helpRow(
+              leading: const Icon(Icons.arrow_circle_down),
+              text: context.loc.tabs.scrollToBottom,
             ),
             const Divider(),
-            Row(
-              children: [
-                const Icon(Icons.filter_alt),
-                const SizedBox(width: 10),
-                Expanded(child: Text(context.loc.tabs.filterTabsByBooru)),
-              ],
+            helpRow(
+              leading: const Icon(Icons.filter_alt),
+              text: context.loc.tabs.filterTabsByBooru,
             ),
             const Divider(),
-            Text(context.loc.tabs.sorting),
+            helpText(context.loc.tabs.sorting),
             const SizedBox(height: 6),
-            Row(
-              children: [
-                const TabSortingIcon(TabSortingMode.none, withBorder: true),
-                const SizedBox(width: 10),
-                Expanded(child: Text(context.loc.tabs.defaultTabsOrder)),
-              ],
+            helpRow(
+              leading: const Padding(
+                padding: EdgeInsets.only(right: 8),
+                child: TabSortingIcon(TabSortingMode.none, withBorder: true),
+              ),
+              text: context.loc.tabs.defaultTabsOrder,
             ),
             const SizedBox(height: 6),
-            Row(
-              children: [
-                const TabSortingIcon(TabSortingMode.alphabet, withBorder: true),
-                const SizedBox(width: 10),
-                Expanded(child: Text(context.loc.tabs.sortAlphabetically)),
-              ],
+            helpRow(
+              leading: const Padding(
+                padding: EdgeInsets.only(right: 8),
+                child: TabSortingIcon(TabSortingMode.alphabet, withBorder: true),
+              ),
+              text: context.loc.tabs.sortAlphabetically,
             ),
             const SizedBox(height: 6),
-            Row(
-              children: [
-                const TabSortingIcon(TabSortingMode.alphabetReverse, withBorder: true),
-                const SizedBox(width: 10),
-                Expanded(child: Text(context.loc.tabs.sortAlphabeticallyReversed)),
-              ],
+            helpRow(
+              leading: const Padding(
+                padding: EdgeInsets.only(right: 8),
+                child: TabSortingIcon(TabSortingMode.alphabetReverse, withBorder: true),
+              ),
+              text: context.loc.tabs.sortAlphabeticallyReversed,
             ),
             const SizedBox(height: 6),
-            Row(
-              children: [
-                const TabSortingIcon(TabSortingMode.booru, withBorder: true),
-                const SizedBox(width: 10),
-                Expanded(child: Text(context.loc.tabs.sortByBooruName)),
-              ],
+            helpRow(
+              leading: const Padding(
+                padding: EdgeInsets.only(right: 8),
+                child: TabSortingIcon(TabSortingMode.booru, withBorder: true),
+              ),
+              text: context.loc.tabs.sortByBooruName,
             ),
             const SizedBox(height: 6),
-            Row(
-              children: [
-                const TabSortingIcon(TabSortingMode.booruReverse, withBorder: true),
-                const SizedBox(width: 10),
-                Expanded(child: Text(context.loc.tabs.sortByBooruNameReversed)),
-              ],
+            helpRow(
+              leading: const Padding(
+                padding: EdgeInsets.only(right: 8),
+                child: TabSortingIcon(TabSortingMode.booruReverse, withBorder: true),
+              ),
+              text: context.loc.tabs.sortByBooruNameReversed,
             ),
             const SizedBox(height: 6),
-            Text(context.loc.tabs.longPressSortToSave),
+            helpText(context.loc.tabs.longPressSortToSave),
             const Divider(),
-            Text(context.loc.tabs.select),
+            helpText(context.loc.tabs.select),
             const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.select_all),
-                const SizedBox(width: 10),
-                Expanded(child: Text(context.loc.tabs.toggleSelectMode)),
-              ],
+            helpRow(
+              leading: const Icon(Icons.select_all),
+              text: context.loc.tabs.toggleSelectMode,
             ),
             const SizedBox(height: 12),
-            Text(context.loc.tabs.onTheBottomOfPage),
+            helpText(context.loc.tabs.onTheBottomOfPage),
             const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.select_all),
-                const Text(' / '),
-                const Icon(Icons.border_clear),
-                const SizedBox(width: 10),
-                Expanded(child: Text(context.loc.tabs.selectDeselectAll)),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.delete_forever),
-                const SizedBox(width: 10),
-                Expanded(child: Text(context.loc.tabs.deleteSelectedTabs)),
-              ],
-            ),
-            const Divider(),
-            Row(
-              children: [
-                const Icon(Icons.expand),
-                const SizedBox(width: 10),
-                Text(context.loc.tabs.longPressToMove),
-              ],
-            ),
-            const Divider(),
-            Text(context.loc.tabs.groups.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.create_new_folder_outlined),
-                const SizedBox(width: 10),
-                Expanded(child: Text(context.loc.tabs.groups.helpTapNewGroup)),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.drag_indicator),
-                const SizedBox(width: 10),
-                Expanded(child: Text(context.loc.tabs.groups.helpDragTabHandle)),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.reorder),
-                const SizedBox(width: 10),
-                Expanded(child: Text(context.loc.tabs.groups.helpDragGroupHandle)),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.expand_more),
-                const SizedBox(width: 10),
-                Expanded(child: Text(context.loc.tabs.groups.helpTapHeaderCollapse)),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.more_vert),
-                const SizedBox(width: 10),
-                Expanded(child: Text(context.loc.tabs.groups.helpTapMoreVert)),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(context.loc.tabs.groups.helpPrevNextInherits),
-            const Divider(),
-            Text(context.loc.tabs.numbersInBottomRight),
-            // TODO
-            Text(context.loc.tabs.firstNumberTabIndex),
-            Text(context.loc.tabs.secondNumberTabIndex),
-            const Divider(),
-            Text(context.loc.tabs.specialFilters),
-            Text(context.loc.tabs.loadedFilter),
-            Text(context.loc.tabs.notLoadedFilter),
-            RichText(
-              text: TextSpan(
-                style: Theme.of(context).textTheme.bodyMedium,
+            helpRow(
+              leading: const Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextSpan(text: context.loc.tabs.notLoadedItalic.replaceAll('italic', '')),
-                  const TextSpan(
-                    text: 'italic',
-                    style: TextStyle(fontStyle: FontStyle.italic),
-                  ),
-                  const TextSpan(text: ' text'),
+                  Icon(Icons.select_all),
+                  Text(' / '),
+                  Icon(Icons.border_clear),
                 ],
               ),
+              text: context.loc.tabs.selectDeselectAll,
             ),
+            const SizedBox(height: 6),
+            helpRow(
+              leading: const Icon(Icons.delete_forever),
+              text: context.loc.tabs.deleteSelectedTabs,
+            ),
+            const Divider(),
+            helpRow(
+              leading: const Icon(Icons.expand),
+              text: context.loc.tabs.longPressToMove,
+            ),
+            const Divider(),
+            helpText(
+              context.loc.tabs.groups.title,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 6),
+            helpRow(
+              leading: const Icon(Icons.create_new_folder_outlined),
+              text: context.loc.tabs.groups.helpTapNewGroup,
+            ),
+            const SizedBox(height: 6),
+            helpRow(
+              leading: const Icon(Icons.drag_indicator),
+              text: context.loc.tabs.groups.helpDragTabHandle,
+            ),
+            const SizedBox(height: 6),
+            helpRow(
+              leading: const Icon(Icons.reorder),
+              text: context.loc.tabs.groups.helpDragGroupHandle,
+            ),
+            const SizedBox(height: 6),
+            helpRow(
+              leading: const Icon(Icons.expand_more),
+              text: context.loc.tabs.groups.helpTapHeaderCollapse,
+            ),
+            const SizedBox(height: 6),
+            helpRow(
+              leading: const Icon(Icons.more_vert),
+              text: context.loc.tabs.groups.helpTapMoreVert,
+            ),
+            const SizedBox(height: 6),
+            helpText(context.loc.tabs.groups.helpPrevNextInherits),
+            const Divider(),
+            helpText(context.loc.tabs.numbersInBottomRight),
+            // TODO
+            helpText(context.loc.tabs.firstNumberTabIndex),
+            helpText(context.loc.tabs.secondNumberTabIndex),
+            const Divider(),
+            helpText(context.loc.tabs.specialFilters),
+            helpText(context.loc.tabs.loadedFilter),
+            helpText(context.loc.tabs.notLoadedFilter),
+            helpRichText([
+              TextSpan(text: context.loc.tabs.notLoadedItalic.replaceAll('italic', '')),
+              const TextSpan(
+                text: 'italic',
+                style: TextStyle(fontStyle: FontStyle.italic),
+              ),
+              const TextSpan(text: ' text'),
+            ]),
+          ],
+          actionButtons: const [
+            CloseDialogButton(withIcon: true),
           ],
         );
       },
@@ -1849,7 +2033,11 @@ class _TabManagerPageState extends State<TabManagerPage> {
   /// actions (add to group, delete) in the conventional top-bar location so
   /// they are discoverable regardless of the optional bottom action bar.
   PreferredSizeWidget _buildSelectionAppBar(BuildContext context) {
-    final filteredTabsMinusCurrent = [...filteredTabs]..remove(searchHandler.currentTab);
+    final currentTab = searchHandler.currentTabOrNull;
+    final filteredTabsMinusCurrent = [...filteredTabs];
+    if (currentTab != null) {
+      filteredTabsMinusCurrent.remove(currentTab);
+    }
     final bool selectedAll = selectedTabs.isNotEmpty && selectedTabs.length == filteredTabsMinusCurrent.length;
     final bool hasSelected = selectedTabs.isNotEmpty;
 
@@ -1876,7 +2064,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
               if (selectedAll) {
                 selectedTabs.clear();
               } else {
-                selectedTabs = [...filteredTabs]..remove(searchHandler.currentTab);
+                selectedTabs = [...filteredTabsMinusCurrent];
               }
             });
           },
@@ -1947,7 +2135,10 @@ class _TabManagerPageState extends State<TabManagerPage> {
                   onLongPress: isFilterActive
                       ? null
                       : () async {
-                          final currentTab = searchHandler.currentTab;
+                          final currentTab = searchHandler.currentTabOrNull;
+                          if (currentTab == null) {
+                            return;
+                          }
 
                           final res = await showDialog(
                             context: context,
@@ -2023,9 +2214,8 @@ class _TabManagerPageState extends State<TabManagerPage> {
                             );
                           }
 
+                          final int newIndex = filteredTabs.indexOf(currentTab);
                           searchHandler.tabs.value = [...filteredTabs];
-
-                          final int newIndex = searchHandler.tabs.indexOf(currentTab);
                           searchHandler.changeTabIndex(newIndex);
 
                           getTabs();
@@ -2068,62 +2258,122 @@ class _TabManagerPageState extends State<TabManagerPage> {
         children: [
           filterBuild(),
           Expanded(
-            child: Stack(
-              children: [
-                Obx(() {
-                  // Touch tabGroups so external mutations (e.g. backup
-                  // restore) trigger a rebuild of the manager body.
-                  searchHandler.tabGroups.length;
-                  return _buildSectionedManagerBody();
-                }),
-                if (totalFilteredTabs == 0)
-                  Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Kaomoji(
-                          category: KaomojiCategory.indifference,
-                          style: TextStyle(fontSize: 36),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final bool isScrollbarLeft = settingsHandler.handSide.value.isLeft;
+                final double scrollProgress =
+                    scrollController.hasClients && scrollController.position.maxScrollExtent > 0
+                    ? (scrollController.offset / scrollController.position.maxScrollExtent).clamp(0.0, 1.0)
+                    : 0;
+                final double scrollLabelDragHeight = max(0, constraints.maxHeight - 40);
+                final double scrollLabelTop = scrollLabelDragHeight * scrollProgress;
+
+                return Stack(
+                  children: [
+                    Obx(() {
+                      // Touch tabGroups so external mutations (e.g. backup
+                      // restore) trigger a rebuild of the manager body.
+                      searchHandler.tabGroups.length;
+                      return _buildSectionedManagerBody();
+                    }),
+                    if (totalFilteredTabs == 0)
+                      Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Kaomoji(
+                              category: KaomojiCategory.indifference,
+                              style: TextStyle(fontSize: 36),
+                            ),
+                            Text(
+                              context.loc.tabs.noTabsFound,
+                              style: const TextStyle(fontSize: 20),
+                            ),
+                          ],
                         ),
-                        Text(
-                          context.loc.tabs.noTabsFound,
-                          style: const TextStyle(fontSize: 20),
+                      ),
+                    if (totalFilteredTabs > 0)
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 100),
+                        curve: Curves.easeOut,
+                        top: scrollLabelTop,
+                        left: isScrollbarLeft ? 16 : null,
+                        right: isScrollbarLeft ? null : 16,
+                        child: IgnorePointer(
+                          ignoring: !showScrollbarContext && !isScrollbarContextHeld,
+                          child: Listener(
+                            onPointerDown: (_) => holdScrollbarContext(),
+                            onPointerUp: (_) => releaseScrollbarContext(),
+                            onPointerCancel: (_) => releaseScrollbarContext(),
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.translucent,
+                              onVerticalDragStart: (_) => holdScrollbarContext(),
+                              onVerticalDragUpdate: (details) {
+                                holdScrollbarContext();
+                                dragScrollbarContext(details.delta.dy, scrollLabelDragHeight);
+                              },
+                              onVerticalDragEnd: (_) => releaseScrollbarContext(),
+                              onVerticalDragCancel: releaseScrollbarContext,
+                              child: AnimatedOpacity(
+                                duration: const Duration(milliseconds: 150),
+                                opacity: showScrollbarContext ? 1 : 0,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.66),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                    child: Text(
+                                      scrollbarContextTitle(),
+                                      style: Theme.of(context).textTheme.labelMedium?.copyWith(fontSize: 16),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                      ],
+                      ),
+                    Positioned(
+                      right: 16,
+                      bottom: 16,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          FloatingActionButton.small(
+                            heroTag: 'tab_manager_new_tab_fab',
+                            tooltip: context.loc.tabs.addNewTab,
+                            onPressed: () {
+                              // Use the current booru's defTags if set, otherwise the
+                              // global default from Boorus & Search settings.
+                              final booru = searchHandler.currentBooruOrNull;
+                              final query = (booru?.defTags?.isNotEmpty == true)
+                                  ? booru!.defTags!
+                                  : settingsHandler.defTags;
+                              searchHandler.addTabByString(query, switchToNew: true);
+                              getTabs();
+                            },
+                            child: const Icon(Icons.add),
+                          ),
+                          const SizedBox(height: 10),
+                          FloatingActionButton.small(
+                            heroTag: 'tab_manager_new_group_fab',
+                            tooltip: context.loc.tabs.groups.newGroup,
+                            onPressed: _onAddGroupTapped,
+                            child: const Icon(Icons.create_new_folder_outlined),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                Positioned(
-                  right: 16,
-                  bottom: 16,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      FloatingActionButton.small(
-                        heroTag: 'tab_manager_new_tab_fab',
-                        tooltip: context.loc.tabs.addNewTab,
-                        onPressed: () {
-                          // Use the current booru's defTags if set, otherwise the
-                          // global default from Boorus & Search settings.
-                          final booru = searchHandler.currentBooru;
-                          final query = (booru.defTags?.isNotEmpty == true) ? booru.defTags! : settingsHandler.defTags;
-                          searchHandler.addTabByString(query, switchToNew: true);
-                          getTabs();
-                        },
-                        child: const Icon(Icons.add),
-                      ),
-                      const SizedBox(height: 10),
-                      FloatingActionButton.small(
-                        heroTag: 'tab_manager_new_group_fab',
-                        tooltip: context.loc.tabs.groups.newGroup,
-                        onPressed: _onAddGroupTapped,
-                        child: const Icon(Icons.create_new_folder_outlined),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                  ],
+                );
+              },
             ),
           ),
           Obx(() {
@@ -2546,7 +2796,7 @@ class _DuplicateTabsDeleteDialogState extends State<_DuplicateTabsDeleteDialog> 
                           child: TabManagerItem(
                             tab: tab,
                             index: index,
-                            isCurrent: tab == widget.searchHandler.currentTab,
+                            isCurrent: tab == widget.searchHandler.currentTabOrNull,
                             isFiltered: true,
                             originalIndex: tabIndexes[tab] ?? -1,
                             onTap: toggleTab,

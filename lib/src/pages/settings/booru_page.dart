@@ -11,9 +11,11 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
+import 'package:lolisnatcher/src/widgets/common/confirm_button.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
@@ -36,6 +38,7 @@ class _BooruPageState extends State<BooruPage> {
   final defaultTagsController = TextEditingController();
   final limitController = TextEditingController();
   Booru? selectedBooru, initPrefBooru;
+  bool _currentPrefBooruWasDeleted = false;
 
   @override
   void initState() {
@@ -72,7 +75,12 @@ class _BooruPageState extends State<BooruPage> {
   }
 
   Future<void> _onPopInvoked(_, _) async {
-    settingsHandler.defTags = defaultTagsController.text;
+    settingsHandler.defTags = selectedBooru == null
+        ? defaultTagsController.text
+        : ContentPolicy.safeSearchTagsFor(
+            selectedBooru!,
+            defaultTagsController.text,
+          );
     if (int.parse(limitController.text) > 100) {
       limitController.text = '100';
     } else if (int.parse(limitController.text) < 10) {
@@ -83,14 +91,18 @@ class _BooruPageState extends State<BooruPage> {
       selectedBooru = settingsHandler.booruList[0];
     }
     if (selectedBooru != null) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      final res = await askToChangePrefBooru(
-        NavigationHandler.instance.navContext,
-        initPrefBooru,
-        selectedBooru!,
-      );
+      if (_currentPrefBooruWasDeleted) {
+        settingsHandler.prefBooru = selectedBooru?.name ?? '';
+      } else {
+        await Future.delayed(const Duration(milliseconds: 100));
+        final res = await askToChangePrefBooru(
+          NavigationHandler.instance.navContext,
+          initPrefBooru,
+          selectedBooru!,
+        );
 
-      settingsHandler.prefBooru = (res == true ? selectedBooru?.name : initPrefBooru?.name) ?? '';
+        settingsHandler.prefBooru = (res == true ? selectedBooru?.name : initPrefBooru?.name) ?? '';
+      }
     }
     settingsHandler.itemLimit = int.parse(limitController.text);
     await settingsHandler.saveSettings(restate: false);
@@ -102,6 +114,82 @@ class _BooruPageState extends State<BooruPage> {
       name: context.loc.settings.booru.addBooru,
       icon: const Icon(Icons.add),
       page: () => BooruEdit(Booru('New', null, '', '', '')),
+    );
+  }
+
+  Widget sourceLimitNotice() {
+    if (!ContentPolicy.isFromStore) {
+      return const SizedBox.shrink();
+    }
+
+    return SettingsButton(
+      name: context.loc.settings.booru.sourceLimitNotice,
+      icon: const Icon(Icons.tune),
+      enabled: false,
+      dense: true,
+    );
+  }
+
+  Widget expandedSourceCompatibilityToggle() {
+    if (!ContentPolicy.isFromStore) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: [
+        SettingsButton(
+          name: context.loc.settings.booru.advanced,
+          icon: const Icon(Icons.tune),
+          enabled: false,
+          drawTopBorder: true,
+        ),
+        SettingsToggle(
+          value: settingsHandler.expandedSourceCompatibilityEnabled,
+          title: context.loc.settings.booru.expandedSourceCompatibility,
+          subtitle: Text(context.loc.settings.booru.expandedSourceCompatibilitySubtitle),
+          onChanged: (value) async {
+            if (value) {
+              final bool confirm =
+                  await showDialog<bool>(
+                    context: context,
+                    builder: (context) {
+                      return SettingsDialog(
+                        title: Text(context.loc.settings.booru.expandedSourceCompatibility),
+                        contentItems: [
+                          Text(context.loc.settings.booru.expandedSourceCompatibilityConfirm),
+                        ],
+                        actionButtons: const [
+                          CancelButton(returnData: false, withIcon: true),
+                          ConfirmButton(
+                            returnData: true,
+                            withIcon: true,
+                          ),
+                        ],
+                      );
+                    },
+                  ) ??
+                  false;
+              if (!confirm) {
+                return;
+              }
+            }
+
+            setState(() {
+              settingsHandler.expandedSourceCompatibilityEnabled = value;
+              if (selectedBooru != null && !ContentPolicy.isBooruAllowed(selectedBooru)) {
+                selectedBooru = null;
+              }
+            });
+            await settingsHandler.saveSettings(restate: true);
+            await settingsHandler.loadBoorus();
+            setState(() {
+              if (selectedBooru == null && settingsHandler.booruList.isNotEmpty) {
+                selectedBooru = settingsHandler.booruList[0];
+              }
+            });
+          },
+        ),
+      ],
     );
   }
 
@@ -282,13 +370,10 @@ class _BooruPageState extends State<BooruPage> {
                   onPressed: () async {
                     // save current and select next available booru to avoid exception after deletion
                     final Booru tempSelected = selectedBooru!;
-                    if (settingsHandler.booruList.isNotEmpty && settingsHandler.booruList.length > 1) {
-                      selectedBooru = settingsHandler.booruList[1];
-                    } else {
-                      selectedBooru = null;
-                    }
+                    selectedBooru = settingsHandler.booruList.firstWhereOrNull((booru) => booru != tempSelected);
                     // set new prefbooru if it is a deleted one
                     if (tempSelected.name == settingsHandler.prefBooru) {
+                      _currentPrefBooruWasDeleted = true;
                       settingsHandler.prefBooru = selectedBooru?.name ?? '';
                     }
                     // restate to avoid an exception due to changed booru list
@@ -308,6 +393,7 @@ class _BooruPageState extends State<BooruPage> {
                     } else {
                       // restore selected and prefbooru if something went wrong
                       selectedBooru = tempSelected;
+                      _currentPrefBooruWasDeleted = false;
                       settingsHandler.prefBooru = tempSelected.name ?? '';
                       await settingsHandler.sortBooruList();
 
@@ -342,7 +428,9 @@ class _BooruPageState extends State<BooruPage> {
   }
 
   Widget webviewButton() {
-    if (BooruType.saveable.contains(selectedBooru?.type) && PlatformExt.hasWebviewSupport) {
+    if (BooruType.saveable.contains(selectedBooru?.type) &&
+        PlatformExt.hasWebviewSupport &&
+        ContentPolicy.canOpenWebview) {
       // TODO add help button and explain how to properly setup cookies?
       return SettingsButton(
         name: context.loc.settings.webview.openWebview,
@@ -372,6 +460,19 @@ class _BooruPageState extends State<BooruPage> {
           if (url.contains('loli.snatcher')) {
             final Booru booru = Booru.fromLink(url);
             if (booru.name != null && booru.name!.isNotEmpty && booru.type!.isSaveable) {
+              if (!ContentPolicy.isBooruAllowed(booru)) {
+                FlashElements.showSnackbar(
+                  context: context,
+                  title: Text(
+                    context.loc.settings.booru.sourceUnavailableCurrentSettings,
+                    style: const TextStyle(fontSize: 20),
+                  ),
+                  leadingIcon: Icons.warning_amber,
+                  leadingIconColor: Colors.yellow,
+                  sideColor: Colors.yellow,
+                );
+                return;
+              }
               if (settingsHandler.booruList.indexWhere((b) => b.name == booru.name) != -1) {
                 // Rename config if its already in the list
                 booru.name = '${booru.name!} (duplicate)';
@@ -416,6 +517,59 @@ class _BooruPageState extends State<BooruPage> {
 
   @override
   Widget build(BuildContext context) {
+    final settingsChildren = <Widget>[
+      sourceLimitNotice(),
+      TagSearchBox(
+        controller: defaultTagsController,
+        title: context.loc.settings.booru.defaultTags,
+        hintText: context.loc.snatcher.enterTags,
+        booru: selectedBooru,
+        allowMultipleTags: true,
+        showBooruSelector: true,
+        clearable: true,
+        // resetText: () => 'rating:safe', // TODO
+      ),
+      SettingsTextInput(
+        controller: limitController,
+        title: context.loc.settings.booru.itemsPerPage,
+        hintText: context.loc.settings.booru.itemsPerPagePlaceholder,
+        subtitle: Text(context.loc.settings.booru.itemsPerPageTip),
+        inputType: TextInputType.number,
+        inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
+        resetText: () => settingsHandler.map['limit']!['default']!.toString(),
+        numberButtons: true,
+        numberStep: 10,
+        numberMin: 10,
+        numberMax: 100,
+        validator: (String? value) {
+          final int? parse = int.tryParse(value ?? '');
+          if (value == null || value.isEmpty) {
+            return context.loc.validationErrors.required;
+          } else if (parse == null) {
+            return context.loc.validationErrors.invalid;
+          } else if (parse < 10) {
+            return context.loc.validationErrors.tooSmall(min: 10);
+          } else if (parse > 100) {
+            return context.loc.validationErrors.tooBig(max: 100);
+          } else {
+            return null;
+          }
+        },
+      ),
+      const SettingsButton(name: '', enabled: false),
+      addFromClipboardButton(),
+      addButton(),
+      if (settingsHandler.booruList.isNotEmpty) ...[
+        booruSelector(),
+        if (selectedBooru != null) ...[
+          editButton(),
+          shareButton(),
+          webviewButton(),
+          deleteButton(),
+        ],
+      ],
+    ];
+
     return PopScope(
       onPopInvokedWithResult: _onPopInvoked,
       child: Scaffold(
@@ -423,60 +577,36 @@ class _BooruPageState extends State<BooruPage> {
         appBar: SettingsAppBar(
           title: context.loc.settings.booru.title,
         ),
-        body: Center(
-          child: ListView(
-            children: [
-              TagSearchBox(
-                controller: defaultTagsController,
-                title: context.loc.settings.booru.defaultTags,
-                hintText: context.loc.snatcher.enterTags,
-                booru: selectedBooru,
-                allowMultipleTags: true,
-                showBooruSelector: true,
-                clearable: true,
-                // resetText: () => 'rating:safe', // TODO
-              ),
-              SettingsTextInput(
-                controller: limitController,
-                title: context.loc.settings.booru.itemsPerPage,
-                hintText: context.loc.settings.booru.itemsPerPagePlaceholder,
-                subtitle: Text(context.loc.settings.booru.itemsPerPageTip),
-                inputType: TextInputType.number,
-                inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
-                resetText: () => settingsHandler.map['limit']!['default']!.toString(),
-                numberButtons: true,
-                numberStep: 10,
-                numberMin: 10,
-                numberMax: 100,
-                validator: (String? value) {
-                  final int? parse = int.tryParse(value ?? '');
-                  if (value == null || value.isEmpty) {
-                    return context.loc.validationErrors.required;
-                  } else if (parse == null) {
-                    return context.loc.validationErrors.invalid;
-                  } else if (parse < 10) {
-                    return context.loc.validationErrors.tooSmall(min: 10);
-                  } else if (parse > 100) {
-                    return context.loc.validationErrors.tooBig(max: 100);
-                  } else {
-                    return null;
-                  }
-                },
-              ),
-              const SettingsButton(name: '', enabled: false),
-              addFromClipboardButton(),
-              addButton(),
-              if (settingsHandler.booruList.isNotEmpty) ...[
-                booruSelector(),
-                if (selectedBooru != null) ...[
-                  editButton(),
-                  shareButton(),
-                  webviewButton(),
-                  deleteButton(),
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            return Center(
+              child: ListView(
+                children: [
+                  if (ContentPolicy.isFromStore) ...[
+                    ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight + 1),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: settingsChildren,
+                      ),
+                    ),
+                    ...List.generate(
+                      constraints.maxHeight < 800 ? 2 : 1,
+                      (_) => const SettingsButton(
+                        name: '',
+                        enabled: false,
+                        drawBottomBorder: false,
+                      ),
+                    ),
+                    //
+                    expandedSourceCompatibilityToggle(),
+                  ] else ...[
+                    ...settingsChildren,
+                  ],
                 ],
-              ],
-            ],
-          ),
+              ),
+            );
+          },
         ),
       ),
     );

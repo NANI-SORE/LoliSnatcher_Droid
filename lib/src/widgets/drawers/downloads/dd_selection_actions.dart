@@ -27,7 +27,7 @@ class DDSelectionActions extends StatelessWidget {
     final searchHandler = controller.searchHandler;
 
     return Obx(() {
-      final selected = searchHandler.currentSelected;
+      final selected = searchHandler.currentSelectedOrNull ?? [];
       if (selected.isNotEmpty) {
         final int favSelectedCount = selected.where((item) => item.isFavourite.value == true).length;
         final int unfavSelectedCount = selected.where((item) => item.isFavourite.value == false).length;
@@ -89,7 +89,7 @@ class DDSelectionActions extends StatelessWidget {
             SettingsButton(
               name: context.loc.settings.downloads.clearSelected,
               icon: const Icon(Icons.delete_forever),
-              action: () => searchHandler.currentTab.selected.clear(),
+              action: () => searchHandler.currentTabOrNull?.selected.clear(),
             ),
           ],
         );
@@ -97,9 +97,12 @@ class DDSelectionActions extends StatelessWidget {
         return SettingsButton(
           name: context.loc.selectAll,
           icon: const Icon(Icons.select_all),
-          action: () => searchHandler.currentTab.selected.addAll(
-            searchHandler.currentFetched,
-          ),
+          action: () {
+            final currentTab = searchHandler.currentTabOrNull;
+            final currentFetched = searchHandler.currentFetchedOrNull;
+            if (currentTab == null || currentFetched == null) return;
+            currentTab.selected.addAll(currentFetched);
+          },
           drawTopBorder: true,
         );
       }
