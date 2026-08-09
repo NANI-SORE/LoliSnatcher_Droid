@@ -9,10 +9,10 @@ class TabGroup {
     required Color color,
     String? id,
     bool collapsed = false,
-  })  : id = id ?? const Uuid().v4(),
-        name = name.obs,
-        color = color.obs,
-        collapsed = collapsed.obs;
+  }) : id = id ?? const Uuid().v4(),
+       name = name.obs,
+       color = color.obs,
+       collapsed = collapsed.obs;
 
   final String id;
   final Rx<String> name;
@@ -20,11 +20,11 @@ class TabGroup {
   final RxBool collapsed;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'n': name.value,
-        'c': tabGroupColorToHex(color.value),
-        if (collapsed.value) 'cl': true,
-      };
+    'id': id,
+    'n': name.value,
+    'c': tabGroupColorToHex(color.value),
+    if (collapsed.value) 'cl': true,
+  };
 
   static TabGroup? fromJson(Map<String, dynamic> json) {
     try {
@@ -48,10 +48,13 @@ class TabGroup {
 
   static List<TabGroup> fromJsonList(List<dynamic> list) {
     final out = <TabGroup>[];
+    final seenIds = <String>{};
     for (final entry in list) {
       if (entry is Map<String, dynamic>) {
         final g = TabGroup.fromJson(entry);
-        if (g != null) out.add(g);
+        if (g != null && g.id.trim().isNotEmpty && seenIds.add(g.id)) {
+          out.add(g);
+        }
       }
     }
     return out;
@@ -93,8 +96,7 @@ const List<String> kTabGroupPaletteHexes = [
   '#FFD01884', // pink
 ];
 
-List<Color> get tabGroupPalette =>
-    kTabGroupPaletteHexes.map(tabGroupColorFromHex).toList(growable: false);
+List<Color> get tabGroupPalette => kTabGroupPaletteHexes.map(tabGroupColorFromHex).toList(growable: false);
 
 Color nextDefaultGroupColor(int existingGroupCount) {
   final palette = tabGroupPalette;

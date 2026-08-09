@@ -26,14 +26,15 @@ sealed class _DesktopItem {
 }
 
 class _DesktopTabItem extends _DesktopItem {
-  const _DesktopTabItem(this.tab);
+  const _DesktopTabItem(this.tab, {this.group});
   final SearchTab tab;
+  final TabGroup? group;
 }
 
-class _DesktopGroupItem extends _DesktopItem {
-  const _DesktopGroupItem(this.group, this.tabs);
+class _DesktopGroupHeaderItem extends _DesktopItem {
+  const _DesktopGroupHeaderItem(this.group, this.tabCount);
   final TabGroup group;
-  final List<SearchTab> tabs;
+  final int tabCount;
 }
 
 class DesktopTabs extends StatefulWidget {
@@ -58,17 +59,29 @@ class _DesktopTabsState extends State<DesktopTabs> {
 
   @override
   void dispose() {
+    scrollController.dispose();
     super.dispose();
   }
 
   Future<void> jumpToTab(int index) async {
-    if (!scrollController.hasClients) return;
+    if (!scrollController.hasClients || index < 0 || index >= searchHandler.tabs.length) return;
+    final tab = searchHandler.tabs[index];
+    final group = searchHandler.groupOf(tab);
+    final collapsedGroupId = group?.collapsed.value == true ? group?.id : null;
+    final items = _buildItems();
+    final itemIndex = items.indexWhere(
+      (item) => switch (item) {
+        _DesktopTabItem(tab: final itemTab) => identical(itemTab, tab),
+        _DesktopGroupHeaderItem(group: final itemGroup) => collapsedGroupId != null && itemGroup.id == collapsedGroupId,
+      },
+    );
+    if (itemIndex < 0) return;
     final max = scrollController.position.maxScrollExtent;
     if (max == 0) return;
-    scrollController.jumpTo(index * (max / searchHandler.tabs.length));
+    scrollController.jumpTo(itemIndex * (max / items.length));
     await Future.delayed(const Duration(milliseconds: 50));
     await scrollController.scrollToIndex(
-      index,
+      itemIndex,
       preferPosition: AutoScrollPosition.begin,
       duration: const Duration(milliseconds: 50),
     );
@@ -82,7 +95,7 @@ class _DesktopTabsState extends State<DesktopTabs> {
 
   /// Build the ordered list of strip items from the master `tabs` list,
   /// preserving the contiguous-block invariant (§0.1): ungrouped tabs first,
-  /// then one item per group containing its tabs.
+  /// then a header and lazily-built tab items for each expanded group.
   List<_DesktopItem> _buildItems() {
     final tabs = searchHandler.tabs;
     final groups = searchHandler.tabGroups;
@@ -103,7 +116,13 @@ class _DesktopTabsState extends State<DesktopTabs> {
       }
     }
     for (final g in groups) {
-      items.add(_DesktopGroupItem(g, byGroup[g.id]!));
+      final groupedTabs = byGroup[g.id]!;
+      items.add(_DesktopGroupHeaderItem(g, groupedTabs.length));
+      if (!g.collapsed.value) {
+        for (final tab in groupedTabs) {
+          items.add(_DesktopTabItem(tab, group: g));
+        }
+      }
     }
 
     return items;
@@ -180,14 +199,14 @@ class _DesktopTabsState extends State<DesktopTabs> {
     );
   }
 
-  Widget _buildGroupCapsule(TabGroup group, List<SearchTab> tabs) {
+  Widget _buildGroupHeader(TabGroup group, int tabCount) {
     return Obx(() {
       final color = group.color.value;
       final name = group.name.value;
       final collapsed = group.collapsed.value;
       final scheme = Theme.of(context).colorScheme;
 
-      final headerCapsule = GestureDetector(
+      return GestureDetector(
         onTap: () => searchHandler.toggleGroupCollapsed(group.id),
         onSecondaryTap: () => _showGroupContextMenu(group),
         onLongPress: () => _showGroupContextMenu(group),
@@ -222,7 +241,7 @@ class _DesktopTabsState extends State<DesktopTabs> {
               ),
               const SizedBox(width: 4),
               Text(
-                '${tabs.length}',
+                '$tabCount',
                 style: TextStyle(
                   fontSize: 12,
                   color: scheme.onSurface.withValues(alpha: 0.6),
@@ -235,34 +254,6 @@ class _DesktopTabsState extends State<DesktopTabs> {
               ),
             ],
           ),
-        ),
-      );
-
-      if (collapsed) {
-        return headerCapsule;
-      }
-
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 2),
-        padding: const EdgeInsets.all(2),
-        decoration: BoxDecoration(
-          border: Border.all(color: color.withValues(alpha: 0.6), width: 1),
-          borderRadius: BorderRadius.circular(8),
-          color: color.withValues(alpha: 0.05),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            headerCapsule,
-            for (final t in tabs)
-              SizedBox(
-                width: _desktopTabWidth,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 1),
-                  child: _buildTabPill(t, insideGroup: true, groupColor: color),
-                ),
-              ),
-          ],
         ),
       );
     });
@@ -414,8 +405,12 @@ class _DesktopTabsState extends State<DesktopTabs> {
                       controller: scrollController,
                       index: index,
                       child: switch (item) {
-                        _DesktopTabItem(:final tab) => _buildTabPill(tab),
-                        _DesktopGroupItem(:final group, :final tabs) => _buildGroupCapsule(group, tabs),
+                        _DesktopTabItem(:final tab, :final group) => _buildTabPill(
+                          tab,
+                          insideGroup: group != null,
+                          groupColor: group?.color.value,
+                        ),
+                        _DesktopGroupHeaderItem(:final group, :final tabCount) => _buildGroupHeader(group, tabCount),
                       },
                     );
                   },
@@ -466,7 +461,7 @@ class _DesktopTabsState extends State<DesktopTabs> {
   String _itemKey(_DesktopItem item) {
     return switch (item) {
       _DesktopTabItem(:final tab) => 'tab-${tab.id}',
-      _DesktopGroupItem(:final group) => 'group-${group.id}',
+      _DesktopGroupHeaderItem(:final group) => 'group-${group.id}',
     };
   }
 }
