@@ -73,7 +73,7 @@ class DDSelectionActions extends StatelessWidget {
                 action: () async {
                   final int count = selected.length;
                   await UploadHandler.instance.addAll(
-                    selected.map(UploadItem.fromBooruItem),
+                    selected.map((e) => UploadItem.fromBooruItem(e)),
                   );
                   searchHandler.currentTab.selected.clear();
                   FlashElements.showSnackbar(

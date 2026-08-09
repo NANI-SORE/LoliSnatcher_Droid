@@ -9,7 +9,7 @@ import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/delete_button.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 
-const double tabGroupHeaderHeight = 44;
+const double tabGroupHeaderHeight = 52;
 
 class TabGroupHeader extends StatelessWidget {
   const TabGroupHeader({
@@ -17,6 +17,8 @@ class TabGroupHeader extends StatelessWidget {
     required this.tabsInGroupCount,
     required this.onToggleCollapse,
     required this.onMenuTap,
+    this.onPreviousGroup,
+    this.onNextGroup,
     super.key,
   });
 
@@ -24,6 +26,8 @@ class TabGroupHeader extends StatelessWidget {
   final int tabsInGroupCount;
   final VoidCallback onToggleCollapse;
   final VoidCallback onMenuTap;
+  final VoidCallback? onPreviousGroup;
+  final VoidCallback? onNextGroup;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +37,7 @@ class TabGroupHeader extends StatelessWidget {
       final collapsed = group.collapsed.value;
       final scheme = Theme.of(context).colorScheme;
 
-      return Padding(
+      final header = Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         child: Material(
           color: Color.alphaBlend(color.withValues(alpha: 0.15), scheme.surface),
@@ -48,10 +52,10 @@ class TabGroupHeader extends StatelessWidget {
               height: tabGroupHeaderHeight - 8,
               child: Row(
                 children: [
-                  _GroupReorderHandle(group: group, color: color, name: name),
+                  const SizedBox(width: 8),
                   Container(
                     width: 6,
-                    height: 22,
+                    height: 26,
                     decoration: BoxDecoration(
                       color: color,
                       borderRadius: BorderRadius.circular(3),
@@ -68,7 +72,7 @@ class TabGroupHeader extends StatelessWidget {
                     child: Text(
                       name,
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: scheme.onSurface,
                       ),
@@ -77,7 +81,7 @@ class TabGroupHeader extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.only(left: 6, right: 4),
+                    padding: const EdgeInsets.only(left: 6, right: 2),
                     child: Text(
                       '$tabsInGroupCount',
                       style: TextStyle(
@@ -86,9 +90,21 @@ class TabGroupHeader extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (onPreviousGroup != null || onNextGroup != null) ...[
+                    _GroupNavigationButton(
+                      icon: Icons.keyboard_arrow_up,
+                      onPressed: onPreviousGroup,
+                    ),
+                    _GroupNavigationButton(
+                      icon: Icons.keyboard_arrow_down,
+                      onPressed: onNextGroup,
+                    ),
+                  ],
                   IconButton(
                     icon: const Icon(Icons.more_vert, size: 20),
                     tooltip: context.loc.tabs.groups.groupActions,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(width: 36, height: 36),
                     splashRadius: 18,
                     visualDensity: VisualDensity.compact,
                     onPressed: onMenuTap,
@@ -99,93 +115,56 @@ class TabGroupHeader extends StatelessWidget {
           ),
         ),
       );
-    });
-  }
-}
 
-/// Drag handle on the left of a group header. Wraps `Icons.drag_indicator`
-/// in a `Draggable<TabGroup>` so the user can drag this group onto another
-/// group's header (which is a `DragTarget<TabGroup>`) to reorder.
-class _GroupReorderHandle extends StatelessWidget {
-  const _GroupReorderHandle({
-    required this.group,
-    required this.color,
-    required this.name,
-  });
-
-  final TabGroup group;
-  final Color color;
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Draggable<TabGroup>(
-      data: group,
-      axis: Axis.vertical,
-      dragAnchorStrategy: pointerDragAnchorStrategy,
-      feedback: Material(
-        color: Colors.transparent,
-        child: Container(
-          width: 220,
-          height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Color.alphaBlend(color.withValues(alpha: 0.3), scheme.surface),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: color, width: 2),
-            boxShadow: const [
-              BoxShadow(blurRadius: 8, color: Colors.black26, offset: Offset(0, 3)),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 6,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: scheme.onSurface,
+      return LongPressDraggable<TabGroup>(
+        data: group,
+        axis: Axis.vertical,
+        dragAnchorStrategy: pointerDragAnchorStrategy,
+        feedback: Material(
+          color: Colors.transparent,
+          child: Container(
+            width: 220,
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Color.alphaBlend(color.withValues(alpha: 0.3), scheme.surface),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: color, width: 2),
+              boxShadow: const [
+                BoxShadow(blurRadius: 8, color: Colors.black26, offset: Offset(0, 3)),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 6,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(3),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-      childWhenDragging: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Icon(
-          Icons.drag_indicator,
-          size: 22,
-          color: scheme.onSurface.withValues(alpha: 0.2),
-        ),
-      ),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {},
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Icon(
-            Icons.drag_indicator,
-            size: 22,
-            color: scheme.onSurface.withValues(alpha: 0.55),
-          ),
-        ),
-      ),
-    );
+        childWhenDragging: Opacity(opacity: 0.35, child: header),
+        child: header,
+      );
+    });
   }
 }
 
@@ -197,16 +176,19 @@ class TabGroupUngroupedHeader extends StatelessWidget {
     required this.tabsInUngroupedCount,
     this.collapsed = false,
     this.onToggleCollapse,
+    this.onPreviousGroup,
+    this.onNextGroup,
     super.key,
   });
 
   final int tabsInUngroupedCount;
   final bool collapsed;
   final VoidCallback? onToggleCollapse;
+  final VoidCallback? onPreviousGroup;
+  final VoidCallback? onNextGroup;
 
   @override
   Widget build(BuildContext context) {
-    if (tabsInUngroupedCount == 0) return const SizedBox.shrink();
     final scheme = Theme.of(context).colorScheme;
     final muted = scheme.onSurface.withValues(alpha: 0.5);
 
@@ -240,6 +222,17 @@ class TabGroupUngroupedHeader extends StatelessWidget {
               color: muted,
             ),
           ),
+          if (onPreviousGroup != null || onNextGroup != null) ...[
+            const Spacer(),
+            _GroupNavigationButton(
+              icon: Icons.keyboard_arrow_up,
+              onPressed: onPreviousGroup,
+            ),
+            _GroupNavigationButton(
+              icon: Icons.keyboard_arrow_down,
+              onPressed: onNextGroup,
+            ),
+          ],
         ],
       ),
     );
@@ -255,6 +248,28 @@ class TabGroupUngroupedHeader extends StatelessWidget {
         onTap: onToggleCollapse,
         child: row,
       ),
+    );
+  }
+}
+
+class _GroupNavigationButton extends StatelessWidget {
+  const _GroupNavigationButton({
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: Icon(icon, size: 20),
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+      visualDensity: VisualDensity.compact,
+      splashRadius: 16,
+      onPressed: onPressed,
     );
   }
 }

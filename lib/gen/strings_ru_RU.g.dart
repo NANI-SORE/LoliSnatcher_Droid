@@ -749,6 +749,10 @@ class _Translations$tabs$ru_RU extends Translations$tabs$en {
   @override
   String get noTabsFound => TranslationOverrides.string(_root.$meta, 'tabs.noTabsFound', {}) ?? 'Вкладки не найдены';
   @override
+  String get viewAsSingleList => TranslationOverrides.string(_root.$meta, 'tabs.viewAsSingleList', {}) ?? 'Показать все вкладки одним списком';
+  @override
+  String get viewGrouped => TranslationOverrides.string(_root.$meta, 'tabs.viewGrouped', {}) ?? 'Показать группы вкладок';
+  @override
   String get copy => TranslationOverrides.string(_root.$meta, 'tabs.copy', {}) ?? 'Копировать';
   @override
   String get moveAction => TranslationOverrides.string(_root.$meta, 'tabs.moveAction', {}) ?? 'Переместить';
@@ -1735,13 +1739,13 @@ class _Translations$tabs$groups$ru_RU extends Translations$tabs$groups$en {
   @override
   String get renameGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.renameGroup', {}) ?? 'Переименовать группу';
   @override
-  String get renameRecolor => TranslationOverrides.string(_root.$meta, 'tabs.groups.renameRecolor', {}) ?? 'Переименовать / изменить цвет';
+  String get renameRecolor => TranslationOverrides.string(_root.$meta, 'tabs.groups.renameRecolor', {}) ?? 'Название и цвет';
   @override
-  String get editGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.editGroup', {}) ?? 'Редактировать группу';
+  String get editGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.editGroup', {}) ?? 'Настроить группу';
   @override
   String get deleteGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteGroup', {}) ?? 'Удалить группу';
   @override
-  String get deleteWithTabs => TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteWithTabs', {}) ?? 'Также удалить вкладки в группе';
+  String get deleteWithTabs => TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteWithTabs', {}) ?? 'Удалить и вкладки в группе';
   @override
   String get ungrouped => TranslationOverrides.string(_root.$meta, 'tabs.groups.ungrouped', {}) ?? 'Без группы';
   @override
@@ -1753,7 +1757,7 @@ class _Translations$tabs$groups$ru_RU extends Translations$tabs$groups$en {
   @override
   String get addToGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.addToGroup', {}) ?? 'Добавить в группу…';
   @override
-  String get newGroupFromTab => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupFromTab', {}) ?? 'Новая группа из этой вкладки';
+  String get newGroupFromTab => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupFromTab', {}) ?? 'Создать группу из этой вкладки';
   @override
   String get groupColor => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupColor', {}) ?? 'Цвет';
   @override
@@ -1765,18 +1769,22 @@ class _Translations$tabs$groups$ru_RU extends Translations$tabs$groups$en {
   @override
   String get filterByGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.filterByGroup', {}) ?? 'Группа';
   @override
-  String get dropToUngroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.dropToUngroup', {}) ?? 'Отпустите, чтобы убрать из группы';
+  String get dropToUngroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.dropToUngroup', {}) ?? 'Отпусти здесь, чтобы убрать из группы';
   @override
-  String get dragToAGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.dragToAGroup', {}) ?? 'Перетащите в группу';
+  String get dragToAGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.dragToAGroup', {}) ?? 'Перетащи в группу';
   @override
   String get groupActions => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupActions', {}) ?? 'Действия с группой';
   @override
   String get newerVersionBackup =>
       TranslationOverrides.string(_root.$meta, 'tabs.groups.newerVersionBackup', {}) ??
-      'Эта резервная копия из более новой версии LoliSnatcher и не может быть загружена.';
+      'Эта резервная копия создана в более новой версии, поэтому открыть её не получится.';
   @override
   String get malformedBackup =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.malformedBackup', {}) ?? 'Резервная копия вкладок повреждена и не может быть загружена.';
+      TranslationOverrides.string(_root.$meta, 'tabs.groups.malformedBackup', {}) ?? 'Резервная копия вкладок повреждена — открыть её не получится.';
+  @override
+  String get backupImportFailed =>
+      TranslationOverrides.string(_root.$meta, 'tabs.groups.backupImportFailed', {}) ??
+      'Резервная копия вкладок создана в более новой версии или повреждена — ничего не импортировано.';
   @override
   String get newGroupTitle => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupTitle', {}) ?? 'Новая группа';
   @override
@@ -1798,46 +1806,46 @@ class _Translations$tabs$groups$ru_RU extends Translations$tabs$groups$en {
       );
   @override
   String get otherwiseBecomeUngrouped =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.otherwiseBecomeUngrouped', {}) ?? 'Иначе вкладки станут без группы.';
+      TranslationOverrides.string(_root.$meta, 'tabs.groups.otherwiseBecomeUngrouped', {}) ?? 'Иначе вкладки из неё перейдут в «Без группы».';
   @override
   String tabsMovedToUngrouped({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'tabs.groups.tabsMovedToUngrouped', {'count': count}) ??
       (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
         count,
-        one: '${count} вкладка убрана из группы',
-        few: '${count} вкладки убраны из группы',
-        many: '${count} вкладок убраны из группы',
-        other: '${count} вкладок убраны из группы',
+        one: '${count} вкладка перенесена в «Без группы»',
+        few: '${count} вкладки перенесены в «Без группы»',
+        many: '${count} вкладок перенесены в «Без группы»',
+        other: '${count} вкладки перенесено в «Без группы»',
       );
   @override
-  String get chooseGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.chooseGroup', {}) ?? 'Выберите группу';
+  String get chooseGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.chooseGroup', {}) ?? 'Выбери группу';
   @override
-  String get unknownGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.unknownGroup', {}) ?? 'Неизвестная группа';
+  String get unknownGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.unknownGroup', {}) ?? 'Группа не найдена';
   @override
   String get ungroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.ungroup', {}) ?? 'Убрать из группы';
   @override
   String get helpTapNewGroup =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapNewGroup', {}) ?? 'Нажмите «Новая группа» внизу списка, чтобы создать группу.';
+      TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapNewGroup', {}) ?? 'Нажми «Новая группа» внизу списка, чтобы создать её.';
   @override
   String get helpDragTabHandle =>
       TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragTabHandle', {}) ??
-      'Перетащите маркер слева от вкладки, чтобы переместить её в другую группу.';
+      'Зажми вкладку и перетащи её на заголовок группы или любую вкладку в ней.';
   @override
   String get helpDragGroupHandle =>
       TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragGroupHandle', {}) ??
-      'Перетащите маркер слева от заголовка группы, чтобы изменить порядок групп.';
+      'Зажми заголовок группы и перетащи его на другой заголовок, чтобы изменить порядок групп.';
   @override
   String get helpTapHeaderCollapse =>
       TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapHeaderCollapse', {}) ??
-      'Нажмите на заголовок группы, чтобы свернуть/развернуть её.';
+      'Нажми на заголовок группы, чтобы свернуть или развернуть её.';
   @override
   String get helpTapMoreVert =>
       TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapMoreVert', {}) ??
-      'Нажмите ⋯ на заголовке группы, чтобы переименовать, изменить цвет или удалить группу.';
+      'Нажми ⋯ на заголовке группы, чтобы переименовать её, изменить цвет или удалить.';
   @override
   String get helpPrevNextInherits =>
       TranslationOverrides.string(_root.$meta, 'tabs.groups.helpPrevNextInherits', {}) ??
-      'Новые вкладки, добавленные через «Назад»/«Вперёд», наследуют группу текущей вкладки. Вкладки, добавленные в конец, остаются без группы.';
+      'Вкладки, добавленные через «Предыдущая вкладка» или «Следующая вкладка», попадут в группу текущей вкладки. Добавленные в конец останутся без группы.';
 }
 
 // Path: webview.navigation
@@ -2155,34 +2163,34 @@ class _Translations$settings$interface$ru_RU extends Translations$settings$inter
       'Может всё ещё происходить при некоторых действиях даже при отключении';
   @override
   String get tabManagerBottomBar =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBar', {}) ?? 'Нижняя панель в менеджере вкладок';
+      TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBar', {}) ?? 'Нижняя панель менеджера вкладок';
   @override
   String get tabManagerBottomBarSubtitle =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBarSubtitle', {}) ??
-      'Показывать кнопки прокрутки и закрытия внизу менеджера вкладок. Плавающие кнопки «Новая вкладка» и «Новая группа» всегда видны.';
+      'Показывать внизу кнопки перехода вверх, к текущей вкладке и вниз, а также кнопку закрытия. Кнопки новой вкладки и группы останутся плавающими.';
   @override
   String get drawerBottomAlign =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlign', {}) ?? 'Выровнять боковое меню по низу';
+      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlign', {}) ?? 'Прижать боковое меню к низу';
   @override
   String get drawerBottomAlignSubtitle =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlignSubtitle', {}) ??
-      'Размещать содержимое бокового меню снизу вверх (поиск, текущая вкладка, действия, остальное), чтобы было удобнее управлять одной рукой.';
+      'Располагать пункты снизу вверх, чтобы до них было удобнее дотягиваться одной рукой.';
   @override
-  String get drawerLayoutTitle => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutTitle', {}) ?? 'Макет бокового меню';
+  String get drawerLayoutTitle => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutTitle', {}) ?? 'Содержимое бокового меню';
   @override
   String get drawerLayoutSubtitle =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutSubtitle', {}) ??
-      'Выберите, какие элементы показывать в боковом меню и в каком порядке.';
+      'Выбери нужные пункты и расставь их в удобном порядке.';
   @override
   String get drawerLayoutPinned =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutPinned', {}) ?? 'Закреплено — всегда отображается';
+      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutPinned', {}) ?? 'Закреплено — скрыть нельзя';
   @override
   String get drawerLayoutRestoreDefaults =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutRestoreDefaults', {}) ?? 'Сбросить';
+      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutRestoreDefaults', {}) ?? 'По умолчанию';
   @override
   String get drawerLayoutBottomAlignHint =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutBottomAlignHint', {}) ??
-      'Включено выравнивание по низу — первый элемент в этом списке окажется внизу меню.';
+      'Меню выровнено по низу: первый пункт списка будет в самом низу.';
   @override
   late final _Translations$settings$interface$drawerItems$ru_RU drawerItems = _Translations$settings$interface$drawerItems$ru_RU._(_root);
   @override
@@ -3795,6 +3803,9 @@ class _Translations$media$loading$ru_RU extends Translations$media$loading$en {
   @override
   String get restartLoading => TranslationOverrides.string(_root.$meta, 'media.loading.restartLoading', {}) ?? 'Перезапустить загрузку';
   @override
+  String get tapToUpdateOrRetry =>
+      TranslationOverrides.string(_root.$meta, 'media.loading.tapToUpdateOrRetry', {}) ?? 'Нажми, чтобы обновить или повторить';
+  @override
   String get stopLoading => TranslationOverrides.string(_root.$meta, 'media.loading.stopLoading', {}) ?? 'Остановить загрузку';
   @override
   String startedSecondsAgo({required int seconds}) =>
@@ -3911,20 +3922,20 @@ class _Translations$settings$interface$drawerItems$ru_RU extends Translations$se
   String get tabButtons => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.tabButtons', {}) ?? 'Кнопки вкладки';
   @override
   String get multibooruToggle =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.multibooruToggle', {}) ?? 'Переключатель мультисайта';
+      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.multibooruToggle', {}) ?? 'Режим мультисайта';
   @override
   String get lockApp => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.lockApp', {}) ?? 'Заблокировать приложение';
   @override
   String get settings => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.settings', {}) ?? 'Настройки';
   @override
-  String get webview => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.webview', {}) ?? 'Открыть веб-просмотр';
+  String get webview => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.webview', {}) ?? 'Открыть вебвью';
   @override
   String get updateAvailable =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.updateAvailable', {}) ?? 'Доступно обновление';
   @override
   String get closeApp => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.closeApp', {}) ?? 'Закрыть приложение';
   @override
-  String get mascot => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.mascot', {}) ?? 'Изображение маскота';
+  String get mascot => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.mascot', {}) ?? 'Маскот';
 }
 
 // Path: settings.interface.previewQualityValues
@@ -4513,6 +4524,8 @@ extension on TranslationsRuRu {
           'tabs.notLoadedItalic' =>
             TranslationOverrides.string(_root.$meta, 'tabs.notLoadedItalic', {}) ?? 'Незагруженные вкладки имеют курсивный текст',
           'tabs.noTabsFound' => TranslationOverrides.string(_root.$meta, 'tabs.noTabsFound', {}) ?? 'Вкладки не найдены',
+          'tabs.viewAsSingleList' => TranslationOverrides.string(_root.$meta, 'tabs.viewAsSingleList', {}) ?? 'Показать все вкладки одним списком',
+          'tabs.viewGrouped' => TranslationOverrides.string(_root.$meta, 'tabs.viewGrouped', {}) ?? 'Показать группы вкладок',
           'tabs.copy' => TranslationOverrides.string(_root.$meta, 'tabs.copy', {}) ?? 'Копировать',
           'tabs.moveAction' => TranslationOverrides.string(_root.$meta, 'tabs.moveAction', {}) ?? 'Переместить',
           'tabs.remove' => TranslationOverrides.string(_root.$meta, 'tabs.remove', {}) ?? 'Удалить',
@@ -4570,33 +4583,35 @@ extension on TranslationsRuRu {
           'tabs.groups.title' => TranslationOverrides.string(_root.$meta, 'tabs.groups.title', {}) ?? 'Группы',
           'tabs.groups.newGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroup', {}) ?? 'Новая группа',
           'tabs.groups.renameGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.renameGroup', {}) ?? 'Переименовать группу',
-          'tabs.groups.renameRecolor' => TranslationOverrides.string(_root.$meta, 'tabs.groups.renameRecolor', {}) ?? 'Переименовать / изменить цвет',
-          'tabs.groups.editGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.editGroup', {}) ?? 'Редактировать группу',
+          'tabs.groups.renameRecolor' => TranslationOverrides.string(_root.$meta, 'tabs.groups.renameRecolor', {}) ?? 'Название и цвет',
+          'tabs.groups.editGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.editGroup', {}) ?? 'Настроить группу',
           'tabs.groups.deleteGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteGroup', {}) ?? 'Удалить группу',
-          'tabs.groups.deleteWithTabs' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteWithTabs', {}) ?? 'Также удалить вкладки в группе',
+          'tabs.groups.deleteWithTabs' => TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteWithTabs', {}) ?? 'Удалить и вкладки в группе',
           'tabs.groups.ungrouped' => TranslationOverrides.string(_root.$meta, 'tabs.groups.ungrouped', {}) ?? 'Без группы',
           'tabs.groups.moveToGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.moveToGroup', {}) ?? 'Переместить в группу',
           'tabs.groups.moveToGroupAction' => TranslationOverrides.string(_root.$meta, 'tabs.groups.moveToGroupAction', {}) ?? 'Переместить в группу…',
           'tabs.groups.removeFromGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.removeFromGroup', {}) ?? 'Убрать из группы',
           'tabs.groups.addToGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.addToGroup', {}) ?? 'Добавить в группу…',
           'tabs.groups.newGroupFromTab' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupFromTab', {}) ?? 'Новая группа из этой вкладки',
+            TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupFromTab', {}) ?? 'Создать группу из этой вкладки',
           'tabs.groups.groupColor' => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupColor', {}) ?? 'Цвет',
           'tabs.groups.groupName' => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupName', {}) ?? 'Название группы',
           'tabs.groups.collapse' => TranslationOverrides.string(_root.$meta, 'tabs.groups.collapse', {}) ?? 'Свернуть группу',
           'tabs.groups.expand' => TranslationOverrides.string(_root.$meta, 'tabs.groups.expand', {}) ?? 'Развернуть группу',
           'tabs.groups.filterByGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.filterByGroup', {}) ?? 'Группа',
           'tabs.groups.dropToUngroup' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.dropToUngroup', {}) ?? 'Отпустите, чтобы убрать из группы',
-          'tabs.groups.dragToAGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.dragToAGroup', {}) ?? 'Перетащите в группу',
+            TranslationOverrides.string(_root.$meta, 'tabs.groups.dropToUngroup', {}) ?? 'Отпусти здесь, чтобы убрать из группы',
+          'tabs.groups.dragToAGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.dragToAGroup', {}) ?? 'Перетащи в группу',
           'tabs.groups.groupActions' => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupActions', {}) ?? 'Действия с группой',
           'tabs.groups.newerVersionBackup' =>
             TranslationOverrides.string(_root.$meta, 'tabs.groups.newerVersionBackup', {}) ??
-                'Эта резервная копия из более новой версии LoliSnatcher и не может быть загружена.',
+                'Эта резервная копия создана в более новой версии, поэтому открыть её не получится.',
           'tabs.groups.malformedBackup' =>
             TranslationOverrides.string(_root.$meta, 'tabs.groups.malformedBackup', {}) ??
-                'Резервная копия вкладок повреждена и не может быть загружена.',
+                'Резервная копия вкладок повреждена — открыть её не получится.',
+          'tabs.groups.backupImportFailed' =>
+            TranslationOverrides.string(_root.$meta, 'tabs.groups.backupImportFailed', {}) ??
+                'Резервная копия вкладок создана в более новой версии или повреждена — ничего не импортировано.',
           'tabs.groups.newGroupTitle' => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupTitle', {}) ?? 'Новая группа',
           'tabs.groups.create' => TranslationOverrides.string(_root.$meta, 'tabs.groups.create', {}) ?? 'Создать',
           'tabs.groups.save' => TranslationOverrides.string(_root.$meta, 'tabs.groups.save', {}) ?? 'Сохранить',
@@ -4614,38 +4629,37 @@ extension on TranslationsRuRu {
                   other: '${count} вкладок в этой группе.',
                 ),
           'tabs.groups.otherwiseBecomeUngrouped' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.otherwiseBecomeUngrouped', {}) ?? 'Иначе вкладки станут без группы.',
+            TranslationOverrides.string(_root.$meta, 'tabs.groups.otherwiseBecomeUngrouped', {}) ?? 'Иначе вкладки из неё перейдут в «Без группы».',
           'tabs.groups.tabsMovedToUngrouped' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'tabs.groups.tabsMovedToUngrouped', {'count': count}) ??
                 (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
                   count,
-                  one: '${count} вкладка убрана из группы',
-                  few: '${count} вкладки убраны из группы',
-                  many: '${count} вкладок убраны из группы',
-                  other: '${count} вкладок убраны из группы',
+                  one: '${count} вкладка перенесена в «Без группы»',
+                  few: '${count} вкладки перенесены в «Без группы»',
+                  many: '${count} вкладок перенесены в «Без группы»',
+                  other: '${count} вкладки перенесено в «Без группы»',
                 ),
-          'tabs.groups.chooseGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.chooseGroup', {}) ?? 'Выберите группу',
-          'tabs.groups.unknownGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.unknownGroup', {}) ?? 'Неизвестная группа',
+          'tabs.groups.chooseGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.chooseGroup', {}) ?? 'Выбери группу',
+          'tabs.groups.unknownGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.unknownGroup', {}) ?? 'Группа не найдена',
           'tabs.groups.ungroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.ungroup', {}) ?? 'Убрать из группы',
           'tabs.groups.helpTapNewGroup' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapNewGroup', {}) ??
-                'Нажмите «Новая группа» внизу списка, чтобы создать группу.',
+            TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapNewGroup', {}) ?? 'Нажми «Новая группа» внизу списка, чтобы создать её.',
           'tabs.groups.helpDragTabHandle' =>
             TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragTabHandle', {}) ??
-                'Перетащите маркер слева от вкладки, чтобы переместить её в другую группу.',
+                'Зажми вкладку и перетащи её на заголовок группы или любую вкладку в ней.',
           'tabs.groups.helpDragGroupHandle' =>
             TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragGroupHandle', {}) ??
-                'Перетащите маркер слева от заголовка группы, чтобы изменить порядок групп.',
+                'Зажми заголовок группы и перетащи его на другой заголовок, чтобы изменить порядок групп.',
           'tabs.groups.helpTapHeaderCollapse' =>
             TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapHeaderCollapse', {}) ??
-                'Нажмите на заголовок группы, чтобы свернуть/развернуть её.',
+                'Нажми на заголовок группы, чтобы свернуть или развернуть её.',
           'tabs.groups.helpTapMoreVert' =>
             TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapMoreVert', {}) ??
-                'Нажмите ⋯ на заголовке группы, чтобы переименовать, изменить цвет или удалить группу.',
+                'Нажми ⋯ на заголовке группы, чтобы переименовать её, изменить цвет или удалить.',
           'tabs.groups.helpPrevNextInherits' =>
             TranslationOverrides.string(_root.$meta, 'tabs.groups.helpPrevNextInherits', {}) ??
-                'Новые вкладки, добавленные через «Назад»/«Вперёд», наследуют группу текущей вкладки. Вкладки, добавленные в конец, остаются без группы.',
+                'Вкладки, добавленные через «Предыдущая вкладка» или «Следующая вкладка», попадут в группу текущей вкладки. Добавленные в конец останутся без группы.',
           'history.searchHistory' => TranslationOverrides.string(_root.$meta, 'history.searchHistory', {}) ?? 'История поиска',
           'history.searchHistoryIsEmpty' => TranslationOverrides.string(_root.$meta, 'history.searchHistoryIsEmpty', {}) ?? 'История поиска пуста',
           'history.searchHistoryIsDisabled' =>
@@ -4896,27 +4910,27 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.interface.disableVibrationSubtitle', {}) ??
                 'Может всё ещё происходить при некоторых действиях даже при отключении',
           'settings.interface.tabManagerBottomBar' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBar', {}) ?? 'Нижняя панель в менеджере вкладок',
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBar', {}) ?? 'Нижняя панель менеджера вкладок',
           'settings.interface.tabManagerBottomBarSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBarSubtitle', {}) ??
-                'Показывать кнопки прокрутки и закрытия внизу менеджера вкладок. Плавающие кнопки «Новая вкладка» и «Новая группа» всегда видны.',
+                'Показывать внизу кнопки перехода вверх, к текущей вкладке и вниз, а также кнопку закрытия. Кнопки новой вкладки и группы останутся плавающими.',
           'settings.interface.drawerBottomAlign' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlign', {}) ?? 'Выровнять боковое меню по низу',
+            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlign', {}) ?? 'Прижать боковое меню к низу',
           'settings.interface.drawerBottomAlignSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlignSubtitle', {}) ??
-                'Размещать содержимое бокового меню снизу вверх (поиск, текущая вкладка, действия, остальное), чтобы было удобнее управлять одной рукой.',
+                'Располагать пункты снизу вверх, чтобы до них было удобнее дотягиваться одной рукой.',
           'settings.interface.drawerLayoutTitle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutTitle', {}) ?? 'Макет бокового меню',
+            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutTitle', {}) ?? 'Содержимое бокового меню',
           'settings.interface.drawerLayoutSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutSubtitle', {}) ??
-                'Выберите, какие элементы показывать в боковом меню и в каком порядке.',
+                'Выбери нужные пункты и расставь их в удобном порядке.',
           'settings.interface.drawerLayoutPinned' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutPinned', {}) ?? 'Закреплено — всегда отображается',
+            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutPinned', {}) ?? 'Закреплено — скрыть нельзя',
           'settings.interface.drawerLayoutRestoreDefaults' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutRestoreDefaults', {}) ?? 'Сбросить',
+            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutRestoreDefaults', {}) ?? 'По умолчанию',
           'settings.interface.drawerLayoutBottomAlignHint' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutBottomAlignHint', {}) ??
-                'Включено выравнивание по низу — первый элемент в этом списке окажется внизу меню.',
+                'Меню выровнено по низу: первый пункт списка будет в самом низу.',
           'settings.interface.drawerItems.search' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.search', {}) ?? 'Строка поиска',
           'settings.interface.drawerItems.tabSelector' =>
@@ -4924,19 +4938,19 @@ extension on TranslationsRuRu {
           'settings.interface.drawerItems.tabButtons' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.tabButtons', {}) ?? 'Кнопки вкладки',
           'settings.interface.drawerItems.multibooruToggle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.multibooruToggle', {}) ?? 'Переключатель мультисайта',
+            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.multibooruToggle', {}) ?? 'Режим мультисайта',
           'settings.interface.drawerItems.lockApp' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.lockApp', {}) ?? 'Заблокировать приложение',
           'settings.interface.drawerItems.settings' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.settings', {}) ?? 'Настройки',
           'settings.interface.drawerItems.webview' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.webview', {}) ?? 'Открыть веб-просмотр',
+            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.webview', {}) ?? 'Открыть вебвью',
           'settings.interface.drawerItems.updateAvailable' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.updateAvailable', {}) ?? 'Доступно обновление',
           'settings.interface.drawerItems.closeApp' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.closeApp', {}) ?? 'Закрыть приложение',
           'settings.interface.drawerItems.mascot' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.mascot', {}) ?? 'Изображение маскота',
+            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.mascot', {}) ?? 'Маскот',
           'settings.interface.usePredictiveBack' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.usePredictiveBack', {}) ?? 'Анимация смахивания',
           'settings.interface.previewColumnsPortrait' =>
@@ -5073,14 +5087,14 @@ extension on TranslationsRuRu {
                 'Скрывать панель инструментов при открытии просмотрщика',
           'settings.viewer.expandDetailsByDefault' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.expandDetailsByDefault', {}) ?? 'Раскрывать детали по умолчанию',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.viewer.hideTranslationNotesByDefault' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.hideTranslationNotesByDefault', {}) ?? 'Скрывать заметки перевода по умолчанию',
           'settings.viewer.enableRotation' => TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotation', {}) ?? 'Включить вращение',
           'settings.viewer.enableRotationSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotationSubtitle', {}) ?? 'Двойное нажатие для сброса',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.viewer.toolbarButtonsOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.toolbarButtonsOrder', {}) ?? 'Порядок кнопок панели инструментов',
           'settings.viewer.buttonsOrder' => TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonsOrder', {}) ?? 'Порядок кнопок',
@@ -6085,12 +6099,12 @@ extension on TranslationsRuRu {
           'tagView.history' => TranslationOverrides.string(_root.$meta, 'tagView.history', {}) ?? 'История',
           'tagView.failedToLoadPreviewPage' =>
             TranslationOverrides.string(_root.$meta, 'tagView.failedToLoadPreviewPage', {}) ?? 'Не удалось загрузить страницу предпросмотра',
-          'tagView.tryAgain' => TranslationOverrides.string(_root.$meta, 'tagView.tryAgain', {}) ?? 'Попробовать снова',
-          'tagView.detectedLinks' => TranslationOverrides.string(_root.$meta, 'tagView.detectedLinks', {}) ?? 'Обнаруженные ссылки:',
-          'tagView.relatedTabs' => TranslationOverrides.string(_root.$meta, 'tagView.relatedTabs', {}) ?? 'Связанные вкладки',
           _ => null,
         } ??
         switch (path) {
+          'tagView.tryAgain' => TranslationOverrides.string(_root.$meta, 'tagView.tryAgain', {}) ?? 'Попробовать снова',
+          'tagView.detectedLinks' => TranslationOverrides.string(_root.$meta, 'tagView.detectedLinks', {}) ?? 'Обнаруженные ссылки:',
+          'tagView.relatedTabs' => TranslationOverrides.string(_root.$meta, 'tagView.relatedTabs', {}) ?? 'Связанные вкладки',
           'tagView.tabsWithOnlyTag' => TranslationOverrides.string(_root.$meta, 'tagView.tabsWithOnlyTag', {}) ?? 'Вкладки только с этим тегом',
           'tagView.tabsWithOnlyTagDifferentBooru' =>
             TranslationOverrides.string(_root.$meta, 'tagView.tabsWithOnlyTagDifferentBooru', {}) ??
@@ -6330,6 +6344,8 @@ extension on TranslationsRuRu {
           'media.loading.loading' => TranslationOverrides.string(_root.$meta, 'media.loading.loading', {}) ?? 'Загрузка…',
           'media.loading.loadAnyway' => TranslationOverrides.string(_root.$meta, 'media.loading.loadAnyway', {}) ?? 'Все равно загрузить',
           'media.loading.restartLoading' => TranslationOverrides.string(_root.$meta, 'media.loading.restartLoading', {}) ?? 'Перезапустить загрузку',
+          'media.loading.tapToUpdateOrRetry' =>
+            TranslationOverrides.string(_root.$meta, 'media.loading.tapToUpdateOrRetry', {}) ?? 'Нажми, чтобы обновить или повторить',
           'media.loading.stopLoading' => TranslationOverrides.string(_root.$meta, 'media.loading.stopLoading', {}) ?? 'Остановить загрузку',
           'media.loading.startedSecondsAgo' =>
             ({required int seconds}) =>

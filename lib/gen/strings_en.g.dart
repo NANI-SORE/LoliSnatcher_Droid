@@ -920,6 +920,12 @@ class Translations$tabs$en {
   /// en: 'No tabs found'
   String get noTabsFound => TranslationOverrides.string(_root.$meta, 'tabs.noTabsFound', {}) ?? 'No tabs found';
 
+  /// en: 'Show all tabs in one list'
+  String get viewAsSingleList => TranslationOverrides.string(_root.$meta, 'tabs.viewAsSingleList', {}) ?? 'Show all tabs in one list';
+
+  /// en: 'Show tab groups'
+  String get viewGrouped => TranslationOverrides.string(_root.$meta, 'tabs.viewGrouped', {}) ?? 'Show tab groups';
+
   /// en: 'Copy'
   String get copy => TranslationOverrides.string(_root.$meta, 'tabs.copy', {}) ?? 'Copy';
 
@@ -2183,23 +2189,28 @@ class Translations$tabs$groups$en {
   /// en: 'Group'
   String get filterByGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.filterByGroup', {}) ?? 'Group';
 
-  /// en: 'Drop to ungroup'
-  String get dropToUngroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.dropToUngroup', {}) ?? 'Drop to ungroup';
+  /// en: 'Drop here to remove from the group'
+  String get dropToUngroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.dropToUngroup', {}) ?? 'Drop here to remove from the group';
 
-  /// en: 'Drag to a group'
-  String get dragToAGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.dragToAGroup', {}) ?? 'Drag to a group';
+  /// en: 'Drag into a group'
+  String get dragToAGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.dragToAGroup', {}) ?? 'Drag into a group';
 
   /// en: 'Group actions'
   String get groupActions => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupActions', {}) ?? 'Group actions';
 
-  /// en: 'This backup is from a newer version of LoliSnatcher and could not be loaded.'
+  /// en: 'This backup was created by a newer version, so it cannot be loaded.'
   String get newerVersionBackup =>
       TranslationOverrides.string(_root.$meta, 'tabs.groups.newerVersionBackup', {}) ??
-      'This backup is from a newer version of LoliSnatcher and could not be loaded.';
+      'This backup was created by a newer version, so it cannot be loaded.';
 
-  /// en: 'Tab backup is malformed and could not be loaded.'
+  /// en: 'This tab backup is broken and cannot be loaded.'
   String get malformedBackup =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.malformedBackup', {}) ?? 'Tab backup is malformed and could not be loaded.';
+      TranslationOverrides.string(_root.$meta, 'tabs.groups.malformedBackup', {}) ?? 'This tab backup is broken and cannot be loaded.';
+
+  /// en: 'This tab backup is from a newer version or is broken, so nothing was imported.'
+  String get backupImportFailed =>
+      TranslationOverrides.string(_root.$meta, 'tabs.groups.backupImportFailed', {}) ??
+      'This tab backup is from a newer version or is broken, so nothing was imported.';
 
   /// en: 'New group'
   String get newGroupTitle => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupTitle', {}) ?? 'New group';
@@ -2223,21 +2234,21 @@ class Translations$tabs$groups$en {
         other: '${count} tabs in this group.',
       );
 
-  /// en: 'Otherwise, tabs become ungrouped.'
+  /// en: 'Otherwise, its tabs will move to Ungrouped.'
   String get otherwiseBecomeUngrouped =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.otherwiseBecomeUngrouped', {}) ?? 'Otherwise, tabs become ungrouped.';
+      TranslationOverrides.string(_root.$meta, 'tabs.groups.otherwiseBecomeUngrouped', {}) ?? 'Otherwise, its tabs will move to Ungrouped.';
 
-  /// en: '(one) {${count} tab moved to ungrouped} (other) {${count} tabs moved to ungrouped}'
+  /// en: '(one) {Moved ${count} tab to Ungrouped} (other) {Moved ${count} tabs to Ungrouped}'
   String tabsMovedToUngrouped({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'tabs.groups.tabsMovedToUngrouped', {'count': count}) ??
       (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
         count,
-        one: '${count} tab moved to ungrouped',
-        other: '${count} tabs moved to ungrouped',
+        one: 'Moved ${count} tab to Ungrouped',
+        other: 'Moved ${count} tabs to Ungrouped',
       );
 
-  /// en: 'Choose group'
-  String get chooseGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.chooseGroup', {}) ?? 'Choose group';
+  /// en: 'Choose a group'
+  String get chooseGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.chooseGroup', {}) ?? 'Choose a group';
 
   /// en: 'Unknown group'
   String get unknownGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.unknownGroup', {}) ?? 'Unknown group';
@@ -2245,33 +2256,33 @@ class Translations$tabs$groups$en {
   /// en: 'Ungroup'
   String get ungroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.ungroup', {}) ?? 'Ungroup';
 
-  /// en: 'Tap "New group" at the bottom of the list to create a group.'
+  /// en: 'Tap “New group” at the bottom of the list to create one.'
   String get helpTapNewGroup =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapNewGroup', {}) ?? 'Tap "New group" at the bottom of the list to create a group.';
+      TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapNewGroup', {}) ?? 'Tap “New group” at the bottom of the list to create one.';
 
-  /// en: 'Drag the handle on the left of a tab to move it between groups.'
+  /// en: 'Long-press a tab, then drag it onto a group header or any tab in that group.'
   String get helpDragTabHandle =>
       TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragTabHandle', {}) ??
-      'Drag the handle on the left of a tab to move it between groups.';
+      'Long-press a tab, then drag it onto a group header or any tab in that group.';
 
-  /// en: 'Drag the handle on the left of a group header to reorder groups.'
+  /// en: 'Long-press a group header, then drag it onto another header to reorder groups.'
   String get helpDragGroupHandle =>
       TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragGroupHandle', {}) ??
-      'Drag the handle on the left of a group header to reorder groups.';
+      'Long-press a group header, then drag it onto another header to reorder groups.';
 
-  /// en: 'Tap a group header to collapse / expand it.'
+  /// en: 'Tap a group header to collapse or expand it.'
   String get helpTapHeaderCollapse =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapHeaderCollapse', {}) ?? 'Tap a group header to collapse / expand it.';
+      TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapHeaderCollapse', {}) ?? 'Tap a group header to collapse or expand it.';
 
-  /// en: 'Tap ⋯ on a group header to rename, recolor, or delete the group.'
+  /// en: 'Tap ⋮ on a group header to rename it, change its color, or delete it.'
   String get helpTapMoreVert =>
       TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapMoreVert', {}) ??
-      'Tap ⋯ on a group header to rename, recolor, or delete the group.';
+      'Tap ⋮ on a group header to rename it, change its color, or delete it.';
 
-  /// en: 'New tabs added "Prev"/"Next" inherit the current tab's group. Tabs added at the end are ungrouped.'
+  /// en: 'Tabs added with “Prev tab” or “Next tab” position options join the current tab's group. Tabs added at the end stay ungrouped.'
   String get helpPrevNextInherits =>
       TranslationOverrides.string(_root.$meta, 'tabs.groups.helpPrevNextInherits', {}) ??
-      'New tabs added "Prev"/"Next" inherit the current tab\'s group. Tabs added at the end are ungrouped.';
+      'Tabs added with “Prev tab” or “Next tab” position options join the current tab\'s group. Tabs added at the end stay ungrouped.';
 }
 
 // Path: webview.navigation
@@ -2678,42 +2689,44 @@ class Translations$settings$interface$en {
       TranslationOverrides.string(_root.$meta, 'settings.interface.disableVibrationSubtitle', {}) ??
       'May still happen on some actions even when disabled';
 
-  /// en: 'Tab manager bottom action bar'
+  /// en: 'Tab manager bottom bar'
   String get tabManagerBottomBar =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBar', {}) ?? 'Tab manager bottom action bar';
+      TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBar', {}) ?? 'Tab manager bottom bar';
 
-  /// en: 'Show scroll-to-top / current / bottom and close buttons at the bottom of the tabs manager. Floating buttons for new tab / new group are always shown.'
+  /// en: 'Show Top, Current, Bottom, and Close controls at the bottom of the tab manager. New-tab and new-group actions remain floating.'
   String get tabManagerBottomBarSubtitle =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBarSubtitle', {}) ??
-      'Show scroll-to-top / current / bottom and close buttons at the bottom of the tabs manager. Floating buttons for new tab / new group are always shown.';
+      'Show Top, Current, Bottom, and Close controls at the bottom of the tab manager. New-tab and new-group actions remain floating.';
 
-  /// en: 'Bottom-align main drawer'
-  String get drawerBottomAlign => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlign', {}) ?? 'Bottom-align main drawer';
+  /// en: 'Align the side drawer to the bottom'
+  String get drawerBottomAlign =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlign', {}) ?? 'Align the side drawer to the bottom';
 
-  /// en: 'Stack the side drawer's contents from the bottom up (search, then current tab, then tab actions, then everything else) for easier one-handed thumb reach.'
+  /// en: 'Arrange drawer items from the bottom up so they are easier to reach with one hand.'
   String get drawerBottomAlignSubtitle =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlignSubtitle', {}) ??
-      'Stack the side drawer\'s contents from the bottom up (search, then current tab, then tab actions, then everything else) for easier one-handed thumb reach.';
+      'Arrange drawer items from the bottom up so they are easier to reach with one hand.';
 
-  /// en: 'Drawer layout'
-  String get drawerLayoutTitle => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutTitle', {}) ?? 'Drawer layout';
+  /// en: 'Side drawer layout'
+  String get drawerLayoutTitle => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutTitle', {}) ?? 'Side drawer layout';
 
-  /// en: 'Choose which items appear in the side drawer and their order.'
+  /// en: 'Choose and reorder the items shown in the side drawer.'
   String get drawerLayoutSubtitle =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutSubtitle', {}) ??
-      'Choose which items appear in the side drawer and their order.';
+      'Choose and reorder the items shown in the side drawer.';
 
-  /// en: 'Pinned — always shown'
-  String get drawerLayoutPinned => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutPinned', {}) ?? 'Pinned — always shown';
+  /// en: 'Pinned — cannot be hidden'
+  String get drawerLayoutPinned =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutPinned', {}) ?? 'Pinned — cannot be hidden';
 
   /// en: 'Restore defaults'
   String get drawerLayoutRestoreDefaults =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutRestoreDefaults', {}) ?? 'Restore defaults';
 
-  /// en: 'Bottom-align is on — the first item in this list shows at the bottom of the drawer.'
+  /// en: 'Bottom alignment is on. The first item here appears at the bottom of the drawer.'
   String get drawerLayoutBottomAlignHint =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutBottomAlignHint', {}) ??
-      'Bottom-align is on — the first item in this list shows at the bottom of the drawer.';
+      'Bottom alignment is on. The first item here appears at the bottom of the drawer.';
 
   late final Translations$settings$interface$drawerItems$en drawerItems = Translations$settings$interface$drawerItems$en.internal(_root);
 
@@ -4771,6 +4784,9 @@ class Translations$media$loading$en {
   /// en: 'Restart loading'
   String get restartLoading => TranslationOverrides.string(_root.$meta, 'media.loading.restartLoading', {}) ?? 'Restart loading';
 
+  /// en: 'Tap to update or retry'
+  String get tapToUpdateOrRetry => TranslationOverrides.string(_root.$meta, 'media.loading.tapToUpdateOrRetry', {}) ?? 'Tap to update or retry';
+
   /// en: 'Stop loading'
   String get stopLoading => TranslationOverrides.string(_root.$meta, 'media.loading.stopLoading', {}) ?? 'Stop loading';
 
@@ -5552,6 +5568,8 @@ extension on Translations {
                 '«Not loaded» - show tabs which are not loaded and/or have zero items',
           'tabs.notLoadedItalic' => TranslationOverrides.string(_root.$meta, 'tabs.notLoadedItalic', {}) ?? 'Not loaded tabs have italic text',
           'tabs.noTabsFound' => TranslationOverrides.string(_root.$meta, 'tabs.noTabsFound', {}) ?? 'No tabs found',
+          'tabs.viewAsSingleList' => TranslationOverrides.string(_root.$meta, 'tabs.viewAsSingleList', {}) ?? 'Show all tabs in one list',
+          'tabs.viewGrouped' => TranslationOverrides.string(_root.$meta, 'tabs.viewGrouped', {}) ?? 'Show tab groups',
           'tabs.copy' => TranslationOverrides.string(_root.$meta, 'tabs.copy', {}) ?? 'Copy',
           'tabs.moveAction' => TranslationOverrides.string(_root.$meta, 'tabs.moveAction', {}) ?? 'Move',
           'tabs.remove' => TranslationOverrides.string(_root.$meta, 'tabs.remove', {}) ?? 'Remove',
@@ -5622,14 +5640,18 @@ extension on Translations {
           'tabs.groups.collapse' => TranslationOverrides.string(_root.$meta, 'tabs.groups.collapse', {}) ?? 'Collapse group',
           'tabs.groups.expand' => TranslationOverrides.string(_root.$meta, 'tabs.groups.expand', {}) ?? 'Expand group',
           'tabs.groups.filterByGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.filterByGroup', {}) ?? 'Group',
-          'tabs.groups.dropToUngroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.dropToUngroup', {}) ?? 'Drop to ungroup',
-          'tabs.groups.dragToAGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.dragToAGroup', {}) ?? 'Drag to a group',
+          'tabs.groups.dropToUngroup' =>
+            TranslationOverrides.string(_root.$meta, 'tabs.groups.dropToUngroup', {}) ?? 'Drop here to remove from the group',
+          'tabs.groups.dragToAGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.dragToAGroup', {}) ?? 'Drag into a group',
           'tabs.groups.groupActions' => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupActions', {}) ?? 'Group actions',
           'tabs.groups.newerVersionBackup' =>
             TranslationOverrides.string(_root.$meta, 'tabs.groups.newerVersionBackup', {}) ??
-                'This backup is from a newer version of LoliSnatcher and could not be loaded.',
+                'This backup was created by a newer version, so it cannot be loaded.',
           'tabs.groups.malformedBackup' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.malformedBackup', {}) ?? 'Tab backup is malformed and could not be loaded.',
+            TranslationOverrides.string(_root.$meta, 'tabs.groups.malformedBackup', {}) ?? 'This tab backup is broken and cannot be loaded.',
+          'tabs.groups.backupImportFailed' =>
+            TranslationOverrides.string(_root.$meta, 'tabs.groups.backupImportFailed', {}) ??
+                'This tab backup is from a newer version or is broken, so nothing was imported.',
           'tabs.groups.newGroupTitle' => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupTitle', {}) ?? 'New group',
           'tabs.groups.create' => TranslationOverrides.string(_root.$meta, 'tabs.groups.create', {}) ?? 'Create',
           'tabs.groups.save' => TranslationOverrides.string(_root.$meta, 'tabs.groups.save', {}) ?? 'Save',
@@ -5645,35 +5667,34 @@ extension on Translations {
                   other: '${count} tabs in this group.',
                 ),
           'tabs.groups.otherwiseBecomeUngrouped' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.otherwiseBecomeUngrouped', {}) ?? 'Otherwise, tabs become ungrouped.',
+            TranslationOverrides.string(_root.$meta, 'tabs.groups.otherwiseBecomeUngrouped', {}) ?? 'Otherwise, its tabs will move to Ungrouped.',
           'tabs.groups.tabsMovedToUngrouped' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'tabs.groups.tabsMovedToUngrouped', {'count': count}) ??
                 (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
                   count,
-                  one: '${count} tab moved to ungrouped',
-                  other: '${count} tabs moved to ungrouped',
+                  one: 'Moved ${count} tab to Ungrouped',
+                  other: 'Moved ${count} tabs to Ungrouped',
                 ),
-          'tabs.groups.chooseGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.chooseGroup', {}) ?? 'Choose group',
+          'tabs.groups.chooseGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.chooseGroup', {}) ?? 'Choose a group',
           'tabs.groups.unknownGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.unknownGroup', {}) ?? 'Unknown group',
           'tabs.groups.ungroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.ungroup', {}) ?? 'Ungroup',
           'tabs.groups.helpTapNewGroup' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapNewGroup', {}) ??
-                'Tap "New group" at the bottom of the list to create a group.',
+            TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapNewGroup', {}) ?? 'Tap “New group” at the bottom of the list to create one.',
           'tabs.groups.helpDragTabHandle' =>
             TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragTabHandle', {}) ??
-                'Drag the handle on the left of a tab to move it between groups.',
+                'Long-press a tab, then drag it onto a group header or any tab in that group.',
           'tabs.groups.helpDragGroupHandle' =>
             TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragGroupHandle', {}) ??
-                'Drag the handle on the left of a group header to reorder groups.',
+                'Long-press a group header, then drag it onto another header to reorder groups.',
           'tabs.groups.helpTapHeaderCollapse' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapHeaderCollapse', {}) ?? 'Tap a group header to collapse / expand it.',
+            TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapHeaderCollapse', {}) ?? 'Tap a group header to collapse or expand it.',
           'tabs.groups.helpTapMoreVert' =>
             TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapMoreVert', {}) ??
-                'Tap ⋯ on a group header to rename, recolor, or delete the group.',
+                'Tap ⋮ on a group header to rename it, change its color, or delete it.',
           'tabs.groups.helpPrevNextInherits' =>
             TranslationOverrides.string(_root.$meta, 'tabs.groups.helpPrevNextInherits', {}) ??
-                'New tabs added "Prev"/"Next" inherit the current tab\'s group. Tabs added at the end are ungrouped.',
+                'Tabs added with “Prev tab” or “Next tab” position options join the current tab\'s group. Tabs added at the end stay ungrouped.',
           'history.searchHistory' => TranslationOverrides.string(_root.$meta, 'history.searchHistory', {}) ?? 'Search history',
           'history.searchHistoryIsEmpty' => TranslationOverrides.string(_root.$meta, 'history.searchHistoryIsEmpty', {}) ?? 'Search history is empty',
           'history.searchHistoryIsDisabled' =>
@@ -5917,27 +5938,27 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.interface.disableVibrationSubtitle', {}) ??
                 'May still happen on some actions even when disabled',
           'settings.interface.tabManagerBottomBar' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBar', {}) ?? 'Tab manager bottom action bar',
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBar', {}) ?? 'Tab manager bottom bar',
           'settings.interface.tabManagerBottomBarSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBarSubtitle', {}) ??
-                'Show scroll-to-top / current / bottom and close buttons at the bottom of the tabs manager. Floating buttons for new tab / new group are always shown.',
+                'Show Top, Current, Bottom, and Close controls at the bottom of the tab manager. New-tab and new-group actions remain floating.',
           'settings.interface.drawerBottomAlign' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlign', {}) ?? 'Bottom-align main drawer',
+            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlign', {}) ?? 'Align the side drawer to the bottom',
           'settings.interface.drawerBottomAlignSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlignSubtitle', {}) ??
-                'Stack the side drawer\'s contents from the bottom up (search, then current tab, then tab actions, then everything else) for easier one-handed thumb reach.',
+                'Arrange drawer items from the bottom up so they are easier to reach with one hand.',
           'settings.interface.drawerLayoutTitle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutTitle', {}) ?? 'Drawer layout',
+            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutTitle', {}) ?? 'Side drawer layout',
           'settings.interface.drawerLayoutSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutSubtitle', {}) ??
-                'Choose which items appear in the side drawer and their order.',
+                'Choose and reorder the items shown in the side drawer.',
           'settings.interface.drawerLayoutPinned' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutPinned', {}) ?? 'Pinned — always shown',
+            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutPinned', {}) ?? 'Pinned — cannot be hidden',
           'settings.interface.drawerLayoutRestoreDefaults' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutRestoreDefaults', {}) ?? 'Restore defaults',
           'settings.interface.drawerLayoutBottomAlignHint' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutBottomAlignHint', {}) ??
-                'Bottom-align is on — the first item in this list shows at the bottom of the drawer.',
+                'Bottom alignment is on. The first item here appears at the bottom of the drawer.',
           'settings.interface.drawerItems.search' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.search', {}) ?? 'Search bar',
           'settings.interface.drawerItems.tabSelector' =>
@@ -6088,14 +6109,14 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.hideToolbarWhenOpeningViewer', {}) ?? 'Hide toolbar when opening viewer',
           'settings.viewer.expandDetailsByDefault' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.expandDetailsByDefault', {}) ?? 'Expand details by default',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.viewer.hideTranslationNotesByDefault' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.hideTranslationNotesByDefault', {}) ?? 'Hide translation notes by default',
           'settings.viewer.enableRotation' => TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotation', {}) ?? 'Enable rotation',
           'settings.viewer.enableRotationSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotationSubtitle', {}) ?? 'Double tap to reset',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.viewer.toolbarButtonsOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.toolbarButtonsOrder', {}) ?? 'Toolbar buttons order',
           'settings.viewer.buttonsOrder' => TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonsOrder', {}) ?? 'Buttons order',
@@ -7054,12 +7075,12 @@ extension on Translations {
           'tagView.history' => TranslationOverrides.string(_root.$meta, 'tagView.history', {}) ?? 'History',
           'tagView.failedToLoadPreviewPage' =>
             TranslationOverrides.string(_root.$meta, 'tagView.failedToLoadPreviewPage', {}) ?? 'Failed to load preview page',
-          'tagView.tryAgain' => TranslationOverrides.string(_root.$meta, 'tagView.tryAgain', {}) ?? 'Try again',
-          'tagView.detectedLinks' => TranslationOverrides.string(_root.$meta, 'tagView.detectedLinks', {}) ?? 'Detected links:',
-          'tagView.relatedTabs' => TranslationOverrides.string(_root.$meta, 'tagView.relatedTabs', {}) ?? 'Related tabs',
           _ => null,
         } ??
         switch (path) {
+          'tagView.tryAgain' => TranslationOverrides.string(_root.$meta, 'tagView.tryAgain', {}) ?? 'Try again',
+          'tagView.detectedLinks' => TranslationOverrides.string(_root.$meta, 'tagView.detectedLinks', {}) ?? 'Detected links:',
+          'tagView.relatedTabs' => TranslationOverrides.string(_root.$meta, 'tagView.relatedTabs', {}) ?? 'Related tabs',
           'tagView.tabsWithOnlyTag' => TranslationOverrides.string(_root.$meta, 'tagView.tabsWithOnlyTag', {}) ?? 'Tabs with only this tag',
           'tagView.tabsWithOnlyTagDifferentBooru' =>
             TranslationOverrides.string(_root.$meta, 'tagView.tabsWithOnlyTagDifferentBooru', {}) ??
@@ -7291,6 +7312,8 @@ extension on Translations {
           'media.loading.loading' => TranslationOverrides.string(_root.$meta, 'media.loading.loading', {}) ?? 'Loading…',
           'media.loading.loadAnyway' => TranslationOverrides.string(_root.$meta, 'media.loading.loadAnyway', {}) ?? 'Load anyway',
           'media.loading.restartLoading' => TranslationOverrides.string(_root.$meta, 'media.loading.restartLoading', {}) ?? 'Restart loading',
+          'media.loading.tapToUpdateOrRetry' =>
+            TranslationOverrides.string(_root.$meta, 'media.loading.tapToUpdateOrRetry', {}) ?? 'Tap to update or retry',
           'media.loading.stopLoading' => TranslationOverrides.string(_root.$meta, 'media.loading.stopLoading', {}) ?? 'Stop loading',
           'media.loading.startedSecondsAgo' =>
             ({required int seconds}) =>

@@ -2,7 +2,7 @@
 ///
 /// The user picks which items appear and their order via
 /// **Settings → User Interface → Drawer layout**. The list of selected items
-/// is persisted in [SettingsHandler.mainDrawerItems]; the order matters,
+/// is persisted in SettingsHandler.mainDrawerItems; the order matters,
 /// and absence from the list means the section is disabled. [settings] is
 /// pinned and cannot be removed.
 enum MainDrawerItem {
@@ -57,6 +57,5 @@ enum MainDrawerItem {
     return result;
   }
 
-  static String toCsv(List<MainDrawerItem> items) =>
-      items.map((e) => e.name).join(',');
+  static String toCsv(List<MainDrawerItem> items) => items.map((e) => e.name).join(',');
 }

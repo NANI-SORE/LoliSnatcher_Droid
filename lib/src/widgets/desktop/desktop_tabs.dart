@@ -113,12 +113,10 @@ class _DesktopTabsState extends State<DesktopTabs> {
     final isNotEmptyBooru = tab.selectedBooru.value.faviconURL != null;
     final totalCount = tab.booruHandler.totalCount.value;
     final totalCountText = (totalCount > 0) ? ' ($totalCount)' : '';
-    final tagText = "${tab.tags == "" ? "[No Tags]" : tab.tags}$totalCountText";
+    final tagText = '${tab.tags.isEmpty ? context.loc.tabs.empty : tab.tags}$totalCountText';
     final isSelected = searchHandler.currentIndex == searchHandler.tabs.indexOf(tab);
 
-    final borderColor = isSelected
-        ? Colors.red
-        : (insideGroup ? Colors.transparent : Colors.grey);
+    final borderColor = isSelected ? Colors.red : (insideGroup ? Colors.transparent : Colors.grey);
 
     final pill = Container(
       decoration: BoxDecoration(
@@ -141,10 +139,7 @@ class _DesktopTabsState extends State<DesktopTabs> {
             ),
             const SizedBox(width: 4),
           ],
-          if (isNotEmptyBooru)
-            BooruFavicon(tab.selectedBooru.value)
-          else
-            const Icon(CupertinoIcons.question, size: 20),
+          if (isNotEmptyBooru) BooruFavicon(tab.selectedBooru.value) else const Icon(CupertinoIcons.question, size: 20),
           const SizedBox(width: 3),
           MarqueeText(
             key: ValueKey(tagText),
@@ -420,8 +415,7 @@ class _DesktopTabsState extends State<DesktopTabs> {
                       index: index,
                       child: switch (item) {
                         _DesktopTabItem(:final tab) => _buildTabPill(tab),
-                        _DesktopGroupItem(:final group, :final tabs) =>
-                          _buildGroupCapsule(group, tabs),
+                        _DesktopGroupItem(:final group, :final tabs) => _buildGroupCapsule(group, tabs),
                       },
                     );
                   },
@@ -430,14 +424,12 @@ class _DesktopTabsState extends State<DesktopTabs> {
             ),
             const SizedBox(width: 3),
             IconButton(
-              tooltip: 'New tab',
+              tooltip: context.loc.tabs.addNewTab,
               onPressed: () {
                 // Use the current booru's defTags if set, otherwise the global
                 // default from Boorus & Search settings.
                 final booru = searchHandler.currentBooru;
-                final query = (booru.defTags?.isNotEmpty == true)
-                    ? booru.defTags!
-                    : SettingsHandler.instance.defTags;
+                final query = (booru.defTags?.isNotEmpty == true) ? booru.defTags! : SettingsHandler.instance.defTags;
                 searchHandler.addTabByString(query, switchToNew: true);
               },
               icon: const Icon(Icons.add),

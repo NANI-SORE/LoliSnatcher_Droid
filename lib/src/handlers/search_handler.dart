@@ -345,8 +345,7 @@ class SearchHandler {
     final group = groupById(id);
     if (group == null) return;
 
-    final List<SearchTab> tabsInGroup =
-        tabs.where((t) => t.groupId.value == id).toList();
+    final List<SearchTab> tabsInGroup = tabs.where((t) => t.groupId.value == id).toList();
 
     if (deleteTabs && tabsInGroup.isNotEmpty) {
       removeTabs(tabsInGroup);
@@ -366,9 +365,10 @@ class SearchHandler {
 
       if (tabsInGroup.isNotEmpty) {
         try {
+          final context = NavigationHandler.instance.navContext;
           FlashElements.showSnackbar(
             title: Text(
-              '${tabsInGroup.length} tab${tabsInGroup.length == 1 ? '' : 's'} moved to ungrouped',
+              context.loc.tabs.groups.tabsMovedToUngrouped(count: tabsInGroup.length),
               style: const TextStyle(fontSize: 18),
             ),
             sideColor: Colors.blue,
@@ -384,9 +384,17 @@ class SearchHandler {
     unawaited(backupTabs());
   }
 
-  /// Assign a single tab to [newGroupId] (or `null` for ungrouped). The tab
-  /// lands at the END of the destination group's contiguous range (§0.1).
-  void assignTabToGroup(SearchTab tab, String? newGroupId) {
+  /// Assign a single tab to [newGroupId] (or `null` for ungrouped).
+  ///
+  /// By default the tab lands at the end of the destination group's
+  /// contiguous range (§0.1). When [targetTab] belongs to that destination,
+  /// the tab is placed at its position instead. Both changes are persisted as
+  /// one operation so drag/drop previews match the restored order.
+  void assignTabToGroup(
+    SearchTab tab,
+    String? newGroupId, {
+    SearchTab? targetTab,
+  }) {
     if (tab.groupId.value == newGroupId) return;
     if (newGroupId != null && groupById(newGroupId) == null) return;
 
@@ -399,7 +407,17 @@ class SearchHandler {
     input.add(tab);
 
     final SearchTab? currentTabRef = tabs.isNotEmpty ? tabs[currentIndex] : null;
-    tabs.value = _normalizeTabsByGroup(input, tabGroups.value);
+    final normalizedTabs = _normalizeTabsByGroup(input, tabGroups.value);
+    if (targetTab != null && targetTab != tab && targetTab.groupId.value == newGroupId) {
+      final fromIndex = normalizedTabs.indexOf(tab);
+      final toIndex = normalizedTabs.indexOf(targetTab);
+      if (fromIndex >= 0 && toIndex >= 0 && fromIndex != toIndex) {
+        normalizedTabs.removeAt(fromIndex);
+        normalizedTabs.insert(toIndex, tab);
+      }
+    }
+
+    tabs.value = normalizedTabs;
     if (currentTabRef != null) {
       final newIdx = tabs.indexOf(currentTabRef);
       changeTabIndex(newIdx < 0 ? 0 : newIdx);
@@ -1312,8 +1330,8 @@ class SearchHandler {
         title: Text(context.loc.searchHandler.tabsRestored, style: const TextStyle(fontSize: 20)),
         content: Text(
           parsed.failureReason == 'unsupported-version'
-              ? 'This backup is from a newer version of LoliSnatcher and could not be loaded.'
-              : 'Tab backup is malformed and could not be loaded.',
+              ? context.loc.tabs.groups.newerVersionBackup
+              : context.loc.tabs.groups.malformedBackup,
         ),
         sideColor: Colors.orange,
         leadingIcon: Icons.warning_amber,
@@ -1448,7 +1466,7 @@ class SearchHandler {
       final context = NavigationHandler.instance.navContext;
       FlashElements.showSnackbar(
         title: Text(context.loc.searchHandler.tabsMerged),
-        content: const Text('Tab backup is from a newer version or malformed; nothing was imported.'),
+        content: Text(context.loc.tabs.groups.backupImportFailed),
         sideColor: Colors.orange,
         leadingIcon: Icons.warning_amber,
       );
@@ -1482,9 +1500,7 @@ class SearchHandler {
     final List<TabBackup> tabBackups = TabBackup.fromJsonList(tabsString);
     final List<SearchTab> restoredTabs = [];
     for (final tb in tabBackups) {
-      final remappedGroupId = tb.groupId == null
-          ? null
-          : (remapped[tb.groupId] ?? tb.groupId);
+      final remappedGroupId = tb.groupId == null ? null : (remapped[tb.groupId] ?? tb.groupId);
       final remappedBackup = tb.copyWith(groupId: remappedGroupId);
       final newTab = parseTabFromBackup(remappedBackup);
 
@@ -1522,7 +1538,7 @@ class SearchHandler {
       final context = NavigationHandler.instance.navContext;
       FlashElements.showSnackbar(
         title: Text(context.loc.searchHandler.tabsReplaced),
-        content: const Text('Tab backup is from a newer version or malformed; nothing was imported.'),
+        content: Text(context.loc.tabs.groups.backupImportFailed),
         sideColor: Colors.orange,
         leadingIcon: Icons.warning_amber,
       );
@@ -1604,8 +1620,7 @@ class SearchHandler {
       // bare array so older app versions (and external tooling) can still read
       // backups produced by this version.
       if (tabGroups.isNotEmpty) {
-        final List<String> groupsDump =
-            tabGroups.map((g) => jsonEncode(g.toJson())).toList();
+        final List<String> groupsDump = tabGroups.map((g) => jsonEncode(g.toJson())).toList();
         final String groupsBody = '[${groupsDump.join(',')}]';
         final String ungroupedCollapsedBody = ungroupedCollapsed.value ? ',"uc":true' : '';
         return '{"v":2,"groups":$groupsBody,"tabs":$tabsBody$ungroupedCollapsedBody}';
