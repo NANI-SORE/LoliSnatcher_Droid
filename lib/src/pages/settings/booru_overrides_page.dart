@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:lolisnatcher/gen/strings.g.dart';
-import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/settings/setting_def.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/settings/setting_state.dart';
@@ -14,7 +13,7 @@ import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
 
 enum _OverrideResetAction { category, all }
 
-/// Page for editing per-booru setting overrides.
+/// Embedded editor for per-booru setting overrides.
 ///
 /// Wraps its content in a [BooruEditingScope] so that setting widgets
 /// automatically read/write override values for the given booru instead
@@ -25,30 +24,28 @@ enum _OverrideResetAction { category, all }
 /// - "Using default" badge when no override exists (tap to customize)
 /// - "Custom" badge with reset button when an override is active
 ///
-/// Saves override changes immediately unless [saveOnPop] is false, e.g. when
-/// opened from [BooruEdit] which handles its own save.
-class BooruOverridesPage extends StatefulWidget {
-  const BooruOverridesPage({
-    required this.booru,
+/// Override changes are saved immediately when [autosave] is true.
+class BooruOverridesEditor extends StatefulWidget {
+  const BooruOverridesEditor({
+    required this.booruName,
+    this.displayName,
     this.initialCategory,
     this.initialSettingKey,
-    this.saveOnPop = true,
+    this.autosave = true,
     super.key,
   });
 
-  final Booru booru;
+  final String booruName;
+  final String? displayName;
   final SettingCategory? initialCategory;
   final SettingKey? initialSettingKey;
-
-  /// Whether override changes should save immediately.
-  /// Set to false when opened from [BooruEdit] which handles its own save.
-  final bool saveOnPop;
+  final bool autosave;
 
   @override
-  State<BooruOverridesPage> createState() => _BooruOverridesPageState();
+  State<BooruOverridesEditor> createState() => _BooruOverridesEditorState();
 }
 
-class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProviderStateMixin {
+class _BooruOverridesEditorState extends State<BooruOverridesEditor> with TickerProviderStateMixin {
   late final Map<SettingCategory, List<SettingState<dynamic>>> grouped;
   late final List<SettingCategory> categories;
   late final TabController tabController;
@@ -143,7 +140,7 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
         contentItems: [
           Text(
             context.loc.settings.resetAllOverridesDescription(
-              booru: widget.booru.name ?? '',
+              booru: widget.displayName ?? widget.booruName,
             ),
           ),
         ],
@@ -168,12 +165,12 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
     switch (action) {
       case _OverrideResetAction.category:
         for (final state in categoryStates) {
-          state.removeOverrideFor(booruName, save: widget.saveOnPop);
+          state.removeOverrideFor(booruName, save: widget.autosave);
         }
         setState(() {});
         break;
       case _OverrideResetAction.all:
-        registry.removeAllOverridesForBooru(booruName, save: widget.saveOnPop);
+        registry.removeAllOverridesForBooru(booruName, save: widget.autosave);
         setState(() {});
         break;
       case null:
@@ -190,63 +187,61 @@ class _BooruOverridesPageState extends State<BooruOverridesPage> with TickerProv
 
   @override
   Widget build(BuildContext context) {
-    final booruName = widget.booru.name ?? '';
+    final booruName = widget.booruName;
     final registry = SettingsRegistry.instance;
     final perBooruSettings = registry.perBooruSettings
         .where((s) => registry.isSettingVisible(s) && s.def.widgetBuilder != null)
         .toList();
 
-    final Widget body = Scaffold(
-      resizeToAvoidBottomInset: true,
-      appBar: SettingsAppBar(
-        title: context.loc.settings.booruOverridesTitle(
-          booru: widget.booru.name ?? '',
-        ),
-        actions: [
-          if (perBooruSettings.any((s) => s.hasOverrideFor(booruName)))
-            IconButton(
-              icon: const Icon(Icons.restart_alt),
-              tooltip: context.loc.settings.resetAllOverrides,
-              onPressed: () => _showResetOverridesDialog(registry, booruName),
-            ),
-        ],
-        bottom: categories.length > 1
-            ? TabBar(
-                controller: tabController,
-                indicatorColor: Theme.of(context).colorScheme.secondary,
-                labelColor: Theme.of(context).colorScheme.onSecondary,
-                unselectedLabelColor: Theme.of(context).colorScheme.onSecondary.withValues(alpha: 0.66),
-                labelStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                unselectedLabelStyle: const TextStyle(fontSize: 16),
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                tabs: [
-                  for (final cat in categories)
-                    Tab(
-                      icon: cat.iconWidget(),
-                      text: cat.locName(context),
+    final Widget body = perBooruSettings.isEmpty
+        ? const Center(child: CircularProgressIndicator())
+        : Column(
+            children: [
+              Material(
+                color: Theme.of(context).colorScheme.surfaceContainer,
+                child: Row(
+                  children: [
+                    if (categories.length > 1)
+                      Expanded(
+                        child: TabBar(
+                          controller: tabController,
+                          isScrollable: true,
+                          tabAlignment: TabAlignment.start,
+                          tabs: [
+                            for (final cat in categories)
+                              Tab(
+                                icon: cat.iconWidget(),
+                                text: cat.locName(context),
+                              ),
+                          ],
+                        ),
+                      )
+                    else
+                      const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.restart_alt),
+                      tooltip: context.loc.settings.resetAllOverrides,
+                      onPressed: () => _showResetOverridesDialog(registry, booruName),
                     ),
-                ],
-              )
-            : null,
-      ),
-      body: perBooruSettings.isEmpty
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
-          : categories.length == 1
-          ? _buildCategoryList(categories.first, showHeader: true)
-          : TabBarView(
-              controller: tabController,
-              children: [
-                for (final cat in categories) _buildCategoryList(cat),
-              ],
-            ),
-    );
+                  ],
+                ),
+              ),
+              Expanded(
+                child: categories.length == 1
+                    ? _buildCategoryList(categories.first, showHeader: true)
+                    : TabBarView(
+                        controller: tabController,
+                        children: [
+                          for (final cat in categories) _buildCategoryList(cat),
+                        ],
+                      ),
+              ),
+            ],
+          );
 
     return BooruEditingScope(
       booruName: booruName,
-      autosave: widget.saveOnPop,
+      autosave: widget.autosave,
       child: body,
     );
   }

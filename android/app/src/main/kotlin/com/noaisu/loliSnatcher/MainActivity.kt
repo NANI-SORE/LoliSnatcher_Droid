@@ -277,6 +277,17 @@ class MainActivity: FlutterFragmentActivity() {
                             result.error("INVALID_ARGUMENT", "URI is null", null)
                         }
                     }
+                    "canAccessSafDirectory" -> {
+                        val uri = call.argument<String>("uri")
+                        if (uri != null) {
+                            Executors.newSingleThreadExecutor().execute {
+                                val canAccess = canAccessSafDirectory(uri)
+                                runOnUiThread { result.success(canAccess) }
+                            }
+                        } else {
+                            result.error("INVALID_ARGUMENT", "URI is null", null)
+                        }
+                    }
                     "deleteFileByName" -> {
                         val uri = call.argument<String>("uri")
                         val fileName = call.argument<String>("fileName")
@@ -570,6 +581,28 @@ class MainActivity: FlutterFragmentActivity() {
         } catch (e: Exception) {
             Log.e("MainActivity", "Error reading SAF file: $fileName", e)
             null
+        }
+    }
+
+    private fun canAccessSafDirectory(uriString: String): Boolean {
+        return try {
+            val uri = Uri.parse(uriString)
+            if (uri == Uri.EMPTY) return false
+
+            val permissionFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            val hasPermission = checkUriPermission(
+                uri,
+                android.os.Process.myPid(),
+                android.os.Process.myUid(),
+                permissionFlags
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!hasPermission) return false
+
+            val directory = DocumentFile.fromTreeUri(applicationContext, uri) ?: return false
+            directory.exists() && directory.isDirectory && directory.canRead() && directory.canWrite()
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Unable to access SAF directory: $uriString", e)
+            false
         }
     }
 

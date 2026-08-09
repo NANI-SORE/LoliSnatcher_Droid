@@ -889,7 +889,7 @@ class _Translations$settings$ru_RU extends Translations$settings$en {
   @override
   String get noSettingsFound => TranslationOverrides.string(_root.$meta, 'settings.noSettingsFound', {}) ?? 'Настройки не найдены';
   @override
-  String get perBooruSettings => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Индивидуальные настройки для сайта';
+  String get perBooruSettings => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Особые настройки';
   @override
   String resetCategoryQuestion({required String category}) =>
       TranslationOverrides.string(_root.$meta, 'settings.resetCategoryQuestion', {'category': category}) ??
@@ -4604,8 +4604,7 @@ extension on TranslationsRuRu {
           'settings.typeToSearch' =>
             TranslationOverrides.string(_root.$meta, 'settings.typeToSearch', {}) ?? 'Начни вводить текст для поиска по настройкам',
           'settings.noSettingsFound' => TranslationOverrides.string(_root.$meta, 'settings.noSettingsFound', {}) ?? 'Настройки не найдены',
-          'settings.perBooruSettings' =>
-            TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Индивидуальные настройки для сайта',
+          'settings.perBooruSettings' => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Особые настройки',
           'settings.resetCategoryQuestion' =>
             ({required String category}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.resetCategoryQuestion', {'category': category}) ??

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -48,6 +49,7 @@ import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/confirm_button.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/settings/cache_stats_widget.dart';
+import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
 import 'package:lolisnatcher/src/widgets/settings/cookie_manager_widget.dart';
 import 'package:lolisnatcher/src/widgets/settings/database_actions_widget.dart';
 import 'package:lolisnatcher/src/widgets/settings/database_page_lock.dart';
@@ -1071,22 +1073,19 @@ void registerAllSettings() {
       supportsPerBooru: true,
       visibleWhen: () => Platform.isAndroid,
       pickFile: ServiceHandler.getImageSAFUri,
+      accessValidator: (path) => File(path).exists(),
       setButtonLabel: (ctx) => ctx.loc.settings.theme.setCustomMascot,
       removeButtonLabel: (ctx) => ctx.loc.settings.theme.removeCustomMascot,
+      transformPickedPath: (ctx, path) {
+        final booruName = BooruEditingScope.of(ctx);
+        final scopeKey = booruName == null ? null : base64Url.encode(utf8.encode(booruName)).replaceAll('=', '');
+        final fileName = scopeKey == null ? 'mascot' : 'mascot_$scopeKey';
+        return ImageWriter().writeMascotImage(path, fileName: fileName);
+      },
       onRemove: (path) async {
         if (path.isNotEmpty) {
           final file = File(path);
           if (await file.exists()) await file.delete();
-        }
-      },
-      onChanged: (oldValue, newValue) async {
-        if (newValue.isNotEmpty) {
-          // Write mascot image to app directory
-          final writtenPath = await ImageWriter().writeMascotImage(newValue);
-          final state = SettingsRegistry.instance.get<String>(.drawerMascotPathOverride);
-          if (state != null && writtenPath != newValue) {
-            state.globalValue = writtenPath;
-          }
         }
       },
       localization: SettingLocalization(
@@ -1215,6 +1214,7 @@ void registerAllSettings() {
       isDeviceSpecific: true,
       visibleWhen: () => Platform.isAndroid,
       pickDirectory: ServiceHandler.setExtDir,
+      accessValidator: ServiceHandler.canAccessSAFDirectory,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.cache.setStorageDirectory,
       ),
@@ -1308,6 +1308,7 @@ void registerAllSettings() {
       isDeviceSpecific: true,
       visibleWhen: () => Platform.isAndroid,
       pickDirectory: ServiceHandler.getSAFDirectoryAccess,
+      accessValidator: ServiceHandler.canAccessSAFDirectory,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.backupAndRestore.selectBackupDir,
       ),
@@ -1442,7 +1443,7 @@ void registerAllSettings() {
       categories: [SettingCategory.network],
       subcategories: [SettingSubcategory.security],
       isDeviceSpecific: true,
-      onChanged: (_, _) => initProxy(),
+      onChanged: (_, _) => scheduleProxyRefresh(),
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.network.enableSelfSignedSSLCertificates,
       ),
@@ -1461,7 +1462,7 @@ void registerAllSettings() {
       supportsPerBooru: true,
       // The installed callback reads effective settings dynamically. Re-run
       // initialization only to refresh the OS proxy address for system mode.
-      onChanged: (_, _) => initProxy(),
+      onChanged: (_, _) => scheduleProxyRefresh(),
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.network.proxy,
         subtitle: (ctx) => ctx.loc.settings.network.proxySubtitle,
@@ -1482,7 +1483,7 @@ void registerAllSettings() {
         final t = _val<ProxyType>(.proxyType, context);
         return t != ProxyType.direct && t != ProxyType.system;
       },
-      onChanged: (_, _) => initProxy(),
+      onChanged: (_, _) => scheduleProxyRefresh(),
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.address,
       ),
@@ -1502,7 +1503,7 @@ void registerAllSettings() {
         final t = _val<ProxyType>(.proxyType, context);
         return t != ProxyType.direct && t != ProxyType.system;
       },
-      onChanged: (_, _) => initProxy(),
+      onChanged: (_, _) => scheduleProxyRefresh(),
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.username,
       ),
@@ -1523,7 +1524,7 @@ void registerAllSettings() {
         final t = _val<ProxyType>(.proxyType, context);
         return t != ProxyType.direct && t != ProxyType.system;
       },
-      onChanged: (_, _) => initProxy(),
+      onChanged: (_, _) => scheduleProxyRefresh(),
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.password,
       ),

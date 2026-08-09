@@ -376,7 +376,7 @@
         "title": "Настройки",
         "typeToSearch": "Начни вводить текст для поиска по настройкам",
         "noSettingsFound": "Настройки не найдены",
-        "perBooruSettings": "Индивидуальные настройки для сайта",
+        "perBooruSettings": "Особые настройки",
         "resetCategoryQuestion(param=category)": "Сбросить все настройки категории «${category: String}» до значений по умолчанию?",
         "globalValue(param=value)": "Глобально: ${value: String}",
         "booruOverridesTitle(param=booru)": "${booru: String} — Индивидуальные настройки",

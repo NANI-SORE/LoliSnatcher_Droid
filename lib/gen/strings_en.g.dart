@@ -1094,8 +1094,8 @@ class Translations$settings$en {
   /// en: 'No settings found'
   String get noSettingsFound => TranslationOverrides.string(_root.$meta, 'settings.noSettingsFound', {}) ?? 'No settings found';
 
-  /// en: 'Per-booru Settings'
-  String get perBooruSettings => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Per-booru Settings';
+  /// en: 'Overrides'
+  String get perBooruSettings => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Overrides';
 
   /// en: 'Reset all ${category: String} settings to their defaults?'
   String resetCategoryQuestion({required String category}) =>
@@ -5639,7 +5639,7 @@ extension on Translations {
           'settings.title' => TranslationOverrides.string(_root.$meta, 'settings.title', {}) ?? 'Settings',
           'settings.typeToSearch' => TranslationOverrides.string(_root.$meta, 'settings.typeToSearch', {}) ?? 'Type to search settings',
           'settings.noSettingsFound' => TranslationOverrides.string(_root.$meta, 'settings.noSettingsFound', {}) ?? 'No settings found',
-          'settings.perBooruSettings' => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Per-booru Settings',
+          'settings.perBooruSettings' => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Overrides',
           'settings.resetCategoryQuestion' =>
             ({required String category}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.resetCategoryQuestion', {'category': category}) ??

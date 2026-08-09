@@ -376,7 +376,7 @@
         "title": "Settings",
         "typeToSearch": "Type to search settings",
         "noSettingsFound": "No settings found",
-        "perBooruSettings": "Per-booru Settings",
+        "perBooruSettings": "Overrides",
         "resetCategoryQuestion(param=category)": "Reset all ${category: String} settings to their defaults?",
         "globalValue(param=value)": "Global: ${value: String}",
         "booruOverridesTitle(param=booru)": "${booru: String} — Overrides",

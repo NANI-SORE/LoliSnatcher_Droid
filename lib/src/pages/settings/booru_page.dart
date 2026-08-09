@@ -11,7 +11,6 @@ import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
-import 'package:lolisnatcher/src/pages/settings/booru_overrides_page.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -306,18 +305,6 @@ class _BooruPageState extends State<BooruPage> {
     );
   }
 
-  Widget overridesButton() {
-    if (!BooruType.saveable.contains(selectedBooru?.type)) {
-      return const SizedBox.shrink();
-    }
-
-    return SettingsButton(
-      name: context.loc.settings.perBooruSettings,
-      icon: const Icon(Icons.tune),
-      page: selectedBooru != null ? () => BooruOverridesPage(booru: selectedBooru!) : null,
-    );
-  }
-
   Widget deleteButton() {
     if (!BooruType.saveable.contains(selectedBooru?.type)) {
       return const SizedBox.shrink();
@@ -542,7 +529,6 @@ class _BooruPageState extends State<BooruPage> {
         booruSelector(),
         if (selectedBooru != null) ...[
           editButton(),
-          overridesButton(),
           shareButton(),
           webviewButton(),
           deleteButton(),

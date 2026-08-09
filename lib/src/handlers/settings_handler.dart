@@ -95,6 +95,10 @@ class SettingsHandler {
   int tagsFiltersMetadataVersion = 0;
   int booruListVersion = 0;
   final Map<String, ({Timer timer, Future<void> Function() save})> _settingsSaveDebounceTimers = {};
+  final Map<String, Future<void> Function()> _pendingSettingsSaves = {};
+  final Map<String, Future<void>> _fileWriteQueues = {};
+  Future<void> _settingsSaveQueue = Future<void>.value();
+  bool _settingsSaveBatchScheduled = false;
 
   static const Duration updateCheckInterval = Duration(hours: 12);
   Timer? _updateCheckTimer;
@@ -102,12 +106,7 @@ class SettingsHandler {
 
   void dispose() {
     _updateCheckTimer?.cancel();
-    final pendingSaves = _settingsSaveDebounceTimers.values.toList();
-    _settingsSaveDebounceTimers.clear();
-    for (final pendingSave in pendingSaves) {
-      pendingSave.timer.cancel();
-      unawaited(pendingSave.save());
-    }
+    unawaited(flushPendingSettingsSaves());
   }
 
   void _startPeriodicUpdateChecks() {
@@ -160,6 +159,17 @@ class SettingsHandler {
       await loadSettingsJson();
     } else {
       await saveSettings(restate: true);
+    }
+
+    final pickerValidation = await SettingsRegistry.instance.clearInaccessiblePickerValues();
+    if (pickerValidation.clearedGlobal.isNotEmpty) {
+      Logger.Inst().log(
+        'Cleared inaccessible picker settings: ${pickerValidation.clearedGlobal.map((key) => key.jsonKey).join(', ')}',
+        'SettingsHandler',
+        'loadSettings',
+        LogTypes.settingsError,
+      );
+      await saveSettings(restate: false);
     }
     return true;
   }
@@ -238,9 +248,7 @@ class SettingsHandler {
     json['build'] = Constants.updateInfo.buildNumber;
 
     final File settingsFile = File('${path}settings.json');
-    final writer = settingsFile.openWrite();
-    writer.write(jsonEncode(json));
-    await writer.close();
+    await _writeJsonAtomically(settingsFile, json);
 
     if (restate) {
       final searchHandler = SearchHandler.instance;
@@ -276,21 +284,95 @@ class SettingsHandler {
       await saveSettings(restate: restate);
     }
 
+    final key = booruName ?? '__global__';
     if (debounce) {
-      final key = booruName ?? '__global__';
       _settingsSaveDebounceTimers[key]?.timer.cancel();
       final timer = Timer(
         const Duration(milliseconds: 600),
         () {
           _settingsSaveDebounceTimers.remove(key);
-          unawaited(save());
+          _enqueueSettingsSave(key, save);
         },
       );
       _settingsSaveDebounceTimers[key] = (timer: timer, save: save);
       return;
     }
 
-    unawaited(save());
+    _settingsSaveDebounceTimers.remove(key)?.timer.cancel();
+    _enqueueSettingsSave(key, save);
+  }
+
+  void _enqueueSettingsSave(String key, Future<void> Function() save) {
+    _pendingSettingsSaves[key] = save;
+    if (_settingsSaveBatchScheduled) return;
+    _settingsSaveBatchScheduled = true;
+    scheduleMicrotask(_submitPendingSettingsSaves);
+  }
+
+  void _submitPendingSettingsSaves() {
+    if (!_settingsSaveBatchScheduled) return;
+    _settingsSaveBatchScheduled = false;
+    if (_pendingSettingsSaves.isEmpty) return;
+
+    final saves = _pendingSettingsSaves.values.toList(growable: false);
+    _pendingSettingsSaves.clear();
+    _settingsSaveQueue = _settingsSaveQueue.then((_) async {
+      for (final save in saves) {
+        try {
+          await save();
+        } catch (e, s) {
+          Logger.Inst().log(
+            'Failed to persist settings: $e',
+            'SettingsHandler',
+            '_submitPendingSettingsSaves',
+            LogTypes.settingsError,
+            s: s,
+          );
+        }
+      }
+    });
+  }
+
+  /// Flushes debounced and queued writes in call order.
+  Future<void> flushPendingSettingsSaves() async {
+    final debounced = _settingsSaveDebounceTimers.entries.toList(growable: false);
+    _settingsSaveDebounceTimers.clear();
+    for (final entry in debounced) {
+      entry.value.timer.cancel();
+      _pendingSettingsSaves[entry.key] = entry.value.save;
+    }
+    if (_pendingSettingsSaves.isNotEmpty) {
+      _settingsSaveBatchScheduled = true;
+    }
+
+    while (true) {
+      _submitPendingSettingsSaves();
+      final queue = _settingsSaveQueue;
+      await queue;
+      if (identical(queue, _settingsSaveQueue) && !_settingsSaveBatchScheduled && _pendingSettingsSaves.isEmpty) {
+        return;
+      }
+    }
+  }
+
+  Future<void> _writeJsonAtomically(File file, Object? value) {
+    return _queueFileOperation(file, () async {
+      await file.parent.create(recursive: true);
+      final tempFile = File('${file.path}.tmp');
+      await tempFile.writeAsString(jsonEncode(value), flush: true);
+      await tempFile.rename(file.path);
+    });
+  }
+
+  Future<void> _queueFileOperation(File file, Future<void> Function() operation) {
+    final previousWrite = _fileWriteQueues[file.path] ?? Future<void>.value();
+    final write = previousWrite.catchError((Object _) {}).then((_) => operation());
+    _fileWriteQueues[file.path] = write;
+    return write.whenComplete(() {
+      if (identical(_fileWriteQueues[file.path], write)) {
+        _fileWriteQueues.remove(file.path);
+      }
+    });
   }
 
   Future<bool> loadBoorus() async {
@@ -333,6 +415,23 @@ class SettingsHandler {
         if (booru.name != null && booru.settingOverrides != null) {
           registry.loadOverridesFromMap(booru.name!, booru.settingOverrides);
         }
+      }
+
+      final pickerValidation = await registry.clearInaccessiblePickerValues(
+        includeGlobal: false,
+        booruNames: tempList.map((booru) => booru.name).whereType<String>(),
+      );
+      for (final entry in pickerValidation.clearedOverrides.entries) {
+        final booru = tempList.where((candidate) => candidate.name == entry.key).firstOrNull;
+        if (booru == null) continue;
+        Logger.Inst().log(
+          'Cleared inaccessible picker overrides for ${entry.key}: '
+              '${entry.value.map((key) => key.jsonKey).join(', ')}',
+          'SettingsHandler',
+          'loadBoorus',
+          LogTypes.settingsError,
+        );
+        await saveBooru(booru, onlySave: true);
       }
 
       if (SX.dbEnabled.value && tempList.isNotEmpty) {
@@ -423,9 +522,7 @@ class SettingsHandler {
 
     await Directory(boorusPath).create(recursive: true);
     final File booruFile = File('$boorusPath${booru.name}.json');
-    final writer = booruFile.openWrite();
-    writer.write(jsonEncode(booru.toJson()));
-    await writer.close();
+    await _writeJsonAtomically(booruFile, booru.toJson());
 
     if (!onlySave) {
       // used only to avoid duplication after migration to json format
@@ -437,12 +534,16 @@ class SettingsHandler {
     return true;
   }
 
-  Future<bool> deleteBooru(Booru booru) async {
+  Future<bool> deleteBooru(Booru booru, {bool removeOverrides = true}) async {
     final File booruFile = File('$boorusPath${booru.name}.json');
-    await booruFile.delete();
+    await _queueFileOperation(booruFile, () async {
+      if (await booruFile.exists()) {
+        await booruFile.delete();
+      }
+    });
 
     // Clean up in-memory per-booru setting overrides
-    if (booru.name != null) {
+    if (removeOverrides && booru.name != null) {
       SettingsRegistry.instance.removeAllOverridesForBooru(booru.name!, save: false);
     }
 
