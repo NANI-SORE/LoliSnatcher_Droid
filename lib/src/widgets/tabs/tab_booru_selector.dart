@@ -7,7 +7,7 @@ import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
-import 'package:lolisnatcher/src/pages/settings/booru_overrides_page.dart';
+import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
 import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
 import 'package:lolisnatcher/src/widgets/common/marquee_text.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -64,7 +64,10 @@ class TabBooruSelector extends StatelessWidget {
               ? () {
                   SettingsPageOpen(
                     context: context,
-                    page: (_) => BooruOverridesPage(booru: selectedBooruForOverrides!),
+                    page: (_) => BooruEdit.edit(
+                      selectedBooruForOverrides!,
+                      initialSection: BooruEditSection.overrides,
+                    ),
                   ).open();
                 }
               : null,

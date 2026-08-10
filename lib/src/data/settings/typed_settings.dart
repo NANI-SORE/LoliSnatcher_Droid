@@ -560,7 +560,7 @@ SettingDef<List<String>> stringListSetting({
     onChanged: onChanged,
     valueToJson: (v) => v,
     valueFromJson: (json) {
-      if (json is List) return List<String>.from(json);
+      if (json is List) return json.whereType<String>().toList();
       if (json is String && json.isNotEmpty) return json.split(',');
       return getDefaultValue();
     },

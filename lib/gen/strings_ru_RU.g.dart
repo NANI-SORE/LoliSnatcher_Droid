@@ -893,7 +893,7 @@ class _Translations$settings$ru_RU extends Translations$settings$en {
   @override
   String get noSettingsFound => TranslationOverrides.string(_root.$meta, 'settings.noSettingsFound', {}) ?? 'Настройки не найдены';
   @override
-  String get perBooruSettings => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Индивидуальные настройки для сайта';
+  String get perBooruSettings => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Особые настройки';
   @override
   String resetCategoryQuestion({required String category}) =>
       TranslationOverrides.string(_root.$meta, 'settings.resetCategoryQuestion', {'category': category}) ??
@@ -2053,6 +2053,18 @@ class _Translations$settings$booruEditor$ru_RU extends Translations$settings$boo
   @override
   String get runningTest => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.runningTest', {}) ?? 'Выполнение теста…';
   @override
+  String get connectionSettingsChanged =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.connectionSettingsChanged', {}) ??
+      'Настройки подключения изменились во время проверки. Попробуй сохранить ещё раз.';
+  @override
+  String get saveFailed => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveFailed', {}) ?? 'Не удалось сохранить конфиг';
+  @override
+  String get overrideChangesSavedAutomatically =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.overrideChangesSavedAutomatically', {}) ?? 'Изменения сохраняются автоматически';
+  @override
+  String get noOverrideSettings =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.noOverrideSettings', {}) ?? 'Особые настройки недоступны';
+  @override
   String get booruConfigExistsError =>
       TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigExistsError', {}) ?? 'Такой конфиг уже существует';
   @override
@@ -3075,6 +3087,16 @@ class _Translations$settings$performance$ru_RU extends Translations$settings$per
   // Translations
   @override
   String get title => TranslationOverrides.string(_root.$meta, 'settings.performance.title', {}) ?? 'Производительность';
+  @override
+  String get crashDetectedTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.performance.crashDetectedTitle', {}) ?? 'Приложение вылетело в прошлый раз';
+  @override
+  String get crashDetectedMessage =>
+      TranslationOverrides.string(_root.$meta, 'settings.performance.crashDetectedMessage', {}) ??
+      'Открыть настройки производительности? Некоторые значения могут помочь избежать подобных вылетов.';
+  @override
+  String get openPerformanceSettings =>
+      TranslationOverrides.string(_root.$meta, 'settings.performance.openPerformanceSettings', {}) ?? 'Открыть настройки производительности';
   @override
   String get lowPerformanceMode =>
       TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceMode', {}) ?? 'Режим низкой производительности';
@@ -4665,8 +4687,7 @@ extension on TranslationsRuRu {
           'settings.typeToSearch' =>
             TranslationOverrides.string(_root.$meta, 'settings.typeToSearch', {}) ?? 'Начни вводить текст для поиска по настройкам',
           'settings.noSettingsFound' => TranslationOverrides.string(_root.$meta, 'settings.noSettingsFound', {}) ?? 'Настройки не найдены',
-          'settings.perBooruSettings' =>
-            TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Индивидуальные настройки для сайта',
+          'settings.perBooruSettings' => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Особые настройки',
           'settings.resetCategoryQuestion' =>
             ({required String category}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.resetCategoryQuestion', {'category': category}) ??
@@ -4816,6 +4837,16 @@ extension on TranslationsRuRu {
           'settings.booruEditor.saveBooru' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveBooru', {}) ?? 'Сохранить конфиг',
           'settings.booruEditor.runningTest' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.runningTest', {}) ?? 'Выполнение теста…',
+          'settings.booruEditor.connectionSettingsChanged' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.connectionSettingsChanged', {}) ??
+                'Настройки подключения изменились во время проверки. Попробуй сохранить ещё раз.',
+          'settings.booruEditor.saveFailed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveFailed', {}) ?? 'Не удалось сохранить конфиг',
+          'settings.booruEditor.overrideChangesSavedAutomatically' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.overrideChangesSavedAutomatically', {}) ??
+                'Изменения сохраняются автоматически',
+          'settings.booruEditor.noOverrideSettings' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.noOverrideSettings', {}) ?? 'Особые настройки недоступны',
           'settings.booruEditor.booruConfigExistsError' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigExistsError', {}) ?? 'Такой конфиг уже существует',
           'settings.booruEditor.booruSameNameExistsError' =>
@@ -5059,6 +5090,9 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.viewerToolbarPosition', {}) ?? 'Позиция панели инструментов просмотрщика',
           'settings.viewer.zoomButtonPosition' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.zoomButtonPosition', {}) ?? 'Позиция кнопки масштабирования',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.viewer.changePageButtonsPosition' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.changePageButtonsPosition', {}) ?? 'Позиция кнопок смены страниц',
           'settings.viewer.hideToolbarWhenOpeningViewer' =>
@@ -5068,9 +5102,6 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.expandDetailsByDefault', {}) ?? 'Раскрывать детали по умолчанию',
           'settings.viewer.hideTranslationNotesByDefault' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.hideTranslationNotesByDefault', {}) ?? 'Скрывать заметки перевода по умолчанию',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.viewer.enableRotation' => TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotation', {}) ?? 'Включить вращение',
           'settings.viewer.enableRotationSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotationSubtitle', {}) ?? 'Двойное нажатие для сброса',
@@ -5589,6 +5620,13 @@ extension on TranslationsRuRu {
                 'Не удалось изменить название приложения. Пожалуйста, попробуй снова.',
           'settings.privacy.restartNow' => TranslationOverrides.string(_root.$meta, 'settings.privacy.restartNow', {}) ?? 'Перезапустить сейчас',
           'settings.performance.title' => TranslationOverrides.string(_root.$meta, 'settings.performance.title', {}) ?? 'Производительность',
+          'settings.performance.crashDetectedTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.performance.crashDetectedTitle', {}) ?? 'Приложение вылетело в прошлый раз',
+          'settings.performance.crashDetectedMessage' =>
+            TranslationOverrides.string(_root.$meta, 'settings.performance.crashDetectedMessage', {}) ??
+                'Открыть настройки производительности? Некоторые значения могут помочь избежать подобных вылетов.',
+          'settings.performance.openPerformanceSettings' =>
+            TranslationOverrides.string(_root.$meta, 'settings.performance.openPerformanceSettings', {}) ?? 'Открыть настройки производительности',
           'settings.performance.lowPerformanceMode' =>
             TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceMode', {}) ?? 'Режим низкой производительности',
           'settings.performance.lowPerformanceModeSubtitle' =>
@@ -6083,6 +6121,9 @@ extension on TranslationsRuRu {
           'tagView.excludeFromSearch' => TranslationOverrides.string(_root.$meta, 'tagView.excludeFromSearch', {}) ?? 'Исключить из поиска',
           'tagView.exclusionAddedToSearchBar' =>
             TranslationOverrides.string(_root.$meta, 'tagView.exclusionAddedToSearchBar', {}) ?? 'Исключение добавлено в строку поиска:',
+          _ => null,
+        } ??
+        switch (path) {
           'tagView.addToMarked' => TranslationOverrides.string(_root.$meta, 'tagView.addToMarked', {}) ?? 'Добавить в Отмеченные',
           'tagView.addToHidden' => TranslationOverrides.string(_root.$meta, 'tagView.addToHidden', {}) ?? 'Добавить в Скрытые',
           'tagView.removeFromMarked' => TranslationOverrides.string(_root.$meta, 'tagView.removeFromMarked', {}) ?? 'Убрать из Отмеченных',
@@ -6090,9 +6131,6 @@ extension on TranslationsRuRu {
           'tagView.editTag' => TranslationOverrides.string(_root.$meta, 'tagView.editTag', {}) ?? 'Редактировать тег',
           'tagView.sourceDialogTitle' => TranslationOverrides.string(_root.$meta, 'tagView.sourceDialogTitle', {}) ?? 'Источник',
           'tagView.preview' => TranslationOverrides.string(_root.$meta, 'tagView.preview', {}) ?? 'Предпросмотр',
-          _ => null,
-        } ??
-        switch (path) {
           'tagView.selectBooruToLoad' => TranslationOverrides.string(_root.$meta, 'tagView.selectBooruToLoad', {}) ?? 'Выбери сайт для загрузки',
           'tagView.previewIsLoading' => TranslationOverrides.string(_root.$meta, 'tagView.previewIsLoading', {}) ?? 'Предпросмотр загружается…',
           'tagView.failedToLoadPreview' =>
