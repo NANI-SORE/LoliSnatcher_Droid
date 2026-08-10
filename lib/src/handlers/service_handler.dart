@@ -137,6 +137,16 @@ class ServiceHandler {
     return result;
   }
 
+  static Future<bool> canAccessSAFDirectory(String safUri) async {
+    if (safUri.isEmpty || !Platform.isAndroid) return false;
+    try {
+      return await platform.invokeMethod<bool>('canAccessSafDirectory', {'uri': safUri}) ?? false;
+    } catch (e) {
+      log(e);
+      return false;
+    }
+  }
+
   static Future<Uint8List?> getFileFromSAFDirectory(String safUri, String fileName) async {
     Uint8List? result;
     try {

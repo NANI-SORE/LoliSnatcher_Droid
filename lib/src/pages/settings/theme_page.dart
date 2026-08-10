@@ -7,7 +7,7 @@ import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/data/theme_item.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/theme_handler.dart';
-import 'package:lolisnatcher/src/pages/settings/booru_overrides_page.dart';
+import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/settings/auto_settings_page.dart';
 import 'package:lolisnatcher/src/widgets/root/theme_builder.dart';
@@ -83,9 +83,10 @@ class ThemePage extends StatelessWidget {
       if (booru.name == booruName) {
         SettingsPageOpen(
           context: context,
-          page: (_) => BooruOverridesPage(
-            booru: booru,
-            initialCategory: SettingCategory.theme,
+          page: (_) => BooruEdit.edit(
+            booru,
+            initialSection: BooruEditSection.overrides,
+            initialOverrideCategory: SettingCategory.theme,
           ),
         ).open();
         return;

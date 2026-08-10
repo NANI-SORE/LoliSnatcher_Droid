@@ -21,6 +21,7 @@ import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/ok_button.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
+import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
 import 'package:lolisnatcher/src/widgets/settings/setting_builder.dart';
 
 /// Factory for [ThemeMode] settings (System/Light/Dark).
@@ -504,6 +505,7 @@ SettingDef<String> directoryPickerSetting({
   required String Function() getDefaultValue,
   required SettingLocalization localization,
   required Future<String> Function() pickDirectory,
+  required SettingAccessValidator<String> accessValidator,
   List<SettingCategory> categories = const [],
   List<SettingSubcategory> subcategories = const [],
   bool isDeviceSpecific = false,
@@ -523,6 +525,7 @@ SettingDef<String> directoryPickerSetting({
     dependsOn: dependsOn,
     enabledWhen: enabledWhen,
     onChanged: onChanged,
+    accessValidator: accessValidator,
     valueToJson: (v) => v,
     valueFromJson: (json) {
       if (json is String) return json;
@@ -548,8 +551,10 @@ SettingDef<String> filePickerSetting({
   required String Function() getDefaultValue,
   required SettingLocalization localization,
   required Future<String> Function() pickFile,
+  required SettingAccessValidator<String> accessValidator,
   String Function(BuildContext context)? setButtonLabel,
   String Function(BuildContext context)? removeButtonLabel,
+  Future<String> Function(BuildContext context, String path)? transformPickedPath,
   Future<void> Function(String path)? onRemove,
   List<SettingCategory> categories = const [],
   List<SettingSubcategory> subcategories = const [],
@@ -572,6 +577,7 @@ SettingDef<String> filePickerSetting({
     dependsOn: dependsOn,
     enabledWhen: enabledWhen,
     onChanged: onChanged,
+    accessValidator: accessValidator,
     valueToJson: (v) => v,
     valueFromJson: (json) {
       if (json is String) return json;
@@ -585,6 +591,7 @@ SettingDef<String> filePickerSetting({
         pickFile: pickFile,
         setButtonLabel: setButtonLabel,
         removeButtonLabel: removeButtonLabel,
+        transformPickedPath: transformPickedPath,
         onRemove: onRemove,
       );
     },
@@ -1313,6 +1320,7 @@ class _FilePickerSettingWidget extends StatelessWidget {
     required this.pickFile,
     this.setButtonLabel,
     this.removeButtonLabel,
+    this.transformPickedPath,
     this.onRemove,
   });
 
@@ -1321,6 +1329,7 @@ class _FilePickerSettingWidget extends StatelessWidget {
   final Future<String> Function() pickFile;
   final String Function(BuildContext context)? setButtonLabel;
   final String Function(BuildContext context)? removeButtonLabel;
+  final Future<String> Function(BuildContext context, String path)? transformPickedPath;
   final Future<void> Function(String path)? onRemove;
 
   @override
@@ -1337,9 +1346,14 @@ class _FilePickerSettingWidget extends StatelessWidget {
               subtitle: scopedVal.isEmpty ? null : Text('${localization.title(ctx)}: $scopedVal'),
               icon: const Icon(Icons.image_search_outlined),
               action: () async {
-                final path = await pickFile();
-                if (path.isNotEmpty) {
-                  setting.setScopedValue(ctx, path);
+                final selectedPath = await pickFile();
+                if (selectedPath.isNotEmpty) {
+                  final path = transformPickedPath == null
+                      ? selectedPath
+                      : await transformPickedPath!(ctx, selectedPath);
+                  if (path.isNotEmpty) {
+                    setting.setScopedValue(ctx, path);
+                  }
                 }
               },
             ),
@@ -1349,8 +1363,12 @@ class _FilePickerSettingWidget extends StatelessWidget {
                 icon: const Icon(Icons.delete_forever),
                 action: () async {
                   final oldPath = setting.scopedValue(ctx);
+                  final isBooruScope = setting.def.supportsPerBooru && BooruEditingScope.of(ctx) != null;
+                  final ownsPath = !isBooruScope || setting.hasScopedOverride(ctx);
                   setting.setScopedValue(ctx, '');
-                  await onRemove?.call(oldPath);
+                  if (ownsPath) {
+                    await onRemove?.call(oldPath);
+                  }
                 },
               ),
           ],
