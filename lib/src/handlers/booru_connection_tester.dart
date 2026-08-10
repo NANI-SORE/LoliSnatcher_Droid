@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/boorus/hydrus_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
@@ -7,13 +9,29 @@ import 'package:lolisnatcher/src/utils/logger.dart';
 typedef BooruConnectionTestResult = ({BooruType? booruType, String? errorString});
 
 class BooruConnectionTester {
-  const BooruConnectionTester();
+  const BooruConnectionTester({this.timeout = const Duration(seconds: 60)});
+
+  final Duration timeout;
 
   Future<BooruConnectionTestResult> test(
     Booru booru,
     BooruType requestedType, {
     required String hydrusFailureMessage,
     bool withCaptchaCheck = true,
+  }) {
+    return _test(
+      booru,
+      requestedType,
+      hydrusFailureMessage: hydrusFailureMessage,
+      withCaptchaCheck: withCaptchaCheck,
+    ).timeout(timeout);
+  }
+
+  Future<BooruConnectionTestResult> _test(
+    Booru booru,
+    BooruType requestedType, {
+    required String hydrusFailureMessage,
+    required bool withCaptchaCheck,
   }) async {
     booru.type = requestedType;
 
@@ -27,7 +45,7 @@ class BooruConnectionTester {
 
     if (requestedType == BooruType.Autodetect) {
       for (final type in BooruType.detectable.skip(1)) {
-        final result = await test(
+        final result = await _test(
           booru,
           type,
           hydrusFailureMessage: hydrusFailureMessage,

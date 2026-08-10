@@ -64,7 +64,7 @@ class TabBooruSelector extends StatelessWidget {
               ? () {
                   SettingsPageOpen(
                     context: context,
-                    page: (_) => BooruEdit(
+                    page: (_) => BooruEdit.edit(
                       selectedBooruForOverrides!,
                       initialSection: BooruEditSection.overrides,
                     ),

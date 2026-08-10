@@ -246,6 +246,7 @@ class _HydrusAccessKeyWidget extends StatelessWidget {
                 5,
               );
               final accessKey = await hydrus.getAccessKey();
+              if (!context.mounted) return;
               if (accessKey.isNotEmpty) {
                 FlashElements.showSnackbar(
                   context: context,

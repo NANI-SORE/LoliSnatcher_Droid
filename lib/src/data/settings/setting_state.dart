@@ -67,14 +67,14 @@ class SettingState<T> {
     setValue(newValue);
   }
 
-  void setValue(T newValue, {bool debounceSave = false}) {
+  void setValue(T newValue, {bool debounceSave = false, bool save = true}) {
     final validated = def.validate?.call(newValue) ?? newValue;
     final oldValue = _globalValue.value;
     _globalValue.value = validated;
     if (!def.supportsPerBooru && !valuesEqual(oldValue, validated)) {
       def.onChanged?.call(oldValue, validated);
     }
-    if (!valuesEqual(oldValue, validated)) {
+    if (save && !valuesEqual(oldValue, validated)) {
       _scheduleSave(debounce: debounceSave);
     }
   }
@@ -292,9 +292,19 @@ class SettingState<T> {
 
   /// Load the global value from JSON.
   void loadFromJson(dynamic json) {
+    _loadGlobalValue(def.valueFromJson(json));
+  }
+
+  /// Restore the global default without scheduling a save or firing runtime
+  /// side effects. Safe to call through a type-erased `SettingState<dynamic>`.
+  void loadDefaultValue() {
+    _loadGlobalValue(def.getDefaultValue());
+  }
+
+  void _loadGlobalValue(T value) {
     _suppressSideEffects = true;
     try {
-      _globalValue.value = def.valueFromJson(json);
+      _globalValue.value = value;
     } finally {
       _suppressSideEffects = false;
     }
@@ -502,7 +512,7 @@ class _GlobalOverridesChip extends StatelessWidget {
     final initialCategory = state.def.categories.isNotEmpty ? state.def.categories.first : null;
     await SettingsPageOpen(
       context: context,
-      page: (_) => BooruEdit(
+      page: (_) => BooruEdit.edit(
         booru,
         initialSection: BooruEditSection.overrides,
         initialOverrideCategory: initialCategory,

@@ -6,9 +6,7 @@ import 'package:lolisnatcher/src/utils/tools.dart';
 
 /// Owns the editable values and connection-test state for a booru form.
 class BooruEditFormController {
-  BooruEditFormController(Booru initialBooru) {
-    if (initialBooru.name == 'New') return;
-
+  BooruEditFormController(Booru initialBooru, {required bool trustInitialConnection}) {
     name.text = initialBooru.name ?? '';
     url.text = initialBooru.baseURL ?? '';
     favicon.text = initialBooru.faviconURL ?? '';
@@ -16,6 +14,9 @@ class BooruEditFormController {
     userId.text = initialBooru.userID ?? '';
     defaultTags.text = initialBooru.defTags ?? '';
     selectedType = BooruType.values.contains(initialBooru.type) ? initialBooru.type! : selectedType;
+    if (trustInitialConnection && !selectedType.isAutodetect && url.text.trim().isNotEmpty) {
+      markTestSuccessful(selectedType);
+    }
   }
 
   final name = TextEditingController();
@@ -49,6 +50,15 @@ class BooruEditFormController {
     testedType = type;
     selectedType = type;
     _successfulTestSignature = testSignature(typeOverride: type);
+  }
+
+  bool markTestSuccessfulIfCurrent(BooruType type, String testedSignature) {
+    if (testSignature() != testedSignature) {
+      clearTestResult();
+      return false;
+    }
+    markTestSuccessful(type);
+    return true;
   }
 
   void clearTestResult() {

@@ -7,13 +7,42 @@ enum BooruEditConflict { duplicate, name, url }
 
 String normalizeBooruUrl(String input) {
   var normalized = input.trim();
-  if (!normalized.startsWith('http://') && !normalized.startsWith('https://')) {
+  final schemeMatch = RegExp('^(https?)://', caseSensitive: false).firstMatch(normalized);
+  if (schemeMatch == null) {
     normalized = 'https://$normalized';
+  } else {
+    normalized = '${schemeMatch.group(1)!.toLowerCase()}://${normalized.substring(schemeMatch.end)}';
   }
   while (normalized.endsWith('/')) {
     normalized = normalized.substring(0, normalized.length - 1);
   }
   return normalized;
+}
+
+String canonicalBooruName(String input) => input.trim().toLowerCase();
+
+String canonicalBooruUrl(String input) {
+  final normalized = normalizeBooruUrl(input);
+  final uri = Uri.tryParse(normalized);
+  if (uri == null || uri.host.isEmpty) return normalized.toLowerCase();
+
+  final scheme = uri.scheme.toLowerCase();
+  final host = uri.host.toLowerCase().replaceFirst(RegExp(r'^www\.'), '');
+  final includePort = uri.hasPort && !((scheme == 'http' && uri.port == 80) || (scheme == 'https' && uri.port == 443));
+  var path = uri.path;
+  while (path.endsWith('/') && path.length > 1) {
+    path = path.substring(0, path.length - 1);
+  }
+  if (path == '/') path = '';
+
+  return Uri(
+    scheme: scheme,
+    host: host,
+    port: includePort ? uri.port : null,
+    path: path,
+    query: uri.hasQuery ? uri.query : null,
+    fragment: uri.hasFragment ? uri.fragment : null,
+  ).toString();
 }
 
 String normalizedBooruHost(String input) {
@@ -50,22 +79,27 @@ String booruFaviconUrlFor(String url) {
 
 BooruEditConflict? findBooruEditConflict({
   required Iterable<Booru> existingBoorus,
-  required Booru original,
+  required Booru? original,
   required Booru candidate,
 }) {
+  final existingList = existingBoorus.toList(growable: false);
+  final containsOriginalInstance = original != null && existingList.any((existing) => identical(existing, original));
   var skippedOriginal = false;
-  for (final existing in existingBoorus) {
+  for (final existing in existingList) {
     final isOriginal =
-        original.name != 'New' &&
+        original != null &&
         !skippedOriginal &&
-        (identical(existing, original) || (existing.name == original.name && existing.baseURL == original.baseURL));
+        (identical(existing, original) ||
+            (!containsOriginalInstance &&
+                canonicalBooruName(existing.name ?? '') == canonicalBooruName(original.name ?? '') &&
+                canonicalBooruUrl(existing.baseURL ?? '') == canonicalBooruUrl(original.baseURL ?? '')));
     if (isOriginal) {
       skippedOriginal = true;
       continue;
     }
 
-    final sameName = existing.name == candidate.name;
-    final sameUrl = existing.baseURL == candidate.baseURL;
+    final sameName = canonicalBooruName(existing.name ?? '') == canonicalBooruName(candidate.name ?? '');
+    final sameUrl = canonicalBooruUrl(existing.baseURL ?? '') == canonicalBooruUrl(candidate.baseURL ?? '');
     if (sameName && sameUrl) return BooruEditConflict.duplicate;
     if (sameName) return BooruEditConflict.name;
     if (sameUrl) return BooruEditConflict.url;

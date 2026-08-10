@@ -216,7 +216,7 @@ class SettingsRegistry {
 
       if (includeGlobal && !state.valuesEqual(state.globalValue, state.defaultValue)) {
         if (!await _hasPickerAccess(state, state.globalValue)) {
-          state.loadFromJson(state.def.valueToJson(state.defaultValue));
+          state.loadDefaultValue();
           result.clearedGlobal.add(state.def.key);
         }
       }

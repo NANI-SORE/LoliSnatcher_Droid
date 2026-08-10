@@ -28,8 +28,10 @@ class _BooruFaviconCacheKey {
 
   factory _BooruFaviconCacheKey.fromWidget(BooruFavicon widget) {
     final baseUrl = widget.booru?.baseURL?.trim() ?? '';
+    final booruFaviconUrl = widget.booru?.faviconURL?.trim();
+    final customFaviconUrl = widget.customFaviconUrl?.trim();
     return _BooruFaviconCacheKey(
-      url: (widget.booru?.faviconURL ?? widget.customFaviconUrl ?? '').trim(),
+      url: booruFaviconUrl?.isNotEmpty == true ? booruFaviconUrl! : customFaviconUrl ?? '',
       baseUrl: baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl,
       booruName: widget.booru?.name?.trim() ?? '',
       booruType: widget.booru?.type?.name ?? '',
@@ -317,13 +319,14 @@ class _BooruFaviconState extends State<BooruFavicon> {
     isLoaded = false;
     errorCode = null;
 
+    final cacheKey = _BooruFaviconCacheKey.fromWidget(widget);
     updateState();
 
-    if (isIcon) {
+    if (isIcon || cacheKey.url.isEmpty) {
+      isIcon = true;
       isLoaded = true;
       updateState();
     } else {
-      final cacheKey = _BooruFaviconCacheKey.fromWidget(widget);
       activeCacheKey = cacheKey;
       try {
         final provider = await _BooruFaviconProviderCache.obtain(cacheKey, widget.booru);

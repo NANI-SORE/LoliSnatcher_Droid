@@ -506,7 +506,7 @@ class SettingsHandler {
     booruListVersion++;
   }
 
-  Future saveBooru(Booru booru, {bool onlySave = false}) async {
+  Future<bool> saveBooru(Booru booru, {bool onlySave = false}) async {
     if (!ContentPolicy.isBooruAllowed(booru)) {
       return false;
     }
@@ -534,13 +534,113 @@ class SettingsHandler {
     return true;
   }
 
-  Future<bool> deleteBooru(Booru booru, {bool removeOverrides = true}) async {
-    final File booruFile = File('$boorusPath${booru.name}.json');
+  /// Replaces an existing booru without deleting its working configuration
+  /// before the replacement and related preference changes are durable.
+  Future<bool> replaceBooru(Booru original, Booru replacement) async {
+    if (!ContentPolicy.isBooruAllowed(replacement)) return false;
+    await flushPendingSettingsSaves();
+
+    final oldName = original.name;
+    final newName = replacement.name;
+    if (oldName == null || oldName.isEmpty || newName == null || newName.isEmpty) return false;
+
+    final registry = SettingsRegistry.instance;
+    final renamed = oldName != newName;
+    final samePhysicalFile =
+        oldName == newName ||
+        ((Platform.isWindows || Platform.isMacOS || Platform.isIOS) && oldName.toLowerCase() == newName.toLowerCase());
+    final wasPreferred = SX.prefBooru.value == oldName;
+    var replacementWritten = false;
+    var preferenceUpdated = false;
+
+    if (renamed) {
+      registry.removeAllOverridesForBooru(newName, save: false);
+      registry.copyOverrides(oldName, newName, save: false);
+    }
+
+    try {
+      if (!await saveBooru(replacement, onlySave: true)) {
+        if (renamed) registry.removeAllOverridesForBooru(newName, save: false);
+        return false;
+      }
+      replacementWritten = true;
+
+      if (renamed && wasPreferred) {
+        SX.prefBooru.state.setValue(newName, save: false);
+        preferenceUpdated = true;
+        await saveSettings(restate: false);
+      }
+
+      if (renamed && !samePhysicalFile) {
+        await _deleteBooruFile(original);
+      }
+      if (renamed) {
+        registry.removeAllOverridesForBooru(oldName, save: false);
+      }
+
+      await loadBoorus();
+      return true;
+    } catch (e, s) {
+      if (preferenceUpdated) {
+        SX.prefBooru.state.setValue(oldName, save: false);
+        try {
+          await saveSettings(restate: false);
+        } catch (rollbackError, rollbackStack) {
+          Logger.Inst().log(
+            'Failed to restore preferred booru after edit failure: $rollbackError',
+            'SettingsHandler',
+            'replaceBooru',
+            LogTypes.settingsError,
+            s: rollbackStack,
+          );
+        }
+      }
+
+      if (replacementWritten) {
+        try {
+          if (samePhysicalFile) {
+            await saveBooru(original, onlySave: true);
+          } else {
+            await saveBooru(original, onlySave: true);
+            await _deleteBooruFile(replacement);
+          }
+        } catch (rollbackError, rollbackStack) {
+          Logger.Inst().log(
+            'Failed to restore booru config after edit failure: $rollbackError',
+            'SettingsHandler',
+            'replaceBooru',
+            LogTypes.settingsError,
+            s: rollbackStack,
+          );
+        }
+      }
+
+      if (renamed) {
+        registry.removeAllOverridesForBooru(newName, save: false);
+      }
+      await loadBoorus();
+      Logger.Inst().log(
+        'Failed to replace booru $oldName with $newName: $e',
+        'SettingsHandler',
+        'replaceBooru',
+        LogTypes.settingsError,
+        s: s,
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> _deleteBooruFile(Booru booru) async {
+    final booruFile = File('$boorusPath${booru.name}.json');
     await _queueFileOperation(booruFile, () async {
       if (await booruFile.exists()) {
         await booruFile.delete();
       }
     });
+  }
+
+  Future<bool> deleteBooru(Booru booru, {bool removeOverrides = true}) async {
+    await _deleteBooruFile(booru);
 
     // Clean up in-memory per-booru setting overrides
     if (removeOverrides && booru.name != null) {

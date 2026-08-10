@@ -105,7 +105,7 @@ class _BooruPageState extends State<BooruPage> {
     return SettingsButton(
       name: context.loc.settings.booru.addBooru,
       icon: const Icon(Icons.add),
-      page: () => BooruEdit(Booru('New', null, '', '', '')),
+      page: BooruEdit.add,
     );
   }
 
@@ -192,8 +192,6 @@ class _BooruPageState extends State<BooruPage> {
         final bool isNewValuePresent = settingsHandler.booruList.contains(newValue);
         setState(() {
           selectedBooru = isNewValuePresent ? newValue : settingsHandler.booruList[0];
-          SX.prefBooru.state.value = selectedBooru?.name ?? '';
-          settingsHandler.sortBooruList();
         });
       },
       title: context.loc.settings.booru.addedBoorus,
@@ -300,9 +298,20 @@ class _BooruPageState extends State<BooruPage> {
       // TODO update all tabs with old booru with a new one
       // TODO if you open edit after already editing - it will open old instance + possible exception due to old data
       page: (selectedBooru != null && BooruType.saveable.contains(selectedBooru?.type))
-          ? () => BooruEdit(selectedBooru!)
+          ? () => BooruEdit.edit(selectedBooru!)
           : null,
     );
+  }
+
+  Booru? _preferredBooru() {
+    return settingsHandler.booruList.firstWhereOrNull((booru) => booru.name == SX.prefBooru.value) ??
+        (settingsHandler.booruList.contains(initPrefBooru) ? initPrefBooru : null);
+  }
+
+  Booru? _fallbackAfterDeleting(Booru removed) {
+    final preferred = _preferredBooru();
+    if (preferred != null && !preferred.matchesIdentity(removed)) return preferred;
+    return settingsHandler.booruList.firstWhereOrNull((booru) => !booru.matchesIdentity(removed));
   }
 
   Widget deleteButton() {
@@ -329,11 +338,11 @@ class _BooruPageState extends State<BooruPage> {
           return;
         }
 
-        // TODO reset all tabs to next available booru?
         final List<SearchTab> tabsWithBooru = searchHandler.tabs
-            .where((tab) => tab.selectedBooru.value.name == selectedBooru?.name)
+            .where((tab) => tab.selectedBooru.value.matchesIdentity(selectedBooru))
             .toList();
-        if (tabsWithBooru.isNotEmpty) {
+        final fallbackAfterDeletion = _fallbackAfterDeleting(selectedBooru!);
+        if (tabsWithBooru.isNotEmpty && fallbackAfterDeletion == null) {
           FlashElements.showSnackbar(
             context: context,
             title: Text(
@@ -360,18 +369,60 @@ class _BooruPageState extends State<BooruPage> {
                 const CancelButton(withIcon: true),
                 ElevatedButton.icon(
                   onPressed: () async {
-                    // save current and select next available booru to avoid exception after deletion
                     final Booru tempSelected = selectedBooru!;
-                    selectedBooru = settingsHandler.booruList.firstWhereOrNull((booru) => booru != tempSelected);
-                    // set new prefbooru if it is a deleted one
-                    if (tempSelected.name == SX.prefBooru.value) {
+                    final preferredBooru = _preferredBooru();
+                    final fallbackBooru = _fallbackAfterDeleting(tempSelected);
+                    final deletedPreferredBooru = tempSelected.matchesIdentity(preferredBooru);
+
+                    selectedBooru = fallbackBooru;
+                    if (deletedPreferredBooru) {
                       _currentPrefBooruWasDeleted = true;
-                      SX.prefBooru.state.value = selectedBooru?.name ?? '';
+                      SX.prefBooru.state.setValue(fallbackBooru?.name ?? '', save: false);
                     }
-                    // restate to avoid an exception due to changed booru list
                     setState(() {});
 
-                    if (await settingsHandler.deleteBooru(tempSelected)) {
+                    var deleted = false;
+                    try {
+                      deleted = await settingsHandler.deleteBooru(tempSelected);
+                    } catch (e, s) {
+                      Logger.Inst().log(
+                        'Failed to delete booru ${tempSelected.name}: $e',
+                        'BooruPage',
+                        'deleteButton',
+                        LogTypes.exception,
+                        s: s,
+                      );
+                    }
+
+                    if (deleted) {
+                      if (deletedPreferredBooru) {
+                        try {
+                          await settingsHandler.saveSettings(restate: false);
+                        } catch (e, s) {
+                          Logger.Inst().log(
+                            'Failed to persist preferred booru after deletion: $e',
+                            'BooruPage',
+                            'deleteButton',
+                            LogTypes.settingsError,
+                            s: s,
+                          );
+                        }
+                      }
+                      if (fallbackBooru != null) {
+                        searchHandler.replaceBooruInTabs(tempSelected, fallbackBooru);
+                      }
+                    } else {
+                      // restore selected and prefbooru if something went wrong
+                      selectedBooru = tempSelected;
+                      _currentPrefBooruWasDeleted = false;
+                      if (deletedPreferredBooru) {
+                        SX.prefBooru.state.setValue(tempSelected.name ?? '', save: false);
+                      }
+                      await settingsHandler.sortBooruList();
+                    }
+
+                    if (!context.mounted) return;
+                    if (deleted) {
                       FlashElements.showSnackbar(
                         context: context,
                         title: Text(
@@ -383,12 +434,6 @@ class _BooruPageState extends State<BooruPage> {
                         sideColor: Colors.yellow,
                       );
                     } else {
-                      // restore selected and prefbooru if something went wrong
-                      selectedBooru = tempSelected;
-                      _currentPrefBooruWasDeleted = false;
-                      SX.prefBooru.state.value = tempSelected.name ?? '';
-                      await settingsHandler.sortBooruList();
-
                       FlashElements.showSnackbar(
                         context: context,
                         title: Text(
@@ -471,7 +516,7 @@ class _BooruPageState extends State<BooruPage> {
               }
               await Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (BuildContext context) => BooruEdit(booru),
+                  builder: (BuildContext context) => BooruEdit.add(initialBooru: booru),
                 ),
               );
             }

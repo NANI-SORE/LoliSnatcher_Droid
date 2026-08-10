@@ -83,7 +83,7 @@ class ThemePage extends StatelessWidget {
       if (booru.name == booruName) {
         SettingsPageOpen(
           context: context,
-          page: (_) => BooruEdit(
+          page: (_) => BooruEdit.edit(
             booru,
             initialSection: BooruEditSection.overrides,
             initialOverrideCategory: SettingCategory.theme,

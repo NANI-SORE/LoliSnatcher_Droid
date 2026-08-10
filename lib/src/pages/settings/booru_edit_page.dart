@@ -7,6 +7,7 @@ import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/data/settings/setting_def.dart';
 import 'package:lolisnatcher/src/handlers/booru_connection_tester.dart';
+import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
@@ -19,7 +20,6 @@ import 'package:lolisnatcher/src/services/get_perms.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
-import 'package:lolisnatcher/src/widgets/common/confirm_button.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/html.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -28,16 +28,28 @@ import 'package:url_launcher/url_launcher_string.dart';
 
 enum BooruEditSection { details, overrides }
 
+enum BooruEditMode { add, edit }
+
 class BooruEdit extends StatefulWidget {
-  const BooruEdit(
+  BooruEdit.add({
+    Booru? initialBooru,
+    this.initialSection = BooruEditSection.details,
+    this.initialOverrideCategory,
+    this.initialOverrideSettingKey,
+    super.key,
+  }) : booru = initialBooru ?? Booru('', null, '', '', ''),
+       mode = BooruEditMode.add;
+
+  const BooruEdit.edit(
     this.booru, {
     this.initialSection = BooruEditSection.details,
     this.initialOverrideCategory,
     this.initialOverrideSettingKey,
     super.key,
-  });
+  }) : mode = BooruEditMode.edit;
 
   final Booru booru;
+  final BooruEditMode mode;
   final BooruEditSection initialSection;
   final SettingCategory? initialOverrideCategory;
   final SettingKey? initialOverrideSettingKey;
@@ -47,6 +59,9 @@ class BooruEdit extends StatefulWidget {
 }
 
 class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMixin {
+  static const _testingSnackbarKey = 'booruConnectionTest';
+  static int _nextDraftId = 0;
+
   final SettingsHandler settingsHandler = SettingsHandler.instance;
   final SearchHandler searchHandler = SearchHandler.instance;
 
@@ -56,8 +71,11 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
   late final String overrideScopeName;
   late int activeSectionIndex;
   bool isTesting = false;
+  bool isSaving = false;
 
-  bool get isAdding => widget.booru.name == 'New';
+  bool get isBusy => isTesting || isSaving;
+
+  bool get isAdding => widget.mode == BooruEditMode.add;
 
   void showSourceUnavailableMessage() {
     FlashElements.showSnackbar(
@@ -102,8 +120,8 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
   @override
   void initState() {
     super.initState();
-    formController = BooruEditFormController(widget.booru);
-    overrideScopeName = isAdding ? '__new_booru_draft_${identityHashCode(this)}' : widget.booru.name ?? '';
+    formController = BooruEditFormController(widget.booru, trustInitialConnection: !isAdding);
+    overrideScopeName = isAdding ? '__new_booru_draft_${_nextDraftId++}' : widget.booru.name ?? '';
     activeSectionIndex = widget.initialSection == BooruEditSection.overrides ? 1 : 0;
     sectionController = TabController(
       length: 2,
@@ -148,12 +166,12 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
           ],
         ),
       ),
-      floatingActionButton: activeSectionIndex == 0
+      floatingActionButton: (activeSectionIndex == 0 || isAdding)
           ? GestureDetector(
-              onLongPress: SX.isDebug.value ? () => _save(force: true) : null,
+              onLongPress: SX.isDebug.value && !isBusy ? () => _save(force: true) : null,
               child: FloatingActionButton.extended(
-                onPressed: _save,
-                icon: isTesting
+                onPressed: isBusy ? null : _save,
+                icon: isBusy
                     ? SizedBox(
                         width: 20,
                         height: 20,
@@ -167,21 +185,24 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
               ),
             )
           : null,
-      body: TabBarView(
-        controller: sectionController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: [
-          _buildDetailsTab(context),
-          BooruOverridesEditor(
-            booruName: overrideScopeName,
-            displayName: isAdding && formController.name.text.trim().isNotEmpty
-                ? formController.name.text.trim()
-                : widget.booru.name,
-            initialCategory: widget.initialOverrideCategory,
-            initialSettingKey: widget.initialOverrideSettingKey,
-            autosave: !isAdding,
-          ),
-        ],
+      body: IgnorePointer(
+        ignoring: isBusy,
+        child: TabBarView(
+          controller: sectionController,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            _buildDetailsTab(context),
+            BooruOverridesEditor(
+              booruName: overrideScopeName,
+              displayName: isAdding && formController.name.text.trim().isNotEmpty
+                  ? formController.name.text.trim()
+                  : widget.booru.name,
+              initialCategory: widget.initialOverrideCategory,
+              initialSettingKey: widget.initialOverrideSettingKey,
+              autosave: !isAdding,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -194,11 +215,18 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
     );
   }
 
-  Future<bool> _testConnection() async {
+  void _showDetailsForError() {
+    if (sectionController.index != 0) {
+      sectionController.animateTo(0);
+    }
+  }
+
+  Future<bool> _testConnection({bool skipNetwork = false}) async {
     formController.sanitizeName();
     setState(() {});
 
     if (formController.name.text.trim().isEmpty) {
+      _showDetailsForError();
       FlashElements.showSnackbar(
         context: context,
         title: Text(
@@ -213,6 +241,7 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
     }
 
     if (formController.url.text.trim().isEmpty) {
+      _showDetailsForError();
       FlashElements.showSnackbar(
         context: context,
         title: Text(
@@ -229,6 +258,7 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
     formController.url.text = normalizeBooruUrl(formController.url.text);
 
     if (!ContentPolicy.isBooruTypeAllowed(formController.selectedType)) {
+      _showDetailsForError();
       showSourceUnavailableMessage();
       return false;
     }
@@ -244,6 +274,7 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
 
     formController.url.text = booruApiUrlFor(formController.url.text);
     if (!ContentPolicy.isBooruTypeAllowed(formController.selectedType)) {
+      _showDetailsForError();
       showSourceUnavailableMessage();
       return false;
     }
@@ -255,101 +286,168 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
     //Call the booru test
     final testBooru = formController.toBooru();
     if (!ContentPolicy.isBooruAllowed(testBooru)) {
+      _showDetailsForError();
       showSourceUnavailableMessage();
       return false;
     }
 
+    if (skipNetwork) {
+      if (formController.selectedType.isAutodetect) {
+        _showDetailsForError();
+        return false;
+      }
+      formController.markTestSuccessful(formController.selectedType);
+      return true;
+    }
+
+    final testedSignature = formController.testSignature();
+
     isTesting = true;
     setState(() {});
+    _showRunningTestMessage();
 
-    late final BooruConnectionTestResult testResults;
+    BooruConnectionTestResult? testResults;
     try {
       testResults = await connectionTester.test(
         testBooru,
         formController.selectedType,
         hydrusFailureMessage: context.loc.settings.booruEditor.failedVerifyApiHydrus,
       );
+    } catch (e, s) {
+      Logger.Inst().log(
+        'Booru connection test failed: $e',
+        'BooruEdit',
+        '_testConnection',
+        LogTypes.exception,
+        s: s,
+      );
+      if (mounted) {
+        _showDetailsForError();
+        _showTestFailure(e.toString());
+      }
+      return false;
     } finally {
       isTesting = false;
+      await FlashElements.dismissKey(_testingSnackbarKey);
       if (mounted) setState(() {});
     }
     if (!mounted) return false;
     final testBooruType = testResults.booruType;
-    final String errorString = testResults.errorString?.isNotEmpty == true ? testResults.errorString! : '';
-
-    // If a booru type is returned set the widget state
-    if (testBooruType != null) {
-      formController.markTestSuccessful(testBooruType);
-      return true;
-    } else {
+    if (testBooruType != null && !formController.markTestSuccessfulIfCurrent(testBooruType, testedSignature)) {
+      _showDetailsForError();
       FlashElements.showSnackbar(
         context: context,
-        duration: const Duration(seconds: 5),
-        title: Text(
-          context.loc.settings.booruEditor.testBooruFailedTitle,
-          style: const TextStyle(fontSize: 20),
-        ),
-        content: Column(
-          spacing: 12,
-          children: [
-            Text(
-              context.loc.settings.booruEditor.testBooruFailedMsg,
-              style: const TextStyle(fontSize: 16),
-            ),
-            if (errorString.trim().isNotEmpty)
-              LoliHtml(
-                '${context.loc.error}: $errorString',
-              ),
-          ],
-        ),
-        actionsBuilder: (context, controller) {
-          return [
-            if (errorString.trim().isNotEmpty)
-              ElevatedButton.icon(
-                onPressed: () => ClipboardUtils.copyTextToClipboard(errorString),
-                icon: const Icon(Icons.copy),
-                label: Text(context.loc.copyErrorText),
-              ),
-          ];
-        },
+        title: Text(context.loc.settings.booruEditor.connectionSettingsChanged),
         leadingIcon: Icons.warning_amber,
-        leadingIconColor: Colors.red,
-        sideColor: Colors.red,
+        leadingIconColor: Colors.orange,
+        sideColor: Colors.orange,
       );
       return false;
     }
+
+    final errorString = testResults.errorString?.isNotEmpty == true ? testResults.errorString! : '';
+
+    // If a booru type is returned set the widget state
+    if (testBooruType != null) {
+      return true;
+    }
+
+    _showDetailsForError();
+    _showTestFailure(errorString);
+    return false;
+  }
+
+  void _showTestFailure(String errorString) {
+    FlashElements.showSnackbar(
+      context: context,
+      duration: const Duration(seconds: 5),
+      title: Text(
+        context.loc.settings.booruEditor.testBooruFailedTitle,
+        style: const TextStyle(fontSize: 20),
+      ),
+      content: Column(
+        spacing: 12,
+        children: [
+          Text(
+            context.loc.settings.booruEditor.testBooruFailedMsg,
+            style: const TextStyle(fontSize: 16),
+          ),
+          if (errorString.trim().isNotEmpty) LoliHtml('${context.loc.error}: $errorString'),
+        ],
+      ),
+      actionsBuilder: (context, controller) => [
+        if (errorString.trim().isNotEmpty)
+          ElevatedButton.icon(
+            onPressed: () => ClipboardUtils.copyTextToClipboard(errorString),
+            icon: const Icon(Icons.copy),
+            label: Text(context.loc.copyErrorText),
+          ),
+      ],
+      leadingIcon: Icons.warning_amber,
+      leadingIconColor: Colors.red,
+      sideColor: Colors.red,
+    );
   }
 
   Future<void> _save({bool force = false}) async {
+    if (isBusy) return;
+    isSaving = true;
+    setState(() {});
+
+    try {
+      await _performSave(force: force);
+    } catch (e, s) {
+      Logger.Inst().log(
+        'Failed to save booru: $e',
+        'BooruEdit',
+        '_save',
+        LogTypes.exception,
+        s: s,
+      );
+      if (mounted) {
+        _showDetailsForError();
+        FlashElements.showSnackbar(
+          context: context,
+          title: Text(context.loc.settings.booruEditor.saveFailed),
+          content: Text(e.toString()),
+          leadingIcon: Icons.error_outline,
+          leadingIconColor: Colors.red,
+          sideColor: Colors.red,
+        );
+      }
+    } finally {
+      isSaving = false;
+      if (mounted) setState(() {});
+    }
+  }
+
+  Future<void> _performSave({required bool force}) async {
     formController.sanitizeName();
     setState(() {});
 
-    if (force && !isAdding) {
-      formController.testedType = formController.selectedType;
-      if (formController.testedType!.isAutodetect) return;
-    } else if (formController.testedType != null && !formController.hasCurrentSuccessfulTest) {
+    if (formController.testedType != null && !formController.hasCurrentSuccessfulTest) {
       formController.clearTestResult();
     }
 
     if (formController.testedType == null) {
-      _showRunningTestMessage();
-      if (!await _testConnection()) return;
-      await FlashElements.dismissAll();
+      if (!await _testConnection(skipNetwork: force && !isAdding)) return;
       if (!mounted) return;
     }
 
     final newBooru = _buildSaveCandidate();
     if (!ContentPolicy.isBooruAllowed(newBooru)) {
+      _showDetailsForError();
       showSourceUnavailableMessage();
       return;
     }
 
     final conflict = findBooruEditConflict(
       existingBoorus: settingsHandler.booruList,
-      original: widget.booru,
+      original: isAdding ? null : widget.booru,
       candidate: newBooru,
     );
     if (conflict != null) {
+      _showDetailsForError();
       _showConflictMessage(_conflictReason(conflict));
       return;
     }
@@ -367,6 +465,9 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
   void _showRunningTestMessage() {
     FlashElements.showSnackbar(
       context: context,
+      key: _testingSnackbarKey,
+      isKeyUnique: true,
+      duration: null,
       title: Text(
         context.loc.settings.booruEditor.runningTest,
         style: const TextStyle(fontSize: 20),
@@ -412,41 +513,43 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
   Future<bool> _confirmSave(Booru booru) async {
     return await showDialog<bool>(
           context: context,
-          builder: (context) => AlertDialog(
-            title: Text(context.loc.settings.booruEditor.booruConfigShouldSave),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: 8,
+          builder: (context) => SettingsDialog(
+            title: Row(
               children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    BooruFavicon(
-                      null,
-                      customFaviconUrl: booru.faviconURL,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        '${booru.name} (${booru.baseURL})',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
+                Icon(
+                  Icons.save_outlined,
+                  color: Theme.of(context).colorScheme.secondary,
                 ),
-                Text(
-                  context.loc.settings.booruEditor.booruConfigSelectedType(
-                    booruType: booru.type!.name,
-                  ),
-                  style: const TextStyle(fontSize: 16),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(context.loc.settings.booruEditor.booruConfigShouldSave),
                 ),
               ],
             ),
-            actions: const [
-              CancelButton(returnData: false),
-              ConfirmButton(returnData: true),
+            titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            contentPadding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            borderRadius: BorderRadius.circular(20),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: _BooruSaveSummary(
+                name: booru.name ?? '',
+                url: booru.baseURL ?? '',
+                type: booru.type?.alias ?? '',
+                faviconUrl: booru.faviconURL,
+                urlLabel: context.loc.settings.booruEditor.booruUrl,
+                typeLabel: context.loc.type,
+              ),
+            ),
+            actionButtons: [
+              const CancelButton(
+                withIcon: true,
+                returnData: false,
+              ),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.of(context).pop(true),
+                icon: const Icon(Icons.save_outlined),
+                label: Text(context.loc.settings.booruEditor.saveBooru),
+              ),
             ],
           ),
         ) ??
@@ -455,26 +558,13 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
 
   Future<bool> _persistBooru(Booru newBooru) async {
     final registry = SettingsRegistry.instance;
-    final oldBooruName = widget.booru.name;
     final newBooruName = newBooru.name;
 
     if (!isAdding) {
-      final oldIndex = settingsHandler.booruList.indexWhere(
-        (item) =>
-            identical(item, widget.booru) || (item.name == widget.booru.name && item.baseURL == widget.booru.baseURL),
-      );
-      if (oldIndex >= 0) {
-        settingsHandler.booruList.removeAt(oldIndex);
-      }
-      await settingsHandler.deleteBooru(widget.booru, removeOverrides: false);
+      return settingsHandler.replaceBooru(widget.booru, newBooru);
     }
 
-    if (oldBooruName != null && newBooruName != null && !isAdding && oldBooruName != newBooruName) {
-      registry.copyOverrides(oldBooruName, newBooruName, save: false);
-      registry.removeAllOverridesForBooru(oldBooruName, save: false);
-    }
-
-    final committingDraftOverrides = isAdding && newBooruName != null;
+    final committingDraftOverrides = newBooruName != null;
     if (committingDraftOverrides) {
       registry.copyOverrides(overrideScopeName, newBooruName, save: false);
     }
@@ -494,9 +584,7 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
       }
       rethrow;
     }
-    if (isAdding) {
-      registry.removeAllOverridesForBooru(overrideScopeName, save: false);
-    }
+    registry.removeAllOverridesForBooru(overrideScopeName, save: false);
     await settingsHandler.loadBoorus();
     return true;
   }
@@ -508,7 +596,7 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
         context.loc.settings.booruEditor.booruConfigSaved,
         style: const TextStyle(fontSize: 20),
       ),
-      content: widget.booru.name == 'New'
+      content: isAdding
           ? const SizedBox(height: 20)
           : Text(
               context.loc.settings.booruEditor.existingTabsNeedReload,
@@ -527,7 +615,13 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
     }
 
     for (final tab in searchHandler.tabs) {
-      if (tab.selectedBooru.value.type == newBooru.type && tab.selectedBooru.value.baseURL == newBooru.baseURL) {
+      final selected = tab.selectedBooru.value;
+      final matchesEditedBooru =
+          !isAdding &&
+          (identical(selected, widget.booru) ||
+              (selected.name == widget.booru.name && selected.baseURL == widget.booru.baseURL));
+      final matchesAddedBooru = isAdding && selected.type == newBooru.type && selected.baseURL == newBooru.baseURL;
+      if (matchesEditedBooru || matchesAddedBooru) {
         tab.selectedBooru.value = newBooru;
       }
     }
@@ -536,6 +630,152 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
       Future.delayed(const Duration(seconds: 1)).then((_) {
         searchHandler.rootRestate?.call();
       }),
+    );
+  }
+}
+
+class _BooruSaveSummary extends StatelessWidget {
+  const _BooruSaveSummary({
+    required this.name,
+    required this.url,
+    required this.type,
+    required this.urlLabel,
+    required this.typeLabel,
+    this.faviconUrl,
+  });
+
+  final String name;
+  final String url;
+  final String type;
+  final String urlLabel;
+  final String typeLabel;
+  final String? faviconUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerHighest.withValues(alpha: 0.55),
+        border: Border.all(color: colors.outlineVariant),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: colors.secondaryContainer,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: BooruFavicon(
+                    null,
+                    customFaviconUrl: faviconUrl,
+                    size: 34,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    name,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: colors.outlineVariant),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _BooruSaveDetail(
+                  icon: Icons.link_rounded,
+                  label: urlLabel,
+                  value: url,
+                ),
+                const SizedBox(height: 14),
+                _BooruSaveDetail(
+                  icon: Icons.category_outlined,
+                  label: typeLabel,
+                  value: type,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BooruSaveDetail extends StatelessWidget {
+  const _BooruSaveDetail({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: colors.secondaryContainer,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, size: 19, color: colors.onSecondaryContainer),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                softWrap: true,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

@@ -584,7 +584,10 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           // Rename config if its already in the list
           booru.name = '${booru.name!} (duplicate)';
         }
-        await SettingsPageOpen(context: context, page: (_) => BooruEdit(booru)).open();
+        await SettingsPageOpen(
+          context: context,
+          page: (_) => BooruEdit.add(initialBooru: booru),
+        ).open();
       }
     }
   }

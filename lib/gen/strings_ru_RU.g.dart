@@ -2023,6 +2023,18 @@ class _Translations$settings$booruEditor$ru_RU extends Translations$settings$boo
   @override
   String get runningTest => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.runningTest', {}) ?? 'Выполнение теста…';
   @override
+  String get connectionSettingsChanged =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.connectionSettingsChanged', {}) ??
+      'Настройки подключения изменились во время проверки. Попробуй сохранить ещё раз.';
+  @override
+  String get saveFailed => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveFailed', {}) ?? 'Не удалось сохранить конфиг';
+  @override
+  String get overrideChangesSavedAutomatically =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.overrideChangesSavedAutomatically', {}) ?? 'Изменения сохраняются автоматически';
+  @override
+  String get noOverrideSettings =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.noOverrideSettings', {}) ?? 'Особые настройки недоступны';
+  @override
   String get booruConfigExistsError =>
       TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigExistsError', {}) ?? 'Такой конфиг уже существует';
   @override
@@ -4754,6 +4766,16 @@ extension on TranslationsRuRu {
           'settings.booruEditor.saveBooru' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveBooru', {}) ?? 'Сохранить конфиг',
           'settings.booruEditor.runningTest' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.runningTest', {}) ?? 'Выполнение теста…',
+          'settings.booruEditor.connectionSettingsChanged' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.connectionSettingsChanged', {}) ??
+                'Настройки подключения изменились во время проверки. Попробуй сохранить ещё раз.',
+          'settings.booruEditor.saveFailed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveFailed', {}) ?? 'Не удалось сохранить конфиг',
+          'settings.booruEditor.overrideChangesSavedAutomatically' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.overrideChangesSavedAutomatically', {}) ??
+                'Изменения сохраняются автоматически',
+          'settings.booruEditor.noOverrideSettings' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.noOverrideSettings', {}) ?? 'Особые настройки недоступны',
           'settings.booruEditor.booruConfigExistsError' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigExistsError', {}) ?? 'Такой конфиг уже существует',
           'settings.booruEditor.booruSameNameExistsError' =>
@@ -4998,6 +5020,9 @@ extension on TranslationsRuRu {
           'settings.viewer.atLeast4ButtonsVisibleOnToolbar' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.atLeast4ButtonsVisibleOnToolbar', {}) ??
                 'Минимум 4 кнопки из этого списка всегда будут видны на панели инструментов.',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.viewer.otherButtonsWillGoIntoOverflow' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.otherButtonsWillGoIntoOverflow', {}) ??
                 'Остальные кнопки перейдут в меню переполнения (три точки).',
@@ -5006,9 +5031,6 @@ extension on TranslationsRuRu {
           'settings.viewer.onlyForVideos' => TranslationOverrides.string(_root.$meta, 'settings.viewer.onlyForVideos', {}) ?? 'Только для видео',
           'settings.viewer.thisButtonCannotBeDisabled' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.thisButtonCannotBeDisabled', {}) ?? 'Эта кнопка не может быть отключена',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.viewer.defaultShareAction' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.defaultShareAction', {}) ?? 'Действие при «Поделиться» по умолчанию',
           'settings.viewer.shareActions' => TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActions', {}) ?? 'Поделиться',
@@ -6009,15 +6031,15 @@ extension on TranslationsRuRu {
           'tagView.tryAgain' => TranslationOverrides.string(_root.$meta, 'tagView.tryAgain', {}) ?? 'Попробовать снова',
           'tagView.detectedLinks' => TranslationOverrides.string(_root.$meta, 'tagView.detectedLinks', {}) ?? 'Обнаруженные ссылки:',
           'tagView.relatedTabs' => TranslationOverrides.string(_root.$meta, 'tagView.relatedTabs', {}) ?? 'Связанные вкладки',
+          _ => null,
+        } ??
+        switch (path) {
           'tagView.tabsWithOnlyTag' => TranslationOverrides.string(_root.$meta, 'tagView.tabsWithOnlyTag', {}) ?? 'Вкладки только с этим тегом',
           'tagView.tabsWithOnlyTagDifferentBooru' =>
             TranslationOverrides.string(_root.$meta, 'tagView.tabsWithOnlyTagDifferentBooru', {}) ??
                 'Вкладки только с этим тегом, но на другом сайте',
           'tagView.tabsContainingTag' => TranslationOverrides.string(_root.$meta, 'tagView.tabsContainingTag', {}) ?? 'Вкладки, содержащие этот тег',
           'pinnedTags.pinnedTags' => TranslationOverrides.string(_root.$meta, 'pinnedTags.pinnedTags', {}) ?? 'Закрепленные теги',
-          _ => null,
-        } ??
-        switch (path) {
           'pinnedTags.pinTag' => TranslationOverrides.string(_root.$meta, 'pinnedTags.pinTag', {}) ?? 'Закрепить тег',
           'pinnedTags.unpinTag' => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinTag', {}) ?? 'Открепить тег',
           'pinnedTags.pin' => TranslationOverrides.string(_root.$meta, 'pinnedTags.pin', {}) ?? 'Закрепить',

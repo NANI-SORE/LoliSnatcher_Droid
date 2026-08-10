@@ -317,7 +317,7 @@ class TabSelector extends StatelessWidget {
                               ? () {
                                   SettingsPageOpen(
                                     context: context,
-                                    page: (_) => BooruEdit(
+                                    page: (_) => BooruEdit.edit(
                                       searchHandler.currentBooru,
                                       initialSection: BooruEditSection.overrides,
                                     ),

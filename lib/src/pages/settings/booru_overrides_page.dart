@@ -194,9 +194,31 @@ class _BooruOverridesEditorState extends State<BooruOverridesEditor> with Ticker
         .toList();
 
     final Widget body = perBooruSettings.isEmpty
-        ? const Center(child: CircularProgressIndicator())
+        ? Center(child: Text(context.loc.settings.booruEditor.noOverrideSettings))
         : Column(
             children: [
+              if (widget.autosave)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  color: Theme.of(context).colorScheme.secondaryContainer,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.cloud_done_outlined,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.onSecondaryContainer,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          context.loc.settings.booruEditor.overrideChangesSavedAutomatically,
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSecondaryContainer),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Material(
                 color: Theme.of(context).colorScheme.surfaceContainer,
                 child: Row(
