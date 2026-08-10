@@ -6059,6 +6059,9 @@ extension on TranslationsRuRu {
           'tagView.copiedFileURL' =>
             TranslationOverrides.string(_root.$meta, 'tagView.copiedFileURL', {}) ?? 'Ссылка на файл скопирована в буфер обмена',
           'tagView.tagPreviews' => TranslationOverrides.string(_root.$meta, 'tagView.tagPreviews', {}) ?? 'Предпросмотры тегов',
+          _ => null,
+        } ??
+        switch (path) {
           'tagView.currentState' => TranslationOverrides.string(_root.$meta, 'tagView.currentState', {}) ?? 'Текущее состояние',
           'tagView.history' => TranslationOverrides.string(_root.$meta, 'tagView.history', {}) ?? 'История',
           'tagView.failedToLoadPreviewPage' =>
@@ -6066,13 +6069,7 @@ extension on TranslationsRuRu {
           'tagView.tryAgain' => TranslationOverrides.string(_root.$meta, 'tagView.tryAgain', {}) ?? 'Попробовать снова',
           'tagView.detectedLinks' => TranslationOverrides.string(_root.$meta, 'tagView.detectedLinks', {}) ?? 'Обнаруженные ссылки:',
           'tagView.relatedTabs' => TranslationOverrides.string(_root.$meta, 'tagView.relatedTabs', {}) ?? 'Связанные вкладки',
-          _ => null,
-        } ??
-        switch (path) {
           'tagView.tabsWithOnlyTag' => TranslationOverrides.string(_root.$meta, 'tagView.tabsWithOnlyTag', {}) ?? 'Вкладки только с этим тегом',
-          _ => null,
-        } ??
-        switch (path) {
           'tagView.tabsWithOnlyTagDifferentBooru' =>
             TranslationOverrides.string(_root.$meta, 'tagView.tabsWithOnlyTagDifferentBooru', {}) ??
                 'Вкладки только с этим тегом, но на другом сайте',
