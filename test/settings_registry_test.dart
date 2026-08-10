@@ -167,6 +167,37 @@ void main() {
     expect(SX.hiddenTags.value, ['canonical']);
   });
 
+  test('malformed list entries do not abort settings loading', () {
+    registry.loadFromJson({
+      'hiddenTags': ['valid', 42, null],
+      'limit': 75,
+    });
+
+    expect(SX.hiddenTags.value, ['valid']);
+    expect(SX.limit.value, 75);
+  });
+
+  test('list defaults use structural equality for modification state', () {
+    expect(SX.hiddenTags.state.isModified, isFalse);
+
+    SX.hiddenTags.state.value = <String>[];
+    expect(SX.hiddenTags.state.isModified, isFalse);
+
+    SX.hiddenTags.state.value = ['tag'];
+    expect(SX.hiddenTags.state.isModified, isTrue);
+  });
+
+  test('copying booru overrides preserves nullable overrides', () {
+    SX.customPrimaryColor.state.setOverrideFor('Old name', null, save: false);
+
+    registry.copyOverrides('Old name', 'New name', save: false);
+    registry.removeAllOverridesForBooru('Old name', save: false);
+
+    expect(SX.customPrimaryColor.state.hasOverrideFor('Old name'), isFalse);
+    expect(SX.customPrimaryColor.state.hasOverrideFor('New name'), isTrue);
+    expect(SX.customPrimaryColor.state.getOverrideFor('New name'), isNull);
+  });
+
   test('invalid persisted numeric values fall back to defaults', () {
     registry.loadFromJson({
       'portraitColumns': 0,
@@ -213,6 +244,24 @@ void main() {
     expect(
       keys.every((key) => registry.get<dynamic>(key)!.def.supportsPerBooru),
       isTrue,
+    );
+  });
+
+  test('startup picker validation clears inaccessible global and booru paths', () async {
+    const missingGlobal = r'Z:\missing\global-mascot.png';
+    const missingOverride = r'Z:\missing\booru-mascot.png';
+    final mascot = SX.drawerMascotPathOverride.state;
+    mascot.loadFromJson(missingGlobal);
+    mascot.setOverrideFor('Example', missingOverride, save: false);
+
+    final result = await registry.clearInaccessiblePickerValues(booruNames: const ['Example']);
+
+    expect(mascot.globalValue, isEmpty);
+    expect(mascot.hasOverrideFor('Example'), isFalse);
+    expect(result.clearedGlobal, contains(SettingKey.drawerMascotPathOverride));
+    expect(
+      result.clearedOverrides['Example'],
+      contains(SettingKey.drawerMascotPathOverride),
     );
   });
 

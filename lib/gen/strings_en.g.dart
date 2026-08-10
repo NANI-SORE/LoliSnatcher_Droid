@@ -1104,8 +1104,8 @@ class Translations$settings$en {
   /// en: 'No settings found'
   String get noSettingsFound => TranslationOverrides.string(_root.$meta, 'settings.noSettingsFound', {}) ?? 'No settings found';
 
-  /// en: 'Per-booru Settings'
-  String get perBooruSettings => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Per-booru Settings';
+  /// en: 'Overrides'
+  String get perBooruSettings => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Overrides';
 
   /// en: 'Reset all ${category: String} settings to their defaults?'
   String resetCategoryQuestion({required String category}) =>
@@ -2564,6 +2564,22 @@ class Translations$settings$booruEditor$en {
 
   /// en: 'Running test…'
   String get runningTest => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.runningTest', {}) ?? 'Running test…';
+
+  /// en: 'Connection settings changed during the test. Please save again.'
+  String get connectionSettingsChanged =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.connectionSettingsChanged', {}) ??
+      'Connection settings changed during the test. Please save again.';
+
+  /// en: 'Failed to save Booru'
+  String get saveFailed => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveFailed', {}) ?? 'Failed to save Booru';
+
+  /// en: 'Changes are saved automatically'
+  String get overrideChangesSavedAutomatically =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.overrideChangesSavedAutomatically', {}) ?? 'Changes are saved automatically';
+
+  /// en: 'No overrides are available'
+  String get noOverrideSettings =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.noOverrideSettings', {}) ?? 'No overrides are available';
 
   /// en: 'This Booru config already exists'
   String get booruConfigExistsError =>
@@ -4263,6 +4279,19 @@ class Translations$settings$performance$en {
 
   /// en: 'Performance'
   String get title => TranslationOverrides.string(_root.$meta, 'settings.performance.title', {}) ?? 'Performance';
+
+  /// en: 'The app crashed last time'
+  String get crashDetectedTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.performance.crashDetectedTitle', {}) ?? 'The app crashed last time';
+
+  /// en: 'Would you like to open Performance settings? Changing these options may help prevent similar crashes.'
+  String get crashDetectedMessage =>
+      TranslationOverrides.string(_root.$meta, 'settings.performance.crashDetectedMessage', {}) ??
+      'Would you like to open Performance settings? Changing these options may help prevent similar crashes.';
+
+  /// en: 'Open Performance settings'
+  String get openPerformanceSettings =>
+      TranslationOverrides.string(_root.$meta, 'settings.performance.openPerformanceSettings', {}) ?? 'Open Performance settings';
 
   /// en: 'Low performance mode'
   String get lowPerformanceMode => TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceMode', {}) ?? 'Low performance mode';
@@ -6122,7 +6151,7 @@ extension on Translations {
           'settings.title' => TranslationOverrides.string(_root.$meta, 'settings.title', {}) ?? 'Settings',
           'settings.typeToSearch' => TranslationOverrides.string(_root.$meta, 'settings.typeToSearch', {}) ?? 'Type to search settings',
           'settings.noSettingsFound' => TranslationOverrides.string(_root.$meta, 'settings.noSettingsFound', {}) ?? 'No settings found',
-          'settings.perBooruSettings' => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Per-booru Settings',
+          'settings.perBooruSettings' => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Overrides',
           'settings.resetCategoryQuestion' =>
             ({required String category}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.resetCategoryQuestion', {'category': category}) ??
@@ -6267,6 +6296,16 @@ extension on Translations {
                 'Config parameters may be incorrect, booru doesn\'t allow API access, request didn\'t return any data or there was a network error.',
           'settings.booruEditor.saveBooru' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveBooru', {}) ?? 'Save Booru',
           'settings.booruEditor.runningTest' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.runningTest', {}) ?? 'Running test…',
+          'settings.booruEditor.connectionSettingsChanged' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.connectionSettingsChanged', {}) ??
+                'Connection settings changed during the test. Please save again.',
+          'settings.booruEditor.saveFailed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveFailed', {}) ?? 'Failed to save Booru',
+          'settings.booruEditor.overrideChangesSavedAutomatically' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.overrideChangesSavedAutomatically', {}) ??
+                'Changes are saved automatically',
+          'settings.booruEditor.noOverrideSettings' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.noOverrideSettings', {}) ?? 'No overrides are available',
           'settings.booruEditor.booruConfigExistsError' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigExistsError', {}) ?? 'This Booru config already exists',
           'settings.booruEditor.booruSameNameExistsError' =>
@@ -6495,6 +6534,9 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.viewerScrollDirection', {}) ?? 'Viewer scroll direction',
           'settings.viewer.viewerToolbarPosition' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.viewerToolbarPosition', {}) ?? 'Viewer toolbar position',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.viewer.zoomButtonPosition' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.zoomButtonPosition', {}) ?? 'Zoom button position',
           'settings.viewer.changePageButtonsPosition' =>
@@ -6503,9 +6545,6 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.hideToolbarWhenOpeningViewer', {}) ?? 'Hide toolbar when opening viewer',
           'settings.viewer.expandDetailsByDefault' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.expandDetailsByDefault', {}) ?? 'Expand details by default',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.viewer.hideTranslationNotesByDefault' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.hideTranslationNotesByDefault', {}) ?? 'Hide translation notes by default',
           'settings.viewer.enableRotation' => TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotation', {}) ?? 'Enable rotation',
@@ -7230,6 +7269,13 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.privacy.appAliasChangeFailed', {}) ?? 'Failed to change app name. Please try again.',
           'settings.privacy.restartNow' => TranslationOverrides.string(_root.$meta, 'settings.privacy.restartNow', {}) ?? 'Restart now',
           'settings.performance.title' => TranslationOverrides.string(_root.$meta, 'settings.performance.title', {}) ?? 'Performance',
+          'settings.performance.crashDetectedTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.performance.crashDetectedTitle', {}) ?? 'The app crashed last time',
+          'settings.performance.crashDetectedMessage' =>
+            TranslationOverrides.string(_root.$meta, 'settings.performance.crashDetectedMessage', {}) ??
+                'Would you like to open Performance settings? Changing these options may help prevent similar crashes.',
+          'settings.performance.openPerformanceSettings' =>
+            TranslationOverrides.string(_root.$meta, 'settings.performance.openPerformanceSettings', {}) ?? 'Open Performance settings',
           'settings.performance.lowPerformanceMode' =>
             TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceMode', {}) ?? 'Low performance mode',
           'settings.performance.lowPerformanceModeSubtitle' =>
@@ -7532,6 +7578,9 @@ extension on Translations {
             ({required String width, required String height}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.debug.resolution', {'width': width, 'height': height}) ??
                 'Res: ${width}x${height}',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.debug.pixelRatio' =>
             ({required String ratio}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.debug.pixelRatio', {'ratio': ratio}) ?? 'Pixel ratio: ${ratio}',
@@ -7545,9 +7594,6 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.debug.getSessionString', {}) ?? 'Get session string',
           'settings.debug.setSessionString' =>
             TranslationOverrides.string(_root.$meta, 'settings.debug.setSessionString', {}) ?? 'Set session string',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.debug.sessionString' => TranslationOverrides.string(_root.$meta, 'settings.debug.sessionString', {}) ?? 'Session string',
           'settings.debug.restoredSessionFromString' =>
             TranslationOverrides.string(_root.$meta, 'settings.debug.restoredSessionFromString', {}) ?? 'Restored session from string',

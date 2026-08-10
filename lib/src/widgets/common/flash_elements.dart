@@ -61,6 +61,17 @@ class FlashElements {
     }
   }
 
+  static Future<void> dismissKey(String key) async {
+    final controllers = List<dynamic>.from(controllersMap[key] ?? const []);
+    await Future.wait(
+      controllers.map((controller) async {
+        try {
+          await controller.dismiss();
+        } catch (_) {}
+      }),
+    );
+  }
+
   /// Shows a snackbar with a title, content and a leading icon, with a strip on the left side. Optionally can be used as a dialog.
   ///
   /// [title] - title of the tip, required
