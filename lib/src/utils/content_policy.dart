@@ -40,6 +40,7 @@ class ContentPolicy {
   static Set<String> get _blockedSourceHosts => {
     'aibooru.online',
     'agn.ph',
+    'bakemono.app',
     'booru.allthefallen.moe',
     'booru.xxx',
     'e-hentai.org',
