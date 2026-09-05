@@ -119,7 +119,7 @@ SettingDef<bool> boolSetting({
             defaultValue: s.resetValue(ctx),
             onReset: () => s.resetScoped(ctx),
             onChanged: (newValue) => s.setScopedValue(ctx, newValue),
-            enabled: enabledWhen?.call() ?? true,
+            enabled: enabledWhen?.call(ctx) ?? true,
             leadingIcon: widgetConfig?.leadingIcon,
             trailingIcon:
                 widgetConfig?.trailingIcon ??

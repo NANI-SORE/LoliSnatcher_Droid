@@ -1332,6 +1332,21 @@ class _FilePickerSettingWidget extends StatelessWidget {
   final Future<String> Function(BuildContext context, String path)? transformPickedPath;
   final Future<void> Function(String path)? onRemove;
 
+  Future<void> _removePreviousFile(String path, {required bool autosave, required String? booruName}) async {
+    if (path.isEmpty || onRemove == null) return;
+    if (autosave) {
+      // Keep the previous file until the replacement preference is durable.
+      final settingsHandler = SettingsHandler.instance;
+      if (booruName == null) {
+        await settingsHandler.saveSettings(restate: false);
+      } else {
+        final booru = settingsHandler.booruList.where((booru) => booru.name == booruName).firstOrNull;
+        if (booru == null || !await settingsHandler.saveBooru(booru, onlySave: true)) return;
+      }
+    }
+    await onRemove!(path);
+  }
+
   @override
   Widget build(BuildContext context) {
     return SettingBuilder<String>(
@@ -1346,13 +1361,25 @@ class _FilePickerSettingWidget extends StatelessWidget {
               subtitle: scopedVal.isEmpty ? null : Text('${localization.title(ctx)}: $scopedVal'),
               icon: const Icon(Icons.image_search_outlined),
               action: () async {
+                final oldPath = setting.scopedValue(ctx);
+                final booruName = setting.def.supportsPerBooru ? BooruEditingScope.of(ctx) : null;
+                final ownsPath = booruName == null || setting.hasScopedOverride(ctx);
+                final autosave = booruName == null || BooruEditingScope.autosaveOf(ctx);
                 final selectedPath = await pickFile();
+                if (!ctx.mounted) return;
                 if (selectedPath.isNotEmpty) {
                   final path = transformPickedPath == null
                       ? selectedPath
                       : await transformPickedPath!(ctx, selectedPath);
+                  if (!ctx.mounted) {
+                    if (transformPickedPath != null) await onRemove?.call(path);
+                    return;
+                  }
                   if (path.isNotEmpty) {
                     setting.setScopedValue(ctx, path);
+                    if (ownsPath && oldPath != path) {
+                      await _removePreviousFile(oldPath, autosave: autosave, booruName: booruName);
+                    }
                   }
                 }
               },
@@ -1363,11 +1390,12 @@ class _FilePickerSettingWidget extends StatelessWidget {
                 icon: const Icon(Icons.delete_forever),
                 action: () async {
                   final oldPath = setting.scopedValue(ctx);
-                  final isBooruScope = setting.def.supportsPerBooru && BooruEditingScope.of(ctx) != null;
-                  final ownsPath = !isBooruScope || setting.hasScopedOverride(ctx);
+                  final booruName = setting.def.supportsPerBooru ? BooruEditingScope.of(ctx) : null;
+                  final ownsPath = booruName == null || setting.hasScopedOverride(ctx);
+                  final autosave = booruName == null || BooruEditingScope.autosaveOf(ctx);
                   setting.setScopedValue(ctx, '');
                   if (ownsPath) {
-                    await onRemove?.call(oldPath);
+                    await _removePreviousFile(oldPath, autosave: autosave, booruName: booruName);
                   }
                 },
               ),
@@ -1407,7 +1435,7 @@ class _ConfirmBoolSettingWidget extends StatelessWidget {
         value: setting.scopedValue(ctx),
         defaultValue: setting.resetValue(ctx),
         onReset: () => setting.resetScoped(ctx),
-        enabled: enabledWhen?.call() ?? true,
+        enabled: enabledWhen?.call(ctx) ?? true,
         leadingIcon: widgetConfig?.leadingIcon,
         trailingIcon: widgetConfig?.trailingIcon,
         onChanged: (newValue) async {

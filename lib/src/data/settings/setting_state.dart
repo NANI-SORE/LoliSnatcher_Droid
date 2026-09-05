@@ -14,12 +14,11 @@ import 'package:lolisnatcher/src/widgets/settings/setting_chrome_scope.dart';
 /// Set by [SettingsRegistry] during initialization to avoid circular imports.
 ValueNotifier<String?> Function()? _currentBooruNotifierProvider;
 
-typedef SettingsSaveScheduler =
-    void Function({
-      bool debounce,
-      bool restate,
-      String? booruName,
-    });
+typedef SettingsSaveScheduler = void Function({
+  bool debounce,
+  bool restate,
+  String? booruName,
+});
 
 SettingsSaveScheduler? _settingsSaveScheduler;
 
@@ -60,6 +59,15 @@ class SettingState<T> {
 
   /// Get the effective value (considers current booru override).
   T get value => effectiveNotifier.value;
+
+  /// Resolve a specific booru without depending on the foreground tab.
+  /// A null name, or a setting without per-booru support, uses the global value.
+  T valueForBooru(String? booruName) {
+    if (def.supportsPerBooru && booruName != null && _booruOverrides.value.containsKey(booruName)) {
+      return _booruOverrides.value[booruName] as T;
+    }
+    return globalValue;
+  }
 
   /// Set the global value. Validates via [SettingDef.validate] and fires
   /// [SettingDef.onChanged] if the value actually changed.
@@ -355,16 +363,7 @@ class SettingState<T> {
   // ============================================
 
   T _computeEffective() {
-    if (!def.supportsPerBooru) return _globalValue.value;
-
-    final notifierProvider = _currentBooruNotifierProvider;
-    if (notifierProvider == null) return _globalValue.value;
-
-    final currentBooruName = notifierProvider().value;
-    if (currentBooruName != null && _booruOverrides.value.containsKey(currentBooruName)) {
-      return _booruOverrides.value[currentBooruName] as T;
-    }
-    return _globalValue.value;
+    return valueForBooru(_currentBooruNotifierProvider?.call().value);
   }
 
   ValueNotifier<T> _createEffectiveNotifier() {

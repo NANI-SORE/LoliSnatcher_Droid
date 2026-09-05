@@ -141,14 +141,14 @@ class SettingsRegistry {
 
     final queryLower = query.toLowerCase();
     return _states.values.where((state) {
-      if (!isSearchVisible(state)) return false;
+      if (!isSearchVisible(state, context)) return false;
       final searchable = state.def.getSearchableText(context);
       return searchable.any((text) => text.toLowerCase().contains(queryLower));
     }).toList();
   }
 
   /// Whether a setting is allowed to appear in global settings search.
-  bool isSearchVisible(SettingState<dynamic> state) {
+  bool isSearchVisible(SettingState<dynamic> state, [BuildContext? context]) {
     final def = state.def;
     if (!def.isSearchable || def.isWidgetSlot || def.widgetBuilder == null) {
       return false;
@@ -159,7 +159,7 @@ class SettingsRegistry {
     if (!(def.searchVisibleWhen?.call() ?? true)) {
       return false;
     }
-    return def.enabledWhen?.call() ?? true;
+    return def.enabledWhen?.call(context) ?? true;
   }
 
   // ============================================
@@ -180,7 +180,17 @@ class SettingsRegistry {
 
   /// Load global setting values from JSON.
   /// Unrecognized keys are silently ignored (forwards compatibility).
-  void loadFromJson(Map<String, dynamic> json) {
+  /// Full restores reset absent persisted settings; partial updates retain them.
+  void loadFromJson(Map<String, dynamic> json, {bool resetMissing = false}) {
+    if (resetMissing) {
+      for (final state in _states.values) {
+        if (!_excludeFromJson(state) &&
+            !json.containsKey(state.def.jsonKey) &&
+            !state.def.legacyJsonKeys.any(json.containsKey)) {
+          state.loadDefaultValue();
+        }
+      }
+    }
     // Load canonical keys first so they win when a file contains both the
     // current key and one of its historical aliases.
     for (final state in _states.values) {
