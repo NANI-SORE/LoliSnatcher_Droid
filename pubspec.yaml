@@ -6,7 +6,7 @@ version: 2.5.2+5218 # remember to update the values in constants.dart->updateInf
 
 environment:
   sdk: ">=3.13.2 <4.0.0"
-  flutter: 3.47.2
+  flutter: 3.47.3
 
 dependencies:
   flutter:
