@@ -72,14 +72,21 @@ class WaterfallBottomBarState extends State<WaterfallBottomBar> with TickerProvi
 
     return Align(
       alignment: Alignment.bottomCenter,
-      child: Padding(
-        padding: EdgeInsets.only(bottom: bottomPadding),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const _WaterfallSelectionButtons(),
-            WaterfallBottomSlide(
-              animation: animation,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedBuilder(
+            animation: animation,
+            builder: (context, child) => Padding(
+              padding: EdgeInsets.only(bottom: bottomPadding * animValue),
+              child: child,
+            ),
+            child: const _WaterfallSelectionButtons(),
+          ),
+          WaterfallBottomSlide(
+            animation: animation,
+            child: Padding(
+              padding: EdgeInsets.only(bottom: bottomPadding),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -116,8 +123,8 @@ class WaterfallBottomBarState extends State<WaterfallBottomBar> with TickerProvi
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -135,9 +142,15 @@ class WaterfallBottomSlide extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizeTransition(
-      sizeFactor: ReverseAnimation(animation),
-      alignment: Alignment.topCenter,
+    // Shrink the layout without clipping the controls as they pass through the
+    // bottom safe area and off the screen.
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) => Align(
+        alignment: Alignment.topCenter,
+        heightFactor: 1 - animation.value,
+        child: child,
+      ),
       child: child,
     );
   }
