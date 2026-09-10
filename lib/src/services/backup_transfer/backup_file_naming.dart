@@ -7,6 +7,13 @@ class BackupFileNaming {
     'boorusnatcher',
   };
   static const extension = 'lsbackup';
+  // Keep Android document providers from appending .zip to the custom extension.
+  static const mimeType = 'application/octet-stream';
+
+  static bool isPackageFileName(String fileName) {
+    final lowerName = fileName.toLowerCase();
+    return lowerName.endsWith('.$extension') || lowerName.endsWith('.$extension.zip');
+  }
 
   static String get currentFormatId => '$currentAppSlug-backup';
 
@@ -36,7 +43,7 @@ class BackupFileNaming {
 
   static bool isUpdateAutoBackupPath(String path) {
     final lowerPath = path.toLowerCase();
-    return supportedAppSlugs.any((slug) => lowerPath.contains('$slug-update-')) && lowerPath.endsWith('.$extension');
+    return supportedAppSlugs.any((slug) => lowerPath.contains('$slug-update-')) && isPackageFileName(lowerPath);
   }
 
   static String get transferPackageFileName => '$currentAppSlug-transfer.$extension';

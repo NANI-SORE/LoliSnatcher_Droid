@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_entry_registry.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/backup_file_naming.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_import_compat_service.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_models.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_package_service.dart';
@@ -97,7 +98,7 @@ class _AdvancedBackupPageState extends State<AdvancedBackupPage> {
       final file = await FilePicker.pickFile();
       if (file == null) return;
       final bytes = await file.readAsBytes();
-      if (file.name.toLowerCase().endsWith('.lsbackup')) {
+      if (BackupFileNaming.isPackageFileName(file.name)) {
         await compatService.importNamedBytes(file.name, bytes);
       } else {
         await entry.importEntry(bytes, const BackupImportOptions());

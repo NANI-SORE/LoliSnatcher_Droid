@@ -198,7 +198,7 @@ class AutoBackupService {
           tempFile.parent.path,
           fileName,
           config.location,
-          'application/zip',
+          BackupFileNaming.mimeType,
         );
         if (!copied) throw FileSystemException('Failed to save backup package', config.location);
       } finally {
@@ -260,7 +260,7 @@ class AutoBackupService {
         .where(
           (entity) =>
               entity is File &&
-              entity.path.toLowerCase().endsWith('.${BackupFileNaming.extension}') &&
+              BackupFileNaming.isPackageFileName(entity.path) &&
               !BackupFileNaming.isUpdateAutoBackupPath(entity.path),
         )
         .cast<File>()

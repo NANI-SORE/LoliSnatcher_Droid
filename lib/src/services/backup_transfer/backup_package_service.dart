@@ -364,7 +364,7 @@ class BackupPackageService {
           tempFile.parent.path,
           fileName,
           savePath,
-          'application/zip',
+          BackupFileNaming.mimeType,
         );
         if (!copied) throw FileSystemException('Failed to save backup package', savePath);
         BackupTransferLogger.info(
@@ -408,7 +408,7 @@ class BackupPackageService {
     final file = await FilePicker.pickFile(
       dialogTitle: loc.settings.backupAndTransfer.importBackupDialogTitle,
       type: FileType.custom,
-      allowedExtensions: [extension, 'json', 'db'],
+      allowedExtensions: [extension, 'zip', 'json', 'db'],
     );
     if (file == null) return null;
     final bytes = await file.readAsBytes();

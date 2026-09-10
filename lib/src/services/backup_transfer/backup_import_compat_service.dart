@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_entry_registry.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/backup_file_naming.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_models.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_package_service.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_transfer_logger.dart';
@@ -28,7 +29,7 @@ class BackupImportCompatService {
       'importNamedBytes',
     );
     final lowerName = fileName.toLowerCase();
-    if (lowerName.endsWith('.lsbackup')) {
+    if (BackupFileNaming.isPackageFileName(fileName)) {
       return packageService.importPackage(bytes, options: options);
     }
 
@@ -69,8 +70,7 @@ class BackupImportCompatService {
       'BackupImportCompatService',
       'importNamedFile',
     );
-    final lowerName = fileName.toLowerCase();
-    if (lowerName.endsWith('.lsbackup')) {
+    if (BackupFileNaming.isPackageFileName(fileName)) {
       return packageService.importPackageFile(file, options: options);
     }
     return importNamedBytes(fileName, await file.readAsBytes(), options: options);
