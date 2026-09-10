@@ -11,8 +11,8 @@ import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_controller.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_bar.dart';
 import 'package:lolisnatcher/src/widgets/preview/waterfall_error_buttons.dart';
 
-// Visibility follows the primary waterfall scroll direction and explicit
-// MainAppBar show/hide requests.
+// Search/error controls follow the primary waterfall scroll direction and
+// explicit MainAppBar show/hide requests. Selection controls stay visible.
 
 class WaterfallBottomBar extends StatefulWidget {
   const WaterfallBottomBar({super.key});
@@ -72,46 +72,51 @@ class WaterfallBottomBarState extends State<WaterfallBottomBar> with TickerProvi
 
     return Align(
       alignment: Alignment.bottomCenter,
-      child: WaterfallBottomSlide(
-        animation: animation,
-        child: Padding(
-          padding: EdgeInsets.only(bottom: showSearchBar ? 0 : bottomPadding),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const _WaterfallSelectionButtons(),
-              // Loading/error controls and the optional search bar move as one unit so
-              // every bottom control is completely outside the viewport when hidden.
-              AnimatedBuilder(
-                animation: animation,
-                builder: (context, child) {
-                  final double buttonPadding = showSearchBar
-                      ? ((MediaQuery.sizeOf(context).width * 0.07) + kMinInteractiveDimension) * reverseAnimValue
-                      : 0;
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const _WaterfallSelectionButtons(),
+            WaterfallBottomSlide(
+              animation: animation,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Loading/error controls and the optional search bar move as one unit so
+                  // selection controls can settle at the bottom when these are hidden.
+                  AnimatedBuilder(
+                    animation: animation,
+                    builder: (context, child) {
+                      final double buttonPadding = showSearchBar
+                          ? ((MediaQuery.sizeOf(context).width * 0.07) + kMinInteractiveDimension) * reverseAnimValue
+                          : 0;
 
-                  return AnimatedPadding(
-                    duration: const Duration(milliseconds: 100),
-                    padding: EdgeInsets.only(
-                      left: (SX.scrollGridButtonsPosition.value.isLeft ? buttonPadding : 0) + 10,
-                      right: (SX.scrollGridButtonsPosition.value.isRight ? buttonPadding : 0) + 10,
-                    ),
-                    child: child,
-                  );
-                },
-                child: WaterfallErrorButtons(animation: animation),
-              ),
-              if (showSearchBar)
-                Padding(
-                  padding: EdgeInsets.only(bottom: 12 + bottomPadding),
-                  child: Container(
-                    height: MainSearchBar.height,
-                    width: double.infinity,
-                    margin: const EdgeInsets.symmetric(horizontal: 12),
-                    child: const MainSearchBarWithActions('bottom'),
+                      return AnimatedPadding(
+                        duration: const Duration(milliseconds: 100),
+                        padding: EdgeInsets.only(
+                          left: (SX.scrollGridButtonsPosition.value.isLeft ? buttonPadding : 0) + 10,
+                          right: (SX.scrollGridButtonsPosition.value.isRight ? buttonPadding : 0) + 10,
+                        ),
+                        child: child,
+                      );
+                    },
+                    child: WaterfallErrorButtons(animation: animation),
                   ),
-                ),
-            ],
-          ),
+                  if (showSearchBar)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Container(
+                        height: MainSearchBar.height,
+                        width: double.infinity,
+                        margin: const EdgeInsets.symmetric(horizontal: 12),
+                        child: const MainSearchBarWithActions('bottom'),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -130,14 +135,9 @@ class WaterfallBottomSlide extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, child) {
-        return FractionalTranslation(
-          translation: Offset(0, animation.value),
-          child: child,
-        );
-      },
+    return SizeTransition(
+      sizeFactor: ReverseAnimation(animation),
+      alignment: Alignment.topCenter,
       child: child,
     );
   }
