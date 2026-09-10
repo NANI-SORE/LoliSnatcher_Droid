@@ -73,7 +73,7 @@ class _SelectedPreviewSheetState extends State<SelectedPreviewSheet> {
     _isClosing = true;
     _dismissInput();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
         Navigator.of(context).pop();
       }
     });
@@ -109,6 +109,8 @@ class _SelectedPreviewSheetState extends State<SelectedPreviewSheet> {
           },
           child: DraggableScrollableSheet(
             expand: false,
+            // The notification listener owns dismissal at the minimum size.
+            shouldCloseOnMinExtent: false,
             initialChildSize: 0.66,
             minChildSize: _minSheetSize,
             maxChildSize: 0.92,
