@@ -216,6 +216,46 @@ class SearchHandler {
     }
   }
 
+  /// Rebuilds tabs that reference a removed booru so their handlers no longer
+  /// retain the deleted configuration.
+  int replaceBooruInTabs(
+    Booru removed,
+    Booru replacement, {
+    bool refreshCurrent = true,
+  }) {
+    var replacedCount = 0;
+    var currentTabWasReplaced = false;
+
+    for (var i = 0; i < tabs.length; i++) {
+      final oldTab = tabs[i];
+      final selectedWasRemoved = oldTab.selectedBooru.value.matchesIdentity(removed);
+      final oldSecondary = oldTab.secondaryBoorus.value ?? const <Booru>[];
+      final secondaryContainedRemoved = oldSecondary.any((booru) => booru.matchesIdentity(removed));
+      if (!selectedWasRemoved && !secondaryContainedRemoved) continue;
+
+      final newSelected = selectedWasRemoved ? replacement : oldTab.selectedBooru.value;
+      final newSecondary = oldSecondary
+          .where((booru) => !booru.matchesIdentity(removed) && !booru.matchesIdentity(newSelected))
+          .toList(growable: false);
+      tabs[i] = SearchTab(
+        newSelected,
+        newSecondary.isEmpty ? null : newSecondary,
+        oldTab.tags,
+      );
+      replacedCount++;
+      currentTabWasReplaced |= i == currentIndex;
+    }
+
+    if (currentTabWasReplaced) {
+      changeTabIndex(
+        currentIndex,
+        switchOnly: !refreshCurrent,
+        ignoreSameIndexCheck: true,
+      );
+    }
+    return replacedCount;
+  }
+
   void moveTab(int fromIndex, int toIndex) {
     // value checks
     if (fromIndex == toIndex) {

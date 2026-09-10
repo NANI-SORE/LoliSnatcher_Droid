@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
-import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -146,7 +145,7 @@ class _MediaPreviewsState extends State<MediaPreviews> {
                           subtitle: loc.addBooruActionSubtitle,
                           icon: Icons.add_photo_alternate_outlined,
                           filled: true,
-                          onTap: () => openPage(BooruEdit(Booru('New', null, '', '', ''))),
+                          onTap: () => openPage(BooruEdit.add()),
                         ),
                         _OnboardingActionTile(
                           title: loc.restoreBackupAction,

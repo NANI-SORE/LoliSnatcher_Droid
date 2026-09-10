@@ -147,7 +147,6 @@ class _LogFilesPageState extends State<LogFilesPage> {
     setState(() {
       SX.captureLogcat.state.value = enabled;
     });
-    await Logger.setLogcatCaptureEnabled(enabled);
     await settingsHandler.saveSettings(restate: false);
   }
 

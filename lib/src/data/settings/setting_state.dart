@@ -4,7 +4,7 @@ import 'package:lolisnatcher/src/data/settings/setting_def.dart';
 import 'package:lolisnatcher/src/data/settings/settings_enum.dart';
 import 'package:lolisnatcher/src/data/theme_item.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
-import 'package:lolisnatcher/src/pages/settings/booru_overrides_page.dart';
+import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
 import 'package:lolisnatcher/src/widgets/common/close_dialog_button.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
@@ -14,12 +14,11 @@ import 'package:lolisnatcher/src/widgets/settings/setting_chrome_scope.dart';
 /// Set by [SettingsRegistry] during initialization to avoid circular imports.
 ValueNotifier<String?> Function()? _currentBooruNotifierProvider;
 
-typedef SettingsSaveScheduler =
-    void Function({
-      bool debounce,
-      bool restate,
-      String? booruName,
-    });
+typedef SettingsSaveScheduler = void Function({
+  bool debounce,
+  bool restate,
+  String? booruName,
+});
 
 SettingsSaveScheduler? _settingsSaveScheduler;
 
@@ -61,20 +60,29 @@ class SettingState<T> {
   /// Get the effective value (considers current booru override).
   T get value => effectiveNotifier.value;
 
+  /// Resolve a specific booru without depending on the foreground tab.
+  /// A null name, or a setting without per-booru support, uses the global value.
+  T valueForBooru(String? booruName) {
+    if (def.supportsPerBooru && booruName != null && _booruOverrides.value.containsKey(booruName)) {
+      return _booruOverrides.value[booruName] as T;
+    }
+    return globalValue;
+  }
+
   /// Set the global value. Validates via [SettingDef.validate] and fires
   /// [SettingDef.onChanged] if the value actually changed.
   set value(T newValue) {
     setValue(newValue);
   }
 
-  void setValue(T newValue, {bool debounceSave = false}) {
+  void setValue(T newValue, {bool debounceSave = false, bool save = true}) {
     final validated = def.validate?.call(newValue) ?? newValue;
     final oldValue = _globalValue.value;
     _globalValue.value = validated;
-    if (!def.supportsPerBooru && oldValue != validated) {
+    if (!def.supportsPerBooru && !valuesEqual(oldValue, validated)) {
       def.onChanged?.call(oldValue, validated);
     }
-    if (oldValue != validated) {
+    if (save && !valuesEqual(oldValue, validated)) {
       _scheduleSave(debounce: debounceSave);
     }
   }
@@ -87,10 +95,10 @@ class SettingState<T> {
     final validated = def.validate?.call(newValue) ?? newValue;
     final oldValue = _globalValue.value;
     _globalValue.value = validated;
-    if (!def.supportsPerBooru && oldValue != validated) {
+    if (!def.supportsPerBooru && !valuesEqual(oldValue, validated)) {
       def.onChanged?.call(oldValue, validated);
     }
-    if (oldValue != validated) {
+    if (!valuesEqual(oldValue, validated)) {
       _scheduleSave();
     }
   }
@@ -113,7 +121,13 @@ class SettingState<T> {
   }
 
   /// Whether the global value differs from the default.
-  bool get isModified => globalValue != def.getDefaultValue();
+  bool get isModified => !valuesEqual(globalValue, def.getDefaultValue());
+
+  /// Compare values using structural equality for collections.
+  ///
+  /// Settings commonly use freshly-created lists as defaults, so identity
+  /// equality would otherwise report them as modified forever.
+  bool valuesEqual(T a, T b) => def.equals?.call(a, b) ?? _deepEquals(a, b);
 
   /// Reset to the default value.
   void reset() {
@@ -156,11 +170,12 @@ class SettingState<T> {
     bool debounceSave = false,
   }) {
     final validated = def.validate?.call(val) ?? val;
+    final hadOverride = _booruOverrides.value.containsKey(booruName);
     final oldValue = _booruOverrides.value[booruName];
     final map = Map<String, T>.from(_booruOverrides.value);
     map[booruName] = validated;
     _booruOverrides.value = map; // Triggers notification
-    if (save && oldValue != validated) {
+    if (save && (!hadOverride || !valuesEqual(oldValue as T, validated))) {
       _scheduleSave(debounce: debounceSave, booruName: booruName);
     }
   }
@@ -223,7 +238,7 @@ class SettingState<T> {
       setValue(newValue, debounceSave: debounceSave);
     } else {
       final validated = def.validate?.call(newValue) ?? newValue;
-      if (validated == globalValue) {
+      if (valuesEqual(validated, globalValue)) {
         removeOverrideFor(editingBooru, save: BooruEditingScope.autosaveOf(context));
         return;
       }
@@ -285,9 +300,19 @@ class SettingState<T> {
 
   /// Load the global value from JSON.
   void loadFromJson(dynamic json) {
+    _loadGlobalValue(def.valueFromJson(json));
+  }
+
+  /// Restore the global default without scheduling a save or firing runtime
+  /// side effects. Safe to call through a type-erased `SettingState<dynamic>`.
+  void loadDefaultValue() {
+    _loadGlobalValue(def.getDefaultValue());
+  }
+
+  void _loadGlobalValue(T value) {
     _suppressSideEffects = true;
     try {
-      _globalValue.value = def.valueFromJson(json);
+      _globalValue.value = value;
     } finally {
       _suppressSideEffects = false;
     }
@@ -338,16 +363,7 @@ class SettingState<T> {
   // ============================================
 
   T _computeEffective() {
-    if (!def.supportsPerBooru) return _globalValue.value;
-
-    final notifierProvider = _currentBooruNotifierProvider;
-    if (notifierProvider == null) return _globalValue.value;
-
-    final currentBooruName = notifierProvider().value;
-    if (currentBooruName != null && _booruOverrides.value.containsKey(currentBooruName)) {
-      return _booruOverrides.value[currentBooruName] as T;
-    }
-    return _globalValue.value;
+    return valueForBooru(_currentBooruNotifierProvider?.call().value);
   }
 
   ValueNotifier<T> _createEffectiveNotifier() {
@@ -381,7 +397,7 @@ class _EffectiveValueNotifier<T> extends ValueNotifier<T> {
     final oldValue = value;
     final newValue = _state._computeEffective();
     value = newValue;
-    if (!_state._suppressSideEffects && oldValue != newValue) {
+    if (!_state._suppressSideEffects && !_state.valuesEqual(oldValue, newValue)) {
       _state.def.onChanged?.call(oldValue, newValue);
     }
   }
@@ -428,7 +444,7 @@ class _GlobalOverridesWrapper extends StatelessWidget {
     return ValueListenableBuilder<Map<String, dynamic>>(
       valueListenable: state._booruOverrides,
       builder: (context, overrides, _) {
-        final entries = overrides.entries.where((entry) => entry.value != state.globalValue).toList()
+        final entries = overrides.entries.where((entry) => !state.valuesEqual(entry.value, state.globalValue)).toList()
           ..sort((a, b) => a.key.toLowerCase().compareTo(b.key.toLowerCase()));
 
         return SettingChromeScope(
@@ -438,6 +454,30 @@ class _GlobalOverridesWrapper extends StatelessWidget {
       },
     );
   }
+}
+
+bool _deepEquals(Object? a, Object? b) {
+  if (identical(a, b)) return true;
+  if (a is List && b is List) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (!_deepEquals(a[i], b[i])) return false;
+    }
+    return true;
+  }
+  if (a is Map && b is Map) {
+    if (a.length != b.length) return false;
+    for (final entry in a.entries) {
+      if (!b.containsKey(entry.key) || !_deepEquals(entry.value, b[entry.key])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if (a is Set && b is Set) {
+    return a.length == b.length && a.every(b.contains);
+  }
+  return a == b;
 }
 
 /// Small read-only chip shown on global settings that have booru overrides.
@@ -471,10 +511,11 @@ class _GlobalOverridesChip extends StatelessWidget {
     final initialCategory = state.def.categories.isNotEmpty ? state.def.categories.first : null;
     await SettingsPageOpen(
       context: context,
-      page: (_) => BooruOverridesPage(
-        booru: booru,
-        initialCategory: initialCategory,
-        initialSettingKey: state.def.key,
+      page: (_) => BooruEdit.edit(
+        booru,
+        initialSection: BooruEditSection.overrides,
+        initialOverrideCategory: initialCategory,
+        initialOverrideSettingKey: state.def.key,
       ),
     ).open();
   }

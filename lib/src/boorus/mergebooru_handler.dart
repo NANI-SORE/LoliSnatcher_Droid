@@ -30,6 +30,9 @@ class MergebooruHandler extends BooruHandler {
   ({Booru booru, int index})? sourceFor(BooruItem item) => _itemSources[item];
 
   @override
+  Booru sourceBooruFor(BooruItem item) => sourceFor(item)?.booru ?? booru;
+
+  @override
   FilterContext filterContextFor(BooruItem item) => FilterContext(
     viewBooru: booru,
     sourceBooru: sourceFor(item)?.booru,
@@ -63,11 +66,9 @@ class MergebooruHandler extends BooruHandler {
           if (tag is MetaTagWithValues) {
             final List<MetaTagValue> combinedValues = [];
             for (final handler in boorusWhereTagExists) {
-              final tagWithValues =
-                  handler.availableMetaTags().firstWhereOrNull(
-                        (e) => e is MetaTagWithValues && e.keyName == tag.keyName,
-                      )
-                      as MetaTagWithValues?;
+              final tagWithValues = handler.availableMetaTags().firstWhereOrNull(
+                (e) => e is MetaTagWithValues && e.keyName == tag.keyName,
+              ) as MetaTagWithValues?;
               final values = tagWithValues?.values;
               if (values != null) {
                 for (final v in values) {
@@ -142,11 +143,10 @@ class MergebooruHandler extends BooruHandler {
       fetchedMax += tmpFetched.length;
     }
     int innerFetchedOffset = 0;
-    int innerFetchedIndex = -1;
     final List<BooruItem> newItems = [];
     do {
-      innerFetchedIndex = (limit * pageNum) + innerFetchedOffset;
       for (int i = 0; i < tmpFetchedMap.entries.length; i++) {
+        final innerFetchedIndex = (booruHandlers[i].limit * pageNum) + innerFetchedOffset;
         final items = tmpFetchedMap[i]!.items;
 
         final booru = tmpFetchedMap[i]!.booru;
@@ -225,7 +225,7 @@ class MergebooruHandler extends BooruHandler {
         }
       }
       innerFetchedOffset++;
-    } while ((fetched.length < fetchedMax) && innerFetchedIndex < fetchedMax);
+    } while ((fetched.length < fetchedMax) && innerFetchedOffset < fetchedMax);
 
     await afterParseResponse(newItems);
 

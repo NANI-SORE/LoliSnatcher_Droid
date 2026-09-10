@@ -52,6 +52,24 @@ abstract class BooruHandler {
 
   RxList<BooruItem> fetched = RxList<BooruItem>([]);
   RxList<BooruItem> filteredFetched = RxList<BooruItem>([]);
+
+  /// Merged searches override this to retain each item's source settings.
+  Booru sourceBooruFor(BooruItem item) => booru;
+
+  bool Function(BooruItem, TagFilterEvaluation) _itemFilterFor(Booru source) {
+    final filterMarked = SX.filterMarked.valueForBooru(source.name);
+    final filterAi = SX.filterAi.valueForBooru(source.name);
+    final filterFavourites = SX.filterFavourites.valueForBooru(source.name) && source.type?.isFavourites != true;
+    final filterSnatched = SX.filterSnatched.valueForBooru(source.name) && source.type?.isDownloads != true;
+
+    return (item, evaluation) =>
+        !evaluation.isHidden &&
+        !(filterMarked && evaluation.isMarked) &&
+        !(filterAi && item.isAI) &&
+        !(filterFavourites && item.isFavourite.value == true) &&
+        !(filterSnatched && item.isSnatched.value == true);
+  }
+
   final Map<
     BooruItem,
     ({
@@ -84,13 +102,6 @@ abstract class BooruHandler {
     _filterContextCache.clear();
   }
 
-  bool _boolSettingForView(TypedKey<bool> setting) {
-    final state = setting.state;
-    final booruName = booru.name;
-    if (booruName == null || booruName.isEmpty) return state.globalValue;
-    return state.getOverrideFor(booruName) ?? state.globalValue;
-  }
-
   String _filterContextCatalogKey() => SettingsHandler.instance.booruList
       .where((source) => source.type?.isFavouritesOrDownloads != true)
       .map((source) => BooruIdentity.fromBooru(source).stableKey)
@@ -103,10 +114,7 @@ abstract class BooruHandler {
   void filterFetched({bool forceRefresh = false}) {
     final List<BooruItem> itemsBeforeFilter = filteredFetched;
 
-    final bool doFilterMarked = _boolSettingForView(SX.filterMarked);
-    final bool doFilterAi = _boolSettingForView(SX.filterAi);
-    final bool doFilterFavourites = _boolSettingForView(SX.filterFavourites) && booru.type?.isFavourites != true;
-    final bool doFilterSnatched = _boolSettingForView(SX.filterSnatched) && booru.type?.isDownloads != true;
+    final filters = <Booru, bool Function(BooruItem, TagFilterEvaluation)>{};
 
     final List<BooruItem> filteredItems = [];
     final Set<String> seenFileUrls = {};
@@ -119,7 +127,8 @@ abstract class BooruHandler {
 
     for (final item in fetched) {
       activeItems.add(item);
-      if (!ContentPolicy.isItemAllowed(booru, item)) {
+      final source = sourceBooruFor(item);
+      if (!ContentPolicy.isItemAllowed(source, item)) {
         continue;
       }
 
@@ -171,23 +180,8 @@ abstract class BooruHandler {
         );
       }
 
-      if (evaluation.isHidden) {
-        continue;
-      }
-
-      if (doFilterMarked && evaluation.isMarked) {
-        continue;
-      }
-
-      if (doFilterAi && item.isAI) {
-        continue;
-      }
-
-      if (doFilterFavourites && item.isFavourite.value == true) {
-        continue;
-      }
-
-      if (doFilterSnatched && item.isSnatched.value == true) {
+      final includeItem = filters.putIfAbsent(source, () => _itemFilterFor(source));
+      if (!includeItem(item, evaluation)) {
         continue;
       }
 
@@ -289,6 +283,7 @@ abstract class BooruHandler {
     Response response;
     try {
       response = await fetchSearch(uri, tags, withCaptchaCheck: withCaptchaCheck);
+      DioNetwork.throwIfCancelled();
       if (response.statusCode == 200) {
         if (response.requestOptions.uri.toString().contains('rule34.xxx') &&
             response.data is String &&
@@ -300,6 +295,7 @@ abstract class BooruHandler {
 
         // parse response data
         final List<BooruItem> newItems = await parseResponse(response);
+        DioNetwork.throwIfCancelled();
         await afterParseResponse(newItems);
 
         // save tags for check on next search
@@ -332,11 +328,9 @@ abstract class BooruHandler {
         if (e.response?.statusCode == HttpStatus.unauthorized) {
           if (e.requestOptions.uri.toString().contains('gelbooru.com')) {
             // add a message to direct user to set his user ID and api key
-            errorString +=
-                '\n<p><b>You may need to add your User ID and API key. Go to <a href="/settings/booru">[Settings > Booru & Search]</a> to update the booru config. Note: Anonymous access is NOT allowed.</b></p>';
+            errorString += '\n<p><b>You may need to add your User ID and API key. Go to <a href="/settings/booru">[Settings > Booru & Search]</a> to update the booru config. Note: Anonymous access is NOT allowed.</b></p>';
           } else if (e.requestOptions.uri.toString().contains('rule34.xxx')) {
-            errorString +=
-                '\n<p><b>You may need to add your User ID and API key. Go to <a href="/settings/booru">[Settings > Booru & Search]</a> to update the booru config. Note: Anonymous access is NOT allowed.</b></p>';
+            errorString += '\n<p><b>You may need to add your User ID and API key. Go to <a href="/settings/booru">[Settings > Booru & Search]</a> to update the booru config. Note: Anonymous access is NOT allowed.</b></p>';
           }
         }
       } else {
@@ -441,6 +435,7 @@ abstract class BooruHandler {
   }
 
   Future<void> afterParseResponse(List<BooruItem> newItems) async {
+    DioNetwork.throwIfCancelled();
     final int lengthBefore = fetched.length;
     fetched.addAll(newItems);
     filterFetched();

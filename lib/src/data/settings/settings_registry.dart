@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:lolisnatcher/src/data/settings/setting_def.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/settings/setting_state.dart';
+import 'package:lolisnatcher/src/utils/logger.dart';
 
 /// Central registry for all application settings.
 ///
@@ -140,14 +141,14 @@ class SettingsRegistry {
 
     final queryLower = query.toLowerCase();
     return _states.values.where((state) {
-      if (!isSearchVisible(state)) return false;
+      if (!isSearchVisible(state, context)) return false;
       final searchable = state.def.getSearchableText(context);
       return searchable.any((text) => text.toLowerCase().contains(queryLower));
     }).toList();
   }
 
   /// Whether a setting is allowed to appear in global settings search.
-  bool isSearchVisible(SettingState<dynamic> state) {
+  bool isSearchVisible(SettingState<dynamic> state, [BuildContext? context]) {
     final def = state.def;
     if (!def.isSearchable || def.isWidgetSlot || def.widgetBuilder == null) {
       return false;
@@ -158,7 +159,7 @@ class SettingsRegistry {
     if (!(def.searchVisibleWhen?.call() ?? true)) {
       return false;
     }
-    return def.enabledWhen?.call() ?? true;
+    return def.enabledWhen?.call(context) ?? true;
   }
 
   // ============================================
@@ -179,14 +180,24 @@ class SettingsRegistry {
 
   /// Load global setting values from JSON.
   /// Unrecognized keys are silently ignored (forwards compatibility).
-  void loadFromJson(Map<String, dynamic> json) {
+  /// Full restores reset absent persisted settings; partial updates retain them.
+  void loadFromJson(Map<String, dynamic> json, {bool resetMissing = false}) {
+    if (resetMissing) {
+      for (final state in _states.values) {
+        if (!_excludeFromJson(state) &&
+            !json.containsKey(state.def.jsonKey) &&
+            !state.def.legacyJsonKeys.any(json.containsKey)) {
+          state.loadDefaultValue();
+        }
+      }
+    }
     // Load canonical keys first so they win when a file contains both the
     // current key and one of its historical aliases.
     for (final state in _states.values) {
       if (_excludeFromJson(state) || !json.containsKey(state.def.jsonKey)) {
         continue;
       }
-      state.loadFromJson(json[state.def.jsonKey]);
+      _loadGlobalValue(state, json[state.def.jsonKey]);
     }
 
     for (final entry in json.entries) {
@@ -195,8 +206,75 @@ class SettingsRegistry {
           !_excludeFromJson(state) &&
           entry.key != state.def.jsonKey &&
           !json.containsKey(state.def.jsonKey)) {
-        state.loadFromJson(entry.value);
+        _loadGlobalValue(state, entry.value);
       }
+    }
+  }
+
+  /// Clears persisted picker values whose files or directories are no longer
+  /// accessible. Global values are reset to their defaults; per-booru values
+  /// are removed so the booru resumes inheriting the global value.
+  Future<PickerAccessValidationResult> clearInaccessiblePickerValues({
+    bool includeGlobal = true,
+    Iterable<String> booruNames = const [],
+  }) async {
+    final result = PickerAccessValidationResult();
+    final scopedNames = booruNames.toSet();
+
+    for (final state in _states.values) {
+      if (!state.def.hasAccessValidator) continue;
+
+      if (includeGlobal && !state.valuesEqual(state.globalValue, state.defaultValue)) {
+        if (!await _hasPickerAccess(state, state.globalValue)) {
+          state.loadDefaultValue();
+          result.clearedGlobal.add(state.def.key);
+        }
+      }
+
+      if (!state.def.supportsPerBooru) continue;
+      for (final booruName in scopedNames) {
+        if (!state.hasOverrideFor(booruName)) continue;
+        final value = state.getOverrideFor(booruName);
+        if (value == null || state.valuesEqual(value, state.defaultValue)) continue;
+        if (!await _hasPickerAccess(state, value)) {
+          state.removeOverrideFor(booruName, save: false);
+          result.clearedOverrides.putIfAbsent(booruName, () => <SettingKey>{}).add(state.def.key);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  Future<bool> _hasPickerAccess(
+    SettingState<dynamic> state,
+    dynamic value,
+  ) async {
+    try {
+      return await state.def.canAccessValue(value);
+    } catch (e, s) {
+      Logger.Inst().log(
+        'Failed to validate picker setting ${state.def.jsonKey}: $e',
+        'SettingsRegistry',
+        'clearInaccessiblePickerValues',
+        LogTypes.settingsError,
+        s: s,
+      );
+      return false;
+    }
+  }
+
+  void _loadGlobalValue(SettingState<dynamic> state, dynamic value) {
+    try {
+      state.loadFromJson(value);
+    } catch (e, s) {
+      Logger.Inst().log(
+        'Failed to load setting ${state.def.jsonKey}: $e',
+        'SettingsRegistry',
+        'loadFromJson',
+        LogTypes.settingsError,
+        s: s,
+      );
     }
   }
 
@@ -228,7 +306,17 @@ class SettingsRegistry {
     for (final entry in overrides.entries) {
       final state = getByJsonKey(entry.key);
       if (state != null && state.def.supportsPerBooru) {
-        state.setOverrideFor(booruName, state.def.valueFromJson(entry.value), save: false);
+        try {
+          state.setOverrideFor(booruName, state.def.valueFromJson(entry.value), save: false);
+        } catch (e, s) {
+          Logger.Inst().log(
+            'Failed to load ${state.def.jsonKey} override for $booruName: $e',
+            'SettingsRegistry',
+            'loadOverridesFromMap',
+            LogTypes.settingsError,
+            s: s,
+          );
+        }
       }
     }
   }
@@ -263,12 +351,19 @@ class SettingsRegistry {
   }
 
   /// Copy all overrides from one booru to another.
-  void copyOverrides(String fromBooruName, String toBooruName) {
+  void copyOverrides(String fromBooruName, String toBooruName, {bool save = true}) {
     for (final state in perBooruSettings) {
-      final override = state.getOverrideFor(fromBooruName);
-      if (override != null) {
-        state.setOverrideFor(toBooruName, override);
+      if (state.hasOverrideFor(fromBooruName)) {
+        final override = state.getOverrideFor(fromBooruName);
+        state.setOverrideFor(toBooruName, override, save: save);
       }
     }
   }
+}
+
+class PickerAccessValidationResult {
+  final Set<SettingKey> clearedGlobal = <SettingKey>{};
+  final Map<String, Set<SettingKey>> clearedOverrides = <String, Set<SettingKey>>{};
+
+  bool get isEmpty => clearedGlobal.isEmpty && clearedOverrides.isEmpty;
 }

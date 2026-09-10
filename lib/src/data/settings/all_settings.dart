@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fvp/fvp.dart' as fvp;
+import 'package:uuid/uuid.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
@@ -43,6 +44,7 @@ import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/http_overrides.dart';
+import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/confirm_button.dart';
@@ -1071,24 +1073,15 @@ void registerAllSettings() {
       supportsPerBooru: true,
       visibleWhen: () => Platform.isAndroid,
       pickFile: ServiceHandler.getImageSAFUri,
+      accessValidator: (path) => File(path).exists(),
       setButtonLabel: (ctx) => ctx.loc.settings.theme.setCustomMascot,
       removeButtonLabel: (ctx) => ctx.loc.settings.theme.removeCustomMascot,
-      onRemove: (path) async {
-        if (path.isNotEmpty) {
-          final file = File(path);
-          if (await file.exists()) await file.delete();
-        }
+      transformPickedPath: (ctx, path) {
+        // Asset identity survives saving drafts and renaming boorus.
+        final fileName = 'mascot_${const Uuid().v4()}';
+        return ImageWriter().writeMascotImage(path, fileName: fileName);
       },
-      onChanged: (oldValue, newValue) async {
-        if (newValue.isNotEmpty) {
-          // Write mascot image to app directory
-          final writtenPath = await ImageWriter().writeMascotImage(newValue);
-          final state = SettingsRegistry.instance.get<String>(.drawerMascotPathOverride);
-          if (state != null && writtenPath != newValue) {
-            state.globalValue = writtenPath;
-          }
-        }
-      },
+      onRemove: ImageWriter.removeUnusedMascotImage,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.theme.currentMascotPath,
       ),
@@ -1215,6 +1208,7 @@ void registerAllSettings() {
       isDeviceSpecific: true,
       visibleWhen: () => Platform.isAndroid,
       pickDirectory: ServiceHandler.setExtDir,
+      accessValidator: ServiceHandler.canAccessSAFDirectory,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.cache.setStorageDirectory,
       ),
@@ -1308,6 +1302,7 @@ void registerAllSettings() {
       isDeviceSpecific: true,
       visibleWhen: () => Platform.isAndroid,
       pickDirectory: ServiceHandler.getSAFDirectoryAccess,
+      accessValidator: ServiceHandler.canAccessSAFDirectory,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.backupAndRestore.selectBackupDir,
       ),
@@ -1442,7 +1437,7 @@ void registerAllSettings() {
       categories: [SettingCategory.network],
       subcategories: [SettingSubcategory.security],
       isDeviceSpecific: true,
-      onChanged: (_, _) => initProxy(),
+      onChanged: (_, _) => scheduleProxyRefresh(),
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.network.enableSelfSignedSSLCertificates,
       ),
@@ -1461,7 +1456,7 @@ void registerAllSettings() {
       supportsPerBooru: true,
       // The installed callback reads effective settings dynamically. Re-run
       // initialization only to refresh the OS proxy address for system mode.
-      onChanged: (_, _) => initProxy(),
+      onChanged: (_, _) => scheduleProxyRefresh(),
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.network.proxy,
         subtitle: (ctx) => ctx.loc.settings.network.proxySubtitle,
@@ -1482,7 +1477,7 @@ void registerAllSettings() {
         final t = _val<ProxyType>(.proxyType, context);
         return t != ProxyType.direct && t != ProxyType.system;
       },
-      onChanged: (_, _) => initProxy(),
+      onChanged: (_, _) => scheduleProxyRefresh(),
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.address,
       ),
@@ -1502,7 +1497,7 @@ void registerAllSettings() {
         final t = _val<ProxyType>(.proxyType, context);
         return t != ProxyType.direct && t != ProxyType.system;
       },
-      onChanged: (_, _) => initProxy(),
+      onChanged: (_, _) => scheduleProxyRefresh(),
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.username,
       ),
@@ -1523,7 +1518,7 @@ void registerAllSettings() {
         final t = _val<ProxyType>(.proxyType, context);
         return t != ProxyType.direct && t != ProxyType.system;
       },
-      onChanged: (_, _) => initProxy(),
+      onChanged: (_, _) => scheduleProxyRefresh(),
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.password,
       ),
@@ -1561,7 +1556,7 @@ void registerAllSettings() {
               }
               return SettingsButton(
                 name: ctx.loc.settings.network.setBrowserUserAgent,
-                action: () => SX.customUserAgent.state.value = Constants.defaultBrowserUserAgent,
+                action: () => SX.customUserAgent.state.setScopedValue(ctx, Constants.defaultBrowserUserAgent),
               );
             },
           ),
@@ -2058,6 +2053,8 @@ void registerAllSettings() {
       categories: [SettingCategory.logging],
       subcategories: [SettingSubcategory.logs],
       isDeviceSpecific: true,
+      visibleWhen: () => Platform.isAndroid,
+      onChanged: (_, enabled) => unawaited(Logger.setLogcatCaptureEnabled(enabled)),
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.logging.captureLogcat,
         subtitle: (ctx) => ctx.loc.settings.logging.captureLogcatDescription,

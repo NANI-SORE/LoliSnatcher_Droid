@@ -563,6 +563,7 @@ class ThemeHandler {
       fontWeight: FontWeight.w400,
     ),
     indicatorSize: TabBarIndicatorSize.tab,
+    indicatorColor: colorScheme.secondary,
   );
 
   DropdownMenuThemeData dropdownMenuTheme(ColorScheme colorScheme) => DropdownMenuThemeData(

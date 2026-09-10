@@ -26,6 +26,7 @@ import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/media_loading.dart';
+import 'package:lolisnatcher/src/widgets/common/preserve_media_animations.dart';
 import 'package:lolisnatcher/src/widgets/common/transparent_pointer.dart';
 import 'package:lolisnatcher/src/widgets/image/image_viewer.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_details_sheet.dart';
@@ -709,24 +710,46 @@ class VideoViewerState extends State<VideoViewer> {
       //   backgroundColor: Color.fromRGBO(41, 41, 41, 0.7),
       //   iconColor: Color.fromARGB(255, 200, 200, 200)
       // ),
-      playbackSpeeds: const [
-        0.1,
-        0.25,
-        0.5,
-        0.75,
-        1,
-        1.25,
-        1.5,
-        1.75,
-        2,
-        3,
-        4,
-        6,
-        8,
-        12,
-        16,
-        32,
-      ],
+      // ios default video handler seems unstable with speeds above 2.5
+      playbackSpeeds: (Platform.isIOS && SX.videoBackendMode.value.isDefault)
+          ? const [
+              0.1,
+              0.25,
+              0.35,
+              0.5,
+              0.65,
+              0.75,
+              0.8,
+              0.9,
+              1,
+              1.25,
+              1.5,
+              1.75,
+              2,
+              2.5,
+            ]
+          : const [
+              0.1,
+              0.25,
+              0.35,
+              0.5,
+              0.65,
+              0.75,
+              0.8,
+              0.9,
+              1,
+              1.25,
+              1.5,
+              1.75,
+              2,
+              3,
+              4,
+              6,
+              8,
+              12,
+              16,
+              32,
+            ],
       materialProgressColors: ChewieProgressColors(
         playedColor: accentColor,
         handleColor: darkenedAceentColor,
@@ -941,12 +964,14 @@ class VideoViewerState extends State<VideoViewer> {
     return AnimatedBuilder(
       animation: animation,
       builder: (context, child) => child!,
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        body: Container(
-          alignment: Alignment.center,
-          color: Colors.black,
-          child: buildFullscreenContent(context, controllerProvider),
+      child: PreserveMediaAnimations(
+        child: Scaffold(
+          resizeToAvoidBottomInset: false,
+          body: Container(
+            alignment: Alignment.center,
+            color: Colors.black,
+            child: buildFullscreenContent(context, controllerProvider),
+          ),
         ),
       ),
     );
@@ -1010,163 +1035,165 @@ class VideoViewerState extends State<VideoViewer> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: Stack(
-        alignment: Alignment.center,
-        fit: StackFit.expand,
-        children: [
-          AnimatedOpacity(
-            duration: const Duration(milliseconds: 300),
-            opacity: isVideoInited ? 0 : 1,
-            child: ValueListenableBuilder(
-              valueListenable: isViewed,
-              builder: (context, isViewed, child) {
-                return Hero(
-                  tag: isViewed ? imageHeroTag : ignoredImageHeroTag,
-                  child: child!,
-                );
-              },
-              child: Thumbnail(
-                item: widget.booruItem,
-                booru: widget.booru,
-                filterEvaluation: widget.filterEvaluation,
-                isStandalone: false,
-                useHero: false,
+    return PreserveMediaAnimations(
+      child: Material(
+        color: Colors.transparent,
+        child: Stack(
+          alignment: Alignment.center,
+          fit: StackFit.expand,
+          children: [
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 300),
+              opacity: isVideoInited ? 0 : 1,
+              child: ValueListenableBuilder(
+                valueListenable: isViewed,
+                builder: (context, isViewed, child) {
+                  return Hero(
+                    tag: isViewed ? imageHeroTag : ignoredImageHeroTag,
+                    child: child!,
+                  );
+                },
+                child: Thumbnail(
+                  item: widget.booruItem,
+                  booru: widget.booru,
+                  filterEvaluation: widget.filterEvaluation,
+                  isStandalone: false,
+                  useHero: false,
+                ),
               ),
             ),
-          ),
-          //
-          ValueListenableBuilder(
-            valueListenable: showControls,
-            builder: (context, showControlsVal, child) {
-              return AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: (isVideoInited || !showControlsVal) ? const SizedBox.shrink() : child,
-              );
-            },
-            child: ListenableBuilder(
-              listenable: Listenable.merge([
-                isViewed,
-                isStopped,
-                isFromCache,
-                stopReason,
-                stopDetails,
-              ]),
-              builder: (context, _) {
-                return MediaLoading(
-                  item: widget.booruItem,
-                  hasProgress: SX.mediaCache.value && (forceCache.value || !SX.videoCacheMode.value.isStream),
-                  isFromCache: isFromCache.value,
-                  isDone: isVideoInited,
-                  isTooBig: blockPreloadState.isTooBig,
-                  isStopped: isStopped.value,
-                  stopReason: stopReason.value,
-                  stopDetails: stopDetails.value,
-                  filterEvaluation: widget.filterEvaluation,
-                  isViewed: isViewed.value,
-                  total: total,
-                  received: received,
-                  startedAt: startedAt,
-                  onRestart: onManualRestart,
-                  onStop: onManualStop,
-                  onFilterDetailsTap: widget.filterEvaluation.matches.isEmpty
-                      ? null
-                      : () => showTagFilterDetailsSheet(context, widget.filterEvaluation),
+            //
+            ValueListenableBuilder(
+              valueListenable: showControls,
+              builder: (context, showControlsVal, child) {
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: (isVideoInited || !showControlsVal) ? const SizedBox.shrink() : child,
                 );
               },
+              child: ListenableBuilder(
+                listenable: Listenable.merge([
+                  isViewed,
+                  isStopped,
+                  isFromCache,
+                  stopReason,
+                  stopDetails,
+                ]),
+                builder: (context, _) {
+                  return MediaLoading(
+                    item: widget.booruItem,
+                    hasProgress: SX.mediaCache.value && (forceCache.value || !SX.videoCacheMode.value.isStream),
+                    isFromCache: isFromCache.value,
+                    isDone: isVideoInited,
+                    isTooBig: blockPreloadState.isTooBig,
+                    isStopped: isStopped.value,
+                    stopReason: stopReason.value,
+                    stopDetails: stopDetails.value,
+                    filterEvaluation: widget.filterEvaluation,
+                    isViewed: isViewed.value,
+                    total: total,
+                    received: received,
+                    startedAt: startedAt,
+                    onRestart: onManualRestart,
+                    onStop: onManualStop,
+                    onFilterDetailsTap: widget.filterEvaluation.matches.isEmpty
+                        ? null
+                        : () => showTagFilterDetailsSheet(context, widget.filterEvaluation),
+                  );
+                },
+              ),
             ),
-          ),
-          //
-          Positioned.fill(
-            child: AnimatedSwitcher(
-              duration: Duration(milliseconds: SX.appMode.value.isDesktop ? 50 : 200),
-              child: isVideoInited
-                  ? Listener(
-                      onPointerSignal: (pointerSignal) {
-                        if (PlatformExt.isDesktop && pointerSignal is PointerScrollEvent) {
-                          scrollZoomImage(pointerSignal.scrollDelta.dy);
-                        }
-                      },
-                      child: Stack(
-                        children: [
-                          ImageFiltered(
-                            enabled: settingsHandler.blurImages,
-                            imageFilter: ImageFilter.blur(
-                              sigmaX: 40,
-                              sigmaY: 40,
-                              tileMode: TileMode.decal,
-                            ),
-                            child: buildZoomableVideo(
-                              context: context,
-                              child: ValueListenableBuilder(
-                                valueListenable: localAuthHandler.isAuthenticated,
-                                builder: (context, isAuthenticated, child) {
-                                  if (isAuthenticated != false) {
-                                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                                      if (mounted) {
-                                        pauseCheckTimer?.cancel();
-                                      }
-                                    });
+            //
+            Positioned.fill(
+              child: AnimatedSwitcher(
+                duration: Duration(milliseconds: SX.appMode.value.isDesktop ? 50 : 200),
+                child: isVideoInited
+                    ? Listener(
+                        onPointerSignal: (pointerSignal) {
+                          if (PlatformExt.isDesktop && pointerSignal is PointerScrollEvent) {
+                            scrollZoomImage(pointerSignal.scrollDelta.dy);
+                          }
+                        },
+                        child: Stack(
+                          children: [
+                            ImageFiltered(
+                              enabled: settingsHandler.blurImages,
+                              imageFilter: ImageFilter.blur(
+                                sigmaX: 40,
+                                sigmaY: 40,
+                                tileMode: TileMode.decal,
+                              ),
+                              child: buildZoomableVideo(
+                                context: context,
+                                child: ValueListenableBuilder(
+                                  valueListenable: localAuthHandler.isAuthenticated,
+                                  builder: (context, isAuthenticated, child) {
+                                    if (isAuthenticated != false) {
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        if (mounted) {
+                                          pauseCheckTimer?.cancel();
+                                        }
+                                      });
 
-                                    return child!;
-                                  } else {
-                                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                                      if (mounted) {
-                                        pauseOnAppLock();
-                                      }
-                                    });
+                                      return child!;
+                                    } else {
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        if (mounted) {
+                                          pauseOnAppLock();
+                                        }
+                                      });
 
-                                    return const Center(child: CircularProgressIndicator());
-                                  }
-                                },
-                                child: Chewie(controller: chewieController.value!),
+                                      return const Center(child: CircularProgressIndicator());
+                                    }
+                                  },
+                                  child: Chewie(controller: chewieController.value!),
+                                ),
                               ),
                             ),
-                          ),
-                          ChewieControllerProvider(
-                            controller: chewieController.value!,
-                            child: TransparentPointer(
-                              child: SafeArea(
-                                top: false,
-                                child: ListenableBuilder(
-                                  listenable: Listenable.merge([
-                                    isViewed,
-                                    localAuthHandler.isAuthenticated,
-                                    showControls,
-                                    viewerHandler.isFullscreen,
-                                  ]),
-                                  builder: (context, child) {
-                                    final bool shouldShow =
-                                        isViewed.value &&
-                                        localAuthHandler.isAuthenticated.value != false &&
-                                        showControls.value &&
-                                        !viewerHandler.isFullscreen.value;
+                            ChewieControllerProvider(
+                              controller: chewieController.value!,
+                              child: TransparentPointer(
+                                child: SafeArea(
+                                  top: false,
+                                  child: ListenableBuilder(
+                                    listenable: Listenable.merge([
+                                      isViewed,
+                                      localAuthHandler.isAuthenticated,
+                                      showControls,
+                                      viewerHandler.isFullscreen,
+                                    ]),
+                                    builder: (context, child) {
+                                      final bool shouldShow =
+                                          isViewed.value &&
+                                          localAuthHandler.isAuthenticated.value != false &&
+                                          showControls.value &&
+                                          !viewerHandler.isFullscreen.value;
 
-                                    return AnimatedSwitcher(
-                                      duration: const Duration(milliseconds: 200),
-                                      child: shouldShow ? child : const SizedBox.shrink(),
-                                    );
-                                  },
-                                  child: ValueListenableBuilder(
-                                    valueListenable: isZoomed,
-                                    builder: (context, isZoomedVal, _) {
-                                      return LoliControls(
-                                        useLongTapFastForward: !isZoomedVal,
+                                      return AnimatedSwitcher(
+                                        duration: const Duration(milliseconds: 200),
+                                        child: shouldShow ? child : const SizedBox.shrink(),
                                       );
                                     },
+                                    child: ValueListenableBuilder(
+                                      valueListenable: isZoomed,
+                                      builder: (context, isZoomedVal, _) {
+                                        return LoliControls(
+                                          useLongTapFastForward: !isZoomedVal,
+                                        );
+                                      },
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : const SizedBox.shrink(),
+                          ],
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

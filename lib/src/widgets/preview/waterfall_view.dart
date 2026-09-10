@@ -21,6 +21,7 @@ import 'package:lolisnatcher/src/widgets/preview/grid_builder.dart';
 import 'package:lolisnatcher/src/widgets/preview/shimmer_builder.dart';
 import 'package:lolisnatcher/src/widgets/preview/staggered_builder.dart';
 import 'package:lolisnatcher/src/widgets/preview/waterfall_bottom_bar.dart';
+import 'package:lolisnatcher/src/widgets/preview/waterfall_scroll_controller.dart';
 import 'package:lolisnatcher/src/widgets/root/main_appbar.dart';
 
 class WaterfallView extends StatefulWidget {
@@ -31,24 +32,28 @@ class WaterfallView extends StatefulWidget {
 }
 
 class _WaterfallViewState extends State<WaterfallView> with RouteAware {
+  static const int _floatingBarsDirectionDebounceMs = 120;
+
   final SearchHandler searchHandler = SearchHandler.instance;
   final ViewerHandler viewerHandler = ViewerHandler.instance;
   final NavigationHandler navigationHandler = NavigationHandler.instance;
-
-  static const int _floatingBarsDirectionDebounceMs = 120;
 
   StreamSubscription? volumeListener;
   bool scrollDone = true;
 
   Orientation currentOrientation = Orientation.portrait;
+  // Nested viewers replace ViewerHandler.current, so retain the page shown by
+  // the root gallery for scroll restoration while they are open.
+  int? _rootViewerIndex;
 
   bool isStaggered = false;
 
   bool get isMobile => SX.appMode.value.isMobile;
 
   final ValueNotifier<bool> isActive = ValueNotifier(true);
-  ScrollDirection lastFloatingBarsDirection = ScrollDirection.idle;
-  int lastFloatingBarsDirectionChangedAt = 0;
+  ScrollDirection _lastFloatingBarsDirection = ScrollDirection.idle;
+  ScrollDirection _pendingFloatingBarsDirection = ScrollDirection.idle;
+  int _lastFloatingBarsDirectionChangedAt = 0;
 
   Timer? viewedItemCleanupTimer;
   int viewedItemCleanupCount = 0;
@@ -71,7 +76,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
     ServiceHandler.setVolumeButtons(!SX.useVolumeButtonsForScroll.value);
     // tabChanged(0);
     // TODO reset the controller when appMode changes
-    searchHandler.gridScrollController = AutoScrollController(
+    searchHandler.gridScrollController = WaterfallScrollController(
       initialScrollOffset: searchHandler.currentTabOrNull?.scrollPosition ?? 0,
       viewportBoundaryGetter: () => Rect.fromLTRB(
         0,
@@ -120,6 +125,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
 
     // postpone scroll updates until the current render is done, since this is called after the global restate after exiting settings
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final currentTab = searchHandler.currentTabOrNull;
       if (currentTab == null) {
         return;
@@ -131,7 +137,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
       } else {
         // if (currentTab.scrollPosition != 0) {
         // TODO reset the controller when appMode changes
-        searchHandler.gridScrollController = AutoScrollController(
+        searchHandler.gridScrollController = WaterfallScrollController(
           initialScrollOffset: currentTab.scrollPosition,
           viewportBoundaryGetter: () => Rect.fromLTRB(
             0,
@@ -141,6 +147,8 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
           ),
         );
       }
+
+      _showFloatingBars();
     });
 
     // check if grid type changed when changing tab
@@ -233,45 +241,86 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   }
 
   void syncFloatingBarsWithScroll(ScrollNotification notification) {
-    if (!PlatformExt.isDesktop) {
+    if (notification.depth != 0 ||
+        notification.metrics.axis != Axis.vertical ||
+        !searchHandler.gridScrollController.hasClients) {
       return;
     }
 
-    double? scrollDelta;
-    if (notification is ScrollUpdateNotification) {
-      scrollDelta = notification.scrollDelta;
-    } else if (notification is OverscrollNotification) {
-      scrollDelta = notification.overscroll;
-    }
-
-    if (scrollDelta == null || scrollDelta == 0) {
+    if (_isAtScrollStart(notification.metrics)) {
+      _showFloatingBars();
       return;
     }
 
-    final direction = scrollDelta > 0 ? ScrollDirection.reverse : ScrollDirection.forward;
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final bool directionChanged = lastFloatingBarsDirection != direction;
-    final bool shouldIgnoreDirectionChange =
-        directionChanged && now - lastFloatingBarsDirectionChangedAt < _floatingBarsDirectionDebounceMs;
-
-    if (shouldIgnoreDirectionChange) {
+    final controller = searchHandler.gridScrollController;
+    if (!isActive.value || controller.isAutoScrolling) {
       return;
     }
 
-    lastFloatingBarsDirection = direction;
-    lastFloatingBarsDirectionChangedAt = now;
-    navigationHandler.floatingHeaderKey.currentState?.handleUserScrollDirection(direction);
-
-    if (direction == ScrollDirection.reverse) {
-      navigationHandler.bottomBarKey.currentState?.hide();
+    // Driven user paging has an idle (or interrupted drag's stale) direction.
+    // Only use its deltas; jumps, layout corrections and ballistic bounce-back
+    // must not be interpreted as a new user direction.
+    if (controller is WaterfallScrollController && controller.isPaging) {
+      final delta = notification is ScrollUpdateNotification ? notification.scrollDelta : null;
+      if (delta != null && delta != 0) {
+        _updateFloatingBars(delta > 0 ? ScrollDirection.reverse : ScrollDirection.forward, debounce: false);
+      }
     } else {
-      navigationHandler.bottomBarKey.currentState?.show();
+      _updateFloatingBars(controller.position.userScrollDirection);
     }
   }
 
-  void settleFloatingBarsAfterScroll() {
-    if (!PlatformExt.isDesktop) {
+  void _updateFloatingBars(
+    ScrollDirection direction, {
+    bool debounce = true,
+  }) {
+    if (direction == ScrollDirection.idle) {
       return;
+    }
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final directionChanged = _lastFloatingBarsDirection != direction;
+    if (debounce && directionChanged && now - _lastFloatingBarsDirectionChangedAt < _floatingBarsDirectionDebounceMs) {
+      _pendingFloatingBarsDirection = direction;
+      return;
+    }
+
+    _pendingFloatingBarsDirection = ScrollDirection.idle;
+    _lastFloatingBarsDirection = direction;
+    if (directionChanged) {
+      _lastFloatingBarsDirectionChangedAt = now;
+    }
+    navigationHandler.floatingHeaderKey.currentState?.handleUserScrollDirection(direction);
+  }
+
+  bool _isAtScrollStart(ScrollMetrics metrics) {
+    return metrics.pixels <= metrics.minScrollExtent + 0.5;
+  }
+
+  void _showFloatingBars() {
+    _pendingFloatingBarsDirection = ScrollDirection.idle;
+    if (_lastFloatingBarsDirection != ScrollDirection.forward) {
+      _lastFloatingBarsDirectionChangedAt = DateTime.now().millisecondsSinceEpoch;
+    }
+    _lastFloatingBarsDirection = ScrollDirection.forward;
+    navigationHandler.floatingHeaderKey.currentState?.show();
+  }
+
+  void settleFloatingBarsAfterScroll(ScrollNotification notification) {
+    if (notification.depth != 0 || notification.metrics.axis != Axis.vertical) {
+      return;
+    }
+
+    if (_isAtScrollStart(notification.metrics)) {
+      _showFloatingBars();
+      final controller = searchHandler.gridScrollController;
+      // jumpTo emits scroll-end while already idle; show() has snapped it.
+      if (!controller.hasClients || !controller.position.isScrollingNotifier.value) {
+        return;
+      }
+    } else if (_pendingFloatingBarsDirection != ScrollDirection.idle) {
+      // A short reversal may end before the debounce window expires.
+      _updateFloatingBars(_pendingFloatingBarsDirection, debounce: false);
     }
 
     navigationHandler.floatingHeaderKey.currentState?.settleUserScrollDirection();
@@ -290,6 +339,8 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   }
 
   void onViewerPageChanged(int index) {
+    _rootViewerIndex = index;
+
     final currentFetched = searchHandler.currentFetchedOrNull;
     if (currentFetched == null || index >= currentFetched.length) return;
     viewedItems.add(currentFetched[index]);
@@ -321,6 +372,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
 
       isActive.value = false;
       viewerHandler.showNotes.value = !SX.hideNotes.value;
+      _rootViewerIndex = index;
 
       final viewerKey = GlobalKey(debugLabel: 'viewer-main');
       ViewerHandler.instance.addViewer(viewerKey);
@@ -349,6 +401,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
         ),
       );
 
+      _rootViewerIndex = null;
       viewerHandler.dropCurrent();
 
       viewedItemCleanupTimer = Timer.periodic(
@@ -376,8 +429,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
       viewerCallback();
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        navigationHandler.floatingHeaderKey.currentState?.show();
-        navigationHandler.bottomBarKey.currentState?.show();
+        if (mounted) _showFloatingBars();
       });
     } else {
       final currentFetched = searchHandler.currentFetchedOrNull;
@@ -436,9 +488,12 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
         final currentFetched = searchHandler.currentFetchedOrNull;
         if (currentFetched == null) return;
 
-        final itemIndex = currentFetched.indexWhere(
-          (item) => item.key == viewerHandler.current.value?.key,
-        );
+        final rootViewerIndex = _rootViewerIndex;
+        final itemIndex = rootViewerIndex != null && rootViewerIndex >= 0 && rootViewerIndex < currentFetched.length
+            ? rootViewerIndex
+            : currentFetched.indexWhere(
+                (item) => item.key == viewerHandler.current.value?.key,
+              );
         if (itemIndex != -1) {
           searchHandler.gridScrollController.scrollToIndex(
             itemIndex,
@@ -590,18 +645,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
                               SX.scrollGridButtonsPosition.value.isDisabled ||
                               SX.appMode.value.isDesktop == true)
                           ? const SizedBox.shrink()
-                          : WaterfallScrollButtons(
-                              onTap: (bool forward) {
-                                if (forward) {
-                                  navigationHandler.floatingHeaderKey.currentState?.hide();
-                                  navigationHandler.bottomBarKey.currentState?.hide();
-                                } else {
-                                  navigationHandler.floatingHeaderKey.currentState?.show();
-                                  navigationHandler.bottomBarKey.currentState?.show();
-                                }
-                                // TODO increase cacheExtent (to load future thumbnails faster) for duration of scrolling + few seconds after + keep resetting timer if didn't exceed debounce between presses?
-                              },
-                            ),
+                          : const WaterfallScrollButtons(),
                     );
                   }),
                 ),
@@ -609,6 +653,12 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
             ),
           ),
           onNotification: (notif) {
+            if (notif.depth != 0 || notif.metrics.axis != Axis.vertical) {
+              return false;
+            }
+            if (notif is ScrollStartNotification) {
+              navigationHandler.floatingHeaderKey.currentState?.handleScrollStart();
+            }
             if (notif is ScrollUpdateNotification || notif is OverscrollNotification) {
               syncFloatingBarsWithScroll(notif);
               searchHandler.sendToScrollStream(notif);
@@ -635,7 +685,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
               }
             }
             if (notif is ScrollEndNotification) {
-              settleFloatingBarsAfterScroll();
+              settleFloatingBarsAfterScroll(notif);
               searchHandler.sendToScrollStream(notif);
             }
             return true;
@@ -653,12 +703,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
 }
 
 class WaterfallScrollButtons extends StatelessWidget {
-  const WaterfallScrollButtons({
-    required this.onTap,
-    super.key,
-  });
-
-  final ValueChanged<bool> onTap;
+  const WaterfallScrollButtons({super.key});
 
   Future<void> pageScroll(bool forward) async {
     final scrollController = SearchHandler.instance.gridScrollController;
@@ -687,8 +732,6 @@ class WaterfallScrollButtons extends StatelessWidget {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
-
-      onTap(forward);
     }
   }
 
