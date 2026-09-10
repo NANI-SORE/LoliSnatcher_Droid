@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
+
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/boorus/hydrus_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
+import 'package:lolisnatcher/src/utils/dio_network.dart';
 
 typedef BooruConnectionTestResult = ({BooruType? booruType, String? errorString});
 
@@ -18,13 +21,32 @@ class BooruConnectionTester {
     BooruType requestedType, {
     required String hydrusFailureMessage,
     bool withCaptchaCheck = true,
-  }) {
-    return _test(
-      booru,
-      requestedType,
-      hydrusFailureMessage: hydrusFailureMessage,
-      withCaptchaCheck: withCaptchaCheck,
-    ).timeout(timeout);
+    CancelToken? cancelToken,
+  }) async {
+    final token = cancelToken ?? CancelToken();
+    try {
+      return await Future.any<BooruConnectionTestResult>([
+        DioNetwork.runWithCancellation(
+          token,
+          () => _test(
+            booru,
+            requestedType,
+            hydrusFailureMessage: hydrusFailureMessage,
+            withCaptchaCheck: withCaptchaCheck,
+            cancelToken: token,
+          ),
+        ),
+        token.whenCancel.then((error) => throw error),
+      ]).timeout(
+        timeout,
+        onTimeout: () {
+          token.cancel('Booru connection test timed out');
+          throw TimeoutException('Booru connection test timed out', timeout);
+        },
+      );
+    } finally {
+      token.cancel('Booru connection test finished');
+    }
   }
 
   Future<BooruConnectionTestResult> _test(
@@ -32,12 +54,16 @@ class BooruConnectionTester {
     BooruType requestedType, {
     required String hydrusFailureMessage,
     required bool withCaptchaCheck,
+    required CancelToken cancelToken,
   }) async {
+    if (cancelToken.isCancelled) throw cancelToken.cancelError!;
     booru.type = requestedType;
 
     if (requestedType == BooruType.Hydrus) {
       final hydrusHandler = HydrusHandler(booru, 20);
-      if (await hydrusHandler.verifyApiAccess()) {
+      final verified = await hydrusHandler.verifyApiAccess();
+      if (cancelToken.isCancelled) throw cancelToken.cancelError!;
+      if (verified) {
         return (booruType: requestedType, errorString: null);
       }
       return (booruType: null, errorString: hydrusFailureMessage);
@@ -50,7 +76,9 @@ class BooruConnectionTester {
           type,
           hydrusFailureMessage: hydrusFailureMessage,
           withCaptchaCheck: false,
+          cancelToken: cancelToken,
         );
+        if (cancelToken.isCancelled) throw cancelToken.cancelError!;
         if (result.booruType != null) return result;
       }
       return (booruType: null, errorString: null);
@@ -66,6 +94,7 @@ class BooruConnectionTester {
           withCaptchaCheck: withCaptchaCheck,
         )) ??
         [];
+    if (cancelToken.isCancelled) throw cancelToken.cancelError!;
 
     final errorString = handler.errorString.isEmpty ? null : handler.errorString;
     if (errorString != null) {

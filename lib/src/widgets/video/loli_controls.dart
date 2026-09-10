@@ -60,11 +60,11 @@ class _LoliControlsState extends State<LoliControls> {
   Timer? _doubleTapHideTimer, longTapSpeedChangeDelayTimer, pointerCountCheckTimer;
   static const double _longTapBasePlaybackSpeed = 2;
   static const double _longTapMinPlaybackSpeed = 0.2;
-  static const double _longTapMaxPlaybackSpeed = 4;
+  static final double _longTapMaxPlaybackSpeed = Platform.isIOS ? 2.5 : 4;
   static const double _longTapSlowdownDeadZone = 24;
   static const double _longTapSpeedChangeTolerance = 0.05;
   static const double _longTapMinReverseSpeed = 1;
-  static const double _longTapMaxReverseSpeed = 4;
+  static final double _longTapMaxReverseSpeed = Platform.isIOS ? 2.5 : 4;
   static const double _longTapReverseSpeedChangeTolerance = 0.1;
   static const Duration _longTapSpeedChangeDebounce = Duration(milliseconds: 200);
   static const Duration _longTapReverseTick = Duration(milliseconds: 100);
@@ -73,7 +73,7 @@ class _LoliControlsState extends State<LoliControls> {
   bool longTapReversing = false;
   double longTapReverseSpeed = _longTapMinReverseSpeed;
   int pointerCount = 0;
-  bool speedSetManually = false;
+  double manuallySelectedPlaybackSpeed = 1;
   TapDownDetails? _doubleTapInfo;
   int _lastDoubleTapAmount = 0;
   int _lastDoubleTapSide = 0;
@@ -166,7 +166,7 @@ class _LoliControlsState extends State<LoliControls> {
     controller.setPlaybackSpeed(1);
     doubleTapped = false;
     holdingDown = false;
-    speedSetManually = false;
+    manuallySelectedPlaybackSpeed = 1;
     _doubleTapExtraMessage = '';
     longTapPlaybackSpeed = _longTapBasePlaybackSpeed;
     longTapReversing = false;
@@ -179,17 +179,22 @@ class _LoliControlsState extends State<LoliControls> {
     _initTimer?.cancel();
     _showAfterExpandCollapseTimer?.cancel();
     bufferingDisplayTimer?.cancel();
+    bufferingDisplayTimer = null;
+    displayBufferingIndicator = false;
     pointerCountCheckTimer?.cancel();
   }
 
   @override
   void didChangeDependencies() {
     final ChewieController? oldController = _chewieController;
-    _chewieController = ChewieController.of(context);
-    controller = chewieController.videoPlayerController;
+    final ChewieController newController = ChewieController.of(context);
 
-    if (oldController != chewieController) {
-      _dispose();
+    if (oldController != newController) {
+      if (oldController != null) {
+        _dispose();
+      }
+      _chewieController = newController;
+      controller = newController.videoPlayerController;
       _initialize();
     }
 
@@ -583,7 +588,7 @@ class _LoliControlsState extends State<LoliControls> {
         if (chosenSpeed != null) {
           await controller.setPlaybackSpeed(chosenSpeed);
           setState(() {
-            speedSetManually = chosenSpeed != 1;
+            manuallySelectedPlaybackSpeed = chosenSpeed;
           });
         }
 
@@ -597,6 +602,7 @@ class _LoliControlsState extends State<LoliControls> {
         }
 
         await controller.setPlaybackSpeed(1);
+        manuallySelectedPlaybackSpeed = 1;
 
         if (_latestValue.isPlaying) {
           _startHideTimer();
@@ -771,9 +777,9 @@ class _LoliControlsState extends State<LoliControls> {
         if (holdingDown && pointerCount != 1) {
           onHitAreaLongPressUp();
         }
-        if (pointerCount == 0 && !speedSetManually) {
-          // reset speed when there are no fingers detected and it wasn't set through dialog
-          // required because video controller wrongly reports that speed is reset and speed may not reset properly if it was changed during buffering
+        if (pointerCount == 0 && manuallySelectedPlaybackSpeed == 1) {
+          // Reset speed when there are no fingers detected and no custom speed was selected.
+          // Required because video controller wrongly reports that speed is reset and speed may not reset properly if it was changed during buffering.
           controller.setPlaybackSpeed(1);
         }
       },
@@ -842,42 +848,18 @@ class _LoliControlsState extends State<LoliControls> {
   }
 
   void bufferingTimerTimeout() {
-    displayBufferingIndicator = true;
-    if (mounted) {
-      setState(() {});
-    }
+    bufferingDisplayTimer = null;
+    if (!mounted) return;
+
+    setState(() {
+      displayBufferingIndicator = getIsBuffering();
+    });
   }
 
-  /// Gets the current buffering state of the video player.
-  ///
-  /// For Android, it will use a workaround due to a [bug](https://github.com/flutter/flutter/issues/165149)
-  /// affecting the `video_player` plugin, preventing it from getting the
-  /// actual buffering state. This currently results in the `VideoPlayerController` always buffering,
-  /// thus breaking UI elements.
-  ///
-  /// For this, the actual buffer position is used to determine if the video is
-  /// buffering or not. See Issue [#912](https://github.com/fluttercommunity/chewie/pull/912) for more details.
   bool getIsBuffering() {
     final VideoPlayerValue value = controller.value;
 
-    if (Platform.isAndroid) {
-      if (value.isBuffering) {
-        // -> Check if we actually buffer, as android has a bug preventing to
-        //    get the correct buffering state from this single bool.
-        final int position = value.position.inMilliseconds;
-        // Special case, if the video is finished, we don't want to show the
-        // buffering indicator anymore
-        if (position >= value.duration.inMilliseconds) {
-          return false;
-        } else {
-          final int buffer = value.buffered.lastOrNull?.end.inMilliseconds ?? -1;
-          return position >= buffer;
-        }
-      } else {
-        // -> No buffering
-        return false;
-      }
-    }
+    if (value.hasError || value.isCompleted) return false;
 
     return value.isBuffering;
   }
@@ -889,16 +871,20 @@ class _LoliControlsState extends State<LoliControls> {
 
     if (chewieController.progressIndicatorDelay != null) {
       if (isBuffering) {
-        bufferingDisplayTimer ??= Timer(
-          chewieController.progressIndicatorDelay!,
-          bufferingTimerTimeout,
-        );
+        if (!displayBufferingIndicator) {
+          bufferingDisplayTimer ??= Timer(
+            chewieController.progressIndicatorDelay!,
+            bufferingTimerTimeout,
+          );
+        }
       } else {
         bufferingDisplayTimer?.cancel();
         bufferingDisplayTimer = null;
         displayBufferingIndicator = false;
       }
     } else {
+      bufferingDisplayTimer?.cancel();
+      bufferingDisplayTimer = null;
       displayBufferingIndicator = isBuffering;
     }
 
@@ -1010,7 +996,6 @@ class _LoliControlsState extends State<LoliControls> {
       _doubleTapHideTimer?.cancel();
       doubleTapped = false;
       holdingDown = true;
-      speedSetManually = false;
       longTapPlaybackSpeed = _longTapBasePlaybackSpeed;
       _stopLongTapReverse();
       _doubleTapExtraMessage = '${longTapPlaybackSpeed.toStringAsFixed(1)}x';
@@ -1039,7 +1024,6 @@ class _LoliControlsState extends State<LoliControls> {
         longTapPlaybackSpeed = _longTapMinPlaybackSpeed;
         doubleTapped = false;
         holdingDown = true;
-        speedSetManually = false;
         _doubleTapExtraMessage = '-${longTapReverseSpeed.toStringAsFixed(1)}x';
         _lastDoubleTapSide = -1;
         _startLongTapReverse();
@@ -1058,7 +1042,6 @@ class _LoliControlsState extends State<LoliControls> {
       // update ui value immediately, real speed change will happen in a timer below
       doubleTapped = false;
       holdingDown = true;
-      speedSetManually = false;
       _doubleTapExtraMessage = '${longTapPlaybackSpeed.toStringAsFixed(1)}x';
       _lastDoubleTapSide = 1;
 
@@ -1159,10 +1142,8 @@ class _LoliControlsState extends State<LoliControls> {
       holdingDown = false;
       longTapPlaybackSpeed = _longTapBasePlaybackSpeed;
       longTapReverseSpeed = _longTapMinReverseSpeed;
-      if (!speedSetManually) {
-        controller.setPlaybackSpeed(1);
-        _cancelAndRestartTimer();
-      }
+      controller.setPlaybackSpeed(manuallySelectedPlaybackSpeed);
+      _cancelAndRestartTimer();
     });
   }
 

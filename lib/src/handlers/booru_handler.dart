@@ -57,44 +57,41 @@ abstract class BooruHandler {
   /// Seen server IDs for O(1) duplicate detection.
   final Set<String> _seenServerIds = {};
 
+  /// Merged searches override this to retain each item's source settings.
+  Booru sourceBooruFor(BooruItem item) => booru;
+
+  bool Function(BooruItem) _itemFilterFor(Booru source) {
+    final filterHated = SX.filterHated.valueForBooru(source.name);
+    final filterMarked = SX.filterMarked.valueForBooru(source.name);
+    final filterAi = SX.filterAi.valueForBooru(source.name);
+    final filterFavourites = SX.filterFavourites.valueForBooru(source.name) && source.type?.isFavourites != true;
+    final filterSnatched = SX.filterSnatched.valueForBooru(source.name) && source.type?.isDownloads != true;
+
+    return (item) =>
+        ContentPolicy.isItemAllowed(source, item) &&
+        !(filterHated && item.isHidden) &&
+        !(filterMarked && item.isMarked) &&
+        !(filterAi && item.isAI) &&
+        !(filterFavourites && item.isFavourite.value == true) &&
+        !(filterSnatched && item.isSnatched.value == true);
+  }
+
   /// Filters newly fetched items incrementally (from watermark to end of fetched list).
   /// Only processes items that haven't been filtered yet.
   ///
   /// Should always be called after fetched changed (so don't forget to add it in custom afterParseResponse or search methods)
   /// (See gelbooru or favourites handlers for example)
   void filterFetched() {
-    final bool doFilterHated = SX.filterHated.value;
-    final bool doFilterMarked = SX.filterMarked.value;
-    final bool doFilterAi = SX.filterAi.value;
-    final bool doFilterFavourites = SX.filterFavourites.value && booru.type?.isFavourites != true;
-    final bool doFilterSnatched = SX.filterSnatched.value && booru.type?.isDownloads != true;
+    final filters = <Booru, bool Function(BooruItem)>{};
 
     final List<BooruItem> newFilteredItems = [];
 
     for (int i = _filterWatermark; i < fetched.length; i++) {
       final item = fetched[i];
 
-      if (!ContentPolicy.isItemAllowed(booru, item)) {
-        continue;
-      }
-
-      if (doFilterHated && item.isHidden) {
-        continue;
-      }
-
-      if (doFilterMarked && item.isMarked) {
-        continue;
-      }
-
-      if (doFilterAi && item.isAI) {
-        continue;
-      }
-
-      if (doFilterFavourites && item.isFavourite.value == true) {
-        continue;
-      }
-
-      if (doFilterSnatched && item.isSnatched.value == true) {
+      final source = sourceBooruFor(item);
+      final includeItem = filters.putIfAbsent(source, () => _itemFilterFor(source));
+      if (!includeItem(item)) {
         continue;
       }
 
@@ -216,6 +213,7 @@ abstract class BooruHandler {
     Response response;
     try {
       response = await fetchSearch(uri, tags, withCaptchaCheck: withCaptchaCheck);
+      DioNetwork.throwIfCancelled();
       if (response.statusCode == 200) {
         if (response.requestOptions.uri.toString().contains('rule34.xxx') &&
             response.data is String &&
@@ -227,6 +225,7 @@ abstract class BooruHandler {
 
         // parse response data
         final List<BooruItem> newItems = await parseResponse(response);
+        DioNetwork.throwIfCancelled();
         await afterParseResponse(newItems);
 
         // save tags for check on next search
@@ -259,11 +258,9 @@ abstract class BooruHandler {
         if (e.response?.statusCode == HttpStatus.unauthorized) {
           if (e.requestOptions.uri.toString().contains('gelbooru.com')) {
             // add a message to direct user to set his user ID and api key
-            errorString +=
-                '\n<p><b>You may need to add your User ID and API key. Go to <a href="/settings/booru">[Settings > Booru & Search]</a> to update the booru config. Note: Anonymous access is NOT allowed.</b></p>';
+            errorString += '\n<p><b>You may need to add your User ID and API key. Go to <a href="/settings/booru">[Settings > Booru & Search]</a> to update the booru config. Note: Anonymous access is NOT allowed.</b></p>';
           } else if (e.requestOptions.uri.toString().contains('rule34.xxx')) {
-            errorString +=
-                '\n<p><b>You may need to add your User ID and API key. Go to <a href="/settings/booru">[Settings > Booru & Search]</a> to update the booru config. Note: Anonymous access is NOT allowed.</b></p>';
+            errorString += '\n<p><b>You may need to add your User ID and API key. Go to <a href="/settings/booru">[Settings > Booru & Search]</a> to update the booru config. Note: Anonymous access is NOT allowed.</b></p>';
           }
         }
       } else {
@@ -368,6 +365,7 @@ abstract class BooruHandler {
   }
 
   Future<void> afterParseResponse(List<BooruItem> newItems) async {
+    DioNetwork.throwIfCancelled();
     for (final item in newItems) {
       item.fetchedPage = pageNum;
     }
