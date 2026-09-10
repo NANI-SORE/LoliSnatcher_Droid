@@ -457,7 +457,19 @@ void _encodeBackupPackageFile(Map<String, Object?> data) {
       final sourcePath = raw['sourcePath']?.toString();
       final archivePath = raw['archivePath']?.toString();
       if (sourcePath == null || archivePath == null) continue;
-      encoder.addFileSync(File(sourcePath), archivePath, ZipFileEncoder.store);
+      final sourceFile = File(sourcePath);
+      final input = InputFileStream(sourcePath);
+      try {
+        final stat = sourceFile.statSync();
+        final entry = ArchiveFile.stream(archivePath, input)
+          // Level 0 still deflates into memory; explicitly store the file to stream it.
+          ..compression = CompressionType.none
+          ..lastModTime = stat.modified.millisecondsSinceEpoch ~/ 1000
+          ..mode = stat.mode;
+        encoder.addArchiveFile(entry);
+      } finally {
+        input.closeSync();
+      }
     }
   } finally {
     encoder.closeSync();
