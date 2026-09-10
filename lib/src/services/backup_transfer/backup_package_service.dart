@@ -407,8 +407,8 @@ class BackupPackageService {
   Future<({String name, Uint8List bytes})?> pickBackupFile() async {
     final file = await FilePicker.pickFile(
       dialogTitle: loc.settings.backupAndTransfer.importBackupDialogTitle,
-      type: FileType.custom,
-      allowedExtensions: [extension, 'zip', 'json', 'db'],
+      // Native type filters can hide .lsbackup files; the importer validates the file name.
+      type: FileType.any,
     );
     if (file == null) return null;
     final bytes = await file.readAsBytes();
