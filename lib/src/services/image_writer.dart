@@ -60,9 +60,7 @@ class ImageWriter {
         ...await Tools.getFileCustomHeaders(booru, item: item, checkForReferer: true),
       };
 
-      final String url = ((SX.snatchMode.value.isSample && item.sampleURL.isNotEmpty)
-          ? item.sampleURL
-          : item.fileURL);
+      final String url = ((SX.snatchMode.value.isSample && item.sampleURL.isNotEmpty) ? item.sampleURL : item.fileURL);
 
       final cancelToken = CancelToken();
       if (onCancelTokenCreate != null) {
@@ -572,6 +570,20 @@ class ImageWriter {
       }
     }
     return '';
+  }
+
+  /// A saved booru can retain an asset originally created by a draft.
+  /// Only remove files after their last in-memory setting reference is gone.
+  static Future<void> removeUnusedMascotImage(String path) async {
+    if (path.isEmpty) return;
+    final file = File(path);
+    if (!await file.exists()) return;
+    final setting = SX.drawerMascotPathOverride.state;
+    if (setting.globalValue == path ||
+        setting.boorusWithOverrides.any((name) => setting.getOverrideFor(name) == path)) {
+      return;
+    }
+    await file.delete();
   }
 
   Future<bool> setPaths() async {

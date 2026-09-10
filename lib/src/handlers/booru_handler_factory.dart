@@ -37,7 +37,7 @@ class BooruHandlerFactory {
     List<Booru> boorus,
     int? customLimit,
   ) {
-    final int limit = customLimit ?? SX.limit.value;
+    final int limit = customLimit ?? SX.limit.valueForBooru(boorus.firstOrNull?.name);
 
     if (boorus.length == 1) {
       final Booru booru = boorus.first;

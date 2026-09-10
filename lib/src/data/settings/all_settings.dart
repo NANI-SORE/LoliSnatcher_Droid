@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -9,6 +8,7 @@ import 'package:flutter/material.dart';
 
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fvp/fvp.dart' as fvp;
+import 'package:uuid/uuid.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
@@ -46,12 +46,12 @@ import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/http_overrides.dart';
+import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/confirm_button.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/settings/cache_stats_widget.dart';
-import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
 import 'package:lolisnatcher/src/widgets/settings/cookie_manager_widget.dart';
 import 'package:lolisnatcher/src/widgets/settings/database_actions_widget.dart';
 import 'package:lolisnatcher/src/widgets/settings/database_page_lock.dart';
@@ -1135,17 +1135,11 @@ void registerAllSettings() {
       setButtonLabel: (ctx) => ctx.loc.settings.theme.setCustomMascot,
       removeButtonLabel: (ctx) => ctx.loc.settings.theme.removeCustomMascot,
       transformPickedPath: (ctx, path) {
-        final booruName = BooruEditingScope.of(ctx);
-        final scopeKey = booruName == null ? null : base64Url.encode(utf8.encode(booruName)).replaceAll('=', '');
-        final fileName = scopeKey == null ? 'mascot' : 'mascot_$scopeKey';
+        // Asset identity survives saving drafts and renaming boorus.
+        final fileName = 'mascot_${const Uuid().v4()}';
         return ImageWriter().writeMascotImage(path, fileName: fileName);
       },
-      onRemove: (path) async {
-        if (path.isNotEmpty) {
-          final file = File(path);
-          if (await file.exists()) await file.delete();
-        }
-      },
+      onRemove: ImageWriter.removeUnusedMascotImage,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.theme.currentMascotPath,
       ),
@@ -1633,7 +1627,7 @@ void registerAllSettings() {
               }
               return SettingsButton(
                 name: ctx.loc.settings.network.setBrowserUserAgent,
-                action: () => SX.customUserAgent.state.value = Constants.defaultBrowserUserAgent,
+                action: () => SX.customUserAgent.state.setScopedValue(ctx, Constants.defaultBrowserUserAgent),
               );
             },
           ),
@@ -2119,6 +2113,8 @@ void registerAllSettings() {
       categories: [SettingCategory.logging],
       subcategories: [SettingSubcategory.logs],
       isDeviceSpecific: true,
+      visibleWhen: () => Platform.isAndroid,
+      onChanged: (_, enabled) => unawaited(Logger.setLogcatCaptureEnabled(enabled)),
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.logging.captureLogcat,
         subtitle: (ctx) => ctx.loc.settings.logging.captureLogcatDescription,

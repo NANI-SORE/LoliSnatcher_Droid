@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
@@ -279,7 +280,14 @@ class Tools {
     return cookies.entries.map((e) => '${e.key}=${e.value}').join('; ');
   }
 
-  static Future<bool> checkForCaptcha(Response? response, Uri uri, {String? customUserAgent}) async {
+  static Future<bool> checkForCaptcha(
+    Response? response,
+    Uri uri, {
+    String? customUserAgent,
+    CancelToken? cancelToken,
+  }) async {
+    bool isCancelled() => cancelToken?.isCancelled == true;
+    if (isCancelled()) return false;
     if (captchaScreenActive || isTestMode || response?.requestOptions.headers.containsKey(captchaCheckHeader) == true) {
       return false;
     }
@@ -309,6 +317,7 @@ class Tools {
             url: webUri,
             name: 'cf_clearance',
           );
+      if (isCancelled()) return false;
       if (!res) {
         Logger.Inst().log(
           'Failed to delete cookie',
@@ -322,63 +331,76 @@ class Tools {
       captchaScreenActive = true;
 
       bool userDecidedToStay = false;
-      await Navigator.push(
-        NavigationHandler.instance.navContext,
-        MaterialPageRoute(
-          builder: (context) => InAppWebviewView(
-            initialUrl: '${uri.scheme}://$host${uri.hasPort && uri.port != 80 ? ':${uri.port}' : ''}',
-            userAgent: customUserAgent,
-            title: context.loc.webview.captcha,
-            subtitle: context.loc.webview.captchaCheckDescription,
-            onLoadStop: (context, controller, url) async {
-              // close cloudflare captcha automatically
-              if (url == null) return;
+      final navigator = Navigator.of(NavigationHandler.instance.navContext);
+      final route = MaterialPageRoute<void>(
+        builder: (context) => InAppWebviewView(
+          initialUrl: '${uri.scheme}://$host${uri.hasPort && uri.port != 80 ? ':${uri.port}' : ''}',
+          userAgent: customUserAgent,
+          title: context.loc.webview.captcha,
+          subtitle: context.loc.webview.captchaCheckDescription,
+          onLoadStop: (context, controller, url) async {
+            // close cloudflare captcha automatically
+            if (url == null || isCancelled()) return;
 
-              await Future.delayed(const Duration(milliseconds: 500));
+            await Future.delayed(const Duration(milliseconds: 500));
+            if (!context.mounted || isCancelled()) return;
 
-              final CookieManager cookieManager = CookieManager.instance(webViewEnvironment: webViewEnvironment);
-              final List<Cookie> cookies = await cookieManager.getCookies(url: url);
-              final bool hasClearanceCookie = [
-                ...cookies,
-                ...?globalWindowsCookies[url.host],
-              ].any((c) => c.name == 'cf_clearance' && c.value != invalidClearanceCookie);
+            final CookieManager cookieManager = CookieManager.instance(webViewEnvironment: webViewEnvironment);
+            final List<Cookie> cookies = await cookieManager.getCookies(url: url);
+            if (!context.mounted || isCancelled()) return;
+            final bool hasClearanceCookie = [
+              ...cookies,
+              ...?globalWindowsCookies[url.host],
+            ].any((c) => c.name == 'cf_clearance' && c.value != invalidClearanceCookie);
 
-              final String? htmlContent = await controller.evaluateJavascript(
-                source: 'window.document.documentElement.outerHTML;',
+            final String? htmlContent = await controller.evaluateJavascript(
+              source: 'window.document.documentElement.outerHTML;',
+            );
+
+            if (htmlContent == null || !context.mounted || isCancelled()) return;
+
+            final bool isCloudflareChallengeActive =
+                htmlContent.contains('/cdn-cgi/challenge-platform/') ||
+                htmlContent.contains('id="cf-challenge-') ||
+                htmlContent.contains('cf-browser-verification');
+            final bool isKnownCaptchaRunning = hasCaptchaStrings(url.host, htmlContent);
+            if (context.mounted &&
+                hasClearanceCookie &&
+                !isCloudflareChallengeActive &&
+                !isKnownCaptchaRunning &&
+                !userDecidedToStay) {
+              // allow user to stay in webview through a dialog, in case of false positives, otherwise leave after a few seconds
+              final bool res = await showTimedLeaveDialog(
+                context,
+                title: context.loc.webview.captchaCompleted,
+                icon: const Icon(Icons.thumb_up_alt_rounded),
+                duration: const Duration(seconds: 4),
               );
+              if (!context.mounted || isCancelled()) return;
 
-              if (htmlContent == null) return;
-
-              final bool isCloudflareChallengeActive =
-                  htmlContent.contains('/cdn-cgi/challenge-platform/') ||
-                  htmlContent.contains('id="cf-challenge-') ||
-                  htmlContent.contains('cf-browser-verification');
-              final bool isKnownCaptchaRunning = hasCaptchaStrings(url.host, htmlContent);
-              if (context.mounted &&
-                  hasClearanceCookie &&
-                  !isCloudflareChallengeActive &&
-                  !isKnownCaptchaRunning &&
-                  !userDecidedToStay) {
-                // allow user to stay in webview through a dialog, in case of false positives, otherwise leave after a few seconds
-                final bool res = await showTimedLeaveDialog(
-                  context,
-                  title: context.loc.webview.captchaCompleted,
-                  icon: const Icon(Icons.thumb_up_alt_rounded),
-                  duration: const Duration(seconds: 4),
-                );
-
-                if (res) {
-                  Navigator.of(context).pop();
-                } else {
-                  userDecidedToStay = true;
-                }
+              if (res) {
+                Navigator.of(context).pop();
+              } else {
+                userDecidedToStay = true;
               }
-            },
-          ),
+            }
+          },
         ),
       );
-      captchaScreenActive = false;
-      return true;
+      final closed = navigator.push(route);
+      if (cancelToken != null) {
+        unawaited(
+          cancelToken.whenCancel.then((_) {
+            if (route.isActive) navigator.removeRoute(route);
+          }),
+        );
+      }
+      try {
+        await closed;
+        return !isCancelled();
+      } finally {
+        captchaScreenActive = false;
+      }
     }
     return false;
   }

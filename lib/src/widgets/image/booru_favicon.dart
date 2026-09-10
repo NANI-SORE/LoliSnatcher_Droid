@@ -244,8 +244,13 @@ class _BooruFaviconState extends State<BooruFavicon> {
 
   Future<void> onError(
     Object error, {
+    required int generation,
     _BooruFaviconCacheKey? cacheKey,
   }) async {
+    if (!mounted || generation != loadGeneration) {
+      return;
+    }
+
     //// Error handling
     if (error is DioException && CancelToken.isCancel(error)) {
       //
@@ -260,6 +265,9 @@ class _BooruFaviconState extends State<BooruFavicon> {
         } else if (imageProvider is CustomNetworkAvifImage) {
           await imageProvider.deleteCacheFile();
         }
+        if (!mounted || generation != loadGeneration) {
+          return;
+        }
         _removeImageListener();
       }
       if (error is DioException &&
@@ -267,17 +275,29 @@ class _BooruFaviconState extends State<BooruFavicon> {
           Tools.isGoodStatusCode(error.response!.statusCode) == false) {
         if (manualReloadTapped && (error.response!.statusCode == 403 || error.response!.statusCode == 503)) {
           await Tools.checkForCaptcha(error.response, error.requestOptions.uri);
-          if (mounted && failedCacheKey == activeCacheKey) {
-            unawaited(restartLoading(evictSharedProvider: true));
+          if (!mounted || generation != loadGeneration) {
+            return;
           }
+
           manualReloadTapped = false;
+          if (failedCacheKey == activeCacheKey) {
+            unawaited(restartLoading(evictSharedProvider: true));
+            return;
+          }
         }
         errorCode = error.response!.statusCode.toString();
       }
 
+      if (!mounted || generation != loadGeneration) {
+        return;
+      }
       isFailed = true;
       isLoaded = false;
-      Future.delayed(const Duration(milliseconds: 300), updateState);
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted && generation == loadGeneration) {
+          updateState();
+        }
+      });
     }
   }
 
@@ -345,7 +365,7 @@ class _BooruFaviconState extends State<BooruFavicon> {
           LogTypes.imageLoadingError,
           s: s,
         );
-        await onError(e, cacheKey: cacheKey);
+        await onError(e, generation: generation, cacheKey: cacheKey);
         return;
       }
 
@@ -353,6 +373,8 @@ class _BooruFaviconState extends State<BooruFavicon> {
       imageListener = ImageStreamListener(
         (imageInfo, syncCall) {
           isLoaded = true;
+          isFailed = false;
+          errorCode = null;
           manualReloadTapped = false;
           if (!syncCall) {
             updateState();
@@ -369,7 +391,7 @@ class _BooruFaviconState extends State<BooruFavicon> {
             LogTypes.imageLoadingError,
             s: s,
           );
-          unawaited(onError(e, cacheKey: cacheKey));
+          unawaited(onError(e, generation: generation, cacheKey: cacheKey));
         },
       );
       imageStream?.addListener(imageListener);

@@ -60,6 +60,27 @@ class DioNetwork {
 
   static final HttpClientAdapter _sharedCronetAdapter = _SharedCronetAdapter();
 
+  static final Object _cancelTokenZoneKey = Object();
+
+  /// Shares cancellation with nested requests, including handler setup and parsing.
+  /// The zone keeps concurrent operations outside this scope independent.
+  static Future<T> runWithCancellation<T>(CancelToken cancelToken, Future<T> Function() action) {
+    return runZoned(action, zoneValues: {_cancelTokenZoneKey: cancelToken});
+  }
+
+  /// Prevent side effects after asynchronous work in a cancelled request scope.
+  static void throwIfCancelled() {
+    _requestCancelToken(null);
+  }
+
+  static CancelToken? _requestCancelToken(CancelToken? cancelToken) {
+    final scopedToken = Zone.current[_cancelTokenZoneKey] as CancelToken?;
+    if (scopedToken?.isCancelled == true) throw scopedToken!.cancelError!;
+    final token = cancelToken ?? scopedToken;
+    if (token?.isCancelled == true) throw token!.cancelError!;
+    return token;
+  }
+
   static Dio getClient({
     String? baseUrl,
     bool skipLogging = false,
@@ -142,12 +163,16 @@ class DioNetwork {
     client.interceptors.add(
       InterceptorsWrapper(
         onResponse: (Response response, ResponseInterceptorHandler handler) async {
+          final cancelToken = response.requestOptions.cancelToken;
+          if (cancelToken?.isCancelled == true) return handler.reject(cancelToken!.cancelError!);
           // print('[response]');
           final bool captchaWasDetected = await Tools.checkForCaptcha(
             response,
             response.realUri,
             customUserAgent: customUserAgent,
+            cancelToken: cancelToken,
           );
+          if (cancelToken?.isCancelled == true) return handler.reject(cancelToken!.cancelError!);
           if (!captchaWasDetected) {
             return handler.next(response);
           }
@@ -178,6 +203,7 @@ class DioNetwork {
               options: opts,
               data: response.requestOptions.data,
               queryParameters: response.requestOptions.queryParameters,
+              cancelToken: cancelToken,
             );
             return handler.resolve(cloneReq);
           } catch (e) {
@@ -185,8 +211,15 @@ class DioNetwork {
           }
         },
         onError: (DioException error, ErrorInterceptorHandler handler) async {
+          final cancelToken = error.requestOptions.cancelToken;
+          if (cancelToken?.isCancelled == true) return handler.next(cancelToken!.cancelError!);
           // print('[error]: ${error.message} ${error.response?.statusCode}');
-          final bool captchaWasDetected = await Tools.checkForCaptcha(error.response, error.requestOptions.uri);
+          final bool captchaWasDetected = await Tools.checkForCaptcha(
+            error.response,
+            error.requestOptions.uri,
+            cancelToken: cancelToken,
+          );
+          if (cancelToken?.isCancelled == true) return handler.next(cancelToken!.cancelError!);
           if (!captchaWasDetected) {
             return handler.next(error);
           }
@@ -217,6 +250,7 @@ class DioNetwork {
               options: opts,
               data: error.requestOptions.data,
               queryParameters: error.requestOptions.queryParameters,
+              cancelToken: cancelToken,
             );
             return handler.resolve(cloneReq);
           } catch (e) {
@@ -287,18 +321,21 @@ class DioNetwork {
     void Function(int, int)? onReceiveProgress,
     Dio Function(Dio)? customInterceptor,
   }) async {
+    cancelToken = _requestCancelToken(cancelToken);
     final client = customInterceptor != null ? customInterceptor(getClient()) : getClient();
     final urlAndQuery = separateUrlAndQueryParams(url, queryParameters);
 
-    final res = await client.get(
-      urlAndQuery['url'],
-      queryParameters: urlAndQuery['query'],
-      options: mergeOptions(options, headers),
-      cancelToken: cancelToken,
-      onReceiveProgress: onReceiveProgress,
-    );
-    client.close();
-    return res;
+    try {
+      return await client.get(
+        urlAndQuery['url'],
+        queryParameters: urlAndQuery['query'],
+        options: mergeOptions(options, headers),
+        cancelToken: cancelToken,
+        onReceiveProgress: onReceiveProgress,
+      );
+    } finally {
+      client.close();
+    }
   }
 
   static Future<Response> post(
@@ -312,20 +349,23 @@ class DioNetwork {
     void Function(int, int)? onSendProgress,
     Dio Function(Dio)? customInterceptor,
   }) async {
+    cancelToken = _requestCancelToken(cancelToken);
     final client = customInterceptor != null ? customInterceptor(getClient()) : getClient();
     final urlAndQuery = separateUrlAndQueryParams(url, queryParameters);
 
-    final res = await client.post(
-      urlAndQuery['url'],
-      data: data,
-      queryParameters: urlAndQuery['query'],
-      options: mergeOptions(options, headers),
-      cancelToken: cancelToken,
-      onReceiveProgress: onReceiveProgress,
-      onSendProgress: onSendProgress,
-    );
-    client.close();
-    return res;
+    try {
+      return await client.post(
+        urlAndQuery['url'],
+        data: data,
+        queryParameters: urlAndQuery['query'],
+        options: mergeOptions(options, headers),
+        cancelToken: cancelToken,
+        onReceiveProgress: onReceiveProgress,
+        onSendProgress: onSendProgress,
+      );
+    } finally {
+      client.close();
+    }
   }
 
   static Future<Response> head(
@@ -339,18 +379,21 @@ class DioNetwork {
     void Function(int, int)? onSendProgress,
     Dio Function(Dio)? customInterceptor,
   }) async {
+    cancelToken = _requestCancelToken(cancelToken);
     final client = customInterceptor != null ? customInterceptor(getClient()) : getClient();
     final urlAndQuery = separateUrlAndQueryParams(url, queryParameters);
 
-    final res = await client.head(
-      urlAndQuery['url'],
-      data: data,
-      queryParameters: urlAndQuery['query'],
-      options: mergeOptions(options, headers),
-      cancelToken: cancelToken,
-    );
-    client.close();
-    return res;
+    try {
+      return await client.head(
+        urlAndQuery['url'],
+        data: data,
+        queryParameters: urlAndQuery['query'],
+        options: mergeOptions(options, headers),
+        cancelToken: cancelToken,
+      );
+    } finally {
+      client.close();
+    }
   }
 
   static Future<Response> download(
@@ -365,6 +408,7 @@ class DioNetwork {
     bool deleteOnError = true,
     Dio Function(Dio)? customInterceptor,
   }) async {
+    cancelToken = _requestCancelToken(cancelToken);
     final client = customInterceptor != null ? customInterceptor(getClient()) : getClient();
     final urlAndQuery = separateUrlAndQueryParams(url, queryParameters);
 
@@ -398,6 +442,7 @@ class DioNetwork {
     bool deleteOnError = true,
     Dio Function(Dio)? customInterceptor,
   }) async {
+    cancelToken = _requestCancelToken(cancelToken);
     final client = customInterceptor != null ? customInterceptor(getClient()) : getClient();
     final urlAndQuery = separateUrlAndQueryParams(url, queryParameters);
 
