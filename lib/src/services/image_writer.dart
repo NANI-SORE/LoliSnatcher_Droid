@@ -583,6 +583,20 @@ class ImageWriter {
     return '';
   }
 
+  /// A saved booru can retain an asset originally created by a draft.
+  /// Only remove files after their last in-memory setting reference is gone.
+  static Future<void> removeUnusedMascotImage(String path) async {
+    if (path.isEmpty) return;
+    final file = File(path);
+    if (!await file.exists()) return;
+    final setting = SX.drawerMascotPathOverride.state;
+    if (setting.globalValue == path ||
+        setting.boorusWithOverrides.any((name) => setting.getOverrideFor(name) == path)) {
+      return;
+    }
+    await file.delete();
+  }
+
   Future<bool> setPaths() async {
     if (path.isEmpty) {
       if (SX.extPathOverride.value.isEmpty) {

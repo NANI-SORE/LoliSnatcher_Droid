@@ -1,7 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
+
+import 'package:dio/dio.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
@@ -17,6 +19,7 @@ import 'package:lolisnatcher/src/pages/settings/booru_edit_form_controller.dart'
 import 'package:lolisnatcher/src/pages/settings/booru_edit_utils.dart';
 import 'package:lolisnatcher/src/pages/settings/booru_overrides_page.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
+import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
@@ -60,13 +63,13 @@ class BooruEdit extends StatefulWidget {
 
 class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMixin {
   static const _testingSnackbarKey = 'booruConnectionTest';
-  static int _nextDraftId = 0;
 
   final SettingsHandler settingsHandler = SettingsHandler.instance;
   final SearchHandler searchHandler = SearchHandler.instance;
 
   late final BooruEditFormController formController;
   final connectionTester = const BooruConnectionTester();
+  CancelToken? _connectionTestCancelToken;
   late final TabController sectionController;
   late final String overrideScopeName;
   late int activeSectionIndex;
@@ -121,7 +124,7 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
   void initState() {
     super.initState();
     formController = BooruEditFormController(widget.booru, trustInitialConnection: !isAdding);
-    overrideScopeName = isAdding ? '__new_booru_draft_${_nextDraftId++}' : widget.booru.name ?? '';
+    overrideScopeName = isAdding ? '__new_booru_draft_${const Uuid().v4()}' : widget.booru.name ?? '';
     activeSectionIndex = widget.initialSection == BooruEditSection.overrides ? 1 : 0;
     sectionController = TabController(
       length: 2,
@@ -137,16 +140,16 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
 
   @override
   void dispose() {
+    _connectionTestCancelToken?.cancel('Booru editor closed');
     sectionController
       ..removeListener(_onSectionChanged)
       ..dispose();
     if (isAdding) {
       final draftMascotPath = SX.drawerMascotPathOverride.state.getOverrideFor(overrideScopeName);
-      if (draftMascotPath?.isNotEmpty == true) {
-        final draftMascot = File(draftMascotPath!);
-        unawaited(draftMascot.exists().then((exists) => exists ? draftMascot.delete() : null));
-      }
       SettingsRegistry.instance.removeAllOverridesForBooru(overrideScopeName, save: false);
+      if (draftMascotPath?.isNotEmpty == true) {
+        unawaited(ImageWriter.removeUnusedMascotImage(draftMascotPath!));
+      }
     }
     formController.dispose();
     super.dispose();
@@ -221,7 +224,7 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
     }
   }
 
-  Future<bool> _testConnection({bool skipNetwork = false}) async {
+  bool _validateRequiredFields() {
     formController.sanitizeName();
     setState(() {});
 
@@ -254,6 +257,12 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
       );
       return false;
     }
+
+    return true;
+  }
+
+  Future<bool> _testConnection({bool skipNetwork = false}) async {
+    if (!_validateRequiredFields()) return false;
 
     formController.url.text = normalizeBooruUrl(formController.url.text);
 
@@ -307,11 +316,14 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
     _showRunningTestMessage();
 
     BooruConnectionTestResult? testResults;
+    final cancelToken = CancelToken();
+    _connectionTestCancelToken = cancelToken;
     try {
       testResults = await connectionTester.test(
         testBooru,
         formController.selectedType,
         hydrusFailureMessage: context.loc.settings.booruEditor.failedVerifyApiHydrus,
+        cancelToken: cancelToken,
       );
     } catch (e, s) {
       Logger.Inst().log(
@@ -327,6 +339,9 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
       }
       return false;
     } finally {
+      if (identical(_connectionTestCancelToken, cancelToken)) {
+        _connectionTestCancelToken = null;
+      }
       isTesting = false;
       await FlashElements.dismissKey(_testingSnackbarKey);
       if (mounted) setState(() {});
@@ -422,8 +437,7 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
   }
 
   Future<void> _performSave({required bool force}) async {
-    formController.sanitizeName();
-    setState(() {});
+    if (!_validateRequiredFields()) return;
 
     if (formController.testedType != null && !formController.hasCurrentSuccessfulTest) {
       formController.clearTestResult();
@@ -434,6 +448,8 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
       if (!mounted) return;
     }
 
+    // Keyboard/IME edits can still arrive while a connection test is running.
+    if (!_validateRequiredFields()) return;
     final newBooru = _buildSaveCandidate();
     if (!ContentPolicy.isBooruAllowed(newBooru)) {
       _showDetailsForError();
@@ -454,7 +470,19 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
     if (!await _confirmSave(newBooru) || !mounted) return;
     if (!await getStoragePermission() || !mounted) return;
 
-    if (!await _persistBooru(newBooru) || !mounted) return;
+    final saved = await _persistBooru(newBooru);
+    if (!mounted) return;
+    if (!saved) {
+      _showDetailsForError();
+      FlashElements.showSnackbar(
+        context: context,
+        title: Text(context.loc.settings.booruEditor.saveFailed),
+        leadingIcon: Icons.error_outline,
+        leadingIconColor: Colors.red,
+        sideColor: Colors.red,
+      );
+      return;
+    }
 
     _showSavedMessage();
     _syncOpenTabs(newBooru);
