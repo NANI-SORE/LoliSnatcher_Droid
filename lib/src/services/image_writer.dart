@@ -60,9 +60,7 @@ class ImageWriter {
         ...await Tools.getFileCustomHeaders(booru, item: item, checkForReferer: true),
       };
 
-      final String url = ((SX.snatchMode.value.isSample && item.sampleURL.isNotEmpty)
-          ? item.sampleURL
-          : item.fileURL);
+      final String url = ((SX.snatchMode.value.isSample && item.sampleURL.isNotEmpty) ? item.sampleURL : item.fileURL);
 
       final cancelToken = CancelToken();
       if (onCancelTokenCreate != null) {
@@ -217,29 +215,37 @@ class ImageWriter {
   ) async* {
     int snatchedCounter = 1;
     final List<BooruItem> existsList = [], failedList = [], cancelledList = [];
+    bool skipColldown = false;
     for (int i = 0; i < snatched.length; i++) {
       bool retryCurrent = false;
-      await Future.delayed(Duration(milliseconds: cooldown), () async {
-        final snatchResult = await write(
-          snatched.elementAt(i),
-          booru,
-          onProgress,
-          ignoreExists,
-          onCancelTokenCreate,
-        );
-        if (snatchResult == null) {
-          existsList.add(snatched[i]);
-        } else if (snatchResult is! String) {
-          if (snatchResult is DioException && CancelToken.isCancel(snatchResult)) {
-            retryCurrent = onRetryCurrent?.call() ?? false;
-            if (!retryCurrent) {
-              cancelledList.add(snatched[i]);
-            }
-          } else {
-            failedList.add(snatched[i]);
+
+      if (skipColldown) {
+        skipColldown = false;
+      } else {
+        await Future.delayed(Duration(milliseconds: cooldown));
+      }
+
+      final snatchResult = await write(
+        snatched.elementAt(i),
+        booru,
+        onProgress,
+        ignoreExists,
+        onCancelTokenCreate,
+      );
+      if (snatchResult == null) {
+        existsList.add(snatched[i]);
+        skipColldown = true;
+      } else if (snatchResult is! String) {
+        if (snatchResult is DioException && CancelToken.isCancel(snatchResult)) {
+          retryCurrent = onRetryCurrent?.call() ?? false;
+          if (!retryCurrent) {
+            cancelledList.add(snatched[i]);
           }
+        } else {
+          failedList.add(snatched[i]);
         }
-      });
+      }
+
       if (retryCurrent) {
         i--;
         continue;
@@ -550,18 +556,34 @@ class ImageWriter {
     return '${Tools.sanitize(fileNameExtras)}${Tools.sanitize(fileName)}';
   }
 
-  Future<String> writeMascotImage(String contentUri) async {
+  Future<String> writeMascotImage(String contentUri, {String fileName = 'mascot'}) async {
     await setPaths();
     if (contentUri.isNotEmpty) {
       final Uint8List? fileBytes = await ServiceHandler.getSAFFile(contentUri);
       final String fileExt = await ServiceHandler.getSAFFileExtension(contentUri);
       if (fileBytes != null && fileExt.isNotEmpty) {
         final String path = await ServiceHandler.getConfigDir();
-        await File('${path}mascot.$fileExt').writeAsBytes(fileBytes);
-        return '${path}mascot.$fileExt';
+        final safeFileName = Tools.sanitize(fileName);
+        final outputPath = '$path$safeFileName.$fileExt';
+        await File(outputPath).writeAsBytes(fileBytes, flush: true);
+        return outputPath;
       }
     }
     return '';
+  }
+
+  /// A saved booru can retain an asset originally created by a draft.
+  /// Only remove files after their last in-memory setting reference is gone.
+  static Future<void> removeUnusedMascotImage(String path) async {
+    if (path.isEmpty) return;
+    final file = File(path);
+    if (!await file.exists()) return;
+    final setting = SX.drawerMascotPathOverride.state;
+    if (setting.globalValue == path ||
+        setting.boorusWithOverrides.any((name) => setting.getOverrideFor(name) == path)) {
+      return;
+    }
+    await file.delete();
   }
 
   Future<bool> setPaths() async {

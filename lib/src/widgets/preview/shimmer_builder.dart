@@ -138,20 +138,13 @@ class ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
     super.initState();
 
     _shimmerController = AnimationController.unbounded(vsync: this);
-    if (widget.enabled) {
-      _shimmerController.repeat(
-        min: -0.5,
-        max: 1.5,
-        period: const Duration(milliseconds: 1000),
-      );
-    }
   }
 
   @override
   void didUpdateWidget(Shimmer oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.enabled != oldWidget.enabled) {
-      if (widget.enabled) {
+      if (widget.enabled && activeChildren > 0) {
         play();
       } else {
         stop();
@@ -165,7 +158,7 @@ class ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
   }
 
   void play() {
-    if (!_shimmerController.isAnimating) {
+    if (widget.enabled && activeChildren > 0 && !_shimmerController.isAnimating) {
       _shimmerController.repeat(
         min: -0.5,
         max: 1.5,
@@ -175,7 +168,7 @@ class ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
   }
 
   void stop() {
-    if (activeChildren <= 0 && _shimmerController.isAnimating) {
+    if ((!widget.enabled || activeChildren <= 0) && _shimmerController.isAnimating) {
       _shimmerController.stop();
     }
   }
@@ -219,12 +212,12 @@ class ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
     required RenderBox descendant,
     Offset offset = Offset.zero,
   }) {
-    try {
-      final shimmerBox = context.findRenderObject() as RenderBox?;
-      return descendant.localToGlobal(offset, ancestor: shimmerBox);
-    } catch (_) {
+    final shimmerRenderObject = context.findRenderObject();
+    if (!descendant.attached || shimmerRenderObject is! RenderBox || !shimmerRenderObject.attached) {
       return Offset.zero;
     }
+
+    return descendant.localToGlobal(offset, ancestor: shimmerRenderObject);
   }
 
   Listenable get shimmerChanges => _shimmerController;
@@ -273,18 +266,25 @@ class _ShimmerLoadingState extends State<ShimmerLoading> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final bool isChanged = _shimmerState != Shimmer.of(context);
-    _shimmerState = Shimmer.of(context);
+    final nextShimmerState = Shimmer.of(context);
+    if (identical(_shimmerState, nextShimmerState)) return;
+
+    if (widget.isLoading) {
+      _shimmerState?.deactivateChild();
+    }
     _shimmerChanges?.removeListener(_onShimmerChange);
+    _shimmerState = nextShimmerState;
     _shimmerChanges = _shimmerState?.shimmerChanges;
     _shimmerChanges?.addListener(_onShimmerChange);
-    _shimmerState?.activateChild();
-
-    if (isChanged) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _shimmerUpdateIndex.value++;
-      });
+    if (widget.isLoading) {
+      _shimmerState?.activateChild();
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _shimmerUpdateIndex.value++;
+      }
+    });
   }
 
   @override
@@ -302,8 +302,11 @@ class _ShimmerLoadingState extends State<ShimmerLoading> {
 
   @override
   void dispose() {
-    _shimmerState?.deactivateChild();
+    if (widget.isLoading) {
+      _shimmerState?.deactivateChild();
+    }
     _shimmerChanges?.removeListener(_onShimmerChange);
+    _shimmerUpdateIndex.dispose();
     super.dispose();
   }
 

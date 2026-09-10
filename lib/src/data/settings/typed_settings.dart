@@ -119,7 +119,7 @@ SettingDef<bool> boolSetting({
             defaultValue: s.resetValue(ctx),
             onReset: () => s.resetScoped(ctx),
             onChanged: (newValue) => s.setScopedValue(ctx, newValue),
-            enabled: enabledWhen?.call() ?? true,
+            enabled: enabledWhen?.call(ctx) ?? true,
             leadingIcon: widgetConfig?.leadingIcon,
             trailingIcon:
                 widgetConfig?.trailingIcon ??
@@ -558,7 +558,7 @@ SettingDef<List<String>> stringListSetting({
     onChanged: onChanged,
     valueToJson: (v) => v,
     valueFromJson: (json) {
-      if (json is List) return List<String>.from(json);
+      if (json is List) return json.whereType<String>().toList();
       if (json is String && json.isNotEmpty) return json.split(',');
       return getDefaultValue();
     },

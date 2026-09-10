@@ -15,6 +15,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart' hide Translations;
 import 'package:lemberfpsmonitor/lemberfpsmonitor.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
+import 'package:lolisnatcher/src/widgets/common/confirm_button.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
@@ -37,6 +39,7 @@ import 'package:lolisnatcher/src/pages/init_home_page.dart';
 import 'package:lolisnatcher/src/pages/lockscreen_page.dart';
 import 'package:lolisnatcher/src/pages/mobile_home_page.dart';
 import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
+import 'package:lolisnatcher/src/pages/settings/performance_page.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
@@ -443,6 +446,8 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> with WidgetsBindingObserver {
+  static const MethodChannel _androidCrashChannel = MethodChannel('com.noaisu.loliSnatcher/services');
+
   final SettingsHandler settingsHandler = SettingsHandler.instance;
   final SearchHandler searchHandler = SearchHandler.instance;
   final TagHandler tagHandler = TagHandler.instance;
@@ -488,6 +493,57 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     // consider app launch as return to the app
     WidgetsBinding.instance.addObserver(this);
     localAuthHandler.onReturn();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_offerPerformanceSettingsAfterCrash());
+    });
+  }
+
+  Future<void> _offerPerformanceSettingsAfterCrash() async {
+    if (!Platform.isAndroid) {
+      return;
+    }
+
+    try {
+      final didCrash = await _androidCrashChannel.invokeMethod<bool>('consumePreviousCrash') ?? false;
+      if (!didCrash || !mounted) {
+        return;
+      }
+
+      final openSettings = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(dialogContext.loc.settings.performance.crashDetectedTitle),
+          content: Text(dialogContext.loc.settings.performance.crashDetectedMessage),
+          actions: [
+            CancelButton(
+              returnData: false,
+              withIcon: true,
+              label: dialogContext.loc.later,
+            ),
+            ConfirmButton(
+              withIcon: true,
+              label: dialogContext.loc.settings.performance.openPerformanceSettings,
+            ),
+          ],
+        ),
+      );
+
+      if (openSettings == true && mounted) {
+        await SettingsPageOpen(
+          context: context,
+          page: (_) => const PerformancePage(),
+        ).open();
+      }
+    } on PlatformException catch (error, stack) {
+      Logger.Inst().log(
+        error,
+        'Home',
+        '_offerPerformanceSettingsAfterCrash',
+        LogTypes.exception,
+        s: stack,
+      );
+    }
   }
 
   Future<void> clearCache() async {
@@ -528,7 +584,10 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           // Rename config if its already in the list
           booru.name = '${booru.name!} (duplicate)';
         }
-        await SettingsPageOpen(context: context, page: (_) => BooruEdit(booru)).open();
+        await SettingsPageOpen(
+          context: context,
+          page: (_) => BooruEdit.add(initialBooru: booru),
+        ).open();
       }
     }
   }

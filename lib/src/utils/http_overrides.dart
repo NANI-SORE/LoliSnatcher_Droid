@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -10,6 +11,16 @@ import 'package:lolisnatcher/src/utils/extensions.dart';
 
 String systemProxyAddress = '';
 bool addedRootCert = false;
+Timer? _proxyRefreshTimer;
+
+/// Coalesces related proxy setting changes into a single refresh.
+void scheduleProxyRefresh() {
+  _proxyRefreshTimer?.cancel();
+  _proxyRefreshTimer = Timer(
+    const Duration(milliseconds: 100),
+    () => unawaited(initProxy()),
+  );
+}
 
 Future<void> initProxy() async {
   if (Platform.isAndroid && !addedRootCert) {

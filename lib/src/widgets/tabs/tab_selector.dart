@@ -15,7 +15,7 @@ import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
-import 'package:lolisnatcher/src/pages/settings/booru_overrides_page.dart';
+import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
@@ -317,7 +317,10 @@ class TabSelector extends StatelessWidget {
                               ? () {
                                   SettingsPageOpen(
                                     context: context,
-                                    page: (_) => BooruOverridesPage(booru: searchHandler.currentBooru),
+                                    page: (_) => BooruEdit.edit(
+                                      searchHandler.currentBooru,
+                                      initialSection: BooruEditSection.overrides,
+                                    ),
                                   ).open();
                                 }
                               : null,

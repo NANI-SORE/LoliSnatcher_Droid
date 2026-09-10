@@ -9,6 +9,9 @@ import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 /// Needed here to type the widgetBuilder callback.
 typedef SettingWidgetBuilder<T> = Widget Function(BuildContext context, dynamic state);
 
+/// Checks whether a persisted picker value is still accessible.
+typedef SettingAccessValidator<T> = Future<bool> Function(T value);
+
 /// Immutable definition describing what a setting IS.
 ///
 /// Separate from [SettingState] which holds current mutable values.
@@ -32,6 +35,8 @@ class SettingDef<T> {
     this.visibleWhen,
     this.searchVisibleWhen,
     this.validate,
+    this.equals,
+    this.accessValidator,
     this.widgetBuilder,
     this.dependsOn,
     this.enabledWhen,
@@ -104,6 +109,23 @@ class SettingDef<T> {
   /// Optional validation/clamping. Called before setting a new value.
   /// Return the (possibly adjusted) value.
   final T Function(T value)? validate;
+
+  /// Optional value equality override. Collections use structural equality by
+  /// default in [SettingState], while specialized settings can override it.
+  final bool Function(T a, T b)? equals;
+
+  /// Optional startup access check for values returned by file or directory pickers.
+  /// Inaccessible non-default values are cleared before they can be used.
+  final SettingAccessValidator<T>? accessValidator;
+
+  bool get hasAccessValidator => accessValidator != null;
+
+  /// Invokes [accessValidator] without exposing its generic function type to
+  /// callers that hold this definition as `SettingDef<dynamic>`.
+  Future<bool> canAccessValue(T value) async {
+    final validator = accessValidator;
+    return validator == null || await validator(value);
+  }
 
   /// Self-rendering widget builder. Receives the [SettingState] so it can
   /// read/write the current value and listen to changes.
