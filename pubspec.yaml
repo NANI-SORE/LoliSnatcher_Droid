@@ -14,10 +14,10 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   alice_lightweight: ^3.10.0
-  archive: ^4.0.9
+  archive: ^4.2.0
   app_links: ^7.2.1
   auto_size_text_plus: ^3.0.2
-  bonsoir: ^7.1.4
+  bonsoir: ^7.1.5
   calendar_date_picker2: ^3.0.0
   chewie: ^1.16.2
   clipboard: # ^3.0.14
@@ -39,7 +39,7 @@ dependencies:
     git:
       url: https://github.com/NANI-SORE/fast_marquee.git
       ref: 828e79014ed5fd73062d6a24db14b6c114ac175b # master - forked to add richtext
-  file_picker: ^12.0.0-beta.7
+  file_picker: ^12.2.0
   flash: ^3.1.1
   flex_color_picker: ^3.8.0
   flutter_avif: ^3.1.0

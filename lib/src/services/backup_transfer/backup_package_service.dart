@@ -330,12 +330,12 @@ class BackupPackageService {
       bytes: bytes,
     );
     if (path == null) return null;
-    final file = File(path);
+    final file = File(path.path);
     if (!await file.exists()) {
       await file.writeAsBytes(bytes, flush: true);
     }
     BackupTransferLogger.info('Saved package to $path', 'BackupPackageService', 'savePackageWithPicker');
-    return path;
+    return path.path;
   }
 
   Future<String?> exportPackageFileWithPicker({
@@ -388,12 +388,12 @@ class BackupPackageService {
     if (path == null) return null;
     await exportPackageFile(
       entryIds: entryIds,
-      outputFile: File(path),
+      outputFile: File(path.path),
       options: options,
       entryOptions: entryOptions,
     );
     BackupTransferLogger.info('Saved package to $path', 'BackupPackageService', 'exportPackageFileWithPicker');
-    return path;
+    return path.path;
   }
 
   Future<File> _createTempPackageFile(String fileName) async {
