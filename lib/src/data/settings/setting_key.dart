@@ -202,6 +202,9 @@ class TypedKey<T> {
   /// Get the current effective value (considers per-booru overrides).
   T get value => SettingsRegistry.instance.get<T>(key)!.value;
 
+  /// Resolve a specific booru, independent of the active tab.
+  T valueForBooru(String? booruName) => state.valueForBooru(booruName);
+
   /// Get the mutable [SettingState] for this key.
   SettingState<T> get state => SettingsRegistry.instance.get<T>(key)!;
 }

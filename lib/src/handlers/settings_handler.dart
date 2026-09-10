@@ -134,7 +134,7 @@ class SettingsHandler {
       );
     }
 
-    SettingsRegistry.instance.loadFromJson(json);
+    SettingsRegistry.instance.loadFromJson(json, resetMissing: setMissingKeys);
 
     // Force mobile app mode until desktop UI is redone
     SX.appMode.state.value = AppMode.Mobile;

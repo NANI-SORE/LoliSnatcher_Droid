@@ -883,7 +883,7 @@ class SearchHandler {
       );
 
       tabs.value = restoredGlobals;
-      await changeTabIndex(newIndex);
+      await changeTabIndex(newIndex, switchOnly: true);
     } else {
       Booru defaultBooru = Booru.unknown();
       // Set the default booru and tags at the start
@@ -894,7 +894,7 @@ class SearchHandler {
       if (defaultBooru.type != null) {
         final SearchTab newTab = SearchTab(defaultBooru, null, defaultText);
         tabs.add(newTab);
-        await changeTabIndex(0);
+        await changeTabIndex(0, switchOnly: true);
       }
       searchTextController.text = defaultText;
     }
@@ -1068,7 +1068,7 @@ class SearchHandler {
       );
 
       tabs.value = restoredTabs;
-      await changeTabIndex(newSelectedIndex);
+      await changeTabIndex(newSelectedIndex, switchOnly: true);
     } else {
       Booru defaultBooru = Booru.unknown();
       if (settingsHandler.booruList.isNotEmpty) {
@@ -1080,7 +1080,7 @@ class SearchHandler {
         final defaultTab = SearchTab(defaultBooru, null, defaultText);
         defaultTab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
         tabs.add(defaultTab);
-        await changeTabIndex(0);
+        await changeTabIndex(0, switchOnly: true);
       }
     }
     return;
@@ -1282,12 +1282,40 @@ class SearchHandler {
         newTab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
         tabs.clear();
         tabs.add(newTab);
-        await changeTabIndex(0);
+        await changeTabIndex(0, switchOnly: true);
       }
     }
 
     // allow backup only after restoring to avoid long operations (i.e. database fixes) delaying restore and therefore causing backup to run before tabs were restored
     canBackup.value = true;
+
+    // Startup only waits for local tab state. Load the selected tab in the
+    // background so a slow search does not keep the gallery on the init screen.
+    unawaited(_loadRestoredTab());
+  }
+
+  Future<void> _loadRestoredTab() async {
+    final tab = currentTabOrNull;
+    if (tab == null) return;
+
+    try {
+      // Keep the normal search -> saved-page restore sequence.
+      await changeTabIndex(currentIndex);
+    } catch (e, s) {
+      Logger.Inst().log(
+        'Error loading restored tab: $e',
+        'SearchHandler',
+        '_loadRestoredTab',
+        LogTypes.exception,
+        s: s,
+      );
+      // A search failure must not replace successfully restored tabs.
+      tab.booruHandler.errorString = e.toString();
+      if (currentTabOrNull == tab) {
+        errorString.value = tab.booruHandler.errorString;
+        isLoading.value = false;
+      }
+    }
   }
 
   void mergeTabs(String tabStr) {
