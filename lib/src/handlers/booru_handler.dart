@@ -110,54 +110,6 @@ abstract class BooruHandler {
 
   bool get hasSizeData => false;
 
-  // ---- "send to library" (item add) support --------------------------------
-  // Modular upload pipeline: a handler that can receive items pushed from
-  // another booru (e.g. Eagle, Hydrus) overrides [hasItemAddSupport] and
-  // [addItem]. The viewer's share menu discovers these targets generically via
-  // [BooruType.supportsItemAdd]; no per-booru UI branching needed.
-
-  /// Whether this handler can receive an item pushed into its library.
-  bool get hasItemAddSupport => false;
-
-  /// Whether this target can place added items into a named sub-collection
-  /// (folder/collection). When true, the send UI offers a folder picker via
-  /// [addTargetFolders].
-  bool get hasItemAddFolders => false;
-
-  /// Optional list of `(id, label)` destination folders for the add UI.
-  /// Returned lazily so handlers can fetch them on demand. Default: none.
-  Future<List<({String id, String label})>> addTargetFolders() async => const [];
-
-  /// Push [item] into this booru's library. Returns true on success.
-  ///
-  /// [usePostUrl] sends the source/post URL instead of the direct file URL
-  /// where the target distinguishes them. [folderId] optionally files the item
-  /// into a sub-collection (see [hasItemAddFolders]).
-  Future<bool> addItem(
-    BooruItem item, {
-    bool usePostUrl = false,
-    String? folderId,
-  }) async =>
-      false;
-
-  /// Whether this target can receive a *raw local device file* (not just a URL
-  /// it fetches itself). Eagle supports this via the eagle-serve `/upload`
-  /// endpoint; targets without such a bridge return false.
-  bool get hasLocalUploadSupport => false;
-
-  /// Upload a local file (at [filePath]) into this library. Returns true on
-  /// success. Mirrors [addItem]'s metadata. Only meaningful when
-  /// [hasLocalUploadSupport] is true.
-  Future<bool> addLocalFile(
-    String filePath, {
-    String? name,
-    List<String> tags = const [],
-    String? folderId,
-    String? website,
-    String? annotation,
-  }) async =>
-      false;
-
   Future<bool> searchSetup() async {
     if (hasSignInSupport) {
       final bool canLogin = await canSignIn();

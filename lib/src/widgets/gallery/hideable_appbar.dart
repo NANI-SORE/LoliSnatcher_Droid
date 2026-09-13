@@ -37,9 +37,7 @@ import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
 import 'package:lolisnatcher/src/widgets/common/restartable_progress_indicator.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
-import 'package:lolisnatcher/src/handlers/upload_handler.dart';
 import 'package:lolisnatcher/src/widgets/gallery/image_search_dialog.dart';
-import 'package:lolisnatcher/src/widgets/gallery/send_to_library.dart';
 import 'package:lolisnatcher/src/widgets/gallery/snatched_status_icon.dart';
 import 'package:lolisnatcher/src/widgets/gallery/toolbar_action.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_build.dart';
@@ -1112,10 +1110,6 @@ class _HideableAppBarState extends State<HideableAppBar> {
     }
   }
 
-  /// Any configured booru (other than the current one) that can receive items.
-  bool get _hasSendToLibraryTarget => settingsHandler.booruList
-      .any((b) => b.type?.supportsItemAdd == true && b != widget.tab.booruHandler.booru);
-
   void showShareDialog({bool showTip = true}) {
     final item = widget.tab.booruHandler.filteredFetched[page.value];
 
@@ -1273,7 +1267,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
                   title: Text(context.loc.viewer.appBar.fileWithTags),
                 ),
                 const SizedBox(height: 15),
-                if (_hasSendToLibraryTarget) ...[
+                if (settingsHandler.hasHydrus && widget.tab.booruHandler.booru.type?.isHydrus != true)
                   ListTile(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -1283,38 +1277,12 @@ class _HideableAppBarState extends State<HideableAppBar> {
                       ),
                     ),
                     onTap: () async {
+                      await shareHydrusAction(item);
                       Navigator.of(context).pop();
-                      await sendItemToLibrary(
-                        context,
-                        item,
-                        excludeBooru: widget.tab.booruHandler.booru,
-                      );
                     },
-                    leading: const Icon(Icons.drive_file_move_outline),
-                    title: const Text('Send to library'),
+                    leading: const Icon(Icons.file_present),
+                    title: Text(context.loc.viewer.appBar.hydrus),
                   ),
-                  const SizedBox(height: 15),
-                  ListTile(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(color: Theme.of(context).colorScheme.secondary),
-                    ),
-                    onTap: () async {
-                      Navigator.of(context).pop();
-                      await UploadHandler.instance.addFromBooruItem(item);
-                      FlashElements.showSnackbar(
-                        context: context,
-                        title: const Text('Added to upload queue', style: TextStyle(fontSize: 20)),
-                        leadingIcon: Icons.cloud_upload_outlined,
-                        leadingIconColor: Colors.green,
-                        sideColor: Colors.green,
-                        duration: const Duration(seconds: 2),
-                      );
-                    },
-                    leading: const Icon(Icons.add_to_queue),
-                    title: const Text('Add to upload queue'),
-                  ),
-                ],
               ],
             ),
             const SizedBox(height: 15),

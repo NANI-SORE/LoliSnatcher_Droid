@@ -4,11 +4,8 @@ import 'package:get/get.dart' hide FirstWhereOrNullExt;
 
 import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
-import 'package:lolisnatcher/src/data/upload_item.dart';
-import 'package:lolisnatcher/src/handlers/upload_handler.dart';
 import 'package:lolisnatcher/src/pages/snatcher_page.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
-import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_controller.dart';
 
@@ -65,26 +62,6 @@ class DDSelectionActions extends StatelessWidget {
                 name: '${context.loc.settings.downloads.unfavouriteSelected} (${favSelectedCount.toFormattedString()})',
                 icon: const Icon(Icons.favorite_border),
                 action: controller.unfavouriteSelected,
-              ),
-            if (controller.settingsHandler.booruList.any((b) => b.type?.supportsItemAdd == true))
-              SettingsButton(
-                name: 'Add to upload queue (${selected.length.toFormattedString()})',
-                icon: const Icon(Icons.cloud_upload_outlined),
-                action: () async {
-                  final int count = selected.length;
-                  await UploadHandler.instance.addAll(
-                    selected.map((e) => UploadItem.fromBooruItem(e)),
-                  );
-                  searchHandler.currentTab.selected.clear();
-                  FlashElements.showSnackbar(
-                    context: context,
-                    title: Text('Added $count to upload queue', style: const TextStyle(fontSize: 20)),
-                    leadingIcon: Icons.cloud_upload_outlined,
-                    leadingIconColor: Colors.green,
-                    sideColor: Colors.green,
-                    duration: const Duration(seconds: 2),
-                  );
-                },
               ),
             SettingsButton(
               name: context.loc.settings.downloads.clearSelected,

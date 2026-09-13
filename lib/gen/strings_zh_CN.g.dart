@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:slang/generated.dart';
 import 'package:slang/overrides.dart';
+
 import 'strings.g.dart';
 
 // Path: <root>
@@ -20,7 +21,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
     PluralResolver? cardinalResolver,
     PluralResolver? ordinalResolver,
     TranslationMetadata<AppLocale, Translations>? meta,
-  }) : $meta =
+  }) : _meta =
            meta ??
            TranslationMetadata(
              locale: AppLocale.zhCn,
@@ -29,17 +30,17 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
              ordinalResolver: ordinalResolver,
            ),
        super(cardinalResolver: cardinalResolver, ordinalResolver: ordinalResolver) {
-    super.$meta.setFlatMapFunction($meta.getTranslation); // copy base translations to super.$meta
-    $meta.setFlatMapFunction(_flatMapFunction);
+    _meta.setFlatMapFunction(_flatMapFunction);
   }
 
   /// Metadata for the translations of <zh-CN>.
+  final TranslationMetadata<AppLocale, Translations> _meta;
   @override
-  final TranslationMetadata<AppLocale, Translations> $meta;
+  TranslationMetadata<AppLocale, Translations> get $meta => _meta;
 
   /// Access flat map
   @override
-  dynamic operator [](String key) => $meta.getTranslation(key) ?? super.$meta.getTranslation(key);
+  dynamic operator [](String key) => _meta.getTranslation(key) ?? super[key];
 
   late final TranslationsZhCn _root = this; // ignore: unused_field
 
@@ -626,8 +627,6 @@ class _Translations$tabs$zh_CN extends Translations$tabs$en {
   String get startFromCustomPageNumber => TranslationOverrides.string(_root.$meta, 'tabs.startFromCustomPageNumber', {}) ?? '从指定页数开始';
   @override
   String get switchToNewTab => TranslationOverrides.string(_root.$meta, 'tabs.switchToNewTab', {}) ?? '切换到新标签页';
-  @override
-  late final _Translations$tabs$groups$zh_CN groups = _Translations$tabs$groups$zh_CN._(_root);
   @override
   String get add => TranslationOverrides.string(_root.$meta, 'tabs.add', {}) ?? '添加';
   @override
@@ -1564,105 +1563,6 @@ class _Translations$tagType$zh_CN extends Translations$tagType$en {
   String get none => TranslationOverrides.string(_root.$meta, 'tagType.none', {}) ?? '无/通常的';
 }
 
-// Path: tabs.groups
-class _Translations$tabs$groups$zh_CN extends Translations$tabs$groups$en {
-  _Translations$tabs$groups$zh_CN._(TranslationsZhCn root) : this._root = root, super.internal(root);
-
-  final TranslationsZhCn _root; // ignore: unused_field
-
-  // Translations
-  @override
-  String get title => TranslationOverrides.string(_root.$meta, 'tabs.groups.title', {}) ?? '分组';
-  @override
-  String get newGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroup', {}) ?? '新建分组';
-  @override
-  String get renameGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.renameGroup', {}) ?? '重命名分组';
-  @override
-  String get renameRecolor => TranslationOverrides.string(_root.$meta, 'tabs.groups.renameRecolor', {}) ?? '重命名 / 更改颜色';
-  @override
-  String get editGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.editGroup', {}) ?? '编辑分组';
-  @override
-  String get deleteGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteGroup', {}) ?? '删除分组';
-  @override
-  String get deleteWithTabs => TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteWithTabs', {}) ?? '同时删除分组中的标签';
-  @override
-  String get ungrouped => TranslationOverrides.string(_root.$meta, 'tabs.groups.ungrouped', {}) ?? '未分组';
-  @override
-  String get moveToGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.moveToGroup', {}) ?? '移动到分组';
-  @override
-  String get moveToGroupAction => TranslationOverrides.string(_root.$meta, 'tabs.groups.moveToGroupAction', {}) ?? '移动到分组…';
-  @override
-  String get removeFromGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.removeFromGroup', {}) ?? '从分组移除';
-  @override
-  String get addToGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.addToGroup', {}) ?? '添加到分组…';
-  @override
-  String get newGroupFromTab => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupFromTab', {}) ?? '从此标签创建新分组';
-  @override
-  String get groupColor => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupColor', {}) ?? '颜色';
-  @override
-  String get groupName => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupName', {}) ?? '分组名称';
-  @override
-  String get collapse => TranslationOverrides.string(_root.$meta, 'tabs.groups.collapse', {}) ?? '折叠分组';
-  @override
-  String get expand => TranslationOverrides.string(_root.$meta, 'tabs.groups.expand', {}) ?? '展开分组';
-  @override
-  String get filterByGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.filterByGroup', {}) ?? '分组';
-  @override
-  String get dropToUngroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.dropToUngroup', {}) ?? '放在此处取消分组';
-  @override
-  String get dragToAGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.dragToAGroup', {}) ?? '拖动到分组';
-  @override
-  String get groupActions => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupActions', {}) ?? '分组操作';
-  @override
-  String get newerVersionBackup => TranslationOverrides.string(_root.$meta, 'tabs.groups.newerVersionBackup', {}) ?? '此备份来自较新版本的 LoliSnatcher，无法加载。';
-  @override
-  String get malformedBackup => TranslationOverrides.string(_root.$meta, 'tabs.groups.malformedBackup', {}) ?? '标签备份已损坏，无法加载。';
-  @override
-  String get newGroupTitle => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupTitle', {}) ?? '新建分组';
-  @override
-  String get create => TranslationOverrides.string(_root.$meta, 'tabs.groups.create', {}) ?? '创建';
-  @override
-  String get save => TranslationOverrides.string(_root.$meta, 'tabs.groups.save', {}) ?? '保存';
-  @override
-  String deleteGroupNamed({required String name}) =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteGroupNamed', {'name': name}) ?? '删除分组「${name}」？';
-  @override
-  String tabsInGroup({required num count}) =>
-      TranslationOverrides.plural(_root.$meta, 'tabs.groups.tabsInGroup', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('zh'))(
-        count,
-        other: '此分组中有 ${count} 个标签。',
-      );
-  @override
-  String get otherwiseBecomeUngrouped => TranslationOverrides.string(_root.$meta, 'tabs.groups.otherwiseBecomeUngrouped', {}) ?? '否则标签将变为未分组。';
-  @override
-  String tabsMovedToUngrouped({required num count}) =>
-      TranslationOverrides.plural(_root.$meta, 'tabs.groups.tabsMovedToUngrouped', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('zh'))(
-        count,
-        other: '${count} 个标签已移至未分组',
-      );
-  @override
-  String get chooseGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.chooseGroup', {}) ?? '选择分组';
-  @override
-  String get unknownGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.unknownGroup', {}) ?? '未知分组';
-  @override
-  String get ungroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.ungroup', {}) ?? '取消分组';
-  @override
-  String get helpTapNewGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapNewGroup', {}) ?? '点击列表底部的「新建分组」来创建分组。';
-  @override
-  String get helpDragTabHandle => TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragTabHandle', {}) ?? '拖动标签左侧的把手可在分组之间移动标签。';
-  @override
-  String get helpDragGroupHandle => TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragGroupHandle', {}) ?? '拖动分组标题左侧的把手可调整分组顺序。';
-  @override
-  String get helpTapHeaderCollapse => TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapHeaderCollapse', {}) ?? '点击分组标题以折叠/展开。';
-  @override
-  String get helpTapMoreVert => TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapMoreVert', {}) ?? '点击分组标题上的 ⋯ 可重命名、更改颜色或删除分组。';
-  @override
-  String get helpPrevNextInherits =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.helpPrevNextInherits', {}) ?? '通过「上一个」/「下一个」添加的新标签会继承当前标签的分组。添加到末尾的标签则不属于任何分组。';
-}
-
 // Path: tabs.filters
 class _Translations$tabs$filters$zh_CN extends Translations$tabs$filters$en {
   _Translations$tabs$filters$zh_CN._(TranslationsZhCn root) : this._root = root, super.internal(root);
@@ -2064,30 +1964,6 @@ class _Translations$settings$interface$zh_CN extends Translations$settings$inter
   late final _Translations$settings$interface$appModeValues$zh_CN appModeValues = _Translations$settings$interface$appModeValues$zh_CN._(_root);
   @override
   late final _Translations$settings$interface$handSideValues$zh_CN handSideValues = _Translations$settings$interface$handSideValues$zh_CN._(_root);
-  @override
-  String get tabManagerBottomBar => TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBar', {}) ?? '标签管理器底部操作栏';
-  @override
-  String get tabManagerBottomBarSubtitle =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBarSubtitle', {}) ??
-      '在标签管理器底部显示滚动到顶部/当前/底部和关闭按钮。新建标签/新建分组的悬浮按钮始终显示。';
-  @override
-  String get drawerBottomAlign => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlign', {}) ?? '主抽屉底部对齐';
-  @override
-  String get drawerBottomAlignSubtitle =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlignSubtitle', {}) ?? '将侧抽屉的内容从底部向上堆叠（搜索、当前标签、标签操作、其他），便于单手拇指操作。';
-  @override
-  String get drawerLayoutTitle => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutTitle', {}) ?? '抽屉布局';
-  @override
-  String get drawerLayoutSubtitle => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutSubtitle', {}) ?? '选择侧抽屉中显示哪些项目及其顺序。';
-  @override
-  String get drawerLayoutPinned => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutPinned', {}) ?? '已固定 — 始终显示';
-  @override
-  String get drawerLayoutRestoreDefaults => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutRestoreDefaults', {}) ?? '恢复默认';
-  @override
-  String get drawerLayoutBottomAlignHint =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutBottomAlignHint', {}) ?? '底部对齐已开启 — 此列表中的第一项将显示在抽屉底部。';
-  @override
-  late final _Translations$settings$interface$drawerItems$zh_CN drawerItems = _Translations$settings$interface$drawerItems$zh_CN._(_root);
 }
 
 // Path: settings.theme
@@ -3545,35 +3421,6 @@ class _Translations$settings$interface$handSideValues$zh_CN extends Translations
   String get right => TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.right', {}) ?? '右手';
 }
 
-// Path: settings.interface.drawerItems
-class _Translations$settings$interface$drawerItems$zh_CN extends Translations$settings$interface$drawerItems$en {
-  _Translations$settings$interface$drawerItems$zh_CN._(TranslationsZhCn root) : this._root = root, super.internal(root);
-
-  final TranslationsZhCn _root; // ignore: unused_field
-
-  // Translations
-  @override
-  String get search => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.search', {}) ?? '搜索栏';
-  @override
-  String get tabSelector => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.tabSelector', {}) ?? '当前标签卡片';
-  @override
-  String get tabButtons => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.tabButtons', {}) ?? '标签按钮';
-  @override
-  String get multibooruToggle => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.multibooruToggle', {}) ?? '多 Booru 开关';
-  @override
-  String get lockApp => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.lockApp', {}) ?? '锁定应用';
-  @override
-  String get settings => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.settings', {}) ?? '设置';
-  @override
-  String get webview => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.webview', {}) ?? '打开网页视图';
-  @override
-  String get updateAvailable => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.updateAvailable', {}) ?? '有可用更新';
-  @override
-  String get closeApp => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.closeApp', {}) ?? '关闭应用';
-  @override
-  String get mascot => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.mascot', {}) ?? '吉祥物图片';
-}
-
 // Path: settings.viewer.imageQualityValues
 class _Translations$settings$viewer$imageQualityValues$zh_CN extends Translations$settings$viewer$imageQualityValues$en {
   _Translations$settings$viewer$imageQualityValues$zh_CN._(TranslationsZhCn root) : this._root = root, super.internal(root);
@@ -3817,13 +3664,16 @@ extension on TranslationsZhCn {
           'validationErrors.invalidNumber' => TranslationOverrides.string(_root.$meta, 'validationErrors.invalidNumber', {}) ?? '请输入一个数字',
           'validationErrors.invalidNumericValue' =>
             TranslationOverrides.string(_root.$meta, 'validationErrors.invalidNumericValue', {}) ?? '请输入一个有效的数字值',
-          'validationErrors.tooSmall' =>
-            ({required double min}) => TranslationOverrides.string(_root.$meta, 'validationErrors.tooSmall', {'min': min}) ?? '请输入大于 ${min} 的值',
-          'validationErrors.tooBig' =>
-            ({required double max}) => TranslationOverrides.string(_root.$meta, 'validationErrors.tooBig', {'max': max}) ?? '请输入小于 ${max} 的值',
-          'validationErrors.rangeError' =>
-            ({required double min, required double max}) =>
-                TranslationOverrides.string(_root.$meta, 'validationErrors.rangeError', {'min': min, 'max': max}) ?? '请输入一个介于 ${min} 和 ${max} 之间的值',
+          'validationErrors.tooSmall' => ({
+            required double min,
+          }) => TranslationOverrides.string(_root.$meta, 'validationErrors.tooSmall', {'min': min}) ?? '请输入大于 ${min} 的值',
+          'validationErrors.tooBig' => ({
+            required double max,
+          }) => TranslationOverrides.string(_root.$meta, 'validationErrors.tooBig', {'max': max}) ?? '请输入小于 ${max} 的值',
+          'validationErrors.rangeError' => ({
+            required double min,
+            required double max,
+          }) => TranslationOverrides.string(_root.$meta, 'validationErrors.rangeError', {'min': min, 'max': max}) ?? '请输入一个介于 ${min} 和 ${max} 之间的值',
           'validationErrors.greaterThanOrEqualZero' =>
             TranslationOverrides.string(_root.$meta, 'validationErrors.greaterThanOrEqualZero', {}) ?? '请输入一个大于或等于0的数值',
           'validationErrors.lessThan4' => TranslationOverrides.string(_root.$meta, 'validationErrors.lessThan4', {}) ?? '请输入小于4的值',
@@ -3842,8 +3692,9 @@ extension on TranslationsZhCn {
             TranslationOverrides.string(_root.$meta, 'permissions.noAccessToCustomStorageDirectory', {}) ?? '无法访问自定义存储目录',
           'permissions.pleaseSetStorageDirectoryAgain' =>
             TranslationOverrides.string(_root.$meta, 'permissions.pleaseSetStorageDirectoryAgain', {}) ?? '请再次设置存储目录以授予应用访问权限',
-          'permissions.currentPath' =>
-            ({required String path}) => TranslationOverrides.string(_root.$meta, 'permissions.currentPath', {'path': path}) ?? '当前路径：${path}',
+          'permissions.currentPath' => ({
+            required String path,
+          }) => TranslationOverrides.string(_root.$meta, 'permissions.currentPath', {'path': path}) ?? '当前路径：${path}',
           'permissions.setDirectory' => TranslationOverrides.string(_root.$meta, 'permissions.setDirectory', {}) ?? '设置目录',
           'permissions.currentlyNotAvailableForThisPlatform' =>
             TranslationOverrides.string(_root.$meta, 'permissions.currentlyNotAvailableForThisPlatform', {}) ?? '此平台不可用',
@@ -3855,9 +3706,9 @@ extension on TranslationsZhCn {
           'authentication.noBiometricHardwareAvailable' =>
             TranslationOverrides.string(_root.$meta, 'authentication.noBiometricHardwareAvailable', {}) ?? '未检测到生物识别硬件',
           'authentication.temporaryLockout' => TranslationOverrides.string(_root.$meta, 'authentication.temporaryLockout', {}) ?? '临时锁定',
-          'authentication.somethingWentWrong' =>
-            ({required String error}) =>
-                TranslationOverrides.string(_root.$meta, 'authentication.somethingWentWrong', {'error': error}) ?? '身份认证过程中出错：${error}',
+          'authentication.somethingWentWrong' => ({
+            required String error,
+          }) => TranslationOverrides.string(_root.$meta, 'authentication.somethingWentWrong', {'error': error}) ?? '身份认证过程中出错：${error}',
           'searchHandler.removedLastTab' => TranslationOverrides.string(_root.$meta, 'searchHandler.removedLastTab', {}) ?? '已删除最后一个标签页',
           'searchHandler.resettingSearchToDefaultTags' =>
             TranslationOverrides.string(_root.$meta, 'searchHandler.resettingSearchToDefaultTags', {}) ?? '重置为默认标签',
@@ -4006,63 +3857,6 @@ extension on TranslationsZhCn {
           'tabs.keepSecondaryBoorus' => TranslationOverrides.string(_root.$meta, 'tabs.keepSecondaryBoorus', {}) ?? '保留次要Booru',
           'tabs.startFromCustomPageNumber' => TranslationOverrides.string(_root.$meta, 'tabs.startFromCustomPageNumber', {}) ?? '从指定页数开始',
           'tabs.switchToNewTab' => TranslationOverrides.string(_root.$meta, 'tabs.switchToNewTab', {}) ?? '切换到新标签页',
-          'tabs.groups.title' => TranslationOverrides.string(_root.$meta, 'tabs.groups.title', {}) ?? '分组',
-          'tabs.groups.newGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroup', {}) ?? '新建分组',
-          'tabs.groups.renameGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.renameGroup', {}) ?? '重命名分组',
-          'tabs.groups.renameRecolor' => TranslationOverrides.string(_root.$meta, 'tabs.groups.renameRecolor', {}) ?? '重命名 / 更改颜色',
-          'tabs.groups.editGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.editGroup', {}) ?? '编辑分组',
-          'tabs.groups.deleteGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteGroup', {}) ?? '删除分组',
-          'tabs.groups.deleteWithTabs' => TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteWithTabs', {}) ?? '同时删除分组中的标签',
-          'tabs.groups.ungrouped' => TranslationOverrides.string(_root.$meta, 'tabs.groups.ungrouped', {}) ?? '未分组',
-          'tabs.groups.moveToGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.moveToGroup', {}) ?? '移动到分组',
-          'tabs.groups.moveToGroupAction' => TranslationOverrides.string(_root.$meta, 'tabs.groups.moveToGroupAction', {}) ?? '移动到分组…',
-          'tabs.groups.removeFromGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.removeFromGroup', {}) ?? '从分组移除',
-          'tabs.groups.addToGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.addToGroup', {}) ?? '添加到分组…',
-          'tabs.groups.newGroupFromTab' => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupFromTab', {}) ?? '从此标签创建新分组',
-          'tabs.groups.groupColor' => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupColor', {}) ?? '颜色',
-          'tabs.groups.groupName' => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupName', {}) ?? '分组名称',
-          'tabs.groups.collapse' => TranslationOverrides.string(_root.$meta, 'tabs.groups.collapse', {}) ?? '折叠分组',
-          'tabs.groups.expand' => TranslationOverrides.string(_root.$meta, 'tabs.groups.expand', {}) ?? '展开分组',
-          'tabs.groups.filterByGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.filterByGroup', {}) ?? '分组',
-          'tabs.groups.dropToUngroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.dropToUngroup', {}) ?? '放在此处取消分组',
-          'tabs.groups.dragToAGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.dragToAGroup', {}) ?? '拖动到分组',
-          'tabs.groups.groupActions' => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupActions', {}) ?? '分组操作',
-          'tabs.groups.newerVersionBackup' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.newerVersionBackup', {}) ?? '此备份来自较新版本的 LoliSnatcher，无法加载。',
-          'tabs.groups.malformedBackup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.malformedBackup', {}) ?? '标签备份已损坏，无法加载。',
-          'tabs.groups.newGroupTitle' => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupTitle', {}) ?? '新建分组',
-          'tabs.groups.create' => TranslationOverrides.string(_root.$meta, 'tabs.groups.create', {}) ?? '创建',
-          'tabs.groups.save' => TranslationOverrides.string(_root.$meta, 'tabs.groups.save', {}) ?? '保存',
-          'tabs.groups.deleteGroupNamed' =>
-            ({required String name}) => TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteGroupNamed', {'name': name}) ?? '删除分组「${name}」？',
-          'tabs.groups.tabsInGroup' =>
-            ({required num count}) =>
-                TranslationOverrides.plural(_root.$meta, 'tabs.groups.tabsInGroup', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('zh'))(
-                  count,
-                  other: '此分组中有 ${count} 个标签。',
-                ),
-          'tabs.groups.otherwiseBecomeUngrouped' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.otherwiseBecomeUngrouped', {}) ?? '否则标签将变为未分组。',
-          'tabs.groups.tabsMovedToUngrouped' =>
-            ({required num count}) =>
-                TranslationOverrides.plural(_root.$meta, 'tabs.groups.tabsMovedToUngrouped', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('zh'))(
-                  count,
-                  other: '${count} 个标签已移至未分组',
-                ),
-          'tabs.groups.chooseGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.chooseGroup', {}) ?? '选择分组',
-          'tabs.groups.unknownGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.unknownGroup', {}) ?? '未知分组',
-          'tabs.groups.ungroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.ungroup', {}) ?? '取消分组',
-          'tabs.groups.helpTapNewGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapNewGroup', {}) ?? '点击列表底部的「新建分组」来创建分组。',
-          'tabs.groups.helpDragTabHandle' => TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragTabHandle', {}) ?? '拖动标签左侧的把手可在分组之间移动标签。',
-          'tabs.groups.helpDragGroupHandle' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragGroupHandle', {}) ?? '拖动分组标题左侧的把手可调整分组顺序。',
-          'tabs.groups.helpTapHeaderCollapse' => TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapHeaderCollapse', {}) ?? '点击分组标题以折叠/展开。',
-          'tabs.groups.helpTapMoreVert' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapMoreVert', {}) ?? '点击分组标题上的 ⋯ 可重命名、更改颜色或删除分组。',
-          'tabs.groups.helpPrevNextInherits' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.helpPrevNextInherits', {}) ?? '通过「上一个」/「下一个」添加的新标签会继承当前标签的分组。添加到末尾的标签则不属于任何分组。',
           'tabs.add' => TranslationOverrides.string(_root.$meta, 'tabs.add', {}) ?? '添加',
           'tabs.tabsManager' => TranslationOverrides.string(_root.$meta, 'tabs.tabsManager', {}) ?? '标签页管理',
           'tabs.selectMode' => TranslationOverrides.string(_root.$meta, 'tabs.selectMode', {}) ?? '选择模式',
@@ -4149,23 +3943,26 @@ extension on TranslationsZhCn {
           'tabs.move.outOfRange' => TranslationOverrides.string(_root.$meta, 'tabs.move.outOfRange', {}) ?? '超出范围',
           'tabs.move.pleaseEnterValidTabNumber' =>
             TranslationOverrides.string(_root.$meta, 'tabs.move.pleaseEnterValidTabNumber', {}) ?? '请输入一个有效的标签页编号',
-          'tabs.move.moveTo' =>
-            ({required String formattedNumber}) =>
-                TranslationOverrides.string(_root.$meta, 'tabs.move.moveTo', {'formattedNumber': formattedNumber}) ?? '移动至 #${formattedNumber}',
+          'tabs.move.moveTo' => ({
+            required String formattedNumber,
+          }) => TranslationOverrides.string(_root.$meta, 'tabs.move.moveTo', {'formattedNumber': formattedNumber}) ?? '移动至 #${formattedNumber}',
           'tabs.move.preview' => TranslationOverrides.string(_root.$meta, 'tabs.move.preview', {}) ?? '预览：',
           'history.searchHistory' => TranslationOverrides.string(_root.$meta, 'history.searchHistory', {}) ?? '搜索历史',
           'history.searchHistoryIsEmpty' => TranslationOverrides.string(_root.$meta, 'history.searchHistoryIsEmpty', {}) ?? '搜索历史是空的',
           'history.searchHistoryIsDisabled' => TranslationOverrides.string(_root.$meta, 'history.searchHistoryIsDisabled', {}) ?? '已禁用搜索历史',
           'history.searchHistoryRequiresDatabase' =>
             TranslationOverrides.string(_root.$meta, 'history.searchHistoryRequiresDatabase', {}) ?? '在设置中启用数据库以记录搜索历史',
-          'history.lastSearch' =>
-            ({required String search}) => TranslationOverrides.string(_root.$meta, 'history.lastSearch', {'search': search}) ?? '上次的搜索： ${search}',
-          'history.lastSearchWithDate' =>
-            ({required String date}) => TranslationOverrides.string(_root.$meta, 'history.lastSearchWithDate', {'date': date}) ?? '上次的搜索： ${date}',
+          'history.lastSearch' => ({
+            required String search,
+          }) => TranslationOverrides.string(_root.$meta, 'history.lastSearch', {'search': search}) ?? '上次的搜索： ${search}',
+          'history.lastSearchWithDate' => ({
+            required String date,
+          }) => TranslationOverrides.string(_root.$meta, 'history.lastSearchWithDate', {'date': date}) ?? '上次的搜索： ${date}',
           'history.unknownBooruType' => TranslationOverrides.string(_root.$meta, 'history.unknownBooruType', {}) ?? '未知的Booru类型！',
-          'history.unknownBooru' =>
-            ({required String name, required String type}) =>
-                TranslationOverrides.string(_root.$meta, 'history.unknownBooru', {'name': name, 'type': type}) ?? '未知的Booru (${name}-${type})',
+          'history.unknownBooru' => ({
+            required String name,
+            required String type,
+          }) => TranslationOverrides.string(_root.$meta, 'history.unknownBooru', {'name': name, 'type': type}) ?? '未知的Booru (${name}-${type})',
           'history.open' => TranslationOverrides.string(_root.$meta, 'history.open', {}) ?? '打开',
           'history.openInNewTab' => TranslationOverrides.string(_root.$meta, 'history.openInNewTab', {}) ?? '在新标签页中打开',
           'history.removeFromFavourites' => TranslationOverrides.string(_root.$meta, 'history.removeFromFavourites', {}) ?? '从收藏中移除',
@@ -4202,8 +3999,9 @@ extension on TranslationsZhCn {
           'webview.captchaCompleted' => TranslationOverrides.string(_root.$meta, 'webview.captchaCompleted', {}) ?? '已通过验证码',
           'webview.navigation.enterUrlLabel' => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterUrlLabel', {}) ?? '输入链接',
           'webview.navigation.enterCustomUrl' => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterCustomUrl', {}) ?? '输入自定义链接',
-          'webview.navigation.navigateTo' =>
-            ({required String url}) => TranslationOverrides.string(_root.$meta, 'webview.navigation.navigateTo', {'url': url}) ?? '前往 ${url}',
+          'webview.navigation.navigateTo' => ({
+            required String url,
+          }) => TranslationOverrides.string(_root.$meta, 'webview.navigation.navigateTo', {'url': url}) ?? '前往 ${url}',
           'webview.navigation.listCookies' => TranslationOverrides.string(_root.$meta, 'webview.navigation.listCookies', {}) ?? '列出cookies',
           'webview.navigation.clearCookies' => TranslationOverrides.string(_root.$meta, 'webview.navigation.clearCookies', {}) ?? '清除cookies',
           'webview.navigation.cookiesGone' =>
@@ -4226,9 +4024,7 @@ extension on TranslationsZhCn {
           'settings.language.title' => TranslationOverrides.string(_root.$meta, 'settings.language.title', {}) ?? '语言',
           'settings.language.system' => TranslationOverrides.string(_root.$meta, 'settings.language.system', {}) ?? '跟随系统',
           'settings.language.helpUsTranslate' => TranslationOverrides.string(_root.$meta, 'settings.language.helpUsTranslate', {}) ?? '帮助我们翻译',
-          'settings.language.visitForDetails' =>
-            TranslationOverrides.string(_root.$meta, 'settings.language.visitForDetails', {}) ??
-                '访问 <a href=\'https://github.com/NO-ob/LoliSnatcher_Droid/blob/master/CONTRIBUTING.md#localization--translations\'>GitHub</a> 查看详情，或点击下面的图片前往POEditor',
+          'settings.language.visitForDetails' => TranslationOverrides.string(_root.$meta, 'settings.language.visitForDetails', {}) ?? '访问 <a href=\'https://github.com/NO-ob/LoliSnatcher_Droid/blob/master/CONTRIBUTING.md#localization--translations\'>GitHub</a> 查看详情，或点击下面的图片前往POEditor',
           'settings.booru.title' => TranslationOverrides.string(_root.$meta, 'settings.booru.title', {}) ?? 'Boorus & 搜索',
           'settings.booru.defaultTags' => TranslationOverrides.string(_root.$meta, 'settings.booru.defaultTags', {}) ?? '默认标签',
           'settings.booru.itemsPerPage' => TranslationOverrides.string(_root.$meta, 'settings.booru.itemsPerPage', {}) ?? '每页加载数量',
@@ -4415,42 +4211,6 @@ extension on TranslationsZhCn {
           'settings.interface.handSideValues.left' => TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.left', {}) ?? '左手',
           'settings.interface.handSideValues.right' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.right', {}) ?? '右手',
-          'settings.interface.tabManagerBottomBar' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBar', {}) ?? '标签管理器底部操作栏',
-          'settings.interface.tabManagerBottomBarSubtitle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBarSubtitle', {}) ??
-                '在标签管理器底部显示滚动到顶部/当前/底部和关闭按钮。新建标签/新建分组的悬浮按钮始终显示。',
-          'settings.interface.drawerBottomAlign' => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlign', {}) ?? '主抽屉底部对齐',
-          'settings.interface.drawerBottomAlignSubtitle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlignSubtitle', {}) ??
-                '将侧抽屉的内容从底部向上堆叠（搜索、当前标签、标签操作、其他），便于单手拇指操作。',
-          'settings.interface.drawerLayoutTitle' => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutTitle', {}) ?? '抽屉布局',
-          'settings.interface.drawerLayoutSubtitle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutSubtitle', {}) ?? '选择侧抽屉中显示哪些项目及其顺序。',
-          'settings.interface.drawerLayoutPinned' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutPinned', {}) ?? '已固定 — 始终显示',
-          'settings.interface.drawerLayoutRestoreDefaults' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutRestoreDefaults', {}) ?? '恢复默认',
-          'settings.interface.drawerLayoutBottomAlignHint' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutBottomAlignHint', {}) ?? '底部对齐已开启 — 此列表中的第一项将显示在抽屉底部。',
-          'settings.interface.drawerItems.search' => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.search', {}) ?? '搜索栏',
-          'settings.interface.drawerItems.tabSelector' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.tabSelector', {}) ?? '当前标签卡片',
-          'settings.interface.drawerItems.tabButtons' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.tabButtons', {}) ?? '标签按钮',
-          'settings.interface.drawerItems.multibooruToggle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.multibooruToggle', {}) ?? '多 Booru 开关',
-          'settings.interface.drawerItems.lockApp' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.lockApp', {}) ?? '锁定应用',
-          'settings.interface.drawerItems.settings' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.settings', {}) ?? '设置',
-          'settings.interface.drawerItems.webview' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.webview', {}) ?? '打开网页视图',
-          'settings.interface.drawerItems.updateAvailable' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.updateAvailable', {}) ?? '有可用更新',
-          'settings.interface.drawerItems.closeApp' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.closeApp', {}) ?? '关闭应用',
-          'settings.interface.drawerItems.mascot' => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.mascot', {}) ?? '吉祥物图片',
           'settings.theme.title' => TranslationOverrides.string(_root.$meta, 'settings.theme.title', {}) ?? '主题',
           'settings.theme.themeMode' => TranslationOverrides.string(_root.$meta, 'settings.theme.themeMode', {}) ?? '主题模式',
           'settings.theme.blackBg' => TranslationOverrides.string(_root.$meta, 'settings.theme.blackBg', {}) ?? '黑色背景',
@@ -4515,9 +4275,6 @@ extension on TranslationsZhCn {
           'settings.viewer.enableRotation' => TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotation', {}) ?? '允许旋转',
           'settings.viewer.enableRotationSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotationSubtitle', {}) ?? '双击重置旋转',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.viewer.toolbarButtonsOrder' => TranslationOverrides.string(_root.$meta, 'settings.viewer.toolbarButtonsOrder', {}) ?? '工具栏按钮顺序',
           'settings.viewer.buttonsOrder' => TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonsOrder', {}) ?? '按钮顺序',
           'settings.viewer.longPressToChangeItemOrder' =>
@@ -4619,6 +4376,9 @@ extension on TranslationsZhCn {
             TranslationOverrides.string(_root.$meta, 'settings.video.disableVideosHelp', {}) ?? '针对低端设备播放视频崩溃的问题。提供在外部播放器或浏览器中播放的选项。',
           'settings.video.autoplayVideos' => TranslationOverrides.string(_root.$meta, 'settings.video.autoplayVideos', {}) ?? '自动播放视频',
           'settings.video.startVideosMuted' => TranslationOverrides.string(_root.$meta, 'settings.video.startVideosMuted', {}) ?? '播放时静音',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.video.experimental' => TranslationOverrides.string(_root.$meta, 'settings.video.experimental', {}) ?? '[实验性]',
           'settings.video.videoPlayerBackend' => TranslationOverrides.string(_root.$meta, 'settings.video.videoPlayerBackend', {}) ?? '视频播放后端',
           'settings.video.backendDefault' => TranslationOverrides.string(_root.$meta, 'settings.video.backendDefault', {}) ?? '默认',
@@ -4702,9 +4462,9 @@ extension on TranslationsZhCn {
             TranslationOverrides.string(_root.$meta, 'settings.database.createIndexesDebug', {}) ?? '创建索引[调试]',
           'settings.database.dropIndexesDebug' => TranslationOverrides.string(_root.$meta, 'settings.database.dropIndexesDebug', {}) ?? '清除索引[调试]',
           'settings.database.searchHistoryInfo' => TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryInfo', {}) ?? '需要启用数据库。',
-          'settings.database.searchHistoryRecords' =>
-            ({required int limit}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryRecords', {'limit': limit}) ?? '会保存上 ${limit} 次搜索',
+          'settings.database.searchHistoryRecords' => ({
+            required int limit,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryRecords', {'limit': limit}) ?? '会保存上 ${limit} 次搜索',
           'settings.database.searchHistoryTapInfo' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryTapInfo', {}) ?? '点击记录可进行操作（删除，收藏…）',
           'settings.database.searchHistoryFavouritesInfo' =>
@@ -4753,28 +4513,30 @@ extension on TranslationsZhCn {
             TranslationOverrides.string(_root.$meta, 'settings.database.failedItemsPurgeInfo', {}) ?? '更新失败的项目将会从数据库中移除',
           'settings.database.updateSankakuUrls' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.updateSankakuUrls', {}) ?? '更新Sankaku链接',
-          'settings.database.updating' =>
-            ({required int count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.database.updating', {'count': count}) ?? '正在更新 ${count} 个项目：',
-          'settings.database.left' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'settings.database.left', {'count': count}) ?? '剩余：${count}',
-          'settings.database.done' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'settings.database.done', {'count': count}) ?? '已完成：${count}',
-          'settings.database.failedSkipped' =>
-            ({required int count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.database.failedSkipped', {'count': count}) ?? '失败/已跳过：${count}',
+          'settings.database.updating' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.updating', {'count': count}) ?? '正在更新 ${count} 个项目：',
+          'settings.database.left' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.left', {'count': count}) ?? '剩余：${count}',
+          'settings.database.done' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.done', {'count': count}) ?? '已完成：${count}',
+          'settings.database.failedSkipped' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.failedSkipped', {'count': count}) ?? '失败/已跳过：${count}',
           'settings.database.sankakuRateLimitWarning' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.sankakuRateLimitWarning', {}) ??
                 '如果您看到\'失败\'的数量一直在增长，请稍后再尝试，这可能是触发了速率限制或您的IP被Sankaku屏蔽。',
           'settings.database.skipCurrentItem' => TranslationOverrides.string(_root.$meta, 'settings.database.skipCurrentItem', {}) ?? '点这里跳过当前项目',
           'settings.database.useIfStuck' => TranslationOverrides.string(_root.$meta, 'settings.database.useIfStuck', {}) ?? '在看起来卡住时使用',
           'settings.database.pressToStop' => TranslationOverrides.string(_root.$meta, 'settings.database.pressToStop', {}) ?? '点这里停止',
-          'settings.database.purgeFailedItems' =>
-            ({required int count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.database.purgeFailedItems', {'count': count}) ?? '清除失败的条目（${count} 个）',
-          'settings.database.retryFailedItems' =>
-            ({required int count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.database.retryFailedItems', {'count': count}) ?? '重试失败的条目（${count} 个）',
+          'settings.database.purgeFailedItems' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.purgeFailedItems', {'count': count}) ?? '清除失败的条目（${count} 个）',
+          'settings.database.retryFailedItems' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.retryFailedItems', {'count': count}) ?? '重试失败的条目（${count} 个）',
           'settings.backupAndRestore.title' => TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.title', {}) ?? '备份&恢复',
           'settings.backupAndRestore.duplicateFileDetectedTitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.duplicateFileDetectedTitle', {}) ?? '检测到重名的文件！',
@@ -4873,9 +4635,9 @@ extension on TranslationsZhCn {
             TranslationOverrides.string(_root.$meta, 'settings.network.customUserAgentTitle', {}) ?? '自定义User-Agent',
           'settings.network.keepEmptyForDefault' =>
             TranslationOverrides.string(_root.$meta, 'settings.network.keepEmptyForDefault', {}) ?? '留空以使用默认值',
-          'settings.network.defaultUserAgent' =>
-            ({required String agent}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.network.defaultUserAgent', {'agent': agent}) ?? '默认值：${agent}',
+          'settings.network.defaultUserAgent' => ({
+            required String agent,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.network.defaultUserAgent', {'agent': agent}) ?? '默认值：${agent}',
           'settings.network.userAgentUsedOnRequests' =>
             TranslationOverrides.string(_root.$meta, 'settings.network.userAgentUsedOnRequests', {}) ?? '用于大多数Booru请求和网页浏览',
           'settings.network.valueSavedAfterLeaving' =>
@@ -4886,16 +4648,16 @@ extension on TranslationsZhCn {
           'settings.network.cookieCleaner' => TranslationOverrides.string(_root.$meta, 'settings.network.cookieCleaner', {}) ?? 'Cookie清理器',
           'settings.network.selectBooruToClearCookies' =>
             TranslationOverrides.string(_root.$meta, 'settings.network.selectBooruToClearCookies', {}) ?? '选择一个要清理Cookie的Booru，或留空清理所有的',
-          'settings.network.cookiesFor' =>
-            ({required String booruName}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.network.cookiesFor', {'booruName': booruName}) ?? '${booruName} 的Cookies:',
-          'settings.network.cookieDeleted' =>
-            ({required String cookieName}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.network.cookieDeleted', {'cookieName': cookieName}) ?? '已删除Cookie «${cookieName}»',
+          'settings.network.cookiesFor' => ({
+            required String booruName,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.network.cookiesFor', {'booruName': booruName}) ?? '${booruName} 的Cookies:',
+          'settings.network.cookieDeleted' => ({
+            required String cookieName,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.network.cookieDeleted', {'cookieName': cookieName}) ?? '已删除Cookie «${cookieName}»',
           'settings.network.clearCookies' => TranslationOverrides.string(_root.$meta, 'settings.network.clearCookies', {}) ?? '清除Cookies',
-          'settings.network.clearCookiesFor' =>
-            ({required String booruName}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.network.clearCookiesFor', {'booruName': booruName}) ?? '清除${booruName}的Cookies',
+          'settings.network.clearCookiesFor' => ({
+            required String booruName,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.network.clearCookiesFor', {'booruName': booruName}) ?? '清除${booruName}的Cookies',
           'settings.network.cookiesForBooruDeleted' =>
             ({required String booruName}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.network.cookiesForBooruDeleted', {'booruName': booruName}) ??
@@ -4957,8 +4719,9 @@ extension on TranslationsZhCn {
           'settings.cache.requiresCustomStorageDirectory' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.requiresCustomStorageDirectory', {}) ?? '需要自定义目录',
           'settings.cache.setStorageDirectory' => TranslationOverrides.string(_root.$meta, 'settings.cache.setStorageDirectory', {}) ?? '设置存储目录',
-          'settings.cache.currentPath' =>
-            ({required String path}) => TranslationOverrides.string(_root.$meta, 'settings.cache.currentPath', {'path': path}) ?? '当前：${path}',
+          'settings.cache.currentPath' => ({
+            required String path,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.cache.currentPath', {'path': path}) ?? '当前：${path}',
           'settings.cache.resetStorageDirectory' => TranslationOverrides.string(_root.$meta, 'settings.cache.resetStorageDirectory', {}) ?? '重置存储目录',
           'settings.cache.cachePreviews' => TranslationOverrides.string(_root.$meta, 'settings.cache.cachePreviews', {}) ?? '缓存预览图',
           'settings.cache.cacheMedia' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheMedia', {}) ?? '缓存媒体',
@@ -4981,11 +4744,13 @@ extension on TranslationsZhCn {
           'settings.cache.cacheStats' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheStats', {}) ?? '缓存统计：',
           'settings.cache.loading' => TranslationOverrides.string(_root.$meta, 'settings.cache.loading', {}) ?? '加载中…',
           'settings.cache.empty' => TranslationOverrides.string(_root.$meta, 'settings.cache.empty', {}) ?? '空的',
-          'settings.cache.inFilesPlural' =>
-            ({required String size, required int count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.cache.inFilesPlural', {'size': size, 'count': count}) ?? '${size}, ${count} 个文件',
-          'settings.cache.inFileSingular' =>
-            ({required String size}) => TranslationOverrides.string(_root.$meta, 'settings.cache.inFileSingular', {'size': size}) ?? '${size}, 1个文件',
+          'settings.cache.inFilesPlural' => ({
+            required String size,
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.cache.inFilesPlural', {'size': size, 'count': count}) ?? '${size}, ${count} 个文件',
+          'settings.cache.inFileSingular' => ({
+            required String size,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.cache.inFileSingular', {'size': size}) ?? '${size}, 1个文件',
           'settings.cache.cacheTypeTotal' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeTotal', {}) ?? '总计',
           'settings.cache.cacheTypeFavicons' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeFavicons', {}) ?? '网站图标',
           'settings.cache.cacheTypeThumbnails' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeThumbnails', {}) ?? '缩略图',
@@ -4993,8 +4758,9 @@ extension on TranslationsZhCn {
           'settings.cache.cacheTypeMedia' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeMedia', {}) ?? '媒体',
           'settings.cache.cacheTypeWebView' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeWebView', {}) ?? '网页缓存',
           'settings.cache.cacheCleared' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheCleared', {}) ?? '已清除缓存',
-          'settings.cache.clearedCacheType' =>
-            ({required String type}) => TranslationOverrides.string(_root.$meta, 'settings.cache.clearedCacheType', {'type': type}) ?? '已清除${type}缓存',
+          'settings.cache.clearedCacheType' => ({
+            required String type,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.cache.clearedCacheType', {'type': type}) ?? '已清除${type}缓存',
           'settings.cache.clearAllCache' => TranslationOverrides.string(_root.$meta, 'settings.cache.clearAllCache', {}) ?? '清除所有缓存',
           'settings.cache.clearedCacheCompletely' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.clearedCacheCompletely', {}) ?? '已完成缓存清除',
@@ -5035,9 +4801,9 @@ extension on TranslationsZhCn {
           'settings.sync.port' => TranslationOverrides.string(_root.$meta, 'settings.sync.port', {}) ?? '端口',
           'settings.sync.portPlaceholder' => TranslationOverrides.string(_root.$meta, 'settings.sync.portPlaceholder', {}) ?? '主机端口（如7777）',
           'settings.sync.sendFavourites' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendFavourites', {}) ?? '发送收藏',
-          'settings.sync.favouritesCount' =>
-            ({required String count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.sync.favouritesCount', {'count': count}) ?? '收藏数： ${count}',
+          'settings.sync.favouritesCount' => ({
+            required String count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.sync.favouritesCount', {'count': count}) ?? '收藏数： ${count}',
           'settings.sync.sendFavouritesLegacy' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendFavouritesLegacy', {}) ?? '发送收藏（旧版）',
           'settings.sync.syncFavsFrom' => TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFrom', {}) ?? '从 #… 同步收藏',
           'settings.sync.syncFavsFromHelpText1' =>
@@ -5048,8 +4814,9 @@ extension on TranslationsZhCn {
           'settings.sync.syncFavsFromHelpText4' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText4', {}) ?? '收藏顺序：从最旧 (0) 到最新 (X)',
           'settings.sync.sendSnatchedHistory' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendSnatchedHistory', {}) ?? '发送下载记录',
-          'settings.sync.snatchedCount' =>
-            ({required String count}) => TranslationOverrides.string(_root.$meta, 'settings.sync.snatchedCount', {'count': count}) ?? '已下载：${count}',
+          'settings.sync.snatchedCount' => ({
+            required String count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.sync.snatchedCount', {'count': count}) ?? '已下载：${count}',
           'settings.sync.syncSnatchedFrom' => TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFrom', {}) ?? '从#…开始同步下载',
           'settings.sync.syncSnatchedFromHelpText1' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText1', {}) ?? '允许设置同步的起始位置，适用于您之前已经同步了所有的下载记录，现在只想同步最新项目的情况',
@@ -5061,11 +4828,13 @@ extension on TranslationsZhCn {
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText4', {}) ?? '下载记录顺序：从最旧 (0) 到最新 (X)',
           'settings.sync.sendSettings' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendSettings', {}) ?? '发送设置',
           'settings.sync.sendBooruConfigs' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendBooruConfigs', {}) ?? '发送Booru配置',
-          'settings.sync.configsCount' =>
-            ({required String count}) => TranslationOverrides.string(_root.$meta, 'settings.sync.configsCount', {'count': count}) ?? '配置数量：${count}',
+          'settings.sync.configsCount' => ({
+            required String count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.sync.configsCount', {'count': count}) ?? '配置数量：${count}',
           'settings.sync.sendTabs' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendTabs', {}) ?? '发送标签页',
-          'settings.sync.tabsCount' =>
-            ({required String count}) => TranslationOverrides.string(_root.$meta, 'settings.sync.tabsCount', {'count': count}) ?? '标签页数量：${count}',
+          'settings.sync.tabsCount' => ({
+            required String count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.sync.tabsCount', {'count': count}) ?? '标签页数量：${count}',
           'settings.sync.tabsSyncMode' => TranslationOverrides.string(_root.$meta, 'settings.sync.tabsSyncMode', {}) ?? '标签页同步模式',
           'settings.sync.tabsSyncModeMerge' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.tabsSyncModeMerge', {}) ?? '合并：将此设备上的标签页合并到另一台设备上，已存在的和包含未知Booru的标签页将被忽略',
@@ -5074,8 +4843,9 @@ extension on TranslationsZhCn {
           'settings.sync.merge' => TranslationOverrides.string(_root.$meta, 'settings.sync.merge', {}) ?? '合并',
           'settings.sync.replace' => TranslationOverrides.string(_root.$meta, 'settings.sync.replace', {}) ?? '替换',
           'settings.sync.sendTags' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendTags', {}) ?? '发送标签',
-          'settings.sync.tagsCount' =>
-            ({required String count}) => TranslationOverrides.string(_root.$meta, 'settings.sync.tagsCount', {'count': count}) ?? '标签数：${count}',
+          'settings.sync.tagsCount' => ({
+            required String count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.sync.tagsCount', {'count': count}) ?? '标签数：${count}',
           'settings.sync.tagsSyncMode' => TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncMode', {}) ?? '标签同步模式',
           'settings.sync.tagsSyncModePreferTypeIfNone' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncModePreferTypeIfNone', {}) ?? '保留类型：如果标签类型已存在于其他设备上，但在此设备上不存在，则会跳过该标签',
@@ -5098,8 +4868,9 @@ extension on TranslationsZhCn {
             TranslationOverrides.string(_root.$meta, 'settings.sync.receiverInstructions', {}) ?? '启用一个接受数据的服务器。为了安全请不要在公共WiFi中使用',
           'settings.sync.availableNetworkInterfaces' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.availableNetworkInterfaces', {}) ?? '可用的网络接口',
-          'settings.sync.selectedInterfaceIP' =>
-            ({required String ip}) => TranslationOverrides.string(_root.$meta, 'settings.sync.selectedInterfaceIP', {'ip': ip}) ?? '已选择的接口IP: ${ip}',
+          'settings.sync.selectedInterfaceIP' => ({
+            required String ip,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.sync.selectedInterfaceIP', {'ip': ip}) ?? '已选择的接口IP: ${ip}',
           'settings.sync.serverPort' => TranslationOverrides.string(_root.$meta, 'settings.sync.serverPort', {}) ?? '服务器端口',
           'settings.sync.serverPortPlaceholder' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.serverPortPlaceholder', {}) ?? '（如果留空会默认设置为8080）',
@@ -5157,15 +4928,17 @@ extension on TranslationsZhCn {
             TranslationOverrides.string(_root.$meta, 'settings.debug.blurImagesAndMuteVideosDevOnly', {}) ?? '模糊图片+静音视频 [开发者专用]',
           'settings.debug.enableDragScrollOnListsDesktopOnly' =>
             TranslationOverrides.string(_root.$meta, 'settings.debug.enableDragScrollOnListsDesktopOnly', {}) ?? '在列表中启用拖动 [仅限桌面模式]',
-          'settings.debug.animationSpeed' =>
-            ({required double speed}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.debug.animationSpeed', {'speed': speed}) ?? '动画速度 （${speed}）',
+          'settings.debug.animationSpeed' => ({
+            required double speed,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.debug.animationSpeed', {'speed': speed}) ?? '动画速度 （${speed}）',
           'settings.debug.tagsManager' => TranslationOverrides.string(_root.$meta, 'settings.debug.tagsManager', {}) ?? '标签管理器',
-          'settings.debug.resolution' =>
-            ({required String width, required String height}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.debug.resolution', {'width': width, 'height': height}) ?? '分辨率：${width}x${height}',
-          'settings.debug.pixelRatio' =>
-            ({required String ratio}) => TranslationOverrides.string(_root.$meta, 'settings.debug.pixelRatio', {'ratio': ratio}) ?? '像素比率: ${ratio}',
+          'settings.debug.resolution' => ({
+            required String width,
+            required String height,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.debug.resolution', {'width': width, 'height': height}) ?? '分辨率：${width}x${height}',
+          'settings.debug.pixelRatio' => ({
+            required String ratio,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.debug.pixelRatio', {'ratio': ratio}) ?? '像素比率: ${ratio}',
           'settings.debug.logger' => TranslationOverrides.string(_root.$meta, 'settings.debug.logger', {}) ?? '日志记录',
           'settings.debug.webview' => TranslationOverrides.string(_root.$meta, 'settings.debug.webview', {}) ?? 'Webview',
           'settings.debug.deleteAllCookies' => TranslationOverrides.string(_root.$meta, 'settings.debug.deleteAllCookies', {}) ?? '删除所有Cookies',
@@ -5203,22 +4976,23 @@ extension on TranslationsZhCn {
           'pageChanger.pageLabel' => TranslationOverrides.string(_root.$meta, 'pageChanger.pageLabel', {}) ?? '页数',
           'pageChanger.delayBetweenLoadings' => TranslationOverrides.string(_root.$meta, 'pageChanger.delayBetweenLoadings', {}) ?? '加载间隔（毫秒）',
           'pageChanger.delayInMs' => TranslationOverrides.string(_root.$meta, 'pageChanger.delayInMs', {}) ?? '毫秒',
-          'pageChanger.currentPage' =>
-            ({required int number}) => TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? '当前页#${number}',
-          'pageChanger.possibleMaxPage' =>
-            ({required int number}) =>
-                TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? '可能的最高页数 #~${number}',
+          'pageChanger.currentPage' => ({
+            required int number,
+          }) => TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? '当前页#${number}',
+          'pageChanger.possibleMaxPage' => ({
+            required int number,
+          }) => TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? '可能的最高页数 #~${number}',
           'pageChanger.searchCurrentlyRunning' => TranslationOverrides.string(_root.$meta, 'pageChanger.searchCurrentlyRunning', {}) ?? '有搜索正在运行!',
           'pageChanger.jumpToPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.jumpToPage', {}) ?? '跳转至页数',
           'pageChanger.searchUntilPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.searchUntilPage', {}) ?? '一直搜到页数',
           'pageChanger.stopSearching' => TranslationOverrides.string(_root.$meta, 'pageChanger.stopSearching', {}) ?? '停止搜索',
           'tagsFiltersDialogs.emptyInput' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.emptyInput', {}) ?? '输入为空！',
-          'tagsFiltersDialogs.addNewFilter' =>
-            ({required String type}) =>
-                TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.addNewFilter', {'type': type}) ?? '[添加了新的 ${type} 过滤器]',
-          'tagsFiltersDialogs.newTagFilter' =>
-            ({required String type}) =>
-                TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.newTagFilter', {'type': type}) ?? '新的 ${type} 标签过滤器',
+          'tagsFiltersDialogs.addNewFilter' => ({
+            required String type,
+          }) => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.addNewFilter', {'type': type}) ?? '[添加了新的 ${type} 过滤器]',
+          'tagsFiltersDialogs.newTagFilter' => ({
+            required String type,
+          }) => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.newTagFilter', {'type': type}) ?? '新的 ${type} 标签过滤器',
           'tagsFiltersDialogs.newFilter' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.newFilter', {}) ?? '新过滤器',
           'tagsFiltersDialogs.editFilter' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.editFilter', {}) ?? '编辑过滤器',
           'tagsManager.title' => TranslationOverrides.string(_root.$meta, 'tagsManager.title', {}) ?? '标签',
@@ -5226,9 +5000,9 @@ extension on TranslationsZhCn {
           'tagsManager.name' => TranslationOverrides.string(_root.$meta, 'tagsManager.name', {}) ?? '名称',
           'tagsManager.type' => TranslationOverrides.string(_root.$meta, 'tagsManager.type', {}) ?? '类型',
           'tagsManager.add' => TranslationOverrides.string(_root.$meta, 'tagsManager.add', {}) ?? '添加',
-          'tagsManager.staleAfter' =>
-            ({required String staleText}) =>
-                TranslationOverrides.string(_root.$meta, 'tagsManager.staleAfter', {'staleText': staleText}) ?? '在 ${staleText} 后过期',
+          'tagsManager.staleAfter' => ({
+            required String staleText,
+          }) => TranslationOverrides.string(_root.$meta, 'tagsManager.staleAfter', {'staleText': staleText}) ?? '在 ${staleText} 后过期',
           'tagsManager.addedATab' => TranslationOverrides.string(_root.$meta, 'tagsManager.addedATab', {}) ?? '已添加标签页',
           'tagsManager.addATab' => TranslationOverrides.string(_root.$meta, 'tagsManager.addATab', {}) ?? '添加标签页',
           'tagsManager.copy' => TranslationOverrides.string(_root.$meta, 'tagsManager.copy', {}) ?? '复制',
@@ -5263,18 +5037,20 @@ extension on TranslationsZhCn {
             ({required int statusCode, required String reasonPhrase}) =>
                 TranslationOverrides.string(_root.$meta, 'loliSync.testError', {'statusCode': statusCode, 'reasonPhrase': reasonPhrase}) ??
                 '测试失败: ${statusCode} ${reasonPhrase}',
-          'loliSync.testErrorException' =>
-            ({required String error}) =>
-                TranslationOverrides.string(_root.$meta, 'loliSync.testErrorException', {'error': error}) ?? '测试失败: ${error}',
+          'loliSync.testErrorException' => ({
+            required String error,
+          }) => TranslationOverrides.string(_root.$meta, 'loliSync.testErrorException', {'error': error}) ?? '测试失败: ${error}',
           'loliSync.testSuccess' => TranslationOverrides.string(_root.$meta, 'loliSync.testSuccess', {}) ?? '测试请求返回了积极的回应',
           'loliSync.testSuccessMessage' => TranslationOverrides.string(_root.$meta, 'loliSync.testSuccessMessage', {}) ?? '另一台设备上应该有一条\'Test\'信息',
           'imageSearch.title' => TranslationOverrides.string(_root.$meta, 'imageSearch.title', {}) ?? '图像搜索',
           'tagView.tags' => TranslationOverrides.string(_root.$meta, 'tagView.tags', {}) ?? '标签',
           'tagView.comments' => TranslationOverrides.string(_root.$meta, 'tagView.comments', {}) ?? '评论',
-          'tagView.showNotes' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'tagView.showNotes', {'count': count}) ?? '显示笔记 (${count})',
-          'tagView.hideNotes' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'tagView.hideNotes', {'count': count}) ?? '隐藏笔记 (${count})',
+          'tagView.showNotes' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'tagView.showNotes', {'count': count}) ?? '显示笔记 (${count})',
+          'tagView.hideNotes' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'tagView.hideNotes', {'count': count}) ?? '隐藏笔记 (${count})',
           'tagView.loadNotes' => TranslationOverrides.string(_root.$meta, 'tagView.loadNotes', {}) ?? '加载笔记',
           'tagView.thisTagAlreadyInSearch' => TranslationOverrides.string(_root.$meta, 'tagView.thisTagAlreadyInSearch', {}) ?? '当前搜索中已包含此标签：',
           'tagView.addedToCurrentSearch' => TranslationOverrides.string(_root.$meta, 'tagView.addedToCurrentSearch', {}) ?? '已添加至当前搜索：',
@@ -5318,9 +5094,6 @@ extension on TranslationsZhCn {
           'tagView.tryAgain' => TranslationOverrides.string(_root.$meta, 'tagView.tryAgain', {}) ?? '重试',
           'tagView.detectedLinks' => TranslationOverrides.string(_root.$meta, 'tagView.detectedLinks', {}) ?? '检测到链接：',
           'tagView.relatedTabs' => TranslationOverrides.string(_root.$meta, 'tagView.relatedTabs', {}) ?? '相关的标签页',
-          _ => null,
-        } ??
-        switch (path) {
           'tagView.tabsWithOnlyTag' => TranslationOverrides.string(_root.$meta, 'tagView.tabsWithOnlyTag', {}) ?? '只有此标签的标签页',
           'tagView.tabsWithOnlyTagDifferentBooru' =>
             TranslationOverrides.string(_root.$meta, 'tagView.tabsWithOnlyTagDifferentBooru', {}) ?? '只有此标签的不同站点的标签页',
@@ -5330,22 +5103,26 @@ extension on TranslationsZhCn {
           'pinnedTags.unpinTag' => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinTag', {}) ?? '取消固定标签',
           'pinnedTags.pin' => TranslationOverrides.string(_root.$meta, 'pinnedTags.pin', {}) ?? '固定',
           'pinnedTags.unpin' => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpin', {}) ?? '取消固定',
-          'pinnedTags.pinQuestion' =>
-            ({required String tag}) => TranslationOverrides.string(_root.$meta, 'pinnedTags.pinQuestion', {'tag': tag}) ?? '将 «${tag}» 固定到快速访问吗？',
-          'pinnedTags.unpinQuestion' =>
-            ({required String tag}) => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinQuestion', {'tag': tag}) ?? '将 «${tag}» 从快速访问移除吗？',
-          'pinnedTags.onlyForBooru' =>
-            ({required String name}) => TranslationOverrides.string(_root.$meta, 'pinnedTags.onlyForBooru', {'name': name}) ?? '仅用于 ${name}',
+          'pinnedTags.pinQuestion' => ({
+            required String tag,
+          }) => TranslationOverrides.string(_root.$meta, 'pinnedTags.pinQuestion', {'tag': tag}) ?? '将 «${tag}» 固定到快速访问吗？',
+          'pinnedTags.unpinQuestion' => ({
+            required String tag,
+          }) => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinQuestion', {'tag': tag}) ?? '将 «${tag}» 从快速访问移除吗？',
+          'pinnedTags.onlyForBooru' => ({
+            required String name,
+          }) => TranslationOverrides.string(_root.$meta, 'pinnedTags.onlyForBooru', {'name': name}) ?? '仅用于 ${name}',
           'pinnedTags.labelsOptional' => TranslationOverrides.string(_root.$meta, 'pinnedTags.labelsOptional', {}) ?? '标注（可选）',
           'pinnedTags.typeAndPressAdd' => TranslationOverrides.string(_root.$meta, 'pinnedTags.typeAndPressAdd', {}) ?? '输入后点击加号添加',
           'pinnedTags.selectExistingLabel' => TranslationOverrides.string(_root.$meta, 'pinnedTags.selectExistingLabel', {}) ?? '搜索已有标注',
           'pinnedTags.tagPinned' => TranslationOverrides.string(_root.$meta, 'pinnedTags.tagPinned', {}) ?? '已固定标签',
-          'pinnedTags.pinnedForBooru' =>
-            ({required String name, required String labels}) =>
-                TranslationOverrides.string(_root.$meta, 'pinnedTags.pinnedForBooru', {'name': name, 'labels': labels}) ?? '已固定在 ${name}${labels}',
-          'pinnedTags.pinnedGloballyWithLabels' =>
-            ({required String labels}) =>
-                TranslationOverrides.string(_root.$meta, 'pinnedTags.pinnedGloballyWithLabels', {'labels': labels}) ?? '已全局固定${labels}',
+          'pinnedTags.pinnedForBooru' => ({
+            required String name,
+            required String labels,
+          }) => TranslationOverrides.string(_root.$meta, 'pinnedTags.pinnedForBooru', {'name': name, 'labels': labels}) ?? '已固定在 ${name}${labels}',
+          'pinnedTags.pinnedGloballyWithLabels' => ({
+            required String labels,
+          }) => TranslationOverrides.string(_root.$meta, 'pinnedTags.pinnedGloballyWithLabels', {'labels': labels}) ?? '已全局固定${labels}',
           'pinnedTags.tagUnpinned' => TranslationOverrides.string(_root.$meta, 'pinnedTags.tagUnpinned', {}) ?? '已取消固定标签',
           'pinnedTags.all' => TranslationOverrides.string(_root.$meta, 'pinnedTags.all', {}) ?? '所有',
           'pinnedTags.reorderPinnedTags' => TranslationOverrides.string(_root.$meta, 'pinnedTags.reorderPinnedTags', {}) ?? '重新排序固定的标签',
@@ -5361,15 +5138,15 @@ extension on TranslationsZhCn {
           'pinnedTags.tagQueryHint' => TranslationOverrides.string(_root.$meta, 'pinnedTags.tagQueryHint', {}) ?? 'tag_name',
           'pinnedTags.rawQueryHelp' => TranslationOverrides.string(_root.$meta, 'pinnedTags.rawQueryHelp', {}) ?? '可以搜索任何关键词，包括有空格的标签',
           'searchBar.searchForTags' => TranslationOverrides.string(_root.$meta, 'searchBar.searchForTags', {}) ?? '搜索标签',
-          'searchBar.failedToLoadSuggestions' =>
-            ({required String msg}) =>
-                TranslationOverrides.string(_root.$meta, 'searchBar.failedToLoadSuggestions', {'msg': msg}) ?? '无法加载搜索建议。点击重试${msg}',
+          'searchBar.failedToLoadSuggestions' => ({
+            required String msg,
+          }) => TranslationOverrides.string(_root.$meta, 'searchBar.failedToLoadSuggestions', {'msg': msg}) ?? '无法加载搜索建议。点击重试${msg}',
           'searchBar.noSuggestionsFound' => TranslationOverrides.string(_root.$meta, 'searchBar.noSuggestionsFound', {}) ?? '没有搜索建议',
           'searchBar.tagSuggestionsNotAvailable' =>
             TranslationOverrides.string(_root.$meta, 'searchBar.tagSuggestionsNotAvailable', {}) ?? '此Booru站点不支持搜索建议',
-          'searchBar.copiedTagToClipboard' =>
-            ({required String tag}) =>
-                TranslationOverrides.string(_root.$meta, 'searchBar.copiedTagToClipboard', {'tag': tag}) ?? '复制了 «${tag}» 到剪贴板',
+          'searchBar.copiedTagToClipboard' => ({
+            required String tag,
+          }) => TranslationOverrides.string(_root.$meta, 'searchBar.copiedTagToClipboard', {'tag': tag}) ?? '复制了 «${tag}» 到剪贴板',
           'searchBar.prefix' => TranslationOverrides.string(_root.$meta, 'searchBar.prefix', {}) ?? '前缀',
           'searchBar.exclude' => TranslationOverrides.string(_root.$meta, 'searchBar.exclude', {}) ?? '排除 (—)',
           'searchBar.booruNumberPrefix' => TranslationOverrides.string(_root.$meta, 'searchBar.booruNumberPrefix', {}) ?? 'Booru (N#)',
@@ -5392,8 +5169,12 @@ extension on TranslationsZhCn {
           'mobileHome.cancelledByUser' => TranslationOverrides.string(_root.$meta, 'mobileHome.cancelledByUser', {}) ?? '被用户取消',
           'mobileHome.saveAnyway' => TranslationOverrides.string(_root.$meta, 'mobileHome.saveAnyway', {}) ?? '仍然保存',
           'mobileHome.skip' => TranslationOverrides.string(_root.$meta, 'mobileHome.skip', {}) ?? '跳过',
-          'mobileHome.retryAll' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'mobileHome.retryAll', {'count': count}) ?? '全部重试 (${count})',
+          'mobileHome.retryAll' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'mobileHome.retryAll', {'count': count}) ?? '全部重试 (${count})',
+          _ => null,
+        } ??
+        switch (path) {
           'mobileHome.existingFailedOrCancelledItems' =>
             TranslationOverrides.string(_root.$meta, 'mobileHome.existingFailedOrCancelledItems', {}) ?? '已存在，失败或取消的项目',
           'mobileHome.clearAllRetryableItems' => TranslationOverrides.string(_root.$meta, 'mobileHome.clearAllRetryableItems', {}) ?? '清除所有可重试的项目',
@@ -5477,9 +5258,10 @@ extension on TranslationsZhCn {
           'viewer.appBar.selectTags' => TranslationOverrides.string(_root.$meta, 'viewer.appBar.selectTags', {}) ?? '选择的标签',
           'viewer.notes.note' => TranslationOverrides.string(_root.$meta, 'viewer.notes.note', {}) ?? '笔记',
           'viewer.notes.notes' => TranslationOverrides.string(_root.$meta, 'viewer.notes.notes', {}) ?? '笔记',
-          'viewer.notes.coordinates' =>
-            ({required int posX, required int posY}) =>
-                TranslationOverrides.string(_root.$meta, 'viewer.notes.coordinates', {'posX': posX, 'posY': posY}) ?? 'X:${posX}, Y:${posY}',
+          'viewer.notes.coordinates' => ({
+            required int posX,
+            required int posY,
+          }) => TranslationOverrides.string(_root.$meta, 'viewer.notes.coordinates', {'posX': posX, 'posY': posY}) ?? 'X:${posX}, Y:${posY}',
           'common.selectABooru' => TranslationOverrides.string(_root.$meta, 'common.selectABooru', {}) ?? '选择一个Booru',
           'common.booruItemCopiedToClipboard' =>
             TranslationOverrides.string(_root.$meta, 'common.booruItemCopiedToClipboard', {}) ?? 'Booru项目已复制到剪贴板',
@@ -5517,9 +5299,9 @@ extension on TranslationsZhCn {
           'media.loading.loadAnyway' => TranslationOverrides.string(_root.$meta, 'media.loading.loadAnyway', {}) ?? '仍然加载',
           'media.loading.restartLoading' => TranslationOverrides.string(_root.$meta, 'media.loading.restartLoading', {}) ?? '重新加载',
           'media.loading.stopLoading' => TranslationOverrides.string(_root.$meta, 'media.loading.stopLoading', {}) ?? '停止加载',
-          'media.loading.startedSecondsAgo' =>
-            ({required int seconds}) =>
-                TranslationOverrides.string(_root.$meta, 'media.loading.startedSecondsAgo', {'seconds': seconds}) ?? '开始于 ${seconds} 秒前',
+          'media.loading.startedSecondsAgo' => ({
+            required int seconds,
+          }) => TranslationOverrides.string(_root.$meta, 'media.loading.startedSecondsAgo', {'seconds': seconds}) ?? '开始于 ${seconds} 秒前',
           'media.loading.stopReasons.stoppedByUser' =>
             TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.stoppedByUser', {}) ?? '被用户停止',
           'media.loading.stopReasons.loadingError' =>
@@ -5530,10 +5312,12 @@ extension on TranslationsZhCn {
             TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.hiddenByFilters', {}) ?? '被过滤器隐藏：',
           'media.loading.stopReasons.videoError' => TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.videoError', {}) ?? '视频错误',
           'media.loading.fileIsZeroBytes' => TranslationOverrides.string(_root.$meta, 'media.loading.fileIsZeroBytes', {}) ?? '文件大小为零',
-          'media.loading.fileSize' =>
-            ({required String size}) => TranslationOverrides.string(_root.$meta, 'media.loading.fileSize', {'size': size}) ?? '文件大小：${size}',
-          'media.loading.sizeLimit' =>
-            ({required String limit}) => TranslationOverrides.string(_root.$meta, 'media.loading.sizeLimit', {'limit': limit}) ?? '限制：${limit}',
+          'media.loading.fileSize' => ({
+            required String size,
+          }) => TranslationOverrides.string(_root.$meta, 'media.loading.fileSize', {'size': size}) ?? '文件大小：${size}',
+          'media.loading.sizeLimit' => ({
+            required String limit,
+          }) => TranslationOverrides.string(_root.$meta, 'media.loading.sizeLimit', {'limit': limit}) ?? '限制：${limit}',
           'media.loading.tryChangingVideoBackend' =>
             TranslationOverrides.string(_root.$meta, 'media.loading.tryChangingVideoBackend', {}) ?? '总是遇到播放问题？试着调一下[设置>视频>播放后端]',
           'media.video.videosDisabledOrNotSupported' =>
@@ -5547,27 +5331,31 @@ extension on TranslationsZhCn {
           'media.video.openFileInBrowser' => TranslationOverrides.string(_root.$meta, 'media.video.openFileInBrowser', {}) ?? '在浏览器中打开文件',
           'media.video.openPostInBrowser' => TranslationOverrides.string(_root.$meta, 'media.video.openPostInBrowser', {}) ?? '在浏览器中打开帖子',
           'media.video.currentlyChecking' => TranslationOverrides.string(_root.$meta, 'media.video.currentlyChecking', {}) ?? '当前正检查：',
-          'media.video.unknownFileFormat' =>
-            ({required String fileExt}) =>
-                TranslationOverrides.string(_root.$meta, 'media.video.unknownFileFormat', {'fileExt': fileExt}) ?? '未知的文件格式 (.${fileExt})，点此在浏览器中打开',
-          'imageStats.live' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'imageStats.live', {'count': count}) ?? '就绪：${count}',
-          'imageStats.pending' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'imageStats.pending', {'count': count}) ?? '等待: ${count}',
-          'imageStats.total' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'imageStats.total', {'count': count}) ?? '总共: ${count}',
-          'imageStats.size' =>
-            ({required String size}) => TranslationOverrides.string(_root.$meta, 'imageStats.size', {'size': size}) ?? '内存: ${size}',
+          'media.video.unknownFileFormat' => ({
+            required String fileExt,
+          }) => TranslationOverrides.string(_root.$meta, 'media.video.unknownFileFormat', {'fileExt': fileExt}) ?? '未知的文件格式 (.${fileExt})，点此在浏览器中打开',
+          'imageStats.live' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'imageStats.live', {'count': count}) ?? '就绪：${count}',
+          'imageStats.pending' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'imageStats.pending', {'count': count}) ?? '等待: ${count}',
+          'imageStats.total' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'imageStats.total', {'count': count}) ?? '总共: ${count}',
+          'imageStats.size' => ({
+            required String size,
+          }) => TranslationOverrides.string(_root.$meta, 'imageStats.size', {'size': size}) ?? '内存: ${size}',
           'imageStats.max' => ({required String max}) => TranslationOverrides.string(_root.$meta, 'imageStats.max', {'max': max}) ?? '最大: ${max}',
           'preview.error.noResults' => TranslationOverrides.string(_root.$meta, 'preview.error.noResults', {}) ?? '无结果',
           'preview.error.noResultsSubtitle' => TranslationOverrides.string(_root.$meta, 'preview.error.noResultsSubtitle', {}) ?? '改变搜索关键词或点击重试',
           'preview.error.reachedEnd' => TranslationOverrides.string(_root.$meta, 'preview.error.reachedEnd', {}) ?? '已经翻到最后啦',
-          'preview.error.reachedEndSubtitle' =>
-            ({required int pageNum}) =>
-                TranslationOverrides.string(_root.$meta, 'preview.error.reachedEndSubtitle', {'pageNum': pageNum}) ?? '已加载页数: ${pageNum}\n点此重新加载最后一页',
-          'preview.error.loadingPage' =>
-            ({required int pageNum}) =>
-                TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? '正在加载第 ${pageNum} 页…',
+          'preview.error.reachedEndSubtitle' => ({
+            required int pageNum,
+          }) => TranslationOverrides.string(_root.$meta, 'preview.error.reachedEndSubtitle', {'pageNum': pageNum}) ?? '已加载页数: ${pageNum}\n点此重新加载最后一页',
+          'preview.error.loadingPage' => ({
+            required int pageNum,
+          }) => TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? '正在加载第 ${pageNum} 页…',
           'preview.error.startedAgo' =>
             ({required num seconds}) =>
                 TranslationOverrides.plural(_root.$meta, 'preview.error.startedAgo', {'seconds': seconds}) ??
@@ -5579,9 +5367,9 @@ extension on TranslationsZhCn {
                   other: '在 ${seconds} 秒前开始',
                 ),
           'preview.error.tapToRetryIfStuck' => TranslationOverrides.string(_root.$meta, 'preview.error.tapToRetryIfStuck', {}) ?? '如果感觉卡住了或者太慢可以点击重试',
-          'preview.error.errorLoadingPage' =>
-            ({required int pageNum}) =>
-                TranslationOverrides.string(_root.$meta, 'preview.error.errorLoadingPage', {'pageNum': pageNum}) ?? '加载第 ${pageNum} 页时出错',
+          'preview.error.errorLoadingPage' => ({
+            required int pageNum,
+          }) => TranslationOverrides.string(_root.$meta, 'preview.error.errorLoadingPage', {'pageNum': pageNum}) ?? '加载第 ${pageNum} 页时出错',
           'preview.error.errorWithMessage' => TranslationOverrides.string(_root.$meta, 'preview.error.errorWithMessage', {}) ?? '点此重试',
           'preview.error.errorNoResultsLoaded' => TranslationOverrides.string(_root.$meta, 'preview.error.errorNoResultsLoaded', {}) ?? '错误，没有加载结果',
           'preview.error.tapToRetry' => TranslationOverrides.string(_root.$meta, 'preview.error.tapToRetry', {}) ?? '点此重试',

@@ -63,7 +63,6 @@ dependencies:
       ref: 36a202ceec982d199acdcd717ce85436372f447d # master - forked to fix build errors and remove allowing all bad certs
   huge_listview: ^2.0.12
   image: ^4.9.2
-  image_picker: ^1.1.2
   intl: ^0.20.3
   keyboard_actions: # ^4.2.0
     git:

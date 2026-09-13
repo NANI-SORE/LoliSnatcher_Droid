@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
-import 'package:lolisnatcher/src/boorus/eagle_handler.dart';
 import 'package:lolisnatcher/src/boorus/gelbooru_alikes_handler.dart';
 import 'package:lolisnatcher/src/boorus/gelbooru_handler.dart';
 import 'package:lolisnatcher/src/boorus/hydrus_handler.dart';
@@ -457,8 +456,6 @@ class _BooruEditState extends State<BooruEdit> {
       case BooruType.R34Hentai:
       case BooruType.InkBunny:
         return context.loc.password;
-      case BooruType.Eagle:
-        return 'Token';
       default:
         return context.loc.apiKey;
     }
@@ -484,14 +481,6 @@ class _BooruEditState extends State<BooruEdit> {
         break;
       case BooruType.Hydrus:
         return '';
-      case BooruType.Eagle:
-        return '<b>Eagle</b> exposes a local API at <i>http://&lt;host&gt;:41595</i>. '
-            'Set the <b>URL</b> to that address and the <b>Token</b> to your API token.<br><br> '
-            "Eagle's API only returns local file paths, not image bytes, so you must serve the "
-            'image files over HTTP and put that base URL in <b>Image server URL</b>:<br> '
-            '• a static server over <i>&lt;library&gt;/images</i> (e.g. <i>http://host:8080</i>), or<br> '
-            '• an <b>eagle-web</b> bridge — end the URL with <i>/img</i> for real thumbnails '
-            '(<i>http://host:8080/img</i>).';
       default:
         break;
     }
@@ -534,8 +523,6 @@ class _BooruEditState extends State<BooruEdit> {
       case BooruType.Danbooru:
       case BooruType.R34Hentai:
         return context.loc.login;
-      case BooruType.Eagle:
-        return 'Image server URL';
       default:
         return context.loc.userId;
     }
@@ -543,8 +530,6 @@ class _BooruEditState extends State<BooruEdit> {
 
   String getUserIdPlaceholder() {
     switch (selectedBooruType) {
-      case BooruType.Eagle:
-        return 'http://10.0.0.2:8080 (static images/ dir)  —or—  http://10.0.0.2:8080/img (eagle-web)';
       default:
         return '';
     }
@@ -929,17 +914,6 @@ class _BooruEditState extends State<BooruEdit> {
       return (
         booruType: null,
         errorString: context.loc.settings.booruEditor.failedVerifyApiHydrus,
-      );
-    }
-
-    if (userBooruType == BooruType.Eagle) {
-      final EagleHandler eagleHandler = EagleHandler(booru, 20);
-      if (await eagleHandler.verifyApiAccess()) {
-        return (booruType: userBooruType, errorString: null);
-      }
-      return (
-        booruType: null,
-        errorString: 'Failed to verify access to the Eagle API (check the URL and token).',
       );
     }
 

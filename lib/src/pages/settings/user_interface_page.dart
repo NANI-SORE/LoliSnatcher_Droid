@@ -40,8 +40,7 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
       disableVibration,
       usePredictiveBack,
       tabManagerBottomBar,
-      drawerBottomAlign,
-      eagleShowSubfolderItems;
+      drawerBottomAlign;
   late AppMode appMode;
   late HandSide handSide;
 
@@ -60,7 +59,6 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
     usePredictiveBack = settingsHandler.usePredictiveBack;
     tabManagerBottomBar = settingsHandler.tabManagerBottomBar.value;
     drawerBottomAlign = settingsHandler.drawerBottomAlign.value;
-    eagleShowSubfolderItems = settingsHandler.eagleShowSubfolderItems.value;
     previewDisplay = settingsHandler.previewDisplay;
     previewDisplayFallback = settingsHandler.previewDisplayFallback;
     previewMode = settingsHandler.previewMode;
@@ -88,7 +86,6 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
     settingsHandler.usePredictiveBack = usePredictiveBack;
     settingsHandler.tabManagerBottomBar.value = tabManagerBottomBar;
     settingsHandler.drawerBottomAlign.value = drawerBottomAlign;
-    settingsHandler.eagleShowSubfolderItems.value = eagleShowSubfolderItems;
     settingsHandler.previewMode = previewMode;
     settingsHandler.previewDisplay = previewDisplay;
     settingsHandler.previewDisplayFallback = previewDisplayFallback;
@@ -289,18 +286,6 @@ class _UserInterfacePageState extends State<UserInterfacePage> {
                 subtitle: Text(context.loc.settings.interface.drawerLayoutSubtitle),
                 icon: const Icon(Icons.view_list_outlined),
                 page: () => const DrawerLayoutPage(),
-              ),
-              SettingsToggle(
-                value: eagleShowSubfolderItems,
-                onChanged: (newValue) {
-                  setState(() {
-                    eagleShowSubfolderItems = newValue;
-                  });
-                },
-                title: 'Eagle: include subfolder items',
-                subtitle: const Text(
-                  'When filtering by an Eagle folder, also show items from its subfolders.',
-                ),
               ),
               SettingsTextInput(
                 controller: columnsPortraitController,

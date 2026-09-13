@@ -4,7 +4,6 @@ import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/boorus/danbooru_handler.dart';
 import 'package:lolisnatcher/src/boorus/downloads_handler.dart';
 import 'package:lolisnatcher/src/boorus/e621_handler.dart';
-import 'package:lolisnatcher/src/boorus/eagle_handler.dart';
 import 'package:lolisnatcher/src/boorus/empty_handler.dart';
 import 'package:lolisnatcher/src/boorus/favourites_handler.dart';
 import 'package:lolisnatcher/src/boorus/gelbooru_alikes_handler.dart';
@@ -102,11 +101,6 @@ class BooruHandlerFactory {
           break;
         case BooruType.Hydrus:
           booruHandler = HydrusHandler(booru, limit);
-          break;
-        case BooruType.Eagle:
-          // offset-based pagination: leave startingPage at -1 so the first
-          // search runs with pageNum=0 -> offset = pageNum*limit (0-indexed)
-          booruHandler = EagleHandler(booru, limit);
           break;
         case BooruType.GelbooruV1:
           booruHandler = GelbooruV1Handler(booru, limit);

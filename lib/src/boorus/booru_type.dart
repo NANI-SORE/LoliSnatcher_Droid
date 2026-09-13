@@ -10,7 +10,6 @@ enum BooruType {
   BooruOnRails,
   Danbooru,
   e621,
-  Eagle,
   //FurAffinity,
   Gelbooru,
   GelbooruV1,
@@ -60,22 +59,10 @@ enum BooruType {
       ..remove(BooruType.Downloads)
       ..remove(BooruType.Favourites)
       ..remove(BooruType.Hydrus)
-      ..remove(BooruType.Eagle)
       ..remove(BooruType.Merge);
   }
 
   bool get isDetectable => detectable.contains(this);
-
-  /// Booru types that can receive items pushed from another booru (the modular
-  /// "send to library" / upload targets). The viewer's share menu lists every
-  /// configured booru of these types. Handlers implement the actual transfer via
-  /// `BooruHandler.addItem`.
-  static List<BooruType> get itemAddTargets => [
-    BooruType.Eagle,
-    BooruType.Hydrus,
-  ];
-
-  bool get supportsItemAdd => itemAddTargets.contains(this);
 
   static List<BooruType> get saveable {
     return [...values]
@@ -103,7 +90,6 @@ enum BooruType {
   bool get isBooruOnRails => this == BooruType.BooruOnRails;
   bool get isDanbooru => this == BooruType.Danbooru;
   bool get isE621 => this == BooruType.e621;
-  bool get isEagle => this == BooruType.Eagle;
   //bool get isFurAffinity => this == BooruType.FurAffinity;
   bool get isGelbooru => this == BooruType.Gelbooru;
   bool get isGelbooruV1 => this == BooruType.GelbooruV1;

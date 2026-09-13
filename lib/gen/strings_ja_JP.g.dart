@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:slang/generated.dart';
 import 'package:slang/overrides.dart';
+
 import 'strings.g.dart';
 
 // Path: <root>
@@ -20,7 +21,7 @@ class TranslationsJaJp extends Translations with BaseTranslations<AppLocale, Tra
     PluralResolver? cardinalResolver,
     PluralResolver? ordinalResolver,
     TranslationMetadata<AppLocale, Translations>? meta,
-  }) : $meta =
+  }) : _meta =
            meta ??
            TranslationMetadata(
              locale: AppLocale.jaJp,
@@ -29,17 +30,17 @@ class TranslationsJaJp extends Translations with BaseTranslations<AppLocale, Tra
              ordinalResolver: ordinalResolver,
            ),
        super(cardinalResolver: cardinalResolver, ordinalResolver: ordinalResolver) {
-    super.$meta.setFlatMapFunction($meta.getTranslation); // copy base translations to super.$meta
-    $meta.setFlatMapFunction(_flatMapFunction);
+    _meta.setFlatMapFunction(_flatMapFunction);
   }
 
   /// Metadata for the translations of <ja-JP>.
+  final TranslationMetadata<AppLocale, Translations> _meta;
   @override
-  final TranslationMetadata<AppLocale, Translations> $meta;
+  TranslationMetadata<AppLocale, Translations> get $meta => _meta;
 
   /// Access flat map
   @override
-  dynamic operator [](String key) => $meta.getTranslation(key) ?? super.$meta.getTranslation(key);
+  dynamic operator [](String key) => _meta.getTranslation(key) ?? super[key];
 
   late final TranslationsJaJp _root = this; // ignore: unused_field
 
@@ -749,8 +750,6 @@ class _Translations$tabs$ja_JP extends Translations$tabs$en {
   late final _Translations$tabs$filters$ja_JP filters = _Translations$tabs$filters$ja_JP._(_root);
   @override
   late final _Translations$tabs$move$ja_JP move = _Translations$tabs$move$ja_JP._(_root);
-  @override
-  late final _Translations$tabs$groups$ja_JP groups = _Translations$tabs$groups$ja_JP._(_root);
 }
 
 // Path: history
@@ -1650,110 +1649,6 @@ class _Translations$tabs$move$ja_JP extends Translations$tabs$move$en {
   String get preview => TranslationOverrides.string(_root.$meta, 'tabs.move.preview', {}) ?? 'プレビュー:';
 }
 
-// Path: tabs.groups
-class _Translations$tabs$groups$ja_JP extends Translations$tabs$groups$en {
-  _Translations$tabs$groups$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
-
-  final TranslationsJaJp _root; // ignore: unused_field
-
-  // Translations
-  @override
-  String get title => TranslationOverrides.string(_root.$meta, 'tabs.groups.title', {}) ?? 'グループ';
-  @override
-  String get newGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroup', {}) ?? '新しいグループ';
-  @override
-  String get renameGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.renameGroup', {}) ?? 'グループ名を変更';
-  @override
-  String get renameRecolor => TranslationOverrides.string(_root.$meta, 'tabs.groups.renameRecolor', {}) ?? '名前変更 / 色変更';
-  @override
-  String get editGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.editGroup', {}) ?? 'グループを編集';
-  @override
-  String get deleteGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteGroup', {}) ?? 'グループを削除';
-  @override
-  String get deleteWithTabs => TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteWithTabs', {}) ?? 'グループ内のタブも削除';
-  @override
-  String get ungrouped => TranslationOverrides.string(_root.$meta, 'tabs.groups.ungrouped', {}) ?? '未分類';
-  @override
-  String get moveToGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.moveToGroup', {}) ?? 'グループへ移動';
-  @override
-  String get moveToGroupAction => TranslationOverrides.string(_root.$meta, 'tabs.groups.moveToGroupAction', {}) ?? 'グループへ移動…';
-  @override
-  String get removeFromGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.removeFromGroup', {}) ?? 'グループから外す';
-  @override
-  String get addToGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.addToGroup', {}) ?? 'グループに追加…';
-  @override
-  String get newGroupFromTab => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupFromTab', {}) ?? 'このタブから新しいグループ';
-  @override
-  String get groupColor => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupColor', {}) ?? '色';
-  @override
-  String get groupName => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupName', {}) ?? 'グループ名';
-  @override
-  String get collapse => TranslationOverrides.string(_root.$meta, 'tabs.groups.collapse', {}) ?? 'グループを折りたたむ';
-  @override
-  String get expand => TranslationOverrides.string(_root.$meta, 'tabs.groups.expand', {}) ?? 'グループを展開';
-  @override
-  String get filterByGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.filterByGroup', {}) ?? 'グループ';
-  @override
-  String get dropToUngroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.dropToUngroup', {}) ?? 'ここにドロップでグループから外す';
-  @override
-  String get dragToAGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.dragToAGroup', {}) ?? 'グループにドラッグ';
-  @override
-  String get groupActions => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupActions', {}) ?? 'グループ操作';
-  @override
-  String get newerVersionBackup =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.newerVersionBackup', {}) ?? 'このバックアップは新しいバージョンの LoliSnatcher のもので、読み込めません。';
-  @override
-  String get malformedBackup => TranslationOverrides.string(_root.$meta, 'tabs.groups.malformedBackup', {}) ?? 'タブのバックアップが壊れているため読み込めません。';
-  @override
-  String get newGroupTitle => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupTitle', {}) ?? '新しいグループ';
-  @override
-  String get create => TranslationOverrides.string(_root.$meta, 'tabs.groups.create', {}) ?? '作成';
-  @override
-  String get save => TranslationOverrides.string(_root.$meta, 'tabs.groups.save', {}) ?? '保存';
-  @override
-  String deleteGroupNamed({required String name}) =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteGroupNamed', {'name': name}) ?? 'グループ「${name}」を削除しますか？';
-  @override
-  String tabsInGroup({required num count}) =>
-      TranslationOverrides.plural(_root.$meta, 'tabs.groups.tabsInGroup', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
-        count,
-        other: 'このグループに ${count} 個のタブがあります。',
-      );
-  @override
-  String get otherwiseBecomeUngrouped =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.otherwiseBecomeUngrouped', {}) ?? 'そうしない場合、タブは未分類になります。';
-  @override
-  String tabsMovedToUngrouped({required num count}) =>
-      TranslationOverrides.plural(_root.$meta, 'tabs.groups.tabsMovedToUngrouped', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
-        count,
-        other: '${count} 個のタブを未分類に移動しました',
-      );
-  @override
-  String get chooseGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.chooseGroup', {}) ?? 'グループを選択';
-  @override
-  String get unknownGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.unknownGroup', {}) ?? '不明なグループ';
-  @override
-  String get ungroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.ungroup', {}) ?? 'グループから外す';
-  @override
-  String get helpTapNewGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapNewGroup', {}) ?? 'リストの一番下にある「新しいグループ」をタップしてグループを作成します。';
-  @override
-  String get helpDragTabHandle => TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragTabHandle', {}) ?? 'タブの左側のハンドルをドラッグすると、グループ間で移動できます。';
-  @override
-  String get helpDragGroupHandle =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragGroupHandle', {}) ?? 'グループヘッダーの左側のハンドルをドラッグすると、グループの順序を変更できます。';
-  @override
-  String get helpTapHeaderCollapse =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapHeaderCollapse', {}) ?? 'グループヘッダーをタップして折りたたみ/展開します。';
-  @override
-  String get helpTapMoreVert =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapMoreVert', {}) ?? 'グループヘッダーの ⋯ をタップすると、名前変更、色変更、削除ができます。';
-  @override
-  String get helpPrevNextInherits =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.helpPrevNextInherits', {}) ?? '「前」「次」で追加した新しいタブは、現在のタブのグループを引き継ぎます。末尾に追加したタブは未分類になります。';
-}
-
 // Path: webview.navigation
 class _Translations$webview$navigation$ja_JP extends Translations$webview$navigation$en {
   _Translations$webview$navigation$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
@@ -2040,33 +1935,6 @@ class _Translations$settings$interface$ja_JP extends Translations$settings$inter
   @override
   String get disableVibrationSubtitle =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.disableVibrationSubtitle', {}) ?? '無効にしても一部のアクションで振動が発生する可能性があります';
-  @override
-  String get tabManagerBottomBar => TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBar', {}) ?? 'タブマネージャーの下部アクションバー';
-  @override
-  String get tabManagerBottomBarSubtitle =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBarSubtitle', {}) ??
-      'タブマネージャー下部に上端/現在/下端へのスクロールボタンと閉じるボタンを表示します。「新しいタブ」「新しいグループ」のフローティングボタンは常に表示されます。';
-  @override
-  String get drawerBottomAlign => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlign', {}) ?? 'メインドロワーを下揃え';
-  @override
-  String get drawerBottomAlignSubtitle =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlignSubtitle', {}) ??
-      'サイドドロワーの内容を下から上へ（検索、現在のタブ、タブ操作、その他）配置し、片手の親指で操作しやすくします。';
-  @override
-  String get drawerLayoutTitle => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutTitle', {}) ?? 'ドロワーレイアウト';
-  @override
-  String get drawerLayoutSubtitle =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutSubtitle', {}) ?? 'サイドドロワーに表示する項目と順序を選択します。';
-  @override
-  String get drawerLayoutPinned => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutPinned', {}) ?? 'ピン留め — 常に表示';
-  @override
-  String get drawerLayoutRestoreDefaults =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutRestoreDefaults', {}) ?? 'デフォルトに戻す';
-  @override
-  String get drawerLayoutBottomAlignHint =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutBottomAlignHint', {}) ?? '下揃えが有効です — このリストの最初の項目がドロワーの下部に表示されます。';
-  @override
-  late final _Translations$settings$interface$drawerItems$ja_JP drawerItems = _Translations$settings$interface$drawerItems$ja_JP._(_root);
   @override
   String get usePredictiveBack => TranslationOverrides.string(_root.$meta, 'settings.interface.usePredictiveBack', {}) ?? 'スワイプキャンセルアニメーション';
   @override
@@ -3618,35 +3486,6 @@ class _Translations$preview$error$ja_JP extends Translations$preview$error$en {
   String get tapToRetry => TranslationOverrides.string(_root.$meta, 'preview.error.tapToRetry', {}) ?? 'ここをタップして再試行';
 }
 
-// Path: settings.interface.drawerItems
-class _Translations$settings$interface$drawerItems$ja_JP extends Translations$settings$interface$drawerItems$en {
-  _Translations$settings$interface$drawerItems$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
-
-  final TranslationsJaJp _root; // ignore: unused_field
-
-  // Translations
-  @override
-  String get search => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.search', {}) ?? '検索バー';
-  @override
-  String get tabSelector => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.tabSelector', {}) ?? '現在のタブカード';
-  @override
-  String get tabButtons => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.tabButtons', {}) ?? 'タブボタン';
-  @override
-  String get multibooruToggle => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.multibooruToggle', {}) ?? 'マルチ Booru トグル';
-  @override
-  String get lockApp => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.lockApp', {}) ?? 'アプリをロック';
-  @override
-  String get settings => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.settings', {}) ?? '設定';
-  @override
-  String get webview => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.webview', {}) ?? 'Web ビューを開く';
-  @override
-  String get updateAvailable => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.updateAvailable', {}) ?? '更新が利用可能';
-  @override
-  String get closeApp => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.closeApp', {}) ?? 'アプリを閉じる';
-  @override
-  String get mascot => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.mascot', {}) ?? 'マスコット画像';
-}
-
 // Path: settings.interface.previewQualityValues
 class _Translations$settings$interface$previewQualityValues$ja_JP extends Translations$settings$interface$previewQualityValues$en {
   _Translations$settings$interface$previewQualityValues$ja_JP._(TranslationsJaJp root) : this._root = root, super.internal(root);
@@ -3948,14 +3787,16 @@ extension on TranslationsJaJp {
           'validationErrors.invalidNumber' => TranslationOverrides.string(_root.$meta, 'validationErrors.invalidNumber', {}) ?? '数字を入力',
           'validationErrors.invalidNumericValue' =>
             TranslationOverrides.string(_root.$meta, 'validationErrors.invalidNumericValue', {}) ?? '有効な数値を入力してください',
-          'validationErrors.tooSmall' =>
-            ({required double min}) =>
-                TranslationOverrides.string(_root.$meta, 'validationErrors.tooSmall', {'min': min}) ?? '${min} より大きい値を入力してください',
-          'validationErrors.tooBig' =>
-            ({required double max}) => TranslationOverrides.string(_root.$meta, 'validationErrors.tooBig', {'max': max}) ?? '${max} より小さい値を入力してください',
-          'validationErrors.rangeError' =>
-            ({required double min, required double max}) =>
-                TranslationOverrides.string(_root.$meta, 'validationErrors.rangeError', {'min': min, 'max': max}) ?? '${min} から ${max} までの値を入力してください',
+          'validationErrors.tooSmall' => ({
+            required double min,
+          }) => TranslationOverrides.string(_root.$meta, 'validationErrors.tooSmall', {'min': min}) ?? '${min} より大きい値を入力してください',
+          'validationErrors.tooBig' => ({
+            required double max,
+          }) => TranslationOverrides.string(_root.$meta, 'validationErrors.tooBig', {'max': max}) ?? '${max} より小さい値を入力してください',
+          'validationErrors.rangeError' => ({
+            required double min,
+            required double max,
+          }) => TranslationOverrides.string(_root.$meta, 'validationErrors.rangeError', {'min': min, 'max': max}) ?? '${min} から ${max} までの値を入力してください',
           'validationErrors.greaterThanOrEqualZero' =>
             TranslationOverrides.string(_root.$meta, 'validationErrors.greaterThanOrEqualZero', {}) ?? '0 以上の値を入力してください',
           'validationErrors.lessThan4' => TranslationOverrides.string(_root.$meta, 'validationErrors.lessThan4', {}) ?? '4 未満の値を入力してください',
@@ -3974,8 +3815,9 @@ extension on TranslationsJaJp {
             TranslationOverrides.string(_root.$meta, 'permissions.noAccessToCustomStorageDirectory', {}) ?? 'カスタムストレージディレクトリにアクセスできません',
           'permissions.pleaseSetStorageDirectoryAgain' =>
             TranslationOverrides.string(_root.$meta, 'permissions.pleaseSetStorageDirectoryAgain', {}) ?? 'アプリにアクセスを許可するには、ストレージディレクトリを再度設定する必要があります',
-          'permissions.currentPath' =>
-            ({required String path}) => TranslationOverrides.string(_root.$meta, 'permissions.currentPath', {'path': path}) ?? '現在のパス: ${path}',
+          'permissions.currentPath' => ({
+            required String path,
+          }) => TranslationOverrides.string(_root.$meta, 'permissions.currentPath', {'path': path}) ?? '現在のパス: ${path}',
           'permissions.setDirectory' => TranslationOverrides.string(_root.$meta, 'permissions.setDirectory', {}) ?? 'ディレクトリを設定',
           'permissions.currentlyNotAvailableForThisPlatform' =>
             TranslationOverrides.string(_root.$meta, 'permissions.currentlyNotAvailableForThisPlatform', {}) ?? 'このプラットフォームでは使用できません',
@@ -3988,9 +3830,9 @@ extension on TranslationsJaJp {
           'authentication.noBiometricHardwareAvailable' =>
             TranslationOverrides.string(_root.$meta, 'authentication.noBiometricHardwareAvailable', {}) ?? '生体認証ハードウェアは利用できません',
           'authentication.temporaryLockout' => TranslationOverrides.string(_root.$meta, 'authentication.temporaryLockout', {}) ?? '一時ロックアウト',
-          'authentication.somethingWentWrong' =>
-            ({required String error}) =>
-                TranslationOverrides.string(_root.$meta, 'authentication.somethingWentWrong', {'error': error}) ?? '認証中に問題が発生しました: ${error}',
+          'authentication.somethingWentWrong' => ({
+            required String error,
+          }) => TranslationOverrides.string(_root.$meta, 'authentication.somethingWentWrong', {'error': error}) ?? '認証中に問題が発生しました: ${error}',
           'searchHandler.removedLastTab' => TranslationOverrides.string(_root.$meta, 'searchHandler.removedLastTab', {}) ?? '最後のタブを削除しました',
           'searchHandler.resettingSearchToDefaultTags' =>
             TranslationOverrides.string(_root.$meta, 'searchHandler.resettingSearchToDefaultTags', {}) ?? 'デフォルトのタグにリセットします',
@@ -4229,85 +4071,26 @@ extension on TranslationsJaJp {
           'tabs.move.outOfRange' => TranslationOverrides.string(_root.$meta, 'tabs.move.outOfRange', {}) ?? '範囲外',
           'tabs.move.pleaseEnterValidTabNumber' =>
             TranslationOverrides.string(_root.$meta, 'tabs.move.pleaseEnterValidTabNumber', {}) ?? '有効なタブ番号を入力してください',
-          'tabs.move.moveTo' =>
-            ({required String formattedNumber}) =>
-                TranslationOverrides.string(_root.$meta, 'tabs.move.moveTo', {'formattedNumber': formattedNumber}) ?? '#${formattedNumber} に移動',
+          'tabs.move.moveTo' => ({
+            required String formattedNumber,
+          }) => TranslationOverrides.string(_root.$meta, 'tabs.move.moveTo', {'formattedNumber': formattedNumber}) ?? '#${formattedNumber} に移動',
           'tabs.move.preview' => TranslationOverrides.string(_root.$meta, 'tabs.move.preview', {}) ?? 'プレビュー:',
-          'tabs.groups.title' => TranslationOverrides.string(_root.$meta, 'tabs.groups.title', {}) ?? 'グループ',
-          'tabs.groups.newGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroup', {}) ?? '新しいグループ',
-          'tabs.groups.renameGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.renameGroup', {}) ?? 'グループ名を変更',
-          'tabs.groups.renameRecolor' => TranslationOverrides.string(_root.$meta, 'tabs.groups.renameRecolor', {}) ?? '名前変更 / 色変更',
-          'tabs.groups.editGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.editGroup', {}) ?? 'グループを編集',
-          'tabs.groups.deleteGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteGroup', {}) ?? 'グループを削除',
-          'tabs.groups.deleteWithTabs' => TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteWithTabs', {}) ?? 'グループ内のタブも削除',
-          'tabs.groups.ungrouped' => TranslationOverrides.string(_root.$meta, 'tabs.groups.ungrouped', {}) ?? '未分類',
-          'tabs.groups.moveToGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.moveToGroup', {}) ?? 'グループへ移動',
-          'tabs.groups.moveToGroupAction' => TranslationOverrides.string(_root.$meta, 'tabs.groups.moveToGroupAction', {}) ?? 'グループへ移動…',
-          'tabs.groups.removeFromGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.removeFromGroup', {}) ?? 'グループから外す',
-          'tabs.groups.addToGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.addToGroup', {}) ?? 'グループに追加…',
-          'tabs.groups.newGroupFromTab' => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupFromTab', {}) ?? 'このタブから新しいグループ',
-          'tabs.groups.groupColor' => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupColor', {}) ?? '色',
-          'tabs.groups.groupName' => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupName', {}) ?? 'グループ名',
-          'tabs.groups.collapse' => TranslationOverrides.string(_root.$meta, 'tabs.groups.collapse', {}) ?? 'グループを折りたたむ',
-          'tabs.groups.expand' => TranslationOverrides.string(_root.$meta, 'tabs.groups.expand', {}) ?? 'グループを展開',
-          'tabs.groups.filterByGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.filterByGroup', {}) ?? 'グループ',
-          'tabs.groups.dropToUngroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.dropToUngroup', {}) ?? 'ここにドロップでグループから外す',
-          'tabs.groups.dragToAGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.dragToAGroup', {}) ?? 'グループにドラッグ',
-          'tabs.groups.groupActions' => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupActions', {}) ?? 'グループ操作',
-          'tabs.groups.newerVersionBackup' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.newerVersionBackup', {}) ?? 'このバックアップは新しいバージョンの LoliSnatcher のもので、読み込めません。',
-          'tabs.groups.malformedBackup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.malformedBackup', {}) ?? 'タブのバックアップが壊れているため読み込めません。',
-          'tabs.groups.newGroupTitle' => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupTitle', {}) ?? '新しいグループ',
-          'tabs.groups.create' => TranslationOverrides.string(_root.$meta, 'tabs.groups.create', {}) ?? '作成',
-          'tabs.groups.save' => TranslationOverrides.string(_root.$meta, 'tabs.groups.save', {}) ?? '保存',
-          'tabs.groups.deleteGroupNamed' =>
-            ({required String name}) =>
-                TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteGroupNamed', {'name': name}) ?? 'グループ「${name}」を削除しますか？',
-          'tabs.groups.tabsInGroup' =>
-            ({required num count}) =>
-                TranslationOverrides.plural(_root.$meta, 'tabs.groups.tabsInGroup', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
-                  count,
-                  other: 'このグループに ${count} 個のタブがあります。',
-                ),
-          'tabs.groups.otherwiseBecomeUngrouped' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.otherwiseBecomeUngrouped', {}) ?? 'そうしない場合、タブは未分類になります。',
-          'tabs.groups.tabsMovedToUngrouped' =>
-            ({required num count}) =>
-                TranslationOverrides.plural(_root.$meta, 'tabs.groups.tabsMovedToUngrouped', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
-                  count,
-                  other: '${count} 個のタブを未分類に移動しました',
-                ),
-          'tabs.groups.chooseGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.chooseGroup', {}) ?? 'グループを選択',
-          'tabs.groups.unknownGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.unknownGroup', {}) ?? '不明なグループ',
-          'tabs.groups.ungroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.ungroup', {}) ?? 'グループから外す',
-          'tabs.groups.helpTapNewGroup' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapNewGroup', {}) ?? 'リストの一番下にある「新しいグループ」をタップしてグループを作成します。',
-          'tabs.groups.helpDragTabHandle' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragTabHandle', {}) ?? 'タブの左側のハンドルをドラッグすると、グループ間で移動できます。',
-          'tabs.groups.helpDragGroupHandle' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragGroupHandle', {}) ?? 'グループヘッダーの左側のハンドルをドラッグすると、グループの順序を変更できます。',
-          'tabs.groups.helpTapHeaderCollapse' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapHeaderCollapse', {}) ?? 'グループヘッダーをタップして折りたたみ/展開します。',
-          'tabs.groups.helpTapMoreVert' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapMoreVert', {}) ?? 'グループヘッダーの ⋯ をタップすると、名前変更、色変更、削除ができます。',
-          'tabs.groups.helpPrevNextInherits' =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.helpPrevNextInherits', {}) ??
-                '「前」「次」で追加した新しいタブは、現在のタブのグループを引き継ぎます。末尾に追加したタブは未分類になります。',
           'history.searchHistory' => TranslationOverrides.string(_root.$meta, 'history.searchHistory', {}) ?? '検索履歴',
           'history.searchHistoryIsEmpty' => TranslationOverrides.string(_root.$meta, 'history.searchHistoryIsEmpty', {}) ?? '検索履歴は空です',
           'history.searchHistoryIsDisabled' => TranslationOverrides.string(_root.$meta, 'history.searchHistoryIsDisabled', {}) ?? '検索履歴は無効です',
           'history.searchHistoryRequiresDatabase' =>
             TranslationOverrides.string(_root.$meta, 'history.searchHistoryRequiresDatabase', {}) ?? '設定で検索履歴のデータベースを有効化',
-          'history.lastSearch' =>
-            ({required String search}) => TranslationOverrides.string(_root.$meta, 'history.lastSearch', {'search': search}) ?? '最後の検索: ${search}',
-          'history.lastSearchWithDate' =>
-            ({required String date}) => TranslationOverrides.string(_root.$meta, 'history.lastSearchWithDate', {'date': date}) ?? '最後の検索日: ${date}',
+          'history.lastSearch' => ({
+            required String search,
+          }) => TranslationOverrides.string(_root.$meta, 'history.lastSearch', {'search': search}) ?? '最後の検索: ${search}',
+          'history.lastSearchWithDate' => ({
+            required String date,
+          }) => TranslationOverrides.string(_root.$meta, 'history.lastSearchWithDate', {'date': date}) ?? '最後の検索日: ${date}',
           'history.unknownBooruType' => TranslationOverrides.string(_root.$meta, 'history.unknownBooruType', {}) ?? '不明なBooruタイプです！',
-          'history.unknownBooru' =>
-            ({required String name, required String type}) =>
-                TranslationOverrides.string(_root.$meta, 'history.unknownBooru', {'name': name, 'type': type}) ?? '不明なBooru (${name}-${type})',
+          'history.unknownBooru' => ({
+            required String name,
+            required String type,
+          }) => TranslationOverrides.string(_root.$meta, 'history.unknownBooru', {'name': name, 'type': type}) ?? '不明なBooru (${name}-${type})',
           'history.open' => TranslationOverrides.string(_root.$meta, 'history.open', {}) ?? '開く',
           'history.openInNewTab' => TranslationOverrides.string(_root.$meta, 'history.openInNewTab', {}) ?? '新しいタブで開く',
           'history.removeFromFavourites' => TranslationOverrides.string(_root.$meta, 'history.removeFromFavourites', {}) ?? 'お気に入りから削除',
@@ -4344,8 +4127,9 @@ extension on TranslationsJaJp {
           'webview.captchaCompleted' => TranslationOverrides.string(_root.$meta, 'webview.captchaCompleted', {}) ?? '認証完了',
           'webview.navigation.enterUrlLabel' => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterUrlLabel', {}) ?? 'URLを入力',
           'webview.navigation.enterCustomUrl' => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterCustomUrl', {}) ?? 'カスタムURLを入力',
-          'webview.navigation.navigateTo' =>
-            ({required String url}) => TranslationOverrides.string(_root.$meta, 'webview.navigation.navigateTo', {'url': url}) ?? '${url} へ移動',
+          'webview.navigation.navigateTo' => ({
+            required String url,
+          }) => TranslationOverrides.string(_root.$meta, 'webview.navigation.navigateTo', {'url': url}) ?? '${url} へ移動',
           'webview.navigation.listCookies' => TranslationOverrides.string(_root.$meta, 'webview.navigation.listCookies', {}) ?? 'Cookieのリスト',
           'webview.navigation.clearCookies' => TranslationOverrides.string(_root.$meta, 'webview.navigation.clearCookies', {}) ?? 'Cookieをクリア',
           'webview.navigation.cookiesGone' =>
@@ -4370,9 +4154,7 @@ extension on TranslationsJaJp {
           'settings.language.title' => TranslationOverrides.string(_root.$meta, 'settings.language.title', {}) ?? '言語',
           'settings.language.system' => TranslationOverrides.string(_root.$meta, 'settings.language.system', {}) ?? 'システム',
           'settings.language.helpUsTranslate' => TranslationOverrides.string(_root.$meta, 'settings.language.helpUsTranslate', {}) ?? '翻訳に協力',
-          'settings.language.visitForDetails' =>
-            TranslationOverrides.string(_root.$meta, 'settings.language.visitForDetails', {}) ??
-                '詳細については、 <a href=\'https://github.com/NO-ob/LoliSnatcher_Droid/blob/master/CONTRIBUTING.md#localization--translations\'>GitHub</a> を確認するか、下の画像をタップしてPOEditorにアクセスできます',
+          'settings.language.visitForDetails' => TranslationOverrides.string(_root.$meta, 'settings.language.visitForDetails', {}) ?? '詳細については、 <a href=\'https://github.com/NO-ob/LoliSnatcher_Droid/blob/master/CONTRIBUTING.md#localization--translations\'>GitHub</a> を確認するか、下の画像をタップしてPOEditorにアクセスできます',
           'settings.booru.title' => TranslationOverrides.string(_root.$meta, 'settings.booru.title', {}) ?? 'Booruと検索',
           'settings.booru.defaultTags' => TranslationOverrides.string(_root.$meta, 'settings.booru.defaultTags', {}) ?? 'デフォルトのタグ',
           'settings.booru.itemsPerPage' => TranslationOverrides.string(_root.$meta, 'settings.booru.itemsPerPage', {}) ?? 'ページごとに取得される項目数',
@@ -4515,46 +4297,6 @@ extension on TranslationsJaJp {
           'settings.interface.disableVibration' => TranslationOverrides.string(_root.$meta, 'settings.interface.disableVibration', {}) ?? '振動を無効化',
           'settings.interface.disableVibrationSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.disableVibrationSubtitle', {}) ?? '無効にしても一部のアクションで振動が発生する可能性があります',
-          'settings.interface.tabManagerBottomBar' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBar', {}) ?? 'タブマネージャーの下部アクションバー',
-          'settings.interface.tabManagerBottomBarSubtitle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBarSubtitle', {}) ??
-                'タブマネージャー下部に上端/現在/下端へのスクロールボタンと閉じるボタンを表示します。「新しいタブ」「新しいグループ」のフローティングボタンは常に表示されます。',
-          'settings.interface.drawerBottomAlign' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlign', {}) ?? 'メインドロワーを下揃え',
-          'settings.interface.drawerBottomAlignSubtitle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlignSubtitle', {}) ??
-                'サイドドロワーの内容を下から上へ（検索、現在のタブ、タブ操作、その他）配置し、片手の親指で操作しやすくします。',
-          'settings.interface.drawerLayoutTitle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutTitle', {}) ?? 'ドロワーレイアウト',
-          'settings.interface.drawerLayoutSubtitle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutSubtitle', {}) ?? 'サイドドロワーに表示する項目と順序を選択します。',
-          'settings.interface.drawerLayoutPinned' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutPinned', {}) ?? 'ピン留め — 常に表示',
-          'settings.interface.drawerLayoutRestoreDefaults' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutRestoreDefaults', {}) ?? 'デフォルトに戻す',
-          'settings.interface.drawerLayoutBottomAlignHint' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutBottomAlignHint', {}) ??
-                '下揃えが有効です — このリストの最初の項目がドロワーの下部に表示されます。',
-          'settings.interface.drawerItems.search' => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.search', {}) ?? '検索バー',
-          'settings.interface.drawerItems.tabSelector' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.tabSelector', {}) ?? '現在のタブカード',
-          'settings.interface.drawerItems.tabButtons' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.tabButtons', {}) ?? 'タブボタン',
-          'settings.interface.drawerItems.multibooruToggle' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.multibooruToggle', {}) ?? 'マルチ Booru トグル',
-          'settings.interface.drawerItems.lockApp' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.lockApp', {}) ?? 'アプリをロック',
-          'settings.interface.drawerItems.settings' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.settings', {}) ?? '設定',
-          'settings.interface.drawerItems.webview' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.webview', {}) ?? 'Web ビューを開く',
-          'settings.interface.drawerItems.updateAvailable' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.updateAvailable', {}) ?? '更新が利用可能',
-          'settings.interface.drawerItems.closeApp' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.closeApp', {}) ?? 'アプリを閉じる',
-          'settings.interface.drawerItems.mascot' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.mascot', {}) ?? 'マスコット画像',
           'settings.interface.usePredictiveBack' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.usePredictiveBack', {}) ?? 'スワイプキャンセルアニメーション',
           'settings.interface.previewColumnsPortrait' =>
@@ -4676,9 +4418,6 @@ extension on TranslationsJaJp {
           'settings.viewer.enableRotation' => TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotation', {}) ?? '画像の回転を有効化',
           'settings.viewer.enableRotationSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotationSubtitle', {}) ?? 'ダブルタップで元に戻す',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.viewer.toolbarButtonsOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.toolbarButtonsOrder', {}) ?? 'ツールバーボタンの順番',
           'settings.viewer.buttonsOrder' => TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonsOrder', {}) ?? 'ボタンの順番',
@@ -4789,6 +4528,9 @@ extension on TranslationsJaJp {
                 '動画の読み込み時にクラッシュするローエンドデバイスに便利です。代わりに外部プレイヤーやブラウザで視聴するオプションを提供します。',
           'settings.video.autoplayVideos' => TranslationOverrides.string(_root.$meta, 'settings.video.autoplayVideos', {}) ?? '動画の自動再生',
           'settings.video.startVideosMuted' => TranslationOverrides.string(_root.$meta, 'settings.video.startVideosMuted', {}) ?? '動画をミュート状態で開始',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.video.experimental' => TranslationOverrides.string(_root.$meta, 'settings.video.experimental', {}) ?? '[実験的機能]',
           'settings.video.videoPlayerBackend' => TranslationOverrides.string(_root.$meta, 'settings.video.videoPlayerBackend', {}) ?? 'プレーヤーのバックエンド',
           'settings.video.backendDefault' => TranslationOverrides.string(_root.$meta, 'settings.video.backendDefault', {}) ?? 'デフォルト',
@@ -4887,9 +4629,9 @@ extension on TranslationsJaJp {
             TranslationOverrides.string(_root.$meta, 'settings.database.dropIndexesDebug', {}) ?? 'インデックスの削除 [デバッグ]',
           'settings.database.searchHistoryInfo' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryInfo', {}) ?? 'データベースが有効になっている必要があります。',
-          'settings.database.searchHistoryRecords' =>
-            ({required int limit}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryRecords', {'limit': limit}) ?? '過去 ${limit}件の検索を保存します',
+          'settings.database.searchHistoryRecords' => ({
+            required int limit,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryRecords', {'limit': limit}) ?? '過去 ${limit}件の検索を保存します',
           'settings.database.searchHistoryTapInfo' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryTapInfo', {}) ?? 'エントリーをタップしてアクションを実行できます (削除、お気に入り…)',
           'settings.database.searchHistoryFavouritesInfo' =>
@@ -4943,16 +4685,18 @@ extension on TranslationsJaJp {
             TranslationOverrides.string(_root.$meta, 'settings.database.failedItemsPurgeInfo', {}) ?? '更新に失敗したアイテムはデータベースから削除されます',
           'settings.database.updateSankakuUrls' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.updateSankakuUrls', {}) ?? 'Sankaku URLをアップデート',
-          'settings.database.updating' =>
-            ({required int count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.database.updating', {'count': count}) ?? '${count}個のアイテムを更新中:',
-          'settings.database.left' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'settings.database.left', {'count': count}) ?? '残り: ${count}',
-          'settings.database.done' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'settings.database.done', {'count': count}) ?? '完了: ${count}',
-          'settings.database.failedSkipped' =>
-            ({required int count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.database.failedSkipped', {'count': count}) ?? '失敗/スキップ: ${count}',
+          'settings.database.updating' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.updating', {'count': count}) ?? '${count}個のアイテムを更新中:',
+          'settings.database.left' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.left', {'count': count}) ?? '残り: ${count}',
+          'settings.database.done' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.done', {'count': count}) ?? '完了: ${count}',
+          'settings.database.failedSkipped' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.failedSkipped', {'count': count}) ?? '失敗/スキップ: ${count}',
           'settings.database.sankakuRateLimitWarning' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.sankakuRateLimitWarning', {}) ??
                 '失敗の数が継続的に増加し始めた場合は、停止してしばらくしてから再試行してください。レート制限に達したか、Sankaku がIPからのリクエストをブロックしている可能性があります。',
@@ -4961,12 +4705,12 @@ extension on TranslationsJaJp {
           'settings.database.useIfStuck' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.useIfStuck', {}) ?? 'アイテムでスタックしているように見える場合に使用します',
           'settings.database.pressToStop' => TranslationOverrides.string(_root.$meta, 'settings.database.pressToStop', {}) ?? 'ここをタップして停止',
-          'settings.database.purgeFailedItems' =>
-            ({required int count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.database.purgeFailedItems', {'count': count}) ?? '失敗したアイテムを消去します (${count})',
-          'settings.database.retryFailedItems' =>
-            ({required int count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.database.retryFailedItems', {'count': count}) ?? '失敗したアイテムを再試行します (${count})',
+          'settings.database.purgeFailedItems' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.purgeFailedItems', {'count': count}) ?? '失敗したアイテムを消去します (${count})',
+          'settings.database.retryFailedItems' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.retryFailedItems', {'count': count}) ?? '失敗したアイテムを再試行します (${count})',
           'settings.backupAndRestore.title' => TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.title', {}) ?? 'バックアップと復元',
           'settings.backupAndRestore.duplicateFileDetectedTitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.duplicateFileDetectedTitle', {}) ?? '重複ファイルが検出されました！',
@@ -5068,9 +4812,9 @@ extension on TranslationsJaJp {
             TranslationOverrides.string(_root.$meta, 'settings.network.customUserAgentTitle', {}) ?? 'カスタム User-Agent',
           'settings.network.keepEmptyForDefault' =>
             TranslationOverrides.string(_root.$meta, 'settings.network.keepEmptyForDefault', {}) ?? '空でデフォルトを使用',
-          'settings.network.defaultUserAgent' =>
-            ({required String agent}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.network.defaultUserAgent', {'agent': agent}) ?? 'デフォルト: ${agent}',
+          'settings.network.defaultUserAgent' => ({
+            required String agent,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.network.defaultUserAgent', {'agent': agent}) ?? 'デフォルト: ${agent}',
           'settings.network.userAgentUsedOnRequests' =>
             TranslationOverrides.string(_root.$meta, 'settings.network.userAgentUsedOnRequests', {}) ?? 'ほとんどのBooruリクエストとアプリ内ブラウザに使用されます',
           'settings.network.valueSavedAfterLeaving' =>
@@ -5081,9 +4825,9 @@ extension on TranslationsJaJp {
           'settings.network.cookieCleaner' => TranslationOverrides.string(_root.$meta, 'settings.network.cookieCleaner', {}) ?? 'Cookie クリーナー',
           'settings.network.selectBooruToClearCookies' =>
             TranslationOverrides.string(_root.$meta, 'settings.network.selectBooruToClearCookies', {}) ?? 'Cookieを消去するBooruを選択するか、空白のままにしてすべてから消去',
-          'settings.network.cookiesFor' =>
-            ({required String booruName}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.network.cookiesFor', {'booruName': booruName}) ?? '${booruName} 上のCookie:',
+          'settings.network.cookiesFor' => ({
+            required String booruName,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.network.cookiesFor', {'booruName': booruName}) ?? '${booruName} 上のCookie:',
           'settings.network.cookieDeleted' =>
             ({required String cookieName}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.network.cookieDeleted', {'cookieName': cookieName}) ??
@@ -5159,8 +4903,9 @@ extension on TranslationsJaJp {
             TranslationOverrides.string(_root.$meta, 'settings.cache.requiresCustomStorageDirectory', {}) ?? 'カスタムディレクトリが必要です',
           'settings.cache.setStorageDirectory' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.setStorageDirectory', {}) ?? 'ストレージディレクトリを設定',
-          'settings.cache.currentPath' =>
-            ({required String path}) => TranslationOverrides.string(_root.$meta, 'settings.cache.currentPath', {'path': path}) ?? '現在: ${path}',
+          'settings.cache.currentPath' => ({
+            required String path,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.cache.currentPath', {'path': path}) ?? '現在: ${path}',
           'settings.cache.resetStorageDirectory' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.resetStorageDirectory', {}) ?? 'ストレージディレクトリをリセット',
           'settings.cache.cachePreviews' => TranslationOverrides.string(_root.$meta, 'settings.cache.cachePreviews', {}) ?? 'キャッシュプレビュー',
@@ -5187,12 +4932,13 @@ extension on TranslationsJaJp {
           'settings.cache.cacheStats' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheStats', {}) ?? 'キャッシュの統計:',
           'settings.cache.loading' => TranslationOverrides.string(_root.$meta, 'settings.cache.loading', {}) ?? '読み込み中…',
           'settings.cache.empty' => TranslationOverrides.string(_root.$meta, 'settings.cache.empty', {}) ?? '空',
-          'settings.cache.inFilesPlural' =>
-            ({required String size, required int count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.cache.inFilesPlural', {'size': size, 'count': count}) ?? '${size}, ${count} ファイル',
-          'settings.cache.inFileSingular' =>
-            ({required String size}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.cache.inFileSingular', {'size': size}) ?? '${size}, 1 ファイル',
+          'settings.cache.inFilesPlural' => ({
+            required String size,
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.cache.inFilesPlural', {'size': size, 'count': count}) ?? '${size}, ${count} ファイル',
+          'settings.cache.inFileSingular' => ({
+            required String size,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.cache.inFileSingular', {'size': size}) ?? '${size}, 1 ファイル',
           'settings.cache.cacheTypeTotal' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeTotal', {}) ?? '合計',
           'settings.cache.cacheTypeFavicons' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeFavicons', {}) ?? 'サイトアイコン',
           'settings.cache.cacheTypeThumbnails' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeThumbnails', {}) ?? 'サムネイル',
@@ -5200,9 +4946,9 @@ extension on TranslationsJaJp {
           'settings.cache.cacheTypeMedia' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeMedia', {}) ?? 'メディア',
           'settings.cache.cacheTypeWebView' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeWebView', {}) ?? 'ウェブページ',
           'settings.cache.cacheCleared' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheCleared', {}) ?? 'キャッシュがクリアされました',
-          'settings.cache.clearedCacheType' =>
-            ({required String type}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.cache.clearedCacheType', {'type': type}) ?? '${type} キャッシュをクリアしました',
+          'settings.cache.clearedCacheType' => ({
+            required String type,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.cache.clearedCacheType', {'type': type}) ?? '${type} キャッシュをクリアしました',
           'settings.cache.clearAllCache' => TranslationOverrides.string(_root.$meta, 'settings.cache.clearAllCache', {}) ?? 'すべてのキャッシュをクリア',
           'settings.cache.clearedCacheCompletely' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.clearedCacheCompletely', {}) ?? 'キャッシュを完全にクリアしました',
@@ -5250,9 +4996,9 @@ extension on TranslationsJaJp {
           'settings.sync.port' => TranslationOverrides.string(_root.$meta, 'settings.sync.port', {}) ?? 'ポート',
           'settings.sync.portPlaceholder' => TranslationOverrides.string(_root.$meta, 'settings.sync.portPlaceholder', {}) ?? 'ホストのポート (例: 7777)',
           'settings.sync.sendFavourites' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendFavourites', {}) ?? 'お気に入りを送信',
-          'settings.sync.favouritesCount' =>
-            ({required String count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.sync.favouritesCount', {'count': count}) ?? 'お気に入り: ${count}',
+          'settings.sync.favouritesCount' => ({
+            required String count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.sync.favouritesCount', {'count': count}) ?? 'お気に入り: ${count}',
           'settings.sync.sendFavouritesLegacy' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.sendFavouritesLegacy', {}) ?? 'お気に入りを送信 (レガシー)',
           'settings.sync.syncFavsFrom' => TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFrom', {}) ?? '#... からお気に入りを同期',
@@ -5267,9 +5013,9 @@ extension on TranslationsJaJp {
           'settings.sync.syncFavsFromHelpText4' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText4', {}) ?? 'お気に入りの順序: 古いもの (0) から新しい順 (X)',
           'settings.sync.sendSnatchedHistory' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendSnatchedHistory', {}) ?? 'ダウンロード履歴を送信',
-          'settings.sync.snatchedCount' =>
-            ({required String count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.sync.snatchedCount', {'count': count}) ?? 'ダウンロード済み: ${count}',
+          'settings.sync.snatchedCount' => ({
+            required String count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.sync.snatchedCount', {'count': count}) ?? 'ダウンロード済み: ${count}',
           'settings.sync.syncSnatchedFrom' => TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFrom', {}) ?? '#... からダウンロードを同期',
           'settings.sync.syncSnatchedFromHelpText1' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText1', {}) ??
@@ -5283,11 +5029,13 @@ extension on TranslationsJaJp {
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText4', {}) ?? '履歴の順序: 古いもの (0) から新しい順 (X)',
           'settings.sync.sendSettings' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendSettings', {}) ?? '設定を送信',
           'settings.sync.sendBooruConfigs' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendBooruConfigs', {}) ?? 'Booru設定を送信',
-          'settings.sync.configsCount' =>
-            ({required String count}) => TranslationOverrides.string(_root.$meta, 'settings.sync.configsCount', {'count': count}) ?? '設定: ${count}',
+          'settings.sync.configsCount' => ({
+            required String count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.sync.configsCount', {'count': count}) ?? '設定: ${count}',
           'settings.sync.sendTabs' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendTabs', {}) ?? 'タブを送信',
-          'settings.sync.tabsCount' =>
-            ({required String count}) => TranslationOverrides.string(_root.$meta, 'settings.sync.tabsCount', {'count': count}) ?? 'タブ: ${count}',
+          'settings.sync.tabsCount' => ({
+            required String count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.sync.tabsCount', {'count': count}) ?? 'タブ: ${count}',
           'settings.sync.tabsSyncMode' => TranslationOverrides.string(_root.$meta, 'settings.sync.tabsSyncMode', {}) ?? 'タブ同期モード',
           'settings.sync.tabsSyncModeMerge' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.tabsSyncModeMerge', {}) ?? '結合: このデバイスのタブを先のデバイスにマージします。不明なタブや既存のタブは無視されます',
@@ -5296,8 +5044,9 @@ extension on TranslationsJaJp {
           'settings.sync.merge' => TranslationOverrides.string(_root.$meta, 'settings.sync.merge', {}) ?? '結合',
           'settings.sync.replace' => TranslationOverrides.string(_root.$meta, 'settings.sync.replace', {}) ?? '置換',
           'settings.sync.sendTags' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendTags', {}) ?? 'タグを送信',
-          'settings.sync.tagsCount' =>
-            ({required String count}) => TranslationOverrides.string(_root.$meta, 'settings.sync.tagsCount', {'count': count}) ?? 'タグ: ${count}',
+          'settings.sync.tagsCount' => ({
+            required String count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.sync.tagsCount', {'count': count}) ?? 'タグ: ${count}',
           'settings.sync.tagsSyncMode' => TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncMode', {}) ?? 'タグ同期モード',
           'settings.sync.tagsSyncModePreferTypeIfNone' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncModePreferTypeIfNone', {}) ??
@@ -5322,9 +5071,9 @@ extension on TranslationsJaJp {
             TranslationOverrides.string(_root.$meta, 'settings.sync.receiverInstructions', {}) ?? 'サーバーを起動してデータを受信できます。セキュリティのため、公共Wi-Fiは使用しないでください',
           'settings.sync.availableNetworkInterfaces' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.availableNetworkInterfaces', {}) ?? '利用可能なネットワークインターフェース',
-          'settings.sync.selectedInterfaceIP' =>
-            ({required String ip}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.sync.selectedInterfaceIP', {'ip': ip}) ?? '選択されたインターフェースでのIP: ${ip}',
+          'settings.sync.selectedInterfaceIP' => ({
+            required String ip,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.sync.selectedInterfaceIP', {'ip': ip}) ?? '選択されたインターフェースでのIP: ${ip}',
           'settings.sync.serverPort' => TranslationOverrides.string(_root.$meta, 'settings.sync.serverPort', {}) ?? 'サーバーポート',
           'settings.sync.serverPortPlaceholder' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.serverPortPlaceholder', {}) ?? '(空の場合はデフォルトで\'8080\'になります)',
@@ -5387,16 +5136,17 @@ extension on TranslationsJaJp {
             TranslationOverrides.string(_root.$meta, 'settings.debug.blurImagesAndMuteVideosDevOnly', {}) ?? '画像のぼかし + 動画のミュート [DEV only]',
           'settings.debug.enableDragScrollOnListsDesktopOnly' =>
             TranslationOverrides.string(_root.$meta, 'settings.debug.enableDragScrollOnListsDesktopOnly', {}) ?? 'リストのドラッグスクロールを有効化 [デスクトップのみ]',
-          'settings.debug.animationSpeed' =>
-            ({required double speed}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.debug.animationSpeed', {'speed': speed}) ?? 'アニメーション速度 (${speed})',
+          'settings.debug.animationSpeed' => ({
+            required double speed,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.debug.animationSpeed', {'speed': speed}) ?? 'アニメーション速度 (${speed})',
           'settings.debug.tagsManager' => TranslationOverrides.string(_root.$meta, 'settings.debug.tagsManager', {}) ?? 'タグマネージャー',
           'settings.debug.resolution' =>
             ({required String width, required String height}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.debug.resolution', {'width': width, 'height': height}) ??
                 '解像度: ${width}x${height}',
-          'settings.debug.pixelRatio' =>
-            ({required String ratio}) => TranslationOverrides.string(_root.$meta, 'settings.debug.pixelRatio', {'ratio': ratio}) ?? 'ピクセル比: ${ratio}',
+          'settings.debug.pixelRatio' => ({
+            required String ratio,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.debug.pixelRatio', {'ratio': ratio}) ?? 'ピクセル比: ${ratio}',
           'settings.debug.logger' => TranslationOverrides.string(_root.$meta, 'settings.debug.logger', {}) ?? 'ロガー',
           'settings.debug.webview' => TranslationOverrides.string(_root.$meta, 'settings.debug.webview', {}) ?? 'Webview',
           'settings.debug.deleteAllCookies' => TranslationOverrides.string(_root.$meta, 'settings.debug.deleteAllCookies', {}) ?? 'すべてのCookieを削除',
@@ -5435,23 +5185,23 @@ extension on TranslationsJaJp {
           'pageChanger.pageLabel' => TranslationOverrides.string(_root.$meta, 'pageChanger.pageLabel', {}) ?? 'ページ #',
           'pageChanger.delayBetweenLoadings' => TranslationOverrides.string(_root.$meta, 'pageChanger.delayBetweenLoadings', {}) ?? '読み込み間隔 (ms)',
           'pageChanger.delayInMs' => TranslationOverrides.string(_root.$meta, 'pageChanger.delayInMs', {}) ?? '間隔 (ms)',
-          'pageChanger.currentPage' =>
-            ({required int number}) =>
-                TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? '現在のベージ: #${number}',
-          'pageChanger.possibleMaxPage' =>
-            ({required int number}) =>
-                TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? '最大可能ページ: #~${number}',
+          'pageChanger.currentPage' => ({
+            required int number,
+          }) => TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? '現在のベージ: #${number}',
+          'pageChanger.possibleMaxPage' => ({
+            required int number,
+          }) => TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? '最大可能ページ: #~${number}',
           'pageChanger.searchCurrentlyRunning' => TranslationOverrides.string(_root.$meta, 'pageChanger.searchCurrentlyRunning', {}) ?? '検索が進行中です！',
           'pageChanger.jumpToPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.jumpToPage', {}) ?? '指定ページへジャンプ',
           'pageChanger.searchUntilPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.searchUntilPage', {}) ?? '指定ページまで読み込み',
           'pageChanger.stopSearching' => TranslationOverrides.string(_root.$meta, 'pageChanger.stopSearching', {}) ?? '検索の停止',
           'tagsFiltersDialogs.emptyInput' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.emptyInput', {}) ?? '入力が空です！',
-          'tagsFiltersDialogs.addNewFilter' =>
-            ({required String type}) =>
-                TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.addNewFilter', {'type': type}) ?? '[${type} フィルターに新規追加]',
-          'tagsFiltersDialogs.newTagFilter' =>
-            ({required String type}) =>
-                TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.newTagFilter', {'type': type}) ?? '新規 ${type} タグフィルター',
+          'tagsFiltersDialogs.addNewFilter' => ({
+            required String type,
+          }) => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.addNewFilter', {'type': type}) ?? '[${type} フィルターに新規追加]',
+          'tagsFiltersDialogs.newTagFilter' => ({
+            required String type,
+          }) => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.newTagFilter', {'type': type}) ?? '新規 ${type} タグフィルター',
           'tagsFiltersDialogs.newFilter' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.newFilter', {}) ?? '追加するフィルター',
           'tagsFiltersDialogs.editFilter' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.editFilter', {}) ?? 'フィルターの編集',
           'tagsManager.title' => TranslationOverrides.string(_root.$meta, 'tagsManager.title', {}) ?? 'すべてのタグ',
@@ -5459,9 +5209,9 @@ extension on TranslationsJaJp {
           'tagsManager.name' => TranslationOverrides.string(_root.$meta, 'tagsManager.name', {}) ?? '名前',
           'tagsManager.type' => TranslationOverrides.string(_root.$meta, 'tagsManager.type', {}) ?? 'タイプ',
           'tagsManager.add' => TranslationOverrides.string(_root.$meta, 'tagsManager.add', {}) ?? '追加',
-          'tagsManager.staleAfter' =>
-            ({required String staleText}) =>
-                TranslationOverrides.string(_root.$meta, 'tagsManager.staleAfter', {'staleText': staleText}) ?? '期限切れ: ${staleText}',
+          'tagsManager.staleAfter' => ({
+            required String staleText,
+          }) => TranslationOverrides.string(_root.$meta, 'tagsManager.staleAfter', {'staleText': staleText}) ?? '期限切れ: ${staleText}',
           'tagsManager.addedATab' => TranslationOverrides.string(_root.$meta, 'tagsManager.addedATab', {}) ?? 'タブを追加しました',
           'tagsManager.addATab' => TranslationOverrides.string(_root.$meta, 'tagsManager.addATab', {}) ?? 'タブに追加',
           'tagsManager.copy' => TranslationOverrides.string(_root.$meta, 'tagsManager.copy', {}) ?? 'コピー',
@@ -5497,19 +5247,21 @@ extension on TranslationsJaJp {
             ({required int statusCode, required String reasonPhrase}) =>
                 TranslationOverrides.string(_root.$meta, 'loliSync.testError', {'statusCode': statusCode, 'reasonPhrase': reasonPhrase}) ??
                 'テスト時エラー: ${statusCode} ${reasonPhrase}',
-          'loliSync.testErrorException' =>
-            ({required String error}) =>
-                TranslationOverrides.string(_root.$meta, 'loliSync.testErrorException', {'error': error}) ?? 'テスト時エラー: ${error}',
+          'loliSync.testErrorException' => ({
+            required String error,
+          }) => TranslationOverrides.string(_root.$meta, 'loliSync.testErrorException', {'error': error}) ?? 'テスト時エラー: ${error}',
           'loliSync.testSuccess' => TranslationOverrides.string(_root.$meta, 'loliSync.testSuccess', {}) ?? 'テストリクエストは正常な返答を受け取りました',
           'loliSync.testSuccessMessage' =>
             TranslationOverrides.string(_root.$meta, 'loliSync.testSuccessMessage', {}) ?? '先のデバイスに \'Test\' というメッセージが表示されるはずです',
           'imageSearch.title' => TranslationOverrides.string(_root.$meta, 'imageSearch.title', {}) ?? '画像検索',
           'tagView.tags' => TranslationOverrides.string(_root.$meta, 'tagView.tags', {}) ?? 'タグ',
           'tagView.comments' => TranslationOverrides.string(_root.$meta, 'tagView.comments', {}) ?? 'コメント',
-          'tagView.showNotes' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'tagView.showNotes', {'count': count}) ?? 'ノートを表示 (${count})',
-          'tagView.hideNotes' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'tagView.hideNotes', {'count': count}) ?? 'ノートを隠す (${count})',
+          'tagView.showNotes' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'tagView.showNotes', {'count': count}) ?? 'ノートを表示 (${count})',
+          'tagView.hideNotes' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'tagView.hideNotes', {'count': count}) ?? 'ノートを隠す (${count})',
           'tagView.loadNotes' => TranslationOverrides.string(_root.$meta, 'tagView.loadNotes', {}) ?? 'ノートを読み込み',
           'tagView.thisTagAlreadyInSearch' =>
             TranslationOverrides.string(_root.$meta, 'tagView.thisTagAlreadyInSearch', {}) ?? 'このタグは既に現在の検索に含まれています:',
@@ -5554,9 +5306,6 @@ extension on TranslationsJaJp {
           'tagView.tryAgain' => TranslationOverrides.string(_root.$meta, 'tagView.tryAgain', {}) ?? '再試行',
           'tagView.detectedLinks' => TranslationOverrides.string(_root.$meta, 'tagView.detectedLinks', {}) ?? '見つかったリンク:',
           'tagView.relatedTabs' => TranslationOverrides.string(_root.$meta, 'tagView.relatedTabs', {}) ?? '関連タブ',
-          _ => null,
-        } ??
-        switch (path) {
           'tagView.tabsWithOnlyTag' => TranslationOverrides.string(_root.$meta, 'tagView.tabsWithOnlyTag', {}) ?? 'このタグのみのタブ',
           'tagView.tabsWithOnlyTagDifferentBooru' =>
             TranslationOverrides.string(_root.$meta, 'tagView.tabsWithOnlyTagDifferentBooru', {}) ?? 'このタグのみで、違うBooruのタブ',
@@ -5566,14 +5315,15 @@ extension on TranslationsJaJp {
           'pinnedTags.unpinTag' => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinTag', {}) ?? 'タグのピン留めを解除',
           'pinnedTags.pin' => TranslationOverrides.string(_root.$meta, 'pinnedTags.pin', {}) ?? 'ピン留め',
           'pinnedTags.unpin' => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpin', {}) ?? 'ピン留め解除',
-          'pinnedTags.pinQuestion' =>
-            ({required String tag}) =>
-                TranslationOverrides.string(_root.$meta, 'pinnedTags.pinQuestion', {'tag': tag}) ?? '«${tag}» をクイックアクセスにピン留めしますか？',
-          'pinnedTags.unpinQuestion' =>
-            ({required String tag}) =>
-                TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinQuestion', {'tag': tag}) ?? '«${tag}» をピン留めされたタグから解除しますか？',
-          'pinnedTags.onlyForBooru' =>
-            ({required String name}) => TranslationOverrides.string(_root.$meta, 'pinnedTags.onlyForBooru', {'name': name}) ?? '${name} のみで',
+          'pinnedTags.pinQuestion' => ({
+            required String tag,
+          }) => TranslationOverrides.string(_root.$meta, 'pinnedTags.pinQuestion', {'tag': tag}) ?? '«${tag}» をクイックアクセスにピン留めしますか？',
+          'pinnedTags.unpinQuestion' => ({
+            required String tag,
+          }) => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinQuestion', {'tag': tag}) ?? '«${tag}» をピン留めされたタグから解除しますか？',
+          'pinnedTags.onlyForBooru' => ({
+            required String name,
+          }) => TranslationOverrides.string(_root.$meta, 'pinnedTags.onlyForBooru', {'name': name}) ?? '${name} のみで',
           'pinnedTags.labelsOptional' => TranslationOverrides.string(_root.$meta, 'pinnedTags.labelsOptional', {}) ?? 'ラベル (オプション)',
           'pinnedTags.typeAndPressAdd' => TranslationOverrides.string(_root.$meta, 'pinnedTags.typeAndPressAdd', {}) ?? '入力して追加ボタンを押してラベルを追加',
           'pinnedTags.selectExistingLabel' => TranslationOverrides.string(_root.$meta, 'pinnedTags.selectExistingLabel', {}) ?? '既存のラベルを選択',
@@ -5582,9 +5332,9 @@ extension on TranslationsJaJp {
             ({required String name, required String labels}) =>
                 TranslationOverrides.string(_root.$meta, 'pinnedTags.pinnedForBooru', {'name': name, 'labels': labels}) ??
                 '${name} にピン留めしました ${labels}',
-          'pinnedTags.pinnedGloballyWithLabels' =>
-            ({required String labels}) =>
-                TranslationOverrides.string(_root.$meta, 'pinnedTags.pinnedGloballyWithLabels', {'labels': labels}) ?? '${labels} 全てにピン留めしました',
+          'pinnedTags.pinnedGloballyWithLabels' => ({
+            required String labels,
+          }) => TranslationOverrides.string(_root.$meta, 'pinnedTags.pinnedGloballyWithLabels', {'labels': labels}) ?? '${labels} 全てにピン留めしました',
           'pinnedTags.tagUnpinned' => TranslationOverrides.string(_root.$meta, 'pinnedTags.tagUnpinned', {}) ?? 'ピン留め解除',
           'pinnedTags.all' => TranslationOverrides.string(_root.$meta, 'pinnedTags.all', {}) ?? 'すべて',
           'pinnedTags.reorderPinnedTags' => TranslationOverrides.string(_root.$meta, 'pinnedTags.reorderPinnedTags', {}) ?? 'ピン留めタグの並び替え',
@@ -5600,15 +5350,15 @@ extension on TranslationsJaJp {
           'pinnedTags.tagQueryHint' => TranslationOverrides.string(_root.$meta, 'pinnedTags.tagQueryHint', {}) ?? 'tag_name',
           'pinnedTags.rawQueryHelp' => TranslationOverrides.string(_root.$meta, 'pinnedTags.rawQueryHelp', {}) ?? '複数のタグを含むどんな検索クエリでも入力できます',
           'searchBar.searchForTags' => TranslationOverrides.string(_root.$meta, 'searchBar.searchForTags', {}) ?? 'タグを検索',
-          'searchBar.failedToLoadSuggestions' =>
-            ({required String msg}) =>
-                TranslationOverrides.string(_root.$meta, 'searchBar.failedToLoadSuggestions', {'msg': msg}) ?? '候補が見つかりませんでした。タップして再試行 ${msg}',
+          'searchBar.failedToLoadSuggestions' => ({
+            required String msg,
+          }) => TranslationOverrides.string(_root.$meta, 'searchBar.failedToLoadSuggestions', {'msg': msg}) ?? '候補が見つかりませんでした。タップして再試行 ${msg}',
           'searchBar.noSuggestionsFound' => TranslationOverrides.string(_root.$meta, 'searchBar.noSuggestionsFound', {}) ?? '候補が見つかりませんでした',
           'searchBar.tagSuggestionsNotAvailable' =>
             TranslationOverrides.string(_root.$meta, 'searchBar.tagSuggestionsNotAvailable', {}) ?? 'このBooruではタグ候補を利用できません',
-          'searchBar.copiedTagToClipboard' =>
-            ({required String tag}) =>
-                TranslationOverrides.string(_root.$meta, 'searchBar.copiedTagToClipboard', {'tag': tag}) ?? 'タグ «${tag}» をクリップボードにコピーしました',
+          'searchBar.copiedTagToClipboard' => ({
+            required String tag,
+          }) => TranslationOverrides.string(_root.$meta, 'searchBar.copiedTagToClipboard', {'tag': tag}) ?? 'タグ «${tag}» をクリップボードにコピーしました',
           'searchBar.prefix' => TranslationOverrides.string(_root.$meta, 'searchBar.prefix', {}) ?? 'プレフィックス',
           'searchBar.exclude' => TranslationOverrides.string(_root.$meta, 'searchBar.exclude', {}) ?? '除外 (—)',
           'searchBar.booruNumberPrefix' => TranslationOverrides.string(_root.$meta, 'searchBar.booruNumberPrefix', {}) ?? 'Booru (N#)',
@@ -5632,8 +5382,12 @@ extension on TranslationsJaJp {
           'mobileHome.cancelledByUser' => TranslationOverrides.string(_root.$meta, 'mobileHome.cancelledByUser', {}) ?? 'ユーザーによるキャンセル',
           'mobileHome.saveAnyway' => TranslationOverrides.string(_root.$meta, 'mobileHome.saveAnyway', {}) ?? 'とにかく保存',
           'mobileHome.skip' => TranslationOverrides.string(_root.$meta, 'mobileHome.skip', {}) ?? 'スキップ',
-          'mobileHome.retryAll' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'mobileHome.retryAll', {'count': count}) ?? 'すべて再試行 (${count})',
+          'mobileHome.retryAll' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'mobileHome.retryAll', {'count': count}) ?? 'すべて再試行 (${count})',
+          _ => null,
+        } ??
+        switch (path) {
           'mobileHome.existingFailedOrCancelledItems' =>
             TranslationOverrides.string(_root.$meta, 'mobileHome.existingFailedOrCancelledItems', {}) ?? '既に存在、失敗またはキャンセルされたアイテム',
           'mobileHome.clearAllRetryableItems' => TranslationOverrides.string(_root.$meta, 'mobileHome.clearAllRetryableItems', {}) ?? 'すべてクリア',
@@ -5722,9 +5476,10 @@ extension on TranslationsJaJp {
           'viewer.appBar.selectTags' => TranslationOverrides.string(_root.$meta, 'viewer.appBar.selectTags', {}) ?? 'タグを選択',
           'viewer.notes.note' => TranslationOverrides.string(_root.$meta, 'viewer.notes.note', {}) ?? 'ノート',
           'viewer.notes.notes' => TranslationOverrides.string(_root.$meta, 'viewer.notes.notes', {}) ?? 'ノート',
-          'viewer.notes.coordinates' =>
-            ({required int posX, required int posY}) =>
-                TranslationOverrides.string(_root.$meta, 'viewer.notes.coordinates', {'posX': posX, 'posY': posY}) ?? 'X:${posX}, Y:${posY}',
+          'viewer.notes.coordinates' => ({
+            required int posX,
+            required int posY,
+          }) => TranslationOverrides.string(_root.$meta, 'viewer.notes.coordinates', {'posX': posX, 'posY': posY}) ?? 'X:${posX}, Y:${posY}',
           'common.selectABooru' => TranslationOverrides.string(_root.$meta, 'common.selectABooru', {}) ?? 'Booruを選択',
           'common.booruItemCopiedToClipboard' =>
             TranslationOverrides.string(_root.$meta, 'common.booruItemCopiedToClipboard', {}) ?? 'Booruアイテムがクリップボードにコピーされました',
@@ -5763,9 +5518,9 @@ extension on TranslationsJaJp {
           'media.loading.loadAnyway' => TranslationOverrides.string(_root.$meta, 'media.loading.loadAnyway', {}) ?? 'とにかく読み込む',
           'media.loading.restartLoading' => TranslationOverrides.string(_root.$meta, 'media.loading.restartLoading', {}) ?? '再度読み込む',
           'media.loading.stopLoading' => TranslationOverrides.string(_root.$meta, 'media.loading.stopLoading', {}) ?? '読み込みを停止',
-          'media.loading.startedSecondsAgo' =>
-            ({required int seconds}) =>
-                TranslationOverrides.string(_root.$meta, 'media.loading.startedSecondsAgo', {'seconds': seconds}) ?? '${seconds} 秒前から開始',
+          'media.loading.startedSecondsAgo' => ({
+            required int seconds,
+          }) => TranslationOverrides.string(_root.$meta, 'media.loading.startedSecondsAgo', {'seconds': seconds}) ?? '${seconds} 秒前から開始',
           'media.loading.stopReasons.stoppedByUser' =>
             TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.stoppedByUser', {}) ?? 'ユーザーによる停止',
           'media.loading.stopReasons.loadingError' =>
@@ -5776,10 +5531,12 @@ extension on TranslationsJaJp {
             TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.hiddenByFilters', {}) ?? 'フィルターにより非表示:',
           'media.loading.stopReasons.videoError' => TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.videoError', {}) ?? '動画エラー',
           'media.loading.fileIsZeroBytes' => TranslationOverrides.string(_root.$meta, 'media.loading.fileIsZeroBytes', {}) ?? '空のファイル',
-          'media.loading.fileSize' =>
-            ({required String size}) => TranslationOverrides.string(_root.$meta, 'media.loading.fileSize', {'size': size}) ?? 'ファイルサイズ: ${size}',
-          'media.loading.sizeLimit' =>
-            ({required String limit}) => TranslationOverrides.string(_root.$meta, 'media.loading.sizeLimit', {'limit': limit}) ?? '制限: ${limit}',
+          'media.loading.fileSize' => ({
+            required String size,
+          }) => TranslationOverrides.string(_root.$meta, 'media.loading.fileSize', {'size': size}) ?? 'ファイルサイズ: ${size}',
+          'media.loading.sizeLimit' => ({
+            required String limit,
+          }) => TranslationOverrides.string(_root.$meta, 'media.loading.sizeLimit', {'limit': limit}) ?? '制限: ${limit}',
           'media.loading.tryChangingVideoBackend' =>
             TranslationOverrides.string(_root.$meta, 'media.loading.tryChangingVideoBackend', {}) ??
                 '再生時に問題が頻繁に発生しますか？ [設定 > 動画 > プレーヤーのバックエンド] を変更してみてください',
@@ -5799,14 +5556,18 @@ extension on TranslationsJaJp {
             ({required String fileExt}) =>
                 TranslationOverrides.string(_root.$meta, 'media.video.unknownFileFormat', {'fileExt': fileExt}) ??
                 '不明なファイルフォーマットです (.${fileExt})。ここをタップしてブラウザで開く',
-          'imageStats.live' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'imageStats.live', {'count': count}) ?? 'アクティブ: ${count}',
-          'imageStats.pending' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'imageStats.pending', {'count': count}) ?? '保留中: ${count}',
-          'imageStats.total' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'imageStats.total', {'count': count}) ?? '合計: ${count}',
-          'imageStats.size' =>
-            ({required String size}) => TranslationOverrides.string(_root.$meta, 'imageStats.size', {'size': size}) ?? 'サイズ: ${size}',
+          'imageStats.live' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'imageStats.live', {'count': count}) ?? 'アクティブ: ${count}',
+          'imageStats.pending' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'imageStats.pending', {'count': count}) ?? '保留中: ${count}',
+          'imageStats.total' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'imageStats.total', {'count': count}) ?? '合計: ${count}',
+          'imageStats.size' => ({
+            required String size,
+          }) => TranslationOverrides.string(_root.$meta, 'imageStats.size', {'size': size}) ?? 'サイズ: ${size}',
           'imageStats.max' => ({required String max}) => TranslationOverrides.string(_root.$meta, 'imageStats.max', {'max': max}) ?? '最大: ${max}',
           'preview.error.noResults' => TranslationOverrides.string(_root.$meta, 'preview.error.noResults', {}) ?? '結果が見つかりませんでした',
           'preview.error.noResultsSubtitle' =>
@@ -5816,9 +5577,9 @@ extension on TranslationsJaJp {
             ({required int pageNum}) =>
                 TranslationOverrides.string(_root.$meta, 'preview.error.reachedEndSubtitle', {'pageNum': pageNum}) ??
                 '読み込まれたページ数: ${pageNum}\nここをタップして最後のページを再読み込み',
-          'preview.error.loadingPage' =>
-            ({required int pageNum}) =>
-                TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? 'ページ #${pageNum} の読み込み中…',
+          'preview.error.loadingPage' => ({
+            required int pageNum,
+          }) => TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? 'ページ #${pageNum} の読み込み中…',
           'preview.error.startedAgo' =>
             ({required num seconds}) =>
                 TranslationOverrides.plural(_root.$meta, 'preview.error.startedAgo', {'seconds': seconds}) ??

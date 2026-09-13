@@ -5,16 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart' hide FirstWhereOrNullExt;
 
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
-import 'package:lolisnatcher/src/boorus/eagle_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/data/main_drawer_item.dart';
 import 'package:lolisnatcher/src/handlers/local_auth_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
-import 'package:lolisnatcher/src/handlers/upload_handler.dart';
 import 'package:lolisnatcher/src/pages/settings_page.dart';
-import 'package:lolisnatcher/src/pages/upload_manager_page.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -22,7 +19,6 @@ import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/mascot_image.dart';
 import 'package:lolisnatcher/src/widgets/common/multibooru_toggle.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
-import 'package:lolisnatcher/src/widgets/drawers/eagle_folder_drawer.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_bar.dart';
 import 'package:lolisnatcher/src/widgets/tabs/tab_buttons.dart';
 import 'package:lolisnatcher/src/widgets/tabs/tab_selector.dart';
@@ -94,42 +90,6 @@ class MainDrawer extends StatelessWidget {
           padding: EdgeInsets.symmetric(vertical: 12),
           child: TabButtons(true, WrapAlignment.spaceEvenly),
         );
-
-      case MainDrawerItem.eagleFolders:
-        return Obx(() {
-          searchHandler.index.value; // react to tab switches
-          if (searchHandler.tabs.isEmpty) return const SizedBox.shrink();
-          if (searchHandler.currentBooru.type?.isEagle != true) return const SizedBox.shrink();
-          final handler = searchHandler.currentBooruHandler;
-          if (handler is! EagleHandler) return const SizedBox.shrink();
-          return EagleFolderDrawer(handler: handler);
-        });
-
-      case MainDrawerItem.uploadManager:
-        return Obx(() {
-          settingsHandler.booruList.length; // react to booru add/remove
-          final hasTarget = settingsHandler.booruList.any((b) => b.type?.supportsItemAdd == true);
-          if (!hasTarget) return const SizedBox.shrink();
-          final uploadHandler = UploadHandler.instance;
-          return Obx(() {
-            uploadHandler.queue.length; // react to queue changes
-            final int pending = uploadHandler.activeCount;
-            return SettingsButton(
-              name: 'Upload Manager',
-              icon: pending > 0
-                  ? Badge(
-                      label: Text('$pending'),
-                      child: const Icon(Icons.cloud_upload_outlined),
-                    )
-                  : const Icon(Icons.cloud_upload_outlined),
-              action: () async {
-                await Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const UploadManagerPage()),
-                );
-              },
-            );
-          });
-        });
 
       case MainDrawerItem.multibooruToggle:
         return const MergeBooruToggleAndSelector();

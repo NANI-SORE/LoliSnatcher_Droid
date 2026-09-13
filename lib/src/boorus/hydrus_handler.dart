@@ -186,37 +186,6 @@ class HydrusHandler extends BooruHandler {
     return fetched;
   }
 
-  @override
-  bool get hasItemAddSupport => true;
-
-  /// Modular "send to library" entry point. Pushes the item's URL into Hydrus
-  /// and returns whether it succeeded (no UI — the caller reports the result).
-  /// Hydrus has no folder concept, so [folderId] is ignored.
-  @override
-  Future<bool> addItem(
-    BooruItem item, {
-    bool usePostUrl = false,
-    String? folderId,
-  }) async {
-    try {
-      await DioNetwork.post(
-        '${booru.baseURL}/add_urls/add_url',
-        headers: {
-          HttpHeaders.contentTypeHeader: 'application/json',
-          if (booru.apiKey?.isNotEmpty == true) 'Hydrus-Client-API-Access-Key': booru.apiKey,
-        },
-        data: {
-          'url': usePostUrl ? item.postURL : item.fileURL,
-          'filterable_tags': item.tagsList.map((t) => t.fullString).toList(),
-        },
-      );
-      return true;
-    } catch (e, s) {
-      Logger.Inst().log(e.toString(), 'HydrusHandler', 'addItem', LogTypes.exception, s: s);
-      return false;
-    }
-  }
-
   Future addURL(BooruItem item, {bool usePostUrl = false}) async {
     try {
       final String url = '${booru.baseURL}/add_urls/add_url';

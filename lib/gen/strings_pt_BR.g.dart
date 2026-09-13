@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:slang/generated.dart';
 import 'package:slang/overrides.dart';
+
 import 'strings.g.dart';
 
 // Path: <root>
@@ -20,7 +21,7 @@ class TranslationsPtBr extends Translations with BaseTranslations<AppLocale, Tra
     PluralResolver? cardinalResolver,
     PluralResolver? ordinalResolver,
     TranslationMetadata<AppLocale, Translations>? meta,
-  }) : $meta =
+  }) : _meta =
            meta ??
            TranslationMetadata(
              locale: AppLocale.ptBr,
@@ -29,17 +30,17 @@ class TranslationsPtBr extends Translations with BaseTranslations<AppLocale, Tra
              ordinalResolver: ordinalResolver,
            ),
        super(cardinalResolver: cardinalResolver, ordinalResolver: ordinalResolver) {
-    super.$meta.setFlatMapFunction($meta.getTranslation); // copy base translations to super.$meta
-    $meta.setFlatMapFunction(_flatMapFunction);
+    _meta.setFlatMapFunction(_flatMapFunction);
   }
 
   /// Metadata for the translations of <pt-BR>.
+  final TranslationMetadata<AppLocale, Translations> _meta;
   @override
-  final TranslationMetadata<AppLocale, Translations> $meta;
+  TranslationMetadata<AppLocale, Translations> get $meta => _meta;
 
   /// Access flat map
   @override
-  dynamic operator [](String key) => $meta.getTranslation(key) ?? super.$meta.getTranslation(key);
+  dynamic operator [](String key) => _meta.getTranslation(key) ?? super[key];
 
   late final TranslationsPtBr _root = this; // ignore: unused_field
 
@@ -608,8 +609,6 @@ class _Translations$tabs$pt_BR extends Translations$tabs$en {
   @override
   String get switchToNewTab => TranslationOverrides.string(_root.$meta, 'tabs.switchToNewTab', {}) ?? 'Mudar para uma nova aba';
   @override
-  late final _Translations$tabs$groups$pt_BR groups = _Translations$tabs$groups$pt_BR._(_root);
-  @override
   String get add => TranslationOverrides.string(_root.$meta, 'tabs.add', {}) ?? 'adicionar';
   @override
   String get tabsManager => TranslationOverrides.string(_root.$meta, 'tabs.tabsManager', {}) ?? 'Gerenciador de abas';
@@ -911,120 +910,6 @@ class _Translations$tagType$pt_BR extends Translations$tagType$en {
   // Translations
   @override
   String get artist => TranslationOverrides.string(_root.$meta, 'tagType.artist', {}) ?? 'Artista';
-}
-
-// Path: tabs.groups
-class _Translations$tabs$groups$pt_BR extends Translations$tabs$groups$en {
-  _Translations$tabs$groups$pt_BR._(TranslationsPtBr root) : this._root = root, super.internal(root);
-
-  final TranslationsPtBr _root; // ignore: unused_field
-
-  // Translations
-  @override
-  String get title => TranslationOverrides.string(_root.$meta, 'tabs.groups.title', {}) ?? 'Grupos';
-  @override
-  String get newGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroup', {}) ?? 'Novo grupo';
-  @override
-  String get renameGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.renameGroup', {}) ?? 'Renomear grupo';
-  @override
-  String get renameRecolor => TranslationOverrides.string(_root.$meta, 'tabs.groups.renameRecolor', {}) ?? 'Renomear / mudar cor';
-  @override
-  String get editGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.editGroup', {}) ?? 'Editar grupo';
-  @override
-  String get deleteGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteGroup', {}) ?? 'Excluir grupo';
-  @override
-  String get deleteWithTabs => TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteWithTabs', {}) ?? 'Também excluir abas do grupo';
-  @override
-  String get ungrouped => TranslationOverrides.string(_root.$meta, 'tabs.groups.ungrouped', {}) ?? 'Sem grupo';
-  @override
-  String get moveToGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.moveToGroup', {}) ?? 'Mover para grupo';
-  @override
-  String get moveToGroupAction => TranslationOverrides.string(_root.$meta, 'tabs.groups.moveToGroupAction', {}) ?? 'Mover para grupo…';
-  @override
-  String get removeFromGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.removeFromGroup', {}) ?? 'Remover do grupo';
-  @override
-  String get addToGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.addToGroup', {}) ?? 'Adicionar ao grupo…';
-  @override
-  String get newGroupFromTab => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupFromTab', {}) ?? 'Novo grupo a partir desta aba';
-  @override
-  String get groupColor => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupColor', {}) ?? 'Cor';
-  @override
-  String get groupName => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupName', {}) ?? 'Nome do grupo';
-  @override
-  String get collapse => TranslationOverrides.string(_root.$meta, 'tabs.groups.collapse', {}) ?? 'Recolher grupo';
-  @override
-  String get expand => TranslationOverrides.string(_root.$meta, 'tabs.groups.expand', {}) ?? 'Expandir grupo';
-  @override
-  String get filterByGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.filterByGroup', {}) ?? 'Grupo';
-  @override
-  String get dropToUngroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.dropToUngroup', {}) ?? 'Solte para remover do grupo';
-  @override
-  String get dragToAGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.dragToAGroup', {}) ?? 'Arraste para um grupo';
-  @override
-  String get groupActions => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupActions', {}) ?? 'Ações do grupo';
-  @override
-  String get newerVersionBackup =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.newerVersionBackup', {}) ??
-      'Este backup é de uma versão mais nova do LoliSnatcher e não pôde ser carregado.';
-  @override
-  String get malformedBackup =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.malformedBackup', {}) ?? 'O backup das abas está corrompido e não pôde ser carregado.';
-  @override
-  String get newGroupTitle => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupTitle', {}) ?? 'Novo grupo';
-  @override
-  String get create => TranslationOverrides.string(_root.$meta, 'tabs.groups.create', {}) ?? 'Criar';
-  @override
-  String get save => TranslationOverrides.string(_root.$meta, 'tabs.groups.save', {}) ?? 'Salvar';
-  @override
-  String deleteGroupNamed({required String name}) =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteGroupNamed', {'name': name}) ?? 'Excluir o grupo "${name}"?';
-  @override
-  String tabsInGroup({required num count}) =>
-      TranslationOverrides.plural(_root.$meta, 'tabs.groups.tabsInGroup', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('pt'))(
-        count,
-        one: '${count} aba neste grupo.',
-        other: '${count} abas neste grupo.',
-      );
-  @override
-  String get otherwiseBecomeUngrouped =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.otherwiseBecomeUngrouped', {}) ?? 'Caso contrário, as abas ficam sem grupo.';
-  @override
-  String tabsMovedToUngrouped({required num count}) =>
-      TranslationOverrides.plural(_root.$meta, 'tabs.groups.tabsMovedToUngrouped', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('pt'))(
-        count,
-        one: '${count} aba movida para sem grupo',
-        other: '${count} abas movidas para sem grupo',
-      );
-  @override
-  String get chooseGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.chooseGroup', {}) ?? 'Escolher grupo';
-  @override
-  String get unknownGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.unknownGroup', {}) ?? 'Grupo desconhecido';
-  @override
-  String get ungroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.ungroup', {}) ?? 'Remover do grupo';
-  @override
-  String get helpTapNewGroup =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapNewGroup', {}) ?? 'Toque em "Novo grupo" no final da lista para criar um grupo.';
-  @override
-  String get helpDragTabHandle =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragTabHandle', {}) ??
-      'Arraste a alça à esquerda de uma aba para movê-la entre grupos.';
-  @override
-  String get helpDragGroupHandle =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragGroupHandle', {}) ??
-      'Arraste a alça à esquerda do cabeçalho de um grupo para reordenar grupos.';
-  @override
-  String get helpTapHeaderCollapse =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapHeaderCollapse', {}) ?? 'Toque no cabeçalho de um grupo para recolher/expandir.';
-  @override
-  String get helpTapMoreVert =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapMoreVert', {}) ??
-      'Toque em ⋯ no cabeçalho de um grupo para renomear, mudar a cor ou excluir.';
-  @override
-  String get helpPrevNextInherits =>
-      TranslationOverrides.string(_root.$meta, 'tabs.groups.helpPrevNextInherits', {}) ??
-      'Novas abas adicionadas com "Anterior"/"Próxima" herdam o grupo da aba atual. Abas adicionadas ao final ficam sem grupo.';
 }
 
 // Path: tabs.filters
@@ -1378,38 +1263,6 @@ class _Translations$settings$interface$pt_BR extends Translations$settings$inter
   late final _Translations$settings$interface$appModeValues$pt_BR appModeValues = _Translations$settings$interface$appModeValues$pt_BR._(_root);
   @override
   late final _Translations$settings$interface$handSideValues$pt_BR handSideValues = _Translations$settings$interface$handSideValues$pt_BR._(_root);
-  @override
-  String get tabManagerBottomBar =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBar', {}) ?? 'Barra de ações inferior do gerenciador de abas';
-  @override
-  String get tabManagerBottomBarSubtitle =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBarSubtitle', {}) ??
-      'Mostrar os botões de rolar ao topo / atual / final e fechar na parte inferior do gerenciador de abas. Os botões flutuantes para nova aba / novo grupo sempre são mostrados.';
-  @override
-  String get drawerBottomAlign =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlign', {}) ?? 'Alinhar gaveta principal à base';
-  @override
-  String get drawerBottomAlignSubtitle =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlignSubtitle', {}) ??
-      'Empilhe o conteúdo da gaveta lateral de baixo para cima (pesquisa, depois aba atual, depois ações de aba, depois o resto) para alcance mais fácil com o polegar.';
-  @override
-  String get drawerLayoutTitle => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutTitle', {}) ?? 'Layout da gaveta';
-  @override
-  String get drawerLayoutSubtitle =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutSubtitle', {}) ??
-      'Escolha quais itens aparecem na gaveta lateral e em que ordem.';
-  @override
-  String get drawerLayoutPinned =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutPinned', {}) ?? 'Fixado — sempre mostrado';
-  @override
-  String get drawerLayoutRestoreDefaults =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutRestoreDefaults', {}) ?? 'Restaurar padrões';
-  @override
-  String get drawerLayoutBottomAlignHint =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutBottomAlignHint', {}) ??
-      'Alinhamento ao final está ativo — o primeiro item desta lista aparece na parte de baixo da gaveta.';
-  @override
-  late final _Translations$settings$interface$drawerItems$pt_BR drawerItems = _Translations$settings$interface$drawerItems$pt_BR._(_root);
 }
 
 // Path: settings.theme
@@ -1636,37 +1489,6 @@ class _Translations$settings$interface$handSideValues$pt_BR extends Translations
   String get right => TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.right', {}) ?? 'Direita';
 }
 
-// Path: settings.interface.drawerItems
-class _Translations$settings$interface$drawerItems$pt_BR extends Translations$settings$interface$drawerItems$en {
-  _Translations$settings$interface$drawerItems$pt_BR._(TranslationsPtBr root) : this._root = root, super.internal(root);
-
-  final TranslationsPtBr _root; // ignore: unused_field
-
-  // Translations
-  @override
-  String get search => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.search', {}) ?? 'Barra de pesquisa';
-  @override
-  String get tabSelector => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.tabSelector', {}) ?? 'Cartão da aba atual';
-  @override
-  String get tabButtons => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.tabButtons', {}) ?? 'Botões de aba';
-  @override
-  String get multibooruToggle =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.multibooruToggle', {}) ?? 'Alternar multi-booru';
-  @override
-  String get lockApp => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.lockApp', {}) ?? 'Bloquear app';
-  @override
-  String get settings => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.settings', {}) ?? 'Configurações';
-  @override
-  String get webview => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.webview', {}) ?? 'Abrir webview';
-  @override
-  String get updateAvailable =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.updateAvailable', {}) ?? 'Atualização disponível';
-  @override
-  String get closeApp => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.closeApp', {}) ?? 'Fechar app';
-  @override
-  String get mascot => TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.mascot', {}) ?? 'Imagem do mascote';
-}
-
 // Path: settings.viewer.shareActionValues
 class _Translations$settings$viewer$shareActionValues$pt_BR extends Translations$settings$viewer$shareActionValues$en {
   _Translations$settings$viewer$shareActionValues$pt_BR._(TranslationsPtBr root) : this._root = root, super.internal(root);
@@ -1763,12 +1585,12 @@ extension on TranslationsPtBr {
         TranslationOverrides.string(_root.$meta, 'validationErrors.invalidNumber', {}) ?? 'Por favor, insira um número',
       'validationErrors.invalidNumericValue' =>
         TranslationOverrides.string(_root.$meta, 'validationErrors.invalidNumericValue', {}) ?? 'Por favor, insira um valor numérico válido',
-      'validationErrors.tooSmall' =>
-        ({required double min}) =>
-            TranslationOverrides.string(_root.$meta, 'validationErrors.tooSmall', {'min': min}) ?? 'Por favor, insira um valor maior que ${min}',
-      'validationErrors.tooBig' =>
-        ({required double max}) =>
-            TranslationOverrides.string(_root.$meta, 'validationErrors.tooBig', {'max': max}) ?? 'Por favor, insira um valor menor que ${max}',
+      'validationErrors.tooSmall' => ({
+        required double min,
+      }) => TranslationOverrides.string(_root.$meta, 'validationErrors.tooSmall', {'min': min}) ?? 'Por favor, insira um valor maior que ${min}',
+      'validationErrors.tooBig' => ({
+        required double max,
+      }) => TranslationOverrides.string(_root.$meta, 'validationErrors.tooBig', {'max': max}) ?? 'Por favor, insira um valor menor que ${max}',
       'validationErrors.rangeError' =>
         ({required double min, required double max}) =>
             TranslationOverrides.string(_root.$meta, 'validationErrors.rangeError', {'min': min, 'max': max}) ??
@@ -1797,8 +1619,9 @@ extension on TranslationsPtBr {
       'permissions.pleaseSetStorageDirectoryAgain' =>
         TranslationOverrides.string(_root.$meta, 'permissions.pleaseSetStorageDirectoryAgain', {}) ??
             'Por favor, defina o diretório de armazenamento novamente para conceder acesso ao app',
-      'permissions.currentPath' =>
-        ({required String path}) => TranslationOverrides.string(_root.$meta, 'permissions.currentPath', {'path': path}) ?? 'Caminho atual: ${path}',
+      'permissions.currentPath' => ({
+        required String path,
+      }) => TranslationOverrides.string(_root.$meta, 'permissions.currentPath', {'path': path}) ?? 'Caminho atual: ${path}',
       'permissions.setDirectory' => TranslationOverrides.string(_root.$meta, 'permissions.setDirectory', {}) ?? 'Definir diretório',
       'permissions.currentlyNotAvailableForThisPlatform' =>
         TranslationOverrides.string(_root.$meta, 'permissions.currentlyNotAvailableForThisPlatform', {}) ?? 'Não disponível nesta plataforma',
@@ -1977,75 +1800,6 @@ extension on TranslationsPtBr {
       'tabs.startFromCustomPageNumber' =>
         TranslationOverrides.string(_root.$meta, 'tabs.startFromCustomPageNumber', {}) ?? 'Página inicial personalizada',
       'tabs.switchToNewTab' => TranslationOverrides.string(_root.$meta, 'tabs.switchToNewTab', {}) ?? 'Mudar para uma nova aba',
-      'tabs.groups.title' => TranslationOverrides.string(_root.$meta, 'tabs.groups.title', {}) ?? 'Grupos',
-      'tabs.groups.newGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroup', {}) ?? 'Novo grupo',
-      'tabs.groups.renameGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.renameGroup', {}) ?? 'Renomear grupo',
-      'tabs.groups.renameRecolor' => TranslationOverrides.string(_root.$meta, 'tabs.groups.renameRecolor', {}) ?? 'Renomear / mudar cor',
-      'tabs.groups.editGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.editGroup', {}) ?? 'Editar grupo',
-      'tabs.groups.deleteGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteGroup', {}) ?? 'Excluir grupo',
-      'tabs.groups.deleteWithTabs' => TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteWithTabs', {}) ?? 'Também excluir abas do grupo',
-      'tabs.groups.ungrouped' => TranslationOverrides.string(_root.$meta, 'tabs.groups.ungrouped', {}) ?? 'Sem grupo',
-      'tabs.groups.moveToGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.moveToGroup', {}) ?? 'Mover para grupo',
-      'tabs.groups.moveToGroupAction' => TranslationOverrides.string(_root.$meta, 'tabs.groups.moveToGroupAction', {}) ?? 'Mover para grupo…',
-      'tabs.groups.removeFromGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.removeFromGroup', {}) ?? 'Remover do grupo',
-      'tabs.groups.addToGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.addToGroup', {}) ?? 'Adicionar ao grupo…',
-      'tabs.groups.newGroupFromTab' => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupFromTab', {}) ?? 'Novo grupo a partir desta aba',
-      'tabs.groups.groupColor' => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupColor', {}) ?? 'Cor',
-      'tabs.groups.groupName' => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupName', {}) ?? 'Nome do grupo',
-      'tabs.groups.collapse' => TranslationOverrides.string(_root.$meta, 'tabs.groups.collapse', {}) ?? 'Recolher grupo',
-      'tabs.groups.expand' => TranslationOverrides.string(_root.$meta, 'tabs.groups.expand', {}) ?? 'Expandir grupo',
-      'tabs.groups.filterByGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.filterByGroup', {}) ?? 'Grupo',
-      'tabs.groups.dropToUngroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.dropToUngroup', {}) ?? 'Solte para remover do grupo',
-      'tabs.groups.dragToAGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.dragToAGroup', {}) ?? 'Arraste para um grupo',
-      'tabs.groups.groupActions' => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupActions', {}) ?? 'Ações do grupo',
-      'tabs.groups.newerVersionBackup' =>
-        TranslationOverrides.string(_root.$meta, 'tabs.groups.newerVersionBackup', {}) ??
-            'Este backup é de uma versão mais nova do LoliSnatcher e não pôde ser carregado.',
-      'tabs.groups.malformedBackup' =>
-        TranslationOverrides.string(_root.$meta, 'tabs.groups.malformedBackup', {}) ?? 'O backup das abas está corrompido e não pôde ser carregado.',
-      'tabs.groups.newGroupTitle' => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupTitle', {}) ?? 'Novo grupo',
-      'tabs.groups.create' => TranslationOverrides.string(_root.$meta, 'tabs.groups.create', {}) ?? 'Criar',
-      'tabs.groups.save' => TranslationOverrides.string(_root.$meta, 'tabs.groups.save', {}) ?? 'Salvar',
-      'tabs.groups.deleteGroupNamed' =>
-        ({required String name}) =>
-            TranslationOverrides.string(_root.$meta, 'tabs.groups.deleteGroupNamed', {'name': name}) ?? 'Excluir o grupo "${name}"?',
-      'tabs.groups.tabsInGroup' =>
-        ({required num count}) =>
-            TranslationOverrides.plural(_root.$meta, 'tabs.groups.tabsInGroup', {'count': count}) ??
-            (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('pt'))(
-              count,
-              one: '${count} aba neste grupo.',
-              other: '${count} abas neste grupo.',
-            ),
-      'tabs.groups.otherwiseBecomeUngrouped' =>
-        TranslationOverrides.string(_root.$meta, 'tabs.groups.otherwiseBecomeUngrouped', {}) ?? 'Caso contrário, as abas ficam sem grupo.',
-      'tabs.groups.tabsMovedToUngrouped' =>
-        ({required num count}) =>
-            TranslationOverrides.plural(_root.$meta, 'tabs.groups.tabsMovedToUngrouped', {'count': count}) ??
-            (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('pt'))(
-              count,
-              one: '${count} aba movida para sem grupo',
-              other: '${count} abas movidas para sem grupo',
-            ),
-      'tabs.groups.chooseGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.chooseGroup', {}) ?? 'Escolher grupo',
-      'tabs.groups.unknownGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.unknownGroup', {}) ?? 'Grupo desconhecido',
-      'tabs.groups.ungroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.ungroup', {}) ?? 'Remover do grupo',
-      'tabs.groups.helpTapNewGroup' =>
-        TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapNewGroup', {}) ?? 'Toque em "Novo grupo" no final da lista para criar um grupo.',
-      'tabs.groups.helpDragTabHandle' =>
-        TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragTabHandle', {}) ??
-            'Arraste a alça à esquerda de uma aba para movê-la entre grupos.',
-      'tabs.groups.helpDragGroupHandle' =>
-        TranslationOverrides.string(_root.$meta, 'tabs.groups.helpDragGroupHandle', {}) ??
-            'Arraste a alça à esquerda do cabeçalho de um grupo para reordenar grupos.',
-      'tabs.groups.helpTapHeaderCollapse' =>
-        TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapHeaderCollapse', {}) ?? 'Toque no cabeçalho de um grupo para recolher/expandir.',
-      'tabs.groups.helpTapMoreVert' =>
-        TranslationOverrides.string(_root.$meta, 'tabs.groups.helpTapMoreVert', {}) ??
-            'Toque em ⋯ no cabeçalho de um grupo para renomear, mudar a cor ou excluir.',
-      'tabs.groups.helpPrevNextInherits' =>
-        TranslationOverrides.string(_root.$meta, 'tabs.groups.helpPrevNextInherits', {}) ??
-            'Novas abas adicionadas com "Anterior"/"Próxima" herdam o grupo da aba atual. Abas adicionadas ao final ficam sem grupo.',
       'tabs.add' => TranslationOverrides.string(_root.$meta, 'tabs.add', {}) ?? 'adicionar',
       'tabs.tabsManager' => TranslationOverrides.string(_root.$meta, 'tabs.tabsManager', {}) ?? 'Gerenciador de abas',
       'tabs.selectMode' => TranslationOverrides.string(_root.$meta, 'tabs.selectMode', {}) ?? 'Modo de seleção',
@@ -2142,9 +1896,9 @@ extension on TranslationsPtBr {
       'tabs.move.outOfRange' => TranslationOverrides.string(_root.$meta, 'tabs.move.outOfRange', {}) ?? 'Fora do intervalo',
       'tabs.move.pleaseEnterValidTabNumber' =>
         TranslationOverrides.string(_root.$meta, 'tabs.move.pleaseEnterValidTabNumber', {}) ?? 'Por favor, digite um número de aba válido',
-      'tabs.move.moveTo' =>
-        ({required String formattedNumber}) =>
-            TranslationOverrides.string(_root.$meta, 'tabs.move.moveTo', {'formattedNumber': formattedNumber}) ?? 'Mover para #${formattedNumber}',
+      'tabs.move.moveTo' => ({
+        required String formattedNumber,
+      }) => TranslationOverrides.string(_root.$meta, 'tabs.move.moveTo', {'formattedNumber': formattedNumber}) ?? 'Mover para #${formattedNumber}',
       'tabs.move.preview' => TranslationOverrides.string(_root.$meta, 'tabs.move.preview', {}) ?? 'Prévia:',
       'history.searchHistory' => TranslationOverrides.string(_root.$meta, 'history.searchHistory', {}) ?? 'Search history',
       'history.searchHistoryIsEmpty' =>
@@ -2154,15 +1908,17 @@ extension on TranslationsPtBr {
       'history.searchHistoryRequiresDatabase' =>
         TranslationOverrides.string(_root.$meta, 'history.searchHistoryRequiresDatabase', {}) ??
             'Ative o banco de dados nas configurações para o histórico de busca',
-      'history.lastSearch' =>
-        ({required String search}) => TranslationOverrides.string(_root.$meta, 'history.lastSearch', {'search': search}) ?? 'Última busca: ${search}',
-      'history.lastSearchWithDate' =>
-        ({required String date}) =>
-            TranslationOverrides.string(_root.$meta, 'history.lastSearchWithDate', {'date': date}) ?? 'Última busca em: ${date}',
+      'history.lastSearch' => ({
+        required String search,
+      }) => TranslationOverrides.string(_root.$meta, 'history.lastSearch', {'search': search}) ?? 'Última busca: ${search}',
+      'history.lastSearchWithDate' => ({
+        required String date,
+      }) => TranslationOverrides.string(_root.$meta, 'history.lastSearchWithDate', {'date': date}) ?? 'Última busca em: ${date}',
       'history.unknownBooruType' => TranslationOverrides.string(_root.$meta, 'history.unknownBooruType', {}) ?? 'Tipo de Booru desconhecido!',
-      'history.unknownBooru' =>
-        ({required String name, required String type}) =>
-            TranslationOverrides.string(_root.$meta, 'history.unknownBooru', {'name': name, 'type': type}) ?? 'Booru desconhecido (${name}-${type})',
+      'history.unknownBooru' => ({
+        required String name,
+        required String type,
+      }) => TranslationOverrides.string(_root.$meta, 'history.unknownBooru', {'name': name, 'type': type}) ?? 'Booru desconhecido (${name}-${type})',
       'history.open' => TranslationOverrides.string(_root.$meta, 'history.open', {}) ?? 'Abrir',
       'history.openInNewTab' => TranslationOverrides.string(_root.$meta, 'history.openInNewTab', {}) ?? 'Abrir em uma nova aba',
       'history.removeFromFavourites' => TranslationOverrides.string(_root.$meta, 'history.removeFromFavourites', {}) ?? 'Remover dos favoritos',
@@ -2171,8 +1927,9 @@ extension on TranslationsPtBr {
       'webview.navigation.enterUrlLabel' => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterUrlLabel', {}) ?? 'Digite uma URL',
       'webview.navigation.enterCustomUrl' =>
         TranslationOverrides.string(_root.$meta, 'webview.navigation.enterCustomUrl', {}) ?? 'Digite uma URL personalizada',
-      'webview.navigation.navigateTo' =>
-        ({required String url}) => TranslationOverrides.string(_root.$meta, 'webview.navigation.navigateTo', {'url': url}) ?? 'Navegar para ${url}',
+      'webview.navigation.navigateTo' => ({
+        required String url,
+      }) => TranslationOverrides.string(_root.$meta, 'webview.navigation.navigateTo', {'url': url}) ?? 'Navegar para ${url}',
       'webview.navigation.listCookies' => TranslationOverrides.string(_root.$meta, 'webview.navigation.listCookies', {}) ?? 'Listar cookies',
       'webview.navigation.clearCookies' => TranslationOverrides.string(_root.$meta, 'webview.navigation.clearCookies', {}) ?? 'Limpar cookies',
       'webview.navigation.cookiesGone' => TranslationOverrides.string(_root.$meta, 'webview.navigation.cookiesGone', {}) ?? 'Cookies limpos',
@@ -2227,9 +1984,7 @@ extension on TranslationsPtBr {
       'settings.booruEditor.title' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.title', {}) ?? 'Booru Editor',
       'settings.booruEditor.testBooruFailedTitle' =>
         TranslationOverrides.string(_root.$meta, 'settings.booruEditor.testBooruFailedTitle', {}) ?? 'O teste do Booru falhou',
-      'settings.booruEditor.testBooruFailedMsg' =>
-        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.testBooruFailedMsg', {}) ??
-            'Os parâmetros de configuração podem estar incorretos, o Booru não permite acesso por API, a solicitação não retornou dados ou houve um erro de rede.',
+      'settings.booruEditor.testBooruFailedMsg' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.testBooruFailedMsg', {}) ?? 'Os parâmetros de configuração podem estar incorretos, o Booru não permite acesso por API, a solicitação não retornou dados ou houve um erro de rede.',
       'settings.booruEditor.saveBooru' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveBooru', {}) ?? 'Salvar Booru',
       'settings.booruEditor.runningTest' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.runningTest', {}) ?? 'Executando teste...',
       'settings.booruEditor.booruConfigExistsError' =>
@@ -2260,9 +2015,7 @@ extension on TranslationsPtBr {
       'settings.booruEditor.accessKeyFailedMsg' =>
         TranslationOverrides.string(_root.$meta, 'settings.booruEditor.accessKeyFailedMsg', {}) ??
             'Você tem a janela de solicitação aberta no Hydrus?',
-      'settings.booruEditor.hydrusInstructions' =>
-        TranslationOverrides.string(_root.$meta, 'settings.booruEditor.hydrusInstructions', {}) ??
-            'Para obter a chave Hydrus, você precisa abrir a caixa de diálogo de solicitação no cliente Hydrus: Serviços > Revisar serviços > API do cliente > Adicionar > Da solicitação de API',
+      'settings.booruEditor.hydrusInstructions' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.hydrusInstructions', {}) ?? 'Para obter a chave Hydrus, você precisa abrir a caixa de diálogo de solicitação no cliente Hydrus: Serviços > Revisar serviços > API do cliente > Adicionar > Da solicitação de API',
       'settings.booruEditor.getHydrusApiKey' =>
         TranslationOverrides.string(_root.$meta, 'settings.booruEditor.getHydrusApiKey', {}) ?? 'Obter chave de API do Hydrus',
       'settings.booruEditor.booruName' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruName', {}) ?? 'Nome do Booru',
@@ -2297,9 +2050,7 @@ extension on TranslationsPtBr {
             'Usar o modo Desktop? Pode causar problemas em dispositivos móveis. [INTERFACE DESCONTINUADA]',
       'settings.interface.appUIModeHelpMobile' =>
         TranslationOverrides.string(_root.$meta, 'settings.interface.appUIModeHelpMobile', {}) ?? '- Mobile - Interface dispositivos móveis',
-      'settings.interface.appUIModeHelpWarning' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.appUIModeHelpWarning', {}) ??
-            '[Aviso]: Não defina o Modo de Interface para Desktop em um celular, pois isso pode danificar o aplicativo e você poderá ter que apagar todas as suas configurações, incluindo as configurações do Booru.',
+      'settings.interface.appUIModeHelpWarning' => TranslationOverrides.string(_root.$meta, 'settings.interface.appUIModeHelpWarning', {}) ?? '[Aviso]: Não defina o Modo de Interface para Desktop em um celular, pois isso pode danificar o aplicativo e você poderá ter que apagar todas as suas configurações, incluindo as configurações do Booru.',
       'settings.interface.previewDisplayFallbackHelp' =>
         TranslationOverrides.string(_root.$meta, 'settings.interface.previewDisplayFallbackHelp', {}) ??
             'Isso será usado quando a opção Mosaico não for possível',
@@ -2343,48 +2094,6 @@ extension on TranslationsPtBr {
         TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.left', {}) ?? 'Esquerda',
       'settings.interface.handSideValues.right' =>
         TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.right', {}) ?? 'Direita',
-      'settings.interface.tabManagerBottomBar' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBar', {}) ?? 'Barra de ações inferior do gerenciador de abas',
-      'settings.interface.tabManagerBottomBarSubtitle' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.tabManagerBottomBarSubtitle', {}) ??
-            'Mostrar os botões de rolar ao topo / atual / final e fechar na parte inferior do gerenciador de abas. Os botões flutuantes para nova aba / novo grupo sempre são mostrados.',
-      'settings.interface.drawerBottomAlign' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlign', {}) ?? 'Alinhar gaveta principal à base',
-      'settings.interface.drawerBottomAlignSubtitle' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.drawerBottomAlignSubtitle', {}) ??
-            'Empilhe o conteúdo da gaveta lateral de baixo para cima (pesquisa, depois aba atual, depois ações de aba, depois o resto) para alcance mais fácil com o polegar.',
-      'settings.interface.drawerLayoutTitle' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutTitle', {}) ?? 'Layout da gaveta',
-      'settings.interface.drawerLayoutSubtitle' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutSubtitle', {}) ??
-            'Escolha quais itens aparecem na gaveta lateral e em que ordem.',
-      'settings.interface.drawerLayoutPinned' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutPinned', {}) ?? 'Fixado — sempre mostrado',
-      'settings.interface.drawerLayoutRestoreDefaults' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutRestoreDefaults', {}) ?? 'Restaurar padrões',
-      'settings.interface.drawerLayoutBottomAlignHint' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutBottomAlignHint', {}) ??
-            'Alinhamento ao final está ativo — o primeiro item desta lista aparece na parte de baixo da gaveta.',
-      'settings.interface.drawerItems.search' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.search', {}) ?? 'Barra de pesquisa',
-      'settings.interface.drawerItems.tabSelector' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.tabSelector', {}) ?? 'Cartão da aba atual',
-      'settings.interface.drawerItems.tabButtons' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.tabButtons', {}) ?? 'Botões de aba',
-      'settings.interface.drawerItems.multibooruToggle' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.multibooruToggle', {}) ?? 'Alternar multi-booru',
-      'settings.interface.drawerItems.lockApp' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.lockApp', {}) ?? 'Bloquear app',
-      'settings.interface.drawerItems.settings' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.settings', {}) ?? 'Configurações',
-      'settings.interface.drawerItems.webview' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.webview', {}) ?? 'Abrir webview',
-      'settings.interface.drawerItems.updateAvailable' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.updateAvailable', {}) ?? 'Atualização disponível',
-      'settings.interface.drawerItems.closeApp' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.closeApp', {}) ?? 'Fechar app',
-      'settings.interface.drawerItems.mascot' =>
-        TranslationOverrides.string(_root.$meta, 'settings.interface.drawerItems.mascot', {}) ?? 'Imagem do mascote',
       'settings.theme.title' => TranslationOverrides.string(_root.$meta, 'settings.theme.title', {}) ?? 'Temas',
       'settings.theme.themeMode' => TranslationOverrides.string(_root.$meta, 'settings.theme.themeMode', {}) ?? 'Modo do tema',
       'settings.theme.blackBg' => TranslationOverrides.string(_root.$meta, 'settings.theme.blackBg', {}) ?? 'Fundo preto',
@@ -2449,13 +2158,11 @@ extension on TranslationsPtBr {
         TranslationOverrides.string(_root.$meta, 'settings.privacy.appDisplayNameDescription', {}) ?? 'Mude como o nome do app aparece nos seus apps',
       'settings.cache.appRestartRequired' =>
         TranslationOverrides.string(_root.$meta, 'settings.cache.appRestartRequired', {}) ?? 'Pode ser necessário reiniciar o app!',
-      'settings.about.appDescription' =>
-        TranslationOverrides.string(_root.$meta, 'settings.about.appDescription', {}) ??
-            'LoliSnatcher é de código aberto e licenciado com GPLv3. O código-fonte está disponível no GitHub. Por favor, reporte qualquer problema ou pedido de funcionalidade na seção "issues" no repositório.',
+      'settings.about.appDescription' => TranslationOverrides.string(_root.$meta, 'settings.about.appDescription', {}) ?? 'LoliSnatcher é de código aberto e licenciado com GPLv3. O código-fonte está disponível no GitHub. Por favor, reporte qualquer problema ou pedido de funcionalidade na seção "issues" no repositório.',
       'settings.about.appOnGitHub' => TranslationOverrides.string(_root.$meta, 'settings.about.appOnGitHub', {}) ?? 'LoliSnatcher no Github',
-      'tagsFiltersDialogs.addNewFilter' =>
-        ({required String type}) =>
-            TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.addNewFilter', {'type': type}) ?? '[Adicionar novo filtro de ${type}]',
+      'tagsFiltersDialogs.addNewFilter' => ({
+        required String type,
+      }) => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.addNewFilter', {'type': type}) ?? '[Adicionar novo filtro de ${type}]',
       'tagsManager.addTag' => TranslationOverrides.string(_root.$meta, 'tagsManager.addTag', {}) ?? 'Adicionar tag',
       'tagsManager.add' => TranslationOverrides.string(_root.$meta, 'tagsManager.add', {}) ?? 'adicionar',
       'tagsManager.addedATab' => TranslationOverrides.string(_root.$meta, 'tagsManager.addedATab', {}) ?? 'Uma aba adicionada',
