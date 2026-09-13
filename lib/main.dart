@@ -37,6 +37,7 @@ import 'package:lolisnatcher/src/pages/lockscreen_page.dart';
 import 'package:lolisnatcher/src/pages/mobile_home_page.dart';
 import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/services/image_memory_manager.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -47,6 +48,7 @@ import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
 
 void main() async {
   CustomWidgetsBinding.ensureInitialized();
+  ImageMemoryManager.instance.initialize();
 
   if (Platform.isWindows || Platform.isLinux) {
     sqfliteFfiInit();
@@ -418,8 +420,6 @@ class _DebuggingWidgetsState extends State<DebuggingWidgets> with WidgetsBinding
 
           return ImageStats(
             isEnabled: settingsHandler.showImageStats.value,
-            width: 120,
-            height: 100,
             align: Alignment.centerLeft,
             child: widget.child,
           );

@@ -22,6 +22,7 @@ import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/thumbnail_loading.dart';
 import 'package:lolisnatcher/src/widgets/image/custom_network_image.dart';
+import 'package:lolisnatcher/src/services/image_memory_manager.dart';
 import 'package:lolisnatcher/src/widgets/preview/shimmer_builder.dart';
 
 class Thumbnail extends StatefulWidget {
@@ -74,6 +75,7 @@ class _ThumbnailState extends State<Thumbnail> {
   int _loadGeneration = 0;
 
   bool isBlurred = true;
+  bool _useSafeThumbnail = false;
 
   @override
   void initState() {
@@ -87,6 +89,7 @@ class _ThumbnailState extends State<Thumbnail> {
     super.didUpdateWidget(oldWidget);
     // force redraw on tab change
     if (oldWidget.item != widget.item) {
+      _useSafeThumbnail = false;
       currentUrl = widget.item.thumbnailURL;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
@@ -169,7 +172,7 @@ class _ThumbnailState extends State<Thumbnail> {
     final bool shouldPixelate = widget.item.isHidden && settingsHandler.shitDevice;
 
     if (shouldResize || shouldPixelate) {
-      return ResizeImage(
+      return SafeResizeImage(
         provider,
         // when in low performance mode - resize hidden images to 10px to simulate blur effect
         width: shouldPixelate ? 10 : thumbWidth?.round(),
@@ -233,6 +236,17 @@ class _ThumbnailState extends State<Thumbnail> {
   }
 
   void onError(Object error) {
+    if (error is ImageMemoryException) {
+      failedRendering.value = false; // A valid oversized file must stay on disk.
+      if (!_useSafeThumbnail && widget.item.thumbnailURL.isNotEmpty && thumbURL != widget.item.thumbnailURL) {
+        _useSafeThumbnail = true;
+        unawaited(restartLoading());
+      } else {
+        isFailed.value = true;
+        errorCode.value = null;
+      }
+      return;
+    }
     if (error is DioException && CancelToken.isCancel(error)) {
       //
     } else {
@@ -266,6 +280,7 @@ class _ThumbnailState extends State<Thumbnail> {
     startedAt.value = DateTime.now().millisecondsSinceEpoch;
 
     isThumbQuality =
+        _useSafeThumbnail ||
         settingsHandler.previewMode.isThumbnail ||
         (widget.item.mediaType.value.isVideo ||
             widget.item.mediaType.value.isNeedToGuess ||
@@ -305,6 +320,8 @@ class _ThumbnailState extends State<Thumbnail> {
     mainImageStream = mainProvider.value!.resolve(ImageConfiguration.empty);
     mainImageListener = ImageStreamListener(
       (imageInfo, syncCall) {
+        // This listener owns a clone; cache and rendering handles remain reusable.
+        imageInfo.dispose();
         if (!_isCurrentLoad(loadGeneration)) return;
 
         isLoaded.value = true;
@@ -317,7 +334,7 @@ class _ThumbnailState extends State<Thumbnail> {
       onError: (e, s) {
         if (!_isCurrentLoad(loadGeneration)) return;
 
-        if (e is! DioException) {
+        if (e is! DioException && e is! ImageMemoryException) {
           failedRendering.value = true;
         }
         Logger.Inst().log(
@@ -347,6 +364,8 @@ class _ThumbnailState extends State<Thumbnail> {
       extraImageStream = extraProvider.value!.resolve(ImageConfiguration.empty);
       extraImageListener = ImageStreamListener(
         (imageInfo, syncCall) {
+          // This listener owns a clone; cache and rendering handles remain reusable.
+          imageInfo.dispose();
           if (!_isCurrentLoad(loadGeneration)) return;
 
           isLoadedExtra.value = true;
@@ -354,7 +373,7 @@ class _ThumbnailState extends State<Thumbnail> {
         onError: (e, s) {
           if (!_isCurrentLoad(loadGeneration)) return;
 
-          if (e is! DioException) {
+          if (e is! DioException && e is! ImageMemoryException) {
             failedRendering.value = true;
           }
           Logger.Inst().log(
@@ -425,9 +444,6 @@ class _ThumbnailState extends State<Thumbnail> {
 
       switch (provider) {
         case CustomNetworkImage _:
-          await provider.deleteCacheFile();
-          break;
-        case CustomNetworkAvifImage _:
           await provider.deleteCacheFile();
           break;
       }

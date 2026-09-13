@@ -133,7 +133,7 @@ class _BooruFaviconProviderCache {
             sendTimeout: const Duration(seconds: 5),
             receiveTimeout: const Duration(seconds: 5),
           );
-    return ResizeImage(
+    return SafeResizeImage(
       provider,
       width: key.pixelSize,
       height: key.pixelSize,
@@ -302,7 +302,7 @@ class _BooruFaviconState extends State<BooruFavicon> {
   @override
   void initState() {
     super.initState();
-    imageListener = ImageStreamListener((imageInfo, syncCall) {});
+    imageListener = ImageStreamListener((imageInfo, syncCall) => imageInfo.dispose());
     unawaited(restartLoading());
   }
 
@@ -369,6 +369,8 @@ class _BooruFaviconState extends State<BooruFavicon> {
       imageStream = mainProvider!.resolve(ImageConfiguration.empty);
       imageListener = ImageStreamListener(
         (imageInfo, syncCall) {
+          // This listener owns a clone; cache and rendering handles remain reusable.
+          imageInfo.dispose();
           isLoaded = true;
           isFailed = false;
           errorCode = null;
@@ -409,7 +411,7 @@ class _BooruFaviconState extends State<BooruFavicon> {
   void _removeImageListener() {
     imageStream?.removeListener(imageListener);
     imageStream = null;
-    imageListener = ImageStreamListener((imageInfo, syncCall) {});
+    imageListener = ImageStreamListener((imageInfo, syncCall) => imageInfo.dispose());
   }
 
   @override

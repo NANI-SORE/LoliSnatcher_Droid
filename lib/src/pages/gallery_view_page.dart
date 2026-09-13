@@ -1,3 +1,5 @@
+import 'package:lolisnatcher/src/services/image_memory_manager.dart';
+
 import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
@@ -472,7 +474,13 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                   }
 
                                   final child = ListenableBuilder(
-                                    listenable: Listenable.merge([viewerHandler.activeViewers, page]),
+                                    listenable: Listenable.merge([
+                                      viewerHandler.activeViewers,
+                                      page,
+                                      ImageMemoryManager.instance.underPressure,
+                                      viewerHandler.isLoaded,
+                                      viewerHandler.isStopped,
+                                    ]),
                                     builder: (context, child) {
                                       final activeViewers = viewerHandler.activeViewers.value;
                                       final pageVal = page.value;
@@ -489,6 +497,8 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                       // don't render more than 3 videos at once, chance to crash is too high otherwise
                                       // disabled video preload for sankaku because their videos cause crashes if loading/rendering(?) more than one at a time
                                       final bool isNear =
+                                          !ImageMemoryManager.instance.underPressure.value &&
+                                          (viewerHandler.isLoaded.value || viewerHandler.isStopped.value) &&
                                           viewerDepth < ViewerHandler.maxActiveViewers &&
                                           (distanceFromCurrent <=
                                               (isVideo ? (isSankaku ? 0 : min(preloadCount, 1)) : preloadCount));

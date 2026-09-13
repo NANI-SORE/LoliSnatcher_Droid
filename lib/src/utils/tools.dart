@@ -183,9 +183,8 @@ class Tools {
   static void forceClearMemoryCache({bool withLive = false}) {
     // clears memory image cache on timer or when changing tabs
     PaintingBinding.instance.imageCache.clear();
-    if (withLive) {
-      PaintingBinding.instance.imageCache.clearLiveImages();
-    }
+    // Retain live tracking: visible widgets still own these images. Removing
+    // tracking would allow another provider resolution to decode a duplicate.
   }
 
   static bool isGoodStatusCode(int? statusCode) {
