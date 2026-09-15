@@ -64,6 +64,7 @@ class ImageMemoryManager with WidgetsBindingObserver {
   int _retainedBytes = 0;
   int _activeDownloads = 0;
   int _rejectedCount = 0;
+  int _foregroundDecodes = 0;
 
   int get retainedBytes => _retainedBytes;
   int get activeDecodeCount => _decoding ? 1 : 0;
@@ -122,13 +123,14 @@ class ImageMemoryManager with WidgetsBindingObserver {
     int estimatedBytes,
     Future<T> Function() operation, {
     CancelToken? cancelToken,
+    bool Function()? isForeground,
   }) {
     initialize();
     if (estimatedBytes < 0 || estimatedBytes > maxTransientBytes) {
       _rejectedCount++;
       return Future<T>.error(const ImageMemoryException('Decode exceeds the transient memory budget'));
     }
-    return _enqueue(operation, cancelToken);
+    return _enqueue(operation, cancelToken, isForeground: isForeground);
   }
 
   Future<T> runDownload<T>(Future<T> Function() operation, {CancelToken? cancelToken}) {
@@ -136,7 +138,12 @@ class ImageMemoryManager with WidgetsBindingObserver {
     return _enqueue(operation, cancelToken, download: true);
   }
 
-  Future<T> _enqueue<T>(Future<T> Function() operation, CancelToken? cancelToken, {bool download = false}) {
+  Future<T> _enqueue<T>(
+    Future<T> Function() operation,
+    CancelToken? cancelToken, {
+    bool download = false,
+    bool Function()? isForeground,
+  }) {
     if (cancelToken?.isCancelled == true) return Future<T>.error(cancelToken!.cancelError!);
     final result = Completer<T>();
     final execute = Zone.current.bindCallback(operation);
@@ -151,6 +158,7 @@ class ImageMemoryManager with WidgetsBindingObserver {
         }
       },
       result.completeError,
+      isForeground,
     );
     (download ? _downloads : _queue).add(job);
     if (cancelToken != null) {
@@ -182,9 +190,20 @@ class ImageMemoryManager with WidgetsBindingObserver {
   }
 
   void _pump() {
-    if (_decoding || _queue.isEmpty) return;
+    if (_decoding) return;
+    if (_queue.isEmpty) {
+      _foregroundDecodes = 0;
+      return;
+    }
     _decoding = true;
-    final job = _queue.removeFirst();
+    // Evaluate visibility now so a queued neighboring viewer can be promoted
+    // after a swipe. Give the oldest job a turn after three foreground jobs.
+    final foreground = _foregroundDecodes < 3
+        ? _queue.where((job) => job.isForeground?.call() ?? false).firstOrNull
+        : null;
+    final job = foreground ?? _queue.first;
+    _queue.remove(job);
+    _foregroundDecodes = foreground == null ? 0 : _foregroundDecodes + 1;
     job.cancellation?.jobs.remove(job);
     unawaited(
       job.run().whenComplete(() {
@@ -210,10 +229,11 @@ class ImageMemoryManager with WidgetsBindingObserver {
 }
 
 class _DecodeJob {
-  _DecodeJob(this.run, this.reject);
+  _DecodeJob(this.run, this.reject, this.isForeground);
 
   final Future<void> Function() run;
   final void Function(Object, [StackTrace?]) reject;
+  final bool Function()? isForeground;
   _DecodeCancellation? cancellation;
 }
 

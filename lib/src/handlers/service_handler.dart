@@ -503,24 +503,30 @@ class ServiceHandler {
     }
   }
 
-  static Future<Uint8List> decodeImageRegion(
+  static Future<Map<String, dynamic>> decodeImageRegion(
     String path, {
     required int left,
     required int top,
     required int right,
     required int bottom,
     required int sampleSize,
+    required bool retainDecoder,
   }) async {
-    final bytes = await platform.invokeMethod<Uint8List>('decodeImageRegion', {
+    final bytes = await platform.invokeMapMethod<String, dynamic>('decodeImageRegion', {
       'path': path,
       'left': left,
       'top': top,
       'right': right,
       'bottom': bottom,
       'sampleSize': sampleSize,
+      'retainDecoder': retainDecoder,
     });
     if (bytes == null) throw StateError('No image region returned');
     return bytes;
+  }
+
+  static Future<void> releaseImageRegionDecoder(String path) async {
+    await platform.invokeMethod<void>('releaseImageRegionDecoder', {'path': path});
   }
 
   static Future<String?> writeImage(

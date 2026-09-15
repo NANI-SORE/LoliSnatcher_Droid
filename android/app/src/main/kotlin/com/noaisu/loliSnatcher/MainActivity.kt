@@ -175,7 +175,7 @@ class MainActivity: FlutterFragmentActivity() {
                             result.error("INVALID_ARGUMENT", "videoURL is null", null)
                         }
                     }
-                    "getImageRegionInfo", "decodeImageRegion" -> imageRegions.handle(call, result)
+                    "getImageRegionInfo", "decodeImageRegion", "releaseImageRegionDecoder" -> imageRegions.handle(call, result)
                     "getIP" -> result.success(getIpv4HostAddress())
                     "setExtPath" -> {
                         methodResult = result

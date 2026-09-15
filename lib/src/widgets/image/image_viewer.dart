@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:math';
 import 'dart:ui';
 import 'dart:io';
 
 import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:dio/dio.dart';
@@ -393,6 +395,7 @@ class ImageViewerState extends State<ImageViewer> {
     cancelToken = token;
     final headers = await Tools.getFileCustomHeaders(widget.booru, item: widget.booruItem, checkForReferer: true);
     if (!_isCurrentLoad(loadGeneration)) return null;
+    final downloadTrace = kReleaseMode ? null : (developer.TimelineTask()..start('Image viewer download'));
     final download = await NetworkImageLoader.downloadFile(
       ImageDownloadRequest(
         url: url,
@@ -409,7 +412,7 @@ class ImageViewerState extends State<ImageViewer> {
       onReceiveProgress: (count, total) {
         if (_isCurrentLoad(loadGeneration)) onBytesAdded(count, total);
       },
-    );
+    ).whenComplete(() => downloadTrace?.finish());
     if (!_isCurrentLoad(loadGeneration)) {
       await download.dispose();
       return null;
@@ -417,6 +420,7 @@ class ImageViewerState extends State<ImageViewer> {
     _download = download;
     // Disposal can race with asynchronous metadata reads or the region copy.
     final preparationSource = download.retain();
+    final preparationTrace = kReleaseMode ? null : (developer.TimelineTask()..start('Image viewer preparation'));
     try {
       final isAvif = url.toLowerCase().contains('.avif');
       Size? sourceSize;
@@ -426,11 +430,13 @@ class ImageViewerState extends State<ImageViewer> {
           ImageMemoryManager.maxEncodedBytes + 16 * 1024 * 1024,
           () => ServiceHandler.getImageRegionInfo(download.file.path),
           cancelToken: token,
+          isForeground: () => mounted && isViewed.value,
         );
       }
       if (!_isCurrentLoad(loadGeneration)) return null;
       final regionSize = sourceSize;
       sourceSize ??= await NetworkImageLoader.inspectImageSize(download.file, cancelToken: token, isAvif: isAvif);
+      preparationTrace?.instant('metadataReady');
       if (!_isCurrentLoad(loadGeneration)) return null;
       final heightLimit = settingsHandler.preloadHeight;
       if (heightLimit != 0 && sourceSize.height >= heightLimit && !blockPreloadState.isIgnore) {
@@ -443,13 +449,21 @@ class ImageViewerState extends State<ImageViewer> {
         return null;
       }
       if (regionSize != null && regionSize.height >= 4096 && regionSize.height > regionSize.width * 2) {
-        // Cache maintenance may evict the original while the user is zoomed in.
-        // A private file keeps subsequent region reads valid without pinning RAM.
-        final directory = await Directory.systemTemp.createTemp('image-regions-');
+        // Owned temporary downloads already have the required lifetime. Cache
+        // files still need a private copy to survive cache maintenance.
+        Directory? directory;
         DownloadedImageFile? retained;
         try {
-          final file = await download.file.copy('${directory.path}${Platform.pathSeparator}image');
-          retained = DownloadedImageFile(file, ownsFile: true, temporaryDirectory: directory);
+          if (download.ownsFile) {
+            retained = preparationSource.retain();
+          } else {
+            directory = await Directory.systemTemp.createTemp('image-regions-');
+            final copyTrace = kReleaseMode ? null : (developer.TimelineTask()..start('Image region source copy'));
+            final file = await download.file
+                .copy('${directory.path}${Platform.pathSeparator}image')
+                .whenComplete(() => copyTrace?.finish());
+            retained = DownloadedImageFile(file, ownsFile: true, temporaryDirectory: directory);
+          }
           if (!_isCurrentLoad(loadGeneration)) {
             await retained.dispose();
             return null;
@@ -458,7 +472,7 @@ class ImageViewerState extends State<ImageViewer> {
         } catch (_) {
           if (retained != null) {
             await retained.dispose();
-          } else {
+          } else if (directory != null) {
             try {
               await File('${directory.path}${Platform.pathSeparator}image').delete();
             } on FileSystemException catch (_) {}
@@ -504,6 +518,7 @@ class ImageViewerState extends State<ImageViewer> {
       }
       return provider;
     } finally {
+      preparationTrace?.finish();
       await preparationSource.dispose();
     }
   }
@@ -817,7 +832,12 @@ class ImageViewerState extends State<ImageViewer> {
                   tileMode: TileMode.decal,
                 ),
                 child: ListenableBuilder(
-                  listenable: Listenable.merge([isLoaded, isTilingProcessing, mainProvider]),
+                  listenable: Listenable.merge([
+                    isLoaded,
+                    isTilingProcessing,
+                    mainProvider,
+                    isViewed,
+                  ]),
                   builder: (context, _) {
                     final loadGeneration = _loadGeneration;
                     return AnimatedOpacity(
@@ -848,6 +868,7 @@ class ImageViewerState extends State<ImageViewer> {
                                         source: _regionSource!,
                                         controller: viewController,
                                         viewport: MediaQuery.sizeOf(context),
+                                        isViewed: isViewed.value,
                                         onReady: () {
                                           if (!_isCurrentLoad(loadGeneration) || _regionSource == null) return;
                                           if (!isLoaded.value) resetZoom();
