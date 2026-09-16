@@ -1,7 +1,4 @@
-import 'dart:async';
-
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
-import 'package:lolisnatcher/src/services/get_perms.dart';
 
 class SAFFileCache {
   SAFFileCache._();
@@ -9,59 +6,82 @@ class SAFFileCache {
 
   String _cachedUri = '';
   final Set<String> _fileNames = {};
-  Set<String> get fileNames => _fileNames;
+  Set<String> get fileNames => Set.unmodifiable(_fileNames);
   bool _isPopulated = false;
-  bool _isPopulating = false;
-  Completer<void>? _populateCompleter;
+  int _generation = 0;
+  Future<void>? _population;
+  final Map<String, bool> _changesDuringPopulation = {};
 
   Future<bool> existsFile(String safUri, String fileName) async {
-    bool result;
-
-    if (safUri == _cachedUri && _isPopulated) {
-      result = _fileNames.contains(fileName);
-    } else {
-      result = await ServiceHandler.existsFileFromSAFDirectoryFast(safUri, fileName);
-    }
-
+    if (safUri == _cachedUri && _isPopulated && _fileNames.contains(fileName)) return true;
+    // A file may have appeared since the last directory listing.
+    final result = await ServiceHandler.existsFileFromSAFDirectoryFast(safUri, fileName);
+    if (result && safUri == _cachedUri && _isPopulated) _fileNames.add(fileName);
     return result;
   }
 
-  Future<void> populate(String safUri) async {
-    // skip if can't get access to saf folder for some reason
-    if (_isPopulating || !await checkStorageAvailability()) {
-      await _populateCompleter?.future;
-      return;
+  Future<void> populate(String safUri) {
+    if (safUri.isEmpty) {
+      invalidate();
+      return Future.value();
     }
-    _isPopulating = true;
-    _populateCompleter = Completer<void>();
+    if (safUri == _cachedUri && _population != null) return _population!;
+    final generation = ++_generation;
+    _cachedUri = safUri;
+    _isPopulated = false;
+    _fileNames.clear();
+    _changesDuringPopulation.clear();
+    final population = _populate(safUri, generation);
+    _population = population;
+    return population;
+  }
 
+  Future<void> _populate(String safUri, int generation) async {
     try {
-      _cachedUri = safUri;
+      if (safUri.isEmpty || !await ServiceHandler.testSAFPersistence(safUri)) return;
       final names = await ServiceHandler.listFileNamesFromSAFDirectory(safUri);
-      _fileNames.clear();
-      _fileNames.addAll(names);
+      if (generation != _generation) return;
+      _fileNames
+        ..clear()
+        ..addAll(names);
+      for (final entry in _changesDuringPopulation.entries) {
+        if (entry.value) {
+          _fileNames.add(entry.key);
+        } else {
+          _fileNames.remove(entry.key);
+        }
+      }
       _isPopulated = true;
-    } catch (e) {
-      _isPopulated = false;
+    } catch (_) {
+      if (generation == _generation) _isPopulated = false;
     } finally {
-      _isPopulating = false;
-      _populateCompleter?.complete();
+      if (generation == _generation) {
+        _population = null;
+        _changesDuringPopulation.clear();
+      }
     }
   }
 
-  void onFileCreated(String fileName) {
+  void onFileCreated(String fileName, {String? safUri}) {
+    if (safUri != null && safUri != _cachedUri) return;
+    if (_population != null) _changesDuringPopulation[fileName] = true;
     if (_isPopulated) {
       _fileNames.add(fileName);
     }
   }
 
-  void onFileDeleted(String fileName) {
+  void onFileDeleted(String fileName, {String? safUri}) {
+    if (safUri != null && safUri != _cachedUri) return;
+    if (_population != null) _changesDuringPopulation[fileName] = false;
     if (_isPopulated) {
       _fileNames.remove(fileName);
     }
   }
 
   void invalidate() {
+    _generation++;
+    _population = null;
+    _changesDuringPopulation.clear();
     _fileNames.clear();
     _isPopulated = false;
     _cachedUri = '';

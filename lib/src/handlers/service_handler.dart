@@ -261,7 +261,7 @@ class ServiceHandler {
       result = await platform.invokeMethod('deleteFileByName', {'uri': safUri, 'fileName': fileName});
       log('deleted file $fileName');
       if (result) {
-        SAFFileCache.instance.onFileDeleted(fileName);
+        SAFFileCache.instance.onFileDeleted(fileName, safUri: safUri);
       }
     } catch (e) {
       log(e);

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 import 'dart:ui';
 import 'dart:io';
@@ -9,6 +8,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_avif/flutter_avif.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:photo_view/photo_view.dart';
@@ -22,7 +22,6 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
-import 'package:lolisnatcher/src/services/network_reachability.dart';
 import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -80,10 +79,6 @@ class ImageViewer extends StatefulWidget {
 }
 
 class ImageViewerState extends State<ImageViewer> {
-  static final Uint8List _transparentPng = base64Decode(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
-  );
-
   final settingsHandler = SettingsHandler.instance;
   final viewerHandler = ViewerHandler.instance;
 
@@ -109,12 +104,15 @@ class ImageViewerState extends State<ImageViewer> {
   StreamSubscription<PhotoViewControllerValue>? viewStateSubscription;
   StreamSubscription<PhotoViewScaleState>? scaleStateSubscription;
   int _loadGeneration = 0;
+  bool _ignoreTagsForCurrentLoad = false;
+  int? _handlingErrorGeneration;
 
   String imageFolder = 'media';
   int? widthLimit;
   CancelToken? cancelToken;
   CancelToken? loadItemCancelToken;
   File? localImageFile;
+  bool _usingSavedFile = false;
   bool didTryLocalSavedFallback = false;
 
   static const int kMaxTextureHeight = 4096;
@@ -230,6 +228,9 @@ class ImageViewerState extends State<ImageViewer> {
     super.didUpdateWidget(oldWidget);
     // force redraw on item data change
     if (oldWidget.booruItem != widget.booruItem) {
+      _loadGeneration++;
+      oldWidget.booruItem.isNoScale.removeListener(noScaleListener);
+      oldWidget.booruItem.toggleQuality.removeListener(toggleQualityListener);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
 
@@ -253,8 +254,11 @@ class ImageViewerState extends State<ImageViewer> {
   Future<void> initViewer(
     bool ignoreTagsCheck, {
     bool withCaptchaCheck = false,
+    File? savedFallback,
+    bool networkOnly = false,
   }) async {
     final int loadGeneration = ++_loadGeneration;
+    _ignoreTagsForCurrentLoad = ignoreTagsCheck;
     widget.booruItem.isNoScale.addListener(noScaleListener);
 
     widget.booruItem.toggleQuality.addListener(toggleQualityListener);
@@ -287,14 +291,19 @@ class ImageViewerState extends State<ImageViewer> {
     final mQuery = MediaQuery.of(NavigationHandler.instance.navContext);
     widthLimit = SX.disableImageScaling.value ? null : (mQuery.size.width * mQuery.devicePixelRatio * 2).round();
 
-    final ImageProvider newProvider = await getImageProvider(
-      loadGeneration: loadGeneration,
-      withCaptchaCheck: withCaptchaCheck,
-    );
-
-    if (!_isCurrentLoad(loadGeneration)) {
+    final ImageProvider? newProvider;
+    try {
+      newProvider = await getImageProvider(
+        loadGeneration: loadGeneration,
+        withCaptchaCheck: withCaptchaCheck,
+        savedFallback: savedFallback,
+        networkOnly: networkOnly,
+      );
+    } catch (error) {
+      if (_isCurrentLoad(loadGeneration)) _handleProviderError(error, loadGeneration);
       return;
     }
+    if (!_isCurrentLoad(loadGeneration) || newProvider == null) return;
 
     mainProvider.value = newProvider;
     _removeImageStreamListener();
@@ -331,7 +340,7 @@ class ImageViewerState extends State<ImageViewer> {
       },
       onError: (e, stack) {
         if (_isCurrentLoad(loadGeneration)) {
-          onError(e);
+          _handleProviderError(e, loadGeneration);
         }
       },
     );
@@ -364,125 +373,82 @@ class ImageViewerState extends State<ImageViewer> {
         : (maxWidth * MediaQuery.devicePixelRatioOf(NavigationHandler.instance.navContext) * 2).round();
   }
 
-  Future<ImageProvider> getImageProvider({
+  Future<ImageProvider?> getImageProvider({
     required int loadGeneration,
     bool withCaptchaCheck = false,
+    File? savedFallback,
+    bool networkOnly = false,
   }) async {
-    if ((SX.galleryMode.value.isSample &&
-            widget.booruItem.sampleURL.isNotEmpty &&
-            widget.booruItem.sampleURL != widget.booruItem.thumbnailURL) ||
-        widget.booruItem.sampleURL == widget.booruItem.fileURL) {
-      // use sample file if (sample gallery quality && sampleUrl exists && sampleUrl is not the same as thumbnailUrl) OR sampleUrl is the same as full res fileUrl
-      imageFolder = 'samples';
-    } else {
-      imageFolder = 'media';
-    }
+    if (!_isCurrentLoad(loadGeneration)) return null;
+    imageFolder = useFullImage ? 'media' : 'samples';
+    cancelToken?.cancel();
+    final token = CancelToken();
+    cancelToken = token;
+    final String url = useFullImage ? widget.booruItem.fileURL : widget.booruItem.sampleURL;
+    final bool isAvif = Uri.tryParse(url)?.path.toLowerCase().endsWith('.avif') == true;
+    localImageFile = savedFallback;
+    _usingSavedFile = savedFallback != null;
+    didTryLocalSavedFallback = savedFallback != null || networkOnly;
 
-    if (useFullImage) {
-      if (imageFolder != 'media') {
-        imageFolder = 'media';
-      }
-    } else {
-      if (imageFolder != 'samples') {
-        imageFolder = 'samples';
+    if (savedFallback == null && !networkOnly) {
+      final cachedPath = await ImageWriter().getCachePath(
+        Uri.base.resolve(url).toString(),
+        imageFolder,
+        clearName: true,
+        fileNameExtras: widget.booruItem.fileNameExtras,
+      );
+      if (!_isCurrentLoad(loadGeneration)) return null;
+      if (cachedPath != null) {
+        localImageFile = File(cachedPath);
+      } else if (widget.allowOfflineLocalMedia) {
+        final resolution = await OfflineMediaResolver.instance.resolve(
+          widget.booruItem,
+          widget.booru,
+          allowUntrackedItem: true,
+        );
+        if (!_isCurrentLoad(loadGeneration)) return null;
+        localImageFile = resolution.file;
+        _usingSavedFile = resolution.isAvailable;
       }
     }
 
     ImageProvider provider;
-    cancelToken?.cancel();
-    cancelToken = CancelToken();
-
-    final String url = useFullImage ? widget.booruItem.fileURL : widget.booruItem.sampleURL;
-    final bool isAvif = url.contains('.avif');
-    localImageFile = null;
-    didTryLocalSavedFallback = false;
-
-    final cachedPath = !isAvif
-        ? await ImageWriter().getCachePath(
-            Uri.base.resolve(url).toString(),
-            imageFolder,
-            clearName: imageFolder != 'favicons',
-            fileNameExtras: widget.booruItem.fileNameExtras,
-          )
-        : null;
-    if (cachedPath != null) {
-      localImageFile = File(cachedPath);
+    final localFile = localImageFile;
+    if (localFile != null) {
       isFromCache.value = true;
-      provider = FileImage(localImageFile!);
+      final localIsAvif = _usingSavedFile
+          ? Uri.tryParse(widget.booruItem.fileURL)?.path.toLowerCase().endsWith('.avif') == true
+          : isAvif;
+      if (!_isCurrentLoad(loadGeneration)) return null;
+      provider = localIsAvif ? FileAvifImage(localFile) : FileImage(localFile);
     } else {
-      final hasConnection = await NetworkReachability.instance.hasConnection();
-      final shouldTrySavedBeforeNetwork = widget.allowOfflineLocalMedia;
-
-      final offlineResolution = shouldTrySavedBeforeNetwork
-          ? await OfflineMediaResolver.instance.resolve(
-              widget.booruItem,
-              widget.booru,
-              allowUntrackedItem: widget.allowOfflineLocalMedia,
+      final headers = await Tools.getFileCustomHeaders(widget.booru, item: widget.booruItem, checkForReferer: true);
+      if (!_isCurrentLoad(loadGeneration)) return null;
+      provider = isAvif
+          ? CustomNetworkAvifImage(
+              url,
+              cancelToken: token,
+              headers: headers,
+              withCache: SX.mediaCache.value && !networkOnly,
+              cacheFolder: imageFolder,
+              fileNameExtras: widget.booruItem.fileNameExtras,
+              onCacheDetected: (value) {
+                if (_isCurrentLoad(loadGeneration)) isFromCache.value = value;
+              },
+              withCaptchaCheck: withCaptchaCheck,
             )
-          : const OfflineMediaResolution.unavailable();
-      if (offlineResolution.isAvailable && !isAvif) {
-        localImageFile = offlineResolution.file;
-        isFromCache.value = true;
-        provider = FileImage(localImageFile!);
-      } else if (!hasConnection) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_isCurrentLoad(loadGeneration)) {
-            stopLoading(
-              reason: .error,
-              title: 'No network connection',
+          : CustomNetworkImage(
+              url,
+              cancelToken: token,
+              headers: headers,
+              withCache: SX.mediaCache.value && !networkOnly,
+              cacheFolder: imageFolder,
+              fileNameExtras: widget.booruItem.fileNameExtras,
+              onCacheDetected: (value) {
+                if (_isCurrentLoad(loadGeneration)) isFromCache.value = value;
+              },
+              withCaptchaCheck: withCaptchaCheck,
             );
-          }
-        });
-        provider = MemoryImage(_transparentPng);
-      } else {
-        provider = isAvif
-            ? CustomNetworkAvifImage(
-                url,
-                cancelToken: cancelToken,
-                headers: await Tools.getFileCustomHeaders(
-                  widget.booru,
-                  item: widget.booruItem,
-                  checkForReferer: true,
-                ),
-                withCache: SX.mediaCache.value,
-                cacheFolder: imageFolder,
-                fileNameExtras: widget.booruItem.fileNameExtras,
-                onError: (error) {
-                  if (_isCurrentLoad(loadGeneration)) {
-                    _handleProviderError(error, loadGeneration);
-                  }
-                },
-                onCacheDetected: (bool didDetectCache) {
-                  if (_isCurrentLoad(loadGeneration)) {
-                    isFromCache.value = didDetectCache;
-                  }
-                },
-                withCaptchaCheck: withCaptchaCheck,
-              )
-            : CustomNetworkImage(
-                url,
-                cancelToken: cancelToken,
-                headers: await Tools.getFileCustomHeaders(
-                  widget.booru,
-                  item: widget.booruItem,
-                  checkForReferer: true,
-                ),
-                withCache: SX.mediaCache.value,
-                cacheFolder: imageFolder,
-                fileNameExtras: widget.booruItem.fileNameExtras,
-                onError: (error) {
-                  if (_isCurrentLoad(loadGeneration)) {
-                    _handleProviderError(error, loadGeneration);
-                  }
-                },
-                onCacheDetected: (bool didDetectCache) {
-                  if (_isCurrentLoad(loadGeneration)) {
-                    isFromCache.value = didDetectCache;
-                  }
-                },
-                withCaptchaCheck: withCaptchaCheck,
-              );
-      }
     }
 
     // scale image only if it's not an animation, scaling is allowed, not on desktop and item is not marked as noScale
@@ -503,58 +469,43 @@ class ImageViewerState extends State<ImageViewer> {
   }
 
   void _handleProviderError(Object error, int loadGeneration) {
+    if (!_isCurrentLoad(loadGeneration) || _handlingErrorGeneration == loadGeneration) return;
+    if (error is DioException && CancelToken.isCancel(error)) return;
+    _handlingErrorGeneration = loadGeneration;
     unawaited(() async {
-      if (await tryLocalSavedFallback(loadGeneration)) {
-        return;
-      }
-      if (_isCurrentLoad(loadGeneration)) {
-        onError(error);
+      try {
+        if (localImageFile != null) {
+          // A damaged network cache must not bypass a valid downloaded original.
+          if (!_usingSavedFile && await tryLocalSavedFallback(loadGeneration)) return;
+          if (!_isCurrentLoad(loadGeneration)) return;
+          // A missing, unreadable, or corrupt local file must not prevent a network retry.
+          disposables();
+          isLoaded.value = false;
+          await initViewer(_ignoreTagsForCurrentLoad, networkOnly: true);
+          return;
+        }
+        if (await tryLocalSavedFallback(loadGeneration)) return;
+        if (_isCurrentLoad(loadGeneration)) onError(error);
+      } catch (_) {
+        if (_isCurrentLoad(loadGeneration)) onError(error);
+      } finally {
+        if (_handlingErrorGeneration == loadGeneration) _handlingErrorGeneration = null;
       }
     }());
   }
 
   Future<bool> tryLocalSavedFallback(int loadGeneration) async {
-    if (didTryLocalSavedFallback || !widget.allowOfflineLocalMedia) {
-      return false;
-    }
+    if (!_isCurrentLoad(loadGeneration) || didTryLocalSavedFallback || !widget.allowOfflineLocalMedia) return false;
     didTryLocalSavedFallback = true;
-
-    final offlineResolution = await OfflineMediaResolver.instance.resolve(
+    final resolution = await OfflineMediaResolver.instance.resolve(
       widget.booruItem,
       widget.booru,
-      allowUntrackedItem: widget.allowOfflineLocalMedia,
+      allowUntrackedItem: true,
     );
-    if (!_isCurrentLoad(loadGeneration) || !offlineResolution.isAvailable) {
-      return false;
-    }
-
-    localImageFile = offlineResolution.file;
-    isFromCache.value = true;
-    final provider = FileImage(localImageFile!);
-    mainProvider.value = provider;
-    _removeImageStreamListener();
-    imageStream = provider.resolve(ImageConfiguration.empty);
-    imageListener = ImageStreamListener(
-      (imageInfo, syncCall) {
-        if (!_isCurrentLoad(loadGeneration)) return;
-        isTilingProcessing.value = false;
-        final prevIsLoaded = isLoaded.value;
-        isLoaded.value = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!_isCurrentLoad(loadGeneration)) return;
-          if (prevIsLoaded == false) {
-            resetZoom();
-          }
-          viewerHandler.setLoaded(widget.key, true);
-        });
-      },
-      onError: (e, stack) {
-        if (_isCurrentLoad(loadGeneration)) {
-          _handleProviderError(e, loadGeneration);
-        }
-      },
-    );
-    imageStream!.addListener(imageListener!);
+    if (!_isCurrentLoad(loadGeneration) || !resolution.isAvailable) return false;
+    disposables();
+    isLoaded.value = false;
+    await initViewer(_ignoreTagsForCurrentLoad, savedFallback: resolution.file);
     return true;
   }
 
@@ -793,7 +744,10 @@ class ImageViewerState extends State<ImageViewer> {
           );
 
       final File file = File(cachePath);
-      if (!await file.exists()) return;
+      if (!await file.exists()) {
+        if (_isCurrentLoad(loadGeneration)) isTilingProcessing.value = false;
+        return;
+      }
       if (!_isCurrentLoad(loadGeneration)) return;
 
       final buffer = await ImmutableBuffer.fromFilePath(cachePath);
@@ -834,6 +788,11 @@ class ImageViewerState extends State<ImageViewer> {
 
       if (descriptor.height >= kMaxTextureHeight) {
         await mainProvider.value?.evict();
+        if (!_isCurrentLoad(loadGeneration)) {
+          descriptor.dispose();
+          buffer.dispose();
+          return;
+        }
 
         isTilingProcessing.value = true;
 
@@ -862,12 +821,11 @@ class ImageViewerState extends State<ImageViewer> {
 
           tiledProviders = slices.map((s) {
             return ResizeImage(
-                  MemoryImage(s),
-                  width: tileWidth,
-                  policy: ResizeImagePolicy.fit,
-                  allowUpscaling: false,
-                )
-                as ImageProvider;
+              MemoryImage(s),
+              width: tileWidth,
+              policy: ResizeImagePolicy.fit,
+              allowUpscaling: false,
+            ) as ImageProvider;
           }).toList();
           final double maxWidth = min(size.width, tileWidth.toDouble());
           tiledSize = Size(maxWidth, maxWidth / size.aspectRatio);
@@ -893,7 +851,7 @@ class ImageViewerState extends State<ImageViewer> {
         LogTypes.exception,
         s: s,
       );
-      isTilingProcessing.value = false;
+      if (_isCurrentLoad(loadGeneration)) isTilingProcessing.value = false;
     }
   }
 

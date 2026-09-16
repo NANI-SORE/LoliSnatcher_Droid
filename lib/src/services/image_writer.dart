@@ -138,7 +138,7 @@ class ImageWriter {
       }
 
       print('Image written: $path$fileName');
-      SAFFileCache.instance.onFileCreated(fileName);
+      SAFFileCache.instance.onFileCreated(fileName, safUri: path);
       item.isSnatched.value = true;
       if (SX.dbEnabled.value) {
         await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);

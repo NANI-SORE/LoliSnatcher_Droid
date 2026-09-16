@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
-import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
 import 'package:lolisnatcher/src/widgets/common/pulse_widget.dart';
@@ -57,6 +57,18 @@ class SavedMediaStatusIcon extends StatefulWidget {
 
 class _SavedMediaStatusIconState extends State<SavedMediaStatusIcon> {
   bool fileExists = false, running = false;
+  int _checkGeneration = 0;
+  int? _lookupKey;
+
+  int get _currentLookupKey => Object.hash(
+    widget.item,
+    widget.item.fileURL,
+    widget.item.postURL,
+    widget.item.savedFileName,
+    widget.booru,
+    widget.booru.baseURL,
+    SX.extPathOverride.value,
+  );
 
   @override
   void initState() {
@@ -65,75 +77,72 @@ class _SavedMediaStatusIconState extends State<SavedMediaStatusIcon> {
   }
 
   Future<void> fileExistsCheck() async {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!running && mounted) {
-        running = true;
-        setState(() {});
-      }
-    });
+    final generation = ++_checkGeneration;
+    _lookupKey = _currentLookupKey;
+    final item = widget.item;
+    final booru = widget.booru;
+    final storagePath = SX.extPathOverride.value;
+    running = true;
+    fileExists = false;
+    bool exists = false;
+    try {
+      final resolver = OfflineMediaResolver.instance;
+      final sourceBooru = resolver.resolveSourceBooru(item, fallback: booru);
+      if (sourceBooru == null) return;
+      final fileNames = resolver.filenameCandidates(item, sourceBooru);
+      if (fileNames.isEmpty) return;
 
-    final sourceBooru = OfflineMediaResolver.instance.resolveSourceBooru(
-      widget.item,
-      fallback: widget.booru,
-    );
-    if (sourceBooru == null) {
-      _finishCheck(false);
-      return;
-    }
-
-    final imageWriter = ImageWriter();
-    final fileNames = OfflineMediaResolver.instance.filenameCandidates(widget.item, sourceBooru);
-    if (fileNames.isEmpty) {
-      _finishCheck(false);
-      return;
-    }
-
-    final String extPath = SX.extPathOverride.value;
-    if (extPath.isNotEmpty) {
-      fileExists = false;
-      for (final fileName in fileNames) {
-        if (await SAFFileCache.instance.existsFile(extPath, fileName)) {
-          fileExists = true;
-          break;
+      if (Platform.isAndroid && storagePath.isNotEmpty) {
+        for (final fileName in fileNames) {
+          final found = await SAFFileCache.instance.existsFile(storagePath, fileName);
+          if (!_isCurrentCheck(generation)) return;
+          if (found) {
+            exists = true;
+            break;
+          }
+        }
+      } else {
+        final directory = storagePath.isNotEmpty ? storagePath : await ServiceHandler.getPicturesDir();
+        if (!_isCurrentCheck(generation)) return;
+        for (final fileName in fileNames) {
+          try {
+            final file = File.fromUri(Directory(directory).uri.resolveUri(Uri(path: fileName)));
+            final found = await file.exists() && await file.length() > 0;
+            if (!_isCurrentCheck(generation)) return;
+            if (found) {
+              exists = true;
+              break;
+            }
+          } catch (_) {
+            if (!_isCurrentCheck(generation)) return;
+          }
         }
       }
-    } else {
-      await imageWriter.setPaths();
-      fileExists = false;
-      for (final fileName in fileNames) {
-        if (await File('${imageWriter.path}$fileName').exists()) {
-          fileExists = true;
-          break;
-        }
-      }
+    } catch (_) {
+      // A revoked permission or inaccessible directory means the saved file is unavailable.
+    } finally {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_isCurrentCheck(generation)) return;
+        setState(() {
+          fileExists = exists;
+          running = false;
+        });
+      });
     }
-
-    _finishCheck(fileExists);
   }
 
-  void _finishCheck(bool exists) {
-    fileExists = exists;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        running = false;
-        setState(() {});
-      }
-    });
-  }
+  bool _isCurrentCheck(int generation) => mounted && generation == _checkGeneration && _lookupKey == _currentLookupKey;
 
   @override
   void didUpdateWidget(covariant SavedMediaStatusIcon oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (_lookupKey != _currentLookupKey) fileExistsCheck();
+  }
 
-    if (oldWidget.item != widget.item || oldWidget.booru != widget.booru) {
-      fileExists = false;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {});
-        }
-      });
-      fileExistsCheck();
-    }
+  @override
+  void dispose() {
+    _checkGeneration++;
+    super.dispose();
   }
 
   @override
