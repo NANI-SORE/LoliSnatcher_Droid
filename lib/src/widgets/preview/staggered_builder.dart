@@ -108,7 +108,7 @@ class StaggeredBuilder extends StatelessWidget {
                           top: 2,
                           left: 2,
                           child: IgnorePointer(
-                            child: GridPageIndicator(item.fetchedPage),
+                            child: GridPageIndicator(item.fetchedPage, tab: tab),
                           ),
                         ),
                     ],

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
@@ -21,21 +23,38 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
   final pageNumberController = TextEditingController(), delayController = TextEditingController();
 
   bool scrollToFetchedPage = false;
+  late final SearchTab tab;
 
-  int get pageNumber {
-    final int? parsedNumber = int.tryParse(pageNumberController.text);
+  bool get isCurrentTab => identical(searchHandler.currentTabOrNull, tab);
 
-    return parsedNumber != null ? parsedNumber - 1 : 0;
+  int get currentDisplayPage => max(
+    1,
+    tab.displayPage(isCurrentTab ? searchHandler.currentScrollPage.value : (tab.scrollPage ?? tab.firstPage)),
+  );
+
+  int? get pageNumber {
+    final parsedNumber = int.tryParse(pageNumberController.text);
+    return parsedNumber != null && parsedNumber >= 1 ? tab.apiPage(parsedNumber) : null;
   }
 
-  int get delay => int.tryParse(delayController.text) ?? 200;
+  int? get delay {
+    final parsedDelay = int.tryParse(delayController.text);
+    return parsedDelay != null && parsedDelay >= 100 && parsedDelay <= 10000 ? parsedDelay : null;
+  }
+
+  void onInputChanged() {
+    if (mounted) setState(() {});
+  }
 
   @override
   void initState() {
     super.initState();
 
-    pageNumberController.text = (searchHandler.currentBooruHandlerOrNull?.pageNum ?? 0).toString();
+    tab = searchHandler.currentTab;
+    pageNumberController.text = currentDisplayPage.toString();
     delayController.text = 200.toString();
+    pageNumberController.addListener(onInputChanged);
+    delayController.addListener(onInputChanged);
   }
 
   @override
@@ -47,9 +66,11 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final int total = searchHandler.currentBooruHandlerOrNull?.totalCount.value ?? 0;
-    final int possibleMaxPageNum = total != 0 ? (total / SX.limit.value).round() : 0;
-    final bool isPageBelowCurrentLoaded = pageNumber <= searchHandler.currentBooruHandler.pageNum;
+    final int total = tab.booruHandler.totalCount.value;
+    final int possibleMaxPageNum = total > 0 && SX.limit.value > 0 ? (total / SX.limit.value).ceil() : 0;
+    final targetPage = pageNumber;
+    final bool isPageLoaded =
+        targetPage != null && tab.booruHandler.filteredFetched.any((item) => item.fetchedPage == targetPage);
 
     return SettingsBottomSheet(
       title: Text(
@@ -69,12 +90,13 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
           numberStep: 1,
           numberMin: 0,
           numberMax: double.infinity,
-          onChanged: (_) => setState(() {}),
           validator: (value) {
             if (value == null || value.isEmpty) {
               return context.loc.validationErrors.invalidNumber;
             } else if (int.tryParse(value) == null) {
               return context.loc.validationErrors.invalidNumericValue;
+            } else if (int.parse(value) < 0) {
+              return context.loc.validationErrors.invalidNumber;
             }
             return null;
           },
@@ -108,11 +130,11 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
           },
         ),
         IgnorePointer(
-          ignoring: isPageBelowCurrentLoaded,
+          ignoring: isPageLoaded,
           child: Opacity(
-            opacity: isPageBelowCurrentLoaded ? 0.66 : 1,
+            opacity: isPageLoaded ? 0.66 : 1,
             child: SettingsToggle(
-              value: isPageBelowCurrentLoaded || scrollToFetchedPage,
+              value: isPageLoaded || scrollToFetchedPage,
               onChanged: (newValue) {
                 setState(() {
                   scrollToFetchedPage = newValue;
@@ -124,16 +146,16 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
           ),
         ),
         SettingsToggle(
-          value: searchHandler.currentTab.savePageEnabled.value,
+          value: tab.savePageEnabled.value,
           onChanged: (newValue) async {
             setState(() {
-              searchHandler.currentTab.savePageEnabled.value = newValue;
+              tab.savePageEnabled.value = newValue;
             });
             await searchHandler.backupTabs();
           },
           title: context.loc.pageChanger.saveViewedPage,
           leadingIcon: Icon(
-            searchHandler.currentTab.savePageEnabled.value ? Icons.bookmark : Icons.bookmark_border,
+            tab.savePageEnabled.value ? Icons.bookmark : Icons.bookmark_border,
             color: Theme.of(context).iconTheme.color,
           ),
         ),
@@ -142,10 +164,10 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
             Expanded(
               child: SettingsButton(
                 name: possibleMaxPageNum == 0
-                    ? context.loc.pageChanger.currentPage(number: searchHandler.currentBooruHandler.pageNum)
-                    : context.loc.pageChanger.currentPageShort(number: searchHandler.currentBooruHandler.pageNum),
+                    ? context.loc.pageChanger.currentPage(number: currentDisplayPage)
+                    : context.loc.pageChanger.currentPageShort(number: currentDisplayPage),
                 action: () {
-                  pageNumberController.text = searchHandler.currentScrollPage.value.toString();
+                  pageNumberController.text = currentDisplayPage.toString();
                 },
               ),
             ),
@@ -211,11 +233,12 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.subdirectory_arrow_right_rounded),
                   label: Text(context.loc.pageChanger.jumpToPage),
-                  onPressed: searchHandler.isRunningAutoSearch.value
+                  onPressed: searchHandler.isRunningAutoSearch.value || !isCurrentTab || pageNumber == null
                       ? null
                       : () {
-                          if (pageNumberController.text.isNotEmpty) {
-                            searchHandler.changeCurrentTabPageNumber(pageNumber);
+                          final targetPage = pageNumber;
+                          if (isCurrentTab && targetPage != null) {
+                            searchHandler.changeCurrentTabPageNumber(targetPage);
                             Navigator.of(context).pop();
                           }
                         },
@@ -225,22 +248,23 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
             Obx(() {
               return ElevatedButton.icon(
                 icon: Icon(
-                  isPageBelowCurrentLoaded ? Icons.swipe_up : Icons.search_rounded,
+                  isPageLoaded ? Icons.swipe_up : Icons.search_rounded,
                 ),
                 label: Text(
-                  isPageBelowCurrentLoaded
-                      ? context.loc.pageChanger.scrollToPage
-                      : context.loc.pageChanger.searchUntilPage,
+                  isPageLoaded ? context.loc.pageChanger.scrollToPage : context.loc.pageChanger.searchUntilPage,
                 ),
-                onPressed: searchHandler.isRunningAutoSearch.value
+                onPressed:
+                    searchHandler.isRunningAutoSearch.value || !isCurrentTab || pageNumber == null || delay == null
                     ? null
                     : () {
-                        if (pageNumberController.text.isNotEmpty) {
+                        final targetPage = pageNumber;
+                        final loadingDelay = delay;
+                        if (isCurrentTab && targetPage != null && loadingDelay != null) {
                           searchHandler.executePageRestore(
-                            searchHandler.currentTab,
-                            pageNumber,
-                            (isPageBelowCurrentLoaded || scrollToFetchedPage) ? .fetchAndScroll : .fetchNoScroll,
-                            customDelay: delay,
+                            tab,
+                            targetPage,
+                            (isPageLoaded || scrollToFetchedPage) ? .fetchAndScroll : .fetchNoScroll,
+                            customDelay: loadingDelay,
                           );
                           Navigator.of(context).pop();
                         }

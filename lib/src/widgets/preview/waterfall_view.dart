@@ -48,6 +48,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   int? _rootViewerIndex;
 
   bool isStaggered = false;
+  int _tabScrollRestoreGeneration = 0;
 
   bool get isMobile => SX.appMode.value.isMobile;
 
@@ -122,39 +123,34 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   }
 
   void tabIndexListener() {
-    // print('tabChanged: ${searchHandler.currentTabOrNull?.scrollPosition} ${searchHandler.gridScrollController.hasClients}');
+    final tab = searchHandler.currentTabOrNull;
+    final controller = searchHandler.gridScrollController;
+    final generation = ++_tabScrollRestoreGeneration;
+    final savedOffset = tab?.scrollPosition ?? 0;
 
-    // postpone scroll updates until the current render is done, since this is called after the global restate after exiting settings
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-      final currentTab = searchHandler.currentTabOrNull;
-      if (currentTab == null) {
+    void restoreScroll(int attemptsLeft) {
+      if (!mounted ||
+          generation != _tabScrollRestoreGeneration ||
+          !identical(searchHandler.currentTabOrNull, tab) ||
+          !identical(searchHandler.gridScrollController, controller)) {
         return;
       }
-
-      // restore scroll position on tab change
-      if (searchHandler.gridScrollController.hasClients) {
-        searchHandler.gridScrollController.jumpTo(currentTab.scrollPosition);
-        await Future.delayed(const Duration(milliseconds: 50));
-        if (!mounted || !searchHandler.gridScrollController.hasClients) return;
-        // workaround to force update scrollPage
-        searchHandler.gridScrollController.jumpTo(searchHandler.gridScrollController.position.pixels + 1);
-      } else {
-        // if (currentTab.scrollPosition != 0) {
-        // TODO reset the controller when appMode changes
-        searchHandler.gridScrollController = WaterfallScrollController(
-          initialScrollOffset: currentTab.scrollPosition,
-          viewportBoundaryGetter: () => Rect.fromLTRB(
-            0,
-            isMobile ? (MediaQuery.paddingOf(context).top + kToolbarHeight + 4) : 0,
-            0,
-            MediaQuery.paddingOf(context).bottom,
-          ),
-        );
+      if (!controller.hasClients) {
+        if (attemptsLeft > 0) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => restoreScroll(attemptsLeft - 1));
+          WidgetsBinding.instance.ensureVisualUpdate();
+        }
+        return;
       }
-
+      controller.jumpTo(savedOffset.clamp(controller.position.minScrollExtent, controller.position.maxScrollExtent));
+      searchHandler.refreshCurrentScrollPage();
       _showFloatingBars();
-    });
+    }
+
+    // Keep the shared controller and restore only the tab that scheduled this callback.
+    if (tab != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => restoreScroll(2));
+    }
 
     // check if grid type changed when changing tab
     final bool newIsStaggered =

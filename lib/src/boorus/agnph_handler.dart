@@ -26,9 +26,14 @@ class AGNPHHandler extends BooruHandler {
     };
   }
 
-  /// Because the api doesn't return tags we will create fetched and have another function set tags at a later time.
-  /// Seems to work for now but could cause a performance impact.
-  /// Makes results show on screen faster than waiting on getDataByID
+  /// The list API omits tags; hydrate them before filtering the new page.
+  @override
+  Future<List<BooruItem>> parseResponse(dynamic response) async {
+    final items = await super.parseResponse(response);
+    await Future.wait(items.map((item) => getTagsLater(item.serverId!, item)));
+    return items;
+  }
+
   @override
   List parseListFromResponse(dynamic response) {
     final parsedResponse = XmlDocument.parse(response.data);
@@ -66,16 +71,13 @@ class AGNPHHandler extends BooruHandler {
         postDateFormat: 'unix', // when timezone support added: "EEE MMM dd HH:mm:ss Z yyyy",
       );
 
-      final int newIndex = fetched.length + index;
-      getTagsLater(postID, newIndex);
-
       return item;
     } else {
       return null;
     }
   }
 
-  Future<void> getTagsLater(String postID, int fetchedIndex) async {
+  Future<void> getTagsLater(String postID, BooruItem item) async {
     try {
       final response = await DioNetwork.get(
         '${booru.baseURL}/gallery/post/show/$postID/?api=xml',
@@ -91,7 +93,8 @@ class AGNPHHandler extends BooruHandler {
           final String artist = post.getElement('artist')?.innerText ?? '';
           tagStr = "artist:$artist ${tagStr.replaceAll(artist, "")}";
         }
-        fetched.elementAt(fetchedIndex).tagsList = tagStr.split(' ').map(Tag.new).toList();
+        DioNetwork.throwIfCancelled();
+        item.tagsList = tagStr.split(' ').map(Tag.new).toList();
       } else {
         Logger.Inst().log(
           'AGNPHHandler failed to get post',

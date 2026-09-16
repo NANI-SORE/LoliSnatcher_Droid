@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
+import 'package:scroll_to_index/scroll_to_index.dart';
 
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
@@ -25,6 +26,8 @@ class PageRangeIndex {
   final Map<int, PageItemRange> _ranges = {};
   int _processedLength = 0;
   BooruItem? _lastProcessedItem;
+  List<BooruItem>? _items;
+  int? _lastProcessedPage;
   int lastUpdateProcessedItems = 0;
 
   PageItemRange? operator [](int page) => _ranges[page];
@@ -33,14 +36,19 @@ class PageRangeIndex {
     _ranges.clear();
     _processedLength = 0;
     _lastProcessedItem = null;
+    _items = null;
+    _lastProcessedPage = null;
     lastUpdateProcessedItems = 0;
   }
 
   void update(List<BooruItem> items) {
     lastUpdateProcessedItems = 0;
     final bool canAppend =
-        _processedLength <= items.length &&
-        (_processedLength == 0 || identical(items[_processedLength - 1], _lastProcessedItem));
+        _processedLength < items.length &&
+        (_processedLength == 0 ||
+            (identical(items, _items) &&
+                identical(items[_processedLength - 1], _lastProcessedItem) &&
+                items[_processedLength - 1].fetchedPage == _lastProcessedPage));
 
     if (!canAppend) {
       _ranges.clear();
@@ -59,16 +67,20 @@ class PageRangeIndex {
 
     _processedLength = items.length;
     _lastProcessedItem = items.isEmpty ? null : items.last;
+    _items = items;
+    _lastProcessedPage = _lastProcessedItem?.fetchedPage;
   }
 }
 
 class GridPageIndicator extends StatelessWidget {
   const GridPageIndicator(
     this.page, {
+    required this.tab,
     super.key,
   });
 
   final int page;
+  final SearchTab tab;
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +104,7 @@ class GridPageIndicator extends StatelessWidget {
             spacing: 1,
             children: [
               Text(
-                page.toString(),
+                tab.displayPage(page).toString(),
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 12,
@@ -132,12 +144,15 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
   final RxBool showOverlay = false.obs;
   final PageRangeIndex pageRanges = PageRangeIndex();
   final RxDouble pageProgress = 0.0.obs;
+  late final AutoScrollController _scrollController;
+  int? _progressPage;
 
   @override
   void initState() {
     super.initState();
 
-    searchHandler.gridScrollController.addListener(_onPageChanged);
+    _scrollController = searchHandler.gridScrollController;
+    _scrollController.addListener(_onPageChanged);
     searchHandler.index.addListener(_observeCurrentItems);
     searchHandler.tabId.addListener(_observeCurrentItems);
     _observeCurrentItems();
@@ -147,15 +162,22 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
 
   void _observeCurrentItems() {
     observedItems?.removeListener(_onItemsChanged);
-    observedItems = searchHandler.currentFetched;
+    observedItems = searchHandler.currentFetchedOrNull;
     observedItems?.addListener(_onItemsChanged);
     pageRanges
       ..clear()
-      ..update(searchHandler.currentFetched);
+      ..update(observedItems?.value ?? const []);
+    _progressPage = null;
+    pageProgress.value = 0;
+    showOverlay.value = false;
+    overlayTimer?.cancel();
   }
 
   void _onItemsChanged() {
-    pageRanges.update(searchHandler.currentFetched);
+    pageRanges.update(observedItems?.value ?? const []);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _onPageChanged();
+    });
   }
 
   double _normalizeProgress(double value) {
@@ -169,6 +191,18 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
   }
 
   void _onPageChanged() {
+    if (!mounted) return;
+    if (searchHandler.currentTabOrNull == null || observedItems?.isNotEmpty != true) {
+      showOverlay.value = false;
+      pageProgress.value = 0;
+      overlayTimer?.cancel();
+      return;
+    }
+    final page = searchHandler.currentScrollPage.value;
+    if (_progressPage != page) {
+      _progressPage = page;
+      pageProgress.value = 0;
+    }
     if (SX.shitDevice.value) {
       if (pageProgress.value > 0 && mounted) {
         pageProgress.value = 0;
@@ -183,16 +217,16 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
     showOverlay.value = true;
     overlayTimer?.cancel();
     overlayTimer = Timer(const Duration(milliseconds: 2500), () {
-      showOverlay.value = false;
+      if (mounted) showOverlay.value = false;
     });
   }
 
   double _calculatePageProgress() {
-    final controller = searchHandler.gridScrollController;
-    final currentFetched = searchHandler.currentFetched;
+    final controller = _scrollController;
+    final currentFetched = searchHandler.currentFetchedOrNull;
     final int page = searchHandler.currentScrollPage.value;
 
-    if (!controller.hasClients || currentFetched.isEmpty || page < 0 || SX.shitDevice.value) {
+    if (!controller.hasClients || currentFetched == null || currentFetched.isEmpty || page < 0 || SX.shitDevice.value) {
       return 0;
     }
 
@@ -216,8 +250,9 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
         continue;
       }
 
+      if (!entry.value.mounted) continue;
       final renderObject = entry.value.context.findRenderObject();
-      if (renderObject is! RenderBox || !renderObject.hasSize) {
+      if (renderObject is! RenderBox || !renderObject.attached || !renderObject.hasSize) {
         continue;
       }
 
@@ -270,15 +305,17 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
     observedItems?.removeListener(_onItemsChanged);
     searchHandler.index.removeListener(_observeCurrentItems);
     searchHandler.tabId.removeListener(_observeCurrentItems);
-    searchHandler.gridScrollController.removeListener(_onPageChanged);
+    _scrollController.removeListener(_onPageChanged);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      final tab = searchHandler.currentTabOrNull;
+      if (tab == null) return const SizedBox.shrink();
       final int page = searchHandler.currentScrollPage.value;
-      final bool show = showOverlay.value && page > -1;
+      final bool show = showOverlay.value && page >= tab.firstPage;
 
       return Material(
         color: Colors.transparent,
@@ -341,7 +378,7 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
                           crossAxisAlignment: .center,
                           children: [
                             Text(
-                              page.toString(),
+                              tab.displayPage(page).toString(),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -351,7 +388,7 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
                             ),
                             Obx(
                               () => Icon(
-                                searchHandler.currentTab.savePageEnabled.value ? Icons.bookmark : Icons.bookmark_border,
+                                tab.savePageEnabled.value ? Icons.bookmark : Icons.bookmark_border,
                                 size: 16,
                               ),
                             ),

@@ -2376,7 +2376,7 @@ class _TagContentPreviewState extends State<TagContentPreview> {
                                                       top: 2,
                                                       left: 2,
                                                       child: IgnorePointer(
-                                                        child: GridPageIndicator(item.fetchedPage),
+                                                        child: GridPageIndicator(item.fetchedPage, tab: tab!),
                                                       ),
                                                     ),
                                                 ],
