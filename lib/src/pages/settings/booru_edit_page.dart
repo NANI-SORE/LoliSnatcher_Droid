@@ -484,9 +484,10 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
       return;
     }
 
-    _showSavedMessage();
-    _syncOpenTabs(newBooru);
+    await _syncOpenTabs(newBooru);
     SettingsRegistry.instance.setCurrentBooru(searchHandler.currentBooruOrNull?.name);
+    if (!mounted) return;
+    _showSavedMessage();
     Navigator.of(context).pop(true);
   }
 
@@ -636,22 +637,39 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
     );
   }
 
-  void _syncOpenTabs(Booru newBooru) {
+  Future<void> _syncOpenTabs(Booru newBooru) async {
     if (searchHandler.tabs.isEmpty) {
       searchHandler.addTabByString(SX.defTags.value, customBooru: newBooru);
       unawaited(searchHandler.runSearch());
     }
 
-    for (final tab in searchHandler.tabs) {
-      final selected = tab.selectedBooru.value;
-      final matchesEditedBooru =
-          !isAdding &&
-          (identical(selected, widget.booru) ||
-              (selected.name == widget.booru.name && selected.baseURL == widget.booru.baseURL));
-      final matchesAddedBooru = isAdding && selected.type == newBooru.type && selected.baseURL == newBooru.baseURL;
-      if (matchesEditedBooru || matchesAddedBooru) {
-        tab.selectedBooru.value = newBooru;
+    // Keep only a snapshot of tab references: the live list can change while
+    // yielding. Existing handlers, loaded items, and selections stay intact.
+    final tabs = searchHandler.tabs.toList(growable: false);
+    final couldBackup = searchHandler.canBackup.value;
+    searchHandler.canBackup.value = false;
+    try {
+      for (var i = 0; i < tabs.length; i++) {
+        final tab = tabs[i];
+        final selected = tab.selectedBooru.value;
+        final matchesEditedBooru =
+            !isAdding &&
+            (identical(selected, widget.booru) ||
+                (selected.name == widget.booru.name && selected.baseURL == widget.booru.baseURL));
+        final matchesAddedBooru = isAdding && selected.type == newBooru.type && selected.baseURL == newBooru.baseURL;
+        if (matchesEditedBooru || matchesAddedBooru) {
+          tab.selectedBooru.value = newBooru;
+        }
+
+        // GetX queues observer microtasks for each update. Drain them in
+        // bounded batches and let the UI respond even with thousands of tabs.
+        if ((i + 1) % 128 == 0 && i + 1 < tabs.length) {
+          await Future<void>.delayed(Duration.zero);
+        }
       }
+    } finally {
+      // A backup during synchronization could contain partially renamed tabs.
+      searchHandler.canBackup.value = couldBackup;
     }
 
     unawaited(
