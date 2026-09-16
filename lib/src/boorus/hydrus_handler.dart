@@ -54,10 +54,15 @@ class HydrusHandler extends BooruHandler {
 
   @override
   Future search(String tags, int? pageNumCustom, {bool withCaptchaCheck = true}) async {
+    if (pageNumCustom != null) {
+      pageNum = pageNumCustom;
+    }
     if (prevTags != tags) {
       fetched.value = [];
       fetchedPageNumbers.clear();
       resetFilterState();
+      _fileIDs = null;
+      locked = false;
       prevTags = tags;
     }
 
@@ -285,7 +290,7 @@ class HydrusHandler extends BooruHandler {
     return '';
   }
 
-@override
+  @override
   String makeURL(String tags) {
     if (tags.trim().isEmpty) {
       tags = '*';

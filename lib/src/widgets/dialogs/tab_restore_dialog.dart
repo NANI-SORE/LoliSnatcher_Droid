@@ -80,7 +80,7 @@ class _TabRestoreDialogState extends State<TabRestoreDialog> {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
-          context.loc.pageChanger.browsedToPageLastTime(page: widget.pageNum),
+          context.loc.pageChanger.browsedToPageLastTime(page: widget.tab.displayPage(widget.pageNum)),
           style: Theme.of(context).textTheme.bodyLarge?.bold,
         ),
       ),
@@ -101,7 +101,7 @@ class _TabRestoreDialogState extends State<TabRestoreDialog> {
                     mode.locName,
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
-                  subtitle: selectedMode == mode && widget.pageNum > 10
+                  subtitle: selectedMode == mode && widget.tab.displayPage(widget.pageNum) > 10
                       ? switch (mode) {
                           .fetchNoScroll || .fetchAndScroll => Text(
                             context.loc.pageChanger.tooManyPagesToRestoreWarning,
@@ -180,11 +180,21 @@ class _TabRestoreDialogState extends State<TabRestoreDialog> {
           ),
           ConfirmButton(
             label: context.loc.tabs.filters.apply,
-            returnData: TabRestoreDialogResult(
-              selectedMode: selectedMode,
-              rememberChoice: rememberChoice,
-              delay: delay,
-            ),
+            action: () {
+              final parsedDelay = int.tryParse(delayController.text);
+              if (selectedMode.isFetchMultiplePages &&
+                  (parsedDelay == null || parsedDelay < 100 || parsedDelay > 10000)) {
+                setState(() {});
+                return;
+              }
+              Navigator.of(context).pop(
+                TabRestoreDialogResult(
+                  selectedMode: selectedMode,
+                  rememberChoice: rememberChoice,
+                  delay: selectedMode.isFetchMultiplePages ? parsedDelay! : 200,
+                ),
+              );
+            },
           ),
         ],
       ),

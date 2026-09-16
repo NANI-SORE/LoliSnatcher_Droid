@@ -79,9 +79,12 @@ class _AddNewTabDialogState extends State<AddNewTabDialog> {
   }
 
   void addNewTab() {
+    final int? customPage = int.tryParse(customPageController.text);
+    if (useCustomPage && (customPage == null || customPage < 0)) {
+      setState(() {});
+      return;
+    }
     searchHandler.searchTextController.text = usedQuery;
-    int? customPage = int.tryParse(customPageController.text);
-    customPage = customPage == null ? null : customPage - 1;
 
     searchHandler.addTabByString(
       usedQuery,
@@ -272,13 +275,15 @@ class _AddNewTabDialogState extends State<AddNewTabDialog> {
                           inputType: TextInputType.number,
                           numberButtons: true,
                           numberStep: 1,
-                          numberMin: -1,
+                          numberMin: 0,
                           numberMax: double.infinity,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return context.loc.validationErrors.invalidNumber;
                             } else if (int.tryParse(value) == null) {
                               return context.loc.validationErrors.invalidNumericValue;
+                            } else if (int.parse(value) < 0) {
+                              return context.loc.validationErrors.invalidNumber;
                             }
                             return null;
                           },
