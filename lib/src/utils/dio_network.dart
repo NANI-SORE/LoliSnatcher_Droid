@@ -289,6 +289,32 @@ class DioNetwork {
     }
   }
 
+  static Future<Response> delete(
+    String url, {
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    Map<String, dynamic>? headers = const {},
+    CancelToken? cancelToken,
+    Dio Function(Dio)? customInterceptor,
+  }) async {
+    cancelToken = _requestCancelToken(cancelToken);
+    final client = customInterceptor != null ? customInterceptor(getClient()) : getClient();
+
+    try {
+      final urlAndQuery = separateUrlAndQueryParams(url, queryParameters);
+      return await client.delete(
+        urlAndQuery['url'],
+        data: data,
+        queryParameters: urlAndQuery['query'],
+        options: mergeOptions(options, headers),
+        cancelToken: cancelToken,
+      );
+    } finally {
+      client.close();
+    }
+  }
+
   static Future<Response> head(
     String url, {
     Object? data,

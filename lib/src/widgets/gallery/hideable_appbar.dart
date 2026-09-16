@@ -911,46 +911,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
       return;
     }
 
-    final requestKey = ServerFavoriteFeedback.requestKey(
-      booruName: adapter.displayName,
-      serverId: serverId,
-    );
-    if (!ServerFavoriteFeedback.tryStartRequest(requestKey)) {
-      return;
-    }
-
-    item.serverId = serverId;
-    try {
-      final mutation = add ? await adapter.addFavoriteResult(serverId) : await adapter.removeFavoriteResult(serverId);
-      ServerFavoriteFeedback.record(
-        action: add ? ServerFavoriteRequestAction.add : ServerFavoriteRequestAction.remove,
-        status: mutation.success ? ServerFavoriteRequestStatus.success : ServerFavoriteRequestStatus.failed,
-        booruName: adapter.displayName,
-        serverId: serverId,
-        item: item,
-        message: mutation.message,
-        animate: mutation.success,
-      );
-
-      if (!mounted) return;
-      FlashElements.showSnackbar(
-        context: context,
-        title: Text(
-          mutation.success
-              ? (add
-                    ? context.loc.serverFavouritesSync.serverAddSucceeded
-                    : context.loc.serverFavouritesSync.serverRemoveSucceeded)
-              : context.loc.serverFavouritesSync.directWriteFailedTitle,
-        ),
-        content: Text(mutation.message),
-        sideColor: mutation.success ? Colors.green : Colors.red,
-        leadingIcon: mutation.success ? (add ? Icons.cloud_done : Icons.cloud_outlined) : Icons.cloud_off,
-        leadingIconColor: mutation.success ? Colors.green : Colors.red,
-        shouldLeadingPulse: false,
-      );
-    } finally {
-      ServerFavoriteFeedback.finishRequest(requestKey);
-    }
+    await widget.tab.setItemServerFavourite(item, isFavourite: add);
   }
 
   Future<_ServerFavoriteStatus> _loadServerFavoriteStatus(BooruItem item) async {

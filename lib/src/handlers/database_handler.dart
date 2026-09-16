@@ -23,7 +23,7 @@ import 'package:lolisnatcher/src/utils/tools.dart';
 /// https://pub.dev/packages/sqflite_common_ffi
 ///////////////////////////////////////////////////////////////
 
-enum BooruUpdateMode { local, urlUpdate, sync }
+enum BooruUpdateMode { local, urlUpdate, sync, favourite }
 
 class DBHandler {
   DBHandler();
@@ -180,6 +180,10 @@ class DBHandler {
 
   /// Inserts a new booruItem or updates the isSnatched and isFavourite values of an existing BooruItem in the database
   Future<String?> updateBooruItem(BooruItem item, BooruUpdateMode mode) async {
+    final db = this.db;
+    if (mode == BooruUpdateMode.favourite && (db == null || !db.isOpen)) {
+      throw StateError('The favourites database is not open');
+    }
     Logger.Inst().log(
       'updateBooruItem called fileURL is: ${item.fileURL}',
       'DBHandler',
@@ -189,6 +193,7 @@ class DBHandler {
     String? itemID = await getItemID(item.postURL);
     String resultStr = '';
     if (itemID == null || itemID.isEmpty) {
+      if (mode == BooruUpdateMode.favourite && item.isFavourite.value != true) return 'Already Unfavourited';
       final result = await db?.rawInsert(
         'INSERT INTO BooruItem(thumbnailURL, sampleURL, fileURL, postURL, mediaType, isSnatched, isFavourite, serverId) VALUES(?,?,?,?,?,?,?,?)',
         [
@@ -205,6 +210,13 @@ class DBHandler {
       itemID = result?.toString();
       await updateTags(item.tagsList.map((t) => t.fullString).toList(), itemID);
       resultStr = 'Inserted';
+    } else if (mode == BooruUpdateMode.favourite) {
+      // A server sync must not overwrite an existing download's tracked state.
+      await db!.rawUpdate(
+        'UPDATE BooruItem SET isFavourite = ?, serverId = COALESCE(?, serverId) WHERE id = ?',
+        [Tools.boolToInt(item.isFavourite.value == true), item.serverId, itemID],
+      );
+      resultStr = 'Updated Favourite';
     } else if (mode == BooruUpdateMode.local) {
       await db?.rawUpdate(
         'UPDATE BooruItem SET isSnatched = ?, isFavourite = ?, serverId = COALESCE(?, serverId) WHERE id = ?',
@@ -236,6 +248,13 @@ class DBHandler {
   }
 
   Future<Map<String, int>> updateMultipleBooruItems(List<BooruItem> items, BooruUpdateMode mode) async {
+    if (mode == BooruUpdateMode.favourite) {
+      var saved = 0;
+      for (final item in items) {
+        if (await updateBooruItem(item, mode) == 'Inserted') saved++;
+      }
+      return {'saved': saved, 'exist': items.length - saved};
+    }
     // TODO rewrite using batch
     final List<String> itemIDs = await getItemIDs(items.map((item) => item.postURL).toList());
 
@@ -378,7 +397,8 @@ class DBHandler {
     int offset = 0,
   }) async {
     final db = this.db;
-    if (db == null || host.isEmpty) return [];
+    if (db == null || !db.isOpen) throw StateError('The favourites database is not open');
+    if (host.isEmpty) return [];
 
     final hostPattern = '%$host%';
     final results = await db.rawQuery(
@@ -1149,6 +1169,20 @@ class DBHandler {
 
     final labelsList = uniqueLabels.toList()..sort();
     return labelsList;
+  }
+
+  /// Authoritative local state for retries shared by separate views of a post.
+  Future<bool> isFavouriteByPostUrl(String postUrl) async {
+    final db = this.db;
+    if (db == null || !db.isOpen) throw StateError('The favourites database is not open');
+    final rows = await db.query(
+      'BooruItem',
+      columns: ['isFavourite'],
+      where: 'postURL = ?',
+      whereArgs: [postUrl],
+      limit: 1,
+    );
+    return rows.isNotEmpty && rows.first['isFavourite'] == 1;
   }
 
   /// Return a list of boolean for isSnatched and isFavourite

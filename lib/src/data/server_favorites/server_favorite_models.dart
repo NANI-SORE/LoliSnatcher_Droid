@@ -50,6 +50,13 @@ class ServerFavoriteCapabilities {
 
   bool get hasAnySupport => canFetch || canAdd || canRemove;
   bool get isReadOnly => canFetch && !canAdd && !canRemove;
+
+  bool supportsMode(ServerFavoriteSyncMode mode) => switch (mode) {
+    ServerFavoriteSyncMode.importServer || ServerFavoriteSyncMode.mirrorServerToLocal => canFetch,
+    ServerFavoriteSyncMode.exportLocal => canAdd,
+    ServerFavoriteSyncMode.twoWayMerge => canFetch && canAdd,
+    ServerFavoriteSyncMode.mirrorLocalToServer => canFetch && canAdd && canRemove && isDestructiveMirrorAllowed,
+  };
 }
 
 class ServerFavoriteEntry {
@@ -174,6 +181,7 @@ class ServerFavoritesSyncResult {
   int removedLocal = 0;
   int removedServer = 0;
   int failed = 0;
+  bool cancelled = false;
   final List<String> errors = [];
   final List<ServerFavoritesSyncFailure> failures = [];
 }

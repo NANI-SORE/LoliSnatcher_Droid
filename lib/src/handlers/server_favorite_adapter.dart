@@ -1,4 +1,8 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:xml/xml.dart';
 
 import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
@@ -30,6 +34,13 @@ abstract class ServerFavoriteAdapter {
 
   List<String> get localHosts => [host];
 
+  bool ownsPostUrl(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasAuthority || (uri.scheme != 'http' && uri.scheme != 'https')) return false;
+    String normalize(String value) => value.toLowerCase().replaceFirst(RegExp(r'^www\.'), '');
+    return localHosts.any((host) => normalize(host) == normalize(uri.host));
+  }
+
   String favoriteQuery();
 
   String? serverIdFromItem(BooruItem item) =>
@@ -40,48 +51,157 @@ abstract class ServerFavoriteAdapter {
   Future<List<ServerFavoriteEntry>> fetchFavorites({
     ValueChanged<String>? onStatus,
     bool Function()? shouldCancel,
+    bool requireComplete = true,
   }) async {
-    if (!capabilities.canFetch) return [];
+    if (!capabilities.canFetch) throw StateError('$displayName does not support fetching favourites');
 
     final handlerResult = BooruHandlerFactory().getBooruHandler([booru], 100);
     final handler = handlerResult.booruHandler;
     final entries = <ServerFavoriteEntry>[];
     final seenIds = <String>{};
-    final query = favoriteQuery();
-    int page = handlerResult.startingPage;
-    int emptyPages = 0;
+    final seenPages = <String>{};
+    final query = handler.validateTags(favoriteQuery().trim());
+    // The factory returns the page before the first request, as used by gallery search.
+    int page = handlerResult.startingPage + 1;
+
+    void checkCancelled() {
+      if (shouldCancel?.call() == true) throw StateError('Fetching favourites was cancelled');
+      DioNetwork.throwIfCancelled();
+    }
 
     for (int i = 0; i < 100000; i++) {
-      if (shouldCancel?.call() == true) break;
+      checkCancelled();
       onStatus?.call('$displayName: fetching page $page');
-      final before = handler.fetched.length;
-      await handler.search(query, page, withCaptchaCheck: true);
-      if (handler.errorString.isNotEmpty) {
-        throw Exception(handler.errorString);
+      handler.pageNum = page;
+      if (!await handler.searchSetup()) {
+        throw StateError('$displayName: search setup failed');
       }
-      final newItems = handler.fetched.skip(before).toList();
-      if (newItems.isEmpty) {
-        emptyPages++;
-        if (handler.locked || emptyPages >= 2) break;
-      } else {
-        emptyPages = 0;
+      if (handler.hasSignInSupport && !await handler.isSignedIn()) {
+        throw StateError('$displayName: sign-in failed');
+      }
+      checkCancelled();
+      final url = Uri.tryParse(handler.makeURL(query));
+      if (url == null || !url.hasAuthority) throw StateError('$displayName: invalid search URL');
+      final response = await handler.fetchSearch(url, query);
+      checkCancelled();
+      if (response.statusCode != 200 || looksCloudflareBlocked(response)) {
+        throw StateError('$displayName: fetching favourites returned HTTP ${response.statusCode}');
+      }
+      if (response.data is String) {
+        final body = (response.data as String).toLowerCase();
+        final responseUrl = response.realUri;
+        if (body.contains('post-premium-browsing_error') ||
+            body.contains('missing authentication') ||
+            body.contains('access denied') ||
+            RegExp(r'/(login|sign_in|signin)(/|$)').hasMatch(responseUrl.path) ||
+            responseUrl.queryParameters['s'] == 'login') {
+          throw StateError('$displayName: server restricted favourite pagination');
+        }
       }
 
-      for (final item in newItems) {
+      final data = response.data;
+      Object? jsonData = data;
+      if (data is String && (data.trimLeft().startsWith('[') || data.trimLeft().startsWith('{'))) {
+        jsonData = jsonDecode(data);
+      }
+      if (jsonData is Map) {
+        final success = jsonData['success'];
+        final status = jsonData['status']?.toString().toLowerCase();
+        if (jsonData['post'] is! List ||
+            success == false ||
+            success == 'false' ||
+            success == 0 ||
+            jsonData['error'] != null ||
+            jsonData['errors'] != null ||
+            status == 'error' ||
+            status == 'failed') {
+          throw StateError('$displayName: server returned an invalid favourite response');
+        }
+      } else if (jsonData is! List && jsonData is! String) {
+        throw StateError('$displayName: server returned an invalid favourite response');
+      }
+
+      // Gallery search suppresses individual parsing failures and may stop on an
+      // entirely hidden page. Destructive sync needs a complete snapshot instead.
+      final posts = await handler.parseListFromResponse(response);
+      checkCancelled();
+      if (posts.isEmpty) {
+        final jsonPosts = jsonData is Map ? jsonData['post'] : jsonData;
+        if (jsonPosts is List) {
+          if (jsonPosts.isNotEmpty) {
+            throw StateError('$displayName: server favourite response was not fully parsed');
+          }
+        } else if (data is String) {
+          final isHtmlSource = booru.type == BooruType.R34US || booru.type == BooruType.R34Hentai;
+          if (!requireComplete && isHtmlSource) {
+            final body = data.toLowerCase();
+            if (!body.contains('<html') || !body.contains('</html>')) {
+              throw StateError('$displayName: server returned a malformed favourite page');
+            }
+            return entries;
+          }
+          // HTML login/challenge/error pages also produce zero posts in the
+          // permissive gallery parsers. Only an empty API list is authoritative.
+          final document = XmlDocument.parse(data);
+          final root = document.rootElement;
+          if (root.name.local != 'posts' ||
+              root.getAttribute('success') == 'false' ||
+              root.getAttribute('error') != null ||
+              root.childElements.isNotEmpty ||
+              root.innerText.trim().isNotEmpty) {
+            throw StateError('$displayName: server did not return a complete favourite list');
+          }
+        }
+        return entries;
+      }
+      final pageDigest = sha256.convert(utf8.encode(response.data.toString())).toString();
+      if (!seenPages.add(pageDigest)) {
+        throw StateError('$displayName: server repeated favourite page $page');
+      }
+      final before = seenIds.length;
+      int skippedItems = 0;
+      for (int index = 0; index < posts.length; index++) {
+        checkCancelled();
+        BooruItem? item;
+        try {
+          item = await handler.parseItemFromResponse(posts[index], index);
+        } catch (e) {
+          if (e is DioException && CancelToken.isCancel(e)) rethrow;
+          if (requireComplete) rethrow;
+          checkCancelled();
+        }
+        if (item == null) {
+          if (requireComplete) {
+            throw StateError('$displayName: a favourite on page $page could not be loaded');
+          }
+          skippedItems++;
+          onStatus?.call('$displayName: skipping an unavailable favourite on page $page');
+          continue;
+        }
+
         final id = serverIdFromItem(item);
-        if (id == null || id.isEmpty || !seenIds.add(id)) continue;
+        if (id == null || id.isEmpty || id == 'null') {
+          if (requireComplete) {
+            throw StateError('$displayName: a favourite on page $page has no server ID');
+          }
+          skippedItems++;
+          onStatus?.call('$displayName: skipping a favourite without a server ID on page $page');
+          continue;
+        }
+        if (!seenIds.add(id)) continue;
         item.serverId = id;
         item.isFavourite.value = true;
         entries.add(ServerFavoriteEntry(serverId: id, item: item));
       }
+      checkCancelled();
+      if (seenIds.length == before && skippedItems == 0) {
+        throw StateError('$displayName: favourite pagination stopped making progress at page $page');
+      }
 
       page++;
-      handler.fetched.clear();
-      handler.filteredFetched.clear();
-      if (handler.locked) break;
     }
 
-    return entries;
+    throw StateError('$displayName: favourite pagination limit reached before completion');
   }
 
   Future<bool> addFavorite(String serverId) async => false;
@@ -161,6 +281,17 @@ abstract class ServerFavoriteAdapter {
         body.contains('cf_clearance') ||
         body.contains('just a moment') ||
         body.contains('checking your browser');
+  }
+
+  bool isFavoritesViewRedirect(Response response) {
+    if (response.statusCode != 302 && response.statusCode != 303) return false;
+    final location = response.headers.value('location');
+    if (location == null) return false;
+    final target = response.requestOptions.uri.resolve(location);
+    return ownsPostUrl(target.toString()) &&
+        target.path.endsWith('/index.php') &&
+        target.queryParameters['page'] == 'favorites' &&
+        target.queryParameters['s'] == 'view';
   }
 
   Future<void> tryGelbooruStyleLogin({
@@ -254,9 +385,8 @@ class DanbooruServerFavoriteAdapter extends ServerFavoriteAdapter {
   Future<ServerFavoriteMutationResult> removeFavoriteResult(String serverId) async {
     if (!canMutateServerId(serverId)) return invalidServerIdResult(serverId);
 
-    final client = DioNetwork.getClient();
     try {
-      final response = await client.delete(
+      final response = await DioNetwork.delete(
         '${booru.baseURL}/favorites/${Uri.encodeComponent(serverId)}.json',
         queryParameters: _authQuery,
         options: DioNetwork.defaultOptions.copyWith(validateStatus: (_) => true),
@@ -264,8 +394,6 @@ class DanbooruServerFavoriteAdapter extends ServerFavoriteAdapter {
       return _httpResult(response, successMessage: 'Danbooru favourite removed');
     } catch (e) {
       return _exceptionResult(e);
-    } finally {
-      client.close();
     }
   }
 }
@@ -349,6 +477,13 @@ class GelbooruServerFavoriteAdapter extends ServerFavoriteAdapter {
         customInterceptor: (dio) => DioNetwork.captchaInterceptor(DioNetwork.cookieInterceptor(dio)),
       );
       final code = response.data.toString().trim();
+      if (looksCloudflareBlocked(response)) {
+        return ServerFavoriteMutationResult.failure(
+          cloudflareBlockedMessage('add favourite', 'Gelbooru'),
+          statusCode: response.statusCode,
+          canRetryAfterWebview: true,
+        );
+      }
       if (response.statusCode == 200 && code == '2') {
         return ServerFavoriteMutationResult.failure(
           loginCookiesRequiredMessage('Gelbooru'),
@@ -359,8 +494,8 @@ class GelbooruServerFavoriteAdapter extends ServerFavoriteAdapter {
       return _httpResult(
         response,
         successMessage: code == '1' ? 'Gelbooru favourite: already present' : 'Gelbooru favourite: added',
-        isSuccess: (response) => response.statusCode == 200 && code != '2',
-        failureMessage: (_) => 'Gelbooru add favourite: auth failed',
+        isSuccess: (response) => response.statusCode == 200 && (code == '1' || code == '3'),
+        failureMessage: (_) => 'Gelbooru add favourite: unrecognized response (HTTP ${response.statusCode})',
       );
     } catch (e) {
       return _exceptionResult(e);
@@ -388,9 +523,17 @@ class GelbooruServerFavoriteAdapter extends ServerFavoriteAdapter {
         options: Options(
           responseType: ResponseType.plain,
           validateStatus: (_) => true,
+          followRedirects: false,
         ),
         customInterceptor: (dio) => DioNetwork.captchaInterceptor(DioNetwork.cookieInterceptor(dio)),
       );
+      if (looksCloudflareBlocked(response)) {
+        return ServerFavoriteMutationResult.failure(
+          cloudflareBlockedMessage('remove favourite', 'Gelbooru'),
+          statusCode: response.statusCode,
+          canRetryAfterWebview: true,
+        );
+      }
       final body = response.data.toString().toLowerCase();
       final looksAuthFailed =
           body.contains('login') ||
@@ -407,10 +550,10 @@ class GelbooruServerFavoriteAdapter extends ServerFavoriteAdapter {
       return _httpResult(
         response,
         successMessage: 'Gelbooru favourite removed',
-        isSuccess: (response) => (response.statusCode == 200 || response.statusCode == 302) && !looksAuthFailed,
+        isSuccess: isFavoritesViewRedirect,
         failureMessage: (response) => looksAuthFailed
             ? 'Gelbooru remove favourite looks unauthenticated'
-            : 'Gelbooru remove favourite returned HTTP ${response.statusCode}',
+            : 'Gelbooru remove favourite was not confirmed (HTTP ${response.statusCode})',
       );
     } catch (e) {
       return _exceptionResult(e);
@@ -486,11 +629,11 @@ class Rule34XxxServerFavoriteAdapter extends ServerFavoriteAdapter {
       final response = await DioNetwork.get(
         '$_siteBaseUrl/public/addfav.php',
         queryParameters: {'id': serverId},
-        options: Options(responseType: ResponseType.plain, validateStatus: (_) => true),
+        options: Options(responseType: ResponseType.plain, validateStatus: (_) => true, followRedirects: false),
         customInterceptor: (dio) => DioNetwork.captchaInterceptor(DioNetwork.cookieInterceptor(dio)),
       );
       final body = response.data.toString().trim();
-      if (!(response.statusCode == 200 && body != '2') && looksCloudflareBlocked(response)) {
+      if (looksCloudflareBlocked(response)) {
         return ServerFavoriteMutationResult.failure(
           cloudflareBlockedMessage('add favourite', 'Rule34.xxx'),
           statusCode: response.statusCode,
@@ -507,8 +650,8 @@ class Rule34XxxServerFavoriteAdapter extends ServerFavoriteAdapter {
       return _httpResult(
         response,
         successMessage: body == '1' ? 'Rule34.xxx favourite was already present' : 'Rule34.xxx favourite added',
-        isSuccess: (_) => response.statusCode == 200 && body != '2',
-        failureMessage: (_) => 'Rule34.xxx add favourite looks unauthenticated',
+        isSuccess: (_) => response.statusCode == 200 && (body == '1' || body == '3'),
+        failureMessage: (_) => 'Rule34.xxx add favourite: unrecognized response (HTTP ${response.statusCode})',
       );
     } catch (e) {
       return _exceptionResult(e);
@@ -532,7 +675,7 @@ class Rule34XxxServerFavoriteAdapter extends ServerFavoriteAdapter {
           'id': serverId,
           'return_pid': '0',
         },
-        options: Options(responseType: ResponseType.plain, validateStatus: (_) => true),
+        options: Options(responseType: ResponseType.plain, validateStatus: (_) => true, followRedirects: false),
         customInterceptor: (dio) => DioNetwork.captchaInterceptor(DioNetwork.cookieInterceptor(dio)),
       );
       final body = response.data.toString().toLowerCase();
@@ -541,7 +684,7 @@ class Rule34XxxServerFavoriteAdapter extends ServerFavoriteAdapter {
           body.contains('sign in') ||
           body.contains('access denied') ||
           body.contains('not authorized');
-      if (!(response.statusCode == 200 && !looksAuthFailed) && looksCloudflareBlocked(response)) {
+      if (looksCloudflareBlocked(response)) {
         return ServerFavoriteMutationResult.failure(
           cloudflareBlockedMessage('remove favourite', 'Rule34.xxx'),
           statusCode: response.statusCode,
@@ -558,11 +701,11 @@ class Rule34XxxServerFavoriteAdapter extends ServerFavoriteAdapter {
       return _httpResult(
         response,
         successMessage: 'Rule34.xxx favourite removed',
-        isSuccess: (response) => response.statusCode == 200 && !looksAuthFailed,
+        isSuccess: isFavoritesViewRedirect,
         failureMessage: (response) {
           return looksAuthFailed
               ? 'Rule34.xxx remove favourite looks unauthenticated'
-              : 'Rule34.xxx remove favourite returned HTTP ${response.statusCode}';
+              : 'Rule34.xxx remove favourite was not confirmed (HTTP ${response.statusCode})';
         },
       );
     } catch (e) {
@@ -596,7 +739,14 @@ class SankakuServerFavoriteAdapter extends ServerFavoriteAdapter {
   @override
   List<String> get localHosts => _isIdol
       ? [host, 'idol.sankakucomplex.com', 'idolcomplex.com']
-      : [host, 'chan.sankakucomplex.com', 'sankakucomplex.com', 'sankakuapi.com'];
+      : [
+          host,
+          'chan.sankakucomplex.com',
+          'beta.sankakucomplex.com',
+          'sankakucomplex.com',
+          'sankakuapi.com',
+          'sankaku.app',
+        ];
 
   @override
   ServerFavoriteCapabilities get capabilities => ServerFavoriteCapabilities(
@@ -654,19 +804,17 @@ class SankakuServerFavoriteAdapter extends ServerFavoriteAdapter {
   Future<ServerFavoriteMutationResult> removeFavoriteResult(String serverId) async {
     if (!canMutateServerId(serverId)) return invalidServerIdResult(serverId);
 
-    final handler = await _signedInHandler();
-    if (handler == null) return ServerFavoriteMutationResult.failure('Sankaku sign-in failed');
-    final client = DioNetwork.getClient();
     try {
-      final response = await client.delete(
+      final handler = await _signedInHandler();
+      if (handler == null) return ServerFavoriteMutationResult.failure('Sankaku sign-in failed');
+      final response = await DioNetwork.delete(
         '${handler.baseUrl}/posts/${Uri.encodeComponent(serverId)}/favorite',
-        options: DioNetwork.defaultOptions.copyWith(headers: handler.getHeaders(), validateStatus: (_) => true),
+        headers: handler.getHeaders(),
+        options: DioNetwork.defaultOptions.copyWith(validateStatus: (_) => true),
       );
       return _httpResult(response, successMessage: 'Sankaku favourite removed');
     } catch (e) {
       return _exceptionResult(e);
-    } finally {
-      client.close();
     }
   }
 }
