@@ -17,6 +17,7 @@ import 'package:lolisnatcher/src/data/tag_filter_query.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_filter_repository.dart';
+import 'package:lolisnatcher/src/utils/booru_rating.dart';
 
 class CompiledTagFilterRule {
   const CompiledTagFilterRule({required this.rule, required this.index, this.query, this.error});
@@ -101,6 +102,9 @@ class TagFilterHandler {
   final ValueNotifier<int> revision = ValueNotifier(0);
   Future<void> _pendingOperations = Future.value();
   Timer? _expiryTimer;
+  Timer? _refilterTimer;
+  int _refilterGeneration = 0;
+  bool _refilterForceRefresh = false;
   DateTime? _nextExpiry;
   bool _disposed = false;
   int _evaluationRevision = 0;
@@ -133,6 +137,7 @@ class TagFilterHandler {
   void dispose() {
     _disposed = true;
     _expiryTimer?.cancel();
+    _refilterTimer?.cancel();
     for (final setting in _activeFilterSettings) {
       setting.globalNotifier.removeListener(_activeFilterSettingChanged);
       setting.overridesNotifier.removeListener(_activeFilterSettingChanged);
@@ -169,6 +174,9 @@ class TagFilterHandler {
     if (_booruCatalogSubscription != null || !GetIt.instance.isRegistered<SettingsHandler>()) return;
     _booruCatalogSubscription = SettingsHandler.instance.booruList.listen((_) {
       if (_disposed) return;
+      // Source-scoped evaluations also change for standalone media.
+      _evaluationRevision++;
+      revision.value = _evaluationRevision;
       _refilterLoadedTabs(forceRefresh: true);
     });
   }
@@ -328,12 +336,13 @@ class TagFilterHandler {
   TagFilterEvaluation evaluate(BooruItem item, FilterContext context, {Set<String>? normalizedTags}) {
     final now = _clock().toUtc();
     final usedTags = normalizedTags ?? normalizeTags(item);
+    final rating = normalizeBooruRating(item.rating, booru: context.sourceBooru);
     final matches = <TagFilterRuleMatch>[];
 
-    for (final index in _orderedCandidateIndexes(item, usedTags)) {
+    for (final index in _orderedCandidateIndexes(rating, usedTags)) {
       final compiled = _compiled[index];
       if (compiled.query == null || !compiled.rule.isActiveAt(now) || !compiled.rule.scope.appliesTo(context)) continue;
-      final queryMatch = compiled.query!.match(item, normalizedTags: usedTags);
+      final queryMatch = compiled.query!.match(item, normalizedTags: usedTags, normalizedRating: rating);
       if (queryMatch.matches) {
         matches.add(TagFilterRuleMatch(rule: compiled.rule, matchedTags: queryMatch.matchedTags));
       }
@@ -359,7 +368,7 @@ class TagFilterHandler {
     );
   }
 
-  Iterable<int> _orderedCandidateIndexes(BooruItem item, Set<String> normalizedTags) {
+  Iterable<int> _orderedCandidateIndexes(String? rating, Set<String> normalizedTags) {
     final postingLists = <List<int>>[];
     final seenLists = HashSet<List<int>>.identity();
 
@@ -379,7 +388,7 @@ class TagFilterHandler {
         }
       }
     }
-    add(_ratingIndex[_normalizedRating(item.rating)]);
+    add(_ratingIndex[rating]);
 
     if (postingLists.isEmpty) return const [];
     if (postingLists.length == 1) return postingLists.single;
@@ -395,13 +404,6 @@ class TagFilterHandler {
       if (cursor.moveNext) queue.add(cursor);
     }
   }
-
-  String? _normalizedRating(String? rating) => switch (rating?.trim().toLowerCase()) {
-    's' => 'safe',
-    'q' => 'questionable',
-    'e' => 'explicit',
-    final rating => rating,
-  };
 
   TagFilterConfiguration _copyConfiguration({List<TagFilterRule>? rules, HideAsBlurState? hideAsBlur}) {
     return TagFilterConfiguration(
@@ -529,9 +531,39 @@ class TagFilterHandler {
   }
 
   void _refilterLoadedTabs({bool forceRefresh = true}) {
-    if (!GetIt.instance.isRegistered<SearchHandler>()) return;
-    for (final tab in SearchHandler.instance.tabs) {
-      tab.booruHandler.filterFetched(forceRefresh: forceRefresh);
+    final generation = ++_refilterGeneration;
+    _refilterForceRefresh |= forceRefresh;
+    _refilterTimer?.cancel();
+    _refilterTimer = Timer(Duration.zero, () {
+      final refresh = _refilterForceRefresh;
+      _refilterForceRefresh = false;
+      unawaited(_runRefilter(generation, forceRefresh: refresh));
+    });
+  }
+
+  Future<void> _runRefilter(int generation, {required bool forceRefresh}) async {
+    if (_disposed || !GetIt.instance.isRegistered<SearchHandler>()) return;
+    final search = SearchHandler.instance;
+    bool shouldCancel() => _disposed || generation != _refilterGeneration;
+    try {
+      for (final tab in search.tabs.toList(growable: false)) {
+        if (shouldCancel()) return;
+        if (!search.tabs.contains(tab)) continue;
+        await tab.booruHandler.refilterFetched(
+          forceRefresh: forceRefresh,
+          shouldCancel: () => shouldCancel() || !search.tabs.contains(tab),
+        );
+        await Future<void>.delayed(Duration.zero);
+      }
+    } catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'tag filters',
+          context: ErrorDescription('while refreshing loaded tabs'),
+        ),
+      );
     }
   }
 }

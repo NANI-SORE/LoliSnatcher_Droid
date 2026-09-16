@@ -77,6 +77,7 @@ abstract class BooruHandler {
       List<Tag> tags,
       String? rating,
       String? score,
+      String? uploaderName,
       String contextKey,
       TagFilterEvaluation evaluation,
     })
@@ -93,11 +94,41 @@ abstract class BooruHandler {
   FilterContext? get sharedFilterContext =>
       booru.type?.isFavouritesOrDownloads == true ? null : FilterContext(viewBooru: booru, sourceBooru: booru);
 
-  TagFilterEvaluation filterEvaluationFor(BooruItem item) =>
-      _filterEvaluationCache[item]?.evaluation ?? const TagFilterEvaluation.empty();
+  int _filterGeneration = 0;
+
+  /// Also evaluates standalone items and metadata refreshed after fetching.
+  TagFilterEvaluation filterEvaluationFor(BooruItem item) {
+    if (!GetIt.instance.isRegistered<TagFilterHandler>()) return const TagFilterEvaluation.empty();
+    return _evaluateFilter(item, filterContextFor(item), TagFilterHandler.instance);
+  }
+
+  TagFilterEvaluation _evaluateFilter(BooruItem item, FilterContext context, TagFilterHandler handler) {
+    final cached = _filterEvaluationCache[item];
+    if (cached != null &&
+        cached.revision == handler.evaluationRevision &&
+        identical(cached.tags, item.tagsList) &&
+        cached.rating == item.rating &&
+        cached.score == item.score &&
+        cached.uploaderName == item.uploaderName &&
+        cached.contextKey == context.cacheKey) {
+      return cached.evaluation;
+    }
+    final evaluation = handler.evaluate(item, context);
+    _filterEvaluationCache[item] = (
+      revision: handler.evaluationRevision,
+      tags: item.tagsList,
+      rating: item.rating,
+      score: item.score,
+      uploaderName: item.uploaderName,
+      contextKey: context.cacheKey,
+      evaluation: evaluation,
+    );
+    return evaluation;
+  }
 
   @protected
   void clearFilterCaches() {
+    _filterGeneration++;
     _filterEvaluationCache.clear();
     _filterContextCache.clear();
   }
@@ -112,8 +143,23 @@ abstract class BooruHandler {
   /// Should always be called after fetched changed (so don't forget to add it in custom afterParseResponse or search methods)
   /// (See gelbooru of favourites handlers for example)
   void filterFetched({bool forceRefresh = false}) {
-    final List<BooruItem> itemsBeforeFilter = filteredFetched;
+    final generation = ++_filterGeneration;
+    // Fetch callers depend on the filtered list being ready on return.
+    for (final _ in _filterFetchedSteps(fetched, generation, forceRefresh: forceRefresh)) {}
+  }
 
+  /// Rule edits yield between batches, publishing only a complete, current list.
+  Future<void> refilterFetched({required bool Function() shouldCancel, bool forceRefresh = true}) async {
+    final generation = ++_filterGeneration;
+    final items = fetched.toList(growable: false);
+    final steps = _filterFetchedSteps(items, generation, forceRefresh: forceRefresh).iterator;
+    while (generation == _filterGeneration && !shouldCancel()) {
+      if (!steps.moveNext()) return;
+      await Future<void>.delayed(Duration.zero);
+    }
+  }
+
+  Iterable<void> _filterFetchedSteps(List<BooruItem> items, int generation, {required bool forceRefresh}) sync* {
     final filters = <Booru, bool Function(BooruItem, TagFilterEvaluation)>{};
 
     final List<BooruItem> filteredItems = [];
@@ -125,7 +171,9 @@ abstract class BooruHandler {
     final contextCatalogKey = hasTagFilterHandler && sharedContext == null ? _filterContextCatalogKey() : '';
     final activeItems = HashSet<BooruItem>.identity();
 
-    for (final item in fetched) {
+    var processed = 0;
+    for (final item in items) {
+      if (processed++ > 0 && processed % 128 == 0) yield null;
       activeItems.add(item);
       final source = sourceBooruFor(item);
       if (!ContentPolicy.isItemAllowed(source, item)) {
@@ -150,35 +198,9 @@ abstract class BooruHandler {
           );
         }
       }
-      final cachedEvaluation = _filterEvaluationCache[item];
-      final tagsUnchanged = cachedEvaluation != null && identical(cachedEvaluation.tags, item.tagsList);
-      final canReuseEvaluation =
-          filterHandler != null &&
-          context != null &&
-          cachedEvaluation != null &&
-          cachedEvaluation.revision == filterHandler.evaluationRevision &&
-          tagsUnchanged &&
-          cachedEvaluation.rating == item.rating &&
-          cachedEvaluation.score == item.score &&
-          cachedEvaluation.contextKey == context.cacheKey;
-      final evaluation = canReuseEvaluation
-          ? cachedEvaluation.evaluation
-          : filterHandler?.evaluate(
-                  item,
-                  context!,
-                  normalizedTags: filterHandler.normalizeTags(item),
-                ) ??
-                const TagFilterEvaluation.empty();
-      if (filterHandler != null && context != null) {
-        _filterEvaluationCache[item] = (
-          revision: filterHandler.evaluationRevision,
-          tags: item.tagsList,
-          rating: item.rating,
-          score: item.score,
-          contextKey: context.cacheKey,
-          evaluation: evaluation,
-        );
-      }
+      final evaluation = filterHandler != null && context != null
+          ? _evaluateFilter(item, context, filterHandler)
+          : const TagFilterEvaluation.empty();
 
       final includeItem = filters.putIfAbsent(source, () => _itemFilterFor(source));
       if (!includeItem(item, evaluation)) {
@@ -201,9 +223,10 @@ abstract class BooruHandler {
       filteredItems.add(item);
     }
 
+    if (generation != _filterGeneration || !listEquals(items, fetched)) return;
     _filterEvaluationCache.removeWhere((item, _) => !activeItems.contains(item));
     _filterContextCache.removeWhere((item, _) => !activeItems.contains(item));
-    if (!listEquals(itemsBeforeFilter, filteredItems)) {
+    if (!listEquals(filteredFetched, filteredItems)) {
       filteredFetched.value = filteredItems;
     } else if (forceRefresh) {
       filteredFetched.value = [...filteredItems];

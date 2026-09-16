@@ -22,6 +22,7 @@ import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/pulse_widget.dart';
 import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_evaluation_builder.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
 import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
 
@@ -81,6 +82,14 @@ class ThumbnailBuild extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return TagFilterEvaluationBuilder(
+      item: item,
+      handler: handler,
+      builder: _buildThumbnail,
+    );
+  }
+
+  Widget _buildThumbnail(BuildContext context, TagFilterEvaluation evaluation) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: Stack(
@@ -95,7 +104,7 @@ class ThumbnailBuild extends StatelessWidget {
                 return Thumbnail(
                   item: item,
                   booru: possibleBooru ?? handler?.booru,
-                  filterEvaluation: handler?.filterEvaluationFor(item) ?? const TagFilterEvaluation.empty(),
+                  filterEvaluation: evaluation,
                   isStandalone: true,
                   useHero: selectable,
                 );
@@ -330,7 +339,7 @@ class ThumbnailBuild extends StatelessWidget {
                   Flexible(
                     child: _ThumbnailBottomRightIcons(
                       item,
-                      handler?.filterEvaluationFor(item) ?? const TagFilterEvaluation.empty(),
+                      evaluation,
                     ),
                   ),
                 ],

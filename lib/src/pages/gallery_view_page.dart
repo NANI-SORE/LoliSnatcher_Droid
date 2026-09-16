@@ -29,6 +29,7 @@ import 'package:lolisnatcher/src/widgets/gallery/notes_renderer.dart';
 import 'package:lolisnatcher/src/widgets/gallery/tag_view.dart';
 import 'package:lolisnatcher/src/widgets/gallery/viewer_tutorial.dart';
 import 'package:lolisnatcher/src/widgets/image/image_viewer.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_evaluation_builder.dart';
 import 'package:lolisnatcher/src/widgets/video/guess_extension_viewer.dart';
 import 'package:lolisnatcher/src/widgets/video/load_item_viewer.dart';
 import 'package:lolisnatcher/src/widgets/video/video_viewer_placeholder.dart';
@@ -400,148 +401,155 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                 }
                               }
 
-                              return ValueListenableBuilder(
-                                valueListenable: item.mediaType,
-                                builder: (context, mediaType, _) {
-                                  final bool isVideo = mediaType.isVideo;
-                                  final bool isImage = mediaType.isImageOrAnimation;
-                                  final bool isNeedToGuess = mediaType.isNeedToGuess;
-                                  final bool isNeedToLoadItem =
-                                      mediaType.isNeedToLoadItem && widget.tab.booruHandler.hasLoadItemSupport;
+                              return TagFilterEvaluationBuilder(
+                                item: item,
+                                handler: widget.tab.booruHandler,
+                                builder: (context, evaluation) => ValueListenableBuilder(
+                                  valueListenable: item.mediaType,
+                                  builder: (context, mediaType, _) {
+                                    final bool isVideo = mediaType.isVideo;
+                                    final bool isImage = mediaType.isImageOrAnimation;
+                                    final bool isNeedToGuess = mediaType.isNeedToGuess;
+                                    final bool isNeedToLoadItem =
+                                        mediaType.isNeedToLoadItem && widget.tab.booruHandler.hasLoadItemSupport;
 
-                                  late Widget itemWidget;
-                                  if (isImage) {
-                                    itemWidget = ValueListenableBuilder(
-                                      valueListenable: page,
-                                      builder: (_, pageVal, _) {
-                                        return ImageViewer(
-                                          item,
-                                          booru: possibleBooru ?? widget.tab.booruHandler.booru,
-                                          filterEvaluation: widget.tab.booruHandler.filterEvaluationFor(item),
-                                          isViewed: pageVal == index,
-                                          key: item.key,
-                                        );
-                                      },
-                                    );
-                                  } else if (isVideo) {
-                                    if (!SX.disableVideo.value) {
+                                    late Widget itemWidget;
+                                    if (isImage) {
                                       itemWidget = ValueListenableBuilder(
                                         valueListenable: page,
                                         builder: (_, pageVal, _) {
-                                          return VideoViewer(
+                                          return ImageViewer(
                                             item,
                                             booru: possibleBooru ?? widget.tab.booruHandler.booru,
-                                            filterEvaluation: widget.tab.booruHandler.filterEvaluationFor(item),
+                                            filterEvaluation: evaluation,
                                             isViewed: pageVal == index,
-                                            enableFullscreen: true,
                                             key: item.key,
                                           );
                                         },
                                       );
-                                    } else {
-                                      itemWidget = VideoViewerPlaceholder(
+                                    } else if (isVideo) {
+                                      if (!SX.disableVideo.value) {
+                                        itemWidget = ValueListenableBuilder(
+                                          valueListenable: page,
+                                          builder: (_, pageVal, _) {
+                                            return VideoViewer(
+                                              item,
+                                              booru: possibleBooru ?? widget.tab.booruHandler.booru,
+                                              filterEvaluation: evaluation,
+                                              isViewed: pageVal == index,
+                                              enableFullscreen: true,
+                                              key: item.key,
+                                            );
+                                          },
+                                        );
+                                      } else {
+                                        itemWidget = VideoViewerPlaceholder(
+                                          item: item,
+                                          booru: possibleBooru ?? widget.tab.booruHandler.booru,
+                                          filterEvaluation: evaluation,
+                                          key: item.key,
+                                        );
+                                      }
+                                    } else if (isNeedToGuess) {
+                                      itemWidget = GuessExtensionViewer(
                                         item: item,
                                         booru: possibleBooru ?? widget.tab.booruHandler.booru,
+                                        filterHandler: widget.tab.booruHandler,
+                                        onMediaTypeGuessed: (MediaType newMediaType) {
+                                          item.mediaType.value = newMediaType;
+                                          item.possibleMediaType.value = newMediaType.isUnknown
+                                              ? item.possibleMediaType.value
+                                              : null;
+                                        },
+                                        key: item.key,
+                                      );
+                                    } else if (isNeedToLoadItem) {
+                                      itemWidget = LoadItemViewer(
+                                        item: item,
+                                        handler: widget.tab.booruHandler,
+                                        onItemLoaded: (newItem) {
+                                          widget.tab.booruHandler.filteredFetched[index] = newItem;
+                                          // ignore: invalid_use_of_protected_member
+                                          newItem.mediaType.refresh();
+                                        },
+                                        key: item.key,
+                                      );
+                                    } else {
+                                      itemWidget = GuessExtensionViewer(
+                                        item: item,
+                                        booru: possibleBooru ?? widget.tab.booruHandler.booru,
+                                        filterHandler: widget.tab.booruHandler,
+                                        onMediaTypeGuessed: (MediaType newMediaType) {
+                                          item.mediaType.value = newMediaType;
+                                          item.possibleMediaType.value = newMediaType.isUnknown
+                                              ? item.possibleMediaType.value
+                                              : null;
+                                        },
                                         key: item.key,
                                       );
                                     }
-                                  } else if (isNeedToGuess) {
-                                    itemWidget = GuessExtensionViewer(
-                                      item: item,
-                                      booru: possibleBooru ?? widget.tab.booruHandler.booru,
-                                      onMediaTypeGuessed: (MediaType newMediaType) {
-                                        item.mediaType.value = newMediaType;
-                                        item.possibleMediaType.value = newMediaType.isUnknown
-                                            ? item.possibleMediaType.value
-                                            : null;
-                                      },
-                                      key: item.key,
-                                    );
-                                  } else if (isNeedToLoadItem) {
-                                    itemWidget = LoadItemViewer(
-                                      item: item,
-                                      handler: widget.tab.booruHandler,
-                                      onItemLoaded: (newItem) {
-                                        widget.tab.booruHandler.filteredFetched[index] = newItem;
-                                        // ignore: invalid_use_of_protected_member
-                                        newItem.mediaType.refresh();
-                                      },
-                                      key: item.key,
-                                    );
-                                  } else {
-                                    itemWidget = GuessExtensionViewer(
-                                      item: item,
-                                      booru: possibleBooru ?? widget.tab.booruHandler.booru,
-                                      onMediaTypeGuessed: (MediaType newMediaType) {
-                                        item.mediaType.value = newMediaType;
-                                        item.possibleMediaType.value = newMediaType.isUnknown
-                                            ? item.possibleMediaType.value
-                                            : null;
-                                      },
-                                      key: item.key,
-                                    );
-                                  }
 
-                                  final child = ListenableBuilder(
-                                    listenable: Listenable.merge([viewerHandler.activeViewers, page]),
-                                    builder: (context, child) {
-                                      final activeViewers = viewerHandler.activeViewers.value;
-                                      final pageVal = page.value;
-                                      final viewerIndex = widget.key is GlobalKey
-                                          ? viewerHandler.indexOfViewer(widget.key! as GlobalKey)
-                                          : -1;
-                                      final int viewerDepth = viewerIndex == -1
-                                          ? 0
-                                          : (activeViewers.length - 1 - viewerIndex);
-                                      final bool isViewerTooDeep = viewerDepth >= ViewerHandler.maxActiveViewers;
+                                    final child = ListenableBuilder(
+                                      listenable: Listenable.merge([viewerHandler.activeViewers, page]),
+                                      builder: (context, child) {
+                                        final activeViewers = viewerHandler.activeViewers.value;
+                                        final pageVal = page.value;
+                                        final viewerIndex = widget.key is GlobalKey
+                                            ? viewerHandler.indexOfViewer(widget.key! as GlobalKey)
+                                            : -1;
+                                        final int viewerDepth = viewerIndex == -1
+                                            ? 0
+                                            : (activeViewers.length - 1 - viewerIndex);
+                                        final bool isViewerTooDeep = viewerDepth >= ViewerHandler.maxActiveViewers;
 
-                                      final bool isViewedVal = index == pageVal;
-                                      final int distanceFromCurrent = (pageVal - index).abs();
-                                      // don't render more than 3 videos at once, chance to crash is too high otherwise
-                                      // disabled video preload for sankaku because their videos cause crashes if loading/rendering(?) more than one at a time
-                                      final bool isNear =
-                                          viewerDepth < ViewerHandler.maxActiveViewers &&
-                                          (distanceFromCurrent <=
-                                              (isVideo ? (isSankaku ? 0 : min(preloadCount, 1)) : preloadCount));
+                                        final bool isViewedVal = index == pageVal;
+                                        final int distanceFromCurrent = (pageVal - index).abs();
+                                        // don't render more than 3 videos at once, chance to crash is too high otherwise
+                                        // disabled video preload for sankaku because their videos cause crashes if loading/rendering(?) more than one at a time
+                                        final bool isNear =
+                                            viewerDepth < ViewerHandler.maxActiveViewers &&
+                                            (distanceFromCurrent <=
+                                                (isVideo ? (isSankaku ? 0 : min(preloadCount, 1)) : preloadCount));
 
-                                      return AnimatedSwitcher(
-                                        duration: const Duration(milliseconds: 100),
-                                        child: (isViewerTooDeep || (!isViewedVal && !isNear))
-                                            ? Center(child: Container(color: Colors.black))
-                                            : child,
-                                      );
-                                    },
-                                    child: ClipRect(
-                                      // Stack/Buttons Temp fix for desktop pageview only scrollable on like 2px at edges of screen. Think its a windows only bug
-                                      child: GestureDetector(
-                                        onTap: () => viewerHandler.toggleToolbar(false),
-                                        onLongPress: () => viewerHandler.toggleToolbar(true),
-                                        child: AnimatedSwitcher(
+                                        return AnimatedSwitcher(
                                           duration: const Duration(milliseconds: 100),
-                                          child: itemWidget,
+                                          child: (isViewerTooDeep || (!isViewedVal && !isNear))
+                                              ? Center(child: Container(color: Colors.black))
+                                              : child,
+                                        );
+                                      },
+                                      child: ClipRect(
+                                        // Stack/Buttons Temp fix for desktop pageview only scrollable on like 2px at edges of screen. Think its a windows only bug
+                                        child: GestureDetector(
+                                          onTap: () => viewerHandler.toggleToolbar(false),
+                                          onLongPress: () => viewerHandler.toggleToolbar(true),
+                                          child: AnimatedSwitcher(
+                                            duration: const Duration(milliseconds: 100),
+                                            child: itemWidget,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  );
+                                    );
 
-                                  if (SX.disableCustomPageTransitions.value) {
-                                    return child;
-                                  }
+                                    if (SX.disableCustomPageTransitions.value) {
+                                      return child;
+                                    }
 
-                                  return AnimatedBuilder(
-                                    animation: controller,
-                                    builder: (context, child) {
-                                      return slidePageTransition(
-                                        context,
-                                        controller,
-                                        SX.galleryScrollDirection.value.isVertical ? Axis.vertical : Axis.horizontal,
-                                        index,
-                                        child,
-                                      );
-                                    },
-                                    child: child,
-                                  );
-                                },
+                                    return AnimatedBuilder(
+                                      animation: controller,
+                                      builder: (context, child) {
+                                        return slidePageTransition(
+                                          context,
+                                          controller,
+                                          SX.galleryScrollDirection.value.isVertical ? Axis.vertical : Axis.horizontal,
+                                          index,
+                                          child,
+                                        );
+                                      },
+                                      child: child,
+                                    );
+                                  },
+                                ),
                               );
                             },
                             onPageChanged: (int index) {

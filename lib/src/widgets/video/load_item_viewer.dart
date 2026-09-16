@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_evaluation_builder.dart';
 
 class LoadItemViewer extends StatefulWidget {
   const LoadItemViewer({
@@ -86,10 +87,15 @@ class _LoadItemViewerState extends State<LoadItemViewer> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Thumbnail(
+          TagFilterEvaluationBuilder(
             item: widget.item,
-            booru: widget.handler.booru,
-            isStandalone: false,
+            handler: widget.handler,
+            builder: (context, evaluation) => Thumbnail(
+              item: widget.item,
+              booru: widget.handler.booru,
+              filterEvaluation: evaluation,
+              isStandalone: false,
+            ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),

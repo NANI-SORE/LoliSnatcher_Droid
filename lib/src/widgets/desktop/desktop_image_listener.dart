@@ -13,6 +13,7 @@ import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/widgets/gallery/notes_renderer.dart';
 import 'package:lolisnatcher/src/widgets/image/image_viewer.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_evaluation_builder.dart';
 import 'package:lolisnatcher/src/widgets/video/guess_extension_viewer.dart';
 import 'package:lolisnatcher/src/widgets/video/load_item_viewer.dart';
 import 'package:lolisnatcher/src/widgets/video/video_viewer.dart';
@@ -49,69 +50,69 @@ class _DesktopImageListenerState extends State<DesktopImageListener> {
       return null;
     }
 
-    if (item.mediaType.value.isImageOrAnimation) {
-      return Obx(
-        () => ImageViewer(
-          item,
-          booru: currentBooru,
-          isViewed: ViewerHandler.instance.current.value?.key == item.key,
-          key: item.key,
-        ),
-      );
-    } else if (item.mediaType.value.isVideo) {
-      return Obx(
-        () => VideoViewer(
-          item,
-          booru: currentBooru,
-          isViewed: ViewerHandler.instance.current.value?.key == item.key,
-          enableFullscreen: true,
-          key: item.key,
-        ),
-      );
-    } else if (item.mediaType.value.isNeedToGuess) {
-      return Obx(
-        () => GuessExtensionViewer(
-          item: item,
-          booru: currentBooru,
-          onMediaTypeGuessed: (MediaType mediaType) {
-            item.mediaType.value = mediaType;
-            item.possibleMediaType.value = mediaType.isUnknown ? item.possibleMediaType.value : null;
-            updateState();
-          },
-          key: item.key,
-        ),
-      );
-    } else if (item.mediaType.value.isNeedToGuess && currentHandler.hasLoadItemSupport) {
-      return Obx(
-        () => LoadItemViewer(
-          item: item,
-          handler: currentHandler,
-          onItemLoaded: (newItem) {
-            final currentFetched = searchHandler.currentFetchedOrNull;
-            final index = currentFetched?.indexOf(newItem) ?? -1;
-            if (currentFetched != null && index != -1) {
-              currentFetched[index] = newItem;
+    return TagFilterEvaluationBuilder(
+      item: item,
+      handler: currentHandler,
+      builder: (context, evaluation) => Obx(() {
+        if (item.mediaType.value.isImageOrAnimation) {
+          return ImageViewer(
+            item,
+            booru: currentBooru,
+            filterEvaluation: evaluation,
+            isViewed: ViewerHandler.instance.current.value?.key == item.key,
+            key: item.key,
+          );
+        } else if (item.mediaType.value.isVideo) {
+          return VideoViewer(
+            item,
+            booru: currentBooru,
+            filterEvaluation: evaluation,
+            isViewed: ViewerHandler.instance.current.value?.key == item.key,
+            enableFullscreen: true,
+            key: item.key,
+          );
+        } else if (item.mediaType.value.isNeedToGuess) {
+          return GuessExtensionViewer(
+            item: item,
+            booru: currentBooru,
+            filterHandler: currentHandler,
+            onMediaTypeGuessed: (MediaType mediaType) {
+              item.mediaType.value = mediaType;
+              item.possibleMediaType.value = mediaType.isUnknown ? item.possibleMediaType.value : null;
               updateState();
-            }
-          },
-          key: item.key,
-        ),
-      );
-    } else {
-      return Obx(
-        () => GuessExtensionViewer(
-          item: item,
-          booru: currentBooru,
-          onMediaTypeGuessed: (MediaType mediaType) {
-            item.mediaType.value = mediaType;
-            item.possibleMediaType.value = mediaType.isUnknown ? item.possibleMediaType.value : null;
-            updateState();
-          },
-        ),
-        key: item.key,
-      );
-      // return UnknownViewerPlaceholder(item: item, key: item.key,);
-    }
+            },
+            key: item.key,
+          );
+        } else if (item.mediaType.value.isNeedToLoadItem && currentHandler.hasLoadItemSupport) {
+          return LoadItemViewer(
+            item: item,
+            handler: currentHandler,
+            onItemLoaded: (newItem) {
+              final currentFetched = searchHandler.currentFetchedOrNull;
+              final index = currentFetched?.indexOf(newItem) ?? -1;
+              if (currentFetched != null && index != -1) {
+                currentFetched[index] = newItem;
+                updateState();
+              }
+            },
+            key: item.key,
+          );
+        } else {
+          return GuessExtensionViewer(
+            item: item,
+            booru: currentBooru,
+            filterHandler: currentHandler,
+            onMediaTypeGuessed: (MediaType mediaType) {
+              item.mediaType.value = mediaType;
+              item.possibleMediaType.value = mediaType.isUnknown ? item.possibleMediaType.value : null;
+              updateState();
+            },
+            key: item.key,
+          );
+          // return UnknownViewerPlaceholder(item: item, key: item.key,);
+        }
+      }),
+    );
   }
 
   void updateState() {

@@ -30,6 +30,7 @@ import 'package:lolisnatcher/src/data/pinned_tag.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/tag_filter.dart';
 import 'package:lolisnatcher/src/data/tag_filter_evaluation.dart';
+import 'package:lolisnatcher/src/data/tag_filter_query.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
@@ -43,6 +44,7 @@ import 'package:lolisnatcher/src/handlers/tag_filter_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/pages/gallery_view_page.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
+import 'package:lolisnatcher/src/utils/booru_rating.dart';
 import 'package:lolisnatcher/src/utils/debouncer.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/text_parser/rules/url_rule.dart';
@@ -73,6 +75,14 @@ class _TagInfoIcon {
   final dynamic icon;
   final Color color;
   final VoidCallback? onTap;
+}
+
+class _MetadataTag {
+  const _MetadataTag(this.query, {this.filterQuery, this.canSearch = true});
+
+  final String query;
+  final String? filterQuery;
+  final bool canSearch;
 }
 
 Widget _buildTagInfoIcon(BuildContext context, _TagInfoIcon info) {
@@ -172,6 +182,8 @@ class _TagViewState extends State<TagView> {
   }
 
   void checkForPossibleBooruHandler() {
+    possibleBooruHandler = null;
+
     Booru? getMergeBooruEntry() {
       if (handler is! MergebooruHandler) return null;
 
@@ -279,6 +291,8 @@ class _TagViewState extends State<TagView> {
       failedUpdate = false;
       if (mounted) setState(() {});
       cancelToken = CancelToken();
+      final owningHandler = handler;
+      final loadingItem = item;
       try {
         final res = await (possibleBooruHandler ?? handler).loadItem(
           item: item,
@@ -297,23 +311,30 @@ class _TagViewState extends State<TagView> {
         }
 
         if (!res.failed) {
-          await getUploaderName();
+          owningHandler.filterFetched(forceRefresh: true);
+          if (mounted && identical(item, loadingItem)) await getUploaderName();
         }
       } catch (e) {
         failedUpdate = true;
       }
       loadingUpdate = false;
-      if (mounted) setState(() {});
+      if (!mounted) return;
+      setState(() {});
       WidgetsBinding.instance.addPostFrameCallback(
-        (_) => parseSortGroupTags(),
+        (_) {
+          if (mounted) parseSortGroupTags();
+        },
       );
     }
   }
 
   Future<void> getUploaderName() async {
+    final loadingItem = item;
+    final owningHandler = handler;
     final usedHandler = possibleBooruHandler ?? handler;
-    if (usedHandler is DanbooruHandler && item.uploaderId?.isNotEmpty == true) {
-      item.uploaderName = await usedHandler.getUploaderName(item);
+    if (usedHandler is DanbooruHandler && loadingItem.uploaderId?.isNotEmpty == true) {
+      loadingItem.uploaderName = await usedHandler.getUploaderName(loadingItem);
+      owningHandler.filterFetched(forceRefresh: true);
     }
   }
 
@@ -679,6 +700,29 @@ class _TagViewState extends State<TagView> {
     }
   }
 
+  _MetadataTag? metadataTag(List<String> keys, String? value, {String? filterQuery}) {
+    if (value == null || value.isEmpty) return null;
+    final sourceHandler = possibleBooruHandler ?? handler;
+    final metaTag = sourceHandler.availableMetaTags().firstWhereOrNull((meta) => keys.contains(meta.keyName));
+    if (metaTag == null) {
+      return filterQuery == null ? null : _MetadataTag(filterQuery, filterQuery: filterQuery, canSearch: false);
+    }
+    if (metaTag is MetaTagWithValues) {
+      final matchingValue = metaTag.values.firstWhereOrNull(
+        (candidate) => candidate.value.toLowerCase() == value!.toLowerCase(),
+      );
+      // Older three-rating sources call general content "safe".
+      final safeValue = value == 'general'
+          ? metaTag.values.firstWhereOrNull((candidate) => candidate.value == 'safe')
+          : null;
+      if (matchingValue == null && safeValue == null) {
+        return filterQuery == null ? null : _MetadataTag(filterQuery, filterQuery: filterQuery, canSearch: false);
+      }
+      value = (matchingValue ?? safeValue)!.value;
+    }
+    return _MetadataTag(metaTag.tagBuilder(null, null, value), filterQuery: filterQuery);
+  }
+
   Widget infoText(
     String title,
     String data, {
@@ -687,68 +731,97 @@ class _TagViewState extends State<TagView> {
     VoidCallback? onTap,
     VoidCallback? onLongPress,
     Widget? trailing,
+    _MetadataTag? metadata,
   }) {
     if (data.isNotEmpty) {
-      return ListTile(
-        onTap:
-            onTap ??
-            (canCopy
-                ? () => ClipboardUtils.copyTextToClipboard(
-                    data,
-                    subtitle: '$title: $data',
-                  )
-                : null),
-        onLongPress: onLongPress,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              '$title: ',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
+      void openMetadataDialog() {
+        if (metadata == null) return;
+        final sourceHandler = possibleBooruHandler ?? handler;
+        final query = metadata.query;
+        showTagDialog(
+          context: context,
+          tag: query,
+          handler: sourceHandler,
+          isInSearch: query
+              .split(' ')
+              .every(
+                (part) => searchHandler.searchTextControllerTags.any(
+                  (tag) => tag == part || tag == '-$part' || tag == '~$part',
+                ),
               ),
-            ),
-            if (!isLink)
-              Expanded(
-                child: AutoSizeText(
-                  data,
-                  maxLines: 1,
-                  minFontSize: 13,
-                  maxFontSize: 14,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1,
-                  ),
-                  overflowReplacement: DraggableOverflowText(
-                    data,
+          hasTabWithTag: searchHandler.hasTabWithTag(query, customBooru: sourceHandler.booru),
+          evaluation: handler.filterEvaluationFor(item),
+          onUpdate: parseSortGroupTagsWithoutCache,
+          isMetaTag: true,
+          filterQuery: metadata.filterQuery,
+          canSearch: metadata.canSearch,
+        );
+      }
+
+      return GestureDetector(
+        onSecondaryTap: metadata == null ? null : openMetadataDialog,
+        child: ListTile(
+          onTap:
+              (metadata == null ? null : openMetadataDialog) ??
+              onTap ??
+              (canCopy
+                  ? () => ClipboardUtils.copyTextToClipboard(
+                      data,
+                      subtitle: '$title: $data',
+                    )
+                  : null),
+          onLongPress: metadata == null ? onLongPress : openMetadataDialog,
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                '$title: ',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              if (!isLink)
+                Expanded(
+                  child: AutoSizeText(
+                    metadata?.query ?? data,
+                    maxLines: 1,
+                    minFontSize: 13,
+                    maxFontSize: 14,
                     style: const TextStyle(
                       fontSize: 14,
                       height: 1,
                     ),
+                    overflowReplacement: DraggableOverflowText(
+                      metadata?.query ?? data,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        height: 1,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
+          subtitle: isLink
+              ? DraggableOverflowText(
+                  data,
+                  style: const TextStyle(fontSize: 14),
+                )
+              : null,
+          trailing:
+              trailing ??
+              (isLink
+                  ? IconButton(
+                      icon: const Icon(Icons.exit_to_app),
+                      onPressed: () => launchUrlString(
+                        data,
+                        mode: LaunchMode.externalApplication,
+                      ),
+                    )
+                  : null),
         ),
-        subtitle: isLink
-            ? DraggableOverflowText(
-                data,
-                style: const TextStyle(fontSize: 14),
-              )
-            : null,
-        trailing:
-            trailing ??
-            (isLink
-                ? IconButton(
-                    icon: const Icon(Icons.exit_to_app),
-                    onPressed: () => launchUrlString(
-                      data,
-                      mode: LaunchMode.externalApplication,
-                    ),
-                  )
-                : null),
       );
     }
 
@@ -1034,6 +1107,18 @@ class _TagViewState extends State<TagView> {
     final String rating = item.rating ?? '';
     final String score = item.score ?? '';
     final String md5 = item.md5String ?? '';
+    final sourceHandler = possibleBooruHandler ?? handler;
+    final normalizedRating = normalizeBooruRating(item.rating, booru: sourceHandler.booru);
+    final ratingQuery = const {'safe', 'general', 'sensitive', 'questionable', 'explicit'}.contains(normalizedRating)
+        ? 'rating:$normalizedRating'
+        : null;
+    final scoreValue = int.tryParse(score.trim());
+    final scoreQuery = scoreValue == null ? null : 'score:$scoreValue';
+    final widthTag = metadataTag(['width'], item.fileWidth?.toInt().toString());
+    final heightTag = metadataTag(['height'], item.fileHeight?.toInt().toString());
+    final resolutionTag = widthTag != null && heightTag != null
+        ? _MetadataTag('${widthTag.query} ${heightTag.query}')
+        : null;
     final List<String> sources = item.sources ?? [];
     final bool tagsAvailable = tags.isNotEmpty || hasLoadItemSupport;
     String postDate = item.postDate ?? '';
@@ -1070,52 +1155,29 @@ class _TagViewState extends State<TagView> {
             delegate: SliverChildListDelegate(
               [
                 const SizedBox(height: kMinInteractiveDimension),
-                infoText(context.loc.tagView.id, itemId),
+                infoText(context.loc.tagView.id, itemId, metadata: metadataTag(['id'], itemId)),
                 infoText(context.loc.tagView.postURL, item.postURL, isLink: true),
                 //
                 if (item.uploaderId?.isNotEmpty == true || item.uploaderName?.isNotEmpty == true)
                   Builder(
                     builder: (context) {
-                      final bool hasUploaderName = item.uploaderName?.isNotEmpty == true;
-                      final String text = item.uploaderName ?? item.uploaderId ?? '';
+                      final bool hasUploaderName = item.uploaderName?.trim().isNotEmpty == true;
+                      final String text = hasUploaderName ? item.uploaderName! : item.uploaderId ?? '';
+                      final userMetaTag = sourceHandler.availableMetaTags().firstWhereOrNull(
+                        (meta) => meta is UserMetaTag,
+                      );
+                      final userQuery = TagFilterQuery.escapeExactTag('user:${item.uploaderName?.trim() ?? ''}');
 
                       return infoText(
                         context.loc.tagView.uploader,
                         text,
-                        trailing: hasUploaderName
-                            ? IgnorePointer(
-                                child: IconButton(
-                                  icon: const Icon(Icons.add),
-                                  onPressed: () {},
-                                ),
+                        metadata: hasUploaderName
+                            ? _MetadataTag(
+                                userMetaTag?.tagBuilder(null, null, item.uploaderName) ?? userQuery,
+                                filterQuery: userQuery,
+                                canSearch: userMetaTag != null,
                               )
                             : null,
-                        onTap: hasUploaderName
-                            ? () {
-                                final userMetaTag = searchHandler.currentBooruHandlerOrNull
-                                    ?.availableMetaTags()
-                                    .firstWhereOrNull(
-                                      (t) => t is UserMetaTag,
-                                    );
-                                if (userMetaTag == null) return;
-
-                                final String tag = userMetaTag.tagBuilder(null, null, item.uploaderName);
-
-                                searchHandler.addTagToSearch(tag);
-                                FlashElements.showSnackbar(
-                                  context: context,
-                                  duration: const Duration(seconds: 2),
-                                  title: Text(
-                                    context.loc.tagView.addedToCurrentSearch,
-                                    style: const TextStyle(fontSize: 20),
-                                  ),
-                                  content: Text(tag, style: const TextStyle(fontSize: 16)),
-                                  leadingIcon: Icons.add,
-                                  sideColor: Colors.green,
-                                );
-                              }
-                            : null,
-                        onLongPress: hasUploaderName ? () => ClipboardUtils.copyTextToClipboard(text) : null,
                       );
                     },
                   ),
@@ -1143,12 +1205,28 @@ class _TagViewState extends State<TagView> {
                   children: [
                     if (SX.isDebug.value) infoText(context.loc.tagView.filename, fileName),
                     infoText(context.loc.tagView.url, fileUrl, isLink: true),
-                    infoText(context.loc.tagView.extension, fileExt),
-                    infoText(context.loc.tagView.resolution, fileRes),
-                    infoText(context.loc.tagView.size, fileSize),
-                    infoText(context.loc.tagView.md5, md5),
-                    infoText(context.loc.tagView.rating, rating),
-                    infoText(context.loc.tagView.score, score),
+                    infoText(
+                      context.loc.tagView.extension,
+                      fileExt,
+                      metadata: metadataTag(['filetype', 'file_type', 'ext'], fileExt.toLowerCase()),
+                    ),
+                    infoText(context.loc.tagView.resolution, fileRes, metadata: resolutionTag),
+                    infoText(
+                      context.loc.tagView.size,
+                      fileSize,
+                      metadata: metadataTag(['filesize', 'file_size'], item.fileSize?.toString()),
+                    ),
+                    infoText(context.loc.tagView.md5, md5, metadata: metadataTag(['md5'], md5)),
+                    infoText(
+                      context.loc.tagView.rating,
+                      rating,
+                      metadata: metadataTag(['rating'], normalizedRating, filterQuery: ratingQuery),
+                    ),
+                    infoText(
+                      context.loc.tagView.score,
+                      score,
+                      metadata: metadataTag(['score'], scoreValue?.toString(), filterQuery: scoreQuery),
+                    ),
                   ],
                 ),
                 commentsButton(),
@@ -1307,13 +1385,28 @@ Future<void> showTagDialog({
   required HasTabWithTagResult hasTabWithTag,
   required VoidCallback onUpdate,
   TagFilterEvaluation evaluation = const TagFilterEvaluation.empty(),
+  bool isMetaTag = false,
+  String? filterQuery,
+  bool canSearch = true,
 }) async {
   final parentContext = context;
   final settingsHandler = SettingsHandler.instance;
   final searchHandler = SearchHandler.instance;
   final tagHandler = TagHandler.instance;
+  final metadataConditions = filterQuery == null
+      ? const <TagFilterCondition>[]
+      : TagFilterQuery.parse(filterQuery).query?.conditions ?? const <TagFilterCondition>[];
   final relatedFilterMatches = evaluation.matches
-      .where((match) => match.matchedTags.contains(tag.toLowerCase()))
+      .where((match) {
+        if (!isMetaTag) return match.matchedTags.contains(tag.toLowerCase());
+        final conditions = TagFilterQuery.parse(match.rule.query).query?.conditions ?? const [];
+        return conditions.any(
+          (condition) =>
+              (filterQuery?.startsWith('rating:') == true && condition is RatingCondition) ||
+              (filterQuery?.startsWith('score:') == true && condition is ScoreCondition) ||
+              (metadataConditions.any((candidate) => candidate is UserCondition) && condition is UserCondition),
+        );
+      })
       .toList(growable: false);
 
   Future<void> openRuleEditor(BuildContext dialogContext, TagFilterEffect effect) async {
@@ -1322,7 +1415,9 @@ Future<void> showTagDialog({
     if (!parentContext.mounted) return;
     await showTagFilterEditorSheet(
       parentContext,
-      draft: TagFilterDraft.exactTag(tag, effect),
+      draft: isMetaTag
+          ? TagFilterDraft(name: '', query: filterQuery!, effect: effect)
+          : TagFilterDraft.exactTag(tag, effect),
     );
   }
 
@@ -1347,7 +1442,9 @@ Future<void> showTagDialog({
                   key: ValueKey(tag),
                   text: tag,
                   style: TextStyle(
-                    color: tagHandler.getTag(tag).getColour() ?? Theme.of(context).colorScheme.onSurface,
+                    color:
+                        (isMetaTag ? null : tagHandler.getTag(tag).getColour()) ??
+                        Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1355,36 +1452,37 @@ Future<void> showTagDialog({
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(left: 30),
-              child: Builder(
-                builder: (_) {
-                  final t = tagHandler.getTag(tag);
+            if (!isMetaTag)
+              Padding(
+                padding: const EdgeInsets.only(left: 30),
+                child: Builder(
+                  builder: (_) {
+                    final t = tagHandler.getTag(tag);
 
-                  return Row(
-                    children: [
-                      if (!t.tagType.isNone)
-                        Container(
-                          width: 6,
-                          height: 24,
-                          margin: const EdgeInsets.only(right: 10),
-                          decoration: BoxDecoration(
-                            color: t.getColour(),
-                            borderRadius: BorderRadius.circular(5),
+                    return Row(
+                      children: [
+                        if (!t.tagType.isNone)
+                          Container(
+                            width: 6,
+                            height: 24,
+                            margin: const EdgeInsets.only(right: 10),
+                            decoration: BoxDecoration(
+                              color: t.getColour(),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                          ),
+                        Text(
+                          t.tagType.locName,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      Text(
-                        t.tagType.locName,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  );
-                },
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
             //
             Flexible(
               child: Scrollbar(
@@ -1397,15 +1495,16 @@ Future<void> showTagDialog({
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: ListBody(
                       children: [
-                        TagContentPreview(
-                          tag: tag,
-                          boorus: handler.booru.type?.isMerge == true
-                              ? [
-                                  ...(handler as MergebooruHandler).booruHandlers.map((e) => e.booru),
-                                ]
-                              : [handler.booru],
-                          parentTab: searchHandler.currentTabOrNull,
-                        ),
+                        if (canSearch)
+                          TagContentPreview(
+                            tag: tag,
+                            boorus: handler.booru.type?.isMerge == true
+                                ? [
+                                    ...(handler as MergebooruHandler).booruHandlers.map((e) => e.booru),
+                                  ]
+                                : [handler.booru],
+                            parentTab: searchHandler.currentTabOrNull,
+                          ),
                         //
                         ListTile(
                           leading: Icon(
@@ -1420,7 +1519,7 @@ Future<void> showTagDialog({
                           },
                         ),
                         //
-                        if (isInSearch)
+                        if (canSearch && isInSearch)
                           ListTile(
                             leading: Icon(
                               Icons.delete_outline,
@@ -1428,11 +1527,13 @@ Future<void> showTagDialog({
                             ),
                             title: Text(context.loc.tagView.removeFromSearch),
                             onTap: () {
-                              searchHandler.removeTagFromSearch(tag);
+                              for (final part in isMetaTag ? tag.split(' ') : [tag]) {
+                                searchHandler.removeTagFromSearch(part);
+                              }
                               Navigator.of(context).pop();
                             },
                           )
-                        else ...[
+                        else if (canSearch) ...[
                           ListTile(
                             leading: const Icon(Icons.add, color: Colors.green),
                             title: Text(context.loc.tagView.addToSearch),
@@ -1457,30 +1558,31 @@ Future<void> showTagDialog({
                               Navigator.of(context).pop();
                             },
                           ),
-                          ListTile(
-                            leading: const Icon(Icons.remove_rounded, color: Colors.red),
-                            title: Text(context.loc.tagView.excludeFromSearch),
-                            onTap: () {
-                              searchHandler.addTagToSearch('-$tag');
+                          if (!isMetaTag || !tag.contains(' '))
+                            ListTile(
+                              leading: const Icon(Icons.remove_rounded, color: Colors.red),
+                              title: Text(context.loc.tagView.excludeFromSearch),
+                              onTap: () {
+                                searchHandler.addTagToSearch('-$tag');
 
-                              FlashElements.showSnackbar(
-                                context: context,
-                                duration: const Duration(seconds: 2),
-                                title: Text(
-                                  context.loc.tagView.exclusionAddedToSearchBar,
-                                  style: const TextStyle(fontSize: 20),
-                                ),
-                                content: Text(
-                                  tag,
-                                  style: const TextStyle(fontSize: 16),
-                                ),
-                                leadingIcon: Icons.add,
-                                sideColor: Colors.green,
-                              );
+                                FlashElements.showSnackbar(
+                                  context: context,
+                                  duration: const Duration(seconds: 2),
+                                  title: Text(
+                                    context.loc.tagView.exclusionAddedToSearchBar,
+                                    style: const TextStyle(fontSize: 20),
+                                  ),
+                                  content: Text(
+                                    tag,
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                  leadingIcon: Icons.add,
+                                  sideColor: Colors.green,
+                                );
 
-                              Navigator.of(context).pop();
-                            },
-                          ),
+                                Navigator.of(context).pop();
+                              },
+                            ),
                         ],
                         //
                         if (relatedFilterMatches.isNotEmpty)
@@ -1497,74 +1599,75 @@ Future<void> showTagDialog({
                               title: context.loc.settings.itemFilters.relatedFilters,
                             ),
                           ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(
-                                width: 40,
-                                height: 40,
-                                child: Center(child: Icon(Icons.filter_alt_outlined)),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: Text(
-                                        context.loc.settings.itemFilters.addRule,
-                                        style: Theme.of(context).textTheme.bodyLarge,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 6,
-                                      children: [
-                                        ActionChip(
-                                          onPressed: () => openRuleEditor(context, TagFilterEffect.mark),
-                                          avatar: Icon(
-                                            Icons.star_outline,
-                                            size: 18,
-                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                          ),
-                                          label: Text(context.loc.settings.itemFilters.mark),
-                                        ),
-                                        ActionChip(
-                                          onPressed: () => openRuleEditor(context, TagFilterEffect.blur),
-                                          avatar: Icon(
-                                            Icons.blur_on,
-                                            size: 18,
-                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                          ),
-                                          label: Text(context.loc.settings.itemFilters.blur),
-                                        ),
-                                        ActionChip(
-                                          onPressed: () => openRuleEditor(context, TagFilterEffect.hide),
-                                          avatar: Icon(
-                                            Icons.visibility_off_outlined,
-                                            size: 18,
-                                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                          ),
-                                          label: Text(context.loc.settings.itemFilters.hide),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
+                        if (!isMetaTag || filterQuery != null)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(
+                                  width: 40,
+                                  height: 40,
+                                  child: Center(child: Icon(Icons.filter_alt_outlined)),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 8),
+                                        child: Text(
+                                          context.loc.settings.itemFilters.addRule,
+                                          style: Theme.of(context).textTheme.bodyLarge,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Wrap(
+                                        spacing: 8,
+                                        runSpacing: 6,
+                                        children: [
+                                          ActionChip(
+                                            onPressed: () => openRuleEditor(context, TagFilterEffect.mark),
+                                            avatar: Icon(
+                                              Icons.star_outline,
+                                              size: 18,
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            ),
+                                            label: Text(context.loc.settings.itemFilters.mark),
+                                          ),
+                                          ActionChip(
+                                            onPressed: () => openRuleEditor(context, TagFilterEffect.blur),
+                                            avatar: Icon(
+                                              Icons.blur_on,
+                                              size: 18,
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            ),
+                                            label: Text(context.loc.settings.itemFilters.blur),
+                                          ),
+                                          ActionChip(
+                                            onPressed: () => openRuleEditor(context, TagFilterEffect.hide),
+                                            avatar: Icon(
+                                              Icons.visibility_off_outlined,
+                                              size: 18,
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            ),
+                                            label: Text(context.loc.settings.itemFilters.hide),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
                         //
                         FutureBuilder<PinnedTag?>(
                           future: settingsHandler.dbHandler.getPinnedTag(
                             tag,
-                            booruType: searchHandler.currentBooruOrNull?.type?.name,
-                            booruName: searchHandler.currentBooruOrNull?.name,
+                            booruType: (isMetaTag ? handler.booru : searchHandler.currentBooruOrNull)?.type?.name,
+                            booruName: (isMetaTag ? handler.booru : searchHandler.currentBooruOrNull)?.name,
                           ),
                           builder: (_, snapshot) {
                             final isPinned = snapshot.data != null;
@@ -1573,12 +1676,15 @@ Future<void> showTagDialog({
                             void reopenDialog() {
                               Navigator.of(context).pop();
                               showTagDialog(
-                                context: context,
+                                context: parentContext,
                                 tag: tag,
                                 handler: handler,
                                 isInSearch: isInSearch,
                                 hasTabWithTag: hasTabWithTag,
                                 evaluation: evaluation,
+                                isMetaTag: isMetaTag,
+                                filterQuery: filterQuery,
+                                canSearch: canSearch,
                                 onUpdate: onUpdate,
                               );
                             }
@@ -1598,7 +1704,7 @@ Future<void> showTagDialog({
                                   await showPinTagDialog(
                                     context,
                                     tag,
-                                    searchHandler.currentBooruOrNull ?? handler.booru,
+                                    isMetaTag ? handler.booru : searchHandler.currentBooruOrNull ?? handler.booru,
                                     () {},
                                   );
                                 }
@@ -1632,35 +1738,36 @@ Future<void> showTagDialog({
                             title: Text(context.loc.tagView.relatedTabs),
                             onTap: () => showRelatedTabsDialog(context, tag),
                           ),
-                        ListTile(
-                          leading: Icon(
-                            Icons.edit,
-                            color: Theme.of(context).iconTheme.color,
+                        if (!isMetaTag)
+                          ListTile(
+                            leading: Icon(
+                              Icons.edit,
+                              color: Theme.of(context).iconTheme.color,
+                            ),
+                            title: Text(context.loc.tagView.editTag),
+                            onTap: () async {
+                              Navigator.of(context).pop();
+                              final item = tagHandler.getTag(tag);
+                              await showDialog(
+                                context: context,
+                                builder: (context) => TagsManagerListItemDialog(
+                                  tag: item,
+                                  onChangedType: (TagType? newValue) {
+                                    if (newValue != null && item.tagType != newValue) {
+                                      item.tagType = newValue;
+                                      tagHandler.putTag(
+                                        item,
+                                        dbEnabled: SX.dbEnabled.value,
+                                        preferTypeIfNone: false,
+                                      );
+                                      onUpdate();
+                                    }
+                                  },
+                                ),
+                              );
+                              onUpdate();
+                            },
                           ),
-                          title: Text(context.loc.tagView.editTag),
-                          onTap: () async {
-                            Navigator.of(context).pop();
-                            final item = tagHandler.getTag(tag);
-                            await showDialog(
-                              context: context,
-                              builder: (context) => TagsManagerListItemDialog(
-                                tag: item,
-                                onChangedType: (TagType? newValue) {
-                                  if (newValue != null && item.tagType != newValue) {
-                                    item.tagType = newValue;
-                                    tagHandler.putTag(
-                                      item,
-                                      dbEnabled: SX.dbEnabled.value,
-                                      preferTypeIfNone: false,
-                                    );
-                                    onUpdate();
-                                  }
-                                },
-                              ),
-                            );
-                            onUpdate();
-                          },
-                        ),
                         //
                         ListTile(
                           leading: Icon(

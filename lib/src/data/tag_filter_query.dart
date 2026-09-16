@@ -1,4 +1,5 @@
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/utils/booru_rating.dart';
 
 const _escapedAsterisk = '\u0000';
 const _escapedHyphen = '\u0001';
@@ -10,6 +11,7 @@ enum TagFilterQueryErrorCode {
   danglingEscape,
   invalidRating,
   invalidScore,
+  invalidUser,
 }
 
 class TagFilterQueryError {
@@ -61,14 +63,16 @@ class TagFilterQuery {
       .where((condition) => !condition.negated)
       .map((condition) => condition.rating);
 
-  TagFilterQueryMatch match(BooruItem item, {Set<String>? normalizedTags}) {
+  TagFilterQueryMatch match(BooruItem item, {Set<String>? normalizedTags, String? normalizedRating}) {
     final tags =
         normalizedTags ??
         item.tagsList.map((tag) => tag.fullString.trim().toLowerCase()).where((tag) => tag.isNotEmpty).toSet();
     final matchedTags = <String>{};
 
     for (final condition in conditions) {
-      final result = condition.evaluate(item, tags);
+      final result = condition is RatingCondition
+          ? condition.evaluate(item, tags, normalizedRating: normalizedRating)
+          : condition.evaluate(item, tags);
       if (!result.matches) {
         return const TagFilterQueryMatch(matches: false);
       }
@@ -108,6 +112,20 @@ class TagFilterQuery {
       }
 
       final lower = token.toLowerCase();
+      if (lower.startsWith('user:')) {
+        final username = lower
+            .substring('user:'.length)
+            .replaceAll(_escapedAsterisk, '*')
+            .replaceAll(_escapedHyphen, '-')
+            .trim();
+        if (username.isEmpty) {
+          return const TagFilterQueryParseResult.failure(
+            TagFilterQueryError(TagFilterQueryErrorCode.invalidUser, 'User requires an uploader name'),
+          );
+        }
+        conditions.add(UserCondition(username: username, negated: negated));
+        continue;
+      }
       if (lower.startsWith('rating:')) {
         final value = lower.substring('rating:'.length).replaceAll(_escapedAsterisk, '*');
         final rating = switch (value) {
@@ -132,10 +150,13 @@ class TagFilterQuery {
 
       if (lower.startsWith('score:')) {
         final value = lower.substring('score:'.length).replaceAll(_escapedAsterisk, '*');
-        final match = RegExp(r'^(>=|<=|=|>|<)(-?\d+)$').firstMatch(value);
+        final match = RegExp(r'^(>=|<=|=|>|<)?(-?\d+)$').firstMatch(value);
         if (match == null) {
           return const TagFilterQueryParseResult.failure(
-            TagFilterQueryError(TagFilterQueryErrorCode.invalidScore, 'Score requires an operator and an integer'),
+            TagFilterQueryError(
+              TagFilterQueryErrorCode.invalidScore,
+              'Score requires an integer, optionally preceded by an operator',
+            ),
           );
         }
         final threshold = int.tryParse(match.group(2)!);
@@ -146,7 +167,7 @@ class TagFilterQuery {
         }
         conditions.add(
           ScoreCondition(
-            operator: ScoreOperator.fromSymbol(match.group(1)!),
+            operator: ScoreOperator.fromSymbol(match.group(1) ?? '='),
             threshold: threshold,
             negated: negated,
           ),
@@ -343,19 +364,24 @@ class TagCondition extends TagFilterCondition {
   }
 }
 
+class UserCondition extends TagFilterCondition {
+  const UserCondition({required this.username, required super.negated});
+  final String username;
+
+  @override
+  ConditionMatch evaluate(BooruItem item, Set<String> tags) {
+    final result = item.uploaderName?.trim().toLowerCase() == username;
+    return ConditionMatch(negated ? !result : result);
+  }
+}
+
 class RatingCondition extends TagFilterCondition {
   const RatingCondition({required this.rating, required super.negated});
   final String rating;
 
   @override
-  ConditionMatch evaluate(BooruItem item, Set<String> tags) {
-    final raw = item.rating?.trim().toLowerCase();
-    final normalized = switch (raw) {
-      's' => 'safe',
-      'q' => 'questionable',
-      'e' => 'explicit',
-      _ => raw,
-    };
+  ConditionMatch evaluate(BooruItem item, Set<String> tags, {String? normalizedRating}) {
+    final normalized = normalizedRating ?? normalizeBooruRating(item.rating);
     final result = normalized == rating;
     return ConditionMatch(negated ? !result : result);
   }

@@ -104,6 +104,7 @@ class ImageViewerState extends State<ImageViewer> {
   StreamSubscription<PhotoViewControllerValue>? viewStateSubscription;
   StreamSubscription<PhotoViewScaleState>? scaleStateSubscription;
   int _loadGeneration = 0;
+  bool _ignoreFilterForCurrentLoad = false;
 
   String imageFolder = 'media';
   int? widthLimit;
@@ -119,6 +120,9 @@ class ImageViewerState extends State<ImageViewer> {
   Size? tiledSize;
 
   bool get isProviderLoaded {
+    if (widget.filterEvaluation.isBlurred && !_ignoreFilterForCurrentLoad) {
+      return false;
+    }
     if (isTilingProcessing.value != false) {
       return false;
     }
@@ -223,6 +227,8 @@ class ImageViewerState extends State<ImageViewer> {
     super.didUpdateWidget(oldWidget);
     // force redraw on item data change
     if (oldWidget.booruItem != widget.booruItem) {
+      _loadGeneration++;
+      _ignoreFilterForCurrentLoad = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
 
@@ -238,7 +244,9 @@ class ImageViewerState extends State<ImageViewer> {
           oldEvaluation.primaryMatch?.rule.id != evaluation.primaryMatch?.rule.id ||
           oldEvaluation.primaryMatch?.rule.updatedAt != evaluation.primaryMatch?.rule.updatedAt ||
           oldEvaluation.loadingFilterDetails != evaluation.loadingFilterDetails;
-      if (filterChanged) {
+      if (filterChanged && (evaluation.isBlurred || oldEvaluation.isBlurred)) {
+        _loadGeneration++;
+        _ignoreFilterForCurrentLoad = false;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           if (widget.filterEvaluation.isBlurred) {
@@ -267,6 +275,11 @@ class ImageViewerState extends State<ImageViewer> {
     bool withCaptchaCheck = false,
   }) async {
     final int loadGeneration = ++_loadGeneration;
+    if (_ignoreFilterForCurrentLoad != ignoreTagsCheck) {
+      setState(() {
+        _ignoreFilterForCurrentLoad = ignoreTagsCheck;
+      });
+    }
     widget.booruItem.isNoScale.addListener(noScaleListener);
 
     widget.booruItem.toggleQuality.addListener(toggleQualityListener);
@@ -928,9 +941,11 @@ class ImageViewerState extends State<ImageViewer> {
                         milliseconds: (SX.appMode.value.isDesktop || isViewed.value) ? 50 : 300,
                       ),
                       child: AnimatedSwitcher(
-                        duration: Duration(
-                          milliseconds: (SX.appMode.value.isDesktop || isViewed.value) ? 50 : 300,
-                        ),
+                        duration: widget.filterEvaluation.isBlurred && !_ignoreFilterForCurrentLoad
+                            ? Duration.zero
+                            : Duration(
+                                milliseconds: (SX.appMode.value.isDesktop || isViewed.value) ? 50 : 300,
+                              ),
                         child: !isProviderLoaded
                             ? const SizedBox.shrink()
                             : ((isTiled && tiledProviders != null)

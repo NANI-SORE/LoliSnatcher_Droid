@@ -25,12 +25,13 @@ import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/thumbnail_loading.dart';
 import 'package:lolisnatcher/src/widgets/image/custom_network_image.dart';
 import 'package:lolisnatcher/src/widgets/preview/shimmer_builder.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_evaluation_builder.dart';
 
-class Thumbnail extends StatefulWidget {
+class Thumbnail extends StatelessWidget {
   const Thumbnail({
     required this.item,
     this.booru,
-    this.filterEvaluation = const TagFilterEvaluation.empty(),
+    this.filterEvaluation,
     this.isStandalone = false,
     this.useHero = true,
     super.key,
@@ -38,17 +39,57 @@ class Thumbnail extends StatefulWidget {
 
   final BooruItem item;
   final Booru? booru;
-  final TagFilterEvaluation filterEvaluation;
+  final TagFilterEvaluation? filterEvaluation;
 
   /// set to true when used in a list
   final bool isStandalone;
   final bool useHero;
 
   @override
-  State<Thumbnail> createState() => _ThumbnailState();
+  Widget build(BuildContext context) {
+    final evaluation = filterEvaluation;
+    if (evaluation != null) {
+      return _buildThumbnail(context, evaluation);
+    }
+    return TagFilterEvaluationBuilder(
+      item: item,
+      booru: booru,
+      builder: _buildThumbnail,
+    );
+  }
+
+  Widget _buildThumbnail(BuildContext context, TagFilterEvaluation evaluation) {
+    if (evaluation.isHidden) return const SizedBox.shrink();
+    return _FilteredThumbnail(
+      item: item,
+      booru: booru,
+      filterEvaluation: evaluation,
+      isStandalone: isStandalone,
+      useHero: useHero,
+    );
+  }
 }
 
-class _ThumbnailState extends State<Thumbnail> {
+class _FilteredThumbnail extends StatefulWidget {
+  const _FilteredThumbnail({
+    required this.item,
+    required this.booru,
+    required this.filterEvaluation,
+    required this.isStandalone,
+    required this.useHero,
+  });
+
+  final BooruItem item;
+  final Booru? booru;
+  final TagFilterEvaluation filterEvaluation;
+  final bool isStandalone;
+  final bool useHero;
+
+  @override
+  State<_FilteredThumbnail> createState() => _ThumbnailState();
+}
+
+class _ThumbnailState extends State<_FilteredThumbnail> {
   final ValueNotifier<int> total = ValueNotifier(0), received = ValueNotifier(0), startedAt = ValueNotifier(0);
   int restartedCount = 0;
   final ValueNotifier<bool?> isFromCache = ValueNotifier(null);
@@ -85,10 +126,20 @@ class _ThumbnailState extends State<Thumbnail> {
   }
 
   @override
-  void didUpdateWidget(Thumbnail oldWidget) {
+  void didUpdateWidget(_FilteredThumbnail oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final oldEvaluation = oldWidget.filterEvaluation;
+    final evaluation = widget.filterEvaluation;
+    final filterChanged =
+        oldEvaluation.isBlurred != evaluation.isBlurred ||
+        oldEvaluation.hideAsBlur != evaluation.hideAsBlur ||
+        oldEvaluation.primaryMatch?.rule.id != evaluation.primaryMatch?.rule.id ||
+        oldEvaluation.primaryMatch?.rule.updatedAt != evaluation.primaryMatch?.rule.updatedAt ||
+        oldEvaluation.loadingFilterDetails != evaluation.loadingFilterDetails;
     // force redraw on tab change
-    if (oldWidget.item != widget.item) {
+    if (oldWidget.item != widget.item || filterChanged) {
+      _loadGeneration++;
+      isBlurred = true;
       currentUrl = widget.item.thumbnailURL;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
@@ -647,7 +698,15 @@ class _ThumbnailState extends State<Thumbnail> {
                         child = TickerMode(
                           enabled: SX.gifsAsThumbnails.value,
                           child: Image(
-                            image: mainProvider,
+                            image: widget.filterEvaluation.isBlurred && SX.shitDevice.value
+                                ? ResizeImage(
+                                    mainProvider is ResizeImage ? mainProvider.imageProvider : mainProvider,
+                                    width: 10,
+                                    height: 10,
+                                    policy: ResizeImagePolicy.fit,
+                                    allowUpscaling: false,
+                                  )
+                                : mainProvider,
                             fit: widget.isStandalone ? BoxFit.cover : BoxFit.contain,
                             isAntiAlias: true,
                             filterQuality: FilterQuality.medium,

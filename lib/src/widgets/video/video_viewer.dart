@@ -89,10 +89,13 @@ class VideoViewerState extends State<VideoViewer> {
   StreamSubscription? viewStateSubscription, scaleStateSubscription;
   StreamSubscription? fullscreenViewStateSubscription, fullscreenScaleStateSubscription;
   int _loadGeneration = 0;
+  bool _ignoreFilterForCurrentLoad = false;
   bool _fullscreenZoomResetQueued = false;
   bool _fullscreenDismissThresholdReached = false;
 
-  bool get isVideoInited => videoController.value?.value.isInitialized ?? false;
+  bool get isVideoInited =>
+      !(widget.filterEvaluation.isBlurred && !_ignoreFilterForCurrentLoad) &&
+      (videoController.value?.value.isInitialized ?? false);
   bool get isVideoFullscreen => chewieController.value?.isFullScreen ?? false;
   PhotoViewScaleStateController get activeScaleController =>
       isVideoFullscreen ? fullscreenScaleController : scaleController;
@@ -305,6 +308,8 @@ class VideoViewerState extends State<VideoViewer> {
     super.didUpdateWidget(oldWidget);
     // force redraw on item data change
     if (oldWidget.booruItem != widget.booruItem) {
+      _loadGeneration++;
+      _ignoreFilterForCurrentLoad = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
 
@@ -321,7 +326,9 @@ class VideoViewerState extends State<VideoViewer> {
           oldEvaluation.primaryMatch?.rule.id != evaluation.primaryMatch?.rule.id ||
           oldEvaluation.primaryMatch?.rule.updatedAt != evaluation.primaryMatch?.rule.updatedAt ||
           oldEvaluation.loadingFilterDetails != evaluation.loadingFilterDetails;
-      if (filterChanged) {
+      if (filterChanged && (evaluation.isBlurred || oldEvaluation.isBlurred)) {
+        _loadGeneration++;
+        _ignoreFilterForCurrentLoad = false;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           if (widget.filterEvaluation.isBlurred) {
@@ -339,7 +346,7 @@ class VideoViewerState extends State<VideoViewer> {
       isViewed.value = widget.isViewed;
 
       if (isViewed.value) {
-        if (SX.autoPlayEnabled.value) {
+        if (isVideoInited && SX.autoPlayEnabled.value) {
           videoController.value?.play();
         }
         if (viewerHandler.videoAutoMute) {
@@ -360,6 +367,11 @@ class VideoViewerState extends State<VideoViewer> {
 
   Future<void> initVideo(bool ignoreTagsCheck) async {
     final int loadGeneration = ++_loadGeneration;
+    if (_ignoreFilterForCurrentLoad != ignoreTagsCheck) {
+      setState(() {
+        _ignoreFilterForCurrentLoad = ignoreTagsCheck;
+      });
+    }
     if (widget.filterEvaluation.isBlurred && !ignoreTagsCheck) {
       _stopForFilter(widget.filterEvaluation);
     } else {
@@ -970,7 +982,15 @@ class VideoViewerState extends State<VideoViewer> {
           body: Container(
             alignment: Alignment.center,
             color: Colors.black,
-            child: buildFullscreenContent(context, controllerProvider),
+            child: ValueListenableBuilder(
+              valueListenable: chewieController,
+              builder: (context, controller, _) {
+                if (!mounted || controller != controllerProvider.controller || !isVideoInited) {
+                  return const SizedBox.shrink();
+                }
+                return buildFullscreenContent(context, controllerProvider);
+              },
+            ),
           ),
         ),
       ),
@@ -1106,7 +1126,9 @@ class VideoViewerState extends State<VideoViewer> {
             //
             Positioned.fill(
               child: AnimatedSwitcher(
-                duration: Duration(milliseconds: SX.appMode.value.isDesktop ? 50 : 200),
+                duration: widget.filterEvaluation.isBlurred && !_ignoreFilterForCurrentLoad
+                    ? Duration.zero
+                    : Duration(milliseconds: SX.appMode.value.isDesktop ? 50 : 200),
                 child: isVideoInited
                     ? Listener(
                         onPointerSignal: (pointerSignal) {
