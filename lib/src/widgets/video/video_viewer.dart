@@ -780,7 +780,7 @@ class VideoViewerState extends State<VideoViewer> {
       //   iconColor: Color.fromARGB(255, 200, 200, 200)
       // ),
       // ios default video handler seems unstable with speeds above 2.5
-      playbackSpeeds: (Platform.isIOS && settingsHandler.videoBackendMode.isDefault)
+      playbackSpeeds: (Platform.isIOS && SX.videoBackendMode.value.isDefault)
           ? const [
               0.1,
               0.25,
