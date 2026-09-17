@@ -54,8 +54,8 @@ abstract class BooruHandler {
   /// Seen file URLs for O(1) duplicate detection across incremental filter runs.
   final Set<String> _seenFileURLs = {};
 
-  /// Seen server IDs for O(1) duplicate detection.
-  final Set<String> _seenServerIds = {};
+  /// Server IDs are only unique within a source. Local collections also mix hosts.
+  final Set<(String?, String?, String, String)> _seenServerIds = {};
 
   /// Merged searches override this to retain each item's source settings.
   Booru sourceBooruFor(BooruItem item) => booru;
@@ -99,15 +99,18 @@ abstract class BooruHandler {
         continue;
       }
       final serverId = item.serverId;
-      if (serverId != null && _seenServerIds.contains(serverId)) {
+      final serverKey = serverId?.isNotEmpty == true
+          ? (source.type?.name, source.baseURL, Uri.tryParse(item.postURL)?.authority ?? '', serverId!)
+          : null;
+      if (serverKey != null && _seenServerIds.contains(serverKey)) {
         continue;
       }
 
       if (item.fileURL.isNotEmpty) {
         _seenFileURLs.add(item.fileURL);
       }
-      if (serverId != null) {
-        _seenServerIds.add(serverId);
+      if (serverKey != null) {
+        _seenServerIds.add(serverKey);
       }
 
       newFilteredItems.add(item);
@@ -373,8 +376,16 @@ abstract class BooruHandler {
 
     final int lengthBefore = fetched.length;
     fetched.addAll(newItems);
-    filterFetched();
-    unawaited(setMultipleTrackedValues(lengthBefore, fetched.length));
+    final fetchedAtStart = fetched.value;
+    await setMultipleTrackedValues(lengthBefore, fetched.length);
+    DioNetwork.throwIfCancelled();
+    if (!identical(fetched.value, fetchedAtStart)) return;
+    // A settings change may have filtered this batch while its DB flags loaded.
+    if (_filterWatermark > lengthBefore) {
+      refilterAll();
+    } else {
+      filterFetched();
+    }
     unawaited(populateTagHandler(newItems));
 
     // TODO
@@ -877,32 +888,20 @@ abstract class BooruHandler {
   }
 
   Future<void> setMultipleTrackedValues(int beforeLength, int afterLength) async {
-    // beforeLength can be -1, clamp to 0
-    final int beforePos = max(0, beforeLength);
-    // diff can be negative, clamp to 0
-    int diff = max(0, afterLength - beforeLength);
-    diff = diff > 0 ? diff + 1 : diff;
-    // we need +1 to make sure we don't miss the last item, because sublist doesn't include the item with the end index
-    // so this way we exceed the possible length of fetched to get it
-
-    if (diff == 0) {
-      // do nothing if nothing was added
-      return;
-    }
-
-    // generate list of new fetched indexes
-    final List<int> fetchedIndexes = List.generate(diff, (index) => beforePos + index);
-
+    final fetchedAtStart = fetched.value;
+    final beforePos = beforeLength.clamp(0, fetchedAtStart.length);
+    final afterPos = afterLength.clamp(beforePos, fetchedAtStart.length);
+    final items = fetchedAtStart.sublist(beforePos, afterPos);
+    if (items.isEmpty) return;
     final SettingsHandler settingsHandler = SettingsHandler.instance;
-    if (settingsHandler.dbHandler.db != null && diff > 0) {
-      final List<List<bool>> valuesList = await settingsHandler.dbHandler.getMultipleTrackedValues(
-        fetched.sublist(fetchedIndexes.first, fetchedIndexes.last),
-      ); //.map((e) => e.fileURL).toList()
-
-      valuesList.asMap().forEach((index, values) {
-        fetched[fetchedIndexes[index]].isSnatched.value = values[0];
-        fetched[fetchedIndexes[index]].isFavourite.value = values[1];
-      });
+    if (settingsHandler.dbHandler.db != null) {
+      final valuesList = await settingsHandler.dbHandler.getMultipleTrackedValues(items);
+      DioNetwork.throwIfCancelled();
+      if (!identical(fetched.value, fetchedAtStart)) return;
+      for (int index = 0; index < min(items.length, valuesList.length); index++) {
+        items[index].isSnatched.value = valuesList[index][0];
+        items[index].isFavourite.value = valuesList[index][1];
+      }
     }
 
     return;

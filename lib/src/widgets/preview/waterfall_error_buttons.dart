@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -101,7 +102,9 @@ class _WaterfallErrorButtonsState extends State<WaterfallErrorButtons> {
   Widget build(BuildContext context) {
     return Obx(() {
       final bool isLastPage = searchHandler.isLastPage.value;
-      final int pageNum = searchHandler.pageNum.value;
+      final tab = searchHandler.currentTabOrNull;
+      if (tab == null) return const SizedBox.shrink();
+      final int pageNum = max(1, tab.displayPage(searchHandler.pageNum.value));
       final bool isEmpty = searchHandler.currentFetchedOrNull?.isEmpty ?? true;
       final bool isLoading = searchHandler.isLoading.value;
       final bool hasError = searchHandler.errorString.isNotEmpty;
