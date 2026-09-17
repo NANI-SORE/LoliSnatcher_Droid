@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -1562,28 +1563,43 @@ class SearchTab {
   double scrollPosition = 0;
   int? scrollPage;
   RxList<BooruItem> selected = RxList<BooruItem>.from([]);
-  RxList<BooruItem> hiddenItems = RxList<BooruItem>.from([]);
+  // Preserve hide order without hashing BooruItem's mutable metadata.
+  final hiddenItems = RxSet<BooruItem>(LinkedHashSet<BooruItem>.identity());
   final OrderedSelectionIndex<BooruItem> _selectedIndices = OrderedSelectionIndex();
   final Set<BooruItem> _lastSelectedItems = Set<BooruItem>.identity();
 
   int? selectedIndexOf(BooruItem item) => _selectedIndices.indexOf(item);
 
   bool get hasSelectedItems => _selectedIndices.isNotEmpty;
-  bool get hasHiddenItems => hiddenItems.isNotEmpty;
+  bool get hasHiddenItems => allHiddenItems.isNotEmpty;
+
+  /// Includes manually hidden and filter-excluded items, but not duplicates or policy rejections.
+  Iterable<BooruItem> get allHiddenItems sync* {
+    final manual = hiddenItems.value;
+    final filtered = booruHandler.filterHiddenItems.value;
+    for (final item in manual) {
+      if (ContentPolicy.isItemAllowed(booruHandler.sourceBooruFor(item), item)) yield item;
+    }
+    for (final item in filtered.keys) {
+      if (!manual.contains(item) && ContentPolicy.isItemAllowed(booruHandler.sourceBooruFor(item), item)) yield item;
+    }
+  }
 
   void hideItems(Iterable<BooruItem> items) {
-    for (final item in items) {
-      if (!hiddenItems.contains(item)) {
-        hiddenItems.add(item);
-      }
-    }
+    hiddenItems.addAll(items);
     selected.removeWhere(hiddenItems.contains);
     booruHandler.refilterAll();
   }
 
   void unhideItems() {
+    final items = allHiddenItems.toList();
     hiddenItems.clear();
-    booruHandler.refilterAll();
+    booruHandler.restoreFilteredItems(items);
+  }
+
+  void unhideItem(BooruItem item) {
+    hiddenItems.remove(item);
+    booruHandler.restoreFilteredItems([item]);
   }
 
   void _updateSelectedIndices() {

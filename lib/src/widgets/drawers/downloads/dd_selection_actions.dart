@@ -8,6 +8,7 @@ import 'package:lolisnatcher/src/pages/snatcher_page.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_controller.dart';
+import 'package:lolisnatcher/src/widgets/drawers/downloads/hidden_items_page.dart';
 
 class DDSelectionActions extends StatelessWidget {
   const DDSelectionActions({
@@ -24,18 +25,20 @@ class DDSelectionActions extends StatelessWidget {
     final searchHandler = controller.searchHandler;
 
     return Obx(() {
-      final totalItems = searchHandler.currentFetched.length;
+      final tab = searchHandler.currentTabOrNull;
+      if (tab == null) return const SizedBox.shrink();
+      final totalItems = tab.booruHandler.filteredFetched.length;
       final selected = searchHandler.currentSelectedOrNull ?? [];
-      final hiddenCount = searchHandler.currentTab.hiddenItems.length;
+      final allHiddenCount = tab.allHiddenItems.length;
 
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (hiddenCount > 0)
+          if (allHiddenCount > 0)
             SettingsButton(
-              name: '${context.loc.settings.downloads.unhideHidden} ($hiddenCount)',
-              icon: const Icon(Icons.visibility_outlined),
-              action: controller.unhideItems,
+              name: '${context.loc.settings.downloads.hiddenItems} ($allHiddenCount)',
+              icon: const Icon(Icons.visibility_off_outlined),
+              page: () => HiddenItemsPage(tab: tab),
               drawTopBorder: true,
             ),
           if (selected.length != totalItems)
@@ -50,14 +53,14 @@ class DDSelectionActions extends StatelessWidget {
                 final res = await controller.selectFetchedByQuery(context);
                 if (res) toggleDrawer();
               },
-              drawTopBorder: hiddenCount == 0,
+              drawTopBorder: allHiddenCount == 0,
             ),
           if (selected.isNotEmpty)
             SettingsButton(
               name: context.loc.settings.downloads.clearSelected,
               icon: const Icon(Icons.deselect),
               action: () => searchHandler.currentTabOrNull?.selected.clear(),
-              drawTopBorder: hiddenCount == 0 && selected.length == totalItems,
+              drawTopBorder: allHiddenCount == 0 && selected.length == totalItems,
             ),
         ],
       );

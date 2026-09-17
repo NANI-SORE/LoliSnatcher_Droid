@@ -765,7 +765,8 @@ class _HideableAppBarState extends State<HideableAppBar> {
   }
 
   void shareTextAction(String text) {
-    unawaited(galleryShareService.shareText(text));
+    if (!mounted) return;
+    unawaited(galleryShareService.shareText(text, context: context));
   }
 
   Future<void> shareHydrusAction(BooruItem item) async {
@@ -825,8 +826,13 @@ class _HideableAppBarState extends State<HideableAppBar> {
     }
   }
 
-  Future<void> shareFileAction({String? text}) async {
-    final BooruItem item = widget.tab.booruHandler.filteredFetched[page.value];
+  Future<void> shareFileAction({
+    String? text,
+    BooruItem? itemToShare,
+    Booru? booru,
+  }) async {
+    final BooruItem item = itemToShare ?? widget.tab.booruHandler.filteredFetched[page.value];
+    final sourceBooru = booru ?? widget.tab.booruHandler.sourceBooruFor(item);
 
     final currentShare = snatchHandler.currentShare.value;
     final sharedItem = snatchHandler.shareActiveItem.value;
@@ -916,12 +922,8 @@ class _HideableAppBarState extends State<HideableAppBar> {
       );
 
       if (dialogRes == 'new' || dialogRes == 'abort') {
-        galleryShareService.cancel();
-        await galleryShareService.imageWriter.deleteFileFromCache(
-          item.fileURL,
-          'media',
-          fileNameExtras: item.fileNameExtras,
-        );
+        galleryShareService.cancel(operationId: currentShare.operationId);
+        if (dialogRes == 'new') await currentShare.done;
       }
 
       if (dialogRes == 'abort' || dialogRes == null) {
@@ -929,7 +931,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
       }
     }
 
-    //
+    if (!mounted) return;
 
     FlashElements.showSnackbar(
       context: context,
@@ -946,14 +948,16 @@ class _HideableAppBarState extends State<HideableAppBar> {
       sideColor: Colors.yellow,
     );
 
+    bool cancelled = false;
     final success = await galleryShareService.shareFiles(
       items: [item],
-      booru: widget.tab.booruHandler.booru,
+      booru: sourceBooru,
       context: context,
       text: text,
+      onCancelled: () => cancelled = true,
     );
 
-    if (!success) {
+    if (!success && !cancelled && mounted) {
       FlashElements.showSnackbar(
         context: context,
         title: Text(context.loc.viewer.appBar.error, style: const TextStyle(fontSize: 20)),
@@ -974,6 +978,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
   }
 
   ShareActionController shareActionController(BooruItem item, BuildContext actionContext) {
+    final sourceBooru = widget.tab.booruHandler.sourceBooruFor(item);
     Future<void> ensurePostUrlAndShare(FutureOr<void> Function() action) async {
       if (item.postURL.isEmpty) {
         FlashElements.showSnackbar(
@@ -1015,13 +1020,13 @@ class _HideableAppBarState extends State<HideableAppBar> {
           shareTextAction(item.fileURL);
         }
       },
-      file: shareFileAction,
+      file: () => shareFileAction(itemToShare: item, booru: sourceBooru),
       fileWithTags: () async {
         final tags = await showSelectTagsDialog(actionContext, item.tagsList);
         if (tags.isNotEmpty) {
-          await shareFileAction(text: tags.join(' '));
+          await shareFileAction(text: tags.join(' '), itemToShare: item, booru: sourceBooru);
         } else {
-          await shareFileAction();
+          await shareFileAction(itemToShare: item, booru: sourceBooru);
         }
       },
       hydrus: () => shareHydrusAction(item),

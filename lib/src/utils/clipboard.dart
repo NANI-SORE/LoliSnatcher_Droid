@@ -77,6 +77,7 @@ class ClipboardUtils {
         onReceiveProgress: onReceiveProgress,
       );
 
+      if (cancelToken?.isCancelled == true) throw cancelToken!.cancelError!;
       await FlutterClipboard.copyImage(bytes);
 
       if (notify) {

@@ -21,6 +21,7 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/media_loading.dart';
@@ -61,6 +62,10 @@ class ImageViewer extends StatefulWidget {
     this.booruItem, {
     required this.booru,
     required this.isViewed,
+    this.isStandalone = false,
+    this.allowHidden = false,
+    this.fullQuality = false,
+    this.onReloadItem,
     super.key,
   });
 
@@ -68,13 +73,23 @@ class ImageViewer extends StatefulWidget {
   final Booru booru;
   final bool isViewed;
 
+  /// Standalone viewers do not read or update shared gallery state.
+  final bool isStandalone;
+
+  /// Bypasses user tag filters only; content policy still applies.
+  final bool allowHidden;
+  final bool fullQuality;
+
+  /// Lets standalone hosts refresh metadata without updating saved/gallery items.
+  final VoidCallback? onReloadItem;
+
   @override
   State<ImageViewer> createState() => ImageViewerState();
 }
 
 class ImageViewerState extends State<ImageViewer> {
   final settingsHandler = SettingsHandler.instance;
-  final viewerHandler = ViewerHandler.instance;
+  ViewerHandler? get viewerHandler => widget.isStandalone ? null : ViewerHandler.instance;
 
   PhotoViewScaleStateController scaleController = PhotoViewScaleStateController();
   PhotoViewController viewController = PhotoViewController();
@@ -198,7 +213,7 @@ class ImageViewerState extends State<ImageViewer> {
 
     isViewed.value = widget.isViewed;
 
-    viewerHandler.addViewed(widget.key);
+    viewerHandler?.addViewed(widget.key);
 
     // debug output
     viewStateSubscription = viewController.outputStateStream.listen(onViewStateChanged);
@@ -227,7 +242,7 @@ class ImageViewerState extends State<ImageViewer> {
 
     if (oldWidget.isViewed != widget.isViewed) {
       isViewed.value = widget.isViewed;
-      if (!isViewed.value) {
+      if (!isViewed.value && !widget.isStandalone) {
         // reset zoom if not viewed
         resetZoom();
       }
@@ -235,18 +250,23 @@ class ImageViewerState extends State<ImageViewer> {
   }
 
   bool get useFullImage =>
-      SX.galleryMode.value.isFullRes ? !widget.booruItem.toggleQuality.value : widget.booruItem.toggleQuality.value;
+      widget.fullQuality ||
+      (SX.galleryMode.value.isFullRes ? !widget.booruItem.toggleQuality.value : widget.booruItem.toggleQuality.value);
 
   Future<void> initViewer(
     bool ignoreTagsCheck, {
     bool withCaptchaCheck = false,
   }) async {
     final int loadGeneration = ++_loadGeneration;
+    if (!ContentPolicy.isItemAllowed(widget.booru, widget.booruItem)) {
+      stopLoading(reason: .reset);
+      return;
+    }
     widget.booruItem.isNoScale.addListener(noScaleListener);
 
     widget.booruItem.toggleQuality.addListener(toggleQualityListener);
 
-    if (widget.booruItem.isHidden && !ignoreTagsCheck) {
+    if (widget.booruItem.isHidden && !ignoreTagsCheck && !widget.allowHidden) {
       if (widget.booruItem.isHidden) {
         stopLoading(
           reason: .hidden,
@@ -266,7 +286,7 @@ class ImageViewerState extends State<ImageViewer> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isCurrentLoad(loadGeneration)) return;
 
-      viewerHandler.setStopped(widget.key, false);
+      viewerHandler?.setStopped(widget.key, false);
     });
 
     startedAt.value = DateTime.now().millisecondsSinceEpoch;
@@ -276,7 +296,7 @@ class ImageViewerState extends State<ImageViewer> {
 
     final ImageProvider newProvider = await getImageProvider(
       loadGeneration: loadGeneration,
-      withCaptchaCheck: withCaptchaCheck,
+      withCaptchaCheck: withCaptchaCheck || widget.isStandalone,
     );
 
     if (!_isCurrentLoad(loadGeneration)) {
@@ -308,7 +328,7 @@ class ImageViewerState extends State<ImageViewer> {
           if (prevIsLoaded == false) {
             resetZoom();
           }
-          viewerHandler.setLoaded(widget.key, true);
+          viewerHandler?.setLoaded(widget.key, true);
         });
       },
       onChunk: (event) {
@@ -454,6 +474,9 @@ class ImageViewerState extends State<ImageViewer> {
   }) {
     disposables();
 
+    isTilingProcessing.value = null;
+    mainProvider.value = null;
+
     total.value = 0;
     received.value = 0;
 
@@ -472,8 +495,8 @@ class ImageViewerState extends State<ImageViewer> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      viewerHandler.setStopped(widget.key, true);
-      viewerHandler.setLoaded(widget.key, false);
+      viewerHandler?.setStopped(widget.key, true);
+      viewerHandler?.setLoaded(widget.key, false);
     });
   }
 
@@ -487,7 +510,7 @@ class ImageViewerState extends State<ImageViewer> {
     viewController.dispose();
     disposeNotifiers();
 
-    viewerHandler.removeViewed(widget.key);
+    viewerHandler?.removeViewed(widget.key);
     super.dispose();
   }
 
@@ -505,9 +528,9 @@ class ImageViewerState extends State<ImageViewer> {
     }
     loadItemCancelToken = null;
 
+    // Shared with dispose(): reset UI notifiers only in stopLoading().
     tiledProviders = null;
     isTiled = false;
-    isTilingProcessing.value = null;
     tiledSize = null;
 
     if (imageFolder == 'media' || (!widget.booruItem.mediaType.value.isAnimation || !SX.gifsAsThumbnails.value)) {
@@ -520,8 +543,6 @@ class ImageViewerState extends State<ImageViewer> {
       //   }
       // });
     }
-
-    mainProvider.value = null;
 
     widget.booruItem.isNoScale.removeListener(noScaleListener);
     widget.booruItem.toggleQuality.removeListener(toggleQualityListener);
@@ -567,17 +588,17 @@ class ImageViewerState extends State<ImageViewer> {
         scaleState == PhotoViewScaleState.covering ||
         scaleState == PhotoViewScaleState.originalSize;
 
-    viewerHandler.setZoomed(widget.key, isZoomed.value);
+    viewerHandler?.setZoomed(widget.key, isZoomed.value);
   }
 
   void onViewStateChanged(PhotoViewControllerValue viewState) {
     // print(viewState);
-    viewerHandler.setViewValue(widget.key, viewState);
+    viewerHandler?.setViewValue(widget.key, viewState);
   }
 
   void resetZoom() {
     scaleController.scaleState = PhotoViewScaleState.initial;
-    viewerHandler.setZoomed(widget.key, false);
+    viewerHandler?.setZoomed(widget.key, false);
   }
 
   void scrollZoomImage(double value) {
@@ -601,6 +622,10 @@ class ImageViewerState extends State<ImageViewer> {
   }
 
   Future<void> onManualRestart() async {
+    if (stopReason.value?.isError == true && widget.onReloadItem != null) {
+      widget.onReloadItem!();
+      return;
+    }
     final int loadGeneration = ++_loadGeneration;
     if (blockPreloadState.isTooBig) {
       blockPreloadState = .ignore;
@@ -610,7 +635,7 @@ class ImageViewerState extends State<ImageViewer> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isCurrentLoad(loadGeneration)) return;
 
-      viewerHandler.setStopped(widget.key, false);
+      viewerHandler?.setStopped(widget.key, false);
     });
 
     startedAt.value = DateTime.now().millisecondsSinceEpoch;
@@ -748,12 +773,11 @@ class ImageViewerState extends State<ImageViewer> {
 
           tiledProviders = slices.map((s) {
             return ResizeImage(
-                  MemoryImage(s),
-                  width: tileWidth,
-                  policy: ResizeImagePolicy.fit,
-                  allowUpscaling: false,
-                )
-                as ImageProvider;
+              MemoryImage(s),
+              width: tileWidth,
+              policy: ResizeImagePolicy.fit,
+              allowUpscaling: false,
+            ) as ImageProvider;
           }).toList();
           final double maxWidth = min(size.width, tileWidth.toDouble());
           tiledSize = Size(maxWidth, maxWidth / size.aspectRatio);
@@ -811,6 +835,7 @@ class ImageViewerState extends State<ImageViewer> {
 
   @override
   Widget build(BuildContext context) {
+    if (!ContentPolicy.isItemAllowed(widget.booru, widget.booruItem)) return const SizedBox.shrink();
     return PreserveMediaAnimations(
       child: Material(
         // without this every text element will have broken styles on first frames

@@ -57,7 +57,12 @@ class DownloadsDrawerController {
   void clearHandlerCache() => _handlerCache.clear();
 
   Future<void> onStartSnatching(BuildContext context, bool isLongTap) async {
+    final currentTab = searchHandler.currentTabOrNull;
+    if (currentTab == null) return;
+    final currentBooru = currentTab.selectedBooru.value;
+    final currentSelected = [...currentTab.selected];
     if (!await setPermissions()) {
+      if (!context.mounted) return;
       FlashElements.showSnackbar(
         context: context,
         title: Text(
@@ -68,13 +73,6 @@ class DownloadsDrawerController {
         sideColor: Colors.red,
         leadingIconColor: Colors.red,
       );
-      return;
-    }
-
-    final currentTab = searchHandler.currentTabOrNull;
-    final currentBooru = searchHandler.currentBooruOrNull;
-    final currentSelected = searchHandler.currentSelectedOrNull;
-    if (currentTab == null || currentBooru == null || currentSelected == null) {
       return;
     }
 
@@ -93,8 +91,9 @@ class DownloadsDrawerController {
         );
       }
       await Future.delayed(const Duration(milliseconds: 100));
-      currentTab.selected.clear();
+      currentTab.selected.removeWhere(currentSelected.contains);
     } else {
+      if (!context.mounted) return;
       FlashElements.showSnackbar(
         context: context,
         title: Text(
@@ -110,6 +109,9 @@ class DownloadsDrawerController {
   }
 
   Future<bool> selectFetchedByQuery(BuildContext context) async {
+    final tab = searchHandler.currentTab;
+    final fetched = [...tab.booruHandler.filteredFetched];
+    final selected = [...tab.selected];
     final controller = TextEditingController();
     final query = await showModalBottomSheet<String>(
       context: context,
@@ -125,9 +127,9 @@ class DownloadsDrawerController {
             contentItems: [
               TagSearchBox(
                 controller: controller,
-                booru: searchHandler.currentBooru,
+                booru: tab.selectedBooru.value,
                 title: context.loc.search,
-                hintText: searchHandler.currentTab.tags,
+                hintText: tab.tags,
                 allowMultipleTags: true,
                 drawTopBorder: false,
                 drawBottomBorder: false,
@@ -153,8 +155,9 @@ class DownloadsDrawerController {
       return false;
     }
 
-    searchHandler.currentTab.selected.assignAll(
-      _itemsMatchingTagQuery(searchHandler.currentFetched, query),
+    tab.selected.removeWhere(selected.contains);
+    tab.selected.addAll(
+      _itemsMatchingTagQuery(fetched, query).where((item) => !tab.selected.contains(item)),
     );
     return true;
   }
@@ -344,12 +347,12 @@ class DownloadsDrawerController {
     await shareActionController(context).run(_shareActionWithoutTags(shareAction), context);
   }
 
-  Future<void> shareSelectedText(
+  Future<void> _shareSelectedText(
     BuildContext context,
     String Function(BooruItem item) itemText, {
+    required List<BooruItem> selected,
     bool requirePostUrl = false,
   }) async {
-    final selected = [...searchHandler.currentSelected];
     final lines = <String>[];
 
     for (final item in selected) {
@@ -377,11 +380,17 @@ class DownloadsDrawerController {
     await galleryShareService.shareText(
       lines.join('\n\n'),
       subtitle: '',
+      context: context,
     );
   }
 
-  Future<void> shareSelectedFiles(BuildContext context, {String? text}) async {
-    final selected = [...searchHandler.currentSelected];
+  Future<void> _shareSelectedFiles(
+    BuildContext context, {
+    required SearchTab tab,
+    required List<BooruItem> selected,
+    required Map<BooruItem, Booru> sources,
+    String? text,
+  }) async {
     if (selected.isEmpty) {
       return;
     }
@@ -428,14 +437,18 @@ class DownloadsDrawerController {
       sideColor: Colors.yellow,
     );
 
+    bool cancelled = false;
     final success = await galleryShareService.shareFiles(
       items: selected,
-      booru: searchHandler.currentBooru,
+      booru: tab.selectedBooru.value,
+      sourceBooruFor: (item) => sources[item]!,
       context: context,
       text: text,
+      onCancelled: () => cancelled = true,
     );
 
     if (!success) {
+      if (cancelled || !context.mounted) return;
       FlashElements.showSnackbar(
         context: context,
         title: Text(context.loc.viewer.appBar.error, style: const TextStyle(fontSize: 20)),
@@ -450,10 +463,10 @@ class DownloadsDrawerController {
       return;
     }
 
-    searchHandler.currentTab.selected.clear();
+    tab.selected.removeWhere(selected.contains);
   }
 
-  Future<void> shareSelectedHydrus(BuildContext context) async {
+  Future<void> _shareSelectedHydrus(BuildContext context, List<BooruItem> selected) async {
     if (!settingsHandler.hasHydrus) {
       FlashElements.showSnackbar(
         context: context,
@@ -504,7 +517,7 @@ class DownloadsDrawerController {
     }
 
     final hydrusHandler = HydrusHandler(hydrus, 10);
-    for (final item in [...searchHandler.currentSelected]) {
+    for (final item in selected) {
       await hydrusHandler.addURL(item, usePostUrl: res == 'post');
     }
   }
@@ -535,17 +548,14 @@ class DownloadsDrawerController {
   }
 
   void compareSelected(BuildContext context) {
+    final tab = searchHandler.currentTab;
     final selected = [...searchHandler.currentSelected];
     if (selected.length != 2) {
       return;
     }
 
-    final firstBooru = searchHandler.currentBooru.type?.isFavouritesOrDownloads == true
-        ? _sourceBooruForItem(selected.first) ?? searchHandler.currentBooru
-        : searchHandler.currentBooru;
-    final secondBooru = searchHandler.currentBooru.type?.isFavouritesOrDownloads == true
-        ? _sourceBooruForItem(selected.last) ?? searchHandler.currentBooru
-        : searchHandler.currentBooru;
+    final firstBooru = _sourceBooruForTabItem(tab, selected.first);
+    final secondBooru = _sourceBooruForTabItem(tab, selected.last);
 
     showImageCompareDialog(
       context,
@@ -631,15 +641,17 @@ class DownloadsDrawerController {
   }
 
   Future<void> refreshSelectedMetadata(BuildContext context) async {
-    if (searchHandler.currentBooru.type?.isFavouritesOrDownloads != true) {
+    if (updating.value) return;
+    final tab = searchHandler.currentTab;
+    if (tab.selectedBooru.value.type?.isFavouritesOrDownloads != true) {
       _showNoRefreshableItems(context);
       return;
     }
 
-    final selected = [...searchHandler.currentSelected];
+    final selected = [...tab.selected];
     final refreshableItems = selected
-        .map((item) => (item: item, booru: _sourceBooruForItem(item)))
-        .where((record) => record.booru != null && getHandler(record.booru!).hasLoadItemSupport)
+        .map((item) => (item: item, booru: _sourceBooruForTabItem(tab, item)))
+        .where((record) => getHandler(record.booru).hasLoadItemSupport)
         .toList();
 
     if (refreshableItems.isEmpty) {
@@ -648,7 +660,7 @@ class DownloadsDrawerController {
     }
 
     final delayMs = await _askRefreshDelay(context);
-    if (delayMs == null) {
+    if (delayMs == null || !context.mounted || updating.value) {
       return;
     }
 
@@ -670,7 +682,7 @@ class DownloadsDrawerController {
     try {
       for (int i = 0; i < refreshableItems.length; i++) {
         final record = refreshableItems[i];
-        final handler = getHandler(record.booru!);
+        final handler = getHandler(record.booru);
 
         try {
           final result = await handler.loadItem(
@@ -682,46 +694,56 @@ class DownloadsDrawerController {
               result.item!,
               BooruUpdateMode.urlUpdate,
             );
+            tab.selected.remove(record.item);
           }
         } catch (_) {}
-
-        searchHandler.currentTab.selected.remove(record.item);
 
         if (delayMs > 0 && i < refreshableItems.length - 1) {
           await Future.delayed(Duration(milliseconds: delayMs));
         }
       }
     } finally {
-      searchHandler.currentFetched.assignAll([...searchHandler.currentFetched]);
-      searchHandler.currentTab.selected.clear();
+      tab.booruHandler.refilterAll();
       updating.value = false;
     }
   }
 
   ShareActionController shareActionController(BuildContext context) {
+    final tab = searchHandler.currentTab;
+    final selected = [...tab.selected];
+    final sources = Map<BooruItem, Booru>.identity()
+      ..addEntries(selected.map((item) => MapEntry(item, _sourceBooruForTabItem(tab, item))));
     return ShareActionController(
       currentAction: SX.shareAction.value,
       showTagOptions: false,
-      showHydrusOption: settingsHandler.hasHydrus && searchHandler.currentBooru.type?.isHydrus != true,
+      showHydrusOption: settingsHandler.hasHydrus && tab.selectedBooru.value.type?.isHydrus != true,
       onRememberAction: (action) async {
         SX.shareAction.state.value = _shareActionWithoutTags(action);
         await settingsHandler.saveSettings(restate: false);
       },
-      postUrl: () => shareSelectedText(
+      postUrl: () => _shareSelectedText(
         context,
         (item) => item.postURL,
         requirePostUrl: true,
+        selected: selected,
       ),
-      postUrlWithTags: () => shareSelectedText(
+      postUrlWithTags: () => _shareSelectedText(
         context,
         (item) => _withTags(item.postURL, item),
         requirePostUrl: true,
+        selected: selected,
       ),
-      fileUrl: () => shareSelectedText(context, (item) => item.fileURL),
-      fileUrlWithTags: () => shareSelectedText(context, (item) => _withTags(item.fileURL, item)),
-      file: () => shareSelectedFiles(context),
-      fileWithTags: () => shareSelectedFiles(context, text: _selectedTagsText()),
-      hydrus: () => shareSelectedHydrus(context),
+      fileUrl: () => _shareSelectedText(context, (item) => item.fileURL, selected: selected),
+      fileUrlWithTags: () => _shareSelectedText(context, (item) => _withTags(item.fileURL, item), selected: selected),
+      file: () => _shareSelectedFiles(context, tab: tab, selected: selected, sources: sources),
+      fileWithTags: () => _shareSelectedFiles(
+        context,
+        tab: tab,
+        selected: selected,
+        sources: sources,
+        text: _selectedTagsText(selected),
+      ),
+      hydrus: () => _shareSelectedHydrus(context, selected),
     );
   }
 
@@ -739,9 +761,14 @@ class DownloadsDrawerController {
     return tags.isEmpty ? value : '$value \n $tags';
   }
 
-  String? _selectedTagsText() {
-    final tags = searchHandler.currentSelected.expand((item) => item.tagsList).toSet().join(' ');
+  String? _selectedTagsText(List<BooruItem> selected) {
+    final tags = selected.expand((item) => item.tagsList).toSet().join(' ');
     return tags.isEmpty ? null : tags;
+  }
+
+  Booru _sourceBooruForTabItem(SearchTab tab, BooruItem item) {
+    final source = tab.booruHandler.sourceBooruFor(item);
+    return source.type?.isFavouritesOrDownloads == true ? _sourceBooruForItem(item) ?? source : source;
   }
 
   Booru? _sourceBooruForItem(BooruItem item) {
@@ -771,7 +798,7 @@ class DownloadsDrawerController {
   Future<int?> _askRefreshDelay(BuildContext context) async {
     final controller = TextEditingController(text: '500');
     try {
-      return showDialog<int>(
+      return await showDialog<int>(
         context: context,
         builder: (dialogContext) {
           return AlertDialog(
@@ -854,6 +881,7 @@ class DownloadsDrawerController {
   }
 
   Future<void> removeSnatchedStatusFromSelected() async {
+    if (updating.value) return;
     final currentTab = searchHandler.currentTabOrNull;
     final currentSelected = searchHandler.currentSelectedOrNull;
     if (currentTab == null || currentSelected == null) return;
@@ -862,20 +890,22 @@ class DownloadsDrawerController {
 
     updating.value = true;
 
-    for (final item in onlySnatched) {
-      item.isSnatched.value = false;
-      await settingsHandler.dbHandler.updateBooruItem(
-        item,
-        BooruUpdateMode.local,
-      );
-      currentTab.selected.remove(item);
+    try {
+      for (final item in onlySnatched) {
+        item.isSnatched.value = false;
+        await settingsHandler.dbHandler.updateBooruItem(
+          item,
+          BooruUpdateMode.local,
+        );
+        currentTab.selected.remove(item);
+      }
+    } finally {
+      updating.value = false;
     }
-    currentTab.selected.clear();
-
-    updating.value = false;
   }
 
   Future<void> favouriteSelected() async {
+    if (updating.value) return;
     final currentTab = searchHandler.currentTabOrNull;
     final currentFetched = searchHandler.currentFetchedOrNull;
     final currentSelected = searchHandler.currentSelectedOrNull;
@@ -885,16 +915,19 @@ class DownloadsDrawerController {
 
     updating.value = true;
 
-    await _updateFavouriteForSelectedItems(
-      onlyUnfavs,
-      newValue: true,
-    );
-    currentTab.selected.clear();
-
-    updating.value = false;
+    try {
+      await _updateFavouriteForSelectedItems(
+        onlyUnfavs,
+        tab: currentTab,
+        newValue: true,
+      );
+    } finally {
+      updating.value = false;
+    }
   }
 
   Future<void> unfavouriteSelected() async {
+    if (updating.value) return;
     final currentTab = searchHandler.currentTabOrNull;
     final currentFetched = searchHandler.currentFetchedOrNull;
     final currentSelected = searchHandler.currentSelectedOrNull;
@@ -904,23 +937,26 @@ class DownloadsDrawerController {
 
     updating.value = true;
 
-    await _updateFavouriteForSelectedItems(
-      onlyFavs,
-      newValue: false,
-    );
-    currentTab.selected.clear();
-
-    updating.value = false;
+    try {
+      await _updateFavouriteForSelectedItems(
+        onlyFavs,
+        tab: currentTab,
+        newValue: false,
+      );
+    } finally {
+      updating.value = false;
+    }
   }
 
   Future<void> _updateFavouriteForSelectedItems(
     List<BooruItem> items, {
+    required SearchTab tab,
     required bool newValue,
   }) async {
     if (SX.snatchOnFavourite.value && newValue) {
       snatchHandler.queue(
         items.where((e) => e.isSnatched.value != true).toList(),
-        searchHandler.currentBooru,
+        tab.selectedBooru.value,
         SX.snatchCooldown.value,
         false,
       );
@@ -932,12 +968,12 @@ class DownloadsDrawerController {
         item,
         BooruUpdateMode.local,
       );
-      searchHandler.currentTab.selected.remove(item);
+      tab.selected.remove(item);
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.delayed(const Duration(milliseconds: 200));
-      searchHandler.currentTab.booruHandler.refilterAll();
+      tab.booruHandler.refilterAll();
     });
   }
 

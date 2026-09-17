@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:lolisnatcher/gen/strings.g.dart';
+import 'package:flutter/gestures.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
@@ -12,8 +12,10 @@ import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
+import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/image/custom_network_image.dart';
+import 'package:lolisnatcher/src/widgets/preview/compare_image_source.dart';
 
 enum _ImageCompareMode {
   split,
@@ -98,8 +100,8 @@ class _ImageComparePage extends StatefulWidget {
 class _ImageComparePageState extends State<_ImageComparePage> {
   final TransformationController firstController = TransformationController();
   final TransformationController secondController = TransformationController();
-  Future<ImageProvider>? _firstProviderFuture;
-  Future<ImageProvider>? _secondProviderFuture;
+  CompareImageSource? _firstSource;
+  CompareImageSource? _secondSource;
 
   _ImageCompareMode mode = _ImageCompareMode.split;
   bool syncZoom = true;
@@ -123,14 +125,26 @@ class _ImageComparePageState extends State<_ImageComparePage> {
   Booru get secondBooru => imagesSwapped ? widget.firstBooru : widget.secondBooru;
   bool get imageModesAvailable =>
       widget.first.mediaType.value.isImageOrAnimation && widget.second.mediaType.value.isImageOrAnimation;
-  Future<ImageProvider> get _firstSourceProviderFuture =>
-      _firstProviderFuture ??= _buildCompareImageProvider(widget.first, widget.firstBooru);
-  Future<ImageProvider> get _secondSourceProviderFuture =>
-      _secondProviderFuture ??= _buildCompareImageProvider(widget.second, widget.secondBooru);
-  Future<ImageProvider> get firstProviderFuture =>
-      imagesSwapped ? _secondSourceProviderFuture : _firstSourceProviderFuture;
-  Future<ImageProvider> get secondProviderFuture =>
-      imagesSwapped ? _firstSourceProviderFuture : _secondSourceProviderFuture;
+  CompareImageSource get firstSource => (imagesSwapped ? _secondSource : _firstSource)!;
+  CompareImageSource get secondSource => (imagesSwapped ? _firstSource : _secondSource)!;
+  Future<ImageProvider> get firstProviderFuture => firstSource.providerFuture!;
+  Future<ImageProvider> get secondProviderFuture => secondSource.providerFuture!;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_firstSource != null || !imageModesAvailable) return;
+    final widthLimit = (MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context) * 2).round();
+    _firstSource = CompareImageSource(widget.first, widget.firstBooru, widthLimit: widthLimit)..load();
+    _secondSource = CompareImageSource(widget.second, widget.secondBooru, widthLimit: widthLimit)..load();
+    _firstSource!.addListener(_sourceChanged);
+    _secondSource!.addListener(_sourceChanged);
+  }
+
+  void _sourceChanged() {
+    if (!mounted) return;
+    setState(_resetTransforms);
+  }
 
   @override
   void initState() {
@@ -142,6 +156,8 @@ class _ImageComparePageState extends State<_ImageComparePage> {
   @override
   void dispose() {
     flickerTimer?.cancel();
+    _firstSource?.dispose();
+    _secondSource?.dispose();
     firstController.dispose();
     secondController.dispose();
     super.dispose();
@@ -188,6 +204,10 @@ class _ImageComparePageState extends State<_ImageComparePage> {
           color: appBarForeground,
         ),
         actions: [
+          if (imageModesAvailable && effectiveMode != _ImageCompareMode.data) ...[
+            CompareImageOptions(source: firstSource, label: '1'),
+            CompareImageOptions(source: secondSource, label: '2'),
+          ],
           IconButton(
             tooltip: controlsVisible ? context.loc.hide : context.loc.show,
             icon: Icon(
@@ -205,15 +225,24 @@ class _ImageComparePageState extends State<_ImageComparePage> {
       body: Stack(
         children: [
           Positioned.fill(
-            child: switch (effectiveMode) {
-              _ImageCompareMode.split => _sideBySideView(context),
-              _ImageCompareMode.slider => _stackView(context),
-              _ImageCompareMode.fade => _opacityView(context),
-              _ImageCompareMode.flicker => _flickerView(context),
-              _ImageCompareMode.difference => _renderedCompareView(context, _RenderedCompareMode.difference),
-              _ImageCompareMode.heatmap => _renderedCompareView(context, _RenderedCompareMode.heatmap),
-              _ImageCompareMode.data => _dataCompareView(context),
-            },
+            child:
+                imageModesAvailable &&
+                    effectiveMode != _ImageCompareMode.data &&
+                    (!firstSource.loaded || !secondSource.loaded)
+                ? _loadingView()
+                : ImageFiltered(
+                    enabled: effectiveMode != _ImageCompareMode.data && SettingsHandler.instance.blurImages,
+                    imageFilter: ui.ImageFilter.blur(sigmaX: 40, sigmaY: 40, tileMode: TileMode.decal),
+                    child: switch (effectiveMode) {
+                      _ImageCompareMode.split => _sideBySideView(context),
+                      _ImageCompareMode.slider => _stackView(context),
+                      _ImageCompareMode.fade => _opacityView(context),
+                      _ImageCompareMode.flicker => _flickerView(context),
+                      _ImageCompareMode.difference => _renderedCompareView(context, _RenderedCompareMode.difference),
+                      _ImageCompareMode.heatmap => _renderedCompareView(context, _RenderedCompareMode.heatmap),
+                      _ImageCompareMode.data => _dataCompareView(context),
+                    },
+                  ),
           ),
           Positioned(
             left: 0,
@@ -321,6 +350,29 @@ class _ImageComparePageState extends State<_ImageComparePage> {
     });
   }
 
+  Widget _loadingView() {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(bottom: _bottomControlsInset(context)),
+        child: Flex(
+          direction: stackAxis,
+          children: [
+            for (final source in [firstSource, secondSource])
+              Expanded(
+                child: source.loaded
+                    ? ImageFiltered(
+                        enabled: SettingsHandler.instance.blurImages,
+                        imageFilter: ui.ImageFilter.blur(sigmaX: 40, sigmaY: 40, tileMode: TileMode.decal),
+                        child: Image(image: source.provider!, fit: BoxFit.contain, filterQuality: FilterQuality.medium),
+                      )
+                    : CompareImageLoading(key: ObjectKey(source), source: source),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _resetModeControls() {
     syncZoom = true;
     stackSplit = 0.5;
@@ -415,12 +467,14 @@ class _ImageComparePageState extends State<_ImageComparePage> {
         booru: firstBooru,
         providerFuture: firstProviderFuture,
         controller: firstController,
+        imageSize: firstSource.imageSize,
         onTap: _toggleControls,
       ),
     );
     final second = Expanded(
       child: _InteractiveCompareImage(
         item: secondItem,
+        imageSize: secondSource.imageSize,
         booru: secondBooru,
         providerFuture: secondProviderFuture,
         controller: secondController,
@@ -479,6 +533,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
           children: [
             _DoubleTapInteractiveViewer(
               controller: firstController,
+              imageSize: firstSource.imageSize,
               onTap: _toggleControls,
               child: SizedBox(
                 width: constraints.maxWidth,
@@ -598,6 +653,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
       builder: (context, constraints) {
         return _DoubleTapInteractiveViewer(
           controller: firstController,
+          imageSize: firstSource.imageSize,
           onTap: _toggleControls,
           child: SizedBox(
             width: constraints.maxWidth,
@@ -630,6 +686,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
       builder: (context, constraints) {
         return _DoubleTapInteractiveViewer(
           controller: firstController,
+          imageSize: firstSource.imageSize,
           onTap: _toggleControls,
           child: SizedBox(
             width: constraints.maxWidth,
@@ -684,6 +741,7 @@ class _ImageComparePageState extends State<_ImageComparePage> {
             children: [
               _DoubleTapInteractiveViewer(
                 controller: firstController,
+                imageSize: firstSource.imageSize,
                 onTap: _toggleControls,
                 child: SizedBox(
                   width: constraints.maxWidth,
@@ -1115,26 +1173,29 @@ class _CompareOrderThumbnail extends StatefulWidget {
 }
 
 class _CompareOrderThumbnailState extends State<_CompareOrderThumbnail> {
-  late Future<ImageProvider> providerFuture = _buildCompareThumbnailProvider(widget.item, widget.booru);
+  Future<ImageProvider>? providerFuture;
 
   @override
   void didUpdateWidget(covariant _CompareOrderThumbnail oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     if (oldWidget.item != widget.item || oldWidget.booru != widget.booru) {
-      providerFuture = _buildCompareThumbnailProvider(widget.item, widget.booru);
+      providerFuture = null;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.item.isHidden) {
+      return const SizedBox(width: 30, height: 38, child: Icon(Icons.visibility_off, size: 18));
+    }
     return ClipRRect(
       borderRadius: BorderRadius.circular(5),
       child: SizedBox(
         width: 30,
         height: 38,
         child: FutureBuilder<ImageProvider>(
-          future: providerFuture,
+          future: providerFuture ??= _buildCompareThumbnailProvider(widget.item, widget.booru),
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
               return ColoredBox(
@@ -1852,11 +1913,13 @@ class _DoubleTapInteractiveViewer extends StatefulWidget {
     required this.controller,
     required this.child,
     required this.onTap,
+    this.imageSize,
   });
 
   final TransformationController controller;
   final Widget child;
   final VoidCallback onTap;
+  final Size? imageSize;
 
   @override
   State<_DoubleTapInteractiveViewer> createState() => _DoubleTapInteractiveViewerState();
@@ -1864,39 +1927,80 @@ class _DoubleTapInteractiveViewer extends StatefulWidget {
 
 class _DoubleTapInteractiveViewerState extends State<_DoubleTapInteractiveViewer> {
   Offset? doubleTapPosition;
+  Size viewport = Size.zero;
 
-  void _handleDoubleTap() {
-    final currentScale = widget.controller.value.getMaxScaleOnAxis();
-    if (currentScale > 1.01) {
-      widget.controller.value = Matrix4.identity();
-      return;
-    }
+  double get containedScale {
+    final image = widget.imageSize;
+    if (image == null || image.isEmpty || viewport.isEmpty) return 1;
+    return math.min(viewport.width / image.width, viewport.height / image.height);
+  }
 
-    final position = doubleTapPosition ?? Offset.zero;
-    const scale = 2.5;
+  double get coveringScale {
+    final image = widget.imageSize;
+    if (image == null || image.isEmpty || viewport.isEmpty) return 2.5;
+    return math.max(viewport.width / image.width, viewport.height / image.height) / containedScale;
+  }
+
+  void _zoomTo(double scale, Offset position) {
+    final scene = widget.controller.toScene(position);
     widget.controller.value = Matrix4.identity()
       ..setEntry(0, 0, scale)
       ..setEntry(1, 1, scale)
-      ..setEntry(0, 3, position.dx * (1 - scale))
-      ..setEntry(1, 3, position.dy * (1 - scale));
+      ..setEntry(0, 3, position.dx - scene.dx * scale)
+      ..setEntry(1, 3, position.dy - scene.dy * scale);
+  }
+
+  void _handleDoubleTap() {
+    final currentScale = widget.controller.value.getMaxScaleOnAxis();
+    final cover = coveringScale;
+    final original = math.max(1, 1 / containedScale);
+    final double scale;
+    if (currentScale < cover - 0.01) {
+      scale = cover;
+    } else if (currentScale < original - 0.01) {
+      scale = original.toDouble();
+    } else {
+      widget.controller.value = Matrix4.identity();
+      return;
+    }
+    _zoomTo(scale.clamp(1.0, math.max(8, cover * 8)), doubleTapPosition ?? viewport.center(Offset.zero));
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: widget.onTap,
-      onDoubleTapDown: (details) {
-        doubleTapPosition = details.localPosition;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        viewport = constraints.biggest;
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onTap,
+          onDoubleTapDown: (details) {
+            doubleTapPosition = details.localPosition;
+          },
+          onDoubleTap: _handleDoubleTap,
+          child: InteractiveViewer(
+            constrained: false,
+            transformationController: widget.controller,
+            minScale: 1,
+            maxScale: math.max(8, coveringScale * 8),
+            child: Listener(
+              onPointerSignal: (event) {
+                if (event is! PointerScrollEvent || event.scrollDelta.dy == 0) return;
+                GestureBinding.instance.pointerSignalResolver.register(event, (_) {
+                  final current = widget.controller.value.getMaxScaleOnAxis();
+                  final next = (current + event.scrollDelta.dy / 200).clamp(1.0, math.max(8, coveringScale * 8));
+                  if (next == 1) {
+                    widget.controller.value = Matrix4.identity();
+                  } else {
+                    _zoomTo(next.toDouble(), MatrixUtils.transformPoint(widget.controller.value, event.localPosition));
+                  }
+                });
+              },
+              child: widget.child,
+            ),
+          ),
+        );
       },
-      onDoubleTap: _handleDoubleTap,
-      child: InteractiveViewer(
-        constrained: false,
-        transformationController: widget.controller,
-        minScale: 0.25,
-        maxScale: 8,
-        child: widget.child,
-      ),
     );
   }
 }
@@ -1963,6 +2067,7 @@ class _InteractiveCompareImage extends StatelessWidget {
     required this.providerFuture,
     required this.controller,
     required this.onTap,
+    required this.imageSize,
   });
 
   final BooruItem item;
@@ -1970,6 +2075,7 @@ class _InteractiveCompareImage extends StatelessWidget {
   final Future<ImageProvider> providerFuture;
   final TransformationController controller;
   final VoidCallback onTap;
+  final Size? imageSize;
 
   @override
   Widget build(BuildContext context) {
@@ -1977,6 +2083,7 @@ class _InteractiveCompareImage extends StatelessWidget {
       builder: (context, constraints) {
         return _DoubleTapInteractiveViewer(
           controller: controller,
+          imageSize: imageSize,
           onTap: onTap,
           child: SizedBox(
             width: constraints.maxWidth,
@@ -2024,57 +2131,109 @@ class _RenderedCompareView extends StatefulWidget {
   State<_RenderedCompareView> createState() => _RenderedCompareViewState();
 }
 
+class _RenderedCompareImages {
+  const _RenderedCompareImages(this.first, this.second, this.heatmap, this.matchPercent);
+  final ui.Image first;
+  final ui.Image second;
+  final ui.Image? heatmap;
+  final double matchPercent;
+
+  void dispose() {
+    heatmap?.dispose();
+    second.dispose();
+    first.dispose();
+  }
+}
+
 class _RenderedCompareViewState extends State<_RenderedCompareView> {
-  late Future<({ui.Image first, ui.Image second, ui.Image? heatmap, double? matchPercent})> imagesFuture =
-      _loadImages();
+  late Future<_RenderedCompareImages> imagesFuture = _loadImages();
+  _RenderedCompareImages? _loadedImages;
+  int _generation = 0;
+  Completer<void>? _cancelled;
 
   @override
   void didUpdateWidget(covariant _RenderedCompareView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.firstItem != widget.firstItem ||
-        oldWidget.firstBooru != widget.firstBooru ||
-        oldWidget.firstProviderFuture != widget.firstProviderFuture ||
-        oldWidget.secondItem != widget.secondItem ||
-        oldWidget.secondBooru != widget.secondBooru ||
+    if (oldWidget.firstProviderFuture != widget.firstProviderFuture ||
         oldWidget.secondProviderFuture != widget.secondProviderFuture ||
         oldWidget.mode != widget.mode) {
+      _release();
       imagesFuture = _loadImages();
     }
   }
 
-  Future<({ui.Image first, ui.Image second, ui.Image? heatmap, double? matchPercent})> _loadImages() async {
-    final firstProvider = await widget.firstProviderFuture;
-    final secondProvider = await widget.secondProviderFuture;
-    final first = await _resolveImage(firstProvider);
-    final second = await _resolveImage(secondProvider);
+  void _release() {
+    _generation++;
+    _cancelled?.complete();
+    _cancelled = null;
+    _loadedImages?.dispose();
+    _loadedImages = null;
+  }
 
-    if (widget.mode == _RenderedCompareMode.heatmap) {
-      final heatmap = await _buildHeatmapImage(first, second);
-      return (
-        first: first,
-        second: second,
-        heatmap: heatmap.image,
-        matchPercent: heatmap.matchPercent,
-      );
+  @override
+  void dispose() {
+    _release();
+    super.dispose();
+  }
+
+  Future<_RenderedCompareImages> _loadImages() async {
+    final generation = ++_generation;
+    final cancelled = _cancelled = Completer<void>();
+    final firstFuture = widget.firstProviderFuture;
+    final secondFuture = widget.secondProviderFuture;
+    final mode = widget.mode;
+    void checkCurrent() {
+      if (!mounted || generation != _generation) throw StateError('Comparison cancelled');
     }
 
-    return (
-      first: first,
-      second: second,
-      heatmap: null,
-      matchPercent: await _calculateMatchPercent(first, second),
-    );
+    ui.Image? first;
+    ui.Image? second;
+    ui.Image? heatmap;
+    bool transferred = false;
+    try {
+      final firstProvider = await firstFuture;
+      final secondProvider = await secondFuture;
+      checkCurrent();
+      first = await _resolveImage(firstProvider, cancelled.future);
+      checkCurrent();
+      second = await _resolveImage(secondProvider, cancelled.future);
+      checkCurrent();
+      final double matchPercent;
+      if (mode == _RenderedCompareMode.heatmap) {
+        final result = await _buildHeatmapImage(first, second, checkCurrent);
+        heatmap = result.image;
+        matchPercent = result.matchPercent;
+      } else {
+        matchPercent = await _calculateMatchPercent(first, second, checkCurrent);
+      }
+      checkCurrent();
+      final images = _RenderedCompareImages(first, second, heatmap, matchPercent);
+      _loadedImages = images;
+      transferred = true;
+      return images;
+    } finally {
+      if (!transferred) {
+        heatmap?.dispose();
+        second?.dispose();
+        first?.dispose();
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
       color: Colors.black,
-      child: FutureBuilder<({ui.Image first, ui.Image second, ui.Image? heatmap, double? matchPercent})>(
+      child: FutureBuilder<_RenderedCompareImages>(
+        key: ValueKey(imagesFuture),
         future: imagesFuture,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return _CompareImageError(
+              onRetry: () => setState(() {
+                _release();
+                imagesFuture = _loadImages();
+              }),
               details: snapshot.error.toString(),
             );
           }
@@ -2095,12 +2254,11 @@ class _RenderedCompareViewState extends State<_RenderedCompareView> {
                   background: widget.background,
                 ),
               ),
-              if (snapshot.data!.matchPercent != null)
-                Positioned(
-                  left: 16,
-                  bottom: widget.badgeBottomInset + 16,
-                  child: _MatchPercentBadge(matchPercent: snapshot.data!.matchPercent!),
-                ),
+              Positioned(
+                left: 16,
+                bottom: widget.badgeBottomInset + 16,
+                child: _MatchPercentBadge(matchPercent: snapshot.data!.matchPercent),
+              ),
             ],
           );
         },
@@ -2324,9 +2482,15 @@ Paint _differenceLayerPaint(_DifferenceColorMode colorMode) {
   };
 }
 
-Future<({ui.Image image, double matchPercent})> _buildHeatmapImage(ui.Image first, ui.Image second) async {
+Future<({ui.Image image, double matchPercent})> _buildHeatmapImage(
+  ui.Image first,
+  ui.Image second,
+  VoidCallback checkCurrent,
+) async {
   final firstBytes = await first.toByteData(format: ui.ImageByteFormat.rawRgba);
+  checkCurrent();
   final secondBytes = await second.toByteData(format: ui.ImageByteFormat.rawRgba);
+  checkCurrent();
   if (firstBytes == null || secondBytes == null) {
     throw StateError('Unable to read image pixels for heatmap comparison');
   }
@@ -2373,6 +2537,7 @@ Future<({ui.Image image, double matchPercent})> _buildHeatmapImage(ui.Image firs
 
     if (y % 32 == 0) {
       await Future<void>.delayed(Duration.zero);
+      checkCurrent();
     }
   }
 
@@ -2382,9 +2547,11 @@ Future<({ui.Image image, double matchPercent})> _buildHeatmapImage(ui.Image firs
   );
 }
 
-Future<double> _calculateMatchPercent(ui.Image first, ui.Image second) async {
+Future<double> _calculateMatchPercent(ui.Image first, ui.Image second, VoidCallback checkCurrent) async {
   final firstBytes = await first.toByteData(format: ui.ImageByteFormat.rawRgba);
+  checkCurrent();
   final secondBytes = await second.toByteData(format: ui.ImageByteFormat.rawRgba);
+  checkCurrent();
   if (firstBytes == null || secondBytes == null) {
     throw StateError('Unable to read image pixels for match comparison');
   }
@@ -2420,6 +2587,7 @@ Future<double> _calculateMatchPercent(ui.Image first, ui.Image second) async {
 
     if (y % 32 == 0) {
       await Future<void>.delayed(Duration.zero);
+      checkCurrent();
     }
   }
 
@@ -2504,22 +2672,67 @@ _comparisonPixelData({
   return (255, (255 * (1 - t)).round(), 0);
 }
 
-Future<ui.Image> _resolveImage(ImageProvider provider) {
+Future<ui.Image> _resolveImage(ImageProvider provider, Future<void> cancelled) {
   final completer = Completer<ui.Image>();
-  final stream = provider.resolve(ImageConfiguration.empty);
+  // Bound both dimensions before decoding or extracting RGBA buffers. The
+  // analysis is sampled; the ordinary viewers retain their selected quality.
+  final bounded = ResizeImage(
+    provider is ResizeImage ? provider.imageProvider : provider,
+    width: 2048,
+    height: 2048,
+    policy: ResizeImagePolicy.fit,
+    allowUpscaling: false,
+  );
+  final stream = bounded.resolve(ImageConfiguration.empty);
   late final ImageStreamListener listener;
   listener = ImageStreamListener(
-    (info, _) {
+    (info, _) async {
       stream.removeListener(listener);
-      completer.complete(info.image);
+      var image = info.image.clone();
+      info.dispose();
+      try {
+        // Custom AVIF codecs can ignore ResizeImage's decoder callback. Bound
+        // their raster too, before any caller extracts full RGBA buffers.
+        if (image.width > 2048 || image.height > 2048) {
+          final ratio = 2048 / math.max(image.width, image.height);
+          final width = math.max(1, (image.width * ratio).round());
+          final height = math.max(1, (image.height * ratio).round());
+          final recorder = ui.PictureRecorder();
+          Canvas(recorder).drawImageRect(
+            image,
+            Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+            Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
+            Paint()..filterQuality = FilterQuality.medium,
+          );
+          final picture = recorder.endRecording();
+          try {
+            final resized = await picture.toImage(width, height);
+            image.dispose();
+            image = resized;
+          } finally {
+            picture.dispose();
+          }
+        }
+        if (completer.isCompleted) {
+          image.dispose();
+        } else {
+          completer.complete(image);
+        }
+      } catch (error, stackTrace) {
+        image.dispose();
+        if (!completer.isCompleted) completer.completeError(error, stackTrace);
+      }
     },
-    onError: (error, stackTrace) {
+    onError: (Object error, StackTrace? stackTrace) {
       stream.removeListener(listener);
-      completer.completeError(error, stackTrace);
+      if (!completer.isCompleted) completer.completeError(error, stackTrace);
     },
   );
   stream.addListener(listener);
-
+  cancelled.then((_) {
+    stream.removeListener(listener);
+    if (!completer.isCompleted) completer.completeError(StateError('Comparison cancelled'));
+  });
   return completer.future;
 }
 
@@ -2546,6 +2759,16 @@ class _CompareImageState extends State<_CompareImage> {
   late Future<ImageProvider> providerFuture = widget.providerFuture;
   Object? imageLoadError;
 
+  void _retry() {
+    setState(() {
+      imageLoadError = null;
+      providerFuture = widget.providerFuture.then((provider) async {
+        await provider.evict();
+        return provider;
+      });
+    });
+  }
+
   @override
   void didUpdateWidget(covariant _CompareImage oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -2565,10 +2788,12 @@ class _CompareImageState extends State<_CompareImage> {
         child: Opacity(
           opacity: widget.opacity,
           child: FutureBuilder<ImageProvider>(
+            key: ObjectKey(providerFuture),
             future: providerFuture,
             builder: (context, snapshot) {
               if (snapshot.hasError) {
                 return _CompareImageError(
+                  onRetry: _retry,
                   details: snapshot.error.toString(),
                 );
               }
@@ -2577,6 +2802,7 @@ class _CompareImageState extends State<_CompareImage> {
               }
               if (imageLoadError != null) {
                 return _CompareImageError(
+                  onRetry: _retry,
                   details: imageLoadError.toString(),
                 );
               }
@@ -2584,6 +2810,7 @@ class _CompareImageState extends State<_CompareImage> {
               return Image(
                 image: snapshot.data!,
                 fit: BoxFit.contain,
+                filterQuality: FilterQuality.medium,
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) {
                     return child;
@@ -2601,14 +2828,16 @@ class _CompareImageState extends State<_CompareImage> {
                   );
                 },
                 errorBuilder: (context, error, stackTrace) {
+                  final failedProvider = providerFuture;
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted && imageLoadError == null) {
+                    if (mounted && imageLoadError == null && identical(providerFuture, failedProvider)) {
                       setState(() {
                         imageLoadError = error;
                       });
                     }
                   });
                   return _CompareImageError(
+                    onRetry: _retry,
                     details: error.toString(),
                   );
                 },
@@ -2619,37 +2848,6 @@ class _CompareImageState extends State<_CompareImage> {
       ),
     );
   }
-}
-
-Future<ImageProvider> _buildCompareImageProvider(BooruItem item, Booru booru) async {
-  final url = item.fileURL.isNotEmpty ? item.fileURL : item.sampleURL;
-  if (url.trim().isEmpty) {
-    throw StateError('No image URL found for selected item');
-  }
-  final headers = await Tools.getFileCustomHeaders(
-    booru,
-    item: item,
-    checkForReferer: true,
-  );
-  final isAvif = url.contains('.avif');
-
-  return isAvif
-      ? CustomNetworkAvifImage(
-          url,
-          headers: headers,
-          withCache: SX.mediaCache.value,
-          cacheFolder: 'media',
-          fileNameExtras: item.fileNameExtras,
-          withCaptchaCheck: true,
-        )
-      : CustomNetworkImage(
-          url,
-          headers: headers,
-          withCache: SX.mediaCache.value,
-          cacheFolder: 'media',
-          fileNameExtras: item.fileNameExtras,
-          withCaptchaCheck: true,
-        );
 }
 
 Future<ImageProvider> _buildCompareThumbnailProvider(BooruItem item, Booru booru) async {
@@ -2677,9 +2875,11 @@ Future<ImageProvider> _buildCompareThumbnailProvider(BooruItem item, Booru booru
 class _CompareImageError extends StatelessWidget {
   const _CompareImageError({
     required this.details,
+    this.onRetry,
   });
 
   final String details;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -2688,6 +2888,12 @@ class _CompareImageError extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (onRetry != null)
+            TextButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: Text(context.loc.media.loading.restartLoading),
+            ),
           const Icon(Icons.broken_image, size: 48, color: Colors.white70),
           const SizedBox(height: 12),
           SelectableText(

@@ -31,6 +31,7 @@ class Thumbnail extends StatefulWidget {
     this.booru,
     this.isStandalone = false,
     this.useHero = true,
+    this.forceUnblur = false,
     super.key,
   });
 
@@ -40,6 +41,7 @@ class Thumbnail extends StatefulWidget {
   /// set to true when used in a list
   final bool isStandalone;
   final bool useHero;
+  final bool forceUnblur;
 
   @override
   State<Thumbnail> createState() => _ThumbnailState();
@@ -91,6 +93,11 @@ class _ThumbnailState extends State<Thumbnail> {
         if (!mounted) return;
 
         await restartLoading();
+      });
+    } else if (oldWidget.forceUnblur != widget.forceUnblur && widget.item.isHidden && SX.shitDevice.value) {
+      // Low-performance mode blurs by decoding at 10px, so reload at normal size.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) restartLoading();
       });
     }
   }
@@ -165,7 +172,7 @@ class _ThumbnailState extends State<Thumbnail> {
 
     // on desktop devicePixelRatio is not working?
     final bool shouldResize = (thumbWidth != null || thumbHeight != null) && !PlatformExt.isDesktop;
-    final bool shouldPixelate = widget.item.isHidden && SX.shitDevice.value;
+    final bool shouldPixelate = widget.item.isHidden && SX.shitDevice.value && !widget.forceUnblur;
 
     if (shouldResize || shouldPixelate) {
       return ResizeImage(
@@ -377,6 +384,11 @@ class _ThumbnailState extends State<Thumbnail> {
 
     disposables();
 
+    if (widget.isStandalone) {
+      mainProvider.value = null;
+      extraProvider.value = null;
+    }
+
     total.value = 0;
     received.value = 0;
     startedAt.value = 0;
@@ -460,12 +472,11 @@ class _ThumbnailState extends State<Thumbnail> {
     }
     loadItemCancelToken = null;
 
-    // evict from memory cache only when in grid
+    // Evict grid images without notifying builders during widget disposal.
+    // Provider values are reset separately when restarting a live thumbnail.
     if (widget.isStandalone) {
       mainProvider.value?.evict();
-      mainProvider.value = null;
       extraProvider.value?.evict();
-      extraProvider.value = null;
     }
 
     debounceLoading?.cancel();
@@ -515,6 +526,10 @@ class _ThumbnailState extends State<Thumbnail> {
   Widget build(BuildContext context) {
     Widget imageStack = LayoutBuilder(
       builder: (context, constraints) {
+        // A Hero flight can retain this builder after switching tabs disposes
+        // the thumbnail that owns its notifiers.
+        if (!mounted) return const SizedBox.shrink();
+
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
 
@@ -571,7 +586,7 @@ class _ThumbnailState extends State<Thumbnail> {
                   );
                 },
                 child: ImageFiltered(
-                  enabled: SettingsHandler.instance.blurImages || widget.item.isHidden,
+                  enabled: !widget.forceUnblur && (SettingsHandler.instance.blurImages || widget.item.isHidden),
                   imageFilter: ImageFilter.blur(
                     sigmaX: blurAmount,
                     sigmaY: blurAmount,
@@ -627,6 +642,7 @@ class _ThumbnailState extends State<Thumbnail> {
               child: GestureDetector(
                 child: ImageFiltered(
                   enabled:
+                      !widget.forceUnblur &&
                       isBlurred &&
                       (SettingsHandler.instance.blurImages || (widget.item.isHidden && !SX.shitDevice.value)),
                   imageFilter: ImageFilter.blur(
@@ -688,7 +704,7 @@ class _ThumbnailState extends State<Thumbnail> {
                 },
               ),
             //
-            if (widget.isStandalone && widget.item.isHidden)
+            if (widget.isStandalone && widget.item.isHidden && !widget.forceUnblur)
               Container(
                 alignment: .center,
                 decoration: BoxDecoration(

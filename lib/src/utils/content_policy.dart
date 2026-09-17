@@ -7,7 +7,7 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 class ContentPolicy {
   const ContentPolicy._();
 
-  static Set<BooruType> get blockedSourceHostsAndTypes => {
+  static const Set<BooruType> blockedSourceHostsAndTypes = {
     .AGNPH,
     .IdolSankaku,
     .InkBunny,
@@ -19,12 +19,12 @@ class ContentPolicy {
     .World,
   };
 
-  static RegExp get blockedSourceNamePattern => RegExp(
+  static final RegExp blockedSourceNamePattern = RegExp(
     r'(^|[^a-z0-9])(?:rule[\W_]*34|r34|r34[\W_]*xxx|rule[\W_]*34[\W_]*xxx|porn|hentai|xxx|e[\W_]*hentai|xbooru|rule34hentai|rule34vault|paheal|ink[\W_]*bunny|yiff|nsfw)([^a-z0-9]|$)',
     caseSensitive: false,
   );
 
-  static Set<String> get _blockedCompactSourceTerms => {
+  static const Set<String> _blockedCompactSourceTerms = {
     'hentai',
     'inkbunny',
     'nsfw',
@@ -37,7 +37,7 @@ class ContentPolicy {
     'yiff',
   };
 
-  static Set<String> get _blockedSourceHosts => {
+  static const Set<String> _blockedSourceHosts = {
     'aibooru.online',
     'agn.ph',
     'bakemono.app',
@@ -206,7 +206,7 @@ class ContentPolicy {
     'wound',
   ];
 
-  static Set<String> get blockedItemRatings => {
+  static const Set<String> blockedItemRatings = {
     'adult',
     'e',
     'explicit',
@@ -373,7 +373,7 @@ class ContentPolicy {
   }
 
   static bool _isBlockedSearchTag(String tag) {
-    final String clean = tag.replaceFirst(RegExp('^[-~]'), '');
+    final String clean = tag.startsWith('-') || tag.startsWith('~') ? tag.substring(1) : tag;
     return blockedItemRatings.contains(clean) || _blockedItemTagPattern.hasMatch(clean);
   }
 

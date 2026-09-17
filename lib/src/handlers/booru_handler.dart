@@ -26,6 +26,20 @@ import 'package:lolisnatcher/src/utils/tools.dart';
 
 // TODO better naming for some functions (i.e. Search => getSearch or smth like that)
 
+enum BooruItemFilterReason { hiddenTags, markedTags, ai, favourite, snatched }
+
+/// Append a page without copying previous pages or notifying for every entry.
+class _FilterHiddenItems extends RxMap<BooruItem, List<BooruItemFilterReason>> {
+  _FilterHiddenItems() : super(Map<BooruItem, List<BooruItemFilterReason>>.identity());
+
+  @override
+  void addAll(Map<BooruItem, List<BooruItemFilterReason>> other) {
+    if (other.isEmpty) return;
+    value.addAll(other);
+    refresh();
+  }
+}
+
 abstract class BooruHandler {
   BooruHandler(this.booru, this.limit);
   // pagenum = -1 as "didn't load anything yet" state
@@ -44,7 +58,19 @@ abstract class BooruHandler {
 
   RxList<BooruItem> fetched = RxList<BooruItem>([]);
   RxList<BooruItem> filteredFetched = RxList<BooruItem>([]);
+
+  /// Restorable filter exclusions, before duplicate removal and manual hiding.
+  /// Content-policy rejections are discarded and never tracked here.
+  final RxMap<BooruItem, List<BooruItemFilterReason>> filterHiddenItems = _FilterHiddenItems();
   bool Function(BooruItem item)? extraFilter;
+
+  /// Per-item filter exceptions that last only until the loaded search resets.
+  final Set<BooruItem> _restoredFilterItems = Set<BooruItem>.identity();
+
+  void restoreFilteredItems(Iterable<BooruItem> items) {
+    _restoredFilterItems.addAll(items.where((item) => ContentPolicy.isItemAllowed(sourceBooruFor(item), item)));
+    refilterAll();
+  }
 
   /// Tracks which API page numbers have been loaded.
   final Set<int> fetchedPageNumbers = {};
@@ -61,20 +87,22 @@ abstract class BooruHandler {
   /// Merged searches override this to retain each item's source settings.
   Booru sourceBooruFor(BooruItem item) => booru;
 
-  bool Function(BooruItem) _itemFilterFor(Booru source) {
+  List<BooruItemFilterReason> Function(BooruItem) _itemFilterFor(Booru source) {
     final filterHated = SX.filterHated.valueForBooru(source.name);
     final filterMarked = SX.filterMarked.valueForBooru(source.name);
     final filterAi = SX.filterAi.valueForBooru(source.name);
     final filterFavourites = SX.filterFavourites.valueForBooru(source.name) && source.type?.isFavourites != true;
     final filterSnatched = SX.filterSnatched.valueForBooru(source.name) && source.type?.isDownloads != true;
 
-    return (item) =>
-        ContentPolicy.isItemAllowed(source, item) &&
-        !(filterHated && item.isHidden) &&
-        !(filterMarked && item.isMarked) &&
-        !(filterAi && item.isAI) &&
-        !(filterFavourites && item.isFavourite.value == true) &&
-        !(filterSnatched && item.isSnatched.value == true);
+    return (item) {
+      List<BooruItemFilterReason>? reasons;
+      if (filterHated && item.isHidden) (reasons ??= []).add(.hiddenTags);
+      if (filterMarked && item.isMarked) (reasons ??= []).add(.markedTags);
+      if (filterAi && item.isAI) (reasons ??= []).add(.ai);
+      if (filterFavourites && item.isFavourite.value == true) (reasons ??= []).add(.favourite);
+      if (filterSnatched && item.isSnatched.value == true) (reasons ??= []).add(.snatched);
+      return reasons ?? const [];
+    };
   }
 
   /// Filters newly fetched items incrementally (from watermark to end of fetched list).
@@ -83,17 +111,25 @@ abstract class BooruHandler {
   /// Should always be called after fetched changed (so don't forget to add it in custom afterParseResponse or search methods)
   /// (See gelbooru or favourites handlers for example)
   void filterFetched() {
-    final filters = <Booru, bool Function(BooruItem)>{};
+    final filters = <Booru, List<BooruItemFilterReason> Function(BooruItem)>{};
 
     final List<BooruItem> newFilteredItems = [];
+    final newHiddenItems = Map<BooruItem, List<BooruItemFilterReason>>.identity();
 
     for (int i = _filterWatermark; i < fetched.length; i++) {
       final item = fetched[i];
 
       final source = sourceBooruFor(item);
-      final includeItem = filters.putIfAbsent(source, () => _itemFilterFor(source));
-      if (!includeItem(item)) {
+      if (!ContentPolicy.isItemAllowed(source, item)) {
         continue;
+      }
+      if (!_restoredFilterItems.contains(item)) {
+        final reasonsFor = filters.putIfAbsent(source, () => _itemFilterFor(source));
+        final reasons = reasonsFor(item);
+        if (reasons.isNotEmpty) {
+          newHiddenItems[item] = reasons;
+          continue;
+        }
       }
 
       if (extraFilter?.call(item) == false) {
@@ -122,6 +158,9 @@ abstract class BooruHandler {
     }
 
     _filterWatermark = fetched.length;
+    if (newHiddenItems.isNotEmpty) {
+      filterHiddenItems.addAll(newHiddenItems);
+    }
 
     if (newFilteredItems.isNotEmpty) {
       filteredFetched.addAll(newFilteredItems);
@@ -134,15 +173,18 @@ abstract class BooruHandler {
     _filterWatermark = 0;
     _seenFileURLs.clear();
     _seenServerIds.clear();
+    filterHiddenItems.clear();
     filteredFetched.clear();
     filterFetched();
   }
 
   /// Resets all filter state. Call when fetched list is cleared.
   void resetFilterState() {
+    _restoredFilterItems.clear();
     _filterWatermark = 0;
     _seenFileURLs.clear();
     _seenServerIds.clear();
+    filterHiddenItems.clear();
     filteredFetched.clear();
   }
 
