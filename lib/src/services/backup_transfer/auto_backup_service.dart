@@ -20,6 +20,11 @@ class AutoBackupConfig {
     required this.backupOnUpdate,
     this.lastBackupAt,
     this.lastUpdateBackupBuild,
+    this.lastBackupError,
+    this.lastUpdateBackupAttemptBuild,
+    this.lastUpdateBackupAttemptAt,
+    this.updateBackupAttemptCount = 0,
+    this.lastUpdateBackupError,
   });
 
   final bool enabled;
@@ -29,6 +34,14 @@ class AutoBackupConfig {
   final bool backupOnUpdate;
   final DateTime? lastBackupAt;
   final int? lastUpdateBackupBuild;
+  final String? lastBackupError;
+  final int? lastUpdateBackupAttemptBuild;
+  final DateTime? lastUpdateBackupAttemptAt;
+  final int updateBackupAttemptCount;
+  final String? lastUpdateBackupError;
+
+  static const supportedFrequencyDays = [1, 7, 30];
+  static const supportedMaximumBackups = [0, 3, 5, 10, 20];
 
   static const defaults = AutoBackupConfig(
     enabled: false,
@@ -53,18 +66,31 @@ class AutoBackupConfig {
       'backupOnUpdate': backupOnUpdate,
       'lastBackupAt': lastBackupAt?.toIso8601String(),
       'lastUpdateBackupBuild': lastUpdateBackupBuild,
+      'lastBackupError': lastBackupError,
+      'lastUpdateBackupAttemptBuild': lastUpdateBackupAttemptBuild,
+      'lastUpdateBackupAttemptAt': lastUpdateBackupAttemptAt?.toIso8601String(),
+      'updateBackupAttemptCount': updateBackupAttemptCount,
+      'lastUpdateBackupError': lastUpdateBackupError,
     };
   }
 
   static AutoBackupConfig fromJson(Map<String, dynamic> json) {
+    final frequency = int.tryParse(json['frequencyDays']?.toString() ?? '');
+    final maximum = int.tryParse(json['maximumBackups']?.toString() ?? '');
+    final attempts = int.tryParse(json['updateBackupAttemptCount']?.toString() ?? '') ?? 0;
     return AutoBackupConfig(
       enabled: json['enabled'] == true,
       location: json['location']?.toString() ?? '',
-      frequencyDays: int.tryParse(json['frequencyDays']?.toString() ?? '') ?? defaults.frequencyDays,
-      maximumBackups: int.tryParse(json['maximumBackups']?.toString() ?? '') ?? defaults.maximumBackups,
-      backupOnUpdate: json['backupOnUpdate'] == true,
+      frequencyDays: supportedFrequencyDays.contains(frequency) ? frequency! : defaults.frequencyDays,
+      maximumBackups: supportedMaximumBackups.contains(maximum) ? maximum! : defaults.maximumBackups,
+      backupOnUpdate: json['backupOnUpdate'] is bool ? json['backupOnUpdate'] as bool : defaults.backupOnUpdate,
       lastBackupAt: DateTime.tryParse(json['lastBackupAt']?.toString() ?? ''),
       lastUpdateBackupBuild: int.tryParse(json['lastUpdateBackupBuild']?.toString() ?? ''),
+      lastBackupError: json['lastBackupError'] is String ? json['lastBackupError'] as String : null,
+      lastUpdateBackupAttemptBuild: int.tryParse(json['lastUpdateBackupAttemptBuild']?.toString() ?? ''),
+      lastUpdateBackupAttemptAt: DateTime.tryParse(json['lastUpdateBackupAttemptAt']?.toString() ?? ''),
+      updateBackupAttemptCount: attempts.clamp(0, 1000000),
+      lastUpdateBackupError: json['lastUpdateBackupError'] is String ? json['lastUpdateBackupError'] as String : null,
     );
   }
 
@@ -75,7 +101,15 @@ class AutoBackupConfig {
     int? maximumBackups,
     bool? backupOnUpdate,
     DateTime? lastBackupAt,
+    bool clearLastBackupAt = false,
     int? lastUpdateBackupBuild,
+    String? lastBackupError,
+    bool clearLastBackupError = false,
+    int? lastUpdateBackupAttemptBuild,
+    DateTime? lastUpdateBackupAttemptAt,
+    int? updateBackupAttemptCount,
+    String? lastUpdateBackupError,
+    bool clearLastUpdateBackupError = false,
   }) {
     return AutoBackupConfig(
       enabled: enabled ?? this.enabled,
@@ -83,8 +117,13 @@ class AutoBackupConfig {
       frequencyDays: frequencyDays ?? this.frequencyDays,
       maximumBackups: maximumBackups ?? this.maximumBackups,
       backupOnUpdate: backupOnUpdate ?? this.backupOnUpdate,
-      lastBackupAt: lastBackupAt ?? this.lastBackupAt,
+      lastBackupAt: clearLastBackupAt ? null : lastBackupAt ?? this.lastBackupAt,
       lastUpdateBackupBuild: lastUpdateBackupBuild ?? this.lastUpdateBackupBuild,
+      lastBackupError: clearLastBackupError ? null : lastBackupError ?? this.lastBackupError,
+      lastUpdateBackupAttemptBuild: lastUpdateBackupAttemptBuild ?? this.lastUpdateBackupAttemptBuild,
+      lastUpdateBackupAttemptAt: lastUpdateBackupAttemptAt ?? this.lastUpdateBackupAttemptAt,
+      updateBackupAttemptCount: updateBackupAttemptCount ?? this.updateBackupAttemptCount,
+      lastUpdateBackupError: clearLastUpdateBackupError ? null : lastUpdateBackupError ?? this.lastUpdateBackupError,
     );
   }
 }
@@ -97,11 +136,33 @@ class AutoBackupService {
        registry = registry ?? BackupEntryRegistry.instance;
 
   static const _maximumUpdateBackups = 5;
+  static const maximumAutomaticUpdateAttempts = 3;
+  static const updateRetryDelay = Duration(hours: 6);
+
+  // All entry points, including distinct settings-page/lifecycle service instances,
+  // share these queues. Config updates remain possible during a long export.
+  static Future<void> _runTail = Future<void>.value();
+  static Future<void> _configTail = Future<void>.value();
+  static int _configGeneration = 0;
 
   final BackupPackageService packageService;
   final BackupEntryRegistry registry;
 
-  Future<AutoBackupConfig> loadConfig() async {
+  static Future<T> _withRunLock<T>(Future<T> Function() action) {
+    final result = _runTail.then((_) => action());
+    _runTail = result.then<void>((_) {}, onError: (Object error, StackTrace stack) {});
+    return result;
+  }
+
+  static Future<T> _withConfigLock<T>(Future<T> Function() action) {
+    final result = _configTail.then((_) => action());
+    _configTail = result.then<void>((_) {}, onError: (Object error, StackTrace stack) {});
+    return result;
+  }
+
+  Future<AutoBackupConfig> loadConfig() => _withConfigLock(_readConfig);
+
+  Future<AutoBackupConfig> _readConfig() async {
     final file = await _configFile();
     if (!await file.exists()) return AutoBackupConfig.defaults;
     try {
@@ -111,21 +172,57 @@ class AutoBackupService {
     }
   }
 
-  Future<void> saveConfig(AutoBackupConfig config) async {
+  /// Save user preferences without overwriting newer service-owned completion or
+  /// failure metadata with a settings page's older snapshot.
+  Future<void> saveConfig(AutoBackupConfig config) => _withConfigLock(() async {
+    final latest = await _readConfig();
+    final normalized = AutoBackupConfig.fromJson(config.toJson());
+    await _writeConfig(
+      latest.copyWith(
+        enabled: normalized.enabled,
+        location: normalized.location,
+        clearLastBackupAt: latest.location != normalized.location,
+        frequencyDays: normalized.frequencyDays,
+        maximumBackups: normalized.maximumBackups,
+        backupOnUpdate: normalized.backupOnUpdate,
+      ),
+    );
+  });
+
+  Future<void> _writeConfig(AutoBackupConfig config) async {
     final file = await _configFile();
     await file.parent.create(recursive: true);
-    await file.writeAsString(jsonEncode(config.toJson()));
+    final staging = await file.parent.createTemp('.auto-backup-config-');
+    try {
+      final temporary = File('${staging.path}${Platform.pathSeparator}auto_backup.json');
+      await temporary.writeAsString(jsonEncode(config.toJson()), flush: true);
+      await temporary.rename(file.path);
+    } finally {
+      await staging.delete(recursive: true);
+    }
   }
 
-  Future<void> resetConfig() async {
+  Future<void> resetConfig() => _withConfigLock(() async {
+    _configGeneration++;
     final file = await _configFile();
     if (await file.exists()) {
       await file.delete();
     }
     BackupTransferLogger.info('Reset auto backup config', 'AutoBackupService', 'resetConfig');
-  }
+  });
 
-  Future<bool> runIfDue() async {
+  Future<AutoBackupConfig> _updateStatus(
+    int generation,
+    AutoBackupConfig Function(AutoBackupConfig latest) update,
+  ) => _withConfigLock(() async {
+    final latest = await _readConfig();
+    if (generation != _configGeneration) return latest;
+    final updated = update(latest);
+    await _writeConfig(updated);
+    return updated;
+  });
+
+  Future<bool> runIfDue() => _withRunLock(() async {
     final config = await loadConfig();
     if (!config.isDue) return false;
     BackupTransferLogger.info(
@@ -133,37 +230,94 @@ class AutoBackupService {
       'AutoBackupService',
       'runIfDue',
     );
-    await runNow(config);
+    await _run(config, kind: _AutoBackupKind.normal);
     return true;
+  });
+
+  Future<void> runIfDueSafely() async {
+    try {
+      await runIfDue();
+    } catch (error, stack) {
+      BackupTransferLogger.error(error, 'AutoBackupService', 'lifecycle', stackTrace: stack);
+    }
   }
 
-  Future<AutoBackupConfig> runNow(AutoBackupConfig config) async {
-    return _run(config, kind: _AutoBackupKind.normal);
-  }
+  Future<AutoBackupConfig> runNow(AutoBackupConfig config) => _withRunLock(() async {
+    // The caller's snapshot can be stale while another queued operation runs.
+    final latest = await loadConfig();
+    return _run(latest, kind: _AutoBackupKind.normal);
+  });
 
-  Future<bool> runAfterUpdateIfDue(AsyncCallback? beforeStart) async {
+  Future<bool> runAfterUpdateIfDue(AsyncCallback? beforeStart) =>
+      _withRunLock(() => _runAfterUpdate(beforeStart, forceRetry: false));
+
+  /// Explicit user retry bypasses the automatic retry limit and update toggle.
+  Future<bool> retryAfterUpdateBackup([AsyncCallback? beforeStart]) =>
+      _withRunLock(() => _runAfterUpdate(beforeStart, forceRetry: true));
+
+  Future<bool> _runAfterUpdate(AsyncCallback? beforeStart, {required bool forceRetry}) async {
     final config = await loadConfig();
-    if (!config.backupOnUpdate) return false;
+    if (!forceRetry && !config.backupOnUpdate) return false;
     final currentBuild = Constants.updateInfo.buildNumber;
-    if (config.lastUpdateBackupBuild == currentBuild) return false;
+    if (!forceRetry && config.lastUpdateBackupBuild == currentBuild) return false;
+    final sameBuild = config.lastUpdateBackupAttemptBuild == currentBuild;
+    final attempts = sameBuild ? config.updateBackupAttemptCount : 0;
+    final lastAttempt = sameBuild ? config.lastUpdateBackupAttemptAt : null;
+    if (!forceRetry &&
+        (attempts >= maximumAutomaticUpdateAttempts ||
+            (lastAttempt != null && DateTime.now().difference(lastAttempt) < updateRetryDelay))) {
+      return false;
+    }
     await beforeStart?.call();
-    final markedConfig = config.copyWith(lastUpdateBackupBuild: currentBuild);
-    await saveConfig(markedConfig);
-    BackupTransferLogger.info(
-      'After-update backup is due for build $currentBuild',
-      'AutoBackupService',
-      'runAfterUpdateIfDue',
+    await _updateStatus(
+      _configGeneration,
+      (latest) => latest.copyWith(
+        lastUpdateBackupAttemptBuild: currentBuild,
+        lastUpdateBackupAttemptAt: DateTime.now(),
+        updateBackupAttemptCount: attempts + 1,
+        clearLastUpdateBackupError: true,
+      ),
     );
-    BackupTransferLogger.info(
-      'Marked after-update backup build $currentBuild as handled before starting backup',
-      'AutoBackupService',
-      'runAfterUpdateIfDue',
-    );
-    await _run(markedConfig, kind: _AutoBackupKind.update);
+    await _run(await loadConfig(), kind: _AutoBackupKind.update);
     return true;
   }
 
   Future<AutoBackupConfig> _run(AutoBackupConfig config, {required _AutoBackupKind kind}) async {
+    final generation = _configGeneration;
+    try {
+      await _createBackup(config, kind: kind);
+      return await _updateStatus(
+        generation,
+        (latest) => switch (kind) {
+          _AutoBackupKind.normal =>
+            latest.location == config.location
+                ? latest.copyWith(lastBackupAt: DateTime.now(), clearLastBackupError: true)
+                : latest,
+          _AutoBackupKind.update => latest.copyWith(
+            lastUpdateBackupBuild: Constants.updateInfo.buildNumber,
+            clearLastUpdateBackupError: true,
+          ),
+        },
+      );
+    } catch (error, stack) {
+      try {
+        await _updateStatus(
+          generation,
+          (latest) => switch (kind) {
+            _AutoBackupKind.normal =>
+              latest.location == config.location ? latest.copyWith(lastBackupError: error.toString()) : latest,
+            _AutoBackupKind.update => latest.copyWith(lastUpdateBackupError: error.toString()),
+          },
+        );
+      } catch (statusError, statusStack) {
+        BackupTransferLogger.error(statusError, 'AutoBackupService', 'saveFailureStatus', stackTrace: statusStack);
+      }
+      BackupTransferLogger.error(error, 'AutoBackupService', '_run', stackTrace: stack);
+      rethrow;
+    }
+  }
+
+  Future<void> _createBackup(AutoBackupConfig config, {required _AutoBackupKind kind}) async {
     if (kind == _AutoBackupKind.normal && config.location.isEmpty) {
       throw StateError(loc.settings.backupAndTransfer.autoBackupLocationEmpty);
     }
@@ -183,7 +337,7 @@ class AutoBackupService {
       'AutoBackupService',
       '_run',
     );
-    if (hasConfiguredLocation && (Platform.isAndroid || config.location.startsWith('content://'))) {
+    if (hasConfiguredLocation && config.location.startsWith('content://')) {
       final tempDir = Directory(
         '${await ServiceHandler.getCacheDir()}backup_transfer${Platform.pathSeparator}${DateTime.now().microsecondsSinceEpoch}',
       );
@@ -204,17 +358,17 @@ class AutoBackupService {
       } finally {
         unawaited(tempDir.delete(recursive: true).catchError((_) => tempDir));
       }
-      if (kind == _AutoBackupKind.update) {
-        await _pruneSafUpdateBackups(config.location, _maximumUpdateBackups);
-      }
-      final updated = _markComplete(config, kind, now);
-      await saveConfig(updated);
+      await _pruneSaf(
+        config.location,
+        kind == _AutoBackupKind.update ? _maximumUpdateBackups : config.maximumBackups,
+        kind: kind,
+      );
       BackupTransferLogger.info(
         'Finished ${kind.name} auto backup to SAF location',
         'AutoBackupService',
         '_run',
       );
-      return updated;
+      return;
     }
 
     final dir = hasConfiguredLocation ? Directory(config.location) : await _defaultUpdateBackupDir();
@@ -223,19 +377,12 @@ class AutoBackupService {
       entryIds: registry.fullBackupEntries.map((entry) => entry.id).toList(),
       outputFile: File('${dir.path}${Platform.pathSeparator}$fileName'),
     );
-    if (kind == _AutoBackupKind.normal) {
-      await _prune(dir, config.maximumBackups);
-    } else {
-      await _pruneUpdateBackups(dir, _maximumUpdateBackups);
-    }
-    final updated = _markComplete(config, kind, now);
-    await saveConfig(updated);
+    await _prune(dir, kind == _AutoBackupKind.normal ? config.maximumBackups : _maximumUpdateBackups, kind: kind);
     BackupTransferLogger.info(
       'Finished ${kind.name} auto backup to ${dir.path}',
       'AutoBackupService',
       '_run',
     );
-    return updated;
   }
 
   Future<Directory> _defaultUpdateBackupDir() async {
@@ -246,26 +393,23 @@ class AutoBackupService {
     return Directory('${await ServiceHandler.getConfigDir()}update_backups');
   }
 
-  AutoBackupConfig _markComplete(AutoBackupConfig config, _AutoBackupKind kind, DateTime now) {
-    return switch (kind) {
-      _AutoBackupKind.normal => config.copyWith(lastBackupAt: now),
-      _AutoBackupKind.update => config.copyWith(lastUpdateBackupBuild: Constants.updateInfo.buildNumber),
-    };
-  }
-
-  Future<void> _prune(Directory dir, int maximumBackups) async {
+  Future<void> _prune(Directory dir, int maximumBackups, {required _AutoBackupKind kind}) async {
     if (maximumBackups <= 0) return;
     final backups = await dir
         .list()
         .where(
           (entity) =>
               entity is File &&
-              BackupFileNaming.isPackageFileName(entity.path) &&
-              !BackupFileNaming.isUpdateAutoBackupPath(entity.path),
+              BackupFileNaming.autoBackupTime(entity.path, isUpdate: kind == _AutoBackupKind.update) != null,
         )
         .cast<File>()
         .toList();
-    backups.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+    backups.sort(
+      (a, b) => BackupFileNaming.autoBackupTime(
+        b.path,
+        isUpdate: kind == _AutoBackupKind.update,
+      )!.compareTo(BackupFileNaming.autoBackupTime(a.path, isUpdate: kind == _AutoBackupKind.update)!),
+    );
     final staleBackups = backups.skip(maximumBackups).toList();
     BackupTransferLogger.info(
       'Pruning ${staleBackups.length} normal auto backups from ${dir.path}',
@@ -277,31 +421,17 @@ class AutoBackupService {
     }
   }
 
-  Future<void> _pruneUpdateBackups(Directory dir, int maximumBackups) async {
-    if (maximumBackups <= 0) return;
-    final backups = await dir
-        .list()
-        .where(
-          (entity) => entity is File && BackupFileNaming.isUpdateAutoBackupPath(entity.path),
-        )
-        .cast<File>()
-        .toList();
-    backups.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
-    final staleBackups = backups.skip(maximumBackups).toList();
-    BackupTransferLogger.info(
-      'Pruning ${staleBackups.length} update backups from ${dir.path}',
-      'AutoBackupService',
-      '_pruneUpdateBackups',
-    );
-    for (final stale in staleBackups) {
-      await stale.delete();
-    }
-  }
-
-  Future<void> _pruneSafUpdateBackups(String safUri, int maximumBackups) async {
+  Future<void> _pruneSaf(String safUri, int maximumBackups, {required _AutoBackupKind kind}) async {
     if (maximumBackups <= 0) return;
     final names = await ServiceHandler.listFileNamesFromSAFDirectory(safUri);
-    final backups = names.where(BackupFileNaming.isUpdateAutoBackupPath).toList()..sort((a, b) => b.compareTo(a));
+    final isUpdate = kind == _AutoBackupKind.update;
+    final backups = names.where((name) => BackupFileNaming.autoBackupTime(name, isUpdate: isUpdate) != null).toList()
+      ..sort(
+        (a, b) => BackupFileNaming.autoBackupTime(
+          b,
+          isUpdate: isUpdate,
+        )!.compareTo(BackupFileNaming.autoBackupTime(a, isUpdate: isUpdate)!),
+      );
     final staleBackups = backups.skip(maximumBackups).toList();
     BackupTransferLogger.info(
       'Pruning ${staleBackups.length} update backups from SAF location',
@@ -309,7 +439,9 @@ class AutoBackupService {
       '_pruneSafUpdateBackups',
     );
     for (final stale in staleBackups) {
-      await ServiceHandler.deleteFileFromSAFDirectory(safUri, stale);
+      if (!await ServiceHandler.deleteFileFromSAFDirectory(safUri, stale)) {
+        throw FileSystemException('Failed to remove expired automatic backup', stale);
+      }
     }
   }
 

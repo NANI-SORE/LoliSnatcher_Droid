@@ -936,90 +936,11 @@ class SearchHandler {
     }
   }
 
-  @Deprecated('Switched to new json format. Remove this after a few versions')
-  void mergeTabsLegacy(String tabStr) {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
-    final List<List<String>> splitInput = decodeBackupString(tabStr);
-    final List<SearchTab> restoredGlobals = [];
-    for (final List<String> booruAndTags in splitInput) {
-      // check for parsing errors
-      final bool isEntryValid = booruAndTags.length > 1 && booruAndTags[0].isNotEmpty;
-      if (isEntryValid) {
-        // find booru by name and create searchtab with given tags
-        Booru findBooru = settingsHandler.booruList.firstWhere(
-          (booru) => booru.name == booruAndTags[0],
-          orElse: Booru.unknown,
-        );
-        findBooru = handleFavDlsNameChange(findBooru);
-        if (findBooru.name != null) {
-          final SearchTab newTab = SearchTab(findBooru, null, booruAndTags[1]);
-          // add only if there are not already the same tab in the list and booru is available on this device
-          if (tabs.indexWhere(
-                (tab) => tab.selectedBooru.value.name == newTab.selectedBooru.value.name && tab.tags == newTab.tags,
-              ) ==
-              -1) {
-            restoredGlobals.add(newTab);
-          }
-        }
-      }
-    }
-    tabs.addAll(restoredGlobals);
+  @Deprecated('Use mergeTabs')
+  void mergeTabsLegacy(String text) => _importExternalTabs(text, replace: false);
 
-    final context = NavigationHandler.instance.navContext;
-    FlashElements.showSnackbar(
-      title: Text(context.loc.searchHandler.tabsMerged),
-      content: Text(
-        context.loc.searchHandler.addedTabsCount(count: restoredGlobals.length),
-      ),
-      sideColor: Colors.green,
-      leadingIcon: Icons.settings_backup_restore,
-    );
-  }
-
-  @Deprecated('Switched to new json format. Remove this after a few versions')
-  void replaceTabsLegacy(String tabStr) {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
-    final List<List<String>> splitInput = decodeBackupString(tabStr);
-    final List<SearchTab> restoredGlobals = [];
-    int newIndex = 0;
-
-    // reset current tab index to avoid exceptions when tab list length is different
-    changeTabIndex(0, switchOnly: true);
-
-    for (final List<String> booruAndTags in splitInput) {
-      // check for parsing errors
-      final bool isEntryValid = booruAndTags.length > 1 && booruAndTags[0].isNotEmpty;
-      if (isEntryValid) {
-        // find booru by name and create searchtab with given tags
-        Booru findBooru = settingsHandler.booruList.firstWhere(
-          (booru) => booru.name == booruAndTags[0],
-          orElse: Booru.unknown,
-        );
-        findBooru = handleFavDlsNameChange(findBooru);
-        if (findBooru.name != null) {
-          final SearchTab newTab = SearchTab(findBooru, null, booruAndTags[1]);
-          restoredGlobals.add(newTab);
-
-          if (booruAndTags[2] == 'selected') {
-            final int index = splitInput.indexWhere((si) => si == booruAndTags);
-            newIndex = index;
-          }
-        }
-      }
-    }
-    tabs.value = restoredGlobals;
-    changeTabIndex(newIndex);
-
-    final context = NavigationHandler.instance.navContext;
-    FlashElements.showSnackbar(
-      title: Text(context.loc.searchHandler.tabsReplaced),
-      content: Text(
-        context.loc.searchHandler.receivedTabsCount(count: restoredGlobals.length),
-      ),
-      sideColor: Colors.green,
-      leadingIcon: Icons.settings_backup_restore,
-    );
-  }
+  @Deprecated('Use replaceTabs')
+  void replaceTabsLegacy(String text) => _importExternalTabs(text, replace: true);
 
   //
 
@@ -1117,75 +1038,59 @@ class SearchHandler {
     return;
   }
 
-  void mergeTabsNew(String tabStr) {
-    final List<TabBackup> tabBackups = TabBackup.fromJsonList(tabStr);
-    final List<SearchTab> restoredTabs = [];
-    for (final tabBackup in tabBackups) {
-      final newTab = parseTabFromBackup(tabBackup);
+  void mergeTabsNew(String text) => _importExternalTabs(text, replace: false);
 
-      // add only if there are not already the same tab in the list and booru is available on this device
-      if (newTab.selectedBooru.value.name != null &&
-          ![...tabs, ...restoredTabs].any(
-            (tab) =>
-                tab.selectedBooru.value.name == newTab.selectedBooru.value.name &&
-                listEquals(
-                  tab.secondaryBoorus.value?.map((t) => t.name).toList(),
-                  newTab.secondaryBoorus.value?.map((t) => t.name).toList(),
-                ) &&
-                tab.tags == newTab.tags,
-          )) {
-        restoredTabs.add(newTab);
-      }
+  void replaceTabsNew(String text) => _importExternalTabs(text, replace: true);
+
+  void _importExternalTabs(String text, {required bool replace}) {
+    final backups = TabBackup.parseImport(text);
+    final restored = <SearchTab>[];
+    SearchTab? selected;
+    String identity(SearchTab tab) => jsonEncode([
+      tab.selectedBooru.value.name,
+      [for (final booru in tab.secondaryBoorus.value ?? <Booru>[]) booru.name],
+      tab.tags,
+    ]);
+    final identities = replace ? <String>{} : tabs.map(identity).toSet();
+    for (final backup in backups) {
+      final tab = parseTabFromBackup(backup);
+      if (tab.selectedBooru.value.name == null) continue;
+      if (!replace && !identities.add(identity(tab))) continue;
+      restored.add(tab);
+      if (selected == null && backup.selected) selected = tab;
     }
-
-    tabs.addAll(restoredTabs);
-
+    if (replace) {
+      if (restored.isEmpty) {
+        // Empty or unavailable imports cannot remove the last usable tab.
+        if (tabs.isNotEmpty) return;
+        final booru = SettingsHandler.instance.booruList.firstWhereOrNull((booru) => booru.type != null);
+        if (booru == null) throw StateError('No configured booru is available for the imported tabs');
+        final tab = SearchTab(booru, null, booru.defTags?.isNotEmpty == true ? booru.defTags! : SX.defTags.value);
+        tab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
+        restored.add(tab);
+      }
+      _cancelAutoSearch();
+      index.value = 0;
+      tabs.value = restored;
+      unawaited(changeTabIndex(selected == null ? 0 : restored.indexOf(selected), switchOnly: true));
+      unawaited(_loadRestoredTab());
+    } else {
+      tabs.addAll(restored);
+    }
     final context = NavigationHandler.instance.navContext;
     FlashElements.showSnackbar(
-      title: Text(context.loc.searchHandler.tabsMerged),
+      title: Text(replace ? context.loc.searchHandler.tabsReplaced : context.loc.searchHandler.tabsMerged),
       content: Text(
-        context.loc.searchHandler.addedTabsCount(count: restoredTabs.length),
+        replace
+            ? context.loc.searchHandler.receivedTabsCount(count: restored.length)
+            : context.loc.searchHandler.addedTabsCount(count: restored.length),
       ),
       sideColor: Colors.green,
       leadingIcon: Icons.settings_backup_restore,
     );
   }
 
-  void replaceTabsNew(String tabStr) {
-    final List<TabBackup> tabBackups = TabBackup.fromJsonList(tabStr);
-    final List<SearchTab> restoredTabs = [];
-    int newSelectedIndex = 0;
-    bool foundSelected = false;
-
-    // reset current tab index to avoid exceptions when tab list length is different
-    changeTabIndex(0, switchOnly: true);
-
-    for (final tabBackup in tabBackups) {
-      final newTab = parseTabFromBackup(tabBackup);
-      if (newTab.selectedBooru.value.name != null) {
-        restoredTabs.add(newTab);
-
-        if (!foundSelected && tabBackup.selected) {
-          newSelectedIndex = restoredTabs.length - 1;
-          foundSelected = true;
-        }
-      }
-    }
-    tabs.value = restoredTabs;
-    changeTabIndex(newSelectedIndex);
-
-    final context = NavigationHandler.instance.navContext;
-    FlashElements.showSnackbar(
-      title: Text(context.loc.searchHandler.tabsReplaced),
-      content: Text(
-        context.loc.searchHandler.receivedTabsCount(count: restoredTabs.length),
-      ),
-      sideColor: Colors.green,
-      leadingIcon: Icons.settings_backup_restore,
-    );
-  }
-
-  String? generateBackupJson() {
+  String? generateBackupJson({bool includeDefaultTab = false}) {
     final SettingsHandler settingsHandler = SettingsHandler.instance;
     // if there are only one tab - check that its not with default booru and tags
     // if there are more than 1 tab or check return false - start backup
@@ -1196,13 +1101,13 @@ class SearchHandler {
         tabs[0].tags == SX.defTags.value &&
         (_getTabCurrentPage(tabs[0]) ?? tabs[0].scrollPage ?? tabs[0].firstPage) <= tabs[0].firstPage &&
         tabs[0].savePageEnabled.value == SX.defaultSavePageEnabled.value;
-    if (!onlyDefaultTab && settingsHandler.booruList.isNotEmpty) {
+    if (includeDefaultTab || (!onlyDefaultTab && settingsHandler.booruList.isNotEmpty)) {
       final List<String> dump = tabs.map((tab) {
         final String tags = tab.tags;
         final String booruName = tab.selectedBooru.value.name ?? 'unknown';
         final List<String> secondaryBoorusNames =
             tab.secondaryBoorus.value?.map((b) => b.name ?? 'unknown').toList() ?? [];
-        final bool selected = tab == tabs[tabIndex];
+        final bool selected = tabIndex >= 0 && tabIndex < tabs.length && tab == tabs[tabIndex];
 
         // Save page number only if enabled for this tab
         final int? savedPageNum = tab.savePageEnabled.value ? (_getTabCurrentPage(tab) ?? tab.scrollPage) : null;
@@ -1359,23 +1264,9 @@ class SearchHandler {
     }
   }
 
-  void mergeTabs(String tabStr) {
-    if (tabStr.startsWith('[')) {
-      mergeTabsNew(tabStr);
-    } else {
-      // ignore: deprecated_member_use_from_same_package
-      mergeTabsLegacy(tabStr);
-    }
-  }
+  void mergeTabs(String text) => _importExternalTabs(text, replace: false);
 
-  void replaceTabs(String tabStr) {
-    if (tabStr.startsWith('[')) {
-      replaceTabsNew(tabStr);
-    } else {
-      // ignore: deprecated_member_use_from_same_package
-      replaceTabsLegacy(tabStr);
-    }
-  }
+  void replaceTabs(String text) => _importExternalTabs(text, replace: true);
 
   Future<void> backupTabs() async {
     if (!canBackup.value) {
@@ -1698,6 +1589,44 @@ class TabBackup {
       if (pageNum != null) 'p': pageNum,
       if (savePageEnabled) 'sp': savePageEnabled,
     };
+  }
+
+  /// External backup imports are strict; startup recovery remains tolerant.
+  static List<TabBackup> parseImport(String input) {
+    final text = input.trim().replaceFirst(RegExp(r'^\uFEFF'), '').trimLeft();
+    if (text.startsWith('[')) {
+      final decoded = jsonDecode(text);
+      if (decoded is! List) throw const FormatException('Expected a tab array');
+      return decoded.map((raw) {
+        if (raw is! Map<String, dynamic> ||
+            raw['t'] is! String ||
+            raw['b'] is! String ||
+            (raw['b'] as String).isEmpty) {
+          throw const FormatException('Invalid tab record');
+        }
+        for (final field in ['s', 'sp']) {
+          if (raw.containsKey(field) && raw[field] is! bool) throw FormatException('Invalid tab $field');
+        }
+        if (raw.containsKey('p') && (raw['p'] is! int || (raw['p'] as int) < 0)) {
+          throw const FormatException('Invalid tab page');
+        }
+        if (raw.containsKey('sb') && (raw['sb'] is! List || (raw['sb'] as List).any((value) => value is! String))) {
+          throw const FormatException('Invalid secondary boorus');
+        }
+        if (raw.containsKey('g')) throw const FormatException('Grouped tab backups are not supported by this version');
+        return fromJson(raw)!;
+      }).toList();
+    }
+    if (text.isEmpty || text.startsWith('{')) throw const FormatException('Unsupported tab backup format');
+    return decodeBackupString(text).map((fields) {
+      if (fields.length < 2 ||
+          fields.length > 3 ||
+          fields[0].isEmpty ||
+          (fields.length == 3 && fields[2] != 'selected' && fields[2].isNotEmpty)) {
+        throw const FormatException('Invalid legacy tab record');
+      }
+      return TabBackup(booru: fields[0], tags: fields[1], selected: fields.length == 3 && fields[2] == 'selected');
+    }).toList();
   }
 
   static TabBackup? fromJson(Map<String, dynamic> json) {

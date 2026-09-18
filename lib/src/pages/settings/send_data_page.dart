@@ -24,7 +24,7 @@ class SendDataPage extends StatefulWidget {
 }
 
 class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver {
-  final server = TransferSocketServer();
+  late final server = TransferSocketServer(approveRequest: _approveTransfer);
   final discovery = TransferDiscoveryService();
   final historyService = const TransferHistoryService();
   final logs = <BackupTransferLog>[];
@@ -39,6 +39,43 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
   String deviceName = '';
   String deviceId = '';
   bool keepAwake = false;
+  int _startGeneration = 0;
+
+  Future<bool> _approveTransfer(TransferRequest request) async {
+    if (!mounted || !started) return false;
+    final navigator = Navigator.of(context);
+    final route = DialogRoute<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(dialogContext.loc.settings.backupAndTransfer.approveTransferTitle),
+        content: SingleChildScrollView(
+          child: Text(
+            [
+              dialogContext.loc.settings.backupAndTransfer.approveTransferRequest(
+                device: request.deviceName,
+                address: request.address,
+              ),
+              ...request.entries.map((id) => BackupEntryRegistry.instance.byId(id).title()),
+            ].join('\n'),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => navigator.pop(false), child: Text(dialogContext.loc.cancel)),
+          FilledButton(
+            onPressed: () => navigator.pop(true),
+            child: Text(dialogContext.loc.settings.backupAndTransfer.allowTransfer),
+          ),
+        ],
+      ),
+    );
+    unawaited(
+      request.cancelled.then((_) {
+        if (route.isActive) navigator.removeRoute(route, false);
+      }),
+    );
+    return await navigator.push(route) ?? false;
+  }
 
   bool get _hasActiveTransfer => started && stats != null && stats!.isComplete != true;
 
@@ -80,7 +117,8 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
   }
 
   Future<void> _start() async {
-    if (started || starting) return;
+    if (!mounted || started || starting) return;
+    final generation = ++_startGeneration;
     if (mounted) {
       setState(() {
         starting = true;
@@ -94,11 +132,25 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
       ip = await ServiceHandler.getIP();
       deviceName = await TransferDeviceInfo.displayName();
       deviceId = await TransferDeviceInfo.instanceId();
+      if (!mounted || generation != _startGeneration) return;
       await server.start(deviceName: deviceName);
+      if (!mounted || generation != _startGeneration || server.port == null) return;
       _setKeepAwake(true);
       started = true;
       if (visible) {
         await discovery.startBroadcast(deviceName: deviceName, deviceId: deviceId, port: server.port!);
+      }
+    } catch (error) {
+      await server.stop();
+      _setKeepAwake(false);
+      started = false;
+      if (mounted) {
+        setState(
+          () => logs.insert(
+            0,
+            BackupTransferLog(context.loc.settings.backupAndTransfer.transferStartFailed(error: error.toString())),
+          ),
+        );
       }
     } finally {
       starting = false;
@@ -137,6 +189,7 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
   }
 
   Future<void> _stop() async {
+    ++_startGeneration;
     await discovery.stopBroadcast();
     await server.stop();
     _setKeepAwake(false);
@@ -158,6 +211,7 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
 
   @override
   void dispose() {
+    ++_startGeneration;
     WidgetsBinding.instance.removeObserver(this);
     SX.syncVisibleOnNetwork.state.effectiveNotifier.removeListener(_onVisibleChanged);
     _setKeepAwake(false);
@@ -424,7 +478,11 @@ class _HistorySection extends StatelessWidget {
   }
 
   String _entryNames(List<BackupEntryId> entryIds) {
-    return entryIds.map((id) => BackupEntryRegistry.instance.byId(id).title()).join(', ');
+    return entryIds
+        .map(
+          (id) => BackupEntryRegistry.instance.entries.where((entry) => entry.id == id).firstOrNull?.title() ?? id.name,
+        )
+        .join(', ');
   }
 }
 

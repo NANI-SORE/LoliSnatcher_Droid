@@ -17,6 +17,11 @@ class TransferDiscoveryService {
   StreamSubscription<BonsoirDiscoveryEvent>? _discoverySub;
   final _devicesController = StreamController<List<DiscoveredTransferDevice>>.broadcast();
   final Map<String, DiscoveredTransferDevice> _devices = {};
+  bool _disposed = false;
+  int _broadcastGeneration = 0;
+  int _discoveryGeneration = 0;
+  Future<void> _broadcastTail = Future<void>.value();
+  Future<void> _discoveryTail = Future<void>.value();
   String? _ignoredDeviceId;
   Set<String> _ignoredHosts = {};
 
@@ -27,58 +32,102 @@ class TransferDiscoveryService {
     required String deviceId,
     required int port,
   }) async {
-    await stopBroadcast();
-    final serviceName = '${loc.appName} $port';
-    BackupTransferLogger.info(
-      'Starting Bonsoir broadcast name=$serviceName port=$port deviceId=$deviceId',
-      'TransferDiscoveryService',
-      'startBroadcast',
-    );
-    final service = BonsoirService(
-      name: serviceName,
-      type: serviceType,
-      port: port,
-      attributes: {
-        'protocol': protocolVersion.toString(),
-        'version': Constants.updateInfo.versionName,
-        'build': Constants.updateInfo.buildNumber.toString(),
-        'devName': deviceName,
-        'devId': deviceId,
-      },
-    );
-    _broadcast = BonsoirBroadcast(service: service);
-    await _broadcast!.initialize();
-    await _broadcast!.start();
+    final generation = ++_broadcastGeneration;
+    final pending = _broadcastTail;
+    final operation = () async {
+      await pending;
+      if (_disposed || generation != _broadcastGeneration) return;
+      await _broadcast?.stop();
+      _broadcast = null;
+      final serviceName = '${loc.appName} $port';
+      BackupTransferLogger.info(
+        'Starting Bonsoir broadcast name=$serviceName port=$port deviceId=$deviceId',
+        'TransferDiscoveryService',
+        'startBroadcast',
+      );
+      final service = BonsoirService(
+        name: serviceName,
+        type: serviceType,
+        port: port,
+        attributes: {
+          'protocol': protocolVersion.toString(),
+          'version': Constants.updateInfo.versionName,
+          'build': Constants.updateInfo.buildNumber.toString(),
+          'devName': deviceName,
+          'devId': deviceId,
+        },
+      );
+      final broadcast = BonsoirBroadcast(service: service);
+      await broadcast.initialize();
+      if (_disposed || generation != _broadcastGeneration) {
+        await broadcast.stop();
+        return;
+      }
+      _broadcast = broadcast;
+      await broadcast.start();
+      if (_disposed || generation != _broadcastGeneration) {
+        await broadcast.stop();
+        _broadcast = null;
+      }
+    }();
+    _broadcastTail = operation.then<void>((_) {}, onError: (Object error, StackTrace stack) {});
+    return operation;
   }
 
   Future<void> stopBroadcast() async {
-    if (_broadcast != null) {
-      BackupTransferLogger.info('Stopping Bonsoir broadcast', 'TransferDiscoveryService', 'stopBroadcast');
-    }
-    await _broadcast?.stop();
+    ++_broadcastGeneration;
+    await _broadcastTail;
+    final broadcast = _broadcast;
     _broadcast = null;
+    await broadcast?.stop();
   }
 
   Future<void> startDiscovery({
     String? ignoredDeviceId,
     Set<String> ignoredHosts = const {},
   }) async {
-    await stopDiscovery();
-    _ignoredDeviceId = ignoredDeviceId;
-    _ignoredHosts = ignoredHosts.where((host) => host.isNotEmpty).toSet();
-    BackupTransferLogger.info(
-      'Starting Bonsoir discovery ignoredDeviceId=${ignoredDeviceId ?? '<none>'} ignoredHosts=${_ignoredHosts.join(',')}',
-      'TransferDiscoveryService',
-      'startDiscovery',
-    );
-    _devices.clear();
-    _discovery = BonsoirDiscovery(type: serviceType);
-    await _discovery!.initialize();
-    _discoverySub = _discovery!.eventStream!.listen(_onDiscoveryEvent);
-    await _discovery!.start();
+    final generation = ++_discoveryGeneration;
+    final pending = _discoveryTail;
+    final operation = () async {
+      await pending;
+      if (_disposed || generation != _discoveryGeneration) return;
+      await _discoverySub?.cancel();
+      _discoverySub = null;
+      await _discovery?.stop();
+      _discovery = null;
+      _ignoredDeviceId = ignoredDeviceId;
+      _ignoredHosts = ignoredHosts.where((host) => host.isNotEmpty).toSet();
+      BackupTransferLogger.info(
+        'Starting Bonsoir discovery ignoredDeviceId=${ignoredDeviceId ?? '<none>'} ignoredHosts=${_ignoredHosts.join(',')}',
+        'TransferDiscoveryService',
+        'startDiscovery',
+      );
+      _devices.clear();
+      final discovery = BonsoirDiscovery(type: serviceType);
+      await discovery.initialize();
+      if (_disposed || generation != _discoveryGeneration) {
+        await discovery.stop();
+        return;
+      }
+      _discovery = discovery;
+      _discoverySub = discovery.eventStream!.listen((event) {
+        if (!_disposed && generation == _discoveryGeneration) _onDiscoveryEvent(event);
+      });
+      await discovery.start();
+      if (_disposed || generation != _discoveryGeneration) {
+        await _discoverySub?.cancel();
+        _discoverySub = null;
+        await discovery.stop();
+        _discovery = null;
+      }
+    }();
+    _discoveryTail = operation.then<void>((_) {}, onError: (Object error, StackTrace stack) {});
+    return operation;
   }
 
   Future<void> stopDiscovery() async {
+    ++_discoveryGeneration;
+    await _discoveryTail;
     if (_discovery != null) {
       BackupTransferLogger.info(
         'Stopping Bonsoir discovery',
@@ -97,6 +146,8 @@ class TransferDiscoveryService {
   }
 
   Future<void> dispose() async {
+    if (_disposed) return;
+    _disposed = true;
     await stopBroadcast();
     await stopDiscovery();
     await _devicesController.close();
@@ -179,6 +230,6 @@ class TransferDiscoveryService {
   }
 
   void _emitDevices() {
-    _devicesController.add(_devices.values.toList(growable: false));
+    if (!_disposed && !_devicesController.isClosed) _devicesController.add(_devices.values.toList(growable: false));
   }
 }

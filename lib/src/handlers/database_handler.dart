@@ -232,10 +232,13 @@ class DBHandler {
     // TODO rewrite using batch
     final List<String> itemIDs = await getItemIDs(items.map((item) => item.postURL).toList());
 
+    final knownIds = <String, String>{
+      for (var index = 0; index < items.length; index++)
+        if (itemIDs[index].isNotEmpty) items[index].postURL: itemIDs[index],
+    };
     int saved = 0, exist = 0;
     for (final BooruItem item in items) {
-      final int itemIndex = items.indexWhere((element) => element.postURL == item.postURL);
-      String? itemID = (itemIDs.isNotEmpty && itemIndex != -1) ? itemIDs[itemIndex] : null;
+      String? itemID = knownIds[item.postURL];
 
       if (itemID == null || itemID.isEmpty) {
         final result = await db?.rawInsert(
@@ -251,6 +254,7 @@ class DBHandler {
           ],
         );
         itemID = result?.toString();
+        if (itemID != null) knownIds[item.postURL] = itemID;
         await updateTags(item.tagsList.map((t) => t.fullString).toList(), itemID);
         saved++;
       } else if (mode == BooruUpdateMode.local) {
@@ -269,6 +273,12 @@ class DBHandler {
           ],
         );
       } else {
+        // Sync merges flags; importing favourites must never clear downloads.
+        await db?.rawUpdate(
+          'UPDATE BooruItem SET isFavourite = MAX(COALESCE(isFavourite, 0), ?), '
+          'isSnatched = MAX(COALESCE(isSnatched, 0), ?) WHERE id = ?',
+          [Tools.boolToInt(item.isFavourite.value == true), Tools.boolToInt(item.isSnatched.value == true), itemID],
+        );
         exist++;
       }
       await Future.delayed(const Duration(milliseconds: 1));
@@ -291,21 +301,21 @@ class DBHandler {
   }
 
   Future<List<String>> getItemIDs(List<String> postURLs) async {
-    final List? result = await db?.rawQuery(
-      "SELECT id, postURL FROM BooruItem WHERE postURL IN (${List.generate(postURLs.length, (_) => '?').join(',')})",
-      postURLs,
-    );
-
-    final List<String> ids = List.generate(postURLs.length, (index) => '');
-    if (result != null && result.isNotEmpty) {
-      for (final Map<String, dynamic> item in result) {
-        final int postIndex = postURLs.indexOf(item['postURL']);
-        if (postIndex != -1) {
-          ids[postIndex] = item['id'].toString();
-        }
+    final ids = <String, String>{};
+    final unique = postURLs.toSet().toList();
+    for (var start = 0; start < unique.length; start += 400) {
+      final chunk = unique.sublist(start, min(start + 400, unique.length));
+      final rows =
+          await db?.rawQuery(
+            'SELECT id, postURL FROM BooruItem WHERE postURL IN (${List.filled(chunk.length, '?').join(',')})',
+            chunk,
+          ) ??
+          [];
+      for (final row in rows) {
+        ids[row['postURL']! as String] = row['id'].toString();
       }
     }
-    return ids;
+    return postURLs.map((url) => ids[url] ?? '').toList();
   }
 
   Future<List<BooruItem>> getSankakuItems({
@@ -548,6 +558,16 @@ class DBHandler {
     required bool isDownloads,
     required int lastSeenId,
     required int limit,
+  }) async => (await getFlaggedBackupItemsAfterId(
+    isDownloads: isDownloads,
+    lastSeenId: lastSeenId,
+    limit: limit,
+  )).map((row) => row.item).toList();
+
+  Future<List<({int id, BooruItem item})>> getFlaggedBackupItemsAfterId({
+    required bool isDownloads,
+    required int lastSeenId,
+    required int limit,
   }) async {
     final db = this.db;
     if (db == null) return [];
@@ -580,7 +600,7 @@ class DBHandler {
 
     return results.map((row) {
       final id = row['dbid']! as int;
-      return BooruItem.fromDBRow(row, tagsMap[id] ?? []);
+      return (id: id, item: BooruItem.fromDBRow(row, tagsMap[id] ?? []));
     }).toList();
   }
 

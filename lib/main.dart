@@ -498,7 +498,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     // consider app launch as return to the app
     WidgetsBinding.instance.addObserver(this);
     localAuthHandler.onReturn();
-    unawaited(autoBackupService.runIfDue());
+    unawaited(autoBackupService.runIfDueSafely());
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_offerPerformanceSettingsAfterCrash());
@@ -667,7 +667,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       case AppLifecycleState.resumed:
         // check if app needs to be locked when user returns to the app
         localAuthHandler.onReturn();
-        unawaited(autoBackupService.runIfDue());
+        unawaited(autoBackupService.runIfDueSafely());
         break;
     }
   }

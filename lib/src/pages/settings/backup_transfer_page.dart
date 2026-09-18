@@ -15,6 +15,7 @@ import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 
 import 'package:lolisnatcher/src/pages/settings/advanced_backup_page.dart';
+import 'package:lolisnatcher/src/pages/settings/backup_import_dialog.dart';
 import 'package:lolisnatcher/src/pages/settings/receive_data_page.dart';
 import 'package:lolisnatcher/src/pages/settings/send_data_page.dart';
 
@@ -54,12 +55,14 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
 
   Future<void> _importAny() async {
     await _runBusy(() async {
-      final picked = await packageService.pickBackupFile();
-      if (picked == null) return;
-      final imported = await importService.importNamedBytes(picked.name, picked.bytes);
-      if (mounted) {
-        _snack(context.loc.settings.backupAndTransfer.importedEntries(count: imported.length), false);
-      }
+      await packageService.withPickedBackup((name, file) async {
+        final entries = await importService.inspectNamedFile(name, file);
+        if (!mounted) return;
+        final options = await showBackupImportDialog(context, entries);
+        if (options == null) return;
+        final imported = await importService.importNamedFile(name, file, options: options);
+        if (mounted) _snack(context.loc.settings.backupAndTransfer.importedEntries(count: imported.length), false);
+      });
     });
   }
 
@@ -78,6 +81,15 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
     });
   }
 
+  Future<void> _retryUpdateBackup() => _runBusy(() async {
+    try {
+      await autoBackupService.retryAfterUpdateBackup();
+      if (mounted) _snack(context.loc.settings.backupAndTransfer.autoBackupCreated, false);
+    } finally {
+      await _loadAutoConfig();
+    }
+  });
+
   Future<void> _chooseAutoLocation() async {
     final path = Platform.isAndroid
         ? await ServiceHandler.getSAFDirectoryAccess()
@@ -86,8 +98,17 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
           );
     if (path == null || path.isEmpty) return;
     autoConfig = autoConfig.copyWith(location: path);
-    await autoBackupService.saveConfig(autoConfig);
+    await _saveAutoConfig();
     if (mounted) setState(() {});
+  }
+
+  Future<void> _saveAutoConfig() async {
+    try {
+      await autoBackupService.saveConfig(autoConfig);
+    } catch (error) {
+      if (mounted) _snack(error.toString(), true);
+      await _loadAutoConfig();
+    }
   }
 
   Future<void> _runBusy(Future<void> Function() action) async {
@@ -98,6 +119,7 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
     } catch (e) {
       if (mounted) _snack(e.toString(), true);
     } finally {
+      await _loadAutoConfig();
       if (mounted) setState(() => busy = false);
     }
   }
@@ -179,8 +201,8 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
                         value: autoConfig.enabled,
                         onChanged: (value) async {
                           autoConfig = autoConfig.copyWith(enabled: value);
-                          await autoBackupService.saveConfig(autoConfig);
-                          setState(() {});
+                          await _saveAutoConfig();
+                          if (mounted) setState(() {});
                         },
                       ),
                       SwitchListTile(
@@ -189,8 +211,8 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
                         value: autoConfig.backupOnUpdate,
                         onChanged: (value) async {
                           autoConfig = autoConfig.copyWith(backupOnUpdate: value);
-                          await autoBackupService.saveConfig(autoConfig);
-                          setState(() {});
+                          await _saveAutoConfig();
+                          if (mounted) setState(() {});
                         },
                       ),
                       ListTile(
@@ -226,8 +248,8 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
                           onChanged: (value) async {
                             if (value == null) return;
                             autoConfig = autoConfig.copyWith(frequencyDays: value);
-                            await autoBackupService.saveConfig(autoConfig);
-                            setState(() {});
+                            await _saveAutoConfig();
+                            if (mounted) setState(() {});
                           },
                         ),
                       ),
@@ -257,8 +279,8 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
                           onChanged: (value) async {
                             if (value == null) return;
                             autoConfig = autoConfig.copyWith(maximumBackups: value);
-                            await autoBackupService.saveConfig(autoConfig);
-                            setState(() {});
+                            await _saveAutoConfig();
+                            if (mounted) setState(() {});
                           },
                         ),
                       ),
@@ -285,6 +307,23 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
                           ),
                         ),
                       ),
+                      if (autoConfig.lastBackupError != null)
+                        ListTile(
+                          leading: const Icon(Icons.error_outline),
+                          title: Text(context.loc.settings.backupAndTransfer.lastBackupFailed),
+                          subtitle: Text(autoConfig.lastBackupError!),
+                        ),
+                      if (autoConfig.lastUpdateBackupError != null)
+                        ListTile(
+                          leading: const Icon(Icons.error_outline),
+                          title: Text(context.loc.settings.backupAndTransfer.lastUpdateBackupFailed),
+                          subtitle: Text(autoConfig.lastUpdateBackupError!),
+                          trailing: IconButton(
+                            tooltip: context.loc.settings.backupAndTransfer.retryUpdateBackup,
+                            icon: const Icon(Icons.refresh),
+                            onPressed: busy ? null : _retryUpdateBackup,
+                          ),
+                        ),
                     ],
                   ),
                 ),

@@ -51,6 +51,8 @@ class BackupEntryDefinition {
     required this.importEntry,
     this.exportFile,
     this.importFile,
+    this.exportFileIsTemporary = false,
+    this.isImportAvailable,
   });
 
   final BackupEntryId id;
@@ -64,6 +66,10 @@ class BackupEntryDefinition {
   final Future<void> Function(Uint8List bytes, BackupImportOptions options) importEntry;
   final Future<File> Function(BackupExportOptions options)? exportFile;
   final Future<void> Function(File file, BackupImportOptions options)? importFile;
+  final bool exportFileIsTemporary;
+  final Future<bool> Function()? isImportAvailable;
+
+  Future<bool> canImport() async => await isImportAvailable?.call() ?? true;
 }
 
 class BackupExportOptions {
@@ -80,10 +86,18 @@ class BackupImportOptions {
   const BackupImportOptions({
     this.tabsMode = BackupTabsMode.merge,
     this.tagsMode = BackupTagsMode.preferTypeIfNone,
+    this.allowedEntryIds,
+    this.rejectUnexpectedEntries = true,
+    this.booruNameRemap,
   });
 
   final BackupTabsMode tabsMode;
   final BackupTagsMode tagsMode;
+  final Set<BackupEntryId>? allowedEntryIds;
+  final bool rejectUnexpectedEntries;
+
+  /// Import-local profile renames shared by dependent categories in one package.
+  final Map<String, String>? booruNameRemap;
 }
 
 enum BackupTabsMode {

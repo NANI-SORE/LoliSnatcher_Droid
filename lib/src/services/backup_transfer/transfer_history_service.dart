@@ -57,6 +57,7 @@ class TransferHistoryEntry {
 
 class TransferHistoryService {
   const TransferHistoryService();
+  static Future<void> _writeTail = Future<void>.value();
 
   Future<List<TransferHistoryEntry>> load() async {
     final file = await _file();
@@ -93,7 +94,13 @@ class TransferHistoryService {
     }
   }
 
-  Future<void> add(TransferHistoryEntry entry) async {
+  Future<void> add(TransferHistoryEntry entry) {
+    final operation = _writeTail.then((_) => _add(entry));
+    _writeTail = operation.then<void>((_) {}, onError: (Object error, StackTrace stack) {});
+    return operation;
+  }
+
+  Future<void> _add(TransferHistoryEntry entry) async {
     BackupTransferLogger.info(
       'Adding transfer history direction=${entry.direction.name} peer=${entry.peerAddress} entries=${entry.entryIds.map((id) => id.name).join(',')}',
       'TransferHistoryService',
@@ -105,7 +112,14 @@ class TransferHistoryService {
     ].take(50).toList(growable: false);
     final file = await _file();
     await file.parent.create(recursive: true);
-    await file.writeAsString(jsonEncode(entries.map((item) => item.toJson()).toList()));
+    final stage = await file.parent.createTemp('.transfer-history-');
+    try {
+      final temporary = File('${stage.path}/history.json');
+      await temporary.writeAsString(jsonEncode(entries.map((item) => item.toJson()).toList()), flush: true);
+      await temporary.rename(file.path);
+    } finally {
+      await stage.delete(recursive: true);
+    }
   }
 
   Future<File> _file() async {

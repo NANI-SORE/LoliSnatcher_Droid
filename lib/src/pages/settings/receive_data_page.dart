@@ -45,7 +45,14 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
     WidgetsBinding.instance.addObserver(this);
     devicesSub = discovery.devices.listen((newDevices) {
       if (!mounted) return;
-      setState(() => devices = newDevices);
+      setState(
+        () => devices = [
+          ...devices.where((device) => device.isManual),
+          ...newDevices.where(
+            (device) => !devices.any((manual) => manual.isManual && manual.address == device.address),
+          ),
+        ],
+      );
     });
     logSub = client.logs.stream.listen((log) {
       if (!mounted) return;
@@ -55,7 +62,11 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
       if (!mounted) return;
       setState(() => stats = newStats);
     });
-    unawaited(_loadDeviceInfoAndStartDiscovery());
+    unawaited(
+      _loadDeviceInfoAndStartDiscovery().catchError((Object error) {
+        if (mounted) setState(() => logs.insert(0, BackupTransferLog(error.toString())));
+      }),
+    );
     unawaited(_loadHistory());
   }
 
@@ -157,6 +168,7 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
   Future<void> _selectAndReceive(DiscoveredTransferDevice device) async {
     final selected = <BackupEntryId>{};
     var tabsMode = BackupTabsMode.merge;
+    var tagsMode = BackupTagsMode.preferTypeIfNone;
     final favouritesStartController = TextEditingController(text: '0');
     final snatchedStartController = TextEditingController(text: '0');
     final result = await showDialog<_ReceiveSelection>(
@@ -200,8 +212,12 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
                       },
                     ),
                     const SizedBox(height: 12),
-                    if (_isEntrySelected(selected, BackupEntryId.tabs) &&
-                        !_isEntrySelected(selected, BackupEntryId.database))
+                    if (selected.contains(BackupEntryId.database))
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(context.loc.settings.backupAndTransfer.databaseReplacementWarning),
+                      ),
+                    if (_isEntrySelected(selected, BackupEntryId.tabs))
                       Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: DropdownButtonFormField<BackupTabsMode>(
@@ -218,6 +234,15 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
                             if (value == null) return;
                             setDialogState(() => tabsMode = value);
                           },
+                        ),
+                      ),
+                    if (selected.contains(BackupEntryId.tags))
+                      SwitchListTile(
+                        title: Text(context.loc.settings.sync.overwrite),
+                        subtitle: Text(context.loc.settings.sync.tagsSyncModePreferTypeIfNone),
+                        value: tagsMode == BackupTagsMode.overwrite,
+                        onChanged: (value) => setDialogState(
+                          () => tagsMode = value ? BackupTagsMode.overwrite : BackupTagsMode.preferTypeIfNone,
                         ),
                       ),
                     if (_isEntrySelected(selected, BackupEntryId.favourites) &&
@@ -261,6 +286,7 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
                           _ReceiveSelection(
                             entries: _normalizedSelectedEntries(selected),
                             tabsMode: tabsMode,
+                            tagsMode: tagsMode,
                             favouritesStartIndex: int.tryParse(favouritesStartController.text) ?? 0,
                             snatchedStartIndex: int.tryParse(snatchedStartController.text) ?? 0,
                           ),
@@ -273,7 +299,9 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
         );
       },
     );
-    if (result == null || result.entries.isEmpty) return;
+    favouritesStartController.dispose();
+    snatchedStartController.dispose();
+    if (!mounted || result == null || result.entries.isEmpty) return;
 
     setState(() => receiving = true);
     _setKeepAwake(true);
@@ -289,7 +317,7 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
           'favouritesStartIndex': result.favouritesStartIndex,
           'snatchedStartIndex': result.snatchedStartIndex,
         },
-        options: BackupImportOptions(tabsMode: result.tabsMode),
+        options: BackupImportOptions(tabsMode: result.tabsMode, tagsMode: result.tagsMode),
       );
     } finally {
       _setKeepAwake(false);
@@ -310,23 +338,18 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
       return;
     }
 
-    if (selected.contains(BackupEntryRegistry.databaseParentId)) return;
+    if (registry.isDatabaseChild(entryId) && selected.contains(BackupEntryRegistry.databaseParentId)) return;
 
     if (value) {
       selected.add(entryId);
     } else {
       selected.remove(entryId);
     }
-
-    if (selected.containsAll(BackupEntryRegistry.databaseChildIds) &&
-        !selected.contains(BackupEntryRegistry.databaseParentId)) {
-      selected.add(BackupEntryRegistry.databaseParentId);
-      selected.removeAll(BackupEntryRegistry.databaseChildIds);
-    }
   }
 
   bool _isEntrySelected(Set<BackupEntryId> selected, BackupEntryId entryId) {
-    return selected.contains(entryId) || selected.contains(BackupEntryRegistry.databaseParentId);
+    return selected.contains(entryId) ||
+        (registry.isDatabaseChild(entryId) && selected.contains(BackupEntryRegistry.databaseParentId));
   }
 
   List<BackupEntryId> _normalizedSelectedEntries(Set<BackupEntryId> selected) {
@@ -340,6 +363,7 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
   }
 
   Future<void> _cancelReceive() async {
+    if (client.importing) return;
     await client.cancel();
     _setKeepAwake(false);
     if (!mounted) return;
@@ -357,7 +381,7 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
             IconButton(
               icon: const Icon(Icons.cancel_outlined),
               tooltip: context.loc.cancel,
-              onPressed: receiving ? _cancelReceive : null,
+              onPressed: receiving && !client.importing ? _cancelReceive : null,
             ),
           ],
         ),
@@ -450,7 +474,7 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
                   child: FilledButton.icon(
                     icon: const Icon(Icons.cancel_outlined),
                     label: Text(context.loc.cancel),
-                    onPressed: receiving ? _cancelReceive : null,
+                    onPressed: receiving && !client.importing ? _cancelReceive : null,
                   ),
                 ),
               ),
@@ -501,12 +525,14 @@ class _ReceiveSelection {
   const _ReceiveSelection({
     required this.entries,
     required this.tabsMode,
+    required this.tagsMode,
     required this.favouritesStartIndex,
     required this.snatchedStartIndex,
   });
 
   final List<BackupEntryId> entries;
   final BackupTabsMode tabsMode;
+  final BackupTagsMode tagsMode;
   final int favouritesStartIndex;
   final int snatchedStartIndex;
 }
@@ -682,6 +708,10 @@ class _HistorySection extends StatelessWidget {
   }
 
   String _entryNames(List<BackupEntryId> entryIds) {
-    return entryIds.map((id) => BackupEntryRegistry.instance.byId(id).title()).join(', ');
+    return entryIds
+        .map(
+          (id) => BackupEntryRegistry.instance.entries.where((entry) => entry.id == id).firstOrNull?.title() ?? id.name,
+        )
+        .join(', ');
   }
 }

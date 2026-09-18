@@ -7,6 +7,34 @@ import 'dart:typed_data';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_transfer_logger.dart';
 
+abstract final class TransferProtocol {
+  static const version = 1;
+  static const capabilities = ['sha256', 'requestId', 'importAck'];
+  static const maxFrameBytes = 64 * 1024;
+  static const maxPackageBytes = 8 * 1024 * 1024 * 1024;
+  static const idleTimeout = Duration(seconds: 30);
+  static const approvalTimeout = Duration(minutes: 2);
+  static const importTimeout = Duration(minutes: 30);
+
+  static void validatePeer(Map<String, dynamic> frame) {
+    final supported = frame['capabilities'];
+    if (frame['protocol'] is! int ||
+        frame['protocol'] != version ||
+        supported is! List ||
+        !capabilities.every(supported.contains)) {
+      throw FormatException(loc.settings.backupAndTransfer.unsupportedTransferProtocol);
+    }
+  }
+
+  static bool validRequestId(Object? value) => value is String && RegExp(r'^[a-zA-Z0-9-]{1,64}$').hasMatch(value);
+
+  static void validateSize(int length) {
+    if (length <= 0 || length > maxPackageBytes) {
+      throw FormatException(loc.settings.backupAndTransfer.invalidTransferData);
+    }
+  }
+}
+
 class TransferSocketConnection {
   TransferSocketConnection(this.socket) : _reader = _SocketChunkReader(socket);
 
@@ -15,6 +43,9 @@ class TransferSocketConnection {
 
   Future<void> writeFrame(Map<String, dynamic> frame) async {
     final payload = Uint8List.fromList(utf8.encode(jsonEncode(frame)));
+    if (payload.isEmpty || payload.length > TransferProtocol.maxFrameBytes) {
+      throw FormatException(loc.settings.backupAndTransfer.invalidTransferData);
+    }
     final header = ByteData(4)..setUint32(0, payload.length, Endian.big);
     BackupTransferLogger.info(
       'Writing frame type=${frame['type']} bytes=${payload.length}',
@@ -23,14 +54,21 @@ class TransferSocketConnection {
     );
     socket.add(header.buffer.asUint8List());
     socket.add(payload);
-    await socket.flush();
+    await socket.flush().timeout(TransferProtocol.idleTimeout);
   }
 
-  Future<Map<String, dynamic>> readFrame() async {
-    final header = await _reader.readExactly(4);
+  Future<Map<String, dynamic>> readFrame({Duration timeout = TransferProtocol.idleTimeout}) async {
+    final header = await _reader.readExactly(4, timeout: timeout);
     final length = ByteData.sublistView(header).getUint32(0, Endian.big);
+    if (length == 0 || length > TransferProtocol.maxFrameBytes) {
+      throw FormatException(loc.settings.backupAndTransfer.invalidTransferData);
+    }
     final payload = await _reader.readExactly(length);
-    final frame = Map<String, dynamic>.from(jsonDecode(utf8.decode(payload)));
+    final decoded = jsonDecode(utf8.decode(payload));
+    if (decoded is! Map<String, dynamic>) {
+      throw FormatException(loc.settings.backupAndTransfer.invalidTransferData);
+    }
+    final frame = decoded;
     BackupTransferLogger.info(
       'Read frame type=${frame['type']} bytes=$length',
       'TransferSocketConnection',
@@ -40,6 +78,9 @@ class TransferSocketConnection {
   }
 
   Future<Uint8List> readBytes(int length, void Function(int read)? onProgress) async {
+    if (length < 0 || length > TransferProtocol.maxFrameBytes) {
+      throw FormatException(loc.settings.backupAndTransfer.invalidTransferData);
+    }
     final builder = BytesBuilder(copy: false);
     var remaining = length;
     var read = 0;
@@ -61,6 +102,7 @@ class TransferSocketConnection {
     void Function(int read)? onProgress, {
     bool Function()? isCancelled,
   }) async {
+    TransferProtocol.validateSize(length);
     BackupTransferLogger.info(
       'Reading $length bytes to file ${file.path}',
       'TransferSocketConnection',
@@ -80,6 +122,8 @@ class TransferSocketConnection {
           throw SocketException(loc.settings.backupAndTransfer.transferCancelled);
         }
         sink.add(chunk);
+        // Bound the disk writer's queue as well as the socket reader's queue.
+        await sink.flush().timeout(TransferProtocol.idleTimeout);
         remaining -= chunk.length;
         read += chunk.length;
         progress.call(read);
@@ -104,7 +148,7 @@ class TransferSocketConnection {
       socket.add(bytes.sublist(sent, end));
       sent = end;
       progress.call(sent);
-      await socket.flush();
+      await socket.flush().timeout(TransferProtocol.idleTimeout);
     }
     progress.complete(sent);
   }
@@ -129,7 +173,7 @@ class TransferSocketConnection {
       socket.add(chunk);
       sent += chunk.length;
       progress.call(sent);
-      await socket.flush();
+      await socket.flush().timeout(TransferProtocol.idleTimeout);
       if (isCancelled?.call() == true) {
         throw SocketException(loc.settings.backupAndTransfer.transferCancelled);
       }
@@ -140,6 +184,11 @@ class TransferSocketConnection {
       'TransferSocketConnection',
       'writeFile',
     );
+  }
+
+  Future<void> close() async {
+    socket.destroy();
+    await _reader.close();
   }
 }
 
@@ -187,7 +236,10 @@ class _SocketChunkReader {
   bool _paused = false;
   Object? _error;
 
-  Future<Uint8List> readExactly(int length) async {
+  Future<Uint8List> readExactly(int length, {Duration timeout = TransferProtocol.idleTimeout}) async {
+    if (length < 0 || length > TransferProtocol.maxFrameBytes) {
+      throw FormatException(loc.settings.backupAndTransfer.invalidTransferData);
+    }
     _subscription ??= socket.listen(
       (chunk) {
         _chunks.add(chunk);
@@ -196,23 +248,23 @@ class _SocketChunkReader {
           _subscription?.pause();
           _paused = true;
         }
-        _available?.complete();
+        if (_available?.isCompleted == false) _available!.complete();
         _available = null;
       },
       onDone: () {
         _done = true;
-        _available?.complete();
+        if (_available?.isCompleted == false) _available!.complete();
       },
       onError: (Object error) {
         _error = error;
-        _available?.complete();
+        if (_available?.isCompleted == false) _available!.complete();
       },
       cancelOnError: true,
     );
 
     while (_bufferedBytes < length && !_done && _error == null) {
       _available ??= Completer<void>();
-      await _available!.future;
+      await _available!.future.timeout(timeout);
     }
     if (_error != null) throw Exception(_error);
     if (_bufferedBytes < length) {
@@ -236,6 +288,14 @@ class _SocketChunkReader {
     }
     _resumeIfNeeded();
     return result;
+  }
+
+  Future<void> close() async {
+    _done = true;
+    if (_available?.isCompleted == false) _available!.complete();
+    await _subscription?.cancel();
+    _chunks.clear();
+    _bufferedBytes = 0;
   }
 
   void _resumeIfNeeded() {

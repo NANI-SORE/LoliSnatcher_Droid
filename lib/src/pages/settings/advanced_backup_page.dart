@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/pages/settings/backup_import_dialog.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_entry_registry.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_file_naming.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_import_compat_service.dart';
@@ -95,15 +95,18 @@ class _AdvancedBackupPageState extends State<AdvancedBackupPage> {
 
   Future<void> _importEntryFile(BackupEntryDefinition entry) async {
     await _runBusy(() async {
-      final file = await FilePicker.pickFile();
-      if (file == null) return;
-      final bytes = await file.readAsBytes();
-      if (BackupFileNaming.isPackageFileName(file.name)) {
-        await compatService.importNamedBytes(file.name, bytes);
-      } else {
-        await entry.importEntry(bytes, const BackupImportOptions());
-      }
-      if (mounted) _snack(context.loc.settings.backupAndTransfer.entryImported(entry: entry.title()), false);
+      await packageService.withPickedBackup((name, file) async {
+        final isPackage = BackupFileNaming.isPackageFileName(name);
+        final entries = isPackage ? await packageService.inspectPackageFile(file) : [entry.id];
+        if (!entries.contains(entry.id)) {
+          throw const FormatException('The backup does not contain the selected category');
+        }
+        if (!mounted) return;
+        final options = await showBackupImportDialog(context, entries, restrictedTo: {entry.id});
+        if (options == null) return;
+        await compatService.importNamedFile(isPackage ? name : entry.fileName, file, options: options);
+        if (mounted) _snack(context.loc.settings.backupAndTransfer.entryImported(entry: entry.title()), false);
+      });
     });
   }
 
@@ -120,7 +123,10 @@ class _AdvancedBackupPageState extends State<AdvancedBackupPage> {
       final data = await Clipboard.getData(Clipboard.kTextPlain);
       final text = data?.text;
       if (text == null || text.isEmpty) return;
-      await entry.importEntry(Uint8List.fromList(utf8.encode(text)), const BackupImportOptions());
+      if (!mounted) return;
+      final options = await showBackupImportDialog(context, [entry.id]);
+      if (options == null) return;
+      await compatService.importNamedBytes(entry.fileName, Uint8List.fromList(utf8.encode(text)), options: options);
       if (mounted) _snack(context.loc.settings.backupAndTransfer.entryImported(entry: entry.title()), false);
     });
   }
