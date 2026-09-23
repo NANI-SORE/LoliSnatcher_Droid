@@ -3,12 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 
-import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/boorus/downloads_handler.dart';
 import 'package:lolisnatcher/src/boorus/favourites_handler.dart';
-import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
 import 'package:lolisnatcher/src/boorus/mergebooru_handler.dart';
-import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
@@ -18,6 +15,7 @@ import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
+import 'package:lolisnatcher/src/utils/booru_source_resolver.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/pulse_widget.dart';
@@ -60,22 +58,7 @@ class ThumbnailBuild extends StatelessWidget {
       return cached?.booru;
     }
 
-    final itemFileHost = Uri.tryParse(item.fileURL)?.host;
-    final itemPostHost = Uri.tryParse(item.postURL)?.host;
-    final possibleBooru = settingsHandler.booruList.firstWhereOrNull((e) {
-      final booruHost = Uri.tryParse(e.baseURL ?? '')?.host;
-
-      return (itemPostHost?.isNotEmpty == true &&
-              booruHost?.isNotEmpty == true &&
-              (itemPostHost == booruHost ||
-                  switch (e.type) {
-                    BooruType.IdolSankaku => IdolSankakuHandler.knownUrls.contains(itemPostHost),
-                    BooruType.Sankaku => SankakuHandler.knownPostUrls.contains(itemPostHost),
-                    _ => false,
-                  })) ||
-          (itemFileHost?.isNotEmpty == true && booruHost?.isNotEmpty == true && itemFileHost == booruHost);
-    });
-    final result = possibleBooru?.type?.isFavouritesOrDownloads == true ? null : possibleBooru;
+    final result = BooruSourceResolver.resolve(item);
     _sourceCache[item] = _SourceCacheEntry(settingsHandler.booruListVersion, result);
     return result;
   }

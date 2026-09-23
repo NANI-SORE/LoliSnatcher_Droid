@@ -138,7 +138,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
       ..[_FilterSort.alphabetical] = alphabeticalRules
       ..[_FilterSort.reverseAlphabetical] = alphabeticalRules.reversed.toList()
       ..[_FilterSort.effect] = ([...rules]..sort(_compareByEffect))
-      ..[_FilterSort.reverseEffect] = ([...rules]..sort((left, right) => _compareByEffect(left, right, reverse: true)))
+      ..[_FilterSort.reverseEffect] = ([...rules]..sort((left, right) => _compareByEffect(right, left)))
       ..[_FilterSort.suspensionTime] = ([...rules]..sort((left, right) => _compareBySuspensionTime(left, right, now)));
     effectCounts
       ..clear()
@@ -159,8 +159,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     filteredRules = (sortedRules[sortMode] ?? alphabeticalRules).where((rule) {
       if (selectedEffects.isNotEmpty && !selectedEffects.contains(rule.effect)) return false;
       if (selectedMarkers.isNotEmpty &&
-          rule.effect == TagFilterEffect.mark &&
-          !selectedMarkers.contains(_markerKey(rule.marker))) {
+          (rule.effect != TagFilterEffect.mark || !selectedMarkers.contains(_markerKey(rule.marker)))) {
         return false;
       }
       if (!_matchesScopeFilter(rule)) return false;
@@ -192,11 +191,10 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     return left.id.compareTo(right.id);
   }
 
-  int _compareByEffect(TagFilterRule left, TagFilterRule right, {bool reverse = false}) {
+  int _compareByEffect(TagFilterRule left, TagFilterRule right) {
     final effectResult = left.effect.index.compareTo(right.effect.index);
     if (effectResult != 0) return effectResult;
-    final alphabeticResult = _compareAlphabetically(left, right);
-    return reverse ? -alphabeticResult : alphabeticResult;
+    return _compareAlphabetically(left, right);
   }
 
   int _compareBySuspensionTime(TagFilterRule left, TagFilterRule right, DateTime now) {

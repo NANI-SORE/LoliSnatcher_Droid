@@ -3,6 +3,10 @@ import 'package:lolisnatcher/src/utils/booru_rating.dart';
 
 const _escapedAsterisk = '\u0000';
 const _escapedHyphen = '\u0001';
+const _escapedColon = '\u0002';
+
+String _restoreEscapedLiterals(String value) =>
+    value.replaceAll(_escapedAsterisk, '*').replaceAll(_escapedHyphen, '-').replaceAll(_escapedColon, ':');
 
 enum TagFilterQueryErrorCode {
   empty,
@@ -113,11 +117,7 @@ class TagFilterQuery {
 
       final lower = token.toLowerCase();
       if (lower.startsWith('user:')) {
-        final username = lower
-            .substring('user:'.length)
-            .replaceAll(_escapedAsterisk, '*')
-            .replaceAll(_escapedHyphen, '-')
-            .trim();
+        final username = _restoreEscapedLiterals(lower.substring('user:'.length)).trim();
         if (username.isEmpty) {
           return const TagFilterQueryParseResult.failure(
             TagFilterQueryError(TagFilterQueryErrorCode.invalidUser, 'User requires an uploader name'),
@@ -208,7 +208,7 @@ class TagFilterQuery {
   }
 
   static String escapeExactTag(String tag) {
-    var escaped = tag.replaceAll(r'\', r'\\').replaceAll('*', r'\*').replaceAll('"', r'\"');
+    var escaped = tag.replaceAll(r'\', r'\\').replaceAll('*', r'\*').replaceAll(':', r'\:').replaceAll('"', r'\"');
     if (escaped.startsWith('-')) escaped = r'\-' + escaped.substring(1);
     if (escaped.contains(RegExp(r'\s'))) {
       escaped = '"$escaped"';
@@ -242,6 +242,7 @@ _TokenizeResult _tokenize(String input) {
       buffer.write(switch (char) {
         '*' => _escapedAsterisk,
         '-' => _escapedHyphen,
+        ':' => _escapedColon,
         _ => char,
       });
       escaping = false;
@@ -302,31 +303,21 @@ class TagCondition extends TagFilterCondition {
 
   factory TagCondition.fromToken(String token, {required bool negated}) {
     final hasWildcard = token.contains('*');
-    final pattern = token.replaceAll(_escapedAsterisk, '*').replaceAll(_escapedHyphen, '-').toLowerCase();
+    final pattern = _restoreEscapedLiterals(token).toLowerCase();
     final wildcardIndex = token.indexOf('*');
     final literalPrefix = wildcardIndex < 0
         ? ''
-        : token
-              .substring(0, wildcardIndex)
-              .replaceAll(_escapedAsterisk, '*')
-              .replaceAll(_escapedHyphen, '-')
-              .toLowerCase();
+        : _restoreEscapedLiterals(token.substring(0, wildcardIndex)).toLowerCase();
     final lastWildcardIndex = token.lastIndexOf('*');
     final literalSuffix = lastWildcardIndex < 0
         ? ''
-        : token
-              .substring(lastWildcardIndex + 1)
-              .replaceAll(_escapedAsterisk, '*')
-              .replaceAll(_escapedHyphen, '-')
-              .toLowerCase();
+        : _restoreEscapedLiterals(token.substring(lastWildcardIndex + 1)).toLowerCase();
     RegExp? matcher;
     if (hasWildcard) {
       final source = token
           .split('*')
           .map(
-            (part) => RegExp.escape(
-              part.replaceAll(_escapedAsterisk, '*').replaceAll(_escapedHyphen, '-').toLowerCase(),
-            ),
+            (part) => RegExp.escape(_restoreEscapedLiterals(part).toLowerCase()),
           )
           .join('.*');
       matcher = RegExp('^$source\$', caseSensitive: false, unicode: true);

@@ -11,21 +11,28 @@ class BooruSourceResolver {
   static Booru? resolve(BooruItem item) {
     final itemFileHost = Uri.tryParse(item.fileURL)?.host;
     final itemPostHost = Uri.tryParse(item.postURL)?.host;
-    for (final booru in SettingsHandler.instance.booruList) {
-      if (booru.type?.isFavouritesOrDownloads == true) continue;
+    final sources = SettingsHandler.instance.booruList.where((booru) => booru.type?.isFavouritesOrDownloads != true);
+
+    // A post URL identifies its source more reliably than a media host,
+    // which can also be a configured CDN or another booru's base URL.
+    for (final booru in sources) {
       final booruHost = Uri.tryParse(booru.baseURL ?? '')?.host;
-      final postMatches =
-          itemPostHost?.isNotEmpty == true &&
+      if (itemPostHost?.isNotEmpty == true &&
           booruHost?.isNotEmpty == true &&
           (itemPostHost == booruHost ||
               switch (booru.type) {
                 BooruType.IdolSankaku => IdolSankakuHandler.knownUrls.contains(itemPostHost),
                 BooruType.Sankaku => SankakuHandler.knownPostUrls.contains(itemPostHost),
                 _ => false,
-              });
-      final fileMatches =
-          itemFileHost?.isNotEmpty == true && booruHost?.isNotEmpty == true && itemFileHost == booruHost;
-      if (postMatches || fileMatches) return booru;
+              })) {
+        return booru;
+      }
+    }
+    if (itemFileHost?.isNotEmpty == true) {
+      for (final booru in sources) {
+        final booruHost = Uri.tryParse(booru.baseURL ?? '')?.host;
+        if (booruHost?.isNotEmpty == true && itemFileHost == booruHost) return booru;
+      }
     }
     return null;
   }

@@ -785,7 +785,7 @@ class _TagViewState extends State<TagView> {
               if (!isLink)
                 Expanded(
                   child: AutoSizeText(
-                    metadata?.query ?? data,
+                    data,
                     maxLines: 1,
                     minFontSize: 13,
                     maxFontSize: 14,
@@ -794,7 +794,7 @@ class _TagViewState extends State<TagView> {
                       height: 1,
                     ),
                     overflowReplacement: DraggableOverflowText(
-                      metadata?.query ?? data,
+                      data,
                       style: const TextStyle(
                         fontSize: 14,
                         height: 1,
@@ -1112,13 +1112,6 @@ class _TagViewState extends State<TagView> {
     final ratingQuery = const {'safe', 'general', 'sensitive', 'questionable', 'explicit'}.contains(normalizedRating)
         ? 'rating:$normalizedRating'
         : null;
-    final scoreValue = int.tryParse(score.trim());
-    final scoreQuery = scoreValue == null ? null : 'score:$scoreValue';
-    final widthTag = metadataTag(['width'], item.fileWidth?.toInt().toString());
-    final heightTag = metadataTag(['height'], item.fileHeight?.toInt().toString());
-    final resolutionTag = widthTag != null && heightTag != null
-        ? _MetadataTag('${widthTag.query} ${heightTag.query}')
-        : null;
     final List<String> sources = item.sources ?? [];
     final bool tagsAvailable = tags.isNotEmpty || hasLoadItemSupport;
     String postDate = item.postDate ?? '';
@@ -1155,7 +1148,7 @@ class _TagViewState extends State<TagView> {
             delegate: SliverChildListDelegate(
               [
                 const SizedBox(height: kMinInteractiveDimension),
-                infoText(context.loc.tagView.id, itemId, metadata: metadataTag(['id'], itemId)),
+                infoText(context.loc.tagView.id, itemId),
                 infoText(context.loc.tagView.postURL, item.postURL, isLink: true),
                 //
                 if (item.uploaderId?.isNotEmpty == true || item.uploaderName?.isNotEmpty == true)
@@ -1166,7 +1159,7 @@ class _TagViewState extends State<TagView> {
                       final userMetaTag = sourceHandler.availableMetaTags().firstWhereOrNull(
                         (meta) => meta is UserMetaTag,
                       );
-                      final userQuery = TagFilterQuery.escapeExactTag('user:${item.uploaderName?.trim() ?? ''}');
+                      final userQuery = 'user:${TagFilterQuery.escapeExactTag(item.uploaderName?.trim() ?? '')}';
 
                       return infoText(
                         context.loc.tagView.uploader,
@@ -1205,28 +1198,16 @@ class _TagViewState extends State<TagView> {
                   children: [
                     if (SX.isDebug.value) infoText(context.loc.tagView.filename, fileName),
                     infoText(context.loc.tagView.url, fileUrl, isLink: true),
-                    infoText(
-                      context.loc.tagView.extension,
-                      fileExt,
-                      metadata: metadataTag(['filetype', 'file_type', 'ext'], fileExt.toLowerCase()),
-                    ),
-                    infoText(context.loc.tagView.resolution, fileRes, metadata: resolutionTag),
-                    infoText(
-                      context.loc.tagView.size,
-                      fileSize,
-                      metadata: metadataTag(['filesize', 'file_size'], item.fileSize?.toString()),
-                    ),
-                    infoText(context.loc.tagView.md5, md5, metadata: metadataTag(['md5'], md5)),
+                    infoText(context.loc.tagView.extension, fileExt),
+                    infoText(context.loc.tagView.resolution, fileRes),
+                    infoText(context.loc.tagView.size, fileSize),
+                    infoText(context.loc.tagView.md5, md5),
                     infoText(
                       context.loc.tagView.rating,
                       rating,
                       metadata: metadataTag(['rating'], normalizedRating, filterQuery: ratingQuery),
                     ),
-                    infoText(
-                      context.loc.tagView.score,
-                      score,
-                      metadata: metadataTag(['score'], scoreValue?.toString(), filterQuery: scoreQuery),
-                    ),
+                    infoText(context.loc.tagView.score, score),
                   ],
                 ),
                 commentsButton(),

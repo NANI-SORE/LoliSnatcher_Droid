@@ -37,9 +37,12 @@ class BooruIdentity {
 
   bool matches(Booru? booru) {
     if (booru == null) return false;
-    final candidateUrl = normalizeBaseUrl(booru.baseURL);
-    if (type != null && type == booru.type && baseUrl != null && baseUrl == candidateUrl) return true;
-    return name?.isNotEmpty == true && name!.toLowerCase() == booru.name?.trim().toLowerCase();
+    return _matchesSourceIdentity(
+      this,
+      name: booru.name?.trim().toLowerCase(),
+      type: booru.type,
+      baseUrl: normalizeBaseUrl(booru.baseURL),
+    );
   }
 
   String get stableKey => '${type?.name ?? ''}|${baseUrl ?? ''}|${name?.toLowerCase() ?? ''}';
@@ -51,6 +54,21 @@ class BooruIdentity {
 
   @override
   int get hashCode => stableKey.hashCode;
+}
+
+bool _matchesSourceIdentity(
+  BooruIdentity identity, {
+  required String? name,
+  required BooruType? type,
+  required String? baseUrl,
+}) {
+  // A display name can only stand in for an identity that lacks type or URL.
+  if (identity.type != null && identity.baseUrl != null && type != null && baseUrl != null) {
+    return identity.type == type && identity.baseUrl == baseUrl;
+  }
+  if (identity.type != null && type != null && identity.type != type) return false;
+  final identityName = identity.name?.trim().toLowerCase();
+  return identityName?.isNotEmpty == true && identityName == name;
 }
 
 class TagFilterScope {
@@ -604,10 +622,7 @@ class FilterContext {
       return identity.type == viewBooru.type;
     }
     if (sourceBooru == null) return false;
-    if (identity.type != null && identity.type == _sourceType && identity.baseUrl != null) {
-      if (identity.baseUrl == _sourceBaseUrl) return true;
-    }
-    return identity.name?.isNotEmpty == true && identity.name!.toLowerCase() == _sourceName;
+    return _matchesSourceIdentity(identity, name: _sourceName, type: _sourceType, baseUrl: _sourceBaseUrl);
   }
 }
 
