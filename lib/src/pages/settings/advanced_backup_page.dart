@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/pages/settings/backup_import_dialog.dart';
+import 'package:lolisnatcher/src/pages/settings/backup_transfer_widgets.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_entry_registry.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_file_naming.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_import_compat_service.dart';
@@ -27,57 +28,66 @@ class _AdvancedBackupPageState extends State<AdvancedBackupPage> {
   bool busy = false;
 
   Future<void> _showActions(BackupEntryDefinition entry) async {
+    if (busy) return;
     final available = await entry.isAvailable();
     if (!mounted) return;
     await showModalBottomSheet(
       context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      constraints: BoxConstraints(maxWidth: 640, maxHeight: MediaQuery.sizeOf(context).height * 0.85),
       builder: (context) {
         return SafeArea(
-          child: Wrap(
-            children: [
-              ListTile(
-                title: Text(entry.title()),
-                subtitle: Text(entry.description()),
-              ),
-              if (available)
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 ListTile(
-                  enabled: available,
-                  leading: const Icon(Icons.save_as),
-                  title: Text(context.loc.settings.backupAndTransfer.exportToFile),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _exportEntryFile(entry);
-                  },
+                  leading: Icon(entry.icon),
+                  title: Text(entry.title(), style: Theme.of(context).textTheme.titleLarge),
+                  subtitle: Text(entry.description()),
                 ),
-              ListTile(
-                leading: const Icon(Icons.file_open_rounded),
-                title: Text(context.loc.settings.backupAndTransfer.importFromFile),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _importEntryFile(entry);
-                },
-              ),
-              if (entry.supportsClipboard) ...[
+                const Divider(),
                 if (available)
                   ListTile(
                     enabled: available,
-                    leading: const Icon(Icons.content_copy),
-                    title: Text(context.loc.settings.backupAndTransfer.exportToClipboard),
+                    leading: const Icon(Icons.save_as),
+                    title: Text(context.loc.settings.backupAndTransfer.exportToFile),
                     onTap: () {
                       Navigator.of(context).pop();
-                      _exportClipboard(entry);
+                      _exportEntryFile(entry);
                     },
                   ),
                 ListTile(
-                  leading: const Icon(Icons.content_paste),
-                  title: Text(context.loc.settings.backupAndTransfer.importFromClipboard),
+                  leading: const Icon(Icons.file_open_rounded),
+                  title: Text(context.loc.settings.backupAndTransfer.importFromFile),
                   onTap: () {
                     Navigator.of(context).pop();
-                    _importClipboard(entry);
+                    _importEntryFile(entry);
                   },
                 ),
+                if (entry.supportsClipboard) ...[
+                  if (available)
+                    ListTile(
+                      enabled: available,
+                      leading: const Icon(Icons.content_copy),
+                      title: Text(context.loc.settings.backupAndTransfer.exportToClipboard),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        _exportClipboard(entry);
+                      },
+                    ),
+                  ListTile(
+                    leading: const Icon(Icons.content_paste),
+                    title: Text(context.loc.settings.backupAndTransfer.importFromClipboard),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      _importClipboard(entry);
+                    },
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         );
       },
@@ -156,125 +166,68 @@ class _AdvancedBackupPageState extends State<AdvancedBackupPage> {
 
   @override
   Widget build(BuildContext context) {
-    final topLevelEntries = registry.entries.where((entry) => !registry.isDatabaseChild(entry.id)).toList();
-    return Scaffold(
-      appBar: SettingsAppBar(title: context.loc.settings.backupAndTransfer.advancedExportImport),
-      body: Stack(
-        children: [
-          ListView(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            children: [
-              for (final entry in topLevelEntries) ...[
-                _AdvancedEntryTile(
-                  entry: entry,
-                  onTap: () => _showActions(entry),
+    return PopScope(
+      canPop: !busy,
+      child: Scaffold(
+        appBar: SettingsAppBar(title: context.loc.settings.backupAndTransfer.advancedExportImport),
+        body: Stack(
+          children: [
+            BackupPageBody(
+              children: [
+                BackupNotice(message: context.loc.settings.backupAndTransfer.advancedBackupHint),
+                const SizedBox(height: 24),
+                BackupEntryTree(
+                  entryIds: registry.entries.map((entry) => entry.id),
+                  sectionSpacing: 12,
+                  entryBuilder: (entry) => _AdvancedEntryTile(entry: entry, onTap: () => _showActions(entry)),
                 ),
-                if (entry.id == BackupEntryRegistry.databaseParentId)
-                  for (final indexedEntry in BackupEntryRegistry.databaseChildIds.indexed)
-                    _AdvancedEntryTile(
-                      entry: registry.byId(indexedEntry.$2),
-                      onTap: () => _showActions(registry.byId(indexedEntry.$2)),
-                      isTreeChild: true,
-                      isLastTreeChild: indexedEntry.$1 == BackupEntryRegistry.databaseChildIds.length - 1,
-                    ),
               ],
-            ],
-          ),
-          if (busy)
-            const Positioned.fill(
-              child: ColoredBox(
-                color: Colors.black38,
-                child: Center(child: CircularProgressIndicator()),
-              ),
             ),
-        ],
+            if (busy)
+              Positioned.fill(
+                child: BackupBusyOverlay(label: context.loc.settings.backupAndTransfer.operationInProgress),
+              ),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _AdvancedEntryTile extends StatelessWidget {
-  const _AdvancedEntryTile({
-    required this.entry,
-    required this.onTap,
-    this.isTreeChild = false,
-    this.isLastTreeChild = false,
-  });
-
+  const _AdvancedEntryTile({required this.entry, required this.onTap});
   final BackupEntryDefinition entry;
   final VoidCallback onTap;
-  final bool isTreeChild;
-  final bool isLastTreeChild;
 
   @override
   Widget build(BuildContext context) {
-    final tile = FutureBuilder<bool>(
-      future: entry.isAvailable(),
-      builder: (context, snapshot) {
-        final available = snapshot.data ?? false;
-        return Card(
-          margin: EdgeInsets.zero,
-          child: ListTile(
-            leading: CircleAvatar(child: Icon(entry.icon)),
-            title: Text(entry.title()),
-            subtitle: Text(
-              available
-                  ? entry.description()
-                  : '${entry.description()}\n${context.loc.settings.backupAndTransfer.unavailable}',
-            ),
-            isThreeLine: !available,
-            trailing: const Icon(Icons.more_vert),
-            onTap: onTap,
+    final shape = Theme.of(context).cardTheme.shape ?? RoundedRectangleBorder(borderRadius: BorderRadius.circular(12));
+    return Card(
+      margin: EdgeInsets.zero,
+      shape: shape,
+      clipBehavior: Clip.antiAlias,
+      child: FutureBuilder<bool>(
+        future: entry.isAvailable(),
+        builder: (context, snapshot) => ListTile(
+          shape: shape,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          leading: Icon(entry.icon, color: Theme.of(context).colorScheme.primary),
+          title: Text(entry.title()),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(entry.description()),
+              if (snapshot.hasData && !snapshot.data!)
+                Text(
+                  context.loc.settings.backupAndTransfer.exportUnavailable,
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+            ],
           ),
-        );
-      },
-    );
-    if (!isTreeChild) return tile;
-
-    return Stack(
-      children: [
-        Positioned.directional(
-          textDirection: Directionality.of(context),
-          start: 0,
-          top: 0,
-          bottom: 0,
-          width: 64,
-          child: CustomPaint(
-            painter: _AdvancedTreeBranchPainter(
-              color: Theme.of(context).dividerColor,
-              isLast: isLastTreeChild,
-            ),
-          ),
+          trailing: const Icon(Icons.more_horiz),
+          onTap: onTap,
         ),
-        Padding(
-          padding: const EdgeInsetsDirectional.only(start: 64),
-          child: tile,
-        ),
-      ],
+      ),
     );
-  }
-}
-
-class _AdvancedTreeBranchPainter extends CustomPainter {
-  const _AdvancedTreeBranchPainter({required this.color, required this.isLast});
-
-  final Color color;
-  final bool isLast;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-    final x = size.width * 0.55;
-    final y = size.height / 2;
-    canvas.drawLine(Offset(x, 0), Offset(x, isLast ? y : size.height), paint);
-    canvas.drawLine(Offset(x, y), Offset(size.width, y), paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _AdvancedTreeBranchPainter oldDelegate) {
-    return color != oldDelegate.color || isLast != oldDelegate.isLast;
   }
 }

@@ -15,7 +15,6 @@ import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
-import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -30,6 +29,13 @@ class BackupEntryRegistry {
 
   static const BackupEntryId databaseParentId = BackupEntryId.database;
   static const List<BackupEntryId> databaseChildIds = [
+    BackupEntryId.tabs,
+    BackupEntryId.tags,
+    ...databaseRequiredIds,
+  ];
+
+  // Tabs and tag metadata also work without database storage.
+  static const List<BackupEntryId> databaseRequiredIds = [
     BackupEntryId.favourites,
     BackupEntryId.snatched,
     BackupEntryId.searchHistory,
@@ -183,6 +189,15 @@ class BackupEntryRegistry {
 
   bool isDatabaseChild(BackupEntryId id) => databaseChildIds.contains(id);
 
+  bool requiresDatabase(BackupEntryId id) => databaseRequiredIds.contains(id);
+
+  /// The snapshot already includes every child; do not apply child payloads again.
+  Set<BackupEntryId> normalizeSelection(Iterable<BackupEntryId> ids) {
+    final selected = ids.toSet();
+    if (selected.contains(databaseParentId)) selected.removeAll(databaseChildIds);
+    return selected;
+  }
+
   static const maximumJsonBytes = 64 * 1024 * 1024;
   String _text(Uint8List bytes) => utf8.decode(bytes).trim().replaceFirst(RegExp(r'^\uFEFF'), '').trimLeft();
 
@@ -201,12 +216,18 @@ class BackupEntryRegistry {
       throw const FormatException('This backup category was not selected');
     }
     if (!await byId(id).canImport() ||
-        (databaseChildIds.contains(id) && (!SX.dbEnabled.value || _settingsHandler.dbHandler.db == null))) {
+        (requiresDatabase(id) && (!SX.dbEnabled.value || _settingsHandler.dbHandler.db == null))) {
       throw StateError('Enable the database before importing this category');
     }
   }
 
-  Future<void> validateEntry(BackupEntryId id, {Uint8List? bytes, File? file}) async {
+  Future<void> validateEntry(
+    BackupEntryId id, {
+    Uint8List? bytes,
+    File? file,
+    ValueChanged<BackupImportProgress>? onProgress,
+    BackupImportPhase phase = BackupImportPhase.validating,
+  }) async {
     byId(id);
     if ((bytes == null) == (file == null)) throw ArgumentError('Supply exactly one backup payload');
     if ((bytes?.length ?? await file!.length()) > 8 * 1024 * 1024 * 1024) {
@@ -217,6 +238,7 @@ class BackupEntryRegistry {
       try {
         if (bytes != null) await staged.writeAsBytes(bytes, flush: true);
         await const DatabaseBackupService().validate(staged);
+        await _validateDatabaseTabs(staged);
       } finally {
         if (file == null && await staged.exists()) await staged.delete();
       }
@@ -224,9 +246,14 @@ class BackupEntryRegistry {
     }
     if (id == BackupEntryId.favourites || id == BackupEntryId.snatched) {
       final stream = file?.openRead() ?? Stream<List<int>>.value(bytes!);
+      var count = 0;
+      void report() => onProgress?.call(BackupImportProgress(phase: phase, entryId: id, processedItems: count));
+      report();
       await for (final row in readBackupJsonArray(stream)) {
         _validateFlagged(row);
+        if (++count % 250 == 0) report();
       }
+      report();
       return;
     }
     if ((bytes?.length ?? await file!.length()) > maximumJsonBytes) {
@@ -278,12 +305,7 @@ class BackupEntryRegistry {
             _validateSettings(row['settingOverrides'] as Map<String, dynamic>);
           }
         case BackupEntryId.tags:
-          final name = row['fullString'] ?? row['name'];
-          if (name is! String || name.trim().isEmpty) throw const FormatException('Invalid tag name');
-          for (final field in ['count', 'updatedAt']) {
-            if (row[field] != null && row[field] is! int) throw FormatException('Invalid tag $field');
-          }
-          Tag.fromJson(row);
+          _tagFromBackupJson(row);
         case BackupEntryId.pinnedTags:
           if (row['tagName'] is! String || (row['tagName'] as String).trim().isEmpty) {
             throw const FormatException('Invalid pinned tag');
@@ -306,6 +328,17 @@ class BackupEntryRegistry {
     }
   }
 
+  Tag? _tagFromBackupJson(Map<String, dynamic> row) {
+    final name = row['fullString'] ?? row['name'];
+    if (name is! String) throw const FormatException('Invalid tag name');
+    // Older tag caches can contain blank names. They carry no tag data to restore.
+    if (name.trim().isEmpty) return null;
+    for (final field in ['count', 'updatedAt']) {
+      if (row[field] != null && row[field] is! int) throw FormatException('Invalid tag $field');
+    }
+    return Tag.fromJson(row);
+  }
+
   void _validateNullableStrings(Map<String, dynamic> row, List<String> fields) {
     for (final field in fields) {
       if (row[field] != null && row[field] is! String) throw FormatException('Invalid $field');
@@ -319,7 +352,7 @@ class BackupEntryRegistry {
       final key = json.containsKey(def.jsonKey) ? def.jsonKey : def.legacyJsonKeys.where(json.containsKey).firstOrNull;
       if (key == null) continue;
       final raw = json[key];
-      final example = def.valueToJson(def.getDefaultValue());
+      final example = def.serializeValue(def.getDefaultValue());
       if ((example is bool && raw is! bool) ||
           (example is String && raw is! String) ||
           (example is num && raw is! num) ||
@@ -328,7 +361,7 @@ class BackupEntryRegistry {
         throw FormatException('Invalid setting $key');
       }
       final parsed = def.valueFromJson(raw);
-      final canonical = def.valueToJson(parsed);
+      final canonical = def.serializeValue(parsed);
       if ((example is int && raw is! int) ||
           (parsed is Enum && raw is String && canonical.toString().toLowerCase() != raw.toLowerCase()) ||
           (canonical == null && raw != null)) {
@@ -346,7 +379,7 @@ class BackupEntryRegistry {
       } else if (raw is Map && !const DeepCollectionEquality().equals(raw, canonical)) {
         throw FormatException('Invalid setting object $key');
       }
-      def.validate?.call(parsed);
+      def.validateValue(parsed);
     }
   }
 
@@ -368,7 +401,8 @@ class BackupEntryRegistry {
         Tag.fromJson(Map<String, dynamic>.from(tag));
       }
     }
-    BooruItem.fromMap(row);
+    // All fields consumed by BooruItem.fromMap are checked above. Avoid
+    // allocating viewer keys and reactive state for every preflight record.
   }
 
   Future<void> refreshAfterImport(
@@ -394,18 +428,18 @@ class BackupEntryRegistry {
             }
           });
         }
-        if (!ids.contains(BackupEntryId.tabs)) {
-          final restored = await dbHandler.getTabRestore();
-          if (restored != null && renames.isNotEmpty) {
-            _searchHandler.replaceTabs(_remapTabs(restored, renames));
-          } else {
-            await _searchHandler.restoreTabs();
-          }
+        final restored = await dbHandler.getTabRestore();
+        final tabs = restored == null || restored.trim().isEmpty ? '[]' : restored;
+        final restoredTags = await dbHandler.getAllTags();
+        _tagHandler.tagMap.clear();
+        for (final tag in restoredTags) {
+          await _tagHandler.putTag(tag, dbEnabled: false, useDB: false, preferTypeIfNone: false);
         }
+        _searchHandler.replaceTabs(_remapTabs(tabs, renames), resetIfEmpty: true);
       } finally {
         if (temporaryConnection) await dbHandler.closeDb();
       }
-      if (!ids.contains(BackupEntryId.tags)) await _tagHandler.loadTags();
+      if (!SX.dbEnabled.value) await _saveTagsWithoutDatabase();
     }
     await _searchHandler.backupTabs();
   }
@@ -608,13 +642,29 @@ class BackupEntryRegistry {
 
   Future<File> _exportDatabaseFile(BackupExportOptions options) async {
     final snapshot = await _temporaryFile('db');
+    // Startup backups must retain persisted tabs until the live session is ready.
+    final currentTabs = _searchHandler.canBackup.value
+        ? _searchHandler.generateBackupJson(includeDefaultTab: true)
+        : null;
     try {
       await const DatabaseBackupService().createSnapshot(
         File('${await ServiceHandler.getConfigDir()}store.db'),
         snapshot,
         database: _settingsHandler.dbHandler.db,
       );
+      if (currentTabs != null) {
+        final db = await openDatabase(snapshot.path, singleInstance: false);
+        try {
+          await db.transaction((txn) async {
+            await txn.delete('TabRestore');
+            await txn.insert('TabRestore', {'restore': currentTabs});
+          });
+        } finally {
+          await db.close();
+        }
+      }
       await const DatabaseBackupService().validate(snapshot);
+      await _validateDatabaseTabs(snapshot);
       return snapshot;
     } catch (_) {
       if (await snapshot.exists()) await snapshot.delete();
@@ -635,7 +685,7 @@ class BackupEntryRegistry {
   Future<void> _importDatabaseFile(File file, BackupImportOptions options) async {
     await ensureImportAllowed(BackupEntryId.database, options);
     const backup = DatabaseBackupService();
-    await backup.validate(file);
+    await validateEntry(BackupEntryId.database, file: file);
     final config = await ServiceHandler.getConfigDir();
     final root = Directory(config);
     final staging = await root.createTemp('.database-import-');
@@ -689,6 +739,21 @@ class BackupEntryRegistry {
       _searchHandler.canBackup.value = originalCanBackup;
       await staging.delete(recursive: true);
       if (completed || rollbackSucceeded) await recovery.delete(recursive: true);
+    }
+  }
+
+  Future<void> _validateDatabaseTabs(File file) async {
+    final db = await openDatabase(file.path, readOnly: true, singleInstance: false);
+    try {
+      final tables = await db.rawQuery("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'TabRestore'");
+      if (tables.isEmpty) return; // Older databases gain this optional table when reopened.
+      final rows = await db.query('TabRestore', columns: ['restore'], orderBy: 'id DESC', limit: 1);
+      final text = rows.firstOrNull?['restore'];
+      if (text == null) return;
+      if (text is! String) throw const FormatException('Invalid saved database tabs');
+      if (text.trim().isNotEmpty) TabBackup.parseImport(text);
+    } finally {
+      await db.close();
     }
   }
 
@@ -766,20 +831,37 @@ class BackupEntryRegistry {
 
   Future<void> _importFlaggedFile(BackupEntryId id, File file, BackupImportOptions options) async {
     await ensureImportAllowed(id, options);
-    await validateEntry(id, file: file);
-    final items = <BooruItem>[];
-    await for (final row in readBackupJsonArray(file.openRead())) {
+    var totalItems = 0;
+    await validateEntry(
+      id,
+      file: file,
+      phase: BackupImportPhase.rechecking,
+      onProgress: (progress) {
+        totalItems = progress.processedItems ?? 0;
+        options.onProgress?.call(progress);
+      },
+    );
+    final items = readBackupJsonArray(file.openRead()).map((row) {
       // Older exports serialized full Tag records; accept both representations.
       row['tags'] = (row['tags'] as List)
           .map((tag) => tag is Map ? Tag.fromJson(Map<String, dynamic>.from(tag)).fullString : tag)
           .toList();
-      items.add(BooruItem.fromMap(row));
-      if (items.length == 250) {
-        await _settingsHandler.dbHandler.updateMultipleBooruItems(items, BooruUpdateMode.sync);
-        items.clear();
-      }
-    }
-    if (items.isNotEmpty) await _settingsHandler.dbHandler.updateMultipleBooruItems(items, BooruUpdateMode.sync);
+      return BooruItem.fromMap(row);
+    });
+    options.onProgress?.call(BackupImportProgress(phase: BackupImportPhase.preparingDatabase, entryId: id));
+    await _settingsHandler.dbHandler.importBooruItems(
+      items,
+      keepIndexes: SX.indexesEnabled.value,
+      onProgress: (count) => options.onProgress?.call(
+        BackupImportProgress(
+          phase: BackupImportPhase.importing,
+          entryId: id,
+          processedItems: count,
+          totalItems: totalItems,
+        ),
+      ),
+      onCleanup: () => options.onProgress?.call(BackupImportProgress(phase: BackupImportPhase.cleaningUp, entryId: id)),
+    );
   }
 
   Future<BackupEntryPayload> _exportTabs(BackupExportOptions options) async {
@@ -821,9 +903,10 @@ class BackupEntryRegistry {
   }
 
   Future<BackupEntryPayload> _exportTags(BackupExportOptions options) async {
-    final tags = _tagHandler.toList();
+    final cachedTags = _tagHandler.toList();
+    final tags = cachedTags.where((tag) => tag.fullString.trim().isNotEmpty).toList();
     BackupTransferLogger.info(
-      'Exporting tags count=${tags.length}',
+      'Exporting tags count=${tags.length} skippedBlank=${cachedTags.length - tags.length}',
       'BackupEntryRegistry',
       '_exportTags',
     );
@@ -839,23 +922,38 @@ class BackupEntryRegistry {
       '_importTags',
     );
     final rows = jsonDecode(_text(bytes)) as List;
+    var skippedBlank = 0;
     for (final row in rows) {
+      final tag = _tagFromBackupJson(Map<String, dynamic>.from(row as Map));
+      if (tag == null) {
+        skippedBlank++;
+        continue;
+      }
       await _tagHandler.putTag(
-        Tag.fromJson(Map<String, dynamic>.from(row as Map)),
+        tag,
         preferTypeIfNone: options.tagsMode == BackupTagsMode.preferTypeIfNone,
         dbEnabled: SX.dbEnabled.value,
       );
     }
-    if (!SX.dbEnabled.value) {
-      final target = File('${await ServiceHandler.getConfigDir()}tags.json');
-      final stage = await target.parent.createTemp('.tags-import-');
-      try {
-        final file = File('${stage.path}/tags.json');
-        await file.writeAsString(jsonEncode(_tagHandler.toList()), flush: true);
-        await file.rename(target.path);
-      } finally {
-        await stage.delete(recursive: true);
-      }
+    if (skippedBlank > 0) {
+      BackupTransferLogger.info(
+        'Skipped $skippedBlank blank tag records',
+        'BackupEntryRegistry',
+        '_importTags',
+      );
+    }
+    if (!SX.dbEnabled.value) await _saveTagsWithoutDatabase();
+  }
+
+  Future<void> _saveTagsWithoutDatabase() async {
+    final target = File('${await ServiceHandler.getConfigDir()}tags.json');
+    final stage = await target.parent.createTemp('.tags-import-');
+    try {
+      final file = File('${stage.path}/tags.json');
+      await file.writeAsString(jsonEncode(_tagHandler.toList()), flush: true);
+      await file.rename(target.path);
+    } finally {
+      await stage.delete(recursive: true);
     }
   }
 

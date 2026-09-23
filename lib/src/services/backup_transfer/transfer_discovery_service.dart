@@ -16,7 +16,14 @@ class TransferDiscoveryService {
   BonsoirDiscovery? _discovery;
   StreamSubscription<BonsoirDiscoveryEvent>? _discoverySub;
   final _devicesController = StreamController<List<DiscoveredTransferDevice>>.broadcast();
-  final Map<String, DiscoveredTransferDevice> _devices = {};
+  final Map<(String, String), DiscoveredTransferDevice> _devices = {};
+  final Map<(String, String), int> _advertisedAt = {};
+  final Map<String, int> _latestDeviceAdvertisements = {};
+  final Set<(String, String)> _seenServices = {};
+  Timer? _discoveryRetry;
+  Timer? _discoveryReconcile;
+  int _discoveryRetryAttempt = 0;
+  bool _discoveryRequested = false;
   bool _disposed = false;
   int _broadcastGeneration = 0;
   int _discoveryGeneration = 0;
@@ -39,7 +46,8 @@ class TransferDiscoveryService {
       if (_disposed || generation != _broadcastGeneration) return;
       await _broadcast?.stop();
       _broadcast = null;
-      final serviceName = '${loc.appName} $port';
+      // Ports change when the server restarts; the advertised device does not.
+      final serviceName = 'LoliSnatcher $deviceId';
       BackupTransferLogger.info(
         'Starting Bonsoir broadcast name=$serviceName port=$port deviceId=$deviceId',
         'TransferDiscoveryService',
@@ -55,6 +63,7 @@ class TransferDiscoveryService {
           'build': Constants.updateInfo.buildNumber.toString(),
           'devName': deviceName,
           'devId': deviceId,
+          'startedAt': DateTime.now().millisecondsSinceEpoch.toString(),
         },
       );
       final broadcast = BonsoirBroadcast(service: service);
@@ -86,6 +95,10 @@ class TransferDiscoveryService {
     String? ignoredDeviceId,
     Set<String> ignoredHosts = const {},
   }) async {
+    if (_disposed) return;
+    _discoveryRequested = true;
+    _discoveryRetry?.cancel();
+    _discoveryReconcile?.cancel();
     final generation = ++_discoveryGeneration;
     final pending = _discoveryTail;
     final operation = () async {
@@ -102,7 +115,7 @@ class TransferDiscoveryService {
         'TransferDiscoveryService',
         'startDiscovery',
       );
-      _devices.clear();
+      _seenServices.clear();
       final discovery = BonsoirDiscovery(type: serviceType);
       await discovery.initialize();
       if (_disposed || generation != _discoveryGeneration) {
@@ -110,22 +123,51 @@ class TransferDiscoveryService {
         return;
       }
       _discovery = discovery;
-      _discoverySub = discovery.eventStream!.listen((event) {
-        if (!_disposed && generation == _discoveryGeneration) _onDiscoveryEvent(event);
-      });
+      _discoverySub = discovery.eventStream!.listen(
+        (event) {
+          if (!_disposed && generation == _discoveryGeneration) _onDiscoveryEvent(event);
+        },
+        onError: (Object error, StackTrace stack) {
+          if (_disposed || generation != _discoveryGeneration) return;
+          BackupTransferLogger.error(error, 'TransferDiscoveryService', 'discovery', stackTrace: stack);
+          _scheduleDiscoveryRetry();
+        },
+        onDone: () {
+          if (generation == _discoveryGeneration) _scheduleDiscoveryRetry();
+        },
+      );
       await discovery.start();
       if (_disposed || generation != _discoveryGeneration) {
         await _discoverySub?.cancel();
         _discoverySub = null;
         await discovery.stop();
         _discovery = null;
+        return;
       }
+      // Keep the last scan visible while replacement discovery resolves peers,
+      // then remove anything that was not found again. Manual entries live in the page.
+      _discoveryReconcile = Timer(const Duration(seconds: 10), () {
+        if (_disposed || generation != _discoveryGeneration) return;
+        _discoveryRetryAttempt = 0;
+        _devices.removeWhere((key, _) => !_seenServices.contains(key));
+        _advertisedAt.removeWhere((key, _) => !_devices.containsKey(key));
+        _emitDevices();
+      });
     }();
-    _discoveryTail = operation.then<void>((_) {}, onError: (Object error, StackTrace stack) {});
+    _discoveryTail = operation.then<void>(
+      (_) {},
+      onError: (Object error, StackTrace stack) {
+        if (generation == _discoveryGeneration) _scheduleDiscoveryRetry();
+      },
+    );
     return operation;
   }
 
   Future<void> stopDiscovery() async {
+    _discoveryRequested = false;
+    _discoveryRetryAttempt = 0;
+    _discoveryRetry?.cancel();
+    _discoveryReconcile?.cancel();
     ++_discoveryGeneration;
     await _discoveryTail;
     if (_discovery != null) {
@@ -142,6 +184,9 @@ class TransferDiscoveryService {
     _ignoredDeviceId = null;
     _ignoredHosts = {};
     _devices.clear();
+    _advertisedAt.clear();
+    _latestDeviceAdvertisements.clear();
+    _seenServices.clear();
     _emitDevices();
   }
 
@@ -153,6 +198,37 @@ class TransferDiscoveryService {
     await _devicesController.close();
   }
 
+  Future<void> refreshDiscovery() async {
+    if (_disposed || !_discoveryRequested) return;
+    try {
+      await startDiscovery(ignoredDeviceId: _ignoredDeviceId, ignoredHosts: _ignoredHosts);
+    } catch (error, stack) {
+      BackupTransferLogger.error(error, 'TransferDiscoveryService', 'refreshDiscovery', stackTrace: stack);
+      _scheduleDiscoveryRetry();
+    }
+  }
+
+  void _scheduleDiscoveryRetry() {
+    if (_disposed || !_discoveryRequested || _discoveryRetry?.isActive == true) return;
+    const retrySeconds = [3, 6, 12, 24, 30];
+    final delay = Duration(seconds: retrySeconds[_discoveryRetryAttempt]);
+    if (_discoveryRetryAttempt < retrySeconds.length - 1) _discoveryRetryAttempt++;
+    _discoveryRetry = Timer(delay, () => unawaited(refreshDiscovery()));
+  }
+
+  void _resolveService(BonsoirService service) {
+    final discovery = _discovery;
+    final generation = _discoveryGeneration;
+    if (discovery == null) return;
+    unawaited(
+      service.resolve(discovery.serviceResolver).catchError((Object error, StackTrace stack) {
+        if (_disposed || generation != _discoveryGeneration) return;
+        BackupTransferLogger.error(error, 'TransferDiscoveryService', 'resolve', stackTrace: stack);
+        _scheduleDiscoveryRetry();
+      }),
+    );
+  }
+
   void _onDiscoveryEvent(BonsoirDiscoveryEvent event) {
     switch (event) {
       case BonsoirDiscoveryServiceFoundEvent():
@@ -161,7 +237,7 @@ class TransferDiscoveryService {
           'TransferDiscoveryService',
           '_onDiscoveryEvent',
         );
-        event.service.resolve(_discovery!.serviceResolver);
+        _resolveService(event.service);
         break;
       case BonsoirDiscoveryServiceResolvedEvent():
       case BonsoirDiscoveryServiceUpdatedEvent():
@@ -169,7 +245,10 @@ class TransferDiscoveryService {
         if (service == null) return;
         final host = service.hostAddress ?? _extractHost(service.toJson());
         final port = service.port;
-        if (host == null) return;
+        if (host == null || host.isEmpty || port <= 0) {
+          _resolveService(service);
+          return;
+        }
         final attributes = service.attributes;
         if (_isIgnoredService(host, attributes)) {
           BackupTransferLogger.info(
@@ -186,7 +265,17 @@ class TransferDiscoveryService {
           'TransferDiscoveryService',
           '_onDiscoveryEvent',
         );
-        _devices[id] = DiscoveredTransferDevice(
+        final key = (service.name, service.type);
+        final deviceId = attributes['devId'];
+        final advertisedAt = int.tryParse(attributes['startedAt'] ?? '') ?? 0;
+        if (deviceId != null && deviceId.isNotEmpty) {
+          final latest = _latestDeviceAdvertisements[deviceId] ?? 0;
+          if (advertisedAt < latest) return;
+          _latestDeviceAdvertisements[deviceId] = advertisedAt;
+        }
+        _seenServices.add(key);
+        _advertisedAt[key] = advertisedAt;
+        _devices[key] = DiscoveredTransferDevice(
           id: id,
           name: name,
           host: host,
@@ -201,14 +290,24 @@ class TransferDiscoveryService {
         final service = event.service;
         final host = service.hostAddress ?? _extractHost(service.toJson());
         final port = service.port.toString();
-        if (host == null) return;
+        final key = (service.name, service.type);
+        final current = _devices[key];
+        if (current != null && service.port > 0 && service.port != current.port) return;
+        if (current != null && host != null && host.isNotEmpty && host != current.host) return;
         BackupTransferLogger.info(
           'Lost transfer device $host:$port',
           'TransferDiscoveryService',
           '_onDiscoveryEvent',
         );
-        _devices.remove('$host:$port');
+        _seenServices.remove(key);
+        _devices.remove(key);
+        _advertisedAt.remove(key);
         _emitDevices();
+        _scheduleDiscoveryRetry();
+        break;
+      case BonsoirDiscoveryStoppedEvent():
+      case BonsoirDiscoveryServiceResolveFailedEvent():
+        _scheduleDiscoveryRetry();
         break;
       default:
         break;
@@ -230,6 +329,20 @@ class TransferDiscoveryService {
   }
 
   void _emitDevices() {
-    if (!_disposed && !_devicesController.isClosed) _devicesController.add(_devices.values.toList(growable: false));
+    if (_disposed || _devicesController.isClosed) return;
+    final visible = <String, DiscoveredTransferDevice>{};
+    for (final entry in _devices.entries) {
+      final device = entry.value;
+      final deviceId = device.deviceId;
+      if (deviceId != null && deviceId.isNotEmpty) {
+        // A late cached advertisement must not replace the current endpoint,
+        // including when an old service-lost event arrives after a restart.
+        if ((_advertisedAt[entry.key] ?? 0) < (_latestDeviceAdvertisements[deviceId] ?? 0)) continue;
+        visible['device:$deviceId'] = device;
+      } else {
+        visible['address:${device.address}'] = device;
+      }
+    }
+    _devicesController.add(visible.values.toList(growable: false));
   }
 }

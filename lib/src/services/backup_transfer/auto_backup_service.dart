@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_entry_registry.dart';
@@ -52,7 +51,7 @@ class AutoBackupConfig {
   );
 
   bool get isDue {
-    if (!enabled || location.isEmpty) return false;
+    if (!enabled) return false;
     if (lastBackupAt == null) return true;
     return DateTime.now().difference(lastBackupAt!).inDays >= frequencyDays;
   }
@@ -318,9 +317,6 @@ class AutoBackupService {
   }
 
   Future<void> _createBackup(AutoBackupConfig config, {required _AutoBackupKind kind}) async {
-    if (kind == _AutoBackupKind.normal && config.location.isEmpty) {
-      throw StateError(loc.settings.backupAndTransfer.autoBackupLocationEmpty);
-    }
     final hasConfiguredLocation = config.location.isNotEmpty;
     final now = DateTime.now();
     final fileStem = switch (kind) {
@@ -371,7 +367,7 @@ class AutoBackupService {
       return;
     }
 
-    final dir = hasConfiguredLocation ? Directory(config.location) : await _defaultUpdateBackupDir();
+    final dir = hasConfiguredLocation ? Directory(config.location) : await defaultBackupDirectory();
     await dir.create(recursive: true);
     await packageService.exportPackageFile(
       entryIds: registry.fullBackupEntries.map((entry) => entry.id).toList(),
@@ -385,11 +381,14 @@ class AutoBackupService {
     );
   }
 
-  Future<Directory> _defaultUpdateBackupDir() async {
+  /// Shared destination for scheduled, on-demand and update backups when no
+  /// custom folder has been selected. Resolving the path does not create it.
+  Future<Directory> defaultBackupDirectory() async {
     final downloadsDir = await ServiceHandler.getDownloadsDir();
     if (downloadsDir.isNotEmpty) {
       return Directory('$downloadsDir${Platform.pathSeparator}LoliSnatcher');
     }
+    // Keep the existing fallback path so older update backups remain discoverable.
     return Directory('${await ServiceHandler.getConfigDir()}update_backups');
   }
 

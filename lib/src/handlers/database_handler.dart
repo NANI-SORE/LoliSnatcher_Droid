@@ -156,6 +156,8 @@ class DBHandler {
   }
 
   Future<bool> createIndexes() async {
+    await db?.execute('CREATE INDEX IF NOT EXISTS BooruItem_postURL_index ON BooruItem (postURL);');
+    await db?.execute('CREATE INDEX IF NOT EXISTS Tag_name_index ON Tag (name);');
     await db?.execute('CREATE INDEX IF NOT EXISTS ImageTag_tagID_index ON ImageTag (tagID);');
     await db?.execute('CREATE INDEX IF NOT EXISTS ImageTag_booruItemID_index ON ImageTag (booruItemID);');
     await db?.execute('CREATE INDEX IF NOT EXISTS BooruItem_fav_id_idx ON BooruItem(id) WHERE isFavourite = 1;');
@@ -164,6 +166,7 @@ class DBHandler {
   }
 
   Future<bool> dropIndexes() async {
+    await db?.execute('DROP INDEX IF EXISTS BooruItem_postURL_index;');
     await db?.execute('DROP INDEX IF EXISTS ImageTag_tagID_index;');
     await db?.execute('DROP INDEX IF EXISTS ImageTag_booruItemID_index;');
     await db?.execute('DROP INDEX IF EXISTS BooruItem_isSnatched_index;');
@@ -286,6 +289,150 @@ class DBHandler {
     await deleteUntracked();
 
     return {'saved': saved, 'exist': exist};
+  }
+
+  /// Streams a library backup in bounded transactions, preserving existing flags
+  /// and tag metadata. Lookup indexes are temporary when indexing is disabled.
+  Future<void> importBooruItems(
+    Stream<BooruItem> items, {
+    required bool keepIndexes,
+    ValueChanged<int>? onProgress,
+    VoidCallback? onCleanup,
+  }) async {
+    final database = db;
+    if (database == null) throw StateError('The database is not open');
+    const indexes = {
+      'BooruItem_postURL_index': 'BooruItem (postURL)',
+      'Tag_name_index': 'Tag (name)',
+    };
+    final createdIndexes = <String>[];
+    try {
+      for (final index in indexes.entries) {
+        final existing = await database.rawQuery(
+          "SELECT name FROM sqlite_master WHERE type = 'index' AND name = ?",
+          [index.key],
+        );
+        if (existing.isEmpty) {
+          await database.execute('CREATE INDEX IF NOT EXISTS ${index.key} ON ${index.value}');
+          createdIndexes.add(index.key);
+        }
+      }
+      final chunk = <BooruItem>[];
+      var imported = 0;
+      onProgress?.call(imported);
+      await for (final item in items) {
+        chunk.add(item);
+        if (chunk.length == 250) {
+          await database.transaction((txn) => _importBooruItemsBatch(txn, chunk));
+          imported += chunk.length;
+          onProgress?.call(imported);
+          chunk.clear();
+          await Future<void>.delayed(Duration.zero);
+        }
+      }
+      if (chunk.isNotEmpty) {
+        await database.transaction((txn) => _importBooruItemsBatch(txn, chunk));
+        imported += chunk.length;
+        onProgress?.call(imported);
+      }
+      // Sync only adds flags, so there is no need to scan the growing library
+      // after every chunk. Remove any untracked records once, at the end.
+      onCleanup?.call();
+      await deleteUntracked();
+    } finally {
+      if (!keepIndexes) {
+        for (final name in createdIndexes) {
+          await database.execute('DROP INDEX IF EXISTS $name');
+        }
+      }
+    }
+  }
+
+  Future<void> _importBooruItemsBatch(Transaction txn, List<BooruItem> items) async {
+    final urls = items.map((item) => item.postURL).toSet().toList();
+    final existing = await txn.rawQuery(
+      'SELECT id, postURL FROM BooruItem WHERE postURL IN (${List.filled(urls.length, '?').join(',')})',
+      urls,
+    );
+    final itemIds = {for (final row in existing) row['postURL']! as String: row['id']! as int};
+    final newItems = <String, BooruItem>{};
+    for (final item in items) {
+      if (!itemIds.containsKey(item.postURL)) newItems.putIfAbsent(item.postURL, () => item);
+    }
+    final insertItems = txn.batch();
+    final duplicateSlash = RegExp('(?<!https?:)//');
+    for (final item in newItems.values) {
+      insertItems.rawInsert(
+        'INSERT INTO BooruItem(thumbnailURL, sampleURL, fileURL, postURL, mediaType, isSnatched, isFavourite) '
+        'VALUES(?,?,?,?,?,?,?)',
+        [
+          item.thumbnailURL.replaceFirstMapped(duplicateSlash, (m) => '/'),
+          item.sampleURL.replaceFirstMapped(duplicateSlash, (m) => '/'),
+          item.fileURL.replaceFirstMapped(duplicateSlash, (m) => '/'),
+          item.postURL,
+          item.mediaType.toJson(),
+          Tools.boolToInt(item.isSnatched.value == true),
+          Tools.boolToInt(item.isFavourite.value == true),
+        ],
+      );
+    }
+    final insertedItems = await insertItems.commit();
+    var itemIndex = 0;
+    for (final url in newItems.keys) {
+      itemIds[url] = insertedItems[itemIndex++]! as int;
+    }
+
+    // Resolve each distinct tag once per chunk, rather than one query per link.
+    final names = newItems.values.expand((item) => item.tagsList.map((tag) => tag.fullString)).toSet().toList();
+    final tagIds = <String, int>{};
+    for (var start = 0; start < names.length; start += 400) {
+      final chunk = names.sublist(start, min(start + 400, names.length));
+      final rows = await txn.rawQuery(
+        'SELECT id, name FROM Tag WHERE name IN (${List.filled(chunk.length, '?').join(',')}) ORDER BY id',
+        chunk,
+      );
+      for (final row in rows) {
+        tagIds.putIfAbsent(row['name']! as String, () => row['id']! as int);
+      }
+      final missing = chunk.where((name) => !tagIds.containsKey(name)).toList();
+      final insertTags = txn.batch();
+      for (final name in missing) {
+        insertTags.rawInsert('INSERT INTO Tag(name) VALUES(?)', [name]);
+      }
+      final insertedTags = await insertTags.commit();
+      for (var index = 0; index < missing.length; index++) {
+        tagIds[missing[index]] = insertedTags[index]! as int;
+      }
+    }
+
+    var updates = txn.batch();
+    var pending = 0;
+    for (final item in newItems.values) {
+      for (final tag in item.tagsList) {
+        updates.rawInsert('INSERT INTO ImageTag(tagID, booruItemID) VALUES(?,?)', [
+          tagIds[tag.fullString],
+          itemIds[item.postURL],
+        ]);
+        if (++pending == 500) {
+          await updates.commit(noResult: true);
+          updates = txn.batch();
+          pending = 0;
+        }
+      }
+    }
+    // Apply every occurrence so duplicates in the same chunk also merge flags.
+    for (final item in items) {
+      updates.rawUpdate(
+        'UPDATE BooruItem SET isFavourite = MAX(COALESCE(isFavourite, 0), ?), '
+        'isSnatched = MAX(COALESCE(isSnatched, 0), ?) WHERE id = ?',
+        [
+          Tools.boolToInt(item.isFavourite.value == true),
+          Tools.boolToInt(item.isSnatched.value == true),
+          itemIds[item.postURL],
+        ],
+      );
+    }
+    await updates.commit(noResult: true);
   }
 
   /// Gets a BooruItem id from the database based on a fileurl

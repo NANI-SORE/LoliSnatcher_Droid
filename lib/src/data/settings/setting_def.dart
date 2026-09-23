@@ -111,6 +111,15 @@ class SettingDef<T> {
   /// Return the (possibly adjusted) value.
   final T Function(T value)? validate;
 
+  /// Serialize without exposing a typed callback to `SettingDef<dynamic>` callers.
+  dynamic serializeValue(T value) => valueToJson(value);
+
+  /// Validate without exposing a typed callback to `SettingDef<dynamic>` callers.
+  T validateValue(T value) {
+    final validator = validate;
+    return validator == null ? value : validator(value);
+  }
+
   /// Optional value equality override. Collections use structural equality by
   /// default in [SettingState], while specialized settings can override it.
   final bool Function(T a, T b)? equals;
@@ -264,7 +273,7 @@ enum SettingCategory {
       case SettingCategory.database:
         return context.loc.settings.database.title;
       case SettingCategory.backup:
-        return context.loc.settings.backupAndRestore.title;
+        return context.loc.settings.backupAndTransfer.title;
       case SettingCategory.network:
         return context.loc.settings.network.title;
       case SettingCategory.privacy:

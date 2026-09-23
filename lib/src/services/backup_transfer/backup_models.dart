@@ -89,6 +89,7 @@ class BackupImportOptions {
     this.allowedEntryIds,
     this.rejectUnexpectedEntries = true,
     this.booruNameRemap,
+    this.onProgress,
   });
 
   final BackupTabsMode tabsMode;
@@ -98,6 +99,28 @@ class BackupImportOptions {
 
   /// Import-local profile renames shared by dependent categories in one package.
   final Map<String, String>? booruNameRemap;
+
+  final ValueChanged<BackupImportProgress>? onProgress;
+}
+
+enum BackupImportPhase {
+  extracting,
+  verifying,
+  validating,
+  rechecking,
+  preparingDatabase,
+  importing,
+  cleaningUp,
+  refreshing,
+}
+
+class BackupImportProgress {
+  const BackupImportProgress({required this.phase, this.entryId, this.processedItems, this.totalItems});
+
+  final BackupImportPhase phase;
+  final BackupEntryId? entryId;
+  final int? processedItems;
+  final int? totalItems;
 }
 
 enum BackupTabsMode {
@@ -124,6 +147,8 @@ class BackupTransferStats {
     this.totalBytes,
     this.currentEntry,
     this.isComplete = false,
+    this.importProgress,
+    this.importProgressUpdatedAt,
   });
 
   final int bytesTransferred;
@@ -131,6 +156,8 @@ class BackupTransferStats {
   final DateTime startedAt;
   final String? currentEntry;
   final bool isComplete;
+  final BackupImportProgress? importProgress;
+  final DateTime? importProgressUpdatedAt;
 
   double get bytesPerSecond {
     final elapsedMs = DateTime.now().difference(startedAt).inMilliseconds;
@@ -144,6 +171,8 @@ class BackupTransferStats {
     DateTime? startedAt,
     String? currentEntry,
     bool? isComplete,
+    BackupImportProgress? importProgress,
+    DateTime? importProgressUpdatedAt,
   }) {
     return BackupTransferStats(
       bytesTransferred: bytesTransferred ?? this.bytesTransferred,
@@ -151,6 +180,8 @@ class BackupTransferStats {
       startedAt: startedAt ?? this.startedAt,
       currentEntry: currentEntry ?? this.currentEntry,
       isComplete: isComplete ?? this.isComplete,
+      importProgress: importProgress ?? this.importProgress,
+      importProgressUpdatedAt: importProgressUpdatedAt ?? this.importProgressUpdatedAt,
     );
   }
 }

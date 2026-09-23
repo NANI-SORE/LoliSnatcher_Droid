@@ -81,6 +81,11 @@ class TransferSocketClient {
     Directory? packageDirectory;
     var transferred = 0;
     int? total;
+    BackupImportProgress? importProgress;
+    DateTime? importProgressUpdatedAt;
+    Timer? importHeartbeat;
+    final importLogTimer = Stopwatch();
+    final importUiTimer = Stopwatch();
     void emit({String? entry, bool complete = false}) {
       if (!stats.isClosed) {
         stats.add(
@@ -90,6 +95,8 @@ class TransferSocketClient {
             startedAt: startedAt,
             currentEntry: entry,
             isComplete: complete,
+            importProgress: importProgress,
+            importProgressUpdatedAt: importProgressUpdatedAt,
           ),
         );
       }
@@ -183,6 +190,9 @@ class TransferSocketClient {
       // this phase, and dispose joins it instead of claiming rollback occurred.
       session.importing = true;
       emit(entry: 'importing');
+      // Keep elapsed/stall information live without pretending that a timer is
+      // actual import progress. Only work callbacks update the progress time.
+      importHeartbeat = Timer.periodic(const Duration(seconds: 1), (_) => emit(entry: 'importing'));
       _log(loc.settings.backupAndTransfer.importingPackage);
       final imported = await importService.importNamedFile(
         BackupFileNaming.transferPackageFileName,
@@ -191,8 +201,32 @@ class TransferSocketClient {
           tabsMode: options.tabsMode,
           tagsMode: options.tagsMode,
           allowedEntryIds: entries.toSet(),
+          onProgress: (progress) {
+            final changedStage = importProgress?.phase != progress.phase || importProgress?.entryId != progress.entryId;
+            importProgress = progress;
+            importProgressUpdatedAt = DateTime.now();
+            if (changedStage || importUiTimer.elapsedMilliseconds >= 250) {
+              emit(entry: 'importing');
+              importUiTimer
+                ..reset()
+                ..start();
+            }
+            if (changedStage || importLogTimer.elapsed >= const Duration(seconds: 10)) {
+              BackupTransferLogger.info(
+                'Import phase=${progress.phase.name} entry=${progress.entryId?.name} '
+                    'records=${progress.processedItems}/${progress.totalItems} '
+                    'elapsed=${DateTime.now().difference(startedAt).inSeconds}s',
+                'TransferSocketClient',
+                'receive',
+              );
+              importLogTimer
+                ..reset()
+                ..start();
+            }
+          },
         ),
       );
+      importHeartbeat.cancel();
       await connection.writeFrame({'type': 'imported', 'requestId': requestId});
       try {
         await historyService.add(
@@ -210,6 +244,7 @@ class TransferSocketClient {
       emit(complete: true);
       _log(loc.settings.backupAndTransfer.transferComplete);
     } catch (e, s) {
+      importHeartbeat?.cancel();
       final message = session.cancelled
           ? loc.settings.backupAndTransfer.transferCancelled
           : loc.settings.backupAndTransfer.transferFailed(error: e.toString());
@@ -222,6 +257,7 @@ class TransferSocketClient {
             .timeout(const Duration(milliseconds: 200));
       } catch (_) {}
     } finally {
+      importHeartbeat?.cancel();
       session.connect?.cancel();
       await session.connection?.close();
       if (packageFile != null) {

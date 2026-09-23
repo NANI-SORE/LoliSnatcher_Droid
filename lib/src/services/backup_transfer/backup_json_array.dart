@@ -13,8 +13,19 @@ Stream<Map<String, dynamic>> readBackupJsonArray(Stream<List<int>> bytes) async*
   var firstCharacter = true;
   var record = StringBuffer();
   var length = 0;
+  final workTime = Stopwatch()..start();
+  var charactersSinceYield = 0;
   await for (final chunk in bytes.transform(utf8.decoder)) {
     for (final code in chunk.codeUnits) {
+      // Stream events alone can keep filling the microtask queue. Give frames
+      // and input an event-loop turn, including during validation of big rows.
+      if (++charactersSinceYield == 4096) {
+        charactersSinceYield = 0;
+        if (workTime.elapsedMilliseconds >= 8) {
+          await Future<void>.delayed(Duration.zero);
+          workTime.reset();
+        }
+      }
       if (firstCharacter && code == 0xfeff) {
         firstCharacter = false;
         continue;

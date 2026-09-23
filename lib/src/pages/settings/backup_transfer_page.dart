@@ -16,6 +16,7 @@ import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 
 import 'package:lolisnatcher/src/pages/settings/advanced_backup_page.dart';
 import 'package:lolisnatcher/src/pages/settings/backup_import_dialog.dart';
+import 'package:lolisnatcher/src/pages/settings/backup_transfer_widgets.dart';
 import 'package:lolisnatcher/src/pages/settings/receive_data_page.dart';
 import 'package:lolisnatcher/src/pages/settings/send_data_page.dart';
 
@@ -30,6 +31,7 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
   final packageService = BackupPackageService();
   final importService = BackupImportCompatService();
   final autoBackupService = AutoBackupService();
+  late final defaultBackupDirectory = autoBackupService.defaultBackupDirectory();
   AutoBackupConfig autoConfig = AutoBackupConfig.defaults;
   bool busy = false;
 
@@ -74,6 +76,20 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
   }
 
   Future<void> _resetAutoBackupConfig() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.settings_backup_restore),
+        title: Text(context.loc.reset),
+        scrollable: true,
+        content: Text(context.loc.settings.backupAndTransfer.resetAutoBackupHint),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(context.loc.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(context.loc.reset)),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
     await _runBusy(() async {
       await autoBackupService.resetConfig();
       autoConfig = await autoBackupService.loadConfig();
@@ -137,205 +153,198 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.loc.settings.backupAndTransfer;
     return PopScope(
       canPop: !busy,
       child: Scaffold(
-        appBar: SettingsAppBar(title: context.loc.settings.backupAndTransfer.title),
+        appBar: SettingsAppBar(title: t.title),
         body: Stack(
           children: [
-            ListView(
-              padding: const EdgeInsets.all(12),
+            BackupPageBody(
+              fullWidth: true,
               children: [
-                _SectionTitle(context.loc.settings.backupAndTransfer.transferData),
-                Column(
-                  spacing: 8,
+                BackupSection(
+                  title: t.backupData,
+                  headerPadding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
                     _ActionTile(
-                      icon: Icons.send,
-                      title: context.loc.settings.backupAndTransfer.send,
-                      onTap: () => SettingsPageOpen(context: context, page: (_) => const SendDataPage()).open(),
-                    ),
-                    _ActionTile(
-                      icon: Icons.file_download_outlined,
-                      title: context.loc.settings.backupAndTransfer.receive,
-                      onTap: () => SettingsPageOpen(context: context, page: (_) => const ReceiveDataPage()).open(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                _SectionTitle(context.loc.settings.backupAndTransfer.backupData),
-                Column(
-                  spacing: 8,
-                  children: [
-                    _ActionTile(
-                      icon: Icons.save_as,
-                      title: context.loc.settings.backupAndTransfer.export,
+                      icon: Icons.save_alt,
+                      title: t.exportBackupDialogTitle,
+                      subtitle: t.exportBackupHint,
                       onTap: _exportAll,
                     ),
+                    const Divider(height: 1),
                     _ActionTile(
-                      icon: Icons.file_open_rounded,
-                      title: context.loc.settings.backupAndTransfer.import,
+                      icon: Icons.restore,
+                      title: t.importBackupTitle,
+                      subtitle: t.importBackupHint,
                       onTap: _importAny,
                     ),
+                    const Divider(height: 1),
                     _ActionTile(
                       icon: Icons.tune,
-                      title: context.loc.settings.backupAndTransfer.advancedExportImport,
+                      title: t.advancedExportImport,
+                      subtitle: t.advancedBackupHint,
                       onTap: () => SettingsPageOpen(context: context, page: (_) => const AdvancedBackupPage()).open(),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                _SectionTitle(
-                  context.loc.settings.backupAndTransfer.autoBackup,
+                BackupSection(
+                  title: t.transferData,
+                  headerPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: [
+                    _ActionTile(
+                      icon: Icons.upload_rounded,
+                      title: t.sendDataTitle,
+                      subtitle: t.sendHint,
+                      onTap: () => SettingsPageOpen(context: context, page: (_) => const SendDataPage()).open(),
+                    ),
+                    const Divider(height: 1),
+                    _ActionTile(
+                      icon: Icons.download_rounded,
+                      title: t.receiveDataTitle,
+                      subtitle: t.receiveHint,
+                      onTap: () => SettingsPageOpen(context: context, page: (_) => const ReceiveDataPage()).open(),
+                    ),
+                  ],
+                ),
+                BackupSection(
+                  title: t.autoBackup,
+                  headerPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  allowHeaderWrap: false,
                   trailing: IconButton(
                     tooltip: context.loc.reset,
-                    icon: const Icon(Icons.restore),
+                    icon: const Icon(Icons.settings_backup_restore),
                     onPressed: busy ? null : _resetAutoBackupConfig,
                   ),
-                ),
-                Card(
-                  child: Column(
-                    children: [
-                      SwitchListTile(
-                        title: Text(context.loc.settings.backupAndTransfer.enableAutoBackup),
-                        value: autoConfig.enabled,
-                        onChanged: (value) async {
-                          autoConfig = autoConfig.copyWith(enabled: value);
-                          await _saveAutoConfig();
-                          if (mounted) setState(() {});
-                        },
-                      ),
-                      SwitchListTile(
-                        title: Text(context.loc.settings.backupAndTransfer.backupAfterUpdates),
-                        subtitle: Text(context.loc.settings.backupAndTransfer.backupAfterUpdatesSubtitle),
-                        value: autoConfig.backupOnUpdate,
-                        onChanged: (value) async {
-                          autoConfig = autoConfig.copyWith(backupOnUpdate: value);
-                          await _saveAutoConfig();
-                          if (mounted) setState(() {});
-                        },
-                      ),
-                      ListTile(
-                        title: Text(context.loc.settings.backupAndTransfer.backupLocation),
-                        subtitle: Text(
-                          autoConfig.location.isEmpty
-                              ? context.loc.settings.backupAndTransfer.backupLocationNotSelected
-                              : autoConfig.location,
-                        ),
-                        trailing: FilledButton(
-                          onPressed: _chooseAutoLocation,
-                          child: Text(context.loc.settings.backupAndTransfer.change),
-                        ),
-                      ),
-                      ListTile(
-                        title: Text(context.loc.settings.backupAndTransfer.backupInterval),
-                        trailing: DropdownButton<int>(
-                          value: autoConfig.frequencyDays,
-                          items: [
-                            DropdownMenuItem(
-                              value: 1,
-                              child: Text(context.loc.settings.backupAndTransfer.daily),
+                  children: [
+                    SwitchListTile(
+                      title: Text(t.enableAutoBackup),
+                      subtitle: Text(t.autoBackupScheduleHint),
+                      value: autoConfig.enabled,
+                      onChanged: (value) async {
+                        setState(() => autoConfig = autoConfig.copyWith(enabled: value));
+                        await _saveAutoConfig();
+                      },
+                    ),
+                    SwitchListTile(
+                      title: Text(t.backupAfterUpdates),
+                      subtitle: Text(t.backupAfterUpdatesSubtitle),
+                      value: autoConfig.backupOnUpdate,
+                      onChanged: (value) async {
+                        setState(() => autoConfig = autoConfig.copyWith(backupOnUpdate: value));
+                        await _saveAutoConfig();
+                      },
+                    ),
+                    const Divider(height: 24),
+                    ListTile(
+                      leading: const Icon(Icons.folder_outlined),
+                      title: Text(t.backupLocation),
+                      subtitle: autoConfig.location.isNotEmpty
+                          ? Text(autoConfig.location)
+                          : FutureBuilder<Directory>(
+                              future: defaultBackupDirectory,
+                              builder: (context, snapshot) => Text(
+                                snapshot.hasData
+                                    ? '${t.defaultBackupLocation}\n${snapshot.data!.path}'
+                                    : t.defaultBackupLocation,
+                              ),
                             ),
-                            DropdownMenuItem(
-                              value: 7,
-                              child: Text(context.loc.settings.backupAndTransfer.weekly),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: _chooseAutoLocation,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          DropdownButtonFormField<int>(
+                            initialValue: autoConfig.frequencyDays,
+                            key: ValueKey(('frequency', autoConfig.frequencyDays)),
+                            isExpanded: true,
+                            decoration: InputDecoration(
+                              labelText: t.backupInterval,
+                              border: const OutlineInputBorder(),
                             ),
-                            DropdownMenuItem(
-                              value: 30,
-                              child: Text(context.loc.settings.backupAndTransfer.monthly),
+                            items: [
+                              DropdownMenuItem(value: 1, child: Text(t.daily)),
+                              DropdownMenuItem(value: 7, child: Text(t.weekly)),
+                              DropdownMenuItem(value: 30, child: Text(t.monthly)),
+                            ],
+                            onChanged: !autoConfig.enabled
+                                ? null
+                                : (value) async {
+                                    if (value == null) return;
+                                    setState(() => autoConfig = autoConfig.copyWith(frequencyDays: value));
+                                    await _saveAutoConfig();
+                                  },
+                          ),
+                          const SizedBox(height: 20),
+                          DropdownButtonFormField<int>(
+                            initialValue: autoConfig.maximumBackups,
+                            key: ValueKey(('retention', autoConfig.maximumBackups)),
+                            isExpanded: true,
+                            decoration: InputDecoration(
+                              labelText: t.maximumBackups,
+                              helperText: t.maximumBackupsHint,
+                              helperMaxLines: 5,
+                              border: const OutlineInputBorder(),
+                            ),
+                            items: const [0, 3, 5, 10, 20]
+                                .map(
+                                  (value) => DropdownMenuItem(
+                                    value: value,
+                                    child: Text(value == 0 ? t.backupCountUnlimited : t.backupCount(count: value)),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) async {
+                              if (value == null) return;
+                              setState(() => autoConfig = autoConfig.copyWith(maximumBackups: value));
+                              await _saveAutoConfig();
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            autoConfig.lastBackupAt == null
+                                ? t.lastBackupNever
+                                : t.lastBackup(date: TransferFormatters.dateTime(autoConfig.lastBackupAt!)),
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 12),
+                          FilledButton.icon(
+                            onPressed: busy ? null : _backupNow,
+                            icon: const Icon(Icons.backup_outlined),
+                            label: Text(t.backupNow),
+                          ),
+                          if (autoConfig.lastBackupError != null) ...[
+                            const SizedBox(height: 16),
+                            BackupNotice(
+                              message: '${t.lastBackupFailed}\n${autoConfig.lastBackupError}',
+                              isWarning: true,
                             ),
                           ],
-                          onChanged: (value) async {
-                            if (value == null) return;
-                            autoConfig = autoConfig.copyWith(frequencyDays: value);
-                            await _saveAutoConfig();
-                            if (mounted) setState(() {});
-                          },
-                        ),
+                          if (autoConfig.lastUpdateBackupError != null) ...[
+                            const SizedBox(height: 16),
+                            BackupNotice(
+                              message: '${t.lastUpdateBackupFailed}\n${autoConfig.lastUpdateBackupError}',
+                              isWarning: true,
+                            ),
+                            const SizedBox(height: 8),
+                            OutlinedButton.icon(
+                              onPressed: _retryUpdateBackup,
+                              icon: const Icon(Icons.refresh),
+                              label: Text(t.retryUpdateBackup),
+                            ),
+                          ],
+                        ],
                       ),
-                      ListTile(
-                        title: Text(context.loc.settings.backupAndTransfer.maximumBackups),
-                        trailing: DropdownButton<int>(
-                          value: autoConfig.maximumBackups,
-                          items:
-                              const [
-                                    0,
-                                    3,
-                                    5,
-                                    10,
-                                    20,
-                                  ]
-                                  .map(
-                                    (value) => DropdownMenuItem(
-                                      value: value,
-                                      child: Text(
-                                        value == 0
-                                            ? context.loc.settings.backupAndTransfer.backupCountUnlimited
-                                            : context.loc.settings.backupAndTransfer.backupCount(count: value),
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                          onChanged: (value) async {
-                            if (value == null) return;
-                            autoConfig = autoConfig.copyWith(maximumBackups: value);
-                            await _saveAutoConfig();
-                            if (mounted) setState(() {});
-                          },
-                        ),
-                      ),
-                      ListTile(
-                        title: Text(
-                          autoConfig.lastBackupAt == null
-                              ? context.loc.settings.backupAndTransfer.lastBackupNever
-                              : context.loc.settings.backupAndTransfer.lastBackup(
-                                  date: TransferFormatters.dateTime(autoConfig.lastBackupAt!),
-                                ),
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 12, bottom: 36),
-                          child: Row(
-                            children: [
-                              SizedBox(
-                                height: 36,
-                                child: ElevatedButton(
-                                  onPressed: autoConfig.location.isEmpty ? null : _backupNow,
-                                  child: Text(context.loc.settings.backupAndTransfer.backupNow),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      if (autoConfig.lastBackupError != null)
-                        ListTile(
-                          leading: const Icon(Icons.error_outline),
-                          title: Text(context.loc.settings.backupAndTransfer.lastBackupFailed),
-                          subtitle: Text(autoConfig.lastBackupError!),
-                        ),
-                      if (autoConfig.lastUpdateBackupError != null)
-                        ListTile(
-                          leading: const Icon(Icons.error_outline),
-                          title: Text(context.loc.settings.backupAndTransfer.lastUpdateBackupFailed),
-                          subtitle: Text(autoConfig.lastUpdateBackupError!),
-                          trailing: IconButton(
-                            tooltip: context.loc.settings.backupAndTransfer.retryUpdateBackup,
-                            icon: const Icon(Icons.refresh),
-                            onPressed: busy ? null : _retryUpdateBackup,
-                          ),
-                        ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            if (busy)
-              const Positioned.fill(
-                child: ColoredBox(
-                  color: Colors.black38,
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-              ),
+            if (busy) Positioned.fill(child: BackupBusyOverlay(label: t.operationInProgress)),
           ],
         ),
       ),
@@ -343,72 +352,24 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text, {this.trailing});
-
-  final String text;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(text, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-          ),
-          ?trailing,
-        ],
-      ),
-    );
-  }
-}
-
 class _ActionTile extends StatelessWidget {
-  const _ActionTile({
-    required this.icon,
-    required this.title,
-    required this.onTap,
-  });
-
+  const _ActionTile({required this.icon, required this.title, required this.subtitle, required this.onTap});
   final IconData icon;
   final String title;
+  final String subtitle;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: Theme.of(context).colorScheme.surfaceContainerHigh,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: SizedBox(
-          height: 64,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Icon(
-                  icon,
-                  size: 30,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => ListTile(
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    leading: CircleAvatar(
+      backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+      foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
+      child: Icon(icon),
+    ),
+    title: Text(title),
+    subtitle: Text(subtitle),
+    trailing: const Icon(Icons.chevron_right),
+    onTap: onTap,
+  );
 }

@@ -202,6 +202,7 @@ class BackupPackageService {
   }) async {
     final stage = await _stage();
     try {
+      options.onProgress?.call(const BackupImportProgress(phase: BackupImportPhase.extracting));
       final entries = _entries(await _extract(file, stage));
       if (options.rejectUnexpectedEntries &&
           options.allowedEntryIds != null &&
@@ -220,6 +221,7 @@ class BackupPackageService {
           throw const FormatException('Backup entry size mismatch');
         }
         if (entry.raw.containsKey('sha256')) {
+          options.onProgress?.call(BackupImportProgress(phase: BackupImportPhase.verifying, entryId: entry.id));
           final expected = entry.raw['sha256'];
           if (expected is! String ||
               !RegExp(r'^[a-f0-9]{64}$').hasMatch(expected) ||
@@ -227,14 +229,18 @@ class BackupPackageService {
             throw const FormatException('Backup entry checksum mismatch');
           }
         }
-        await registry.validateEntry(entry.id, file: entry.file);
+        options.onProgress?.call(BackupImportProgress(phase: BackupImportPhase.validating, entryId: entry.id));
+        await registry.validateEntry(entry.id, file: entry.file, onProgress: options.onProgress);
       }
-      final selected = entries
-          .where((entry) => options.allowedEntryIds == null || options.allowedEntryIds!.contains(entry.id))
-          .toList();
+      final selectedIds = registry.normalizeSelection(
+        entries
+            .where((entry) => options.allowedEntryIds == null || options.allowedEntryIds!.contains(entry.id))
+            .map((entry) => entry.id),
+      );
+      final selected = entries.where((entry) => selectedIds.contains(entry.id)).toList();
       if (selected.isEmpty) throw const FormatException('The backup does not contain the selected data');
       final settings = selected.where((entry) => entry.id == BackupEntryId.settings).firstOrNull;
-      if (settings != null && selected.any((entry) => registry.isDatabaseChild(entry.id))) {
+      if (settings != null && selected.any((entry) => registry.requiresDatabase(entry.id))) {
         final values = jsonDecode((await settings.file.readAsString()).replaceFirst(RegExp(r'^\uFEFF'), '')) as Map;
         if (values['dbEnabled'] == false) {
           throw const FormatException(
@@ -259,8 +265,10 @@ class BackupPackageService {
         tabsMode: options.tabsMode,
         tagsMode: options.tagsMode,
         booruNameRemap: {},
+        onProgress: options.onProgress,
       );
       for (final entry in selected) {
+        options.onProgress?.call(BackupImportProgress(phase: BackupImportPhase.importing, entryId: entry.id));
         final definition = registry.byId(entry.id);
         if (definition.importFile != null) {
           await definition.importFile!(entry.file, applyOptions);
@@ -269,6 +277,7 @@ class BackupPackageService {
         }
         imported.add(entry.id);
       }
+      options.onProgress?.call(const BackupImportProgress(phase: BackupImportPhase.refreshing));
       await registry.refreshAfterImport(imported.toSet(), options: applyOptions);
       return imported;
     } finally {

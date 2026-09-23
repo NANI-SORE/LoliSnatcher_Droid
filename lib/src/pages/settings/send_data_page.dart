@@ -10,7 +10,7 @@ import 'package:lolisnatcher/src/services/backup_transfer/backup_models.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_entry_registry.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/transfer_device_info.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/transfer_discovery_service.dart';
-import 'package:lolisnatcher/src/services/backup_transfer/transfer_formatters.dart';
+import 'package:lolisnatcher/src/pages/settings/backup_transfer_widgets.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/transfer_history_service.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/transfer_socket_server.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
@@ -27,9 +27,11 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
   late final server = TransferSocketServer(approveRequest: _approveTransfer);
   final discovery = TransferDiscoveryService();
   final historyService = const TransferHistoryService();
+  final scrollController = ScrollController();
   final logs = <BackupTransferLog>[];
   List<TransferHistoryEntry> history = [];
   BackupTransferStats? stats;
+  String? transferError;
   StreamSubscription<BackupTransferLog>? logSub;
   StreamSubscription<BackupTransferStats>? statsSub;
   bool includeDeviceSpecificSettings = false;
@@ -47,18 +49,33 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
     final route = DialogRoute<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => BackupSelectionDialog(
+        icon: const Icon(Icons.devices),
         title: Text(dialogContext.loc.settings.backupAndTransfer.approveTransferTitle),
-        content: SingleChildScrollView(
-          child: Text(
-            [
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
               dialogContext.loc.settings.backupAndTransfer.approveTransferRequest(
                 device: request.deviceName,
                 address: request.address,
               ),
-              ...request.entries.map((id) => BackupEntryRegistry.instance.byId(id).title()),
-            ].join('\n'),
-          ),
+            ),
+            const SizedBox(height: 16),
+            BackupEntryTree(
+              entryIds: {
+                ...request.entries,
+                if (request.entries.contains(BackupEntryId.database)) ...BackupEntryRegistry.databaseChildIds,
+              },
+              entryBuilder: (entry) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(entry.icon),
+                title: Text(entry.title()),
+                subtitle: Text(entry.description()),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(onPressed: () => navigator.pop(false), child: Text(dialogContext.loc.cancel)),
@@ -77,7 +94,7 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
     return await navigator.push(route) ?? false;
   }
 
-  bool get _hasActiveTransfer => started && stats != null && stats!.isComplete != true;
+  bool get _hasActiveTransfer => server.isTransferring.value;
 
   bool get visible => SX.syncVisibleOnNetwork.state.value;
 
@@ -87,6 +104,7 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
     WidgetsBinding.instance.addObserver(this);
 
     SX.syncVisibleOnNetwork.state.effectiveNotifier.addListener(_onVisibleChanged);
+    server.isTransferring.addListener(_onTransferActivityChanged);
 
     logSub = server.logs.stream.listen((log) {
       if (!mounted) return;
@@ -94,14 +112,25 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
     });
     statsSub = server.stats.stream.listen((newStats) {
       if (!mounted) return;
-      setState(() => stats = newStats);
-      if (newStats.isComplete) unawaited(_loadHistory());
-      if (newStats.isComplete && newStats.currentEntry == 'error') {
-        unawaited(_stop());
+      final transferStarting = !newStats.isComplete && stats?.startedAt != newStats.startedAt;
+      setState(() {
+        stats = newStats;
+        transferError = newStats.currentEntry == 'error' ? logs.firstOrNull?.message : null;
+      });
+      if (transferStarting) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !scrollController.hasClients) return;
+          unawaited(scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut));
+        });
       }
+      if (newStats.isComplete) unawaited(_loadHistory());
     });
     unawaited(_start());
     unawaited(_loadHistory());
+  }
+
+  void _onTransferActivityChanged() {
+    if (mounted) setState(() {});
   }
 
   void _onVisibleChanged() {
@@ -123,6 +152,7 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
       setState(() {
         starting = true;
         stats = null;
+        transferError = null;
       });
     } else {
       starting = true;
@@ -200,13 +230,21 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
     });
   }
 
+  void _clearTransferError() {
+    if (_hasActiveTransfer || stats?.isComplete != true || stats?.currentEntry != 'error') return;
+    setState(() {
+      stats = null;
+      transferError = null;
+    });
+  }
+
   Future<void> _cancelTransfer() async {
     await server.cancelTransfers();
-    if (visible && started && server.port != null) {
-      await discovery.startBroadcast(deviceName: deviceName, deviceId: deviceId, port: server.port!);
-    }
     if (!mounted) return;
-    setState(() => stats = null);
+    setState(() {
+      stats = null;
+      transferError = null;
+    });
   }
 
   @override
@@ -214,9 +252,11 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
     ++_startGeneration;
     WidgetsBinding.instance.removeObserver(this);
     SX.syncVisibleOnNetwork.state.effectiveNotifier.removeListener(_onVisibleChanged);
+    server.isTransferring.removeListener(_onTransferActivityChanged);
     _setKeepAwake(false);
     logSub?.cancel();
     statsSub?.cancel();
+    scrollController.dispose();
     unawaited(discovery.dispose());
     unawaited(server.dispose());
     super.dispose();
@@ -241,167 +281,101 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
 
   @override
   Widget build(BuildContext context) {
+    final t = context.loc.settings.backupAndTransfer;
     final port = server.port;
-    final address = port == null ? null : '$ip:$port';
+    final address = port == null || ip.isEmpty ? null : '$ip:$port';
+    final status = started
+        ? (visible ? t.broadcasting : t.hidden)
+        : starting
+        ? t.starting
+        : t.serverStopped;
     return PopScope(
       canPop: !_hasActiveTransfer,
       child: Scaffold(
         appBar: SettingsAppBar(
-          title: context.loc.settings.backupAndTransfer.sendDataTitle,
-          actions: [
-            IconButton(
-              icon: Icon(
-                started
-                    ? (_hasActiveTransfer ? Icons.cancel_outlined : Icons.stop_circle_outlined)
-                    : Icons.play_circle_outline,
-              ),
-              tooltip: started ? context.loc.media.loading.stopLoading : context.loc.settings.backupAndTransfer.send,
-              onPressed: started
-                  ? (_hasActiveTransfer ? _cancelTransfer : _stop)
-                  : starting
-                  ? null
-                  : _start,
-            ),
-          ],
+          title: t.sendDataTitle,
+          leading: _hasActiveTransfer ? const IconButton(onPressed: null, icon: BackButtonIcon()) : null,
         ),
-        body: ListView(
+        body: BackupPageBody(
+          controller: scrollController,
           children: [
-            const SizedBox(height: 12),
-            Column(
+            if (stats != null)
+              BackupTransferProgress(
+                stats: stats,
+                isReceiving: false,
+                errorMessage: transferError,
+                onClearError: _hasActiveTransfer ? null : _clearTransferError,
+                onCancel: _hasActiveTransfer ? _cancelTransfer : null,
+              ),
+            BackupNotice(message: t.sendInstructions, icon: Icons.devices),
+            const SizedBox(height: 24),
+            BackupSection(
+              title: t.deviceInfo,
               children: [
-                SwitchListTile(
-                  title: Text(context.loc.settings.backupAndTransfer.visibleOnNetwork),
-                  subtitle: Text(context.loc.settings.backupAndTransfer.visibleOnNetworkSubtitle),
-                  value: visible,
-                  onChanged: started ? _setVisible : null,
+                ListTile(
+                  leading: starting
+                      ? const SizedBox.square(dimension: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                      : Icon(started ? Icons.wifi : Icons.wifi_off),
+                  title: Text(deviceName.isEmpty ? t.sendDataTitle : deviceName),
+                  subtitle: Semantics(liveRegion: true, child: Text(status)),
                 ),
-                SwitchListTile(
-                  title: Text(context.loc.settings.backupAndTransfer.includeDeviceSpecificSettings),
-                  subtitle: Text(
-                    context.loc.settings.backupAndTransfer.includeDeviceSpecificSettingsSubtitle,
-                  ),
-                  value: includeDeviceSpecificSettings,
-                  onChanged: _hasActiveTransfer ? null : _setIncludeDeviceSpecificSettings,
-                  secondary: IconButton(
-                    icon: const Icon(Icons.help_outline),
-                    tooltip: context.loc.settings.backupAndTransfer.includeDeviceSpecificSettingsHelpTitle,
-                    onPressed: _showDeviceSpecificSettingsHelp,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: _InfoRow(
-                    label: context.loc.settings.backupAndTransfer.address,
-                    value: address ?? context.loc.settings.backupAndTransfer.starting,
-                    onTap: address == null ? null : () => _copyAddress(address),
-                    trailing: address == null
-                        ? null
-                        : IconButton(
-                            icon: const Icon(Icons.copy),
-                            tooltip: context.loc.copy,
-                            onPressed: () => _copyAddress(address),
-                          ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: _InfoRow(
-                    label: context.loc.settings.backupAndTransfer.name,
-                    value: deviceName.isEmpty ? context.loc.settings.backupAndTransfer.starting : deviceName,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: _InfoRow(
-                    label: context.loc.settings.backupAndTransfer.status,
-                    value: started
-                        ? (visible
-                              ? context.loc.settings.backupAndTransfer.broadcasting
-                              : context.loc.settings.backupAndTransfer.hidden)
-                        : (starting
-                              ? context.loc.settings.backupAndTransfer.starting
-                              : context.loc.settings.backupAndTransfer.serverStopped),
-                  ),
-                ),
-                if (!started)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        icon: starting
-                            ? const SizedBox.square(
-                                dimension: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.play_circle_outline),
-                        label: Text(context.loc.settings.backupAndTransfer.send),
-                        onPressed: starting ? null : _start,
-                      ),
+                if (address != null)
+                  ListTile(
+                    leading: const Icon(Icons.link),
+                    title: Text(t.address),
+                    subtitle: SelectableText(address),
+                    trailing: IconButton(
+                      tooltip: context.loc.copy,
+                      icon: const Icon(Icons.copy),
+                      onPressed: () => _copyAddress(address),
                     ),
                   ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: started
+                      ? OutlinedButton.icon(
+                          onPressed: _hasActiveTransfer ? null : _stop,
+                          icon: const Icon(Icons.stop_circle_outlined),
+                          label: Text(t.stopSharing),
+                        )
+                      : FilledButton.icon(
+                          onPressed: starting ? null : _start,
+                          icon: const Icon(Icons.play_circle_outline),
+                          label: Text(t.send),
+                        ),
+                ),
               ],
             ),
-            if (_hasActiveTransfer)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Column(
-                  children: [
-                    _InfoRow(
-                      label: context.loc.settings.backupAndTransfer.transferred,
-                      value: _formatProgress(stats),
-                    ),
-                    if (stats?.totalBytes != null)
-                      _InfoRow(
-                        label: context.loc.settings.backupAndTransfer.total,
-                        value: TransferFormatters.bytes(stats?.totalBytes ?? 0),
-                      ),
-                    _InfoRow(
-                      label: context.loc.settings.backupAndTransfer.elapsed,
-                      value: TransferFormatters.duration(DateTime.now().difference(stats?.startedAt ?? DateTime.now())),
-                    ),
-                    _InfoRow(
-                      label: context.loc.settings.backupAndTransfer.speed,
-                      value: '${TransferFormatters.bytes(stats?.bytesPerSecond.round() ?? 0)}/s',
-                    ),
-                    _InfoRow(
-                      label: context.loc.settings.backupAndTransfer.current,
-                      value: stats?.currentEntry ?? '-',
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 4, 0, 12),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          icon: const Icon(Icons.stop_circle_outlined),
-                          label: Text(context.loc.media.loading.stopLoading),
-                          onPressed: _cancelTransfer,
-                        ),
-                      ),
-                    ),
-                  ],
+            BackupSection(
+              title: t.transferData,
+              children: [
+                SwitchListTile(
+                  title: Text(t.visibleOnNetwork),
+                  subtitle: Text(t.visibleOnNetworkSubtitle),
+                  value: visible,
+                  onChanged: starting ? null : _setVisible,
                 ),
-              ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(context.loc.settings.backupAndTransfer.logs, style: Theme.of(context).textTheme.titleLarge),
+                const Divider(height: 1),
+                SwitchListTile(
+                  title: Text(t.includeDeviceSpecificSettings),
+                  subtitle: Text(t.includeDeviceSpecificSettingsSubtitle),
+                  value: includeDeviceSpecificSettings,
+                  onChanged: _hasActiveTransfer ? null : _setIncludeDeviceSpecificSettings,
+                ),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                    child: TextButton.icon(
+                      icon: const Icon(Icons.help_outline),
+                      label: Text(t.includeDeviceSpecificSettingsHelpTitle),
+                      onPressed: _showDeviceSpecificSettingsHelp,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            for (final indexedLog in logs.take(100).indexed)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: ListTile(
-                  dense: true,
-                  title: Text(indexedLog.$2.message),
-                  subtitle: Text(TransferFormatters.time(indexedLog.$2.createdAt)),
-                  trailing: _isLogRunning(indexedLog.$1)
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : null,
-                ),
-              ),
-            _HistorySection(history: history),
+            BackupTransferActivity(logs: logs, history: history),
           ],
         ),
       ),
@@ -418,103 +392,6 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
       leadingIcon: Icons.copy,
       leadingIconColor: Colors.green,
       sideColor: Colors.green,
-    );
-  }
-
-  String _formatProgress(BackupTransferStats? stats) {
-    if (stats == null) return '';
-
-    final transferred = TransferFormatters.bytes(stats.bytesTransferred);
-    final total = stats.totalBytes;
-    if (total == null || total <= 0) return transferred;
-    final percent = stats.bytesTransferred / total * 100;
-    return '$transferred / ${TransferFormatters.bytes(total)} (${percent.toStringAsFixed(1)}%)';
-  }
-
-  bool _isLogRunning(int index) {
-    if (index != 0 || !started) return false;
-    return stats?.isComplete != true;
-  }
-}
-
-class _HistorySection extends StatelessWidget {
-  const _HistorySection({required this.history});
-
-  final List<TransferHistoryEntry> history;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.loc.settings.backupAndTransfer;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: Text(t.history, style: Theme.of(context).textTheme.titleLarge),
-        ),
-        if (history.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: ListTile(title: Text(t.noHistory)),
-          )
-        else
-          for (final entry in history.take(20))
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: ListTile(
-                title: Text(entry.peerName.isEmpty ? entry.peerAddress : entry.peerName),
-                subtitle: Text(
-                  [
-                    entry.peerAddress,
-                    TransferFormatters.dateTime(entry.createdAt),
-                    '${t.selectedData}: ${_entryNames(entry.entryIds)}',
-                  ].where((line) => line.isNotEmpty).join('\n'),
-                ),
-                isThreeLine: true,
-              ),
-            ),
-      ],
-    );
-  }
-
-  String _entryNames(List<BackupEntryId> entryIds) {
-    return entryIds
-        .map(
-          (id) => BackupEntryRegistry.instance.entries.where((entry) => entry.id == id).firstOrNull?.title() ?? id.name,
-        )
-        .join(', ');
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.label,
-    required this.value,
-    this.trailing,
-    this.onTap,
-  });
-
-  final String label;
-  final String value;
-  final Widget? trailing;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      dense: true,
-      title: Text(label),
-      onTap: onTap,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 220),
-            child: Text(value, textAlign: TextAlign.end, overflow: TextOverflow.ellipsis),
-          ),
-          ?trailing,
-        ],
-      ),
     );
   }
 }

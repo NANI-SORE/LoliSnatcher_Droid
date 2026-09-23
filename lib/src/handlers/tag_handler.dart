@@ -86,8 +86,7 @@ class TagHandler {
     required bool preferTypeIfNone,
     bool useDB = true,
   }) async {
-    // TODO sanitize tagString?
-    if (tag.fullString.isEmpty) {
+    if (tag.fullString.trim().isEmpty) {
       return;
     }
     tag.fullString = tag.fullString.toLowerCase();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/pages/settings/backup_transfer_widgets.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_entry_registry.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_models.dart';
 
@@ -9,9 +10,9 @@ Future<BackupImportOptions?> showBackupImportDialog(
   List<BackupEntryId> entries, {
   Set<BackupEntryId>? restrictedTo,
 }) {
-  final registry = BackupEntryRegistry.instance;
   final available = entries.where((id) => restrictedTo == null || restrictedTo.contains(id)).toList();
-  final selected = available.toSet();
+  final registry = BackupEntryRegistry.instance;
+  final selected = registry.normalizeSelection(available);
   var tabsMode = BackupTabsMode.merge;
   var tagsMode = BackupTagsMode.preferTypeIfNone;
   return showDialog<BackupImportOptions>(
@@ -19,59 +20,59 @@ Future<BackupImportOptions?> showBackupImportDialog(
     builder: (context) => StatefulBuilder(
       builder: (context, update) {
         final t = context.loc.settings.backupAndTransfer;
-        return AlertDialog(
+        final fullDatabase = selected.contains(BackupEntryId.database);
+        return BackupSelectionDialog(
+          icon: const Icon(Icons.restore),
           title: Text(t.importBackupTitle),
-          content: SizedBox(
-            width: 440,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(t.selectedImportOnly),
-                  for (final id in available)
-                    CheckboxListTile(
-                      title: Text(registry.byId(id).title()),
-                      value: selected.contains(id),
-                      onChanged: (value) => update(() {
-                        if (value == true) {
-                          selected.add(id);
-                        } else {
-                          selected.remove(id);
-                        }
-                      }),
+          warning: fullDatabase ? BackupNotice(message: t.databaseReplacementWarning, isWarning: true) : null,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(t.selectedImportOnly),
+              const SizedBox(height: 12),
+              BackupEntryTree(
+                entryIds: {...available, if (fullDatabase) ...BackupEntryRegistry.databaseChildIds},
+                entryOptionsBuilder: (entry) {
+                  if (!selected.contains(entry.id)) return null;
+                  return switch (entry.id) {
+                    BackupEntryId.tabs || BackupEntryId.tags => BackupRestoreOptions(
+                      showTabs: entry.id == BackupEntryId.tabs,
+                      showTags: entry.id == BackupEntryId.tags,
+                      tabsMode: tabsMode,
+                      tagsMode: tagsMode,
+                      onTabsModeChanged: (value) => update(() => tabsMode = value),
+                      onTagsModeChanged: (value) => update(() => tagsMode = value),
                     ),
-                  if (selected.contains(BackupEntryId.database))
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Text(t.databaseReplacementWarning),
-                    ),
-                  if (selected.contains(BackupEntryId.tabs))
-                    DropdownButtonFormField<BackupTabsMode>(
-                      initialValue: tabsMode,
-                      decoration: InputDecoration(labelText: t.entryTabsTitle),
-                      items: [
-                        DropdownMenuItem(value: BackupTabsMode.merge, child: Text(context.loc.settings.sync.merge)),
-                        DropdownMenuItem(value: BackupTabsMode.replace, child: Text(context.loc.settings.sync.replace)),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) update(() => tabsMode = value);
-                      },
-                    ),
-                  if (selected.contains(BackupEntryId.tags))
-                    SwitchListTile(
-                      title: Text(context.loc.settings.sync.overwrite),
-                      subtitle: Text(context.loc.settings.sync.tagsSyncModePreferTypeIfNone),
-                      value: tagsMode == BackupTagsMode.overwrite,
-                      onChanged: (value) =>
-                          update(() => tagsMode = value ? BackupTagsMode.overwrite : BackupTagsMode.preferTypeIfNone),
-                    ),
-                ],
+                    _ => null,
+                  };
+                },
+                entryBuilder: (entry) {
+                  final includedInDatabase = fullDatabase && registry.isDatabaseChild(entry.id);
+                  return BackupEntryCheckbox(
+                    entry: entry,
+                    selected: includedInDatabase || selected.contains(entry.id),
+                    onChanged: includedInDatabase
+                        ? null
+                        : (value) => update(() {
+                            if (value) {
+                              selected.add(entry.id);
+                            } else {
+                              selected.remove(entry.id);
+                            }
+                            if (entry.id == BackupEntryId.database) {
+                              selected.removeAll(BackupEntryRegistry.databaseChildIds);
+                            }
+                          }),
+                  );
+                },
               ),
-            ),
+            ],
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: Text(context.loc.cancel)),
-            FilledButton(
+            FilledButton.icon(
+              icon: const Icon(Icons.restore),
               onPressed: selected.isEmpty
                   ? null
                   : () => Navigator.pop(
@@ -83,7 +84,7 @@ Future<BackupImportOptions?> showBackupImportDialog(
                         tagsMode: tagsMode,
                       ),
                     ),
-              child: Text(t.import),
+              label: Text(t.import),
             ),
           ],
         );

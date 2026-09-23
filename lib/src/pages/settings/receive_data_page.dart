@@ -9,7 +9,7 @@ import 'package:lolisnatcher/src/services/backup_transfer/backup_entry_registry.
 import 'package:lolisnatcher/src/services/backup_transfer/backup_models.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/transfer_device_info.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/transfer_discovery_service.dart';
-import 'package:lolisnatcher/src/services/backup_transfer/transfer_formatters.dart';
+import 'package:lolisnatcher/src/pages/settings/backup_transfer_widgets.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/transfer_history_service.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/transfer_socket_client.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -24,8 +24,8 @@ class ReceiveDataPage extends StatefulWidget {
 class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingObserver {
   final discovery = TransferDiscoveryService();
   final client = TransferSocketClient();
-  final registry = BackupEntryRegistry.instance;
   final historyService = const TransferHistoryService();
+  final scrollController = ScrollController();
   final logs = <BackupTransferLog>[];
   List<DiscoveredTransferDevice> devices = [];
   List<TransferHistoryEntry> history = [];
@@ -99,6 +99,7 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
     devicesSub?.cancel();
     logSub?.cancel();
     statsSub?.cancel();
+    scrollController.dispose();
     unawaited(discovery.dispose());
     unawaited(client.dispose());
     super.dispose();
@@ -106,8 +107,13 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && keepAwake) {
-      ServiceHandler.disableSleep(force: true);
+    if (state == AppLifecycleState.resumed) {
+      if (keepAwake) ServiceHandler.disableSleep(force: true);
+      unawaited(
+        _loadDeviceInfoAndStartDiscovery().catchError((Object error) {
+          if (mounted) setState(() => logs.insert(0, BackupTransferLog(error.toString())));
+        }),
+      );
     }
   }
 
@@ -122,40 +128,20 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
   }
 
   Future<void> _addManual() async {
-    final controller = TextEditingController();
     final address = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.loc.settings.backupAndTransfer.addDevice),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(labelText: 'IP:port'),
-          inputFormatters: [FilteringTextInputFormatter.allow(RegExp('[0-9.:]'))],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(context.loc.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text),
-            child: Text(context.loc.add),
-          ),
-        ],
-      ),
+      builder: (_) => const _ManualDeviceDialog(),
     );
-    if (address == null || !address.contains(':')) return;
+    if (!mounted || address == null) return;
     final parts = address.split(':');
-    final port = int.tryParse(parts.last);
-    if (port == null) return;
     setState(() {
       devices = [
-        ...devices,
+        ...devices.where((device) => device.address != address),
         DiscoveredTransferDevice(
           id: address,
           name: context.loc.settings.backupAndTransfer.manualDevice,
           host: parts.first,
-          port: port,
+          port: int.parse(parts.last),
           version: context.loc.settings.backupAndTransfer.unknown,
           build: null,
           deviceId: null,
@@ -166,144 +152,20 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
   }
 
   Future<void> _selectAndReceive(DiscoveredTransferDevice device) async {
-    final selected = <BackupEntryId>{};
-    var tabsMode = BackupTabsMode.merge;
-    var tagsMode = BackupTagsMode.preferTypeIfNone;
-    final favouritesStartController = TextEditingController(text: '0');
-    final snatchedStartController = TextEditingController(text: '0');
     final result = await showDialog<_ReceiveSelection>(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text(device.name),
-              insetPadding: const EdgeInsets.all(12),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    for (final entry in registry.defaultEntries.where(
-                      (entry) =>
-                          entry.id != BackupEntryRegistry.databaseParentId && !registry.isDatabaseChild(entry.id),
-                    ))
-                      CheckboxListTile(
-                        value: selected.contains(entry.id),
-                        title: Text(entry.title()),
-                        subtitle: Text(entry.description()),
-                        onChanged: (value) {
-                          setDialogState(() {
-                            if (value == true) {
-                              selected.add(entry.id);
-                            } else {
-                              selected.remove(entry.id);
-                            }
-                          });
-                        },
-                      ),
-                    _DatabaseEntryTree(
-                      registry: registry,
-                      selected: selected,
-                      onChanged: (entryId, value) {
-                        setDialogState(() {
-                          _setTreeEntrySelected(selected, entryId, value);
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    if (selected.contains(BackupEntryId.database))
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Text(context.loc.settings.backupAndTransfer.databaseReplacementWarning),
-                      ),
-                    if (_isEntrySelected(selected, BackupEntryId.tabs))
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: DropdownButtonFormField<BackupTabsMode>(
-                          initialValue: tabsMode,
-                          decoration: InputDecoration(labelText: registry.byId(BackupEntryId.tabs).title()),
-                          items: [
-                            DropdownMenuItem(value: BackupTabsMode.merge, child: Text(context.loc.settings.sync.merge)),
-                            DropdownMenuItem(
-                              value: BackupTabsMode.replace,
-                              child: Text(context.loc.settings.sync.replace),
-                            ),
-                          ],
-                          onChanged: (value) {
-                            if (value == null) return;
-                            setDialogState(() => tabsMode = value);
-                          },
-                        ),
-                      ),
-                    if (selected.contains(BackupEntryId.tags))
-                      SwitchListTile(
-                        title: Text(context.loc.settings.sync.overwrite),
-                        subtitle: Text(context.loc.settings.sync.tagsSyncModePreferTypeIfNone),
-                        value: tagsMode == BackupTagsMode.overwrite,
-                        onChanged: (value) => setDialogState(
-                          () => tagsMode = value ? BackupTagsMode.overwrite : BackupTagsMode.preferTypeIfNone,
-                        ),
-                      ),
-                    if (_isEntrySelected(selected, BackupEntryId.favourites) &&
-                        !_isEntrySelected(selected, BackupEntryId.database))
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: TextField(
-                          controller: favouritesStartController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: context.loc.settings.sync.syncFavsFrom,
-                          ),
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        ),
-                      ),
-                    if (_isEntrySelected(selected, BackupEntryId.snatched) &&
-                        !_isEntrySelected(selected, BackupEntryId.database))
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: TextField(
-                          controller: snatchedStartController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: context.loc.settings.sync.syncSnatchedFrom,
-                          ),
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(context.loc.cancel),
-                ),
-                FilledButton(
-                  onPressed: selected.isEmpty
-                      ? null
-                      : () => Navigator.of(context).pop(
-                          _ReceiveSelection(
-                            entries: _normalizedSelectedEntries(selected),
-                            tabsMode: tabsMode,
-                            tagsMode: tagsMode,
-                            favouritesStartIndex: int.tryParse(favouritesStartController.text) ?? 0,
-                            snatchedStartIndex: int.tryParse(snatchedStartController.text) ?? 0,
-                          ),
-                        ),
-                  child: Text(context.loc.settings.backupAndTransfer.receive),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      builder: (_) => _ReceiveSelectionDialog(device: device),
     );
-    favouritesStartController.dispose();
-    snatchedStartController.dispose();
     if (!mounted || result == null || result.entries.isEmpty) return;
 
-    setState(() => receiving = true);
+    setState(() {
+      stats = null;
+      receiving = true;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !scrollController.hasClients) return;
+      unawaited(scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut));
+    });
     _setKeepAwake(true);
     try {
       await client.receive(
@@ -322,8 +184,141 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
     } finally {
       _setKeepAwake(false);
       unawaited(_loadHistory());
-      if (mounted) setState(() => receiving = false);
+      if (mounted) {
+        setState(() => receiving = false);
+        unawaited(discovery.refreshDiscovery());
+      }
     }
+  }
+
+  Future<void> _cancelReceive() async {
+    if (client.importing) return;
+    await client.cancel();
+    _setKeepAwake(false);
+    if (!mounted) return;
+    setState(() => receiving = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.loc.settings.backupAndTransfer;
+    return PopScope(
+      canPop: !receiving,
+      child: Scaffold(
+        appBar: SettingsAppBar(
+          title: t.receiveDataTitle,
+          leading: receiving ? const IconButton(onPressed: null, icon: BackButtonIcon()) : null,
+        ),
+        body: BackupPageBody(
+          controller: scrollController,
+          children: [
+            if (receiving || stats != null)
+              BackupTransferProgress(
+                stats: stats,
+                isReceiving: true,
+                errorMessage: logs.firstOrNull?.message,
+                onCancel: receiving && !client.importing ? _cancelReceive : null,
+              ),
+            BackupNotice(message: t.receiveInstructions, icon: Icons.devices),
+            const SizedBox(height: 24),
+            BackupSection(
+              title: t.nearbyDevices,
+              trailing: TextButton.icon(
+                onPressed: receiving ? null : _addManual,
+                icon: const Icon(Icons.add),
+                label: Text(t.addDevice),
+              ),
+              children: [
+                if (devices.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        Icon(Icons.devices_other, size: 40, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        const SizedBox(height: 12),
+                        Text(
+                          t.noDevicesFound,
+                          style: Theme.of(context).textTheme.titleMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(t.noDevicesHint, textAlign: TextAlign.center),
+                      ],
+                    ),
+                  ),
+                for (final device in devices)
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    leading: const Icon(Icons.devices),
+                    title: Text(device.name),
+                    subtitle: Text(
+                      '${device.address}\n${device.version}${device.build != null ? ' (${device.build})' : ''}${device.isManual ? ' · ${t.manual}' : ''}',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    enabled: !receiving,
+                    onTap: receiving ? null : () => _selectAndReceive(device),
+                  ),
+              ],
+            ),
+            BackupSection(
+              title: t.deviceInfo,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.smartphone),
+                  title: Text(deviceName.isEmpty ? t.starting : deviceName),
+                  subtitle: SelectableText(ip.isEmpty ? t.starting : ip),
+                ),
+              ],
+            ),
+            BackupTransferActivity(logs: logs, history: history),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReceiveSelection {
+  const _ReceiveSelection({
+    required this.entries,
+    required this.tabsMode,
+    required this.tagsMode,
+    required this.favouritesStartIndex,
+    required this.snatchedStartIndex,
+  });
+
+  final List<BackupEntryId> entries;
+  final BackupTabsMode tabsMode;
+  final BackupTagsMode tagsMode;
+  final int favouritesStartIndex;
+  final int snatchedStartIndex;
+}
+
+class _ReceiveSelectionDialog extends StatefulWidget {
+  const _ReceiveSelectionDialog({required this.device});
+
+  final DiscoveredTransferDevice device;
+
+  @override
+  State<_ReceiveSelectionDialog> createState() => _ReceiveSelectionDialogState();
+}
+
+class _ReceiveSelectionDialogState extends State<_ReceiveSelectionDialog> {
+  final registry = BackupEntryRegistry.instance;
+  final selected = <BackupEntryId>{};
+  BackupTabsMode tabsMode = BackupTabsMode.merge;
+  BackupTagsMode tagsMode = BackupTagsMode.preferTypeIfNone;
+  final favouritesStartController = TextEditingController(text: '0');
+  final snatchedStartController = TextEditingController(text: '0');
+  final formKey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    // showDialog returns before the closing animation finishes. Keep these
+    // alive until the dialog and its text fields are actually unmounted.
+    favouritesStartController.dispose();
+    snatchedStartController.dispose();
+    super.dispose();
   }
 
   void _setTreeEntrySelected(Set<BackupEntryId> selected, BackupEntryId entryId, bool value) {
@@ -347,11 +342,6 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
     }
   }
 
-  bool _isEntrySelected(Set<BackupEntryId> selected, BackupEntryId entryId) {
-    return selected.contains(entryId) ||
-        (registry.isDatabaseChild(entryId) && selected.contains(BackupEntryRegistry.databaseParentId));
-  }
-
   List<BackupEntryId> _normalizedSelectedEntries(Set<BackupEntryId> selected) {
     final ordered = <BackupEntryId>[];
     for (final entry in registry.defaultEntries) {
@@ -362,356 +352,187 @@ class _ReceiveDataPageState extends State<ReceiveDataPage> with WidgetsBindingOb
     return ordered;
   }
 
-  Future<void> _cancelReceive() async {
-    if (client.importing) return;
-    await client.cancel();
-    _setKeepAwake(false);
-    if (!mounted) return;
-    setState(() => receiving = false);
-  }
-
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: !receiving,
-      child: Scaffold(
-        appBar: SettingsAppBar(
-          title: context.loc.settings.backupAndTransfer.receiveDataTitle,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.cancel_outlined),
-              tooltip: context.loc.cancel,
-              onPressed: receiving && !client.importing ? _cancelReceive : null,
-            ),
-          ],
-        ),
-        body: ListView(
-          padding: const EdgeInsets.all(12),
+    final t = context.loc.settings.backupAndTransfer;
+    return BackupSelectionDialog(
+      icon: const Icon(Icons.download_rounded),
+      title: Text(t.selectedData),
+      warning: selected.contains(BackupEntryId.database)
+          ? BackupNotice(message: t.databaseReplacementWarning, isWarning: true)
+          : null,
+      content: Form(
+        key: formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              context.loc.settings.backupAndTransfer.deviceInfo,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Card(
-              child: Column(
-                children: [
-                  _InfoRow(
-                    label: context.loc.settings.backupAndTransfer.name,
-                    value: deviceName.isEmpty ? context.loc.settings.backupAndTransfer.starting : deviceName,
-                  ),
-                  _InfoRow(
-                    label: context.loc.settings.backupAndTransfer.address,
-                    value: ip.isEmpty ? context.loc.settings.backupAndTransfer.starting : ip,
-                  ),
-                ],
-              ),
-            ),
+            Text(widget.device.name, style: Theme.of(context).textTheme.titleMedium),
+            Text(widget.device.address, style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 12),
-            //
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    context.loc.settings.backupAndTransfer.nearbyDevices,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  tooltip: context.loc.settings.backupAndTransfer.addDevice,
-                  onPressed: receiving ? null : _addManual,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (devices.isEmpty) ListTile(title: Text(context.loc.settings.backupAndTransfer.noDevicesFound)),
-            for (final device in devices)
-              Card(
-                child: ListTile(
-                  title: Text(device.name),
-                  subtitle: Text(
-                    '${device.address} • ${device.version}${device.build != null ? ' (${device.build})' : ''}${device.isManual ? ' • ${context.loc.settings.backupAndTransfer.manual}' : ''}',
-                  ),
-                  trailing: const Icon(
-                    Icons.chevron_right_rounded,
-                    size: 24,
-                  ),
-                  onTap: receiving ? null : () => _selectAndReceive(device),
-                ),
-              ),
-            //
-            if (stats != null && stats!.isComplete != true) ...[
-              const SizedBox(height: 12),
-              Text(
-                context.loc.settings.backupAndTransfer.transfer,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              ListTile(
-                title: Text(context.loc.settings.backupAndTransfer.received),
-                trailing: Text(_formatProgress(stats)),
-              ),
-              if (stats?.totalBytes != null)
-                ListTile(
-                  title: Text(context.loc.settings.backupAndTransfer.total),
-                  trailing: Text(TransferFormatters.bytes(stats?.totalBytes ?? 0)),
-                ),
-              ListTile(
-                title: Text(context.loc.settings.backupAndTransfer.elapsed),
-                trailing: Text(
-                  TransferFormatters.duration(DateTime.now().difference(stats?.startedAt ?? DateTime.now())),
-                ),
-              ),
-              ListTile(
-                title: Text(context.loc.settings.backupAndTransfer.speed),
-                trailing: Text('${TransferFormatters.bytes(stats?.bytesPerSecond.round() ?? 0)}/s'),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    icon: const Icon(Icons.cancel_outlined),
-                    label: Text(context.loc.cancel),
-                    onPressed: receiving && !client.importing ? _cancelReceive : null,
-                  ),
-                ),
-              ),
-            ],
-            //
-            if (logs.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 12, bottom: 8),
-                child: Text(context.loc.settings.backupAndTransfer.logs, style: Theme.of(context).textTheme.titleLarge),
-              ),
-            for (final indexedLog in logs.take(100).indexed)
-              ListTile(
-                dense: true,
-                title: Text(indexedLog.$2.message),
-                subtitle: Text(TransferFormatters.time(indexedLog.$2.createdAt)),
-                trailing: _isLogRunning(indexedLog.$1)
-                    ? const SizedBox.square(
-                        dimension: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : null,
-              ),
+            Text(t.selectedImportOnly),
             const SizedBox(height: 12),
-            _HistorySection(history: history),
+            BackupEntryTree(
+              entryIds: registry.defaultEntries.map((entry) => entry.id),
+              entryOptionsBuilder: (entry) {
+                if (!selected.contains(entry.id)) return null;
+                return switch (entry.id) {
+                  BackupEntryId.tabs || BackupEntryId.tags => BackupRestoreOptions(
+                    showTabs: entry.id == BackupEntryId.tabs,
+                    showTags: entry.id == BackupEntryId.tags,
+                    tabsMode: tabsMode,
+                    tagsMode: tagsMode,
+                    onTabsModeChanged: (value) => setState(() => tabsMode = value),
+                    onTagsModeChanged: (value) => setState(() => tagsMode = value),
+                  ),
+                  BackupEntryId.favourites => _StartIndexField(
+                    controller: favouritesStartController,
+                    label: t.favouritesStartIndex,
+                  ),
+                  BackupEntryId.snatched => _StartIndexField(
+                    controller: snatchedStartController,
+                    label: t.snatchedStartIndex,
+                  ),
+                  _ => null,
+                };
+              },
+              entryBuilder: (entry) {
+                // Only an explicit full-database selection locks child categories.
+                final includedInDatabase =
+                    registry.isDatabaseChild(entry.id) && selected.contains(BackupEntryId.database);
+                return BackupEntryCheckbox(
+                  entry: entry,
+                  selected: includedInDatabase || selected.contains(entry.id),
+                  onChanged: includedInDatabase
+                      ? null
+                      : (value) => setState(() => _setTreeEntrySelected(selected, entry.id, value)),
+                );
+              },
+            ),
           ],
         ),
       ),
-    );
-  }
-
-  String _formatProgress(BackupTransferStats? stats) {
-    if (stats == null) return '';
-
-    final transferred = TransferFormatters.bytes(stats.bytesTransferred);
-    final total = stats.totalBytes;
-    if (total == null || total <= 0) return transferred;
-    final percent = stats.bytesTransferred / total * 100;
-    return '$transferred / ${TransferFormatters.bytes(total)} (${percent.toStringAsFixed(1)}%)';
-  }
-
-  bool _isLogRunning(int index) {
-    if (index != 0 || !receiving) return false;
-    return stats?.isComplete != true;
-  }
-}
-
-class _ReceiveSelection {
-  const _ReceiveSelection({
-    required this.entries,
-    required this.tabsMode,
-    required this.tagsMode,
-    required this.favouritesStartIndex,
-    required this.snatchedStartIndex,
-  });
-
-  final List<BackupEntryId> entries;
-  final BackupTabsMode tabsMode;
-  final BackupTagsMode tagsMode;
-  final int favouritesStartIndex;
-  final int snatchedStartIndex;
-}
-
-class _DatabaseEntryTree extends StatelessWidget {
-  const _DatabaseEntryTree({
-    required this.registry,
-    required this.selected,
-    required this.onChanged,
-  });
-
-  final BackupEntryRegistry registry;
-  final Set<BackupEntryId> selected;
-  final void Function(BackupEntryId entryId, bool value) onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final database = registry.byId(BackupEntryRegistry.databaseParentId);
-    final databaseSelected =
-        selected.contains(BackupEntryRegistry.databaseParentId) ||
-        selected.containsAll(BackupEntryRegistry.databaseChildIds);
-    final childSelected = BackupEntryRegistry.databaseChildIds.any(selected.contains);
-    final bool? databaseValue = databaseSelected
-        ? true
-        : childSelected
-        ? null
-        : false;
-
-    return Column(
-      children: [
-        CheckboxListTile(
-          tristate: true,
-          value: databaseValue,
-          title: Text(database.title()),
-          subtitle: Text(database.description()),
-          secondary: Icon(database.icon),
-          onChanged: (_) => onChanged(database.id, !databaseSelected),
-        ),
-        for (final indexedEntry in BackupEntryRegistry.databaseChildIds.indexed)
-          _DatabaseChildEntryTile(
-            entry: registry.byId(indexedEntry.$2),
-            isLast: indexedEntry.$1 == BackupEntryRegistry.databaseChildIds.length - 1,
-            checked: databaseSelected || selected.contains(indexedEntry.$2),
-            locked: databaseSelected,
-            onChanged: (value) => onChanged(indexedEntry.$2, value),
-          ),
-      ],
-    );
-  }
-}
-
-class _DatabaseChildEntryTile extends StatelessWidget {
-  const _DatabaseChildEntryTile({
-    required this.entry,
-    required this.isLast,
-    required this.checked,
-    required this.locked,
-    required this.onChanged,
-  });
-
-  final BackupEntryDefinition entry;
-  final bool isLast;
-  final bool checked;
-  final bool locked;
-  final void Function(bool value) onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).dividerColor;
-    return Stack(
-      children: [
-        Positioned.directional(
-          textDirection: Directionality.of(context),
-          start: 0,
-          top: 0,
-          bottom: 0,
-          width: 42,
-          child: CustomPaint(
-            painter: _TreeBranchPainter(color: color, isLast: isLast),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsetsDirectional.only(start: 42),
-          child: CheckboxListTile(
-            dense: true,
-            value: checked,
-            title: Text(entry.title()),
-            subtitle: Text(entry.description()),
-            secondary: Icon(entry.icon),
-            onChanged: locked ? null : (value) => onChanged(value ?? false),
-          ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(context.loc.cancel)),
+        FilledButton.icon(
+          icon: const Icon(Icons.download_rounded),
+          onPressed: selected.isEmpty
+              ? null
+              : () {
+                  if (!formKey.currentState!.validate()) return;
+                  Navigator.pop(
+                    context,
+                    _ReceiveSelection(
+                      entries: _normalizedSelectedEntries(selected),
+                      tabsMode: tabsMode,
+                      tagsMode: tagsMode,
+                      favouritesStartIndex: int.tryParse(favouritesStartController.text) ?? 0,
+                      snatchedStartIndex: int.tryParse(snatchedStartController.text) ?? 0,
+                    ),
+                  );
+                },
+          label: Text(t.receive),
         ),
       ],
     );
   }
 }
 
-class _TreeBranchPainter extends CustomPainter {
-  const _TreeBranchPainter({required this.color, required this.isLast});
-
-  final Color color;
-  final bool isLast;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-    final x = size.width * 0.62;
-    final y = size.height / 2;
-    canvas.drawLine(Offset(x, 0), Offset(x, isLast ? y : size.height), paint);
-    canvas.drawLine(Offset(x, y), Offset(size.width, y), paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _TreeBranchPainter oldDelegate) {
-    return color != oldDelegate.color || isLast != oldDelegate.isLast;
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
-
+class _StartIndexField extends StatelessWidget {
+  const _StartIndexField({required this.controller, required this.label});
+  final TextEditingController controller;
   final String label;
-  final String value;
 
   @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      dense: true,
-      title: Text(label),
-      trailing: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 220),
-        child: Text(value, textAlign: TextAlign.end, overflow: TextOverflow.ellipsis),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 16),
+    child: TextFormField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: label,
+        helperText: context.loc.settings.backupAndTransfer.startIndexHint,
+        helperMaxLines: 3,
+        errorMaxLines: 3,
+        border: const OutlineInputBorder(),
       ),
-    );
-  }
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      validator: (value) {
+        final index = int.tryParse(value ?? '');
+        return index == null || index < 0 || index > 0x7fffffff
+            ? context.loc.settings.backupAndTransfer.invalidStartIndex
+            : null;
+      },
+    ),
+  );
 }
 
-class _HistorySection extends StatelessWidget {
-  const _HistorySection({required this.history});
+class _ManualDeviceDialog extends StatefulWidget {
+  const _ManualDeviceDialog();
+  @override
+  State<_ManualDeviceDialog> createState() => _ManualDeviceDialogState();
+}
 
-  final List<TransferHistoryEntry> history;
+class _ManualDeviceDialogState extends State<_ManualDeviceDialog> {
+  final controller = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  void submit() {
+    if (formKey.currentState!.validate()) Navigator.pop(context, controller.text.trim());
+  }
 
   @override
   Widget build(BuildContext context) {
     final t = context.loc.settings.backupAndTransfer;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(t.history, style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 8),
-        if (history.isEmpty)
-          ListTile(title: Text(t.noHistory))
-        else
-          for (final entry in history.take(20))
-            Card(
-              child: ListTile(
-                title: Text(entry.peerName.isEmpty ? entry.peerAddress : entry.peerName),
-                subtitle: Text(
-                  [
-                    entry.peerAddress,
-                    TransferFormatters.dateTime(entry.createdAt),
-                    '${t.selectedData}: ${_entryNames(entry.entryIds)}',
-                  ].where((line) => line.isNotEmpty).join('\n'),
-                ),
-                isThreeLine: true,
-              ),
+    return AlertDialog(
+      icon: const Icon(Icons.add_link),
+      title: Text(t.addDevice),
+      scrollable: true,
+      content: SizedBox(
+        width: 400,
+        child: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            autofocus: true,
+            autocorrect: false,
+            keyboardType: TextInputType.url,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => submit(),
+            decoration: InputDecoration(
+              labelText: t.address,
+              hintText: '192.168.1.10:12345',
+              helperText: t.manualAddressHint,
+              helperMaxLines: 4,
+              errorMaxLines: 3,
+              border: const OutlineInputBorder(),
             ),
+            validator: (value) {
+              final parts = (value ?? '').trim().split(':');
+              final octets = parts.first.split('.');
+              final port = parts.length == 2 ? int.tryParse(parts.last) : null;
+              if (octets.length != 4 ||
+                  octets.any((part) => !RegExp(r'^\d{1,3}$').hasMatch(part) || int.parse(part) > 255) ||
+                  port == null ||
+                  port < 1 ||
+                  port > 65535) {
+                return t.invalidDeviceAddress;
+              }
+              return null;
+            },
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(context.loc.cancel)),
+        FilledButton(onPressed: submit, child: Text(context.loc.add)),
       ],
     );
-  }
-
-  String _entryNames(List<BackupEntryId> entryIds) {
-    return entryIds
-        .map(
-          (id) => BackupEntryRegistry.instance.entries.where((entry) => entry.id == id).firstOrNull?.title() ?? id.name,
-        )
-        .join(', ');
   }
 }

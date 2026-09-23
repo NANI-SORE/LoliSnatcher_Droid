@@ -1042,7 +1042,7 @@ class SearchHandler {
 
   void replaceTabsNew(String text) => _importExternalTabs(text, replace: true);
 
-  void _importExternalTabs(String text, {required bool replace}) {
+  void _importExternalTabs(String text, {required bool replace, bool resetIfEmpty = false}) {
     final backups = TabBackup.parseImport(text);
     final restored = <SearchTab>[];
     SearchTab? selected;
@@ -1061,8 +1061,8 @@ class SearchHandler {
     }
     if (replace) {
       if (restored.isEmpty) {
-        // Empty or unavailable imports cannot remove the last usable tab.
-        if (tabs.isNotEmpty) return;
+        // Individual imports keep a usable tab; full snapshots reset the session.
+        if (tabs.isNotEmpty && !resetIfEmpty) return;
         final booru = SettingsHandler.instance.booruList.firstWhereOrNull((booru) => booru.type != null);
         if (booru == null) throw StateError('No configured booru is available for the imported tabs');
         final tab = SearchTab(booru, null, booru.defTags?.isNotEmpty == true ? booru.defTags! : SX.defTags.value);
@@ -1266,7 +1266,8 @@ class SearchHandler {
 
   void mergeTabs(String text) => _importExternalTabs(text, replace: false);
 
-  void replaceTabs(String text) => _importExternalTabs(text, replace: true);
+  void replaceTabs(String text, {bool resetIfEmpty = false}) =>
+      _importExternalTabs(text, replace: true, resetIfEmpty: resetIfEmpty);
 
   Future<void> backupTabs() async {
     if (!canBackup.value) {

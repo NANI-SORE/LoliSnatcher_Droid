@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:crypto/crypto.dart';
 
 import 'package:lolisnatcher/src/data/constants.dart';
@@ -44,6 +46,11 @@ class TransferSocketServer {
   final Future<bool> Function(TransferRequest request)? approveRequest;
   final logs = StreamController<BackupTransferLog>.broadcast();
   final stats = StreamController<BackupTransferStats>.broadcast();
+  final _isTransferring = ValueNotifier(false);
+
+  /// Covers the whole session, including approval, export and cleanup.
+  ValueListenable<bool> get isTransferring => _isTransferring;
+
   bool includeDeviceSpecificSettings = false;
 
   ServerSocket? _server;
@@ -110,6 +117,7 @@ class TransferSocketServer {
     await stop();
     await logs.close();
     await stats.close();
+    _isTransferring.dispose();
   }
 
   Future<void> serveSocket(Socket socket) {
@@ -122,9 +130,14 @@ class TransferSocketServer {
     }
     final session = _SendSession(connection);
     _active = session;
-    return session.done = _serve(session).whenComplete(() {
-      if (identical(_active, session)) _active = null;
+    session.done = _serve(session).whenComplete(() {
+      if (identical(_active, session)) {
+        _active = null;
+        _isTransferring.value = false;
+      }
     });
+    _isTransferring.value = true;
+    return session.done;
   }
 
   Future<void> _reject(TransferSocketConnection connection) async {
