@@ -17,6 +17,7 @@ import 'package:lolisnatcher/src/widgets/common/marquee_text.dart';
 import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_editor.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_query_text.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_rule_list.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_suspension_sheet.dart';
 
 class TagsFiltersPage extends StatefulWidget {
@@ -26,12 +27,10 @@ class TagsFiltersPage extends StatefulWidget {
   State<TagsFiltersPage> createState() => _TagsFiltersPageState();
 }
 
-enum _FilterSort { alphabetical, reverseAlphabetical, effect, reverseEffect, suspensionTime }
-
 class _TagsFiltersPageState extends State<TagsFiltersPage> {
-  static const String _globalScopeKey = 'global';
-  static const String _favouritesScopeKey = 'view:favourites';
-  static const String _downloadsScopeKey = 'view:downloads';
+  static const String _globalScopeKey = TagFilterRuleList.globalScopeKey;
+  static const String _favouritesScopeKey = TagFilterRuleList.favouritesScopeKey;
+  static const String _downloadsScopeKey = TagFilterRuleList.downloadsScopeKey;
 
   final TextEditingController searchController = TextEditingController();
   final ScrollController filterControlsScrollController = ScrollController();
@@ -47,16 +46,9 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
   final Set<String> expandedTimerRuleIds = {};
   final Set<String> selectedRuleIds = {};
   bool _selectionMode = false;
-  _FilterSort sortMode = _FilterSort.alphabetical;
-  final Map<String, String> searchableText = {};
-  final Map<String, TagFilterMarker?> markersByKey = {};
-  final Map<TagFilterEffect, int> effectCounts = {};
-  List<String> markerFilterKeys = [];
-  List<TagFilterRule> alphabeticalRules = [];
-  final Map<_FilterSort, List<TagFilterRule>> sortedRules = {};
+  TagFilterSort sortMode = TagFilterSort.alphabetical;
+  late TagFilterRuleList ruleList;
   List<TagFilterRule> filteredRules = [];
-  List<Booru> cachedRegularBoorus = [];
-  final Map<String, Booru> boorusByScopeKey = {};
 
   @override
   void initState() {
@@ -81,7 +73,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
 
   void _refresh() {
     _rebuildRuleCache();
-    selectedMarkers.removeWhere((key) => !markerFilterKeys.contains(key));
+    selectedMarkers.removeWhere((key) => !ruleList.markerKeys.contains(key));
     selectedScopes.removeWhere((key) => !_scopeFilterKeys.contains(key));
     expandedTimerRuleIds.retainWhere((id) => TagFilterHandler.instance.rules.any((rule) => rule.id == id));
     selectedRuleIds.retainWhere((id) => TagFilterHandler.instance.rules.any((rule) => rule.id == id));
@@ -104,109 +96,32 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     countdownRefreshTimer = Timer(delay, () {
       if (!mounted) return;
       countdownRevision.value++;
+      _rebuildRuleCache();
+      _applyFilters();
       setState(() {});
       _scheduleCountdownRefresh();
     });
   }
 
   void _rebuildRuleCache() {
-    final rules = TagFilterHandler.instance.rules;
-    final now = DateTime.now().toUtc();
-    cachedRegularBoorus = SettingsHandler.instance.booruList
-        .where((booru) => booru.type?.isFavouritesOrDownloads != true && booru.type?.isMerge != true)
-        .toList();
-    boorusByScopeKey
-      ..clear()
-      ..addEntries(cachedRegularBoorus.map((booru) => MapEntry(_sourceScopeKey(booru), booru)));
-    searchableText
-      ..clear()
-      ..addEntries(
-        rules.map(
-          (rule) => MapEntry(
-            rule.id,
-            '${rule.name} ${rule.query} ${rule.effect.name} ${rule.scope.kind.name} '
-                    '${rule.scope.targets.map((target) => '${target.name ?? ''} ${target.baseUrl ?? ''}').join(' ')} '
-                    '${rule.scope.excludedSources.map((source) => '${source.name ?? ''} ${source.baseUrl ?? ''}').join(' ')} '
-                    '${TagFilterMarker.stableKeyFor(rule.marker)}'
-                .toLowerCase(),
-          ),
-        ),
-      );
-    alphabeticalRules = [...rules]..sort(_compareAlphabetically);
-    sortedRules
-      ..clear()
-      ..[_FilterSort.alphabetical] = alphabeticalRules
-      ..[_FilterSort.reverseAlphabetical] = alphabeticalRules.reversed.toList()
-      ..[_FilterSort.effect] = ([...rules]..sort(_compareByEffect))
-      ..[_FilterSort.reverseEffect] = ([...rules]..sort((left, right) => _compareByEffect(right, left)))
-      ..[_FilterSort.suspensionTime] = ([...rules]..sort((left, right) => _compareBySuspensionTime(left, right, now)));
-    effectCounts
-      ..clear()
-      ..addEntries(TagFilterEffect.values.map((effect) => MapEntry(effect, 0)));
-    markersByKey.clear();
-    for (final rule in rules) {
-      effectCounts[rule.effect] = effectCounts[rule.effect]! + 1;
-      if (rule.effect == TagFilterEffect.mark) markersByKey.putIfAbsent(_markerKey(rule.marker), () => rule.marker);
-    }
-    markerFilterKeys = markersByKey.keys.toList()
-      ..sort((left, right) => _markerSortName(left).compareTo(_markerSortName(right)));
+    ruleList = TagFilterRuleList(
+      rules: TagFilterHandler.instance.rules,
+      boorus: SettingsHandler.instance.booruList,
+      now: DateTime.now().toUtc(),
+    );
   }
 
   void _applyFilters() {
-    final query = search.toLowerCase();
-    final now = DateTime.now().toUtc();
-    final handler = TagFilterHandler.instance;
-    filteredRules = (sortedRules[sortMode] ?? alphabeticalRules).where((rule) {
-      if (selectedEffects.isNotEmpty && !selectedEffects.contains(rule.effect)) return false;
-      if (selectedMarkers.isNotEmpty &&
-          (rule.effect != TagFilterEffect.mark || !selectedMarkers.contains(_markerKey(rule.marker)))) {
-        return false;
-      }
-      if (!_matchesScopeFilter(rule)) return false;
-      final suspended = rule.enabled && rule.disabledUntil?.isAfter(now) == true;
-      final matchesStatus =
-          selectedStatuses.isEmpty ||
-          selectedStatuses.any(
-            (status) => switch (status) {
-              'enabled' => rule.enabled && !suspended,
-              'disabled' => !rule.enabled,
-              'suspended' => suspended,
-              'missing' => _isMissingSource(rule),
-              'invalid' => handler.errorFor(rule.id) != null,
-              _ => false,
-            },
-          );
-      if (!matchesStatus) return false;
-      return query.isEmpty || (searchableText[rule.id]?.contains(query) ?? false);
-    }).toList();
-  }
-
-  String _ruleSortName(TagFilterRule rule) => (rule.name.trim().isEmpty ? rule.query : rule.name).trim().toLowerCase();
-
-  int _compareAlphabetically(TagFilterRule left, TagFilterRule right) {
-    final nameResult = _ruleSortName(left).compareTo(_ruleSortName(right));
-    if (nameResult != 0) return nameResult;
-    final queryResult = left.query.toLowerCase().compareTo(right.query.toLowerCase());
-    if (queryResult != 0) return queryResult;
-    return left.id.compareTo(right.id);
-  }
-
-  int _compareByEffect(TagFilterRule left, TagFilterRule right) {
-    final effectResult = left.effect.index.compareTo(right.effect.index);
-    if (effectResult != 0) return effectResult;
-    return _compareAlphabetically(left, right);
-  }
-
-  int _compareBySuspensionTime(TagFilterRule left, TagFilterRule right, DateTime now) {
-    final leftUntil = left.enabled && left.disabledUntil?.isAfter(now) == true ? left.disabledUntil : null;
-    final rightUntil = right.enabled && right.disabledUntil?.isAfter(now) == true ? right.disabledUntil : null;
-    if (leftUntil != null && rightUntil != null) {
-      final timeResult = leftUntil.compareTo(rightUntil);
-      return timeResult != 0 ? timeResult : _compareAlphabetically(left, right);
-    }
-    if (leftUntil != null) return -1;
-    if (rightUntil != null) return 1;
-    return _compareAlphabetically(left, right);
+    filteredRules = ruleList.select(
+      search: search,
+      effects: selectedEffects,
+      markers: selectedMarkers,
+      scopes: selectedScopes,
+      statuses: selectedStatuses,
+      sort: sortMode,
+      isInvalid: (id) => TagFilterHandler.instance.errorFor(id) != null,
+      now: DateTime.now().toUtc(),
+    );
   }
 
   Future<void> _openEditor([TagFilterRule? rule]) => showTagFilterEditorSheet(context, rule: rule);
@@ -235,15 +150,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     TagFilterEffect.mark => Theme.of(context).colorScheme.onPrimaryContainer,
   };
 
-  String _markerKey(TagFilterMarker? marker) => TagFilterMarker.stableKeyFor(marker);
-
-  String _markerSortName(String key) {
-    if (key == TagFilterMarker.defaultStableKey) return '';
-    final marker = markersByKey[key];
-    return (marker?.icon?.name ?? marker?.text ?? key).toLowerCase();
-  }
-
-  TagFilterMarker? _markerForKey(String key) => markersByKey[key];
+  TagFilterMarker? _markerForKey(String key) => ruleList.markerForKey(key);
 
   Widget _markerVisual(TagFilterMarker? marker, {double size = 20, Color? color}) {
     if (marker == null) return Icon(Icons.star, size: size, color: TagFilterMarkerColor.grey.color);
@@ -297,41 +204,9 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     child: _ruleEffectVisual(rule, color: _onEffectContainerColor(rule.effect)),
   );
 
-  List<Booru> get regularBoorus => cachedRegularBoorus;
-
-  String _sourceScopeKey(Booru booru) => 'source:${BooruIdentity.fromBooru(booru).stableKey}';
-
-  List<String> get _scopeFilterKeys => [
-    _globalScopeKey,
-    ...regularBoorus.map(_sourceScopeKey),
-    _favouritesScopeKey,
-    _downloadsScopeKey,
-  ];
-
-  Booru? _booruForScopeKey(String key) => boorusByScopeKey[key];
-
-  bool _matchesScopeFilter(TagFilterRule rule) {
-    if (selectedScopes.isEmpty) return true;
-    return selectedScopes.any((scopeKey) => _matchesScopeKey(rule, scopeKey));
-  }
-
-  bool _matchesScopeKey(TagFilterRule rule, String scopeKey) {
-    if (scopeKey == _globalScopeKey) return rule.scope.kind == TagFilterScopeKind.global;
-    if (scopeKey == _favouritesScopeKey) {
-      return (rule.scope.kind == TagFilterScopeKind.view && rule.scope.viewType == BooruType.Favourites) ||
-          (rule.scope.kind == TagFilterScopeKind.source &&
-              rule.scope.targets.any((target) => target.type == BooruType.Favourites));
-    }
-    if (scopeKey == _downloadsScopeKey) {
-      return (rule.scope.kind == TagFilterScopeKind.view && rule.scope.viewType == BooruType.Downloads) ||
-          (rule.scope.kind == TagFilterScopeKind.source &&
-              rule.scope.targets.any((target) => target.type == BooruType.Downloads));
-    }
-    final booru = _booruForScopeKey(scopeKey);
-    return booru != null &&
-        rule.scope.kind == TagFilterScopeKind.source &&
-        rule.scope.targets.any((target) => target.matches(booru));
-  }
+  List<Booru> get regularBoorus => ruleList.regularBoorus;
+  List<String> get _scopeFilterKeys => ruleList.scopeKeys;
+  Booru? _booruForScopeKey(String key) => ruleList.booruForScopeKey(key);
 
   String _scopeName(String key) {
     final loc = context.loc.settings.itemFilters;
@@ -518,24 +393,24 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     return _selectionSummary(icon: Icons.tune, count: values.length);
   }
 
-  String _sortName(_FilterSort value) {
+  String _sortName(TagFilterSort value) {
     final loc = context.loc.settings.itemFilters;
     return switch (value) {
-      _FilterSort.alphabetical => loc.sortAlphabetical,
-      _FilterSort.reverseAlphabetical => loc.sortReverseAlphabetical,
-      _FilterSort.effect => loc.sortEffect,
-      _FilterSort.reverseEffect => loc.sortReverseEffect,
-      _FilterSort.suspensionTime => loc.sortSuspensionTime,
+      TagFilterSort.alphabetical => loc.sortAlphabetical,
+      TagFilterSort.reverseAlphabetical => loc.sortReverseAlphabetical,
+      TagFilterSort.effect => loc.sortEffect,
+      TagFilterSort.reverseEffect => loc.sortReverseEffect,
+      TagFilterSort.suspensionTime => loc.sortSuspensionTime,
     };
   }
 
-  IconData _sortIcon(_FilterSort value) => switch (value) {
-    _FilterSort.alphabetical || _FilterSort.reverseAlphabetical => Icons.sort_by_alpha,
-    _FilterSort.effect || _FilterSort.reverseEffect => Icons.category_outlined,
-    _FilterSort.suspensionTime => Icons.timer_outlined,
+  IconData _sortIcon(TagFilterSort value) => switch (value) {
+    TagFilterSort.alphabetical || TagFilterSort.reverseAlphabetical => Icons.sort_by_alpha,
+    TagFilterSort.effect || TagFilterSort.reverseEffect => Icons.category_outlined,
+    TagFilterSort.suspensionTime => Icons.timer_outlined,
   };
 
-  Widget _sortOption(_FilterSort? value) {
+  Widget _sortOption(TagFilterSort? value) {
     final usedValue = value ?? sortMode;
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -554,9 +429,9 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
       selectedScopes.isNotEmpty ||
       selectedStatuses.isNotEmpty;
 
-  bool get hasModifiedListControls => hasActiveListFilter || sortMode != _FilterSort.alphabetical;
+  bool get hasModifiedListControls => hasActiveListFilter || sortMode != TagFilterSort.alphabetical;
 
-  void _resetListFilters() {
+  void _resetListFilters({StateSetter? sheetSetState}) {
     debounce?.cancel();
     searchController.clear();
     setState(() {
@@ -565,9 +440,10 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
       selectedMarkers.clear();
       selectedScopes.clear();
       selectedStatuses.clear();
-      sortMode = _FilterSort.alphabetical;
+      sortMode = TagFilterSort.alphabetical;
       _applyFilters();
     });
+    sheetSetState?.call(() {});
   }
 
   String _statusName(String value) {
@@ -916,11 +792,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     },
   );
 
-  bool _isMissingSource(TagFilterRule rule) {
-    return [...rule.scope.targets, ...rule.scope.excludedSources].any(
-      (source) => !cachedRegularBoorus.any(source.matches),
-    );
-  }
+  bool _isMissingSource(TagFilterRule rule) => ruleList.hasMissingSource(rule);
 
   bool get _isSelecting => selectedRuleIds.isNotEmpty || _selectionMode;
 
@@ -1210,6 +1082,191 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     ),
   );
 
+  void _changeListControls(VoidCallback change, {StateSetter? sheetSetState}) {
+    setState(() {
+      change();
+      _applyFilters();
+    });
+    sheetSetState?.call(() {});
+  }
+
+  List<Widget> _filterFields({required bool compact, StateSetter? sheetSetState}) {
+    final loc = context.loc.settings.itemFilters;
+    Widget field(double width, Widget child) => SizedBox(width: compact ? double.infinity : width, child: child);
+    return [
+      field(
+        180,
+        LoliMultiselectDropdown<TagFilterEffect>(
+          value: selectedEffects.toList(),
+          labelText: loc.effect,
+          items: TagFilterEffect.values,
+          itemBuilder: (value) => _dropdownSheetItem(_effectOption(value)),
+          selectedItemBuilder: _selectedEffectOptions,
+          onChanged: (values) => _changeListControls(() {
+            selectedEffects
+              ..clear()
+              ..addAll(values);
+            if (selectedEffects.isNotEmpty && !selectedEffects.contains(TagFilterEffect.mark)) selectedMarkers.clear();
+          }, sheetSetState: sheetSetState),
+        ),
+      ),
+      field(
+        190,
+        LoliMultiselectDropdown<String>(
+          value: selectedMarkers.toList(),
+          labelText: loc.marker,
+          items: ruleList.markerKeys,
+          itemBuilder: (value) => _dropdownSheetItem(_markerOption(value)),
+          selectedItemBuilder: _selectedMarkerOptions,
+          onChanged: (values) => _changeListControls(() {
+            selectedMarkers
+              ..clear()
+              ..addAll(values);
+            if (selectedMarkers.isNotEmpty) {
+              selectedEffects
+                ..clear()
+                ..add(TagFilterEffect.mark);
+            }
+          }, sheetSetState: sheetSetState),
+        ),
+      ),
+      field(
+        220,
+        LoliMultiselectDropdown<String>(
+          value: selectedScopes.toList(),
+          labelText: loc.scope,
+          items: _scopeFilterKeys,
+          itemBuilder: (value) => _dropdownSheetItem(_scopeOption(value)),
+          selectedItemBuilder: _selectedScopeOptions,
+          onChanged: (values) => _changeListControls(() {
+            selectedScopes
+              ..clear()
+              ..addAll(values);
+          }, sheetSetState: sheetSetState),
+        ),
+      ),
+      field(
+        190,
+        LoliMultiselectDropdown<String>(
+          value: selectedStatuses.toList(),
+          labelText: loc.allStates,
+          items: const ['enabled', 'disabled', 'suspended', 'missing', 'invalid'],
+          itemBuilder: (value) => _dropdownSheetItem(_statusOption(value)),
+          selectedItemBuilder: _selectedStatusOptions,
+          onChanged: (values) => _changeListControls(() {
+            selectedStatuses
+              ..clear()
+              ..addAll(values);
+          }, sheetSetState: sheetSetState),
+        ),
+      ),
+      field(
+        250,
+        LoliDropdown<TagFilterSort>(
+          value: sortMode,
+          labelText: context.loc.sort,
+          items: TagFilterSort.values,
+          itemBuilder: (value) => _dropdownSheetItem(_sortOption(value)),
+          selectedItemBuilder: _sortOption,
+          onChanged: (value) => _changeListControls(() => sortMode = value!, sheetSetState: sheetSetState),
+        ),
+      ),
+    ];
+  }
+
+  Future<void> _showListControls() => showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    constraints: const BoxConstraints(maxWidth: 560),
+    builder: (sheetContext) => StatefulBuilder(
+      builder: (context, sheetSetState) => ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85),
+        child: SafeArea(
+          top: false,
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(context.loc.filter, style: Theme.of(context).textTheme.titleLarge),
+                trailing: IconButton(
+                  tooltip: context.loc.close,
+                  onPressed: () => Navigator.of(sheetContext).pop(),
+                  icon: const Icon(Icons.close),
+                ),
+              ),
+              ..._filterFields(compact: true, sheetSetState: sheetSetState).expand(
+                (field) => [Padding(padding: const EdgeInsets.only(bottom: 12), child: field)],
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: hasModifiedListControls ? () => _resetListFilters(sheetSetState: sheetSetState) : null,
+                  icon: const Icon(Icons.restart_alt),
+                  label: Text(context.loc.reset),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
+  List<Widget> _activeFilterChips() {
+    final loc = context.loc.settings.itemFilters;
+    final chips = <Widget>[];
+    for (final effect in selectedEffects) {
+      chips.add(
+        InputChip(
+          avatar: Icon(_effectIcon(effect), size: 16),
+          label: Text(_effectName(effect)),
+          onDeleted: () => _changeListControls(() {
+            selectedEffects.remove(effect);
+            if (effect == TagFilterEffect.mark) selectedMarkers.clear();
+          }),
+        ),
+      );
+    }
+    for (final key in selectedMarkers) {
+      final marker = _markerForKey(key);
+      chips.add(
+        InputChip(
+          avatar: _markerVisual(marker, size: 18),
+          label: Text(marker?.icon?.name ?? marker?.text ?? loc.marker),
+          onDeleted: () => _changeListControls(() => selectedMarkers.remove(key)),
+        ),
+      );
+    }
+    for (final key in selectedScopes) {
+      chips.add(
+        InputChip(
+          label: Text(_scopeName(key)),
+          onDeleted: () => _changeListControls(() => selectedScopes.remove(key)),
+        ),
+      );
+    }
+    for (final status in selectedStatuses) {
+      chips.add(
+        InputChip(
+          label: Text(_statusName(status)),
+          onDeleted: () => _changeListControls(() => selectedStatuses.remove(status)),
+        ),
+      );
+    }
+    if (sortMode != TagFilterSort.alphabetical) {
+      chips.add(
+        InputChip(
+          label: Text(_sortName(sortMode)),
+          onDeleted: () => _changeListControls(() => sortMode = TagFilterSort.alphabetical),
+        ),
+      );
+    }
+    return chips;
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = context.loc.settings.itemFilters;
@@ -1302,121 +1359,61 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
               },
             ),
           ),
-          Row(
-            children: [
-              Expanded(
-                child: FadingEdgeScrollView.fromSingleChildScrollView(
-                  child: SingleChildScrollView(
-                    controller: filterControlsScrollController,
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.fromLTRB(12, 4, 8, 8),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 180,
-                          child: LoliMultiselectDropdown<TagFilterEffect>(
-                            value: selectedEffects.toList(),
-                            labelText: loc.effect,
-                            items: TagFilterEffect.values,
-                            itemBuilder: (value) => _dropdownSheetItem(_effectOption(value)),
-                            selectedItemBuilder: _selectedEffectOptions,
-                            onChanged: (values) => setState(() {
-                              selectedEffects
-                                ..clear()
-                                ..addAll(values);
-                              if (selectedEffects.isNotEmpty && !selectedEffects.contains(TagFilterEffect.mark)) {
-                                selectedMarkers.clear();
-                              }
-                              _applyFilters();
-                            }),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        SizedBox(
-                          width: 190,
-                          child: LoliMultiselectDropdown<String>(
-                            value: selectedMarkers.toList(),
-                            labelText: loc.marker,
-                            items: markerFilterKeys,
-                            itemBuilder: (value) => _dropdownSheetItem(_markerOption(value)),
-                            selectedItemBuilder: _selectedMarkerOptions,
-                            onChanged: (values) => setState(() {
-                              selectedMarkers
-                                ..clear()
-                                ..addAll(values);
-                              if (selectedMarkers.isNotEmpty) {
-                                selectedEffects
-                                  ..clear()
-                                  ..add(TagFilterEffect.mark);
-                              }
-                              _applyFilters();
-                            }),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        SizedBox(
-                          width: 220,
-                          child: LoliMultiselectDropdown<String>(
-                            value: selectedScopes.toList(),
-                            labelText: loc.scope,
-                            items: _scopeFilterKeys,
-                            itemBuilder: (value) => _dropdownSheetItem(_scopeOption(value)),
-                            selectedItemBuilder: _selectedScopeOptions,
-                            onChanged: (values) => setState(() {
-                              selectedScopes
-                                ..clear()
-                                ..addAll(values);
-                              _applyFilters();
-                            }),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        SizedBox(
-                          width: 190,
-                          child: LoliMultiselectDropdown<String>(
-                            value: selectedStatuses.toList(),
-                            labelText: loc.allStates,
-                            items: const ['enabled', 'disabled', 'suspended', 'missing', 'invalid'],
-                            itemBuilder: (value) => _dropdownSheetItem(_statusOption(value)),
-                            selectedItemBuilder: _selectedStatusOptions,
-                            onChanged: (values) => setState(() {
-                              selectedStatuses
-                                ..clear()
-                                ..addAll(values);
-                              _applyFilters();
-                            }),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        SizedBox(
-                          width: 250,
-                          child: LoliDropdown<_FilterSort>(
-                            value: sortMode,
-                            labelText: context.loc.sort,
-                            items: _FilterSort.values,
-                            itemBuilder: (value) => _dropdownSheetItem(_sortOption(value)),
-                            selectedItemBuilder: _sortOption,
-                            onChanged: (value) => setState(() {
-                              sortMode = value!;
-                              _applyFilters();
-                            }),
-                          ),
-                        ),
-                      ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 1180) {
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton.icon(
+                      onPressed: _showListControls,
+                      icon: const Icon(Icons.filter_alt_outlined),
+                      label: Text(context.loc.filter),
                     ),
                   ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 4, 12, 8),
-                child: IconButton.outlined(
-                  onPressed: hasModifiedListControls ? _resetListFilters : null,
-                  tooltip: context.loc.reset,
-                  icon: const Icon(Icons.restart_alt),
-                ),
-              ),
-            ],
+                );
+              }
+              final fields = _filterFields(compact: false);
+              return Row(
+                children: [
+                  Expanded(
+                    child: FadingEdgeScrollView.fromSingleChildScrollView(
+                      child: SingleChildScrollView(
+                        controller: filterControlsScrollController,
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.fromLTRB(12, 4, 8, 8),
+                        child: Row(
+                          children: [
+                            for (var index = 0; index < fields.length; index++) ...[
+                              if (index > 0) const SizedBox(width: 12),
+                              fields[index],
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 4, 12, 8),
+                    child: IconButton.outlined(
+                      onPressed: hasModifiedListControls ? _resetListFilters : null,
+                      tooltip: context.loc.reset,
+                      icon: const Icon(Icons.restart_alt),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
+          if (hasModifiedListControls)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Wrap(spacing: 8, runSpacing: 4, children: _activeFilterChips()),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
             child: Align(
@@ -1436,7 +1433,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                       color: _onEffectContainerColor(TagFilterEffect.hide),
                     ),
                     label: Text(
-                      loc.counterHide(count: effectCounts[TagFilterEffect.hide] ?? 0),
+                      loc.counterHide(count: ruleList.effectCounts[TagFilterEffect.hide] ?? 0),
                     ),
                     labelStyle: TextStyle(color: _onEffectContainerColor(TagFilterEffect.hide)),
                   ),
@@ -1449,7 +1446,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                       color: _onEffectContainerColor(TagFilterEffect.blur),
                     ),
                     label: Text(
-                      loc.counterBlur(count: effectCounts[TagFilterEffect.blur] ?? 0),
+                      loc.counterBlur(count: ruleList.effectCounts[TagFilterEffect.blur] ?? 0),
                     ),
                     labelStyle: TextStyle(color: _onEffectContainerColor(TagFilterEffect.blur)),
                   ),
@@ -1462,7 +1459,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                       color: _onEffectContainerColor(TagFilterEffect.mark),
                     ),
                     label: Text(
-                      loc.counterMark(count: effectCounts[TagFilterEffect.mark] ?? 0),
+                      loc.counterMark(count: ruleList.effectCounts[TagFilterEffect.mark] ?? 0),
                     ),
                     labelStyle: TextStyle(color: _onEffectContainerColor(TagFilterEffect.mark)),
                   ),
@@ -1520,19 +1517,29 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (showQuery) TagFilterQueryText(query: rule.query),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 8),
                               Wrap(
                                 spacing: 6,
                                 runSpacing: 4,
                                 children: [
                                   _effectChip(rule),
-                                  if (activeTimer) _timerBadge(rule.id, rule.disabledUntil!),
                                   _scopeChip(rule),
+                                  _issueChip(
+                                    activeTimer
+                                        ? 'suspended'
+                                        : rule.enabled
+                                        ? 'enabled'
+                                        : 'disabled',
+                                  ),
+                                  if (activeTimer) _timerBadge(rule.id, rule.disabledUntil!),
                                   if (error != null) _issueChip('invalid'),
                                   if (missing) _issueChip('missing'),
                                 ],
                               ),
+                              if (showQuery) ...[
+                                const SizedBox(height: 8),
+                                TagFilterQueryText(query: rule.query),
+                              ],
                             ],
                           ),
                           isThreeLine: true,

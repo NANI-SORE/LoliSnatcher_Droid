@@ -12,6 +12,7 @@ import 'package:lolisnatcher/src/data/tag_filter_query.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_filter_handler.dart';
+import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
 import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
 import 'package:lolisnatcher/src/widgets/preview/tag_search_query_editor_page.dart';
@@ -75,6 +76,8 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
   static const String _allBoorusScopeKey = 'scope:all';
   static const String _onlySelectedScopeKey = 'scope:only-selected';
   static const String _allExceptSelectedScopeKey = 'scope:all-except-selected';
+
+  bool _saving = false;
 
   late final TextEditingController nameController;
   late final TextEditingController queryController;
@@ -235,6 +238,7 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     final scope = _scope();
     if (scope == null) {
       setState(() => showEmptyScopeWarning = true);
@@ -259,12 +263,28 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     );
-    if (existing == null) {
-      await TagFilterHandler.instance.addRule(rule);
-    } else {
-      await TagFilterHandler.instance.updateRule(rule);
+    setState(() => _saving = true);
+    try {
+      if (existing == null) {
+        await TagFilterHandler.instance.addRule(rule);
+      } else {
+        await TagFilterHandler.instance.updateRule(rule);
+      }
+      if (mounted) {
+        setState(() => _saving = false);
+        Navigator.of(context).pop();
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      FlashElements.showSnackbar(
+        context: context,
+        title: Text(context.loc.error),
+        content: Text(error.toString()),
+        sideColor: Theme.of(context).colorScheme.error,
+        leadingIcon: Icons.error_outline,
+      );
     }
-    if (mounted) Navigator.of(context).pop();
   }
 
   String _effectName(TagFilterEffect value) => switch (value) {
@@ -865,7 +885,7 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
                   ),
                   trailing: IconButton(
                     icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: _saving ? null : () => Navigator.of(context).pop(),
                   ),
                 ),
                 const Divider(height: 1),
@@ -1063,11 +1083,16 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(context.loc.cancel)),
+                      TextButton(
+                        onPressed: _saving ? null : () => Navigator.of(context).pop(),
+                        child: Text(context.loc.cancel),
+                      ),
                       const SizedBox(width: 8),
                       FilledButton.icon(
-                        onPressed: queryResult.isValid && markerValid && !isDuplicate ? _save : null,
-                        icon: const Icon(Icons.save_outlined),
+                        onPressed: !_saving && queryResult.isValid && markerValid && !isDuplicate ? _save : null,
+                        icon: _saving
+                            ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.save_outlined),
                         label: Text(context.loc.save),
                       ),
                     ],
