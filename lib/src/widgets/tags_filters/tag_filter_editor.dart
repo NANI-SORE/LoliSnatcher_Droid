@@ -16,6 +16,7 @@ import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
 import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
 import 'package:lolisnatcher/src/widgets/preview/tag_search_query_editor_page.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/compact_filter_sheet.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_suspension_sheet.dart';
 
 enum _MarkerEditorMode { predefined, custom }
@@ -46,13 +47,12 @@ class TagFilterDraft {
 
 Future<void> showTagFilterEditorSheet(BuildContext context, {TagFilterRule? rule, TagFilterDraft? draft}) {
   assert(rule == null || draft == null, 'An editor cannot open with both a rule and a draft');
-  return showModalBottomSheet<void>(
+  return showCompactFilterSheet<void>(
     context: context,
     backgroundColor: Theme.of(context).colorScheme.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
     clipBehavior: Clip.antiAlias,
     constraints: const BoxConstraints(maxWidth: 700),
-    showDragHandle: true,
     isScrollControlled: true,
     useSafeArea: true,
     builder: (context) => Padding(
@@ -293,9 +293,8 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
     TagFilterEffect.mark => context.loc.settings.itemFilters.mark,
   };
 
-  Future<void> _showQueryHelp() => showModalBottomSheet<void>(
+  Future<void> _showQueryHelp() => showCompactFilterSheet<void>(
     context: context,
-    showDragHandle: true,
     useSafeArea: true,
     isScrollControlled: true,
     constraints: const BoxConstraints(maxWidth: 700),
@@ -458,13 +457,12 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
   }
 
   Future<void> _showMarkerPicker() async {
-    final selection = await showModalBottomSheet<_MarkerPickerSelection>(
+    final selection = await showCompactFilterSheet<_MarkerPickerSelection>(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       clipBehavior: Clip.antiAlias,
       constraints: const BoxConstraints(maxWidth: 620),
-      showDragHandle: true,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (_) => _MarkerPickerSheet(
@@ -530,13 +528,12 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
   Future<({TagFilterMarkerColor? preset, bool custom})?> _showMarkerColorSelector(
     Widget Function(Color color) previewBuilder,
   ) {
-    return showModalBottomSheet<({TagFilterMarkerColor? preset, bool custom})>(
+    return showCompactFilterSheet<({TagFilterMarkerColor? preset, bool custom})>(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       clipBehavior: Clip.antiAlias,
       constraints: const BoxConstraints(maxWidth: 520),
-      showDragHandle: true,
       useSafeArea: true,
       builder: (sheetContext) {
         final colors = Theme.of(sheetContext).colorScheme;
@@ -617,13 +614,12 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
   }
 
   Future<Color?> _showCustomMarkerColorPicker(Widget Function(Color color) previewBuilder) {
-    return showModalBottomSheet<Color>(
+    return showCompactFilterSheet<Color>(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       clipBehavior: Clip.antiAlias,
       constraints: const BoxConstraints(maxWidth: 520),
-      showDragHandle: true,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (sheetContext) => _CustomMarkerColorPickerSheet(
@@ -896,18 +892,6 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        TextField(
-                          controller: nameController,
-                          decoration: InputDecoration(
-                            labelText: loc.ruleName,
-                            hintText: loc.optional,
-                            helperText: loc.emptyNameUsesQuery,
-                            helperMaxLines: 5,
-                            floatingLabelBehavior: FloatingLabelBehavior.always,
-                          ),
-                          onChanged: (_) => setState(() {}),
-                        ),
-                        const SizedBox(height: 24),
                         TagSearchBox(
                           controller: queryController,
                           title: loc.query,
@@ -942,6 +926,18 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
                               ),
                             ),
                           ),
+                        const SizedBox(height: 24),
+                        TextField(
+                          controller: nameController,
+                          decoration: InputDecoration(
+                            labelText: loc.ruleName,
+                            hintText: loc.optional,
+                            helperText: loc.emptyNameUsesQuery,
+                            helperMaxLines: 5,
+                            floatingLabelBehavior: FloatingLabelBehavior.always,
+                          ),
+                          onChanged: (_) => setState(() {}),
+                        ),
                         const SizedBox(height: 16),
                         LoliDropdown<TagFilterEffect>(
                           value: effect,

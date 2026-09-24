@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
 import 'package:lolisnatcher/gen/strings.g.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/compact_filter_sheet.dart';
 
 Future<bool?> showTagFilterMigrationSheet({
   required BuildContext context,
   required int migratedRuleCount,
 }) {
-  return showModalBottomSheet<bool>(
+  return showCompactFilterSheet<bool>(
     context: context,
     useSafeArea: true,
-    showDragHandle: true,
     builder: (_) {
       return _TagFilterMigrationSheet(
         migratedRuleCount: migratedRuleCount,

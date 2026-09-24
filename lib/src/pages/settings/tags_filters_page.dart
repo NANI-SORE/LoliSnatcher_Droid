@@ -15,6 +15,7 @@ import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
 import 'package:lolisnatcher/src/widgets/common/marquee_text.dart';
 import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/compact_filter_sheet.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_editor.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_query_text.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_rule_list.dart';
@@ -623,9 +624,8 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     }
   }
 
-  Future<void> _showHideAsBlurOptions() => showModalBottomSheet<void>(
+  Future<void> _showHideAsBlurOptions() => showCompactFilterSheet<void>(
     context: context,
-    showDragHandle: true,
     useSafeArea: true,
     builder: (sheetContext) {
       final loc = sheetContext.loc.settings.itemFilters;
@@ -692,9 +692,8 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     );
   }
 
-  Future<void> _showRuleActions(TagFilterRule rule) => showModalBottomSheet<void>(
+  Future<void> _showRuleActions(TagFilterRule rule) => showCompactFilterSheet<void>(
     context: context,
-    showDragHandle: true,
     useSafeArea: true,
     isScrollControlled: true,
     builder: (sheetContext) {
@@ -854,9 +853,8 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
   Future<void> _confirmDeleteSelected(Set<String> ids) async {
     final count = ids.length;
     if (count == 0) return;
-    final confirmed = await showModalBottomSheet<bool>(
+    final confirmed = await showCompactFilterSheet<bool>(
       context: context,
-      showDragHandle: true,
       useSafeArea: true,
       constraints: const BoxConstraints(maxWidth: 600),
       builder: (sheetContext) => Padding(
@@ -920,9 +918,8 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
         .toSet();
     final deleteIds = Set<String>.of(suspendIds);
 
-    return showModalBottomSheet<void>(
+    return showCompactFilterSheet<void>(
       context: context,
-      showDragHandle: true,
       useSafeArea: true,
       constraints: const BoxConstraints(maxWidth: 600),
       builder: (sheetContext) {
@@ -1000,9 +997,8 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     );
   }
 
-  Future<void> _showFilterSettings() => showModalBottomSheet<void>(
+  Future<void> _showFilterSettings() => showCompactFilterSheet<void>(
     context: context,
-    showDragHandle: true,
     useSafeArea: true,
     isScrollControlled: true,
     constraints: const BoxConstraints(maxWidth: 700),
@@ -1174,7 +1170,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     ];
   }
 
-  Future<void> _showListControls() => showModalBottomSheet<void>(
+  Future<void> _showListControls() => showCompactFilterSheet<void>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,

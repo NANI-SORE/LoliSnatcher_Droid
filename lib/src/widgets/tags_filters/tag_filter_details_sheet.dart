@@ -4,6 +4,7 @@ import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/data/tag_filter.dart';
 import 'package:lolisnatcher/src/data/tag_filter_evaluation.dart';
 import 'package:lolisnatcher/src/widgets/common/marquee_text.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/compact_filter_sheet.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_editor.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_query_text.dart';
 
@@ -18,13 +19,12 @@ Future<void> showTagFilterMatchesSheet(
 }) {
   final displayedMatches = matches.toList(growable: false);
   if (displayedMatches.isEmpty) return Future.value();
-  return showModalBottomSheet<void>(
+  return showCompactFilterSheet<void>(
     context: context,
     backgroundColor: Theme.of(context).colorScheme.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
     clipBehavior: Clip.antiAlias,
     constraints: const BoxConstraints(maxWidth: 700),
-    showDragHandle: true,
     isScrollControlled: true,
     useSafeArea: true,
     builder: (sheetContext) => Material(

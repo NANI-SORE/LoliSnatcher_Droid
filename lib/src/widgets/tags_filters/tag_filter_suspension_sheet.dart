@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/widgets/common/loli_date_time_picker.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/compact_filter_sheet.dart';
 
 @immutable
 class TagFilterAvailabilityChange {
@@ -15,9 +16,8 @@ Future<TagFilterAvailabilityChange?> showTagFilterSuspensionSheet(
   BuildContext context, {
   bool showReenable = true,
 }) async {
-  final value = await showModalBottomSheet<String>(
+  final value = await showCompactFilterSheet<String>(
     context: context,
-    showDragHandle: true,
     useSafeArea: true,
     constraints: const BoxConstraints(maxWidth: 600),
     builder: (sheetContext) {
