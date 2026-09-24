@@ -8,9 +8,10 @@ import 'package:dio/dio.dart';
 
 /// A policy refusal, distinct from a corrupt file or a transport failure.
 class ImageMemoryException implements Exception {
-  const ImageMemoryException(this.reason);
+  const ImageMemoryException(this.reason, {this.isTransient = false});
 
   final String reason;
+  final bool isTransient;
 
   @override
   String toString() => 'ImageMemoryException: $reason';
@@ -55,6 +56,33 @@ class ImageMemoryManager with WidgetsBindingObserver {
   static const Duration pressureCooldown = Duration(seconds: 30);
 
   final ValueNotifier<bool> underPressure = ValueNotifier(false);
+  final ValueNotifier<bool> animationViewerActive = ValueNotifier(false);
+  final Set<Object> _animationViewers = {};
+  bool _animationNotificationScheduled = false;
+
+  bool get hasAnimationViewer => _animationViewers.isNotEmpty;
+
+  /// Thumbnail codecs yield their memory while foreground animations play.
+  /// Coalesce build-time focus changes, including swipes between two viewers.
+  void setAnimationViewerActive(Object owner, bool active) {
+    if (active) {
+      _animationViewers.add(owner);
+    } else {
+      _animationViewers.remove(owner);
+    }
+    if (_animationNotificationScheduled) return;
+    if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+      _animationNotificationScheduled = true;
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        _animationNotificationScheduled = false;
+        animationViewerActive.value = hasAnimationViewer;
+      });
+      SchedulerBinding.instance.ensureVisualUpdate();
+    } else {
+      animationViewerActive.value = hasAnimationViewer;
+    }
+  }
+
   final Queue<_DecodeJob> _queue = Queue<_DecodeJob>();
   final Queue<_DecodeJob> _downloads = Queue<_DecodeJob>();
   final Expando<_DecodeCancellation> _cancellations = Expando<_DecodeCancellation>();
@@ -110,7 +138,7 @@ class ImageMemoryManager with WidgetsBindingObserver {
       // them here: a visible caller can otherwise deadlock behind keep-alives.
       if (_retainedBytes + bytes > maxRetainedBytes) {
         _rejectedCount++;
-        throw const ImageMemoryException('Image memory is currently in use');
+        throw const ImageMemoryException('Image memory is currently in use', isTransient: true);
       }
     }
     _retainedBytes += bytes;

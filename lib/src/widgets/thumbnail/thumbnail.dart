@@ -76,12 +76,50 @@ class _ThumbnailState extends State<Thumbnail> {
 
   bool isBlurred = true;
   bool _useSafeThumbnail = false;
+  late bool _firstFrameOnly;
+  bool _playbackUpdateScheduled = false;
+  int? _rendererErrorGeneration;
+
+  // Hidden thumbnails also use a tiny pixelated image on low-end devices.
+  // Neither blur nor pixelation needs an active animation codec.
+  bool get _isObscured => isBlurred && (settingsHandler.blurImages || widget.item.isHidden);
+
+  bool get _shouldShowFirstFrame =>
+      _isObscured ||
+      !settingsHandler.gifsAsThumbnails ||
+      ImageMemoryManager.instance.hasAnimationViewer ||
+      ImageMemoryManager.instance.underPressure.value;
 
   @override
   void initState() {
     super.initState();
 
     currentUrl = widget.item.thumbnailURL;
+    _firstFrameOnly = _shouldShowFirstFrame;
+    ImageMemoryManager.instance.animationViewerActive.addListener(_updatePlaybackPolicy);
+    ImageMemoryManager.instance.underPressure.addListener(_updatePlaybackPolicy);
+  }
+
+  void _updatePlaybackPolicy() {
+    if (!mounted || _playbackUpdateScheduled) return;
+    _playbackUpdateScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _playbackUpdateScheduled = false;
+      if (!mounted) return;
+      final firstFrameOnly = _shouldShowFirstFrame;
+      if (_firstFrameOnly == firstFrameOnly) return;
+      _firstFrameOnly = firstFrameOnly;
+      if (!firstFrameOnly) _useSafeThumbnail = false;
+      if (isFirstBuild.value || !widget.item.mediaType.value.isAnimation) return;
+      // Remove all owners of the animated stream before requesting its poster.
+      // TickerMode alone pauses painting but retains the native GIF codec.
+      unawaited(mainProvider.value?.evict());
+      unawaited(extraProvider.value?.evict());
+      mainProvider.value = null;
+      extraProvider.value = null;
+      unawaited(restartLoading());
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 
   @override
@@ -90,6 +128,7 @@ class _ThumbnailState extends State<Thumbnail> {
     // force redraw on tab change
     if (oldWidget.item != widget.item) {
       _useSafeThumbnail = false;
+      _firstFrameOnly = _shouldShowFirstFrame;
       currentUrl = widget.item.thumbnailURL;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
@@ -114,6 +153,7 @@ class _ThumbnailState extends State<Thumbnail> {
     final ImageProvider provider = isAvif
         ? CustomNetworkAvifImage(
             url,
+            firstFrameOnly: _firstFrameOnly,
             cancelToken: isMain ? mainCancelToken : extraCancelToken,
             headers: await Tools.getFileCustomHeaders(
               widget.booru,
@@ -141,6 +181,7 @@ class _ThumbnailState extends State<Thumbnail> {
           )
         : CustomNetworkImage(
             url,
+            firstFrameOnly: _firstFrameOnly,
             cancelToken: isMain ? mainCancelToken : extraCancelToken,
             headers: await Tools.getFileCustomHeaders(
               widget.booru,
@@ -273,6 +314,26 @@ class _ThumbnailState extends State<Thumbnail> {
     }
   }
 
+  void _reportLateFrameError(Object error, StackTrace? stack, int generation) {
+    // Initial failures belong to the loading listener. After frame one, the
+    // renderer owns animation activity and forwards terminal frame failures.
+    if (!isLoaded.value || mainImageListener != null || _rendererErrorGeneration == generation) return;
+    _rendererErrorGeneration = generation;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isCurrentLoad(generation)) return;
+      failedRendering.value = error is! DioException && error is! ImageMemoryException;
+      Logger.Inst().log(
+        'Error decoding thumbnail frame: $error',
+        'Thumbnail',
+        'build',
+        LogTypes.imageLoadingError,
+        s: stack,
+      );
+      onError(error);
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
   void selectThumbProvider({
     bool withCaptchaCheck = false,
   }) {
@@ -325,6 +386,10 @@ class _ThumbnailState extends State<Thumbnail> {
         if (!_isCurrentLoad(loadGeneration)) return;
 
         isLoaded.value = true;
+        final stream = mainImageStream;
+        scheduleMicrotask(() {
+          if (identical(mainImageStream, stream)) _removeMainImageStreamListener();
+        });
       },
       onChunk: (event) {
         if (!_isCurrentLoad(loadGeneration)) return;
@@ -369,6 +434,10 @@ class _ThumbnailState extends State<Thumbnail> {
           if (!_isCurrentLoad(loadGeneration)) return;
 
           isLoadedExtra.value = true;
+          final stream = extraImageStream;
+          scheduleMicrotask(() {
+            if (identical(extraImageStream, stream)) _removeExtraImageStreamListener();
+          });
         },
         onError: (e, s) {
           if (!_isCurrentLoad(loadGeneration)) return;
@@ -452,6 +521,8 @@ class _ThumbnailState extends State<Thumbnail> {
 
   @override
   void dispose() {
+    ImageMemoryManager.instance.animationViewerActive.removeListener(_updatePlaybackPolicy);
+    ImageMemoryManager.instance.underPressure.removeListener(_updatePlaybackPolicy);
     disposables();
     disposeNotifiers();
     super.dispose();
@@ -530,6 +601,10 @@ class _ThumbnailState extends State<Thumbnail> {
 
   @override
   Widget build(BuildContext context) {
+    // Blur/filter changes and local reveal actions rebuild this widget.
+    // Refresh both thumbnail providers after the frame when their policy changes.
+    if (_firstFrameOnly != _shouldShowFirstFrame) _updatePlaybackPolicy();
+
     Widget imageStack = LayoutBuilder(
       builder: (context, constraints) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -620,6 +695,8 @@ class _ThumbnailState extends State<Thumbnail> {
                       }
 
                       return AnimatedSwitcher(
+                        // Drop old animation owners immediately on policy changes.
+                        key: ValueKey(_firstFrameOnly),
                         duration: Duration(milliseconds: widget.isStandalone ? 100 : 0),
                         child: child,
                       );
@@ -658,11 +735,12 @@ class _ThumbnailState extends State<Thumbnail> {
                   child: ValueListenableBuilder(
                     valueListenable: mainProvider,
                     builder: (context, mainProvider, _) {
+                      final generation = _loadGeneration;
                       Widget child = const SizedBox.shrink();
 
                       if (mainProvider != null) {
                         child = TickerMode(
-                          enabled: settingsHandler.gifsAsThumbnails,
+                          enabled: !_shouldShowFirstFrame,
                           child: Image(
                             image: mainProvider,
                             fit: widget.isStandalone ? BoxFit.cover : BoxFit.contain,
@@ -671,6 +749,7 @@ class _ThumbnailState extends State<Thumbnail> {
                             width: double.infinity,
                             height: double.infinity,
                             errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
+                              _reportLateFrameError(exception, stackTrace, generation);
                               if (widget.isStandalone) {
                                 return Icon(
                                   Icons.broken_image,
@@ -686,6 +765,7 @@ class _ThumbnailState extends State<Thumbnail> {
                       }
 
                       return AnimatedSwitcher(
+                        key: ValueKey(_firstFrameOnly),
                         duration: Duration(milliseconds: widget.isStandalone ? 200 : 0),
                         child: child,
                       );

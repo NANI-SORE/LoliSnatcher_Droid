@@ -61,12 +61,18 @@ class ImageViewer extends StatefulWidget {
     this.booruItem, {
     required this.booru,
     required this.isViewed,
+    this.isRevealed,
+    this.onReveal,
     super.key,
   });
 
   final BooruItem booruItem;
   final Booru booru;
   final bool isViewed;
+
+  /// Gallery-owned reveal choice, retained even when this viewer is recreated.
+  final bool Function()? isRevealed;
+  final VoidCallback? onReveal;
 
   @override
   State<ImageViewer> createState() => ImageViewerState();
@@ -109,6 +115,9 @@ class ImageViewerState extends State<ImageViewer> {
   String? _fallbackUrl;
   String? _activeUrl;
   final Set<String> _attemptedUrls = {};
+  int _animationRetries = 0;
+  bool _ignoreTagsForLoad = false;
+  bool _captchaForLoad = false;
   bool isTiled = false;
   final ValueNotifier<bool?> isTilingProcessing = ValueNotifier(null);
   Size? tiledSize;
@@ -176,7 +185,24 @@ class ImageViewerState extends State<ImageViewer> {
   }
 
   void onError(Object error) {
+    showLoading.value = true;
+    final animation = widget.booruItem.mediaType.value.isAnimation;
+    final cancelled = error is DioException && CancelToken.isCancel(error);
+    if (animation && (cancelled || (error is ImageMemoryException && error.isTransient)) && _animationRetries < 2) {
+      _animationRetries++;
+      disposables();
+      isLoaded.value = false;
+      final generation = _loadGeneration;
+      unawaited(_retryAnimation(generation));
+      return;
+    }
     if (error is ImageMemoryException) {
+      if (animation) {
+        // A static sample/thumbnail cannot satisfy a request for playback.
+        // Keep genuine refusal visible instead of declaring a still image loaded.
+        stopLoading(reason: error.isTransient ? .error : .tooBig, details: error.reason);
+        return;
+      }
       final fallback = [
         widget.booruItem.sampleURL,
         widget.booruItem.thumbnailURL,
@@ -191,8 +217,8 @@ class ImageViewerState extends State<ImageViewer> {
       stopLoading(reason: .tooBig);
       return;
     }
-    if (error is DioException && CancelToken.isCancel(error)) {
-      //
+    if (cancelled) {
+      stopLoading(reason: .error, details: error.toString());
     } else {
       if (error is DioException) {
         stopLoading(
@@ -211,11 +237,28 @@ class ImageViewerState extends State<ImageViewer> {
     }
   }
 
+  Future<void> _retryAnimation(int generation) async {
+    // Let thumbnail policy changes rebuild and remove their codec owners.
+    await WidgetsBinding.instance.endOfFrame;
+    await WidgetsBinding.instance.endOfFrame;
+    if (!_isCurrentLoad(generation)) return;
+    PaintingBinding.instance.imageCache.clear();
+    await initViewer(_ignoreTagsForLoad, withCaptchaCheck: _captchaForLoad);
+  }
+
+  void _updateAnimationFocus() {
+    ImageMemoryManager.instance.setAnimationViewerActive(
+      this,
+      widget.isViewed && widget.booruItem.mediaType.value.isAnimation && !isStopped.value,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
 
     isViewed.value = widget.isViewed;
+    _updateAnimationFocus();
 
     viewerHandler.addViewed(widget.key);
 
@@ -236,6 +279,8 @@ class ImageViewerState extends State<ImageViewer> {
     super.didUpdateWidget(oldWidget);
     // force redraw on item data change
     if (oldWidget.booruItem != widget.booruItem) {
+      _animationRetries = 0;
+      _ignoreTagsForLoad = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
 
@@ -246,6 +291,16 @@ class ImageViewerState extends State<ImageViewer> {
 
     if (oldWidget.isViewed != widget.isViewed) {
       isViewed.value = widget.isViewed;
+      if (widget.booruItem.mediaType.value.isAnimation) {
+        if (widget.isViewed && oldWidget.booruItem == widget.booruItem) {
+          _animationRetries = 0;
+          unawaited(initViewer(false));
+        } else if (!widget.isViewed) {
+          disposables();
+          isLoaded.value = false;
+        }
+      }
+      _updateAnimationFocus();
       if (!isViewed.value) {
         // reset zoom if not viewed
         resetZoom();
@@ -261,12 +316,17 @@ class ImageViewerState extends State<ImageViewer> {
     bool ignoreTagsCheck, {
     bool withCaptchaCheck = false,
   }) async {
+    // An offscreen GIF needs only its thumbnail. Its native animation codec
+    // must not reserve the memory needed by the currently viewed GIF.
+    if (widget.booruItem.mediaType.value.isAnimation && !widget.isViewed) return;
+    _ignoreTagsForLoad = ignoreTagsCheck || _ignoreTagsForLoad || (widget.isRevealed?.call() ?? false);
+    _captchaForLoad = withCaptchaCheck;
     final int loadGeneration = ++_loadGeneration;
     widget.booruItem.isNoScale.addListener(noScaleListener);
 
     widget.booruItem.toggleQuality.addListener(toggleQualityListener);
 
-    if (widget.booruItem.isHidden && !ignoreTagsCheck) {
+    if (widget.booruItem.isHidden && !_ignoreTagsForLoad) {
       if (widget.booruItem.isHidden) {
         stopLoading(
           reason: .hidden,
@@ -283,6 +343,7 @@ class ImageViewerState extends State<ImageViewer> {
     }
 
     isStopped.value = false;
+    _updateAnimationFocus();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isCurrentLoad(loadGeneration)) return;
 
@@ -296,6 +357,12 @@ class ImageViewerState extends State<ImageViewer> {
 
     ImageProvider? newProvider;
     try {
+      if (widget.booruItem.mediaType.value.isAnimation) {
+        await WidgetsBinding.instance.endOfFrame;
+        await WidgetsBinding.instance.endOfFrame;
+        if (!_isCurrentLoad(loadGeneration)) return;
+        PaintingBinding.instance.imageCache.clear();
+      }
       newProvider = await getImageProvider(
         loadGeneration: loadGeneration,
         withCaptchaCheck: withCaptchaCheck,
@@ -355,6 +422,7 @@ class ImageViewerState extends State<ImageViewer> {
   }
 
   void noScaleListener() {
+    _animationRetries = 0;
     stopLoading(reason: .reset);
     _fallbackUrl = null;
     _attemptedUrls.clear();
@@ -362,6 +430,7 @@ class ImageViewerState extends State<ImageViewer> {
   }
 
   void toggleQualityListener() {
+    _animationRetries = 0;
     stopLoading(reason: .reset);
     _fallbackUrl = null;
     _attemptedUrls.clear();
@@ -490,9 +559,14 @@ class ImageViewerState extends State<ImageViewer> {
         return null;
       }
 
+      // A viewer opens a fresh playback session, even when a thumbnail has
+      // already played a finite animation to its final frame.
+      final playbackKey = widget.booruItem.mediaType.value.isAnimation ? Object() : null;
       ImageProvider provider = isAvif
           ? CustomNetworkAvifImage(
               url,
+              playbackKey: playbackKey,
+              isForeground: () => mounted && isViewed.value,
               localFilePath: download.file.path,
               preparedSource: download,
               cancelToken: token,
@@ -503,6 +577,8 @@ class ImageViewerState extends State<ImageViewer> {
             )
           : CustomNetworkImage(
               url,
+              playbackKey: playbackKey,
+              isForeground: () => mounted && isViewed.value,
               localFilePath: download.file.path,
               preparedSource: download,
               cancelToken: token,
@@ -538,6 +614,7 @@ class ImageViewerState extends State<ImageViewer> {
     isLoaded.value = false;
     isFromCache.value = false;
     isStopped.value = true;
+    _updateAnimationFocus();
     stopReason.value = reason;
     stopDetails.value = '${title != null ? '$title\n' : ''}${details ?? ''}';
 
@@ -555,6 +632,7 @@ class ImageViewerState extends State<ImageViewer> {
 
   @override
   void dispose() {
+    ImageMemoryManager.instance.setAnimationViewerActive(this, false);
     disposables();
 
     viewStateSubscription?.cancel();
@@ -590,17 +668,9 @@ class ImageViewerState extends State<ImageViewer> {
     isTilingProcessing.value = null;
     tiledSize = null;
 
-    if (imageFolder == 'media' ||
-        (!widget.booruItem.mediaType.value.isAnimation || !settingsHandler.gifsAsThumbnails)) {
-      mainProvider.value?.evict();
-      // mainProvider.value?.evict().then((bool success) {
-      //   if(success) {
-      //     print('main image evicted');
-      //   } else {
-      //     print('main image eviction failed');
-      //   }
-      // });
-    }
+    // Viewer providers have their own playback identity; no thumbnail relies
+    // on keeping a completed viewer animation in the cache.
+    unawaited(mainProvider.value?.evict());
 
     mainProvider.value = null;
 
@@ -682,6 +752,9 @@ class ImageViewerState extends State<ImageViewer> {
   }
 
   Future<void> onManualRestart() async {
+    _ignoreTagsForLoad = true;
+    widget.onReveal?.call();
+    _animationRetries = 0;
     _fallbackUrl = null;
     _attemptedUrls.clear();
     final int loadGeneration = ++_loadGeneration;
@@ -846,6 +919,11 @@ class ImageViewerState extends State<ImageViewer> {
                         milliseconds: (settingsHandler.appMode.value.isDesktop || isViewed.value) ? 50 : 300,
                       ),
                       child: AnimatedSwitcher(
+                        // Outgoing GIF listeners must release their codec now,
+                        // not after a fade that can outlast the next GIF's retry.
+                        key: widget.booruItem.mediaType.value.isAnimation
+                            ? ValueKey((isViewed.value, mainProvider.value))
+                            : null,
                         duration: Duration(
                           milliseconds: (settingsHandler.appMode.value.isDesktop || isViewed.value) ? 50 : 300,
                         ),

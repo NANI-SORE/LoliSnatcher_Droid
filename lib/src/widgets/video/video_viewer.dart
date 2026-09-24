@@ -38,6 +38,8 @@ class VideoViewer extends StatefulWidget {
     required this.booru,
     required this.isViewed,
     this.enableFullscreen = true,
+    this.isRevealed,
+    this.onReveal,
     super.key,
   });
 
@@ -45,6 +47,10 @@ class VideoViewer extends StatefulWidget {
   final Booru booru;
   final bool isViewed;
   final bool enableFullscreen;
+
+  /// Gallery-owned reveal choice, retained even when this viewer is recreated.
+  final bool Function()? isRevealed;
+  final VoidCallback? onReveal;
 
   @override
   State<VideoViewer> createState() => VideoViewerState();
@@ -65,6 +71,7 @@ class VideoViewerState extends State<VideoViewer> {
   final ValueNotifier<int> total = ValueNotifier(0), received = ValueNotifier(0), startedAt = ValueNotifier(0);
   int lastViewedIndex = -1;
   PreloadBlockState blockPreloadState = .initial;
+  bool _ignoreTagsForLoad = false;
   final ValueNotifier<bool> isFromCache = ValueNotifier(false);
   final ValueNotifier<bool> isStopped = ValueNotifier(false);
   final ValueNotifier<bool> isViewed = ValueNotifier(false);
@@ -303,6 +310,7 @@ class VideoViewerState extends State<VideoViewer> {
     super.didUpdateWidget(oldWidget);
     // force redraw on item data change
     if (oldWidget.booruItem != widget.booruItem) {
+      _ignoreTagsForLoad = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
 
@@ -338,7 +346,8 @@ class VideoViewerState extends State<VideoViewer> {
 
   Future<void> initVideo(bool ignoreTagsCheck) async {
     final int loadGeneration = ++_loadGeneration;
-    if (widget.booruItem.isHidden && !ignoreTagsCheck) {
+    _ignoreTagsForLoad = ignoreTagsCheck || _ignoreTagsForLoad || (widget.isRevealed?.call() ?? false);
+    if (widget.booruItem.isHidden && !_ignoreTagsForLoad) {
       final tagsData = settingsHandler.parseTagsList(widget.booruItem.tagsList, isCapped: true);
       stopLoading(
         reason: ViewerStopReason.hidden,
@@ -953,6 +962,8 @@ class VideoViewerState extends State<VideoViewer> {
   }
 
   Future<void> onManualRestart() async {
+    _ignoreTagsForLoad = true;
+    widget.onReveal?.call();
     if (blockPreloadState.isTooBig) {
       blockPreloadState = .ignore;
     }

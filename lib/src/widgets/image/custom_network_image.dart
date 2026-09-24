@@ -114,12 +114,37 @@ class SafeResizeImage extends ResizeImage {
   @override
   ImageStreamCompleter loadImage(ResizeImageKey key, ImageDecoderCallback decode) {
     if (imageProvider is! CustomNetworkImage) return super.loadImage(key, decode);
+    final provider = imageProvider as CustomNetworkImage;
+    // ResizeImage installs an unconditional delayed error eviction. Our
+    // completer owns eviction by identity, including late animation errors.
+    // This provider's obtainKey is synchronous and returns itself.
     final completer = runZoned(
-      () => super.loadImage(key, _decodeBounded),
+      () => provider.loadImage(
+        provider,
+        (buffer, {getTargetSize}) => _decodeBounded(buffer, getTargetSize: _resizeTarget),
+      ),
       zoneValues: {_safeResizeZone: true},
     );
     if (completer is _MemoryImageCompleter) completer.cacheKey = key;
     return completer;
+  }
+
+  ui.TargetImageSize _resizeTarget(int intrinsicWidth, int intrinsicHeight) {
+    if (policy == ResizeImagePolicy.exact) {
+      return ui.TargetImageSize(
+        width: width == null || allowUpscaling ? width : math.min(width!, intrinsicWidth),
+        height: height == null || allowUpscaling ? height : math.min(height!, intrinsicHeight),
+      );
+    }
+    var ratio = math.min(
+      width == null ? double.infinity : width! / intrinsicWidth,
+      height == null ? double.infinity : height! / intrinsicHeight,
+    );
+    if (!allowUpscaling) ratio = math.min(1, ratio);
+    return ui.TargetImageSize(
+      width: math.max(1, (intrinsicWidth * ratio).floor()),
+      height: math.max(1, (intrinsicHeight * ratio).floor()),
+    );
   }
 }
 
@@ -141,6 +166,9 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
     this.withCaptchaCheck = false,
     this.localFilePath,
     this.preparedSource,
+    this.firstFrameOnly = false,
+    this.playbackKey,
+    this.isForeground,
   }) : assert(!withCache || cacheFolder != null, 'cacheFolder must be set when withCache is true');
 
   @override
@@ -166,6 +194,9 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
   /// Prefer this over a bare path for owned temporary files. Retained only when
   /// an actual load begins; a Flutter image-cache hit creates no extra owner.
   final DownloadedImageFile? preparedSource;
+  final bool firstFrameOnly;
+  final Object? playbackKey;
+  final bool Function()? isForeground;
   bool get _isAvif => false;
 
   @override
@@ -180,7 +211,7 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
     // A cached completer may already serve several widgets. Its work belongs
     // to that shared lifetime, not to the first widget's cancellation token.
     // Viewer-owned preflight/download work still uses its caller's token.
-    final session = _DecodeSession(isAvif: _isAvif);
+    final session = _DecodeSession(isAvif: _isAvif, firstFrameOnly: firstFrameOnly, isForeground: isForeground);
     final selectedDecode = Zone.current[_safeResizeZone] == true ? decode : _decodeBounded;
     final codec = runZoned(
       () => _loadAsync(key, chunks, selectedDecode, session),
@@ -257,6 +288,7 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
           }
         },
         cancelToken: session.cancelToken,
+        isForeground: session.isForeground,
       );
       session.checkCancelled();
       session.source = source;
@@ -269,7 +301,6 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
       session.releaseReservations();
       if (!session.abandoned) {
         onError?.call(error);
-        scheduleMicrotask(() => PaintingBinding.instance.imageCache.evict(key, includeLive: false));
       }
       rethrow;
     } finally {
@@ -291,7 +322,9 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
       other.fileNameExtras == fileNameExtras &&
       other.sendTimeout == sendTimeout &&
       other.receiveTimeout == receiveTimeout &&
-      other.withCaptchaCheck == withCaptchaCheck;
+      other.withCaptchaCheck == withCaptchaCheck &&
+      other.firstFrameOnly == firstFrameOnly &&
+      other.playbackKey == playbackKey;
 
   @override
   int get hashCode => Object.hash(
@@ -305,6 +338,8 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
     sendTimeout,
     receiveTimeout,
     withCaptchaCheck,
+    firstFrameOnly,
+    playbackKey,
   );
 
   @override
@@ -327,6 +362,9 @@ class CustomNetworkAvifImage extends CustomNetworkImage {
     super.withCaptchaCheck,
     super.localFilePath,
     super.preparedSource,
+    super.firstFrameOnly,
+    super.playbackKey,
+    super.isForeground,
   });
 
   @override
@@ -334,10 +372,12 @@ class CustomNetworkAvifImage extends CustomNetworkImage {
 }
 
 class _DecodeSession {
-  _DecodeSession({required this.isAvif});
+  _DecodeSession({required this.isAvif, required this.firstFrameOnly, this.isForeground});
 
   final CancelToken cancelToken = CancelToken();
   final bool isAvif;
+  final bool firstFrameOnly;
+  final bool Function()? isForeground;
   late File file;
   DownloadedImageFile? source;
   bool isGif = false;
@@ -447,20 +487,20 @@ class _MemoryImageCompleter extends MultiFrameImageStreamCompleter {
        );
 
   final _DecodeSession session;
-  static final Map<Object, WeakReference<_MemoryImageCompleter>> _pendingOwners = {};
+  static final Map<Object, WeakReference<_MemoryImageCompleter>> _cacheOwners = {};
   Object cacheKey;
 
   void registerCacheOwner() {
     // Resolution has now finished assigning the effective key, including a
     // ResizeImage wrapper. Never temporarily register a resized load under
     // its raw provider key: an independent raw load may already own that key.
-    if (!session.hasEmittedFrame && !session.disposed && !session.abandoned) {
-      _pendingOwners[cacheKey] = WeakReference(this);
+    if (!session.disposed && !session.abandoned) {
+      _cacheOwners[cacheKey] = WeakReference(this);
     }
   }
 
-  void _forgetPendingOwner() {
-    if (identical(_pendingOwners[cacheKey]?.target, this)) _pendingOwners.remove(cacheKey);
+  void _forgetCacheOwner() {
+    if (identical(_cacheOwners[cacheKey]?.target, this)) _cacheOwners.remove(cacheKey);
   }
 
   int _consumers = 0;
@@ -479,8 +519,8 @@ class _MemoryImageCompleter extends MultiFrameImageStreamCompleter {
       session.abandoned = true;
       // A manual restart may have replaced the cache entry before this frame
       // callback runs. Cancel our work without evicting the newer completer.
-      if (identical(_pendingOwners[cacheKey]?.target, this)) {
-        _forgetPendingOwner();
+      if (identical(_cacheOwners[cacheKey]?.target, this)) {
+        _forgetCacheOwner();
         PaintingBinding.instance.imageCache.evict(cacheKey);
       }
       session.cancelToken.cancel('Image no longer has consumers');
@@ -500,7 +540,12 @@ class _MemoryImageCompleter extends MultiFrameImageStreamCompleter {
     // cancellation would run ResizeImage's error eviction against a new load
     // with the same key, or deliver an obsolete error to a departed widget.
     if (session.abandoned) return;
-    _forgetPendingOwner();
+    // A failed animation must not remain a cached still image. Only evict our
+    // own entry: a retry may already have installed another completer.
+    if (identical(_cacheOwners[cacheKey]?.target, this)) {
+      PaintingBinding.instance.imageCache.evict(cacheKey);
+    }
+    _forgetCacheOwner();
     super.reportError(
       context: context,
       exception: exception,
@@ -516,13 +561,12 @@ class _MemoryImageCompleter extends MultiFrameImageStreamCompleter {
     // clone. A pending, un-emitted frame instead belongs to onDisposed below.
     session.pendingFrame = null;
     session.hasEmittedFrame = true;
-    _forgetPendingOwner();
     super.setImage(image);
   }
 
   @override
   void onDisposed() {
-    _forgetPendingOwner();
+    _forgetCacheOwner();
     session.dispose();
     super.onDisposed();
   }
@@ -536,6 +580,40 @@ class _MemoryImageCompleter extends MultiFrameImageStreamCompleter {
   ratio = math.min(ratio, ImageMemoryManager.maxTextureDimension / math.max(width, height));
   ratio = math.min(ratio, math.sqrt(ImageMemoryManager.maxOutputPixels / (width * height)));
   return (width: math.max(1, (width * ratio).floor()), height: math.max(1, (height * ratio).floor()));
+}
+
+({int width, int height}) _animationTarget(
+  ({int width, int height}) requested, {
+  required int retainedBase,
+  required int transientBase,
+}) {
+  // Two output textures with mipmaps are retained; frame work can temporarily
+  // require eight RGBA target buffers. Native source/APNG costs stay fixed.
+  final transientPixels = (ImageMemoryManager.maxTransientBytes - transientBase) ~/ 32;
+  final hardRetainedPixels = (ImageMemoryManager.maxRetainedBytes - retainedBase) ~/ 16;
+  if (transientPixels < 1 || hardRetainedPixels < 1) {
+    throw const ImageMemoryException('Animated source exceeds the frame memory budget');
+  }
+  final manager = ImageMemoryManager.instance;
+  var retainedPixels = (ImageMemoryManager.maxRetainedBytes - manager.retainedBytes - retainedBase) ~/ 16;
+  final requestedPixels = requested.width * requested.height;
+  if (retainedPixels < math.min(requestedPixels, transientPixels)) {
+    // Release cache-only owners without dropping attached live-image tracking.
+    // Flutter may defer disposal until frame end; the viewer can retry then.
+    PaintingBinding.instance.imageCache.clear();
+    retainedPixels = (ImageMemoryManager.maxRetainedBytes - manager.retainedBytes - retainedBase) ~/ 16;
+  }
+  if (retainedPixels < 1) {
+    throw const ImageMemoryException('Image memory is currently in use', isTransient: true);
+  }
+  final maxPixels = math.min(requestedPixels, math.min(transientPixels, retainedPixels));
+  var ratio = math.min(1, math.sqrt(maxPixels / requestedPixels));
+  // Clamping a very narrow dimension to one pixel must still fit the budget.
+  ratio = math.min(ratio, maxPixels / math.max(requested.width, requested.height));
+  return (
+    width: math.max(1, (requested.width * ratio).floor()),
+    height: math.max(1, (requested.height * ratio).floor()),
+  );
 }
 
 Future<ui.Codec> _decodeBounded(ui.ImmutableBuffer buffer, {ui.TargetImageSizeCallback? getTargetSize}) async {
@@ -555,14 +633,9 @@ Future<ui.Codec> _decodeBounded(ui.ImmutableBuffer buffer, {ui.TargetImageSizeCa
     if (animation.animated) {
       ImageMetadata.checkDimensions(width, height, pixelLimit: ImageMemoryManager.maxAnimatedSourcePixels);
     }
-    final target = _targetSize(width, height, getTargetSize);
-    final pixels = target.width * target.height;
-    session.transientBytes = session.encodedBytes + width * height * 4 + pixels * 4;
-    if (session.transientBytes > ImageMemoryManager.maxTransientBytes) {
-      throw const ImageMemoryException('Decode exceeds the transient memory budget');
-    }
-    session.outputLease = ImageMemoryManager.instance.reserveImage(pixels * 4);
-    session.codecLease = ImageMemoryManager.instance.reserveImage(session.encodedBytes);
+    var target = _targetSize(width, height, getTargetSize);
+    // Codec construction reads metadata but does not request a frame. Reserve
+    // output only after its actual frame count determines the allocation path.
     codec = await descriptor.instantiateCodec(targetWidth: target.width, targetHeight: target.height);
     session.checkCancelled();
     if (codec.frameCount > 1) {
@@ -571,23 +644,19 @@ Future<ui.Codec> _decodeBounded(ui.ImmutableBuffer buffer, {ui.TargetImageSizeCa
         throw const ImageMemoryException('Animated source exceeds the native texture limit');
       }
       final sourceBytes = width * height * 4;
-      final targetBytes = pixels * 4;
       // The engine ignores target dimensions for multi-frame codecs. It keeps
       // a source-sized backdrop; APNG also caches decoded frame pixels (and
       // may have a separate default image). Allow 8-byte cached PNG pixels.
       final frameCacheBytes = animation.isApng ? (codec.frameCount + 1) * sourceBytes * 2 : 0;
-      session.transientBytes = session.encodedBytes + frameCacheBytes + sourceBytes * 6 + targetBytes * 8;
-      if (session.transientBytes > ImageMemoryManager.maxTransientBytes) {
-        throw const ImageMemoryException('Animated frame work exceeds the transient memory budget');
-      }
-      session.outputLease!.release();
+      final transientBase = session.encodedBytes + frameCacheBytes + sourceBytes * 6;
+      final retainedBase = session.encodedBytes + frameCacheBytes + sourceBytes;
+      target = _animationTarget(target, retainedBase: retainedBase, transientBase: transientBase);
+      final targetBytes = target.width * target.height * 4;
+      session.transientBytes = transientBase + targetBytes * 8;
       // Native and Picture.toImage textures may have mipmaps. Up to twice the
       // base RGBA bytes covers a complete mip chain, including narrow images.
       session.outputLease = ImageMemoryManager.instance.reserveImage(targetBytes * 2);
-      session.codecLease!.release();
-      session.codecLease = ImageMemoryManager.instance.reserveImage(
-        session.encodedBytes + frameCacheBytes + sourceBytes + targetBytes * 2,
-      );
+      session.codecLease = ImageMemoryManager.instance.reserveImage(retainedBase + targetBytes * 2);
       codec = BoundedImageCodec(
         codec,
         expectedSourceWidth: width,
@@ -595,6 +664,14 @@ Future<ui.Codec> _decodeBounded(ui.ImmutableBuffer buffer, {ui.TargetImageSizeCa
         targetWidth: target.width,
         targetHeight: target.height,
       );
+    } else {
+      final targetBytes = target.width * target.height * 4;
+      session.transientBytes = session.encodedBytes + width * height * 4 + targetBytes;
+      if (session.transientBytes > ImageMemoryManager.maxTransientBytes) {
+        throw const ImageMemoryException('Decode exceeds the transient memory budget');
+      }
+      session.outputLease = ImageMemoryManager.instance.reserveImage(targetBytes);
+      session.codecLease = ImageMemoryManager.instance.reserveImage(session.encodedBytes);
     }
     // The pinned engine's SingleFrameCodec keeps this descriptor until its
     // first frame is decoded. dispose() clears the generator even when the
@@ -614,8 +691,8 @@ Future<ui.Codec> _decodeBounded(ui.ImmutableBuffer buffer, {ui.TargetImageSizeCa
 /// output lifetime are separate: Flutter disposes static codecs after frame 1.
 class _ManagedCodec implements ui.Codec {
   _ManagedCodec(this._codec, this._session, [this._descriptor])
-    : frameCount = _codec.frameCount,
-      repetitionCount = _codec.repetitionCount;
+    : frameCount = _session.firstFrameOnly ? 1 : _codec.frameCount,
+      repetitionCount = _session.firstFrameOnly ? 0 : _codec.repetitionCount;
 
   final ui.Codec _codec;
   final _DecodeSession _session;
@@ -649,7 +726,7 @@ class _ManagedCodec implements ui.Codec {
               throw StateError('Codec has been disposed');
             }
             _session.pendingFrame = frame.image;
-            if (_session.isGif && frame.duration < const Duration(milliseconds: 100)) {
+            if (!_session.firstFrameOnly && _session.isGif && frame.duration < const Duration(milliseconds: 100)) {
               return _FrameInfo(frame.image, const Duration(milliseconds: 100));
             }
             return frame;
@@ -659,6 +736,7 @@ class _ManagedCodec implements ui.Codec {
           }
         },
         cancelToken: _session.cancelToken,
+        isForeground: _session.isForeground,
       );
     } catch (_) {
       // Flutter reports frame errors without disposing its codec. End native
