@@ -38,7 +38,7 @@ class RegionImageSource {
     ImageMemoryLease? lease;
     try {
       // Keep one decoded neighbor pixel around internal edges for filtering.
-      // The logical tile is smaller so the padded decode still fits 1024².
+      // The logical tile leaves room for this gutter within the decode limit.
       final decodedRegion = withGutter ? region.inflate(sample.toDouble()).intersect(Offset.zero & size) : region;
       final decoded = await ImageRegionDecoder.instance.load(
         download.file,
@@ -141,10 +141,11 @@ class RegionImageView extends StatefulWidget {
 }
 
 class _RegionImageViewState extends State<RegionImageView> {
-  static const _maxDecodedSide = 1024;
+  static const _overviewSide = 1024;
+  static const _maxDecodedSide = 512;
   static const _tileSide = _maxDecodedSide - 2; // One decoded gutter pixel on each side.
-  static const _maxTiles = 8;
-  static const _tileBytes = _maxDecodedSide * _maxDecodedSide * 4;
+  static const _tileBudget = 32 * 1024 * 1024;
+  static const _pressureTileBudget = 8 * 1024 * 1024;
   final Map<_TileKey, _RegionTile> _tiles = {};
   final CancelToken _lifetime = CancelToken();
   StreamSubscription<PhotoViewControllerValue>? _subscription;
@@ -163,7 +164,8 @@ class _RegionImageViewState extends State<RegionImageView> {
   int _cancelledTiles = 0;
   developer.TimelineTask? _coverageTrace;
 
-  int get _tileLimit => math.min(_maxTiles, (_maxTiles * 4) ~/ widget.source._bytesPerPixel);
+  int get _tileByteLimit => ImageMemoryManager.instance.underPressure.value ? _pressureTileBudget : _tileBudget;
+  int get _tileLimit => _tileByteLimit ~/ _maxTileBytes;
   int get _maxTileBytes => _maxDecodedSide * _maxDecodedSide * widget.source._bytesPerPixel;
 
   @override
@@ -195,7 +197,7 @@ class _RegionImageViewState extends State<RegionImageView> {
 
   Future<void> _loadOverview() async {
     int sample = 1;
-    while (widget.source.size.longestSide / sample > _maxDecodedSide) {
+    while (widget.source.size.longestSide / sample > _overviewSide) {
       sample *= 2;
     }
     try {
@@ -264,12 +266,13 @@ class _RegionImageViewState extends State<RegionImageView> {
       Offset(0, widget.viewport.height),
       widget.viewport.bottomRight(Offset.zero),
     ].map(toSource);
-    final visible = Rect.fromLTRB(
+    final viewportRegion = Rect.fromLTRB(
       corners.map((p) => p.dx).reduce(math.min),
       corners.map((p) => p.dy).reduce(math.min),
       corners.map((p) => p.dx).reduce(math.max),
       corners.map((p) => p.dy).reduce(math.max),
-    ).intersect(Offset.zero & sourceSize);
+    );
+    final visible = viewportRegion.intersect(Offset.zero & sourceSize);
     if (visible.isEmpty) return;
     final movement = _visible.isEmpty ? Offset.zero : visible.center - _visible.center;
     _visible = visible;
@@ -288,7 +291,27 @@ class _RegionImageViewState extends State<RegionImageView> {
       sample = previousSample;
     }
     final pressure = ImageMemoryManager.instance.underPressure.value;
-    final limit = pressure ? 2 : _tileLimit;
+    final limit = _tileLimit;
+    final viewportSpan = Size(
+      (widget.viewport.width * cosine.abs() + widget.viewport.height * sine.abs()) / scale,
+      (widget.viewport.width * sine.abs() + widget.viewport.height * cosine.abs()) / scale,
+    );
+    // Budget for every grid alignment at this zoom, including a partial tile
+    // at each edge. Using the actual visible key count made tiny pans switch
+    // resolution levels and invalidate every key when crossing the old limit.
+    // Use the unclipped viewport span: moving against an image edge must not
+    // select a finer level that is immediately lost when panning away again.
+    int capacityFor(int sample) {
+      final side = _tileSide * sample;
+      final columns = math.min((sourceSize.width / side).ceil(), (viewportSpan.width / side).ceil() + 1);
+      final rows = math.min((sourceSize.height / side).ceil(), (viewportSpan.height / side).ceil() + 1);
+      return columns * rows;
+    }
+
+    while (sample < 262144 && capacityFor(sample) > limit) {
+      sample *= 2;
+    }
+
     List<_TileKey> keysFor(int sample) {
       final side = _tileSide * sample;
       return [
@@ -298,11 +321,7 @@ class _RegionImageViewState extends State<RegionImageView> {
       ];
     }
 
-    var wanted = keysFor(sample);
-    while (sample < 262144 && wanted.length > limit) {
-      sample *= 2;
-      wanted = keysFor(sample);
-    }
+    final wanted = keysFor(sample);
     _sample = sample;
     // Nearest tiles first. A missing high-resolution tile still has the overview beneath it.
     wanted.sort((a, b) {
@@ -337,6 +356,7 @@ class _RegionImageViewState extends State<RegionImageView> {
     if (_inFlight != null &&
         !_wanted.contains(_inFlight) &&
         _inFlight != _prefetch &&
+        !_isUsefulCoverage(_inFlight!) &&
         _tileRequest?.isCancelled == false) {
       _cancelledTiles++;
       _tileRequest?.cancel();
@@ -349,6 +369,29 @@ class _RegionImageViewState extends State<RegionImageView> {
     if (_trimTiles()) setState(() {});
     _trackCoverage();
     unawaited(_loadTiles());
+  }
+
+  Rect _regionFor(_TileKey key) {
+    final side = _tileSide * key.sample;
+    return Rect.fromLTRB(
+      (key.x * side).toDouble(),
+      (key.y * side).toDouble(),
+      math.min(((key.x + 1) * side).toDouble(), widget.source.size.width),
+      math.min(((key.y + 1) * side).toDouble(), widget.source.size.height),
+    );
+  }
+
+  bool _isUsefulCoverage(_TileKey key) {
+    // A zoom can change levels while native decoding is already underway.
+    // Keep nearby levels that still cover the viewport instead of throwing
+    // their pixels away and leaving only the low-resolution overview.
+    final sample = _sample;
+    return widget.isViewed &&
+        !ImageMemoryManager.instance.underPressure.value &&
+        sample != null &&
+        key.sample <= sample * 2 &&
+        key.sample * 2 >= sample &&
+        _regionFor(key).overlaps(_visible);
   }
 
   void _finishCoverage({bool complete = false}) {
@@ -367,6 +410,9 @@ class _RegionImageViewState extends State<RegionImageView> {
     developer.Timeline.instantSync(
       'Image tile working set',
       arguments: {
+        'sample': _sample ?? 0,
+        'visible': _wanted.length,
+        'limit': _tileLimit,
         'cached': _tiles.length,
         'missing': missing,
         'reused': _cacheHits,
@@ -376,12 +422,12 @@ class _RegionImageViewState extends State<RegionImageView> {
     );
   }
 
-  /// Include the next decode in the eight-tile envelope. Optional retained
+  /// Include the next decode in the tile memory budget. Optional retained
   /// coverage must never prevent a visible replacement from being admitted.
   bool _trimTiles({int incomingBytes = 0, int incomingCount = 0}) {
     final memory = ImageMemoryManager.instance;
     final pressure = memory.underPressure.value;
-    final limit = !widget.isViewed ? 0 : (pressure ? 2 : _tileLimit);
+    final limit = !widget.isViewed ? 0 : _tileLimit;
     var changed = false;
     int bytes() => _tiles.values.fold(0, (sum, tile) => sum + tile.lease.bytes);
     void remove(_TileKey key) {
@@ -395,7 +441,7 @@ class _RegionImageViewState extends State<RegionImageView> {
       }
     }
     while (_tiles.length + incomingCount > limit ||
-        bytes() + incomingBytes > math.min(_maxTiles * _tileBytes, limit * _maxTileBytes) ||
+        bytes() + incomingBytes > _tileByteLimit ||
         (incomingBytes > 0 && memory.retainedBytes + incomingBytes > ImageMemoryManager.maxRetainedBytes)) {
       final optional = _tiles.keys.where((key) => !_wanted.contains(key));
       final victim =
@@ -422,13 +468,7 @@ class _RegionImageViewState extends State<RegionImageView> {
             memory.retainedBytes + _maxTileBytes <= ImageMemoryManager.maxRetainedBytes;
         final key = missing.firstOrNull ?? (canPrefetch ? prefetch : null);
         if (key == null) break;
-        final side = _tileSide * key.sample;
-        final region = Rect.fromLTRB(
-          (key.x * side).toDouble(),
-          (key.y * side).toDouble(),
-          math.min(((key.x + 1) * side).toDouble(), widget.source.size.width),
-          math.min(((key.y + 1) * side).toDouble(), widget.source.size.height),
-        );
+        final region = _regionFor(key);
         final token = CancelToken();
         _inFlight = key;
         _tileRequest = token;
@@ -445,7 +485,10 @@ class _RegionImageViewState extends State<RegionImageView> {
             isForeground: () => mounted && widget.isViewed && _wanted.contains(key),
             isSourceVisible: () => mounted && widget.isViewed,
           );
-          if (!mounted || !widget.isViewed || token.isCancelled || (!_wanted.contains(key) && key != _prefetch)) {
+          if (!mounted ||
+              !widget.isViewed ||
+              token.isCancelled ||
+              (!_wanted.contains(key) && key != _prefetch && !_isUsefulCoverage(key))) {
             tile.dispose();
           } else {
             setState(() {
@@ -528,7 +571,9 @@ class _RegionPainter extends CustomPainter {
       canvas.clipRect(tile.region, doAntiAlias: false);
       // Paint each source pixel once, preserving transparency across levels.
       for (final higher in tiles.skip(index + 1)) {
-        canvas.clipRect(higher.region, clipOp: ui.ClipOp.difference, doAntiAlias: false);
+        if (higher.region.overlaps(tile.region)) {
+          canvas.clipRect(higher.region, clipOp: ui.ClipOp.difference, doAntiAlias: false);
+        }
       }
       canvas.drawImageRect(
         tile.image,
