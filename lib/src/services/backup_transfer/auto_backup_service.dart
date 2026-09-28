@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_entry_registry.dart';
@@ -367,6 +368,27 @@ class AutoBackupService {
       return;
     }
 
+    if (Platform.isIOS && hasConfiguredLocation) {
+      final tempDir = await Directory('${await ServiceHandler.getCacheDir()}backup_transfer').create(recursive: true);
+      final staging = await tempDir.createTemp('auto-backup-');
+      final tempFile = File('${staging.path}${Platform.pathSeparator}$fileName');
+      try {
+        await packageService.exportPackageFile(
+          entryIds: registry.fullBackupEntries.map((entry) => entry.id).toList(),
+          outputFile: tempFile,
+        );
+        await ServiceHandler.copyIosBackupToDirectory(config.location, tempFile, fileName);
+        await _pruneIos(
+          config.location,
+          kind == _AutoBackupKind.update ? _maximumUpdateBackups : config.maximumBackups,
+          kind: kind,
+        );
+      } finally {
+        await staging.delete(recursive: true);
+      }
+      return;
+    }
+
     final dir = hasConfiguredLocation ? Directory(config.location) : await defaultBackupDirectory();
     await dir.create(recursive: true);
     await packageService.exportPackageFile(
@@ -384,6 +406,12 @@ class AutoBackupService {
   /// Shared destination for scheduled, on-demand and update backups when no
   /// custom folder has been selected. Resolving the path does not create it.
   Future<Directory> defaultBackupDirectory() async {
+    if (Platform.isIOS) {
+      final documents = await getApplicationDocumentsDirectory();
+      return Directory(
+        '${documents.path}${Platform.pathSeparator}LoliSnatcher${Platform.pathSeparator}Backups',
+      );
+    }
     final downloadsDir = await ServiceHandler.getDownloadsDir();
     if (downloadsDir.isNotEmpty) {
       return Directory('$downloadsDir${Platform.pathSeparator}LoliSnatcher');
@@ -441,6 +469,22 @@ class AutoBackupService {
       if (!await ServiceHandler.deleteFileFromSAFDirectory(safUri, stale)) {
         throw FileSystemException('Failed to remove expired automatic backup', stale);
       }
+    }
+  }
+
+  Future<void> _pruneIos(String directory, int maximumBackups, {required _AutoBackupKind kind}) async {
+    if (maximumBackups <= 0) return;
+    final isUpdate = kind == _AutoBackupKind.update;
+    final names = await ServiceHandler.listIosBackupDirectory(directory);
+    final backups = names.where((name) => BackupFileNaming.autoBackupTime(name, isUpdate: isUpdate) != null).toList()
+      ..sort(
+        (a, b) => BackupFileNaming.autoBackupTime(
+          b,
+          isUpdate: isUpdate,
+        )!.compareTo(BackupFileNaming.autoBackupTime(a, isUpdate: isUpdate)!),
+      );
+    for (final stale in backups.skip(maximumBackups)) {
+      await ServiceHandler.deleteIosBackupFromDirectory(directory, stale);
     }
   }
 

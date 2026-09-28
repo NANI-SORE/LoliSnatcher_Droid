@@ -1,0 +1,47 @@
+PODS:
+  - cupertino_http (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - Flutter (1.0.0)
+  - flutter_avif_ios (0.0.1):
+    - Flutter
+  - http_proxy (0.0.1):
+    - Flutter
+  - media_kit_libs_ios_video (1.0.4):
+    - Flutter
+  - media_kit_video (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - cupertino_http (from `.symlinks/plugins/cupertino_http/darwin`)
+  - Flutter (from `Flutter`)
+  - flutter_avif_ios (from `.symlinks/plugins/flutter_avif_ios/ios`)
+  - http_proxy (from `.symlinks/plugins/http_proxy/ios`)
+  - media_kit_libs_ios_video (from `.symlinks/plugins/media_kit_libs_ios_video/ios`)
+  - media_kit_video (from `.symlinks/plugins/media_kit_video/ios`)
+
+EXTERNAL SOURCES:
+  cupertino_http:
+    :path: ".symlinks/plugins/cupertino_http/darwin"
+  Flutter:
+    :path: Flutter
+  flutter_avif_ios:
+    :path: ".symlinks/plugins/flutter_avif_ios/ios"
+  http_proxy:
+    :path: ".symlinks/plugins/http_proxy/ios"
+  media_kit_libs_ios_video:
+    :path: ".symlinks/plugins/media_kit_libs_ios_video/ios"
+  media_kit_video:
+    :path: ".symlinks/plugins/media_kit_video/ios"
+
+SPEC CHECKSUMS:
+  cupertino_http: 94ac07f5ff090b8effa6c5e2c47871d48ab7c86c
+  Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
+  flutter_avif_ios: 2553d2aafda56339cf924e943da89ad3f40af2dd
+  http_proxy: 6e9876b8b0d8bd9378a526bf49c51d8df64e891e
+  media_kit_libs_ios_video: 5a18affdb97d1f5d466dc79988b13eff6c5e2854
+  media_kit_video: 1746e198cb697d1ffb734b1d05ec429d1fcd1474
+
+PODFILE CHECKSUM: 3ba3a73b1b12adcf321a227a745625fe0888cc82
+
+COCOAPODS: 1.16.2

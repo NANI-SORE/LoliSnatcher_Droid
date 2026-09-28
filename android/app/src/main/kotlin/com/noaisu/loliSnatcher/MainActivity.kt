@@ -746,14 +746,23 @@ class MainActivity: FlutterFragmentActivity() {
     }
 
     private fun getIpv4HostAddress(): String {
-        return NetworkInterface.getNetworkInterfaces()
+        val addresses = NetworkInterface.getNetworkInterfaces()
             ?.asSequence()
             ?.mapNotNull { networkInterface ->
-                networkInterface.inetAddresses?.asSequence()
-                    ?.firstOrNull { !it.isLoopbackAddress && it is Inet4Address }
-                    ?.let { it.hostAddress }
+                if (!networkInterface.isUp || networkInterface.isLoopback || networkInterface.isVirtual) return@mapNotNull null
+                networkInterface.inetAddresses.asSequence()
+                    .firstOrNull { !it.isLoopbackAddress && !it.isLinkLocalAddress && it is Inet4Address }
+                    ?.let { networkInterface.name to it.hostAddress }
             }
-            ?.firstOrNull()
+            ?.toList().orEmpty()
+        // Cellular and VPN interfaces may be enumerated before Wi-Fi. Their
+        // addresses cannot be reached by another device on the local network.
+        return addresses.firstOrNull { it.first.startsWith("wlan") || it.first.startsWith("swlan") }
+            ?.second
+            ?: addresses.firstOrNull { it.first.startsWith("eth") }?.second
+            ?: addresses.firstOrNull {
+                it.first.startsWith("ap") || it.first.startsWith("usb") || it.first.startsWith("rndis")
+            }?.second
             ?: ""
     }
 

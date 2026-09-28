@@ -168,7 +168,7 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
       _setKeepAwake(true);
       started = true;
       if (visible) {
-        await discovery.startBroadcast(deviceName: deviceName, deviceId: deviceId, port: server.port!);
+        await discovery.startBroadcast(deviceName: deviceName, deviceId: deviceId, port: server.port!, hostIPv4: ip);
       }
     } catch (error) {
       await server.stop();
@@ -193,7 +193,7 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
     await SettingsHandler.instance.saveSettings(restate: false);
 
     if (visible && started) {
-      await discovery.startBroadcast(deviceName: deviceName, deviceId: deviceId, port: server.port!);
+      await discovery.startBroadcast(deviceName: deviceName, deviceId: deviceId, port: server.port!, hostIPv4: ip);
     } else {
       await discovery.stopBroadcast();
     }

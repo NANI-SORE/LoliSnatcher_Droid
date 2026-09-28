@@ -391,6 +391,30 @@ class ServiceHandler {
     return result;
   }
 
+  static Future<String?> chooseIosBackupDirectory() async {
+    return platform.invokeMethod<String>('chooseBackupDirectory');
+  }
+
+  static Future<void> copyIosBackupToDirectory(String directory, File source, String fileName) async {
+    await platform.invokeMethod<void>('copyBackupToDirectory', {
+      'directory': directory,
+      'sourcePath': source.path,
+      'fileName': fileName,
+    });
+  }
+
+  static Future<List<String>> listIosBackupDirectory(String directory) async {
+    final names = await platform.invokeListMethod<String>('listBackupDirectory', {'directory': directory});
+    return names ?? [];
+  }
+
+  static Future<void> deleteIosBackupFromDirectory(String directory, String fileName) async {
+    await platform.invokeMethod<void>('deleteBackupFromDirectory', {
+      'directory': directory,
+      'fileName': fileName,
+    });
+  }
+
   static Future<String> getPicturesDir() async {
     String result = '';
     try {
@@ -523,8 +547,13 @@ class ServiceHandler {
       ip = await platform.invokeMethod('getIP');
     } else {
       final interfaces = await NetworkInterface.list(type: InternetAddressType.IPv4);
-      if (interfaces.isNotEmpty) {
-        ip = interfaces[0].addresses[0].address;
+      final candidates = interfaces
+          .expand((networkInterface) => networkInterface.addresses.map((address) => (networkInterface.name, address)))
+          .where((entry) => !entry.$2.isLoopback && !entry.$2.isLinkLocal)
+          .toList();
+      for (final prefix in ['en0', 'en', 'bridge']) {
+        final preferred = candidates.where((entry) => entry.$1.startsWith(prefix)).firstOrNull;
+        if (preferred != null) return preferred.$2.address;
       }
     }
     return ip;

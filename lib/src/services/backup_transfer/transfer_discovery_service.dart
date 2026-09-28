@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:bonsoir/bonsoir.dart';
 
@@ -38,6 +39,7 @@ class TransferDiscoveryService {
     required String deviceName,
     required String deviceId,
     required int port,
+    String? hostIPv4,
   }) async {
     final generation = ++_broadcastGeneration;
     final pending = _broadcastTail;
@@ -64,6 +66,7 @@ class TransferDiscoveryService {
           'devName': deviceName,
           'devId': deviceId,
           'startedAt': DateTime.now().millisecondsSinceEpoch.toString(),
+          if (_isUsableIPv4(hostIPv4)) 'hostIPv4': hostIPv4!,
         },
       );
       final broadcast = BonsoirBroadcast(service: service);
@@ -243,10 +246,12 @@ class TransferDiscoveryService {
       case BonsoirDiscoveryServiceUpdatedEvent():
         final service = event.service;
         if (service == null) return;
-        final host = service.hostAddress ?? _extractHost(service.toJson());
+        final host = _serviceIPv4(service);
         final port = service.port;
-        if (host == null || host.isEmpty || port <= 0) {
-          _resolveService(service);
+        if (host == null || port <= 0) {
+          // A resolved IPv6-only service has no endpoint this IPv4 server can
+          // accept. Wait for a later update instead of resolving it in a loop.
+          if (service.hostAddresses.isEmpty || port <= 0) _resolveService(service);
           return;
         }
         final attributes = service.attributes;
@@ -288,7 +293,7 @@ class TransferDiscoveryService {
         break;
       case BonsoirDiscoveryServiceLostEvent():
         final service = event.service;
-        final host = service.hostAddress ?? _extractHost(service.toJson());
+        final host = _serviceIPv4(service);
         final port = service.port.toString();
         final key = (service.name, service.type);
         final current = _devices[key];
@@ -314,12 +319,22 @@ class TransferDiscoveryService {
     }
   }
 
-  String? _extractHost(Map<String, dynamic> json) {
-    final host = json['host'] ?? json['serviceHost'] ?? json['hostname'] ?? json['service.hostname'];
-    if (host != null && host.toString().isNotEmpty) return host.toString();
-    final addresses = json['hostAddresses'] ?? json['service.hostAddresses'];
-    if (addresses is List && addresses.isNotEmpty) return addresses.first.toString();
+  // The transfer server listens on IPv4. Bonjour can return IPv6 first (or
+  // alone), which would make a discovered device visible but unreachable.
+  String? _serviceIPv4(BonsoirService service) {
+    for (final address in service.hostAddresses) {
+      if (_isUsableIPv4(address)) return address;
+    }
+    final advertised = service.attributes['hostIPv4'];
+    if (_isUsableIPv4(advertised)) return advertised;
     return null;
+  }
+
+  bool _isUsableIPv4(String? host) {
+    if (host == null) return false;
+    final address = InternetAddress.tryParse(host);
+    if (address == null || address.type != InternetAddressType.IPv4) return false;
+    return !address.isLoopback && !address.isLinkLocal;
   }
 
   bool _isIgnoredService(String host, Map<String, String> attributes) {

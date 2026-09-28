@@ -107,15 +107,21 @@ class _BackupTransferPageState extends State<BackupTransferPage> {
   });
 
   Future<void> _chooseAutoLocation() async {
-    final path = Platform.isAndroid
-        ? await ServiceHandler.getSAFDirectoryAccess()
-        : await FilePicker.getDirectoryPath(
-            dialogTitle: context.loc.settings.backupAndTransfer.autoBackupLocationDialogTitle,
-          );
-    if (path == null || path.isEmpty) return;
-    autoConfig = autoConfig.copyWith(location: path);
-    await _saveAutoConfig();
-    if (mounted) setState(() {});
+    try {
+      final path = Platform.isAndroid
+          ? await ServiceHandler.getSAFDirectoryAccess()
+          : Platform.isIOS
+          ? await ServiceHandler.chooseIosBackupDirectory()
+          : await FilePicker.getDirectoryPath(
+              dialogTitle: context.loc.settings.backupAndTransfer.autoBackupLocationDialogTitle,
+            );
+      if (path == null || path.isEmpty) return;
+      autoConfig = autoConfig.copyWith(location: path);
+      await _saveAutoConfig();
+      if (mounted) setState(() {});
+    } catch (error) {
+      if (mounted) _snack(error.toString(), true);
+    }
   }
 
   Future<void> _saveAutoConfig() async {
