@@ -124,6 +124,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
   /// en: 'Delete'
   String get delete => TranslationOverrides.string(_root.$meta, 'delete', {}) ?? 'Delete';
 
+  /// en: 'Undo'
+  String get undo => TranslationOverrides.string(_root.$meta, 'undo', {}) ?? 'Undo';
+
   /// en: 'Confirm'
   String get confirm => TranslationOverrides.string(_root.$meta, 'confirm', {}) ?? 'Confirm';
 
@@ -4049,8 +4052,8 @@ class Translations$settings$itemFilters$en {
 
   // Translations
 
-  /// en: 'Filters'
-  String get title => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.title', {}) ?? 'Filters';
+  /// en: 'Content filters'
+  String get title => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.title', {}) ?? 'Content filters';
 
   /// en: 'Filtering settings'
   String get filteringSettings => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filteringSettings', {}) ?? 'Filtering settings';
@@ -4075,6 +4078,9 @@ class Translations$settings$itemFilters$en {
   /// en: 'No filters added'
   String get noFiltersAdded => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noFiltersAdded', {}) ?? 'No filters added';
 
+  /// en: 'Filter rule deleted'
+  String get ruleDeleted => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.ruleDeleted', {}) ?? 'Filter rule deleted';
+
   /// en: 'Completely hide items which match Hidden filters'
   String get removeHidden =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeHidden', {}) ?? 'Completely hide items which match Hidden filters';
@@ -4097,8 +4103,20 @@ class Translations$settings$itemFilters$en {
   /// en: 'Remove AI items'
   String get removeAI => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeAI', {}) ?? 'Remove AI items';
 
-  /// en: 'Filter rules'
-  String get rules => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.rules', {}) ?? 'Filter rules';
+  /// en: 'Content filters'
+  String get rules => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.rules', {}) ?? 'Content filters';
+
+  /// en: 'Filter list'
+  String get filterList => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filterList', {}) ?? 'Filter list';
+
+  /// en: 'Search rules'
+  String get searchRules => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.searchRules', {}) ?? 'Search rules';
+
+  /// en: 'No matching rules'
+  String get noMatchingRules => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noMatchingRules', {}) ?? 'No matching rules';
+
+  /// en: 'No rules yet'
+  String get noRulesYet => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noRulesYet', {}) ?? 'No rules yet';
 
   /// en: 'Add filter rule'
   String get addRule => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.addRule', {}) ?? 'Add filter rule';
@@ -4315,13 +4333,18 @@ class Translations$settings$itemFilters$en {
   String excludedBoorusCount({required int count}) =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.excludedBoorusCount', {'count': count}) ?? '${count} excluded';
 
-  /// en: 'Total: ${count: int}'
+  /// en: 'Rules: ${count: int}'
   String counterTotal({required int count}) =>
-      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterTotal', {'count': count}) ?? 'Total: ${count}';
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterTotal', {'count': count}) ?? 'Rules: ${count}';
 
   /// en: 'Filtered: ${count: int}'
   String counterShown({required int count}) =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterShown', {'count': count}) ?? 'Filtered: ${count}';
+
+  /// en: 'Showing ${shown: int} of ${total: int} rules'
+  String rulesShown({required int shown, required int total}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.rulesShown', {'shown': shown, 'total': total}) ??
+      'Showing ${shown} of ${total} rules';
 
   /// en: 'Hide: ${count: int}'
   String counterHide({required int count}) =>
@@ -4450,14 +4473,14 @@ class Translations$settings$itemFilters$en {
   /// en: 'Matching filter rules'
   String get matchingRules => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.matchingRules', {}) ?? 'Matching filter rules';
 
-  /// en: 'Related filters'
-  String get relatedFilters => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.relatedFilters', {}) ?? 'Related filters';
+  /// en: 'Related rules'
+  String get relatedFilters => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.relatedFilters', {}) ?? 'Related rules';
 
-  /// en: 'Tap to view matching filters'
-  String get tapForDetails => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.tapForDetails', {}) ?? 'Tap to view matching filters';
+  /// en: 'View matching rules'
+  String get tapForDetails => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.tapForDetails', {}) ?? 'View matching rules';
 
-  /// en: 'Select filters'
-  String get selectFilters => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.selectFilters', {}) ?? 'Select filters';
+  /// en: 'Select rules'
+  String get selectFilters => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.selectFilters', {}) ?? 'Select rules';
 
   /// en: '${count: int} selected'
   String selectedCount({required int count}) =>
@@ -4490,10 +4513,10 @@ class Translations$settings$itemFilters$en {
   String deleteSelected({required int count}) =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.deleteSelected', {'count': count}) ?? 'Delete selected (${count})';
 
-  /// en: 'Delete ${count: int} selected filters? This cannot be undone.'
+  /// en: 'Delete ${count: int} selected rules? This cannot be undone.'
   String deleteSelectedConfirm({required int count}) =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.deleteSelectedConfirm', {'count': count}) ??
-      'Delete ${count} selected filters? This cannot be undone.';
+      'Delete ${count} selected rules? This cannot be undone.';
 }
 
 // Path: settings.sync
@@ -5613,6 +5636,7 @@ extension on Translations {
           'remove' => TranslationOverrides.string(_root.$meta, 'remove', {}) ?? 'Remove',
           'save' => TranslationOverrides.string(_root.$meta, 'save', {}) ?? 'Save',
           'delete' => TranslationOverrides.string(_root.$meta, 'delete', {}) ?? 'Delete',
+          'undo' => TranslationOverrides.string(_root.$meta, 'undo', {}) ?? 'Undo',
           'confirm' => TranslationOverrides.string(_root.$meta, 'confirm', {}) ?? 'Confirm',
           'retry' => TranslationOverrides.string(_root.$meta, 'retry', {}) ?? 'Retry',
           'clear' => TranslationOverrides.string(_root.$meta, 'clear', {}) ?? 'Clear',
@@ -6444,10 +6468,10 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotationSubtitle', {}) ?? 'Double tap to reset',
           'settings.viewer.toolbarButtonsOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.toolbarButtonsOrder', {}) ?? 'Toolbar buttons order',
-          'settings.viewer.buttonsOrder' => TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonsOrder', {}) ?? 'Buttons order',
           _ => null,
         } ??
         switch (path) {
+          'settings.viewer.buttonsOrder' => TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonsOrder', {}) ?? 'Buttons order',
           'settings.viewer.longPressToChangeItemOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.longPressToChangeItemOrder', {}) ?? 'Long press to change item order.',
           'settings.viewer.atLeast4ButtonsVisibleOnToolbar' =>
@@ -7034,7 +7058,7 @@ extension on Translations {
           'settings.cache.errorExclamation' => TranslationOverrides.string(_root.$meta, 'settings.cache.errorExclamation', {}) ?? 'Error!',
           'settings.cache.notAvailableForPlatform' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.notAvailableForPlatform', {}) ?? 'Currently not available for this platform',
-          'settings.itemFilters.title' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.title', {}) ?? 'Filters',
+          'settings.itemFilters.title' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.title', {}) ?? 'Content filters',
           'settings.itemFilters.filteringSettings' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filteringSettings', {}) ?? 'Filtering settings',
           'settings.itemFilters.hidden' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hidden', {}) ?? 'Hidden',
@@ -7049,6 +7073,8 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noFiltersFound', {}) ?? 'No filters found',
           'settings.itemFilters.noFiltersAdded' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noFiltersAdded', {}) ?? 'No filters added',
+          'settings.itemFilters.ruleDeleted' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.ruleDeleted', {}) ?? 'Filter rule deleted',
           'settings.itemFilters.removeHidden' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeHidden', {}) ?? 'Completely hide items which match Hidden filters',
           'settings.itemFilters.removeMarked' =>
@@ -7061,7 +7087,12 @@ extension on Translations {
           'settings.itemFilters.removeSnatched' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeSnatched', {}) ?? 'Remove snatched items',
           'settings.itemFilters.removeAI' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeAI', {}) ?? 'Remove AI items',
-          'settings.itemFilters.rules' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.rules', {}) ?? 'Filter rules',
+          'settings.itemFilters.rules' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.rules', {}) ?? 'Content filters',
+          'settings.itemFilters.filterList' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filterList', {}) ?? 'Filter list',
+          'settings.itemFilters.searchRules' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.searchRules', {}) ?? 'Search rules',
+          'settings.itemFilters.noMatchingRules' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noMatchingRules', {}) ?? 'No matching rules',
+          'settings.itemFilters.noRulesYet' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noRulesYet', {}) ?? 'No rules yet',
           'settings.itemFilters.addRule' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.addRule', {}) ?? 'Add filter rule',
           'settings.itemFilters.editRule' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.editRule', {}) ?? 'Edit filter rule',
           'settings.itemFilters.ruleName' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.ruleName', {}) ?? 'Name',
@@ -7179,10 +7210,14 @@ extension on Translations {
           }) => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.excludedBoorusCount', {'count': count}) ?? '${count} excluded',
           'settings.itemFilters.counterTotal' => ({
             required int count,
-          }) => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterTotal', {'count': count}) ?? 'Total: ${count}',
+          }) => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterTotal', {'count': count}) ?? 'Rules: ${count}',
           'settings.itemFilters.counterShown' => ({
             required int count,
           }) => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterShown', {'count': count}) ?? 'Filtered: ${count}',
+          'settings.itemFilters.rulesShown' =>
+            ({required int shown, required int total}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.rulesShown', {'shown': shown, 'total': total}) ??
+                'Showing ${shown} of ${total} rules',
           'settings.itemFilters.counterHide' => ({
             required int count,
           }) => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterHide', {'count': count}) ?? 'Hide: ${count}',
@@ -7283,11 +7318,11 @@ extension on Translations {
           'settings.itemFilters.matchingRules' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.matchingRules', {}) ?? 'Matching filter rules',
           'settings.itemFilters.relatedFilters' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.relatedFilters', {}) ?? 'Related filters',
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.relatedFilters', {}) ?? 'Related rules',
           'settings.itemFilters.tapForDetails' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.tapForDetails', {}) ?? 'Tap to view matching filters',
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.tapForDetails', {}) ?? 'View matching rules',
           'settings.itemFilters.selectFilters' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.selectFilters', {}) ?? 'Select filters',
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.selectFilters', {}) ?? 'Select rules',
           'settings.itemFilters.selectedCount' => ({
             required int count,
           }) => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.selectedCount', {'count': count}) ?? '${count} selected',
@@ -7315,7 +7350,7 @@ extension on Translations {
           'settings.itemFilters.deleteSelectedConfirm' =>
             ({required int count}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.itemFilters.deleteSelectedConfirm', {'count': count}) ??
-                'Delete ${count} selected filters? This cannot be undone.',
+                'Delete ${count} selected rules? This cannot be undone.',
           'settings.sync.title' => TranslationOverrides.string(_root.$meta, 'settings.sync.title', {}) ?? 'Sync',
           'settings.sync.dbError' => TranslationOverrides.string(_root.$meta, 'settings.sync.dbError', {}) ?? 'Database must be enabled to use Sync',
           'settings.sync.errorTitle' => TranslationOverrides.string(_root.$meta, 'settings.sync.errorTitle', {}) ?? 'Error!',
@@ -7513,6 +7548,9 @@ extension on Translations {
           'settings.logging.captureLogcatDescription' =>
             TranslationOverrides.string(_root.$meta, 'settings.logging.captureLogcatDescription', {}) ??
                 'Record warning and error messages from this app\'s Android process',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.webview.openWebview' => TranslationOverrides.string(_root.$meta, 'settings.webview.openWebview', {}) ?? 'Open webview',
           'settings.webview.openWebviewTip' =>
             TranslationOverrides.string(_root.$meta, 'settings.webview.openWebviewTip', {}) ?? 'to login or obtain cookies',
@@ -7524,9 +7562,6 @@ extension on Translations {
                 'Do you want to close the picker without choosing a directory?',
           'settings.dirPicker.no' => TranslationOverrides.string(_root.$meta, 'settings.dirPicker.no', {}) ?? 'No',
           'settings.dirPicker.yes' => TranslationOverrides.string(_root.$meta, 'settings.dirPicker.yes', {}) ?? 'Yes',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.dirPicker.error' => TranslationOverrides.string(_root.$meta, 'settings.dirPicker.error', {}) ?? 'Error!',
           'settings.dirPicker.failedToCreateDirectory' =>
             TranslationOverrides.string(_root.$meta, 'settings.dirPicker.failedToCreateDirectory', {}) ?? 'Failed to create directory',

@@ -99,6 +99,8 @@ class TranslationsRuRu extends Translations with BaseTranslations<AppLocale, Tra
   @override
   String get delete => TranslationOverrides.string(_root.$meta, 'delete', {}) ?? 'Удалить';
   @override
+  String get undo => TranslationOverrides.string(_root.$meta, 'undo', {}) ?? 'Отменить';
+  @override
   String get confirm => TranslationOverrides.string(_root.$meta, 'confirm', {}) ?? 'Подтвердить';
   @override
   String get retry => TranslationOverrides.string(_root.$meta, 'retry', {}) ?? 'Повторить';
@@ -3224,7 +3226,7 @@ class _Translations$settings$itemFilters$ru_RU extends Translations$settings$ite
 
   // Translations
   @override
-  String get title => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.title', {}) ?? 'Фильтры тегов';
+  String get title => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.title', {}) ?? 'Фильтры контента';
   @override
   String get filteringSettings => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filteringSettings', {}) ?? 'Настройки фильтрации';
   @override
@@ -3241,6 +3243,8 @@ class _Translations$settings$itemFilters$ru_RU extends Translations$settings$ite
   String get noFiltersFound => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noFiltersFound', {}) ?? 'Фильтры не найдены';
   @override
   String get noFiltersAdded => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noFiltersAdded', {}) ?? 'Нет фильтров';
+  @override
+  String get ruleDeleted => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.ruleDeleted', {}) ?? 'Правило фильтрации удалено';
   @override
   String get removeHidden =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeHidden', {}) ??
@@ -3260,7 +3264,15 @@ class _Translations$settings$itemFilters$ru_RU extends Translations$settings$ite
   @override
   String get removeAI => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeAI', {}) ?? 'Скрыть элементы с ИИ-тегами';
   @override
-  String get rules => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.rules', {}) ?? 'Правила фильтрации';
+  String get rules => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.rules', {}) ?? 'Фильтры контента';
+  @override
+  String get filterList => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filterList', {}) ?? 'Фильтр списка';
+  @override
+  String get searchRules => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.searchRules', {}) ?? 'Поиск правил';
+  @override
+  String get noMatchingRules => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noMatchingRules', {}) ?? 'Подходящих правил нет';
+  @override
+  String get noRulesYet => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noRulesYet', {}) ?? 'Правил пока нет';
   @override
   String get addRule => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.addRule', {}) ?? 'Добавить правило';
   @override
@@ -3418,10 +3430,14 @@ class _Translations$settings$itemFilters$ru_RU extends Translations$settings$ite
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.excludedBoorusCount', {'count': count}) ?? 'Исключено: ${count}';
   @override
   String counterTotal({required int count}) =>
-      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterTotal', {'count': count}) ?? 'Всего: ${count}';
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterTotal', {'count': count}) ?? 'Правил: ${count}';
   @override
   String counterShown({required int count}) =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterShown', {'count': count}) ?? 'Отфильтровано: ${count}';
+  @override
+  String rulesShown({required int shown, required int total}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.rulesShown', {'shown': shown, 'total': total}) ??
+      'Показано правил: ${shown} из ${total}';
   @override
   String counterHide({required int count}) =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterHide', {'count': count}) ?? 'Скрытие: ${count}';
@@ -3532,12 +3548,11 @@ class _Translations$settings$itemFilters$ru_RU extends Translations$settings$ite
   @override
   String get matchingRules => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.matchingRules', {}) ?? 'Сработавшие правила фильтрации';
   @override
-  String get relatedFilters => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.relatedFilters', {}) ?? 'Связанные фильтры';
+  String get relatedFilters => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.relatedFilters', {}) ?? 'Связанные правила';
   @override
-  String get tapForDetails =>
-      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.tapForDetails', {}) ?? 'Нажмите, чтобы посмотреть сработавшие фильтры';
+  String get tapForDetails => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.tapForDetails', {}) ?? 'Посмотреть сработавшие правила';
   @override
-  String get selectFilters => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.selectFilters', {}) ?? 'Выбрать фильтры';
+  String get selectFilters => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.selectFilters', {}) ?? 'Выбрать правила';
   @override
   String selectedCount({required int count}) =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.selectedCount', {'count': count}) ?? 'Выбрано: ${count}';
@@ -3564,7 +3579,7 @@ class _Translations$settings$itemFilters$ru_RU extends Translations$settings$ite
   @override
   String deleteSelectedConfirm({required int count}) =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.deleteSelectedConfirm', {'count': count}) ??
-      'Удалить выбранные фильтры (${count})? Это действие нельзя отменить.';
+      'Удалить выбранные правила (${count})? Это действие нельзя отменить.';
 }
 
 // Path: settings.sync
@@ -4461,6 +4476,7 @@ extension on TranslationsRuRu {
           'remove' => TranslationOverrides.string(_root.$meta, 'remove', {}) ?? 'Убрать',
           'save' => TranslationOverrides.string(_root.$meta, 'save', {}) ?? 'Сохранить',
           'delete' => TranslationOverrides.string(_root.$meta, 'delete', {}) ?? 'Удалить',
+          'undo' => TranslationOverrides.string(_root.$meta, 'undo', {}) ?? 'Отменить',
           'confirm' => TranslationOverrides.string(_root.$meta, 'confirm', {}) ?? 'Подтвердить',
           'retry' => TranslationOverrides.string(_root.$meta, 'retry', {}) ?? 'Повторить',
           'clear' => TranslationOverrides.string(_root.$meta, 'clear', {}) ?? 'Сбросить',
@@ -5322,10 +5338,10 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotationSubtitle', {}) ?? 'Двойное нажатие для сброса',
           'settings.viewer.toolbarButtonsOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.toolbarButtonsOrder', {}) ?? 'Порядок кнопок панели инструментов',
-          'settings.viewer.buttonsOrder' => TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonsOrder', {}) ?? 'Порядок кнопок',
           _ => null,
         } ??
         switch (path) {
+          'settings.viewer.buttonsOrder' => TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonsOrder', {}) ?? 'Порядок кнопок',
           'settings.viewer.longPressToChangeItemOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.longPressToChangeItemOrder', {}) ??
                 'Длительное нажатие для изменения порядка элементов.',
@@ -5934,7 +5950,7 @@ extension on TranslationsRuRu {
           'settings.cache.errorExclamation' => TranslationOverrides.string(_root.$meta, 'settings.cache.errorExclamation', {}) ?? 'Ошибка!',
           'settings.cache.notAvailableForPlatform' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.notAvailableForPlatform', {}) ?? 'В данный момент недоступно для этой платформы',
-          'settings.itemFilters.title' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.title', {}) ?? 'Фильтры тегов',
+          'settings.itemFilters.title' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.title', {}) ?? 'Фильтры контента',
           'settings.itemFilters.filteringSettings' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filteringSettings', {}) ?? 'Настройки фильтрации',
           'settings.itemFilters.hidden' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hidden', {}) ?? 'Скрытые',
@@ -5949,6 +5965,8 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noFiltersFound', {}) ?? 'Фильтры не найдены',
           'settings.itemFilters.noFiltersAdded' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noFiltersAdded', {}) ?? 'Нет фильтров',
+          'settings.itemFilters.ruleDeleted' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.ruleDeleted', {}) ?? 'Правило фильтрации удалено',
           'settings.itemFilters.removeHidden' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeHidden', {}) ??
                 'Полностью скрыть элементы, подпадающие под Скрытые фильтры',
@@ -5964,7 +5982,12 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeSnatched', {}) ?? 'Скрыть скачанные элементы',
           'settings.itemFilters.removeAI' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeAI', {}) ?? 'Скрыть элементы с ИИ-тегами',
-          'settings.itemFilters.rules' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.rules', {}) ?? 'Правила фильтрации',
+          'settings.itemFilters.rules' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.rules', {}) ?? 'Фильтры контента',
+          'settings.itemFilters.filterList' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filterList', {}) ?? 'Фильтр списка',
+          'settings.itemFilters.searchRules' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.searchRules', {}) ?? 'Поиск правил',
+          'settings.itemFilters.noMatchingRules' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noMatchingRules', {}) ?? 'Подходящих правил нет',
+          'settings.itemFilters.noRulesYet' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noRulesYet', {}) ?? 'Правил пока нет',
           'settings.itemFilters.addRule' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.addRule', {}) ?? 'Добавить правило',
           'settings.itemFilters.editRule' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.editRule', {}) ?? 'Изменить правило',
           'settings.itemFilters.ruleName' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.ruleName', {}) ?? 'Название',
@@ -6087,10 +6110,14 @@ extension on TranslationsRuRu {
           }) => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.excludedBoorusCount', {'count': count}) ?? 'Исключено: ${count}',
           'settings.itemFilters.counterTotal' => ({
             required int count,
-          }) => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterTotal', {'count': count}) ?? 'Всего: ${count}',
+          }) => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterTotal', {'count': count}) ?? 'Правил: ${count}',
           'settings.itemFilters.counterShown' => ({
             required int count,
           }) => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterShown', {'count': count}) ?? 'Отфильтровано: ${count}',
+          'settings.itemFilters.rulesShown' =>
+            ({required int shown, required int total}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.itemFilters.rulesShown', {'shown': shown, 'total': total}) ??
+                'Показано правил: ${shown} из ${total}',
           'settings.itemFilters.counterHide' => ({
             required int count,
           }) => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterHide', {'count': count}) ?? 'Скрытие: ${count}',
@@ -6193,11 +6220,11 @@ extension on TranslationsRuRu {
           'settings.itemFilters.matchingRules' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.matchingRules', {}) ?? 'Сработавшие правила фильтрации',
           'settings.itemFilters.relatedFilters' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.relatedFilters', {}) ?? 'Связанные фильтры',
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.relatedFilters', {}) ?? 'Связанные правила',
           'settings.itemFilters.tapForDetails' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.tapForDetails', {}) ?? 'Нажмите, чтобы посмотреть сработавшие фильтры',
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.tapForDetails', {}) ?? 'Посмотреть сработавшие правила',
           'settings.itemFilters.selectFilters' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.selectFilters', {}) ?? 'Выбрать фильтры',
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.selectFilters', {}) ?? 'Выбрать правила',
           'settings.itemFilters.selectedCount' => ({
             required int count,
           }) => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.selectedCount', {'count': count}) ?? 'Выбрано: ${count}',
@@ -6228,7 +6255,7 @@ extension on TranslationsRuRu {
           'settings.itemFilters.deleteSelectedConfirm' =>
             ({required int count}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.itemFilters.deleteSelectedConfirm', {'count': count}) ??
-                'Удалить выбранные фильтры (${count})? Это действие нельзя отменить.',
+                'Удалить выбранные правила (${count})? Это действие нельзя отменить.',
           'settings.sync.title' => TranslationOverrides.string(_root.$meta, 'settings.sync.title', {}) ?? 'Синхронизация',
           'settings.sync.dbError' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.dbError', {}) ??
@@ -6427,6 +6454,9 @@ extension on TranslationsRuRu {
           'settings.logging.captureLogcatDescription' =>
             TranslationOverrides.string(_root.$meta, 'settings.logging.captureLogcatDescription', {}) ??
                 'Запись системных сообщений об ошибках и предупреждениях для этого процесса',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.webview.openWebview' => TranslationOverrides.string(_root.$meta, 'settings.webview.openWebview', {}) ?? 'Открыть вебвью',
           'settings.webview.openWebviewTip' =>
             TranslationOverrides.string(_root.$meta, 'settings.webview.openWebviewTip', {}) ?? 'чтобы залогиниться или получить куки',
@@ -6437,9 +6467,6 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.dirPicker.closeWithoutChoosing', {}) ?? 'Ты хочешь закрыть выбор папки без выбора?',
           'settings.dirPicker.no' => TranslationOverrides.string(_root.$meta, 'settings.dirPicker.no', {}) ?? 'Нет',
           'settings.dirPicker.yes' => TranslationOverrides.string(_root.$meta, 'settings.dirPicker.yes', {}) ?? 'Да',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.dirPicker.error' => TranslationOverrides.string(_root.$meta, 'settings.dirPicker.error', {}) ?? 'Ошибка!',
           'settings.dirPicker.failedToCreateDirectory' =>
             TranslationOverrides.string(_root.$meta, 'settings.dirPicker.failedToCreateDirectory', {}) ?? 'Не удалось создать папку',

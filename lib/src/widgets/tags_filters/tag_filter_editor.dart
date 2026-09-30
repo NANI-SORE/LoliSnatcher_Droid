@@ -84,16 +84,13 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
   late final TextEditingController markerController;
 
   late TagFilterEffect effect;
-  late TagFilterScopeKind scopeKind;
+  late String _scopeMode;
   late bool enabled;
   late bool showMarkerInGrid;
   bool showEmptyScopeWarning = false;
   DateTime? disabledUntil;
-  final List<Booru> sourceBoorus = [];
-  final List<BooruIdentity> missingSources = [];
-  BooruType viewType = BooruType.Favourites;
+  final List<BooruIdentity> _selectedScopeSources = [];
   Booru? suggestionBooru;
-  final Set<BooruIdentity> exclusions = {};
   late _MarkerEditorMode markerMode;
   TagFilterMarkerIcon markerIcon = tagFilterMarkerIconCatalog.first;
   TagFilterMarkerColor markerColor = TagFilterMarkerColor.grey;
@@ -106,6 +103,8 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
 
   List<Booru> get scopeBoorus =>
       SettingsHandler.instance.booruList.where((booru) => booru.type?.isMerge != true).toList();
+
+  List<Booru> get sourceBoorus => _selectedScopeSources.map(_booruForIdentity).nonNulls.toList();
 
   @override
   void initState() {
@@ -120,28 +119,24 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
     effect = rule?.effect ?? draft?.effect ?? TagFilterEffect.hide;
     showMarkerInGrid = rule?.showMarkerInGrid ?? true;
     final initialScope = rule?.scope ?? draft?.scope ?? const TagFilterScope.global();
-    scopeKind = initialScope.kind;
+    _scopeMode = switch (initialScope.kind) {
+      TagFilterScopeKind.global =>
+        initialScope.excludedSources.isEmpty ? _allBoorusScopeKey : _allExceptSelectedScopeKey,
+      TagFilterScopeKind.source || TagFilterScopeKind.view => _onlySelectedScopeKey,
+    };
     enabled = rule?.enabled ?? true;
     disabledUntil = rule?.disabledUntil;
-    for (final target in initialScope.targets) {
-      final source = scopeBoorus.where((booru) => _identityMatchesBooru(target, booru)).firstOrNull;
-      if (source == null) {
-        missingSources.add(target);
-      } else if (!sourceBoorus.contains(source)) {
-        sourceBoorus.add(source);
-      }
-    }
-    viewType = initialScope.viewType ?? BooruType.Favourites;
-    if (initialScope.kind == TagFilterScopeKind.view) {
-      scopeKind = TagFilterScopeKind.source;
-      final source = scopeBoorus.where((booru) => booru.type == viewType).firstOrNull;
-      if (source == null) {
-        missingSources.add(BooruIdentity(type: viewType));
-      } else if (!sourceBoorus.contains(source)) {
-        sourceBoorus.add(source);
-      }
-    }
-    exclusions.addAll(initialScope.excludedSources);
+    final initialSources = switch (initialScope.kind) {
+      TagFilterScopeKind.global => initialScope.excludedSources,
+      TagFilterScopeKind.source => initialScope.targets,
+      TagFilterScopeKind.view => [BooruIdentity(type: initialScope.viewType)],
+    };
+    _selectedScopeSources.addAll(
+      initialSources.map((identity) {
+        final booru = _booruForIdentity(identity);
+        return booru == null ? identity : _identityForBooru(booru);
+      }).toSet(),
+    );
     final initialMarker = rule?.marker;
     markerIcon = initialMarker?.icon ?? tagFilterMarkerIconCatalog.first;
     markerColor = initialMarker?.color ?? TagFilterMarkerColor.grey;
@@ -155,7 +150,9 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
       markerMode = _MarkerEditorMode.custom;
     }
     suggestionBooru =
-        sourceBoorus.where((booru) => booru.type?.isFavouritesOrDownloads != true).firstOrNull ??
+        (_scopeMode == _onlySelectedScopeKey
+            ? sourceBoorus.where((booru) => booru.type?.isFavouritesOrDownloads != true).firstOrNull
+            : null) ??
         SearchHandler.instance.currentBooruOrNull ??
         regularBoorus.firstOrNull;
   }
@@ -188,13 +185,12 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
     return result.toString().trim();
   }
 
-  TagFilterScope? _scope() => switch (scopeKind) {
-    TagFilterScopeKind.global => TagFilterScope.global(excludedSources: exclusions.toList()),
-    TagFilterScopeKind.source =>
-      [...sourceBoorus.map(_identityForBooru), ...missingSources].isEmpty
-          ? null
-          : TagFilterScope.sources([...sourceBoorus.map(_identityForBooru), ...missingSources]),
-    TagFilterScopeKind.view => TagFilterScope.view(viewType),
+  TagFilterScope? _scope() => switch (_scopeMode) {
+    _allBoorusScopeKey => const TagFilterScope.global(),
+    _onlySelectedScopeKey => _selectedScopeSources.isEmpty ? null : TagFilterScope.sources(_selectedScopeSources),
+    _allExceptSelectedScopeKey =>
+      _selectedScopeSources.isEmpty ? null : TagFilterScope.global(excludedSources: _selectedScopeSources.toList()),
+    _ => null,
   };
 
   TagFilterMarker? _marker() {
@@ -645,10 +641,8 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
   Booru? _booruForIdentity(BooruIdentity identity) =>
       scopeBoorus.where((booru) => _identityMatchesBooru(identity, booru)).firstOrNull;
 
-  List<BooruIdentity> get _missingScopeSources => {
-    ...missingSources,
-    ...exclusions.where((source) => _booruForIdentity(source) == null),
-  }.toList();
+  List<BooruIdentity> get _missingScopeSources =>
+      _selectedScopeSources.where((source) => _booruForIdentity(source) == null).toList();
 
   String _scopeKeyForIdentity(BooruIdentity identity) {
     final booru = _booruForIdentity(identity);
@@ -660,68 +654,33 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
     ..._missingScopeSources.map(_missingSourceKey),
   ];
 
-  List<String> get _scopeKeys => [
-    _allBoorusScopeKey,
-    _onlySelectedScopeKey,
-    _allExceptSelectedScopeKey,
-    ..._booruScopeKeys,
-  ];
-
-  List<String> get _selectedScopeKeys => switch (scopeKind) {
-    TagFilterScopeKind.global =>
-      exclusions.isEmpty ? [_allBoorusScopeKey] : [_allExceptSelectedScopeKey, ...exclusions.map(_scopeKeyForIdentity)],
-    TagFilterScopeKind.source => [
-      _onlySelectedScopeKey,
-      ...sourceBoorus.map(_sourceScopeKey),
-      ...missingSources.map(_missingSourceKey),
-    ],
-    TagFilterScopeKind.view => [
-      _onlySelectedScopeKey,
-      _missingSourceKey(BooruIdentity(type: viewType)),
-    ],
-  };
+  List<String> get _selectedSiteKeys => _selectedScopeSources.map(_scopeKeyForIdentity).toList();
 
   Booru? _booruForScopeKey(String key) => scopeBoorus.where((booru) => _sourceScopeKey(booru) == key).firstOrNull;
 
   BooruIdentity? _identityForScopeKey(String key) {
     final booru = _booruForScopeKey(key);
-    return booru == null ? _missingSourceForKey(key) : BooruIdentity.fromBooru(booru);
+    return booru == null ? _missingSourceForKey(key) : _identityForBooru(booru);
   }
 
-  void _setScopeKeys(List<String> keys) {
-    final previous = _selectedScopeKeys;
+  void _setSelectedSiteKeys(List<String> keys) {
+    final previous = _selectedSiteKeys;
     if (keys.length == previous.length && keys.every(previous.contains)) return;
     final selectedSources = keys.map(_identityForScopeKey).nonNulls.toList();
     setState(() {
       showEmptyScopeWarning = false;
-      if (keys.contains(_allBoorusScopeKey)) {
-        scopeKind = TagFilterScopeKind.global;
-        exclusions.clear();
-        sourceBoorus.clear();
-        missingSources.clear();
-      } else if (keys.contains(_allExceptSelectedScopeKey)) {
-        scopeKind = TagFilterScopeKind.global;
-        exclusions
-          ..clear()
-          ..addAll(selectedSources);
-        sourceBoorus.clear();
-        missingSources.clear();
-      } else {
-        scopeKind = TagFilterScopeKind.source;
-        exclusions.clear();
-        sourceBoorus
-          ..clear()
-          ..addAll(selectedSources.map(_booruForIdentity).nonNulls);
-        missingSources
-          ..clear()
-          ..addAll(selectedSources.where((source) => _booruForIdentity(source) == null));
-        if (!sourceBoorus.contains(suggestionBooru)) {
-          suggestionBooru =
-              sourceBoorus.where((booru) => booru.type?.isFavouritesOrDownloads != true).firstOrNull ??
-              regularBoorus.firstOrNull;
-        }
-      }
+      _selectedScopeSources
+        ..clear()
+        ..addAll(selectedSources);
+      _updateSuggestionBooruForScope();
     });
+  }
+
+  void _updateSuggestionBooruForScope() {
+    if (_scopeMode != _onlySelectedScopeKey || sourceBoorus.contains(suggestionBooru)) return;
+    suggestionBooru =
+        sourceBoorus.where((booru) => booru.type?.isFavouritesOrDownloads != true).firstOrNull ??
+        regularBoorus.firstOrNull;
   }
 
   String _scopeName(String? key) {
@@ -765,69 +724,12 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
     );
   }
 
-  Widget _selectedScopeOptions(List<String> keys) {
-    if (keys.isEmpty) return Text(context.loc.select);
-    final mode = keys.first;
-    if (mode == _allBoorusScopeKey) {
-      return _scopeOption(mode);
-    }
-    final selectedCount = keys.where(_isBooruScopeKey).length;
-    return Row(
-      children: [
-        Icon(mode == _allExceptSelectedScopeKey ? Icons.playlist_remove : Icons.playlist_add_check, size: 20),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            '${_scopeName(mode)} ($selectedCount)',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _selectedSiteOptions(List<String> keys) =>
+      Text(context.loc.settings.itemFilters.selectedCount(count: keys.length));
 
-  bool _isBooruScopeKey(String key) => key.startsWith('source:') || key.startsWith('missing:');
-
-  bool _isScopeModeKey(String key) => {
-    _allBoorusScopeKey,
-    _onlySelectedScopeKey,
-    _allExceptSelectedScopeKey,
-  }.contains(key);
-
-  List<String> _normalizeScopeSelection(List<String> selected, String toggled) {
-    final selectedBoorus = selected.where(_isBooruScopeKey).toList();
-    if (_isScopeModeKey(toggled)) {
-      if (toggled == _allBoorusScopeKey) {
-        return [toggled];
-      }
-      return [toggled, ...selectedBoorus];
-    }
-    final currentMode = selected.where(_isScopeModeKey).firstOrNull;
-    return [
-      if (currentMode == _onlySelectedScopeKey || currentMode == _allExceptSelectedScopeKey)
-        currentMode!
-      else
-        _onlySelectedScopeKey,
-      ...selectedBoorus,
-    ];
-  }
-
-  List<String> _clearScopeSelection(List<String> _) => [_onlySelectedScopeKey];
-
-  List<String> _selectAllScopes(List<String> _) => [_allBoorusScopeKey];
-
-  List<String> _invertScopeSelection(List<String> selected) {
-    final mode = selected.where(_isScopeModeKey).firstOrNull;
-    final selectedBoorus = selected.where(_isBooruScopeKey).toSet();
-    if (mode == _allExceptSelectedScopeKey) {
-      return [_onlySelectedScopeKey, ...selectedBoorus];
-    }
-    if (mode == _allBoorusScopeKey) return [_onlySelectedScopeKey];
-    return [
-      _onlySelectedScopeKey,
-      ..._booruScopeKeys.where((key) => !selectedBoorus.contains(key)),
-    ];
+  List<String> _invertSiteSelection(List<String> selected) {
+    final selectedKeys = selected.toSet();
+    return _booruScopeKeys.where((key) => !selectedKeys.contains(key)).toList();
   }
 
   String _formatTimerEnd(DateTime until) {
@@ -858,6 +760,7 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
   @override
   Widget build(BuildContext context) {
     final loc = context.loc.settings.itemFilters;
+    final suspended = enabled && disabledUntil?.isAfter(DateTime.now().toUtc()) == true;
     return Material(
       clipBehavior: Clip.antiAlias,
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -948,21 +851,41 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
                           onChanged: (value) => setState(() => effect = value!),
                         ),
                         const SizedBox(height: 12),
-                        LoliMultiselectDropdown<String>(
-                          value: _selectedScopeKeys,
-                          items: _scopeKeys,
-                          onChanged: _setScopeKeys,
+                        LoliDropdown<String>(
+                          value: _scopeMode,
+                          items: const [
+                            _allBoorusScopeKey,
+                            _onlySelectedScopeKey,
+                            _allExceptSelectedScopeKey,
+                          ],
+                          onChanged: (mode) => setState(() {
+                            _scopeMode = mode!;
+                            showEmptyScopeWarning = false;
+                            _updateSuggestionBooruForScope();
+                          }),
                           itemBuilder: (key) => _dropdownSheetItem(_scopeOption(key)),
-                          selectedItemBuilder: _selectedScopeOptions,
+                          selectedItemBuilder: _scopeOption,
                           labelText: loc.scope,
-                          selectionNormalizer: _normalizeScopeSelection,
-                          clearSelection: _clearScopeSelection,
-                          selectAllSelection: _selectAllScopes,
-                          invertSelection: _invertScopeSelection,
-                          invertSelectionLabel: loc.invertSelection,
-                          selectionCount: (keys) => keys.where(_isBooruScopeKey).length,
-                          showSelectionOrder: false,
                         ),
+                        if (_scopeMode != _allBoorusScopeKey) ...[
+                          const SizedBox(height: 12),
+                          LoliMultiselectDropdown<String>(
+                            value: _selectedSiteKeys,
+                            items: _booruScopeKeys,
+                            onChanged: _setSelectedSiteKeys,
+                            itemBuilder: (key) => _dropdownSheetItem(_scopeOption(key)),
+                            selectedItemBuilder: _selectedSiteOptions,
+                            labelText: _scopeMode == _allExceptSelectedScopeKey
+                                ? loc.excludedBoorus
+                                : loc.onlySelectedBoorus,
+                            clearSelection: (_) => [],
+                            selectAllSelection: (_) => _booruScopeKeys,
+                            invertSelection: _invertSiteSelection,
+                            invertSelectionLabel: loc.invertSelection,
+                            selectionCount: (keys) => keys.length,
+                            showSelectionOrder: false,
+                          ),
+                        ],
                         if (showEmptyScopeWarning && _scope() == null)
                           Padding(
                             padding: const EdgeInsets.only(top: 6),
@@ -1006,7 +929,7 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
                           ),
                           const SizedBox(height: 4),
                         ],
-                        if (enabled && disabledUntil?.isAfter(DateTime.now().toUtc()) == true) ...[
+                        if (suspended) ...[
                           const SizedBox(height: 12),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1060,11 +983,14 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
                         if (widget.rule != null)
                           SwitchListTile(
                             contentPadding: EdgeInsets.zero,
-                            value: enabled,
+                            value: enabled && !suspended,
+                            thumbIcon: suspended
+                                ? const WidgetStatePropertyAll<Icon?>(Icon(Icons.timer_outlined))
+                                : null,
                             title: Text(loc.enabled),
                             onChanged: (value) => setState(() {
                               enabled = value;
-                              if (value) disabledUntil = null;
+                              disabledUntil = null;
                             }),
                           ),
                         if (isDuplicate)

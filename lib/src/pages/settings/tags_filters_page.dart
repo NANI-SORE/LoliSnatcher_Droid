@@ -113,7 +113,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
   }
 
   void _applyFilters() {
-    filteredRules = ruleList.select(
+    final nextRules = ruleList.select(
       search: search,
       effects: selectedEffects,
       markers: selectedMarkers,
@@ -123,6 +123,15 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
       isInvalid: (id) => TagFilterHandler.instance.errorFor(id) != null,
       now: DateTime.now().toUtc(),
     );
+    if (_isSelecting) {
+      final previousIds = filteredRules.map((rule) => rule.id).toSet();
+      final nextIds = nextRules.map((rule) => rule.id).toSet();
+      if (previousIds.length != nextIds.length || !previousIds.containsAll(nextIds)) {
+        selectedRuleIds.clear();
+        _selectionMode = false;
+      }
+    }
+    filteredRules = nextRules;
   }
 
   Future<void> _openEditor([TagFilterRule? rule]) => showTagFilterEditorSheet(context, rule: rule);
@@ -325,6 +334,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     final colors = Theme.of(context).colorScheme;
     final foreground = colors.onSurfaceVariant;
     return Chip(
+      visualDensity: VisualDensity.compact,
       backgroundColor: colors.surfaceContainerHighest,
       side: BorderSide.none,
       labelStyle: TextStyle(color: foreground),
@@ -485,6 +495,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
   Widget _effectChip(TagFilterRule rule) {
     final foreground = _onEffectContainerColor(rule.effect);
     return Chip(
+      visualDensity: VisualDensity.compact,
       backgroundColor: _effectContainerColor(rule.effect),
       side: BorderSide.none,
       avatar: _ruleEffectVisual(rule, size: 16, color: foreground),
@@ -516,7 +527,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
           child: AnimatedSize(
             duration: const Duration(milliseconds: 180),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -535,6 +546,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
   Widget _issueChip(String state) {
     final foreground = _onStatusContainerColor(state);
     return Chip(
+      visualDensity: VisualDensity.compact,
       backgroundColor: _statusContainerColor(state),
       side: BorderSide.none,
       avatar: Icon(_statusIcon(state), size: 16, color: foreground),
@@ -673,6 +685,21 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
         await _openEditor(rule);
       case 'delete':
         await handler.deleteRule(rule.id);
+        if (!mounted) return;
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(context.loc.settings.itemFilters.ruleDeleted),
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(
+              label: context.loc.undo,
+              onPressed: () async {
+                if (handler.rules.any((item) => item.id == rule.id)) return;
+                await handler.addRule(rule);
+              },
+            ),
+          ),
+        );
     }
   }
 
@@ -1047,6 +1074,9 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                           children: [
                             Switch(
                               value: handler.configuration.hideAsBlur.isActiveAt(now),
+                              thumbIcon: temporaryUntil != null
+                                  ? const WidgetStatePropertyAll<Icon?>(Icon(Icons.timer_outlined))
+                                  : null,
                               onChanged: (value) => handler.setHideAsBlur(enabled: value),
                             ),
                             IconButton(
@@ -1186,7 +1216,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
             children: [
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(context.loc.filter, style: Theme.of(context).textTheme.titleLarge),
+                title: Text(context.loc.settings.itemFilters.filterList, style: Theme.of(context).textTheme.titleLarge),
                 trailing: IconButton(
                   tooltip: context.loc.close,
                   onPressed: () => Navigator.of(sheetContext).pop(),
@@ -1231,7 +1261,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
       chips.add(
         InputChip(
           avatar: _markerVisual(marker, size: 18),
-          label: Text(marker?.icon?.name ?? marker?.text ?? loc.marker),
+          label: _activeChipLabel(marker?.icon?.name ?? marker?.text ?? loc.marker),
           onDeleted: () => _changeListControls(() => selectedMarkers.remove(key)),
         ),
       );
@@ -1239,7 +1269,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     for (final key in selectedScopes) {
       chips.add(
         InputChip(
-          label: Text(_scopeName(key)),
+          label: _activeChipLabel(_scopeName(key)),
           onDeleted: () => _changeListControls(() => selectedScopes.remove(key)),
         ),
       );
@@ -1255,7 +1285,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     if (sortMode != TagFilterSort.alphabetical) {
       chips.add(
         InputChip(
-          label: Text(_sortName(sortMode)),
+          label: _activeChipLabel(_sortName(sortMode)),
           onDeleted: () => _changeListControls(() => sortMode = TagFilterSort.alphabetical),
         ),
       );
@@ -1263,12 +1293,18 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     return chips;
   }
 
+  Widget _activeChipLabel(String value) => ConstrainedBox(
+    constraints: const BoxConstraints(maxWidth: 200),
+    child: Text(value, maxLines: 1, overflow: TextOverflow.ellipsis),
+  );
+
   @override
   Widget build(BuildContext context) {
     final loc = context.loc.settings.itemFilters;
     final handler = TagFilterHandler.instance;
     final now = DateTime.now().toUtc();
     final rules = filteredRules;
+    final activeFilterChips = _activeFilterChips();
     return Scaffold(
       appBar: AppBar(
         leading: _isSelecting
@@ -1322,257 +1358,278 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
               label: Text(loc.batchActions),
             )
           : FloatingActionButton(onPressed: _openEditor, child: const Icon(Icons.add)),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-            child: TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                labelText: context.loc.search,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: searchController.text.isEmpty
-                    ? null
-                    : IconButton(
-                        onPressed: () => setState(() {
-                          searchController.clear();
-                          search = '';
-                          _applyFilters();
-                        }),
-                        icon: const Icon(Icons.clear),
+      body: FadingEdgeScrollView.fromScrollView(
+        child: CustomScrollView(
+          controller: rulesScrollController,
+          slivers: [
+            SliverFloatingHeader(
+              snapMode: FloatingHeaderSnapMode.overlay,
+              child: ColoredBox(
+                color: Theme.of(context).colorScheme.surface,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 24, 12, 4),
+                      child: TextField(
+                        controller: searchController,
+                        decoration: InputDecoration(
+                          labelText: loc.searchRules,
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: searchController.text.isEmpty
+                              ? null
+                              : IconButton(
+                                  onPressed: () => setState(() {
+                                    searchController.clear();
+                                    search = '';
+                                    _applyFilters();
+                                  }),
+                                  icon: const Icon(Icons.clear),
+                                ),
+                        ),
+                        onChanged: (value) {
+                          debounce?.cancel();
+                          debounce = Timer(const Duration(milliseconds: 250), () {
+                            if (mounted) {
+                              setState(() {
+                                search = value;
+                                _applyFilters();
+                              });
+                            }
+                          });
+                        },
                       ),
-              ),
-              onChanged: (value) {
-                debounce?.cancel();
-                debounce = Timer(const Duration(milliseconds: 250), () {
-                  if (mounted) {
-                    setState(() {
-                      search = value;
-                      _applyFilters();
-                    });
-                  }
-                });
-              },
-            ),
-          ),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth < 1180) {
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: OutlinedButton.icon(
-                      onPressed: _showListControls,
-                      icon: const Icon(Icons.filter_alt_outlined),
-                      label: Text(context.loc.filter),
                     ),
-                  ),
-                );
-              }
-              final fields = _filterFields(compact: false);
-              return Row(
-                children: [
-                  Expanded(
-                    child: FadingEdgeScrollView.fromSingleChildScrollView(
-                      child: SingleChildScrollView(
-                        controller: filterControlsScrollController,
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.fromLTRB(12, 4, 8, 8),
-                        child: Row(
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        if (constraints.maxWidth < 1180) {
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                OutlinedButton.icon(
+                                  onPressed: _showListControls,
+                                  icon: const Icon(Icons.filter_alt_outlined),
+                                  label: Text(loc.filterList),
+                                ),
+                                for (final chip in activeFilterChips)
+                                  ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxWidth: constraints.maxWidth > 24 ? constraints.maxWidth - 24 : 0,
+                                    ),
+                                    child: chip,
+                                  ),
+                              ],
+                            ),
+                          );
+                        }
+                        final fields = _filterFields(compact: false);
+                        return Column(
                           children: [
-                            for (var index = 0; index < fields.length; index++) ...[
-                              if (index > 0) const SizedBox(width: 12),
-                              fields[index],
-                            ],
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: FadingEdgeScrollView.fromSingleChildScrollView(
+                                    child: SingleChildScrollView(
+                                      controller: filterControlsScrollController,
+                                      scrollDirection: Axis.horizontal,
+                                      padding: const EdgeInsets.fromLTRB(12, 4, 8, 8),
+                                      child: Row(
+                                        children: [
+                                          for (var index = 0; index < fields.length; index++) ...[
+                                            if (index > 0) const SizedBox(width: 12),
+                                            fields[index],
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(4, 4, 12, 8),
+                                  child: IconButton.outlined(
+                                    onPressed: hasModifiedListControls ? _resetListFilters : null,
+                                    tooltip: context.loc.reset,
+                                    icon: const Icon(Icons.restart_alt),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (activeFilterChips.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                                child: Wrap(spacing: 8, runSpacing: 4, children: activeFilterChips),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+                      child: DefaultTextStyle(
+                        style: (Theme.of(context).textTheme.bodySmall ?? const TextStyle()).copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        child: Wrap(
+                          spacing: 12,
+                          runSpacing: 2,
+                          children: [
+                            if (hasActiveListFilter)
+                              Text(loc.rulesShown(shown: rules.length, total: handler.rules.length))
+                            else
+                              Text(loc.counterTotal(count: handler.rules.length)),
+                            Text(loc.counterHide(count: ruleList.effectCounts[TagFilterEffect.hide] ?? 0)),
+                            Text(loc.counterBlur(count: ruleList.effectCounts[TagFilterEffect.blur] ?? 0)),
+                            Text(loc.counterMark(count: ruleList.effectCounts[TagFilterEffect.mark] ?? 0)),
                           ],
                         ),
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(4, 4, 12, 8),
-                    child: IconButton.outlined(
-                      onPressed: hasModifiedListControls ? _resetListFilters : null,
-                      tooltip: context.loc.reset,
-                      icon: const Icon(Icons.restart_alt),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _showFilterSettings,
+                          icon: const Icon(Icons.settings_outlined),
+                          label: Text(loc.filteringSettings),
+                        ),
+                      ),
                     ),
-                  ),
-                ],
-              );
-            },
-          ),
-          if (hasModifiedListControls)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Wrap(spacing: 8, runSpacing: 4, children: _activeFilterChips()),
+                  ],
+                ),
               ),
             ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: [
-                  Chip(label: Text(loc.counterTotal(count: handler.rules.length))),
-                  if (hasActiveListFilter) Chip(label: Text(loc.counterShown(count: rules.length))),
-                  Chip(
-                    backgroundColor: _effectContainerColor(TagFilterEffect.hide),
-                    side: BorderSide.none,
-                    avatar: Icon(
-                      Icons.visibility_off,
-                      size: 16,
-                      color: _onEffectContainerColor(TagFilterEffect.hide),
-                    ),
-                    label: Text(
-                      loc.counterHide(count: ruleList.effectCounts[TagFilterEffect.hide] ?? 0),
-                    ),
-                    labelStyle: TextStyle(color: _onEffectContainerColor(TagFilterEffect.hide)),
+            if (rules.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(handler.rules.isEmpty ? loc.noRulesYet : loc.noMatchingRules),
+                      const SizedBox(height: 8),
+                      if (handler.rules.isEmpty)
+                        TextButton.icon(
+                          onPressed: _openEditor,
+                          icon: const Icon(Icons.add),
+                          label: Text(loc.addRule),
+                        )
+                      else
+                        TextButton.icon(
+                          onPressed: _resetListFilters,
+                          icon: const Icon(Icons.restart_alt),
+                          label: Text(context.loc.reset),
+                        ),
+                    ],
                   ),
-                  Chip(
-                    backgroundColor: _effectContainerColor(TagFilterEffect.blur),
-                    side: BorderSide.none,
-                    avatar: Icon(
-                      Icons.blur_on,
-                      size: 16,
-                      color: _onEffectContainerColor(TagFilterEffect.blur),
-                    ),
-                    label: Text(
-                      loc.counterBlur(count: ruleList.effectCounts[TagFilterEffect.blur] ?? 0),
-                    ),
-                    labelStyle: TextStyle(color: _onEffectContainerColor(TagFilterEffect.blur)),
-                  ),
-                  Chip(
-                    backgroundColor: _effectContainerColor(TagFilterEffect.mark),
-                    side: BorderSide.none,
-                    avatar: Icon(
-                      Icons.star,
-                      size: 16,
-                      color: _onEffectContainerColor(TagFilterEffect.mark),
-                    ),
-                    label: Text(
-                      loc.counterMark(count: ruleList.effectCounts[TagFilterEffect.mark] ?? 0),
-                    ),
-                    labelStyle: TextStyle(color: _onEffectContainerColor(TagFilterEffect.mark)),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _showFilterSettings,
-                icon: const Icon(Icons.settings_outlined),
-                label: Text(loc.filteringSettings),
-              ),
-            ),
-          ),
-          Expanded(
-            child: rules.isEmpty
-                ? Center(child: Text(loc.noFiltersFound))
-                : FadingEdgeScrollView.fromScrollView(
-                    child: ListView.builder(
-                      controller: rulesScrollController,
-                      itemCount: rules.length,
-                      itemBuilder: (context, index) {
-                        final rule = rules[index];
-                        final error = handler.errorFor(rule.id);
-                        final activeTimer = rule.enabled && rule.disabledUntil?.isAfter(now) == true;
-                        final missing = _isMissingSource(rule);
-                        final showQuery = rule.hasDistinctName;
-                        final selected = selectedRuleIds.contains(rule.id);
-                        return ListTile(
-                          selected: selected,
-                          tileColor: activeTimer
-                              ? Theme.of(context).colorScheme.tertiaryContainer.withValues(alpha: 0.24)
-                              : null,
-                          selectedTileColor: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.45),
-                          leading: _isSelecting
-                              ? Checkbox(
-                                  value: selected,
-                                  onChanged: (_) => _toggleSelection(rule.id),
-                                )
-                              : _ruleEffectAvatar(rule),
-                          title: showQuery
-                              ? MarqueeText(
+                ),
+              )
+            else
+              SliverList.builder(
+                itemCount: rules.length,
+                itemBuilder: (context, index) {
+                  final rule = rules[index];
+                  final error = handler.errorFor(rule.id);
+                  final activeTimer = rule.enabled && rule.disabledUntil?.isAfter(now) == true;
+                  final missing = _isMissingSource(rule);
+                  final showQuery = rule.hasDistinctName;
+                  final selected = selectedRuleIds.contains(rule.id);
+                  return ListTile(
+                    dense: true,
+                    visualDensity: VisualDensity.compact,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                    selected: selected,
+                    tileColor: activeTimer
+                        ? Theme.of(context).colorScheme.tertiaryContainer.withValues(alpha: 0.24)
+                        : null,
+                    selectedTileColor: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.45),
+                    leading: _isSelecting
+                        ? Checkbox(
+                            value: selected,
+                            onChanged: (_) => _toggleSelection(rule.id),
+                          )
+                        : null,
+                    title: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (showQuery)
+                                MarqueeText(
                                   text: rule.displayName,
                                   style: Theme.of(context).textTheme.titleMedium,
                                   isExpanded: false,
-                                )
-                              : TagFilterQueryText(
-                                  query: rule.query,
-                                  style: Theme.of(context).textTheme.titleMedium,
                                 ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 4,
-                                children: [
-                                  _effectChip(rule),
-                                  _scopeChip(rule),
-                                  _issueChip(
-                                    activeTimer
-                                        ? 'suspended'
-                                        : rule.enabled
-                                        ? 'enabled'
-                                        : 'disabled',
-                                  ),
-                                  if (activeTimer) _timerBadge(rule.id, rule.disabledUntil!),
-                                  if (error != null) _issueChip('invalid'),
-                                  if (missing) _issueChip('missing'),
-                                ],
+                              if (showQuery) const SizedBox(height: 4),
+                              TagFilterQueryText(
+                                query: rule.query,
+                                style: showQuery
+                                    ? Theme.of(context).textTheme.bodyMedium
+                                    : Theme.of(context).textTheme.titleMedium,
                               ),
-                              if (showQuery) ...[
-                                const SizedBox(height: 8),
-                                TagFilterQueryText(query: rule.query),
-                              ],
                             ],
                           ),
-                          isThreeLine: true,
-                          onTap: () => _isSelecting ? _toggleSelection(rule.id) : _openEditor(rule),
-                          onLongPress: () => _toggleSelection(rule.id),
-                          trailing: _isSelecting
-                              ? null
-                              : SizedBox(
-                                  width: 108,
-                                  height: kMinInteractiveDimension,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Switch(
-                                        value: rule.enabled,
-                                        onChanged: (value) => handler.updateRule(
-                                          rule.copyWith(enabled: value, clearDisabledUntil: true),
-                                        ),
-                                      ),
-                                      SizedBox.square(
-                                        dimension: kMinInteractiveDimension,
-                                        child: IconButton(
-                                          padding: EdgeInsets.zero,
-                                          icon: const Icon(Icons.more_vert),
-                                          tooltip: context.loc.searchBar.more,
-                                          onPressed: () => _showRuleActions(rule),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                        );
-                      },
+                        ),
+                        if (!_isSelecting) ...[
+                          const SizedBox(width: 4),
+                          Switch(
+                            value: rule.isActiveAt(now),
+                            thumbIcon: activeTimer
+                                ? const WidgetStatePropertyAll<Icon?>(Icon(Icons.timer_outlined))
+                                : null,
+                            onChanged: (value) => handler.updateRule(
+                              rule.copyWith(enabled: value, clearDisabledUntil: true),
+                            ),
+                          ),
+                          SizedBox.square(
+                            dimension: kMinInteractiveDimension,
+                            child: IconButton(
+                              padding: EdgeInsets.zero,
+                              icon: const Icon(Icons.more_vert),
+                              tooltip: context.loc.searchBar.more,
+                              onPressed: () => _showRuleActions(rule),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ),
-          ),
-        ],
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: [
+                            _effectChip(rule),
+                            _scopeChip(rule),
+                            _issueChip(
+                              activeTimer
+                                  ? 'suspended'
+                                  : rule.enabled
+                                  ? 'enabled'
+                                  : 'disabled',
+                            ),
+                            if (activeTimer) _timerBadge(rule.id, rule.disabledUntil!),
+                            if (error != null) _issueChip('invalid'),
+                            if (missing) _issueChip('missing'),
+                          ],
+                        ),
+                      ],
+                    ),
+                    isThreeLine: true,
+                    onTap: () => _isSelecting ? _toggleSelection(rule.id) : _openEditor(rule),
+                    onLongPress: () => _toggleSelection(rule.id),
+                  );
+                },
+              ),
+          ],
+        ),
       ),
     );
   }
