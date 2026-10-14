@@ -167,6 +167,7 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
     this.localFilePath,
     this.preparedSource,
     this.firstFrameOnly = false,
+    this.preserveSourceResolution = false,
     this.playbackKey,
     this.isForeground,
   }) : assert(!withCache || cacheFolder != null, 'cacheFolder must be set when withCache is true');
@@ -195,6 +196,7 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
   /// an actual load begins; a Flutter image-cache hit creates no extra owner.
   final DownloadedImageFile? preparedSource;
   final bool firstFrameOnly;
+  final bool preserveSourceResolution;
   final Object? playbackKey;
   final bool Function()? isForeground;
   bool get _isAvif => false;
@@ -211,7 +213,12 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
     // A cached completer may already serve several widgets. Its work belongs
     // to that shared lifetime, not to the first widget's cancellation token.
     // Viewer-owned preflight/download work still uses its caller's token.
-    final session = _DecodeSession(isAvif: _isAvif, firstFrameOnly: firstFrameOnly, isForeground: isForeground);
+    final session = _DecodeSession(
+      isAvif: _isAvif,
+      firstFrameOnly: firstFrameOnly,
+      preserveSourceResolution: preserveSourceResolution,
+      isForeground: isForeground,
+    );
     final selectedDecode = Zone.current[_safeResizeZone] == true ? decode : _decodeBounded;
     final codec = runZoned(
       () => _loadAsync(key, chunks, selectedDecode, session),
@@ -258,6 +265,7 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
                 withCaptchaCheck: withCaptchaCheck,
               ),
               cancelToken: session.cancelToken,
+              isForeground: session.isForeground,
               chunkEvents: chunks,
               onCacheDetected: onCacheDetected,
             );
@@ -324,6 +332,7 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
       other.receiveTimeout == receiveTimeout &&
       other.withCaptchaCheck == withCaptchaCheck &&
       other.firstFrameOnly == firstFrameOnly &&
+      other.preserveSourceResolution == preserveSourceResolution &&
       other.playbackKey == playbackKey;
 
   @override
@@ -339,6 +348,7 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
     receiveTimeout,
     withCaptchaCheck,
     firstFrameOnly,
+    preserveSourceResolution,
     playbackKey,
   );
 
@@ -363,6 +373,7 @@ class CustomNetworkAvifImage extends CustomNetworkImage {
     super.localFilePath,
     super.preparedSource,
     super.firstFrameOnly,
+    super.preserveSourceResolution,
     super.playbackKey,
     super.isForeground,
   });
@@ -372,11 +383,17 @@ class CustomNetworkAvifImage extends CustomNetworkImage {
 }
 
 class _DecodeSession {
-  _DecodeSession({required this.isAvif, required this.firstFrameOnly, this.isForeground});
+  _DecodeSession({
+    required this.isAvif,
+    required this.firstFrameOnly,
+    required this.preserveSourceResolution,
+    this.isForeground,
+  });
 
   final CancelToken cancelToken = CancelToken();
   final bool isAvif;
   final bool firstFrameOnly;
+  final bool preserveSourceResolution;
   final bool Function()? isForeground;
   late File file;
   DownloadedImageFile? source;
@@ -573,6 +590,15 @@ class _MemoryImageCompleter extends MultiFrameImageStreamCompleter {
 }
 
 ({int width, int height}) _targetSize(int width, int height, ui.TargetImageSizeCallback? callback) {
+  final session = Zone.current[_decodeSessionZone] as _DecodeSession;
+  if (session.preserveSourceResolution) {
+    if (width > ImageMemoryManager.maxTextureDimension ||
+        height > ImageMemoryManager.maxTextureDimension ||
+        width * height > ImageMemoryManager.maxOutputPixels) {
+      throw const ImageMemoryException('Selected image resolution requires region decoding');
+    }
+    return (width: width, height: height);
+  }
   final requested = callback?.call(width, height);
   var ratio = 1.0;
   if (requested?.width != null) ratio = math.min(ratio, requested!.width! / width);
@@ -586,6 +612,7 @@ class _MemoryImageCompleter extends MultiFrameImageStreamCompleter {
   ({int width, int height}) requested, {
   required int retainedBase,
   required int transientBase,
+  required bool preserveSourceResolution,
 }) {
   // Two output textures with mipmaps are retained; frame work can temporarily
   // require eight RGBA target buffers. Native source/APNG costs stay fixed.
@@ -597,6 +624,9 @@ class _MemoryImageCompleter extends MultiFrameImageStreamCompleter {
   final manager = ImageMemoryManager.instance;
   var retainedPixels = (ImageMemoryManager.maxRetainedBytes - manager.retainedBytes - retainedBase) ~/ 16;
   final requestedPixels = requested.width * requested.height;
+  if (preserveSourceResolution && requestedPixels > math.min(transientPixels, hardRetainedPixels)) {
+    throw const ImageMemoryException('Selected animation resolution exceeds the frame memory budget');
+  }
   if (retainedPixels < math.min(requestedPixels, transientPixels)) {
     // Release cache-only owners without dropping attached live-image tracking.
     // Flutter may defer disposal until frame end; the viewer can retry then.
@@ -605,6 +635,12 @@ class _MemoryImageCompleter extends MultiFrameImageStreamCompleter {
   }
   if (retainedPixels < 1) {
     throw const ImageMemoryException('Image memory is currently in use', isTransient: true);
+  }
+  if (preserveSourceResolution) {
+    if (retainedPixels < requestedPixels) {
+      throw const ImageMemoryException('Image memory is currently in use', isTransient: true);
+    }
+    return requested;
   }
   final maxPixels = math.min(requestedPixels, math.min(transientPixels, retainedPixels));
   var ratio = math.min(1, math.sqrt(maxPixels / requestedPixels));
@@ -650,7 +686,12 @@ Future<ui.Codec> _decodeBounded(ui.ImmutableBuffer buffer, {ui.TargetImageSizeCa
       final frameCacheBytes = animation.isApng ? (codec.frameCount + 1) * sourceBytes * 2 : 0;
       final transientBase = session.encodedBytes + frameCacheBytes + sourceBytes * 6;
       final retainedBase = session.encodedBytes + frameCacheBytes + sourceBytes;
-      target = _animationTarget(target, retainedBase: retainedBase, transientBase: transientBase);
+      target = _animationTarget(
+        target,
+        retainedBase: retainedBase,
+        transientBase: transientBase,
+        preserveSourceResolution: session.preserveSourceResolution,
+      );
       final targetBytes = target.width * target.height * 4;
       session.transientBytes = transientBase + targetBytes * 8;
       // Native and Picture.toImage textures may have mipmaps. Up to twice the
@@ -886,7 +927,12 @@ class NetworkImageLoader {
   /// preflights cannot retain a separate large encoded mapping per image.
   /// Source dimensions are returned without a whole-image decode. The provider
   /// still applies its own source/output limits before constructing a codec.
-  static Future<ui.Size> inspectImageSize(File file, {CancelToken? cancelToken, bool isAvif = false}) async {
+  static Future<ui.Size> inspectImageSize(
+    File file, {
+    CancelToken? cancelToken,
+    bool isAvif = false,
+    bool Function()? isForeground,
+  }) async {
     final token = cancelToken ?? CancelToken();
     token.throwIfCancellationRequested();
     final length = await file.length();
@@ -915,6 +961,7 @@ class NetworkImageLoader {
         }
       },
       cancelToken: token,
+      isForeground: isForeground,
     );
   }
 
@@ -945,6 +992,7 @@ class NetworkImageLoader {
   static Future<DownloadedImageFile> downloadFile(
     ImageDownloadRequest request, {
     CancelToken? cancelToken,
+    bool Function()? isForeground,
     StreamController<ImageChunkEvent>? chunkEvents,
     void Function(bool)? onCacheDetected,
     void Function(int, int?)? onReceiveProgress,
@@ -957,6 +1005,7 @@ class NetworkImageLoader {
       onReceiveProgress: onReceiveProgress,
     ),
     cancelToken: cancelToken,
+    isForeground: isForeground,
   );
 
   static Future<DownloadedImageFile> _downloadFile(

@@ -528,11 +528,13 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                           (distanceFromCurrent <=
                                               (isVideo ? (isSankaku ? 0 : min(preloadCount, 1)) : preloadCount));
 
+                                      final shouldRender = !isViewerTooDeep && (isViewedVal || isNear);
                                       return AnimatedSwitcher(
+                                        // Release pruned media before the current viewer retries
+                                        // its decode; a fade would keep native image owners alive.
+                                        key: ValueKey(shouldRender),
                                         duration: const Duration(milliseconds: 100),
-                                        child: (isViewerTooDeep || (!isViewedVal && !isNear))
-                                            ? Center(child: Container(color: Colors.black))
-                                            : child,
+                                        child: shouldRender ? child : Center(child: Container(color: Colors.black)),
                                       );
                                     },
                                     child: ClipRect(

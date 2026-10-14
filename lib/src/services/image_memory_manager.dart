@@ -56,30 +56,30 @@ class ImageMemoryManager with WidgetsBindingObserver {
   static const Duration pressureCooldown = Duration(seconds: 30);
 
   final ValueNotifier<bool> underPressure = ValueNotifier(false);
-  final ValueNotifier<bool> animationViewerActive = ValueNotifier(false);
-  final Set<Object> _animationViewers = {};
-  bool _animationNotificationScheduled = false;
+  final ValueNotifier<bool> imageViewerActive = ValueNotifier(false);
+  final Set<Object> _imageViewers = {};
+  bool _viewerNotificationScheduled = false;
 
-  bool get hasAnimationViewer => _animationViewers.isNotEmpty;
+  bool get hasImageViewer => _imageViewers.isNotEmpty;
 
-  /// Thumbnail codecs yield their memory while foreground animations play.
+  /// Thumbnail animation codecs yield their memory to the foreground viewer.
   /// Coalesce build-time focus changes, including swipes between two viewers.
-  void setAnimationViewerActive(Object owner, bool active) {
+  void setImageViewerActive(Object owner, bool active) {
     if (active) {
-      _animationViewers.add(owner);
+      _imageViewers.add(owner);
     } else {
-      _animationViewers.remove(owner);
+      _imageViewers.remove(owner);
     }
-    if (_animationNotificationScheduled) return;
+    if (_viewerNotificationScheduled) return;
     if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.persistentCallbacks) {
-      _animationNotificationScheduled = true;
+      _viewerNotificationScheduled = true;
       SchedulerBinding.instance.addPostFrameCallback((_) {
-        _animationNotificationScheduled = false;
-        animationViewerActive.value = hasAnimationViewer;
+        _viewerNotificationScheduled = false;
+        imageViewerActive.value = hasImageViewer;
       });
       SchedulerBinding.instance.ensureVisualUpdate();
     } else {
-      animationViewerActive.value = hasAnimationViewer;
+      imageViewerActive.value = hasImageViewer;
     }
   }
 
@@ -92,7 +92,6 @@ class ImageMemoryManager with WidgetsBindingObserver {
   int _retainedBytes = 0;
   int _activeDownloads = 0;
   int _rejectedCount = 0;
-  int _foregroundDecodes = 0;
 
   int get retainedBytes => _retainedBytes;
   int get activeDecodeCount => _decoding ? 1 : 0;
@@ -161,9 +160,13 @@ class ImageMemoryManager with WidgetsBindingObserver {
     return _enqueue(operation, cancelToken, isForeground: isForeground);
   }
 
-  Future<T> runDownload<T>(Future<T> Function() operation, {CancelToken? cancelToken}) {
+  Future<T> runDownload<T>(
+    Future<T> Function() operation, {
+    CancelToken? cancelToken,
+    bool Function()? isForeground,
+  }) {
     initialize();
-    return _enqueue(operation, cancelToken, download: true);
+    return _enqueue(operation, cancelToken, download: true, isForeground: isForeground);
   }
 
   Future<T> _enqueue<T>(
@@ -219,19 +222,13 @@ class ImageMemoryManager with WidgetsBindingObserver {
 
   void _pump() {
     if (_decoding) return;
-    if (_queue.isEmpty) {
-      _foregroundDecodes = 0;
-      return;
-    }
+    if (_queue.isEmpty) return;
     _decoding = true;
     // Evaluate visibility now so a queued neighboring viewer can be promoted
-    // after a swipe. Give the oldest job a turn after three foreground jobs.
-    final foreground = _foregroundDecodes < 3
-        ? _queue.where((job) => job.isForeground?.call() ?? false).firstOrNull
-        : null;
+    // after a swipe. Visible image work always precedes background work.
+    final foreground = _queue.where((job) => job.isForeground?.call() ?? false).firstOrNull;
     final job = foreground ?? _queue.first;
     _queue.remove(job);
-    _foregroundDecodes = foreground == null ? 0 : _foregroundDecodes + 1;
     job.cancellation?.jobs.remove(job);
     unawaited(
       job.run().whenComplete(() {
@@ -244,7 +241,8 @@ class ImageMemoryManager with WidgetsBindingObserver {
   void _pumpDownloads() {
     while (_activeDownloads < 4 && _downloads.isNotEmpty) {
       _activeDownloads++;
-      final job = _downloads.removeFirst();
+      final job = _downloads.where((job) => job.isForeground?.call() ?? false).firstOrNull ?? _downloads.first;
+      _downloads.remove(job);
       job.cancellation?.jobs.remove(job);
       unawaited(
         job.run().whenComplete(() {

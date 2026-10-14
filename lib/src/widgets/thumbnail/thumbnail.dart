@@ -87,7 +87,7 @@ class _ThumbnailState extends State<Thumbnail> {
   bool get _shouldShowFirstFrame =>
       _isObscured ||
       !settingsHandler.gifsAsThumbnails ||
-      ImageMemoryManager.instance.hasAnimationViewer ||
+      ImageMemoryManager.instance.hasImageViewer ||
       ImageMemoryManager.instance.underPressure.value;
 
   @override
@@ -96,7 +96,7 @@ class _ThumbnailState extends State<Thumbnail> {
 
     currentUrl = widget.item.thumbnailURL;
     _firstFrameOnly = _shouldShowFirstFrame;
-    ImageMemoryManager.instance.animationViewerActive.addListener(_updatePlaybackPolicy);
+    ImageMemoryManager.instance.imageViewerActive.addListener(_updatePlaybackPolicy);
     ImageMemoryManager.instance.underPressure.addListener(_updatePlaybackPolicy);
   }
 
@@ -521,7 +521,7 @@ class _ThumbnailState extends State<Thumbnail> {
 
   @override
   void dispose() {
-    ImageMemoryManager.instance.animationViewerActive.removeListener(_updatePlaybackPolicy);
+    ImageMemoryManager.instance.imageViewerActive.removeListener(_updatePlaybackPolicy);
     ImageMemoryManager.instance.underPressure.removeListener(_updatePlaybackPolicy);
     disposables();
     disposeNotifiers();

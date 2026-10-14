@@ -159,13 +159,20 @@ class _RegionImageViewState extends State<RegionImageView> {
   bool _loading = false;
   bool _scheduled = false;
   bool _ready = false;
+  bool _failed = false;
   int _cacheHits = 0;
   int _decodedTiles = 0;
   int _cancelledTiles = 0;
   developer.TimelineTask? _coverageTrace;
 
-  int get _tileByteLimit => ImageMemoryManager.instance.underPressure.value ? _pressureTileBudget : _tileBudget;
-  int get _tileLimit => _tileByteLimit ~/ _maxTileBytes;
+  int get _cacheByteLimit => ImageMemoryManager.instance.underPressure.value ? _pressureTileBudget : _tileBudget;
+  // Visible detail can displace optional cache entries and use the global
+  // budget. Pressure reduces spare coverage, never the requested resolution.
+  int get _tileByteLimit => math.min(
+    ImageMemoryManager.maxRetainedBytes,
+    math.max(_cacheByteLimit, _wanted.fold<int>(0, (bytes, key) => bytes + _bytesFor(key))),
+  );
+  int get _tileLimit => math.max(_wanted.length, _cacheByteLimit ~/ _maxTileBytes);
   int get _maxTileBytes => _maxDecodedSide * _maxDecodedSide * widget.source._bytesPerPixel;
 
   @override
@@ -212,11 +219,17 @@ class _RegionImageViewState extends State<RegionImageView> {
         return;
       }
       setState(() => _overview = tile);
-      _markReady();
       _schedule();
     } catch (error) {
-      if (mounted && !_lifetime.isCancelled) widget.onError(error);
+      if (mounted && !_lifetime.isCancelled) _fail(error);
     }
+  }
+
+  void _fail(Object error) {
+    if (!mounted || _failed) return;
+    _failed = true;
+    _tileRequest?.cancel();
+    widget.onError(error);
   }
 
   void _markReady() {
@@ -237,6 +250,7 @@ class _RegionImageViewState extends State<RegionImageView> {
   }
 
   void _updateVisibleTiles() {
+    if (_failed) return;
     if (!widget.isViewed) {
       _wanted = [];
       _prefetch = null;
@@ -282,34 +296,21 @@ class _RegionImageViewState extends State<RegionImageView> {
     while (sample < 262144 && sample * 2 * pixelScale <= 1) {
       sample *= 2;
     }
-    // Keep a small dead band around level boundaries during pinch gestures.
-    // Capacity/pressure checks below can still force a coarser level.
+    // Retain finer pixels briefly while zooming out, but never magnify a
+    // coarse tile when a finer level is needed for the screen's pixel density.
     final previousSample = _sample;
     if (previousSample != null &&
         ((sample == previousSample * 2 && previousSample * pixelScale >= 0.4) ||
-            (sample * 2 == previousSample && previousSample * pixelScale <= 1.1))) {
+            (sample * 2 == previousSample && previousSample * pixelScale <= 1))) {
       sample = previousSample;
     }
     final pressure = ImageMemoryManager.instance.underPressure.value;
-    final limit = _tileLimit;
-    final viewportSpan = Size(
-      (widget.viewport.width * cosine.abs() + widget.viewport.height * sine.abs()) / scale,
-      (widget.viewport.width * sine.abs() + widget.viewport.height * cosine.abs()) / scale,
-    );
-    // Budget for every grid alignment at this zoom, including a partial tile
-    // at each edge. Using the actual visible key count made tiny pans switch
-    // resolution levels and invalidate every key when crossing the old limit.
-    // Use the unclipped viewport span: moving against an image edge must not
-    // select a finer level that is immediately lost when panning away again.
-    int capacityFor(int sample) {
-      final side = _tileSide * sample;
-      final columns = math.min((sourceSize.width / side).ceil(), (viewportSpan.width / side).ceil() + 1);
-      final rows = math.min((sourceSize.height / side).ceil(), (viewportSpan.height / side).ceil() + 1);
-      return columns * rows;
-    }
-
-    while (sample < 262144 && capacityFor(sample) > limit) {
-      sample *= 2;
+    final side = _tileSide * sample;
+    final columns = (visible.right / side).ceil() - (visible.left / side).floor();
+    final rows = (visible.bottom / side).ceil() - (visible.top / side).floor();
+    if (columns * rows > ImageMemoryManager.maxRetainedBytes ~/ _maxTileBytes) {
+      _fail(const ImageMemoryException('Selected viewport detail exceeds the image memory budget'));
+      return;
     }
 
     List<_TileKey> keysFor(int sample) {
@@ -379,6 +380,11 @@ class _RegionImageViewState extends State<RegionImageView> {
       math.min(((key.x + 1) * side).toDouble(), widget.source.size.width),
       math.min(((key.y + 1) * side).toDouble(), widget.source.size.height),
     );
+  }
+
+  int _bytesFor(_TileKey key) {
+    final padded = _regionFor(key).inflate(key.sample.toDouble()).intersect(Offset.zero & widget.source.size);
+    return (padded.width / key.sample).ceil() * (padded.height / key.sample).ceil() * widget.source._bytesPerPixel;
   }
 
   bool _isUsefulCoverage(_TileKey key) {
@@ -453,10 +459,10 @@ class _RegionImageViewState extends State<RegionImageView> {
   }
 
   Future<void> _loadTiles() async {
-    if (_loading || !mounted) return;
+    if (_loading || !mounted || _failed) return;
     _loading = true;
     try {
-      while (mounted && widget.isViewed) {
+      while (mounted && widget.isViewed && !_failed) {
         final missing = _wanted.where((key) => !_tiles.containsKey(key));
         final memory = ImageMemoryManager.instance;
         final prefetch = _prefetch;
@@ -467,14 +473,15 @@ class _RegionImageViewState extends State<RegionImageView> {
             _tiles.length < _tileLimit &&
             memory.retainedBytes + _maxTileBytes <= ImageMemoryManager.maxRetainedBytes;
         final key = missing.firstOrNull ?? (canPrefetch ? prefetch : null);
-        if (key == null) break;
+        if (key == null) {
+          if (_wanted.isNotEmpty) _markReady();
+          break;
+        }
         final region = _regionFor(key);
         final token = CancelToken();
         _inFlight = key;
         _tileRequest = token;
-        final padded = region.inflate(key.sample.toDouble()).intersect(Offset.zero & widget.source.size);
-        final incomingBytes =
-            (padded.width / key.sample).ceil() * (padded.height / key.sample).ceil() * widget.source._bytesPerPixel;
+        final incomingBytes = _bytesFor(key);
         if (_trimTiles(incomingBytes: incomingBytes, incomingCount: 1)) setState(() {});
         try {
           final tile = await widget.source._load(
@@ -496,20 +503,21 @@ class _RegionImageViewState extends State<RegionImageView> {
               _trimTiles();
             });
             _decodedTiles++;
-            _markReady();
+            if (_wanted.isNotEmpty && _wanted.every(_tiles.containsKey)) _markReady();
             _trackCoverage();
-            // A wide-gamut fallback may increase the per-tile reservation.
-            // Recompute the sample before admitting more detail at that level.
-            if (_wanted.length > _tileLimit) {
-              _schedule();
-              break;
-            }
           }
         } catch (error) {
           if (!mounted) break;
           if (token.isCancelled) continue;
-          // Keep the overview usable when another live image consumes the budget.
-          if (error is! ImageMemoryException) widget.onError(error);
+          if (!_wanted.contains(key)) {
+            // A speculative neighbor must not replace successfully loaded
+            // visible detail with an error or restart the whole viewer.
+            if (_prefetch == key) _prefetch = null;
+            continue;
+          }
+          // The overview is a temporary placeholder, not a quality fallback.
+          // The viewer retries transient contention and surfaces hard failures.
+          _fail(error);
           break;
         }
       }
