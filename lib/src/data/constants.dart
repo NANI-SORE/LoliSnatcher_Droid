@@ -46,9 +46,9 @@ class Constants {
 
   // TODO don't forget to update on every new release
   static const UpdateInfo updateInfo = UpdateInfo(
-    versionName: '2.5.2',
-    buildNumber: 5218,
-    title: '2.5.2 Hotfix 1',
+    versionName: '2.5.3',
+    buildNumber: 5220,
+    title: '2.5.3 - Languages and fixes',
     isInStore: true,
     isImportant: false,
     storePackage: 'com.noaisu.play.losn',
@@ -61,25 +61,43 @@ If you encounter any issues or have suggestions, please post them on GitHub Issu
 [WE NEED YOUR HELP]: We are looking for volunteers to help translate the app into other languages. For details, visit our GitHub page or ask on our Discord server.
 
 
-A minor update that adds a new onboarding screen, adds fullscreen video zooming and fixes some issues.
+A minor update with new languages and some fixes while we work on a big update.
 
 -------------------
 
 [Known issues]:
-- On Gelbooru, images may blink/flicker and/or fail with various error codes (503, 429, 404...), which may be fixed by trying to load the image again. This is probably caused by their aggressive rate limiting rules. As a temporary workaround until they lift the restrictions, set [Interface - Preview quality] to [Thumbnail] and [Boorus and Search - Items fetched per page] to 20 to reduce flicker and the chance of being rate limited
-- German translations are incorrect and will be fixed in a future release after a new contributor is able to update them
+- On Gelbooru, images may blink/flicker and/or fail with various error codes (503, 429, 404...), which may be fixed by trying to load the image again. This is probably caused by their aggressive rate limiting rules. As a temporary workaround, set [Interface - Preview quality] to [Thumbnail] and [Boorus and Search - Items fetched per page] to 20 to reduce flicker and the chance of being rate limited
 
 -------------------
 
-Hotfix 1 - 2.5.2+5219 (xx.xx.2026):
+Release - 2.5.3+5220 (24.10.2026):
+- Added Italian translation (thanks to ThugThief, Stickcampo)
+- Added Portuguese (Brazil) translation (thanks to restartxx, lev)
+- Added Serbian translation (thanks to Dušan)
+- Added Spanish (Mexico) translation (thanks to ThugThief, LangFlaggot)
+- Fixed parsing issues on some sites
+- Added a prompt requesting Nearby devices permission, which is required on Android 17 and later to access local network servers or use sync features
+- Added cleanup of the testpersist file used to check whether the app still has access to a custom folder
+- Fixed incomplete translations being used when following the system language
+- Improved database backup stability
+- Fixed a potential crash when removing all tabs
+- Updated dependencies
+
+-------------------
+-------------------
+
+Previous changes: 
+
+Hotfix 1 - 2.5.2+5219 (10.09.2026):
 - Update dependencies
-- Possible fix for main appbar and bottom search bar constantly reappearing when not supposed to
+- Possible fix for main appbar and bottom search bar constantly reappearing when not supposed to on scroll
 - Skip download cooldown if file already exists (#401)
 - Keep animating gifs when reduce motion system setting is enabled (#402)
 - Favicon caching improvements
 - Fix file url parsing for some sites
-- Fix possible layout bug in comments when image has broken ratio data
+- Fix broken layout in comments when image has broken ratio data
 - Fix manually selected video speed resetting on any interaction
+- Attempt to force sharing/opening links in external apps to open in separate app instance
 
 -------------------
 
