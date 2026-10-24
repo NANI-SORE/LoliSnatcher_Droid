@@ -48,7 +48,7 @@ class OfflineThumbnailService {
     if (fileName == null) {
       return null;
     }
-    final target = await _thumbnailFile(sourceBooru, fileName, storageIdentity);
+    final target = await _thumbnailFile(item, sourceBooru, fileName, storageIdentity);
     if (await _isUsableFile(target)) {
       return _storageMatches(storageIdentity) ? target : null;
     }
@@ -93,7 +93,7 @@ class OfflineThumbnailService {
 
     final fileNames = OfflineMediaResolver.instance.filenameCandidates(item, sourceBooru);
     for (final fileName in fileNames) {
-      final target = await _thumbnailFile(sourceBooru, fileName, storageIdentity);
+      final target = await _thumbnailFile(item, sourceBooru, fileName, storageIdentity);
       if (await _isUsableFile(target)) {
         return OfflineThumbnailLookup(file: _storageMatches(storageIdentity) ? target : null);
       }
@@ -107,7 +107,7 @@ class OfflineThumbnailService {
       return const OfflineThumbnailLookup();
     }
 
-    final target = await _thumbnailFile(sourceBooru, fileNames.first, storageIdentity);
+    final target = await _thumbnailFile(item, sourceBooru, fileNames.first, storageIdentity);
     if (!_storageMatches(storageIdentity)) return const OfflineThumbnailLookup();
     final existingGeneration = _pendingExistingCacheGenerations[target.path];
     if (existingGeneration != null) {
@@ -147,7 +147,7 @@ class OfflineThumbnailService {
     if (fileName == null) {
       return null;
     }
-    final target = await _thumbnailFile(sourceBooru, fileName, storageIdentity);
+    final target = await _thumbnailFile(item, sourceBooru, fileName, storageIdentity);
     if (await _isUsableFile(target)) {
       return _storageMatches(storageIdentity) ? target : null;
     }
@@ -172,7 +172,7 @@ class OfflineThumbnailService {
     if (fileName == null) {
       return null;
     }
-    final target = await _thumbnailFile(sourceBooru, fileName, storageIdentity);
+    final target = await _thumbnailFile(item, sourceBooru, fileName, storageIdentity);
     if (await _isUsableFile(target)) {
       return _storageMatches(storageIdentity) ? target : null;
     }
@@ -363,10 +363,16 @@ class OfflineThumbnailService {
     }
   }
 
-  Future<File> _thumbnailFile(Booru sourceBooru, String mediaFileName, String storageIdentity) async {
+  Future<File> _thumbnailFile(
+    BooruItem item,
+    Booru sourceBooru,
+    String mediaFileName,
+    String storageIdentity,
+  ) async {
     final cachePath = '${await ServiceHandler.getCacheDir()}offline_thumbnails/';
     await Directory(cachePath).create(recursive: true);
     final fileName = OfflineMediaResolver.instance.cacheKey(
+      item,
       sourceBooru,
       mediaFileName,
       storageIdentity: storageIdentity,

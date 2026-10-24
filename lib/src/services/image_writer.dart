@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
@@ -184,20 +185,45 @@ class ImageWriter {
     BooruItem item,
     Booru booru,
   ) {
-    final int queryLastIndex = item.fileURL.lastIndexOf('?');
-    final int lastIndex = queryLastIndex != -1 ? queryLastIndex : item.fileURL.length;
-    String fileName = '';
+    final uri = Uri.tryParse(item.fileURL);
+    final urlFileName = uri?.pathSegments.lastOrNull ?? '';
+    final hash = mediaHash(item);
+    final prefix = Tools.sanitize(booru.name ?? 'booru');
+    final extension = Tools.sanitize(item.fileExt ?? '');
+
     if (booru.type?.isBooruOnRails == true || booru.type?.isPhilomena == true) {
-      fileName = '${item.fileNameExtras}.${item.fileExt!}';
+      if (item.fileNameExtras.isNotEmpty && item.fileNameExtras != 'null') {
+        return '${item.fileNameExtras}.$extension';
+      }
     } else if (booru.type?.isHydrus == true) {
-      fileName = '${item.fileNameExtras}_${item.md5String}.${item.fileExt}';
-    } else if (booru.baseURL!.contains('yande.re') || booru.baseURL!.contains('paheal.net')) {
-      fileName = '${booru.name}_${item.md5String}.${item.fileExt}';
-    } else {
-      fileName = '${booru.name!}_${item.fileURL.substring(item.fileURL.lastIndexOf("/") + 1, lastIndex)}';
+      if (hash != null) return '${item.fileNameExtras}_$hash.$extension';
+    } else if (booru.type?.isShimmie == true ||
+        booru.type?.isR34Hentai == true ||
+        booru.baseURL?.contains('yande.re') == true ||
+        booru.baseURL?.contains('paheal.net') == true) {
+      if (hash != null) return '${prefix}_$hash.$extension';
+    } else if (urlFileName.isNotEmpty &&
+        extension.isNotEmpty &&
+        urlFileName.toLowerCase().endsWith('.$extension') &&
+        Tools.sanitize(urlFileName) == urlFileName) {
+      return '${prefix}_$urlFileName';
     }
-    print('filename is $fileName');
-    return fileName;
+
+    // Database items may lack hashes/extras, and routed media URLs can share
+    // their last path segment. The post URL survives database round trips.
+    final identity = item.postURL.isNotEmpty ? item.postURL : item.fileURL;
+    final digest = sha256.convert(utf8.encode(identity));
+    return '${prefix}_$digest${extension.isEmpty ? '' : '.$extension'}';
+  }
+
+  static String? mediaHash(BooruItem item) {
+    final hashPattern = RegExp(r'^[a-fA-F0-9]{32,64}$');
+    final hash = item.md5String;
+    if (hash != null && hashPattern.hasMatch(hash)) return hash;
+
+    // Shimmie may put the hash in a directory before the original filename.
+    final path = Uri.tryParse(item.fileURL)?.path ?? '';
+    return RegExp(r'(?:^|[/_])([a-fA-F0-9]{32,64})(?=[/_.]|$)').firstMatch(path)?.group(1);
   }
 
   Future<String> getFilePath(
