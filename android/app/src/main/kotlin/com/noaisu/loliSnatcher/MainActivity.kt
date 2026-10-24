@@ -1,6 +1,7 @@
 package com.noaisu.loliSnatcher
 
 import android.annotation.SuppressLint
+import android.Manifest
 import android.app.Activity
 import android.content.ComponentName
 import android.content.ContentResolver
@@ -39,6 +40,9 @@ import java.util.*
 import java.util.concurrent.Executors
 
 class MainActivity: FlutterFragmentActivity() {
+    private val localNetworkPermissionRequestCode = 3701
+    private var localNetworkPermissionResult: MethodChannel.Result? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -57,6 +61,15 @@ class MainActivity: FlutterFragmentActivity() {
 
     private val activeFiles = mutableMapOf<Uri, OutputStream?>()
 
+    // url_launcher starts ACTION_VIEW intents through this Activity. Without
+    // NEW_TASK, Android may place the external Activity in LoliSnatcher's task.
+    override fun startActivity(intent: Intent) {
+        if (intent.action == Intent.ACTION_VIEW) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        super.startActivity(intent)
+    }
+
     @SuppressLint("WrongThread")
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -70,12 +83,16 @@ class MainActivity: FlutterFragmentActivity() {
                         val text = call.argument<String>("text")
                         val title = call.argument<String>("title")
                         if (text != null) {
-                            val shareTextIntent = Intent.createChooser(Intent().apply {
+                            val shareTextTarget = Intent().apply {
                                 action = Intent.ACTION_SEND
                                 putExtra(Intent.EXTRA_TEXT, text)
                                 // putExtra(Intent.EXTRA_TITLE, title)
                                 type = "text/plain"
-                            }, null)
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            val shareTextIntent = Intent.createChooser(shareTextTarget, null).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
                             startActivity(shareTextIntent)
                             result.success(true)
                         } else {
@@ -88,15 +105,18 @@ class MainActivity: FlutterFragmentActivity() {
                         val text = call.argument<String>("text")
                         if (path != null && mimeType != null) {
                             val contentUri = FileProvider.getUriForFile(applicationContext, BuildConfig.APPLICATION_ID + ".fileprovider", File(path))
-                            val shareFileIntent = Intent.createChooser(Intent().apply {
+                            val shareFileTarget = Intent().apply {
                                 action = Intent.ACTION_SEND
                                 type = mimeType
                                 putExtra(Intent.EXTRA_STREAM, contentUri)
-                                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
                                 if (text != null) {
                                     putExtra(Intent.EXTRA_TEXT, text)
                                 }
-                            }, null)
+                            }
+                            val shareFileIntent = Intent.createChooser(shareFileTarget, null).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
 
                             val resInfoList: List<ResolveInfo> = applicationContext.packageManager.queryIntentActivities(shareFileIntent, PackageManager.MATCH_DEFAULT_ONLY)
                             for (resolveInfo in resInfoList) {
@@ -120,6 +140,21 @@ class MainActivity: FlutterFragmentActivity() {
                     "getPicturesPath" -> result.success(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)?.absolutePath)
                     "getCachePath" -> result.success(applicationContext.cacheDir.absolutePath)
                     "getSdkVersion" -> result.success(Build.VERSION.SDK_INT)
+                    "hasLocalNetworkPermission" -> result.success(
+                        Build.VERSION.SDK_INT < 37 ||
+                            checkSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK) == PackageManager.PERMISSION_GRANTED
+                    )
+                    "requestLocalNetworkPermission" -> {
+                        if (Build.VERSION.SDK_INT < 37 ||
+                            checkSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK) == PackageManager.PERMISSION_GRANTED) {
+                            result.success(true)
+                        } else if (localNetworkPermissionResult != null) {
+                            result.error("PERMISSION_REQUEST_IN_PROGRESS", "Local network permission request already in progress", null)
+                        } else {
+                            localNetworkPermissionResult = result
+                            requestPermissions(arrayOf(Manifest.permission.ACCESS_LOCAL_NETWORK), localNetworkPermissionRequestCode)
+                        }
+                    }
                     "writeImage" -> {
                         val imageBytes = call.argument<ByteArray>("imageData")
                         val fileName = call.argument<String>("fileName")
@@ -369,10 +404,12 @@ class MainActivity: FlutterFragmentActivity() {
                                 methodResult = result
                                 requestDirectoryAccess()
                             } else {
+                                var testFile: DocumentFile? = null
                                 try {
                                     val cr = this.contentResolver
                                     val docFile: DocumentFile? = DocumentFile.fromTreeUri(applicationContext, Uri.parse(uri))
                                     val newFile = docFile?.createFile("text/*", "testpersist")
+                                    testFile = newFile
                                     if (newFile == null) {
                                         result.error("FILE_NOT_FOUND", "File not found", null)
                                     } else {
@@ -381,15 +418,19 @@ class MainActivity: FlutterFragmentActivity() {
                                         if (stream == null) {
                                             result.error("IO_ERROR", "IO error", null)
                                         } else {
-                                            stream.write(output.toByteArray())
-                                            stream.close()
-                                            newFile.delete()
+                                            stream.use { it.write(output.toByteArray()) }
                                             result.success("ok")
                                         }
                                     }
                                 } catch (e: Exception) {
                                     Log.e("MainActivity", "Error testing SAF", e)
                                     result.error("ERROR", "Error testing SAF", null)
+                                } finally {
+                                    try {
+                                        testFile?.delete()
+                                    } catch (e: Exception) {
+                                        Log.e("MainActivity", "Error cleaning up SAF test file", e)
+                                    }
                                 }
                             }
                         } else {
@@ -490,6 +531,22 @@ class MainActivity: FlutterFragmentActivity() {
         }
 
         startActivityForResult(intent, 1)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == localNetworkPermissionRequestCode) {
+            localNetworkPermissionResult?.success(
+                checkSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK) == PackageManager.PERMISSION_GRANTED
+            )
+            localNetworkPermissionResult = null
+        }
+    }
+
+    override fun onDestroy() {
+        localNetworkPermissionResult?.error("ACTIVITY_DESTROYED", "Local network permission request was interrupted", null)
+        localNetworkPermissionResult = null
+        super.onDestroy()
     }
 
     @RequiresApi(Build.VERSION_CODES.KITKAT)

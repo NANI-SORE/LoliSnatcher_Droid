@@ -22,6 +22,7 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/ordered_selection_index.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
@@ -182,14 +183,26 @@ class SearchHandler {
   }
 
   void removeTabs(List<SearchTab> tabsToRemove) {
+    if (tabs.isEmpty || tabsToRemove.isEmpty) return;
     final curTab = currentTab;
-    final totalTabs = total;
+    final fallbackBooru = currentBooru;
+    final removed = tabsToRemove.toSet();
+    final remaining = tabs.where((tab) => !removed.contains(tab)).toList();
+    if (remaining.length == tabs.length) return;
 
-    for (final tab in tabsToRemove) {
-      tabs.value.remove(tab);
-    }
+    if (remaining.isEmpty) {
+      final SettingsHandler settingsHandler = SettingsHandler.instance;
+      final String defaultText = fallbackBooru.defTags?.isNotEmpty == true
+          ? fallbackBooru.defTags!
+          : settingsHandler.defTags;
+      final SearchTab newTab = SearchTab(fallbackBooru, null, defaultText);
+      // Publish a nonempty list, with a valid index even for synchronous listeners.
+      index.value = 0;
+      tabs.value = [newTab];
+      tabId.value = newTab.id;
+      Tools.forceClearMemoryCache(withLive: true);
+      changeTabIndex(0);
 
-    if (totalTabs == tabsToRemove.length) {
       final context = NavigationHandler.instance.navContext;
       FlashElements.showSnackbar(
         title: Text(context.loc.searchHandler.removedLastTab, style: const TextStyle(fontSize: 20)),
@@ -203,19 +216,15 @@ class SearchHandler {
         leadingIconColor: Colors.yellow,
         sideColor: Colors.yellow,
       );
-
-      final SettingsHandler settingsHandler = SettingsHandler.instance;
-      final String defaultText = currentBooru.defTags?.isNotEmpty == true
-          ? currentBooru.defTags!
-          : settingsHandler.defTags;
-      searchTextController.text = defaultText;
-
-      final SearchTab newTab = SearchTab(currentBooru, null, defaultText);
-      tabs.value[0] = newTab;
-      changeTabIndex(0);
     } else {
-      final newIndex = tabs.value.indexWhere((t) => t.id == curTab.id);
-      changeTabIndex(newIndex == -1 ? total - 1 : newIndex);
+      final preservedIndex = remaining.indexWhere((tab) => tab.id == curTab.id);
+      final newIndex = preservedIndex == -1 ? remaining.length - 1 : preservedIndex;
+      final selectionChanged = newIndex != currentIndex || remaining[newIndex].id != curTab.id;
+      index.value = newIndex;
+      tabs.value = remaining;
+      tabId.value = remaining[newIndex].id;
+      if (selectionChanged) Tools.forceClearMemoryCache(withLive: true);
+      changeTabIndex(newIndex);
     }
   }
 
@@ -420,7 +429,7 @@ class SearchHandler {
 
     final onlyTagMatches = tabs.where((tab) => tab.tags.toLowerCase().trim() == tag);
     if (onlyTagMatches.isNotEmpty) {
-      if (onlyTagMatches.any((tab) => tab.selectedBooru.value == targetBooru)) {
+      if (onlyTagMatches.any((tab) => tab.selectedBooru.value.matchesIdentity(targetBooru))) {
         return HasTabWithTagResult.onlyTag;
       }
       return HasTabWithTagResult.onlyTagDifferentBooru;
@@ -439,7 +448,7 @@ class SearchHandler {
     for (int i = 0; i < tabs.length; i++) {
       final tab = tabs[i];
       final parts = tab.tags.toLowerCase().trim().split(' ');
-      if (parts.length == 1 && parts[0] == tag && tab.selectedBooru.value == currentBooru) {
+      if (parts.length == 1 && parts[0] == tag && tab.selectedBooru.value.matchesIdentity(currentBooru)) {
         result.add((i, tab));
       }
     }
@@ -452,7 +461,7 @@ class SearchHandler {
     for (int i = 0; i < tabs.length; i++) {
       final tab = tabs[i];
       final parts = tab.tags.toLowerCase().trim().split(' ');
-      if (parts.length == 1 && parts[0] == tag && tab.selectedBooru.value != currentBooru) {
+      if (parts.length == 1 && parts[0] == tag && !tab.selectedBooru.value.matchesIdentity(currentBooru)) {
         result.add((i, tab));
       }
     }
@@ -474,6 +483,13 @@ class SearchHandler {
   int get currentIndex => index.value;
   String? get currentTabId => tabId.value;
   int get total => tabs.length;
+  bool get hasCurrentTab => tabs.isNotEmpty && currentIndex >= 0 && currentIndex < tabs.length;
+  SearchTab? get currentTabOrNull => hasCurrentTab ? tabs[currentIndex] : null;
+  BooruHandler? get currentBooruHandlerOrNull => currentTabOrNull?.booruHandler;
+  Booru? get currentBooruOrNull => currentTabOrNull?.selectedBooru.value;
+  Rxn<List<Booru>?>? get currentSecondaryBoorusOrNull => currentTabOrNull?.secondaryBoorus;
+  RxList<BooruItem>? get currentSelectedOrNull => currentTabOrNull?.selected;
+  RxList<BooruItem>? get currentFetchedOrNull => currentBooruHandlerOrNull?.filteredFetched;
   SearchTab get currentTab => tabs[currentIndex];
   BooruHandler get currentBooruHandler => currentTab.booruHandler;
   Booru get currentBooru => currentTab.selectedBooru.value;
@@ -492,6 +508,11 @@ class SearchHandler {
 
     // Remove extra spaces
     text = text.trim();
+    final Booru targetBooru =
+        newBooru ??
+        (tabs.isNotEmpty
+            ? currentBooru
+            : (settingsHandler.booruList.isNotEmpty ? settingsHandler.booruList[0] : Booru.unknown()));
 
     // clear image memory cache
     Tools.forceClearMemoryCache(withLive: true);
@@ -508,7 +529,7 @@ class SearchHandler {
       }
     } else {
       final SearchTab newTab = SearchTab(
-        newBooru ?? currentBooru,
+        targetBooru,
         currentSecondaryBoorus.value,
         text,
       );
@@ -559,39 +580,6 @@ class SearchHandler {
         sideColor: Colors.pink,
       );
     }
-
-    // Notify about ratings change on gelbooru and danbooru
-    if (text.contains('rating:safe')) {
-      final bool isOnBooruWhereRatingsChanged =
-          (booru.type?.isGelbooru == true && booru.baseURL!.contains('gelbooru.com')) ||
-          (booru.type?.isDanbooru == true && booru.baseURL!.contains('danbooru.donmai.us'));
-      if (isOnBooruWhereRatingsChanged) {
-        await FlashElements.showSnackbar(
-          duration: null,
-          title: Text(
-            context.loc.searchHandler.ratingsChanged,
-            style: const TextStyle(fontSize: 20),
-          ),
-          content: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.loc.searchHandler.ratingsChangedMessage(booruType: booru.type?.name ?? ''),
-                style: const TextStyle(fontSize: 16),
-              ),
-              const Text(''),
-              Text(
-                context.loc.searchHandler.appFixedRatingAutomatically,
-                style: const TextStyle(fontSize: 18),
-              ),
-            ],
-          ),
-          leadingIcon: Icons.warning_amber,
-          leadingIconColor: Colors.yellow,
-          sideColor: Colors.red,
-        );
-      }
-    }
   }
 
   //
@@ -634,8 +622,10 @@ class SearchHandler {
       pageNum++;
     }
 
+    final String requestTags = ContentPolicy.safeSearchTagsFor(currentBooru, currentTab.tags);
+
     // fetch new items, but get results from booruHandler and not search itself
-    await currentBooruHandler.search(currentTab.tags, null);
+    await currentBooruHandler.search(requestTags, null);
     // print('FINISHED SEARCH: ${booruhandler.filteredFetched.length}');
 
     // lock new loads if handler detected last page
@@ -650,7 +640,7 @@ class SearchHandler {
 
     // request total image count if not already loaded
     if (currentBooruHandler.totalCount.value == 0) {
-      unawaited(currentBooruHandler.searchCount(currentTab.tags));
+      unawaited(currentBooruHandler.searchCount(requestTags));
     }
 
     // check to avoid requests from old tab instances resetting loading state
@@ -1239,7 +1229,7 @@ class SearchTab {
   }
   // unique id to use for booru controller
   final String id = uuid.v4();
-  String tags = '';
+  String tags;
 
   late final Rx<Booru> selectedBooru;
   late final Rxn<List<Booru>?> secondaryBoorus;

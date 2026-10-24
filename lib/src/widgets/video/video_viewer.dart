@@ -20,10 +20,12 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/services/dio_downloader.dart';
+import 'package:lolisnatcher/src/services/local_network_permission.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/media_loading.dart';
+import 'package:lolisnatcher/src/widgets/common/preserve_media_animations.dart';
 import 'package:lolisnatcher/src/widgets/common/transparent_pointer.dart';
 import 'package:lolisnatcher/src/widgets/image/image_viewer.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
@@ -71,6 +73,7 @@ class VideoViewerState extends State<VideoViewer> {
   final ValueNotifier<bool> showControls = ValueNotifier(true);
   final ValueNotifier<bool> fullscreenControlsVisible = ValueNotifier(true);
   final ValueNotifier<bool> forceCache = ValueNotifier(false);
+  final ValueNotifier<double> fullscreenDismissProgress = ValueNotifier(0);
   final ValueNotifier<ViewerStopReason?> stopReason = ValueNotifier(null);
   final ValueNotifier<String?> stopDetails = ValueNotifier(null);
   Timer? bufferingTimer, pauseCheckTimer;
@@ -455,6 +458,7 @@ class VideoViewerState extends State<VideoViewer> {
     showControls.dispose();
     fullscreenControlsVisible.dispose();
     forceCache.dispose();
+    fullscreenDismissProgress.dispose();
     stopReason.dispose();
     stopDetails.dispose();
   }
@@ -580,6 +584,7 @@ class VideoViewerState extends State<VideoViewer> {
     }
 
     _fullscreenDismissThresholdReached = false;
+    fullscreenDismissProgress.value = 0;
     chewieController.value?.toggleFullScreen();
     viewerHandler.setFullScreenState(false);
 
@@ -645,6 +650,16 @@ class VideoViewerState extends State<VideoViewer> {
       );
     } else {
       // Otherwise load from network
+      if (!await LocalNetworkPermission.ensureForUrl(widget.booruItem.fileURL)) {
+        if (_isCurrentLoad(loadGeneration)) {
+          stopLoading(
+            reason: ViewerStopReason.videoError,
+            details: context.loc.permissions.localNetworkRequired,
+          );
+        }
+        return;
+      }
+      if (!_isCurrentLoad(loadGeneration)) return;
       videoController.value = VideoPlayerController.networkUrl(
         Uri.parse(widget.booruItem.fileURL),
         videoPlayerOptions: Platform.isAndroid ? VideoPlayerOptions(mixWithOthers: true) : null,
@@ -681,24 +696,46 @@ class VideoViewerState extends State<VideoViewer> {
       //   backgroundColor: Color.fromRGBO(41, 41, 41, 0.7),
       //   iconColor: Color.fromARGB(255, 200, 200, 200)
       // ),
-      playbackSpeeds: const [
-        0.1,
-        0.25,
-        0.5,
-        0.75,
-        1,
-        1.25,
-        1.5,
-        1.75,
-        2,
-        3,
-        4,
-        6,
-        8,
-        12,
-        16,
-        32,
-      ],
+      // ios default video handler seems unstable with speeds above 2.5
+      playbackSpeeds: (Platform.isIOS && settingsHandler.videoBackendMode.isDefault)
+          ? const [
+              0.1,
+              0.25,
+              0.35,
+              0.5,
+              0.65,
+              0.75,
+              0.8,
+              0.9,
+              1,
+              1.25,
+              1.5,
+              1.75,
+              2,
+              2.5,
+            ]
+          : const [
+              0.1,
+              0.25,
+              0.35,
+              0.5,
+              0.65,
+              0.75,
+              0.8,
+              0.9,
+              1,
+              1.25,
+              1.5,
+              1.75,
+              2,
+              3,
+              4,
+              6,
+              8,
+              12,
+              16,
+              32,
+            ],
       materialProgressColors: ChewieProgressColors(
         playedColor: accentColor,
         handleColor: darkenedAceentColor,
@@ -854,10 +891,12 @@ class VideoViewerState extends State<VideoViewer> {
     BuildContext context,
     ChewieControllerProvider controllerProvider,
   ) {
+    final double screenHeight = MediaQuery.sizeOf(context).height;
+
     return ValueListenableBuilder(
       valueListenable: isZoomed,
       builder: (context, isZoomedVal, _) {
-        const dismissThreshold = 0.18;
+        const dismissThreshold = 0.45;
         return Dismissible(
           key: const Key('fullscreenVideoDismissibleKey'),
           direction: isZoomedVal ? DismissDirection.none : DismissDirection.down,
@@ -866,6 +905,7 @@ class VideoViewerState extends State<VideoViewer> {
             DismissDirection.down: dismissThreshold,
           },
           onUpdate: (dismissUpdateDetails) {
+            fullscreenDismissProgress.value = dismissUpdateDetails.progress;
             final reachedThreshold = dismissUpdateDetails.progress >= dismissThreshold;
             if (!_fullscreenDismissThresholdReached && reachedThreshold) {
               ServiceHandler.vibrate();
@@ -873,7 +913,18 @@ class VideoViewerState extends State<VideoViewer> {
             _fullscreenDismissThresholdReached = reachedThreshold;
           },
           onDismissed: (_) => exitFullscreen(),
-          child: buildFullscreenMedia(context, controllerProvider),
+          child: ValueListenableBuilder(
+            valueListenable: fullscreenDismissProgress,
+            builder: (context, dismissProgress, child) {
+              final double overflowProgress = max(0, dismissProgress - dismissThreshold);
+
+              return Transform.translate(
+                offset: Offset(0, -screenHeight * overflowProgress),
+                child: child,
+              );
+            },
+            child: buildFullscreenMedia(context, controllerProvider),
+          ),
         );
       },
     );
@@ -888,6 +939,7 @@ class VideoViewerState extends State<VideoViewer> {
     if (!_fullscreenZoomResetQueued) {
       _fullscreenZoomResetQueued = true;
       fullscreenControlsVisible.value = true;
+      fullscreenDismissProgress.value = 0;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           resetZoom();
@@ -898,12 +950,14 @@ class VideoViewerState extends State<VideoViewer> {
     return AnimatedBuilder(
       animation: animation,
       builder: (context, child) => child!,
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        body: Container(
-          alignment: Alignment.center,
-          color: Colors.black,
-          child: buildFullscreenContent(context, controllerProvider),
+      child: PreserveMediaAnimations(
+        child: Scaffold(
+          resizeToAvoidBottomInset: false,
+          body: Container(
+            alignment: Alignment.center,
+            color: Colors.black,
+            child: buildFullscreenContent(context, controllerProvider),
+          ),
         ),
       ),
     );
@@ -967,159 +1021,161 @@ class VideoViewerState extends State<VideoViewer> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: Stack(
-        alignment: Alignment.center,
-        fit: StackFit.expand,
-        children: [
-          AnimatedOpacity(
-            duration: const Duration(milliseconds: 300),
-            opacity: isVideoInited ? 0 : 1,
-            child: ValueListenableBuilder(
-              valueListenable: isViewed,
-              builder: (context, isViewed, child) {
-                return Hero(
-                  tag: isViewed ? imageHeroTag : ignoredImageHeroTag,
-                  child: child!,
-                );
-              },
-              child: Thumbnail(
-                item: widget.booruItem,
-                booru: widget.booru,
-                isStandalone: false,
-                useHero: false,
+    return PreserveMediaAnimations(
+      child: Material(
+        color: Colors.transparent,
+        child: Stack(
+          alignment: Alignment.center,
+          fit: StackFit.expand,
+          children: [
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 300),
+              opacity: isVideoInited ? 0 : 1,
+              child: ValueListenableBuilder(
+                valueListenable: isViewed,
+                builder: (context, isViewed, child) {
+                  return Hero(
+                    tag: isViewed ? imageHeroTag : ignoredImageHeroTag,
+                    child: child!,
+                  );
+                },
+                child: Thumbnail(
+                  item: widget.booruItem,
+                  booru: widget.booru,
+                  isStandalone: false,
+                  useHero: false,
+                ),
               ),
             ),
-          ),
-          //
-          ValueListenableBuilder(
-            valueListenable: showControls,
-            builder: (context, showControlsVal, child) {
-              return AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: (isVideoInited || !showControlsVal) ? const SizedBox.shrink() : child,
-              );
-            },
-            child: ListenableBuilder(
-              listenable: Listenable.merge([
-                isViewed,
-                isStopped,
-                isFromCache,
-                stopReason,
-                stopDetails,
-              ]),
-              builder: (context, _) {
-                return MediaLoading(
-                  item: widget.booruItem,
-                  hasProgress:
-                      settingsHandler.mediaCache && (forceCache.value || !settingsHandler.videoCacheMode.isStream),
-                  isFromCache: isFromCache.value,
-                  isDone: isVideoInited,
-                  isTooBig: blockPreloadState.isTooBig,
-                  isStopped: isStopped.value,
-                  stopReason: stopReason.value,
-                  stopDetails: stopDetails.value,
-                  isViewed: isViewed.value,
-                  total: total,
-                  received: received,
-                  startedAt: startedAt,
-                  onRestart: onManualRestart,
-                  onStop: onManualStop,
+            //
+            ValueListenableBuilder(
+              valueListenable: showControls,
+              builder: (context, showControlsVal, child) {
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: (isVideoInited || !showControlsVal) ? const SizedBox.shrink() : child,
                 );
               },
+              child: ListenableBuilder(
+                listenable: Listenable.merge([
+                  isViewed,
+                  isStopped,
+                  isFromCache,
+                  stopReason,
+                  stopDetails,
+                ]),
+                builder: (context, _) {
+                  return MediaLoading(
+                    item: widget.booruItem,
+                    hasProgress:
+                        settingsHandler.mediaCache && (forceCache.value || !settingsHandler.videoCacheMode.isStream),
+                    isFromCache: isFromCache.value,
+                    isDone: isVideoInited,
+                    isTooBig: blockPreloadState.isTooBig,
+                    isStopped: isStopped.value,
+                    stopReason: stopReason.value,
+                    stopDetails: stopDetails.value,
+                    isViewed: isViewed.value,
+                    total: total,
+                    received: received,
+                    startedAt: startedAt,
+                    onRestart: onManualRestart,
+                    onStop: onManualStop,
+                  );
+                },
+              ),
             ),
-          ),
-          //
-          Positioned.fill(
-            child: AnimatedSwitcher(
-              duration: Duration(milliseconds: settingsHandler.appMode.value.isDesktop ? 50 : 200),
-              child: isVideoInited
-                  ? Listener(
-                      onPointerSignal: (pointerSignal) {
-                        if (PlatformExt.isDesktop && pointerSignal is PointerScrollEvent) {
-                          scrollZoomImage(pointerSignal.scrollDelta.dy);
-                        }
-                      },
-                      child: Stack(
-                        children: [
-                          ImageFiltered(
-                            enabled: settingsHandler.blurImages,
-                            imageFilter: ImageFilter.blur(
-                              sigmaX: 40,
-                              sigmaY: 40,
-                              tileMode: TileMode.decal,
-                            ),
-                            child: buildZoomableVideo(
-                              context: context,
-                              child: ValueListenableBuilder(
-                                valueListenable: localAuthHandler.isAuthenticated,
-                                builder: (context, isAuthenticated, child) {
-                                  if (isAuthenticated != false) {
-                                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                                      if (mounted) {
-                                        pauseCheckTimer?.cancel();
-                                      }
-                                    });
+            //
+            Positioned.fill(
+              child: AnimatedSwitcher(
+                duration: Duration(milliseconds: settingsHandler.appMode.value.isDesktop ? 50 : 200),
+                child: isVideoInited
+                    ? Listener(
+                        onPointerSignal: (pointerSignal) {
+                          if (PlatformExt.isDesktop && pointerSignal is PointerScrollEvent) {
+                            scrollZoomImage(pointerSignal.scrollDelta.dy);
+                          }
+                        },
+                        child: Stack(
+                          children: [
+                            ImageFiltered(
+                              enabled: settingsHandler.blurImages,
+                              imageFilter: ImageFilter.blur(
+                                sigmaX: 40,
+                                sigmaY: 40,
+                                tileMode: TileMode.decal,
+                              ),
+                              child: buildZoomableVideo(
+                                context: context,
+                                child: ValueListenableBuilder(
+                                  valueListenable: localAuthHandler.isAuthenticated,
+                                  builder: (context, isAuthenticated, child) {
+                                    if (isAuthenticated != false) {
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        if (mounted) {
+                                          pauseCheckTimer?.cancel();
+                                        }
+                                      });
 
-                                    return child!;
-                                  } else {
-                                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                                      if (mounted) {
-                                        pauseOnAppLock();
-                                      }
-                                    });
+                                      return child!;
+                                    } else {
+                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                        if (mounted) {
+                                          pauseOnAppLock();
+                                        }
+                                      });
 
-                                    return const Center(child: CircularProgressIndicator());
-                                  }
-                                },
-                                child: Chewie(controller: chewieController.value!),
+                                      return const Center(child: CircularProgressIndicator());
+                                    }
+                                  },
+                                  child: Chewie(controller: chewieController.value!),
+                                ),
                               ),
                             ),
-                          ),
-                          ChewieControllerProvider(
-                            controller: chewieController.value!,
-                            child: TransparentPointer(
-                              child: SafeArea(
-                                top: false,
-                                child: ListenableBuilder(
-                                  listenable: Listenable.merge([
-                                    isViewed,
-                                    localAuthHandler.isAuthenticated,
-                                    showControls,
-                                    viewerHandler.isFullscreen,
-                                  ]),
-                                  builder: (context, child) {
-                                    final bool shouldShow =
-                                        isViewed.value &&
-                                        localAuthHandler.isAuthenticated.value != false &&
-                                        showControls.value &&
-                                        !viewerHandler.isFullscreen.value;
+                            ChewieControllerProvider(
+                              controller: chewieController.value!,
+                              child: TransparentPointer(
+                                child: SafeArea(
+                                  top: false,
+                                  child: ListenableBuilder(
+                                    listenable: Listenable.merge([
+                                      isViewed,
+                                      localAuthHandler.isAuthenticated,
+                                      showControls,
+                                      viewerHandler.isFullscreen,
+                                    ]),
+                                    builder: (context, child) {
+                                      final bool shouldShow =
+                                          isViewed.value &&
+                                          localAuthHandler.isAuthenticated.value != false &&
+                                          showControls.value &&
+                                          !viewerHandler.isFullscreen.value;
 
-                                    return AnimatedSwitcher(
-                                      duration: const Duration(milliseconds: 200),
-                                      child: shouldShow ? child : const SizedBox.shrink(),
-                                    );
-                                  },
-                                  child: ValueListenableBuilder(
-                                    valueListenable: isZoomed,
-                                    builder: (context, isZoomedVal, _) {
-                                      return LoliControls(
-                                        useLongTapFastForward: !isZoomedVal,
+                                      return AnimatedSwitcher(
+                                        duration: const Duration(milliseconds: 200),
+                                        child: shouldShow ? child : const SizedBox.shrink(),
                                       );
                                     },
+                                    child: ValueListenableBuilder(
+                                      valueListenable: isZoomed,
+                                      builder: (context, isZoomedVal, _) {
+                                        return LoliControls(
+                                          useLongTapFastForward: !isZoomedVal,
+                                        );
+                                      },
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : const SizedBox.shrink(),
+                          ],
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

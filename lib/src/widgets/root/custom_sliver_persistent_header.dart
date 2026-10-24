@@ -76,15 +76,11 @@ class CustomSliverPersistentHeader extends StatelessWidget {
 class CustomFloatingHeader extends StatefulWidget {
   const CustomFloatingHeader({
     required this.child,
-    required this.shrinkOffset,
-    required this.overlapsContent,
     this.onVisibilityChanged,
     super.key,
   });
 
   final Widget child;
-  final double shrinkOffset;
-  final bool overlapsContent;
   final ValueChanged<bool>? onVisibilityChanged;
 
   @override
@@ -94,80 +90,83 @@ class CustomFloatingHeader extends StatefulWidget {
 
 class CustomFloatingHeaderState extends State<CustomFloatingHeader> {
   ScrollPosition? _position;
-
-  int lastToggleTime = 0;
+  ScrollDirection _lastUserScrollDirection = ScrollDirection.idle;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_position != null) {
-      _position!.isScrollingNotifier.removeListener(_isScrollingListener);
-    }
     _position = Scrollable.maybeOf(context)?.position;
-    if (_position != null) {
-      _position!.isScrollingNotifier.addListener(_isScrollingListener);
-    }
-  }
-
-  @override
-  void didUpdateWidget(CustomFloatingHeader oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // print('didUpdateWidget: ${widget.overlapsContent} ${widget.shrinkOffset}');
-    if (widget.overlapsContent != oldWidget.overlapsContent || widget.shrinkOffset != oldWidget.shrinkOffset) {
-      widget.onVisibilityChanged?.call(widget.overlapsContent || widget.shrinkOffset == 0);
-    }
-  }
-
-  @override
-  void dispose() {
-    if (_position != null) {
-      _position!.isScrollingNotifier.removeListener(_isScrollingListener);
-    }
-    super.dispose();
   }
 
   RenderSliverFloatingPersistentHeader? _headerRenderer() {
     return context.findAncestorRenderObjectOfType<RenderSliverFloatingPersistentHeader>();
   }
 
+  bool _setLastUserScrollDirection(ScrollDirection direction) {
+    if (direction == ScrollDirection.idle) {
+      return false;
+    }
+
+    _lastUserScrollDirection = direction;
+    return true;
+  }
+
+  void _startSnap(ScrollDirection direction) {
+    if (direction == ScrollDirection.idle) {
+      return;
+    }
+
+    final RenderSliverFloatingPersistentHeader? header = _headerRenderer();
+    header?.maybeStartSnapAnimation(direction);
+  }
+
+  void _snapOrDefer(ScrollDirection direction) {
+    final RenderSliverFloatingPersistentHeader? header = _headerRenderer();
+    _setLastUserScrollDirection(direction);
+    header?.updateScrollStartDirection(direction);
+
+    if (_position?.isScrollingNotifier.value == true) {
+      header?.maybeStopSnapAnimation(direction);
+    } else {
+      _startSnap(direction);
+    }
+  }
+
+  void handleUserScrollDirection(ScrollDirection direction) {
+    if (!_setLastUserScrollDirection(direction)) {
+      return;
+    }
+
+    _snapOrDefer(direction);
+    widget.onVisibilityChanged?.call(direction == ScrollDirection.forward);
+  }
+
+  void settleUserScrollDirection() {
+    if (_lastUserScrollDirection == ScrollDirection.idle) {
+      return;
+    }
+
+    _startSnap(_lastUserScrollDirection);
+  }
+
   void show() {
     assert(_position != null);
 
-    final RenderSliverFloatingPersistentHeader? header = _headerRenderer();
-    if (widget.shrinkOffset != 0) {
-      lastToggleTime = DateTime.now().millisecondsSinceEpoch;
-      header?.maybeStartSnapAnimation(ScrollDirection.forward);
-      widget.onVisibilityChanged?.call(true);
-    }
+    _snapOrDefer(ScrollDirection.forward);
+    widget.onVisibilityChanged?.call(true);
   }
 
   void hide() {
     assert(_position != null);
 
-    final RenderSliverFloatingPersistentHeader? header = _headerRenderer();
-    if (widget.shrinkOffset == 0) {
-      lastToggleTime = DateTime.now().millisecondsSinceEpoch;
-      header?.updateScrollStartDirection(ScrollDirection.reverse);
-      header?.maybeStopSnapAnimation(ScrollDirection.reverse);
-      widget.onVisibilityChanged?.call(false);
-    }
+    _snapOrDefer(ScrollDirection.reverse);
+    widget.onVisibilityChanged?.call(false);
   }
 
-  void _isScrollingListener() {
-    assert(_position != null);
-
-    final RenderSliverFloatingPersistentHeader? header = _headerRenderer();
-    if ((lastToggleTime + 500) < DateTime.now().millisecondsSinceEpoch) {
-      return;
-    }
-    if (_position!.isScrollingNotifier.value) {
-      header?.updateScrollStartDirection(_position!.userScrollDirection);
-      header?.maybeStopSnapAnimation(_position!.userScrollDirection);
-      // widget.onVisibilityChanged?.call(_position!.userScrollDirection == ScrollDirection.forward);
-    } else {
-      header?.maybeStartSnapAnimation(_position!.userScrollDirection);
-      // widget.onVisibilityChanged?.call(_position!.userScrollDirection == ScrollDirection.forward);
-    }
+  // WaterfallView owns primary scroll start/end notifications, so snapping is
+  // stopped and settled once, after its direction debounce has been resolved.
+  void handleScrollStart() {
+    _headerRenderer()?.maybeStopSnapAnimation(_lastUserScrollDirection);
   }
 
   @override
@@ -232,8 +231,6 @@ class _SliverPersistentHeaderElement extends RenderObjectElement {
             ? CustomFloatingHeader(
                 key: headerKey,
                 onVisibilityChanged: onHeaderVisiblityChanged,
-                shrinkOffset: shrinkOffset,
-                overlapsContent: overlapsContent,
                 child: sliverPersistentHeaderRenderObjectWidget.delegate.build(
                   this,
                   shrinkOffset,

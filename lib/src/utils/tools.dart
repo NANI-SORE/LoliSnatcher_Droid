@@ -14,6 +14,7 @@ import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/dialogs/timed_leave_dialog.dart';
@@ -77,7 +78,11 @@ class Tools {
 
     final int queryLastIndex = fileURL.lastIndexOf('?'); // if has GET query parameters
     final int lastIndex = queryLastIndex != -1 ? queryLastIndex : fileURL.length;
-    final String fileExt = fileURL.substring(fileURL.lastIndexOf('.') + 1, lastIndex);
+    final String fileURLWithQueryParameters = fileURL.substring(0, lastIndex);
+    final String fileExt = fileURLWithQueryParameters.substring(
+      fileURLWithQueryParameters.lastIndexOf('.') + 1,
+      lastIndex,
+    );
     return fileExt;
   }
 
@@ -245,6 +250,7 @@ class Tools {
     final bool hasCaptchaContent = hasCaptchaStrings(host, response?.data.toString() ?? '');
 
     if (PlatformExt.hasWebviewSupport &&
+        ContentPolicy.canOpenWebview &&
         (response?.statusCode == HttpStatus.forbidden ||
             response?.statusCode == HttpStatus.serviceUnavailable ||
             hasCaptchaContent)) {

@@ -58,3 +58,10 @@ Notes.txt
 
 # AI stuff
 .claude/
+.codex/
+.repowise/
+.mcp.json
+.vscode/mcp.json
+AGENTS.md
+docs/research/
+docs/superpowers/

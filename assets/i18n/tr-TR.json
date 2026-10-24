@@ -126,8 +126,6 @@
         "tabsRestored": "Sekmeler geri yüklendi",
         "restoredTabsCount(param=count)": {
             "one": "Önceki oturumdan ${count} sekme geri yüklendi",
-            "few": "Önceki oturumdan ${count} sekme geri yüklendi",
-            "many": "Önceki oturumdan ${count} sekme geri yüklendi",
             "other": "Önceki oturumdan ${count} sekme geri yüklendi"
         },
         "someRestoredTabsHadIssues": "Geri yüklenen bazı sekmelerde bilinmeyen booru'lar veya bozuk karakterler vardı.",
@@ -136,15 +134,11 @@
         "tabsMerged": "Sekmeler birleştirildi",
         "addedTabsCount(param=count)": {
             "one": "${count} yeni sekme eklendi",
-            "few": "${count} yeni sekme eklendi",
-            "many": "${count} yeni sekme eklendi",
             "other": "${count} yeni sekme eklendi"
         },
         "tabsReplaced": "Sekmeler değiştirildi",
         "receivedTabsCount(param=count)": {
             "one": "${count} sekme alındı",
-            "few": "${count} sekme alındı",
-            "many": "${count} sekme alındı",
             "other": "${count} sekme alındı"
         }
     },
@@ -164,26 +158,18 @@
         "itemsSnatched": "İndirilen ögeler",
         "snatchedCount(param=count)": {
             "one": "İndirilen: ${count} öge",
-            "few": "İndirilen: ${count} öge",
-            "many": "İndirilen: ${count} öge",
             "other": "İndirilen: ${count} öge"
         },
         "filesAlreadySnatched(param=count)": {
             "one": "${count} dosya zaten indirilmiş",
-            "few": "${count} dosya zaten indirilmiş",
-            "many": "${count} dosya zaten indirilmiş",
             "other": "${count} dosya zaten indirilmiş"
         },
         "failedToSnatchFiles(param=count)": {
             "one": "${count} dosya indirilemedi",
-            "few": "${count} dosya indirilemedi",
-            "many": "${count} dosya indirilemedi",
             "other": "${count} dosya indirilemedi"
         },
         "cancelledFiles(param=count)": {
             "one": "${count} dosya iptal edildi",
-            "few": "${count} dosya iptal edildi",
-            "many": "${count} dosya iptal edildi",
             "other": "${count} dosya iptal edildi"
         },
         "snatchingImages": "Görseller indiriliyor",
@@ -191,8 +177,6 @@
         "addedItemToQueue": "Öge İndirme kuyruğuna eklendi",
         "addedItemsToQueue(param=count)": {
             "one": "${count} öge indirme kuyruğuna eklendi",
-            "few": "${count} öge indirme kuyruğuna eklendi",
-            "many": "${count} öge indirme kuyruğuna eklendi",
             "other": "${count} öge indirme kuyruğuna eklendi"
         }
     },
@@ -237,6 +221,11 @@
         "sortMode": "Sekmeleri sırala",
         "help": "Yardım",
         "deleteTabs": "Sekmeleri sil",
+        "deleteDuplicateTabs": "Kopya sekmeleri sil",
+        "deleteDuplicateTabsQuestion": "Kopya sekmeler bulundu. Her grupta kalmasını istediğin sekmeleri seç:",
+        "keepFirstDuplicateTabs": "İlki kalsın",
+        "keepLastDuplicateTabs": "Sonuncu kalsın",
+        "skipDuplicateTabDelete": "Atla",
         "shuffleTabs": "Sekmeleri karıştır",
         "tabRandomlyShuffled": "Sekmeler rastgele karıştırıldı",
         "tabOrderSaved": "Sekme sırası kaydedildi",
@@ -278,8 +267,6 @@
         "reversed": "(tersten)",
         "areYouSureDeleteTabs(param=count)": {
             "one": "${count} sekmeyi silmek istediğine emin misin?",
-            "few": "${count} sekmeyi silmek istediğine emin misin?",
-            "many": "${count} sekmeyi silmek istediğine emin misin?",
             "other": "${count} sekmeyi silmek istediğine emin misin?"
         },
         "filters": {
@@ -290,7 +277,7 @@
             "checkDuplicatesOnSameBooru": "Aynı Booru üzerindeki kopyaları kontrol et",
             "emptySearchQuery": "Boş arama sorgusu",
             "title": "Sekme Filtreleri",
-            "all": "Hepsi",
+            "all": "Tümü",
             "notLoaded": "Yüklenmedi",
             "enabled": "Etkin",
             "disabled": "Devre dışı",
@@ -329,15 +316,11 @@
         "deleteHistoryEntries": "Geçmiş girdilerini sil",
         "deleteItemsConfirm(param=count)": {
             "one": "${count} ögeyi silmek istediğine emin misin?",
-            "few": "${count} ögeyi silmek istediğine emin misin?",
-            "many": "${count} ögeyi silmek istediğine emin misin?",
             "other": "${count} ögeyi silmek istediğine emin misin?"
         },
         "clearSelection": "Seçimi temizle",
         "deleteItems(param=count)": {
             "one": "${count} ögeyi sil",
-            "few": "${count} ögeyi sil",
-            "many": "${count} ögeyi sil",
             "other": "${count} ögeyi sil"
         }
     },
@@ -376,7 +359,7 @@
             "visitForDetails": "Detaylar için <a href='https://github.com/NO-ob/LoliSnatcher_Droid/blob/master/CONTRIBUTING.md#localization--translations'>github</a> adresini ziyaret et veya POEditor'e gitmek için aşağıdaki görsele dokun"
         },
         "booru": {
-            "title": "Booru'lar ve Arama",
+            "title": "Booru'lar ve arama",
             "defaultTags": "Varsayılan etiketler",
             "itemsPerPage": "Sayfa başına getirilen öge sayısı",
             "itemsPerPageTip": "Bazı booru'lar bunu yok sayabilir",
@@ -402,7 +385,13 @@
             "booruConfigLinkCopied": "Booru yapılandırma bağlantısı panoya kopyalandı",
             "noBooruSelected": "Hiçbir Booru seçilmedi!",
             "cantDeleteThisBooru": "Bu Booru silinemez!",
-            "removeRelatedTabsFirst": "Önce ilgili sekmeleri kaldır"
+            "removeRelatedTabsFirst": "Önce ilgili sekmeleri kaldır",
+            "sourceLimitNotice": "Kaynak kurulumunun işleyişi aşağıdaki uyumluluk ayarlarına bağlı olarak değişebilir. İçerikler harici siteler tarafından sağlanır ve uygulamanın kontrolü dışındadır.",
+            "advanced": "Gelişmiş",
+            "expandedSourceCompatibility": "Kaynak kurulum uyumluluğu",
+            "expandedSourceCompatibilitySubtitle": "Kaynak uyumluluk ayarlarının işleyişini düzenle",
+            "expandedSourceCompatibilityConfirm": "Bunu değiştirmek kaynakların çalışma şeklini etkileyebilir. İçerikler harici siteler tarafından barındırılıp sağlanır ve uygulamanın kontrolünde değildir. Devam edilsin mi?",
+            "sourceUnavailableCurrentSettings": "Bu site kullanılamıyor."
         },
         "booruEditor": {
             "title": "Booru Düzenleyici",
@@ -423,11 +412,11 @@
             "accessKeyFailedMsg": "Hydrus'ta istek penceresi açık mı?",
             "hydrusInstructions": "Hydrus anahtarını almak için Hydrus istemcisinde istek penceresini açman gerekir: Hizmetler > Hizmetleri incele > İstemci API > Ekle > API isteğinden (Services > Review services > Client API > Add > From API request)",
             "getHydrusApiKey": "Hydrus API anahtarını al",
-            "booruName": "Booru Adı",
-            "booruNameRequired": "Booru Adı gerekli!",
+            "booruName": "Booru adı",
+            "booruNameRequired": "Booru adı gerekli!",
             "booruUrl": "Booru URL'si",
             "booruUrlRequired": "Booru URL'si gerekli!",
-            "booruType": "Booru Türü",
+            "booruType": "Booru türü",
             "booruFavicon": "Favicon URL'si",
             "booruFaviconPlaceholder": "(Boş bırakılırsa otomatik doldurulur)",
             "booruDefTags": "Varsayılan etiketler",
@@ -709,7 +698,7 @@
             "failedItemsPurgeStartedTitle": "Başarısız ögeleri temizleme işlemi başladı",
             "failedItemsPurgeInfo": "Güncellenemeyen ögeler veritabanından kaldırılacak",
             "updateSankakuUrls": "Sankaku URL'lerini güncelle",
-            "updating(param=count)": "${count: int} öge güncelleniyor:",
+            "updating(param=count)": "Öğeler güncelleniyor: ${count: int}",
             "left(param=count)": "Kalan: ${count: int}",
             "done(param=count)": "Tamamlanan: ${count: int}",
             "failedSkipped(param=count)": "Başarısız/Atlanan: ${count: int}",
@@ -721,7 +710,7 @@
             "retryFailedItems(param=count)": "Başarısız ögeleri tekrar dene (${count: int})"
         },
         "backupAndRestore": {
-            "title": "Yedekle ve Geri Yükle",
+            "title": "Yedekle ve geri yükle",
             "duplicateFileDetectedTitle": "Kopya dosya tespit edildi!",
             "duplicateFileDetectedMsg(param=fileName)": "${fileName: String} dosyası zaten mevcut. Üzerine yazmak istiyor musun? Hayır dersen yedekleme iptal edilecek.",
             "androidOnlyFeatureMsg": "Bu özellik yalnızca Android'de mevcuttur. Masaüstü sürümlerinde dosyaları sistemine göre uygulamanın veri klasörüne kopyalayıp yapıştırabilirsin",
@@ -815,7 +804,7 @@
             "disableVideosHelp": "Videoları yüklemeye çalışırken çöken düşük donanımlı cihazlar için kullanışlıdır: Bunun yerine videoyu harici bir oynatıcıda veya tarayıcıda izleme seçeneği sunar."
         },
         "cache": {
-            "title": "İndirme ve Önbelleğe Alma",
+            "title": "İndirme ve önbelleğe alma",
             "snatchQuality": "İndirme kalitesi",
             "snatchCooldown": "İndirme bekleme süresi (ms)",
             "pleaseEnterAValidTimeout": "Lütfen geçerli bir zaman aşımı değeri gir",
@@ -838,12 +827,13 @@
             "videoCacheNoteEnable": "[Not]: Videolar yalnızca 'Medyayı Önbelleğe Al' etkinleştirilirse önbelleğe alınır.",
             "videoCacheWarningDesktop": "[Uyarı]: Masaüstünde Akış modu bazı Booru'lar için hatalı çalışabilir.",
             "deleteCacheAfter": "Şu süreden sonra önbelleği sil:",
+            "neverDeleteDuration": "Asla",
             "cacheSizeLimit": "Önbellek boyutu sınırı (GB)",
             "maximumTotalCacheSize": "Maksimum toplam önbellek boyutu",
             "cacheStats": "Önbellek istatistikleri:",
             "loading": "Yükleniyor…",
             "empty": "Boş",
-            "inFilesPlural(param=size, param=count)": "${size: String}, ${count: int} dosya",
+            "inFilesPlural(param=size, param=count)": "${size: String}, dosya sayısı: ${count: int}",
             "inFileSingular(param=size)": "${size: String}, 1 dosya",
             "cacheTypeTotal": "Toplam",
             "cacheTypeFavicons": "Favicon'lar",
@@ -874,8 +864,8 @@
             "removeAI": "AI ögelerini kaldır"
         },
         "sync": {
-            "title": "LoliSync",
-            "dbError": "LoliSync kullanmak için veritabanı etkinleştirilmelidir",
+            "title": "Senkronize et",
+            "dbError": "Senkronizasyonu kullanmak için veritabanı etkinleştirilmelidir",
             "errorTitle": "Hata!",
             "pleaseEnterIPAndPort": "Lütfen IP adresini ve portu gir.",
             "selectWhatYouWantToDo": "Ne yapmak istediğini seç",
@@ -940,7 +930,7 @@
             "emailCopied": "E-mail panoya kopyalandı",
             "logoArtistThanks": "Uygulama logosu için eserini kullanmamıza izin veren Showers-U'ya koca bir teşekkürler: Lütfen Pixiv üzerinden ona göz atmayı unutma",
             "developers": "Geliştiriciler",
-            "localizers": "Yerelleştirme Uzmanları",
+            "localizers": "Çeviri:",
             "releases": "Sürümler",
             "releasesMsg": "En güncel sürümü ve tüm sürüm notlarını GitHub Releases sayfasında bulabilirsin:",
             "licenses": "Lisanslar"
@@ -992,7 +982,9 @@
             "restoredSessionFromString": "Oturum dizeden geri yüklendi"
         },
         "logging": {
-            "logger": "Kayıtlar"
+            "logger": "Kayıtlar",
+            "captureLogcat": "Sistem günlüklerini kaydet",
+            "captureLogcatDescription": "Bu uygulamanın Android sürecindeki uyarı ve hata mesajlarını kaydet"
         },
         "webview": {
             "openWebview": "Web görünümünü aç",
@@ -1051,8 +1043,6 @@
         "makeUnstaleable": "Eskimez yap",
         "deleteTags(param=count)": {
             "one": "${count} etiketi sil",
-            "few": "${count} etiketi sil",
-            "many": "${count} etiketi sil",
             "other": "${count} etiketi sil"
         },
         "deleteTagsTitle": "Etiketleri sil",
@@ -1064,14 +1054,14 @@
         "testingMessage": "[TEST]: Uygulamanın kilidini normal yollarla açamıyorsan buraya bas. Cihazınla ilgili detayları geliştiriciye bildir."
     },
     "loliSync": {
-        "title": "LoliSync",
+        "title": "Senkronize et",
         "stopSyncingQuestion": "Senkronizasyonu durdurmak istiyor musun?",
         "stopServerQuestion": "Sunucuyu durdurmak istiyor musun?",
         "noConnection": "Bağlantı yok",
         "waitingForConnection": "Bağlantı bekleniyor…",
         "startingServer": "Sunucu başlatılıyor…",
         "keepScreenAwake": "Ekranı uyanık tut",
-        "serverKilled": "LoliSync sunucusu kapatıldı",
+        "serverKilled": "Senkronizasyon sunucusu kapatıldı",
         "testError(param=statusCode, param=reasonPhrase)": "Test hatası: ${statusCode: int} ${reasonPhrase: String}",
         "testErrorException(param=error)": "Test hatası: ${error: String}",
         "testSuccess": "Test isteği olumlu yanıt aldı",
@@ -1212,6 +1202,19 @@
         "addNewBooru": "Yeni Booru ekle",
         "help": "Yardım",
         "settings": "Ayarlar",
+        "onboardingTitle": "İlk kaynağını ayarla",
+        "onboardingSubtitle": "Gezinmeye başlamak için bir booru yapılandırması ekle veya bir yedeği geri yükle",
+        "addBooruAction": "Yeni booru ekle",
+        "addBooruActionSubtitle": "URL ve arama ayarlarını ekleyerek bir site bağla",
+        "restoreBackupAction": "Yedekleri geri yükle veya yönet",
+        "restoreBackupActionSubtitle": "Ayarları, booru'ları, sekmeleri ve kaydedilen veriyi geri yükle",
+        "openSettingsAction": "Ayarları aç",
+        "openSettingsActionSubtitle": "Kaynakları kurmadan önce uygulamanın işleyişini ayarla",
+        "helpSectionTitle": "Yardım?",
+        "booruSourcesArticle": "Booru yapılandırması nasıl eklenir ve nasıl çalışır",
+        "booruSourcesArticleSubtitle": "İlk booru yapılandırmasını kuran kullanıcılar için talimatlar",
+        "backupRestoreArticle": "Yedekten veri geri yükleme",
+        "backupRestoreArticleSubtitle": "Önceki bir uygulamadan/sürümden geçiş yapan kullanıcılar için talimatlar",
         "restoringPreviousSession": "Önceki oturum geri yükleniyor…",
         "copiedFileURL": "Dosya URL'si panoya kopyalandı!"
     },
@@ -1274,8 +1277,6 @@
         "loadingFileMessage": "Bu biraz zaman alabilir, lütfen bekle…",
         "sources(param=count)": {
             "one": "Kaynak",
-            "few": "Kaynaklar",
-            "many": "Kaynaklar",
             "other": "Kaynaklar"
         }
     },
@@ -1344,8 +1345,6 @@
             "loadingPage(param=pageNum)": "Sayfa #${pageNum: int} yükleniyor…",
             "startedAgo(param=seconds)": {
                 "one": "${seconds} saniye önce başladı",
-                "few": "${seconds} saniye önce başladı",
-                "many": "${seconds} saniye önce başladı",
                 "other": "${seconds} saniye önce başladı"
             },
             "tapToRetryIfStuck": "İstek takılmış veya çok uzun sürmüş gibi görünüyorsa tekrar denemek için dokun",
@@ -1361,6 +1360,7 @@
         "copyright": "Telif Hakkı",
         "meta": "Meta",
         "species": "Tür",
+        "lore": "Bilgi",
         "none": "Yok/Genel"
     }
 }

@@ -20,6 +20,7 @@ import 'package:lolisnatcher/src/data/tag_suggestion.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -52,10 +53,18 @@ abstract class BooruHandler {
   void filterFetched() {
     final SettingsHandler settingsHandler = SettingsHandler.instance;
 
-    final List<BooruItem> itemsBeforeFilter = [...filteredFetched];
-
+    final List<BooruItem> itemsBeforeFilter = filteredFetched;
     final List<BooruItem> filteredItems = [];
+    final Set<String> seenFileUrls = {};
+    final Set<String> seenServerIds = {};
+    final bool filterFavourites = settingsHandler.filterFavourites && booru.type?.isFavourites != true;
+    final bool filterSnatched = settingsHandler.filterSnatched && booru.type?.isDownloads != true;
+
     for (final item in fetched) {
+      if (!ContentPolicy.isItemAllowed(booru, item)) {
+        continue;
+      }
+
       if (settingsHandler.filterHated && item.isHidden) {
         continue;
       }
@@ -68,21 +77,25 @@ abstract class BooruHandler {
         continue;
       }
 
-      final bool filterFavourites = settingsHandler.filterFavourites && booru.type?.isFavourites != true;
       if (filterFavourites && item.isFavourite.value == true) {
         continue;
       }
 
-      final bool filterSnatched = settingsHandler.filterSnatched && booru.type?.isDownloads != true;
       if (filterSnatched && item.isSnatched.value == true) {
         continue;
       }
 
-      final bool isDuplicate = filteredItems.any(
-        (e) => e.fileURL == item.fileURL || (e.serverId != null && e.serverId == item.serverId),
-      );
-      if (isDuplicate) {
+      final String? serverId = item.serverId;
+      final bool duplicateFileUrl = item.fileURL.isNotEmpty && seenFileUrls.contains(item.fileURL);
+      final bool duplicateServerId = serverId != null && seenServerIds.contains(serverId);
+      if (duplicateFileUrl || duplicateServerId) {
         continue;
+      }
+      if (item.fileURL.isNotEmpty) {
+        seenFileUrls.add(item.fileURL);
+      }
+      if (serverId != null) {
+        seenServerIds.add(serverId);
       }
 
       filteredItems.add(item);

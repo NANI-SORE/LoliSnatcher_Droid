@@ -5,8 +5,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/services/local_network_permission.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/webview/webview_navigation_controls.dart';
@@ -44,10 +47,14 @@ class _InAppWebviewViewState extends State<InAppWebviewView> {
   PullToRefreshController? pullToRefreshController;
   int loadingPercentage = 0;
   bool hideSubtitle = false;
+  bool recoveringLocalNetwork = false;
+  bool recoveredLocalNetwork = false;
+  late Future<bool> localNetworkAccess;
 
   @override
   void initState() {
     super.initState();
+    localNetworkAccess = LocalNetworkPermission.ensureForUrl(widget.initialUrl, retry: true);
 
     settings = InAppWebViewSettings(
       userAgent: widget.userAgent ?? Tools.browserUserAgent,
@@ -105,6 +112,10 @@ class _InAppWebviewViewState extends State<InAppWebviewView> {
     }
   }
 
+  Future<void> stopLoading(InAppWebViewController controller) async {
+    await controller.stopLoading();
+  }
+
   @override
   void dispose() {
     pullToRefreshController?.dispose();
@@ -114,12 +125,79 @@ class _InAppWebviewViewState extends State<InAppWebviewView> {
 
   @override
   Widget build(BuildContext context) {
+    if (!ContentPolicy.canOpenWebview) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(widget.title ?? context.loc.webview.title),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              context.loc.settings.booru.sourceUnavailableCurrentSettings,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return FutureBuilder<bool>(
+      future: localNetworkAccess,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return Scaffold(
+            appBar: AppBar(title: Text(widget.title ?? context.loc.webview.title)),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.data != true) {
+          return Scaffold(
+            appBar: AppBar(title: Text(widget.title ?? context.loc.webview.title)),
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(context.loc.permissions.localNetworkRequired),
+                  ),
+                  FilledButton(
+                    onPressed: () {
+                      setState(() {
+                        localNetworkAccess = LocalNetworkPermission.ensureForUrl(widget.initialUrl, retry: true);
+                      });
+                    },
+                    child: Text(context.loc.retry),
+                  ),
+                  TextButton(
+                    onPressed: openAppSettings,
+                    child: Text(context.loc.goToSettings),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        return buildWebview(context);
+      },
+    );
+  }
+
+  Widget buildWebview(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title ?? context.loc.webview.title),
         actions: [
-          WebviewNavigationControls(controller: controller),
-          WebviewNavigationMenu(initialUrl: widget.initialUrl, controller: controller),
+          WebviewNavigationControls(
+            controller: controller,
+            isLoading: loadingPercentage < 100,
+            onStopLoading: stopLoading,
+          ),
+          WebviewNavigationMenu(
+            initialUrl: widget.initialUrl,
+            controller: controller,
+          ),
         ],
       ),
       body: Stack(
@@ -161,6 +239,34 @@ class _InAppWebviewViewState extends State<InAppWebviewView> {
                   loadingPercentage = 0;
                 });
               },
+              onReceivedError: (controller, request, error) async {
+                if (Platform.isAndroid &&
+                    error.description.contains('ERR_LOCAL_NETWORK_PERMISSION_MISSING') &&
+                    !recoveringLocalNetwork &&
+                    !recoveredLocalNetwork) {
+                  recoveringLocalNetwork = true;
+                  try {
+                    final granted = await LocalNetworkPermission.request();
+                    if (!mounted) return;
+                    if (granted) {
+                      recoveredLocalNetwork = true;
+                      await controller.reload();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(context.loc.permissions.localNetworkRequired),
+                          action: SnackBarAction(
+                            label: context.loc.goToSettings,
+                            onPressed: openAppSettings,
+                          ),
+                        ),
+                      );
+                    }
+                  } finally {
+                    recoveringLocalNetwork = false;
+                  }
+                }
+              },
             )
           else
             SizedBox(
@@ -170,10 +276,7 @@ class _InAppWebviewViewState extends State<InAppWebviewView> {
               ),
             ),
           //
-          if (loadingPercentage < 100)
-            LinearProgressIndicator(
-              value: loadingPercentage / 100.0,
-            ),
+          if (loadingPercentage < 100) LinearProgressIndicator(value: loadingPercentage / 100),
           //
           if (kDebugMode && !hideSubtitle)
             Positioned(
