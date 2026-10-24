@@ -813,23 +813,6 @@ class _ThumbnailState extends State<_ThumbnailImage> {
       color: Colors.transparent,
       child: imageStack,
     );
-
-    if (widget.isStandalone && widget.useHero) {
-      return HeroMode(
-        enabled: settingsHandler.enableHeroTransitions && !settingsHandler.shitDevice,
-        child: Hero(
-          tag: 'imageHero${widget.item.hashCode}',
-          placeholderBuilder: (BuildContext context, Size heroSize, Widget child) {
-            // keep building the image since the images can be visible in the
-            // background of the image gallery
-            return child;
-          },
-          child: imageStack,
-        ),
-      );
-    } else {
-      return imageStack;
-    }
   }
 }
 
