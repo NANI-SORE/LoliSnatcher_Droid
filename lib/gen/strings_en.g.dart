@@ -416,6 +416,20 @@ class Translations$permissions$en {
 
   // Translations
 
+  /// en: 'Local network access is required to open this address. Allow Nearby devices permission, then retry.'
+  String get localNetworkRequired =>
+      TranslationOverrides.string(_root.$meta, 'permissions.localNetworkRequired', {}) ??
+      'Local network access is required to open this address. Allow Nearby devices permission, then retry.';
+
+  /// en: 'Local network access'
+  String get localNetworkExplanationTitle =>
+      TranslationOverrides.string(_root.$meta, 'permissions.localNetworkExplanationTitle', {}) ?? 'Local network access';
+
+  /// en: 'To open local booru servers or sync with another device, the app needs access to your local network. Android will show this as a “Nearby devices” permission request.'
+  String get localNetworkExplanation =>
+      TranslationOverrides.string(_root.$meta, 'permissions.localNetworkExplanation', {}) ??
+      'To open local booru servers or sync with another device, the app needs access to your local network. Android will show this as a “Nearby devices” permission request.';
+
   /// en: 'No access to custom storage directory'
   String get noAccessToCustomStorageDirectory =>
       TranslationOverrides.string(_root.$meta, 'permissions.noAccessToCustomStorageDirectory', {}) ?? 'No access to custom storage directory';
@@ -504,14 +518,12 @@ class Translations$searchHandler$en {
   /// en: 'Tabs restored'
   String get tabsRestored => TranslationOverrides.string(_root.$meta, 'searchHandler.tabsRestored', {}) ?? 'Tabs restored';
 
-  /// en: '(one) {Restored ${count} tab from previous session} (few) {Restored ${count} tabs from previous session} (many) {Restored ${count} tabs from previous session} (other) {Restored ${count} tabs from previous session}'
+  /// en: '(one) {Restored ${count} tab from previous session} (other) {Restored ${count} tabs from previous session}'
   String restoredTabsCount({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'searchHandler.restoredTabsCount', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
         count,
         one: 'Restored ${count} tab from previous session',
-        few: 'Restored ${count} tabs from previous session',
-        many: 'Restored ${count} tabs from previous session',
         other: 'Restored ${count} tabs from previous session',
       );
 
@@ -530,28 +542,24 @@ class Translations$searchHandler$en {
   /// en: 'Tabs merged'
   String get tabsMerged => TranslationOverrides.string(_root.$meta, 'searchHandler.tabsMerged', {}) ?? 'Tabs merged';
 
-  /// en: '(one) {Added ${count} new tab} (few) {Added ${count} new tabs} (many) {Added ${count} new tabs} (other) {Added ${count} new tabs}'
+  /// en: '(one) {Added ${count} new tab} (other) {Added ${count} new tabs}'
   String addedTabsCount({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'searchHandler.addedTabsCount', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
         count,
         one: 'Added ${count} new tab',
-        few: 'Added ${count} new tabs',
-        many: 'Added ${count} new tabs',
         other: 'Added ${count} new tabs',
       );
 
   /// en: 'Tabs replaced'
   String get tabsReplaced => TranslationOverrides.string(_root.$meta, 'searchHandler.tabsReplaced', {}) ?? 'Tabs replaced';
 
-  /// en: '(one) {Received ${count} tab} (few) {Received ${count} tabs} (many) {Received ${count} tabs} (other) {Received ${count} tabs}'
+  /// en: '(one) {Received ${count} tab} (other) {Received ${count} tabs}'
   String receivedTabsCount({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'searchHandler.receivedTabsCount', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
         count,
         one: 'Received ${count} tab',
-        few: 'Received ${count} tabs',
-        many: 'Received ${count} tabs',
         other: 'Received ${count} tabs',
       );
 }
@@ -983,47 +991,39 @@ class Translations$snatcher$en {
   /// en: 'Items snatched'
   String get itemsSnatched => TranslationOverrides.string(_root.$meta, 'snatcher.itemsSnatched', {}) ?? 'Items snatched';
 
-  /// en: '(one) {Snatched: ${count} item} (few) {Snatched: ${count} items} (many) {Snatched: ${count} items} (other) {Snatched: ${count} items}'
+  /// en: '(one) {Snatched: ${count} item} (other) {Snatched: ${count} items}'
   String snatchedCount({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.snatchedCount', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
         count,
         one: 'Snatched: ${count} item',
-        few: 'Snatched: ${count} items',
-        many: 'Snatched: ${count} items',
         other: 'Snatched: ${count} items',
       );
 
-  /// en: '(one) {${count} file was already snatched} (few) {${count} files were already snatched} (many) {${count} files were already snatched} (other) {${count} files were already snatched}'
+  /// en: '(one) {${count} file was already snatched} (other) {${count} files were already snatched}'
   String filesAlreadySnatched({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.filesAlreadySnatched', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
         count,
         one: '${count} file was already snatched',
-        few: '${count} files were already snatched',
-        many: '${count} files were already snatched',
         other: '${count} files were already snatched',
       );
 
-  /// en: '(one) {Failed to snatch ${count} file} (few) {Failed to snatch ${count} files} (many) {Failed to snatch ${count} files} (other) {Failed to snatch ${count} files}'
+  /// en: '(one) {Failed to snatch ${count} file} (other) {Failed to snatch ${count} files}'
   String failedToSnatchFiles({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.failedToSnatchFiles', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
         count,
         one: 'Failed to snatch ${count} file',
-        few: 'Failed to snatch ${count} files',
-        many: 'Failed to snatch ${count} files',
         other: 'Failed to snatch ${count} files',
       );
 
-  /// en: '(one) {Cancelled ${count} file} (few) {Cancelled ${count} files} (many) {Cancelled ${count} files} (other) {Cancelled ${count} files}'
+  /// en: '(one) {Cancelled ${count} file} (other) {Cancelled ${count} files}'
   String cancelledFiles({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.cancelledFiles', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
         count,
         one: 'Cancelled ${count} file',
-        few: 'Cancelled ${count} files',
-        many: 'Cancelled ${count} files',
         other: 'Cancelled ${count} files',
       );
 
@@ -1036,14 +1036,12 @@ class Translations$snatcher$en {
   /// en: 'Added item to snatch queue'
   String get addedItemToQueue => TranslationOverrides.string(_root.$meta, 'snatcher.addedItemToQueue', {}) ?? 'Added item to snatch queue';
 
-  /// en: '(one) {Added ${count} item to snatch queue} (few) {Added ${count} items to snatch queue} (many) {Added ${count} items to snatch queue} (other) {Added ${count} items to snatch queue}'
+  /// en: '(one) {Added ${count} item to snatch queue} (other) {Added ${count} items to snatch queue}'
   String addedItemsToQueue({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.addedItemsToQueue', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
         count,
         one: 'Added ${count} item to snatch queue',
-        few: 'Added ${count} items to snatch queue',
-        many: 'Added ${count} items to snatch queue',
         other: 'Added ${count} items to snatch queue',
       );
 }
@@ -1208,8 +1206,8 @@ class Translations$tabs$en {
   /// en: 'Shuffle tabs'
   String get shuffleTabs => TranslationOverrides.string(_root.$meta, 'tabs.shuffleTabs', {}) ?? 'Shuffle tabs';
 
-  /// en: 'Tab randomly shuffled'
-  String get tabRandomlyShuffled => TranslationOverrides.string(_root.$meta, 'tabs.tabRandomlyShuffled', {}) ?? 'Tab randomly shuffled';
+  /// en: 'Tabs randomly shuffled'
+  String get tabRandomlyShuffled => TranslationOverrides.string(_root.$meta, 'tabs.tabRandomlyShuffled', {}) ?? 'Tabs randomly shuffled';
 
   /// en: 'Tab order saved'
   String get tabOrderSaved => TranslationOverrides.string(_root.$meta, 'tabs.tabOrderSaved', {}) ?? 'Tab order saved';
@@ -1331,14 +1329,12 @@ class Translations$tabs$en {
   /// en: '(reversed)'
   String get reversed => TranslationOverrides.string(_root.$meta, 'tabs.reversed', {}) ?? '(reversed)';
 
-  /// en: '(one) {Are you sure you want to delete ${count} tab?} (few) {Are you sure you want to delete ${count} tabs?} (many) {Are you sure you want to delete ${count} tabs?} (other) {Are you sure you want to delete ${count} tabs?}'
+  /// en: '(one) {Are you sure you want to delete ${count} tab?} (other) {Are you sure you want to delete ${count} tabs?}'
   String areYouSureDeleteTabs({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'tabs.areYouSureDeleteTabs', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
         count,
         one: 'Are you sure you want to delete ${count} tab?',
-        few: 'Are you sure you want to delete ${count} tabs?',
-        many: 'Are you sure you want to delete ${count} tabs?',
         other: 'Are you sure you want to delete ${count} tabs?',
       );
 
@@ -1403,28 +1399,24 @@ class Translations$history$en {
   /// en: 'Delete history entries'
   String get deleteHistoryEntries => TranslationOverrides.string(_root.$meta, 'history.deleteHistoryEntries', {}) ?? 'Delete history entries';
 
-  /// en: '(one) {Are you sure you want to delete ${count} item?} (few) {Are you sure you want to delete ${count} items?} (many) {Are you sure you want to delete ${count} items?} (other) {Are you sure you want to delete ${count} items?}'
+  /// en: '(one) {Are you sure you want to delete ${count} item?} (other) {Are you sure you want to delete ${count} items?}'
   String deleteItemsConfirm({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'history.deleteItemsConfirm', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
         count,
         one: 'Are you sure you want to delete ${count} item?',
-        few: 'Are you sure you want to delete ${count} items?',
-        many: 'Are you sure you want to delete ${count} items?',
         other: 'Are you sure you want to delete ${count} items?',
       );
 
   /// en: 'Clear selection'
   String get clearSelection => TranslationOverrides.string(_root.$meta, 'history.clearSelection', {}) ?? 'Clear selection';
 
-  /// en: '(one) {Delete ${count} item} (few) {Delete ${count} items} (many) {Delete ${count} items} (other) {Delete ${count} items}'
+  /// en: '(one) {Delete ${count} item} (other) {Delete ${count} items}'
   String deleteItems({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'history.deleteItems', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
         count,
         one: 'Delete ${count} item',
-        few: 'Delete ${count} items',
-        many: 'Delete ${count} items',
         other: 'Delete ${count} items',
       );
 }
@@ -1667,14 +1659,12 @@ class Translations$tagsManager$en {
   /// en: 'Make unstaleable'
   String get makeUnstaleable => TranslationOverrides.string(_root.$meta, 'tagsManager.makeUnstaleable', {}) ?? 'Make unstaleable';
 
-  /// en: '(one) {Delete ${count} tag} (few) {Delete ${count} tags} (many) {Delete ${count} tags} (other) {Delete ${count} tags}'
+  /// en: '(one) {Delete ${count} tag} (other) {Delete ${count} tags}'
   String deleteTags({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'tagsManager.deleteTags', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
         count,
         one: 'Delete ${count} tag',
-        few: 'Delete ${count} tags',
-        many: 'Delete ${count} tags',
         other: 'Delete ${count} tags',
       );
 
@@ -2312,14 +2302,12 @@ class Translations$gallery$en {
   String get loadingFileMessage =>
       TranslationOverrides.string(_root.$meta, 'gallery.loadingFileMessage', {}) ?? 'This can take some time, please wait…';
 
-  /// en: '(one) {Source} (few) {Sources} (many) {Sources} (other) {Sources}'
+  /// en: '(one) {Source} (other) {Sources}'
   String sources({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'gallery.sources', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
         count,
         one: 'Source',
-        few: 'Sources',
-        many: 'Sources',
         other: 'Sources',
       );
 }
@@ -3756,16 +3744,16 @@ class Translations$settings$database$en {
   String get appRestartRequired =>
       TranslationOverrides.string(_root.$meta, 'settings.database.appRestartRequired', {}) ?? 'An app restart is required!';
 
-  /// en: 'Clear snatched items'
-  String get clearSnatchedItems => TranslationOverrides.string(_root.$meta, 'settings.database.clearSnatchedItems', {}) ?? 'Clear snatched items';
+  /// en: 'Clear download history'
+  String get clearSnatchedItems => TranslationOverrides.string(_root.$meta, 'settings.database.clearSnatchedItems', {}) ?? 'Clear download history';
 
-  /// en: 'Clear all snatched items?'
+  /// en: 'Clear all download history?'
   String get clearAllSnatchedConfirm =>
-      TranslationOverrides.string(_root.$meta, 'settings.database.clearAllSnatchedConfirm', {}) ?? 'Clear all snatched items?';
+      TranslationOverrides.string(_root.$meta, 'settings.database.clearAllSnatchedConfirm', {}) ?? 'Clear all download history?';
 
-  /// en: 'Snatched items cleared'
+  /// en: 'Download history cleared'
   String get snatchedItemsCleared =>
-      TranslationOverrides.string(_root.$meta, 'settings.database.snatchedItemsCleared', {}) ?? 'Snatched items cleared';
+      TranslationOverrides.string(_root.$meta, 'settings.database.snatchedItemsCleared', {}) ?? 'Download history cleared';
 
   /// en: 'An app restart may be required!'
   String get appRestartMayBeRequired =>
@@ -3831,9 +3819,9 @@ class Translations$settings$database$en {
   /// en: 'Update Sankaku URLs'
   String get updateSankakuUrls => TranslationOverrides.string(_root.$meta, 'settings.database.updateSankakuUrls', {}) ?? 'Update Sankaku URLs';
 
-  /// en: 'Updating ${count: int} items:'
+  /// en: 'Updating items: ${count: int}'
   String updating({required int count}) =>
-      TranslationOverrides.string(_root.$meta, 'settings.database.updating', {'count': count}) ?? 'Updating ${count} items:';
+      TranslationOverrides.string(_root.$meta, 'settings.database.updating', {'count': count}) ?? 'Updating items: ${count}';
 
   /// en: 'Left: ${count: int}'
   String left({required int count}) => TranslationOverrides.string(_root.$meta, 'settings.database.left', {'count': count}) ?? 'Left: ${count}';
@@ -4362,9 +4350,9 @@ class Translations$settings$cache$en {
   /// en: 'Empty'
   String get empty => TranslationOverrides.string(_root.$meta, 'settings.cache.empty', {}) ?? 'Empty';
 
-  /// en: '${size: String}, ${count: int} files'
+  /// en: '${size: String}, files: ${count: int}'
   String inFilesPlural({required String size, required int count}) =>
-      TranslationOverrides.string(_root.$meta, 'settings.cache.inFilesPlural', {'size': size, 'count': count}) ?? '${size}, ${count} files';
+      TranslationOverrides.string(_root.$meta, 'settings.cache.inFilesPlural', {'size': size, 'count': count}) ?? '${size}, files: ${count}';
 
   /// en: '${size: String}, 1 file'
   String inFileSingular({required String size}) =>
@@ -4453,14 +4441,14 @@ class Translations$settings$itemFilters$en {
   String get removeMarked =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarked', {}) ?? 'Completely hide items which match Marked filters';
 
-  /// en: 'Remove favourited items'
-  String get removeFavourited => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeFavourited', {}) ?? 'Remove favourited items';
+  /// en: 'Hide favourited items'
+  String get removeFavourited => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeFavourited', {}) ?? 'Hide favourited items';
 
-  /// en: 'Remove snatched items'
-  String get removeSnatched => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeSnatched', {}) ?? 'Remove snatched items';
+  /// en: 'Hide downloaded items'
+  String get removeSnatched => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeSnatched', {}) ?? 'Hide downloaded items';
 
-  /// en: 'Remove AI items'
-  String get removeAI => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeAI', {}) ?? 'Remove AI items';
+  /// en: 'Hide AI-tagged items'
+  String get removeAI => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeAI', {}) ?? 'Hide AI-tagged items';
 }
 
 // Path: settings.sync
@@ -4541,9 +4529,9 @@ class Translations$settings$sync$en {
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText3', {}) ??
       'Example: You have X amount of favourites, set this field to 100, sync will start from item #100 and go until it reaches X';
 
-  /// en: 'Order of snatched: From oldest (0) to newest (X)'
+  /// en: 'Order of favourites: From oldest (0) to newest (X)'
   String get syncFavsFromHelpText4 =>
-      TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText4', {}) ?? 'Order of snatched: From oldest (0) to newest (X)';
+      TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText4', {}) ?? 'Order of favourites: From oldest (0) to newest (X)';
 
   /// en: 'Send snatched history'
   String get sendSnatchedHistory => TranslationOverrides.string(_root.$meta, 'settings.sync.sendSnatchedHistory', {}) ?? 'Send snatched history';
@@ -4620,10 +4608,10 @@ class Translations$settings$sync$en {
   /// en: 'Tags sync mode'
   String get tagsSyncMode => TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncMode', {}) ?? 'Tags sync mode';
 
-  /// en: 'Preserve type: If the tag exists with a tag type on the other device and it doesn't on this device it will be skipped'
+  /// en: 'Preserve type: Do not overwrite an existing known tag type with an unknown type during import'
   String get tagsSyncModePreferTypeIfNone =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncModePreferTypeIfNone', {}) ??
-      'Preserve type: If the tag exists with a tag type on the other device and it doesn\'t on this device it will be skipped';
+      'Preserve type: Do not overwrite an existing known tag type with an unknown type during import';
 
   /// en: 'Overwrite: All tags will be added, if a tag and tag type exists on the other device it will be overwritten'
   String get tagsSyncModeOverwrite =>
@@ -5257,14 +5245,12 @@ class Translations$preview$error$en {
   String loadingPage({required int pageNum}) =>
       TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? 'Loading page #${pageNum}…';
 
-  /// en: '(one) {Started ${seconds} second ago} (few) {Started ${seconds} seconds ago} (many) {Started ${seconds} seconds ago} (other) {Started ${seconds} seconds ago}'
+  /// en: '(one) {Started ${seconds} second ago} (other) {Started ${seconds} seconds ago}'
   String startedAgo({required num seconds}) =>
       TranslationOverrides.plural(_root.$meta, 'preview.error.startedAgo', {'seconds': seconds}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
         seconds,
         one: 'Started ${seconds} second ago',
-        few: 'Started ${seconds} seconds ago',
-        many: 'Started ${seconds} seconds ago',
         other: 'Started ${seconds} seconds ago',
       );
 
@@ -5668,6 +5654,12 @@ extension on Translations {
           'init.loadingBoorus' => TranslationOverrides.string(_root.$meta, 'init.loadingBoorus', {}) ?? 'Loading boorus…',
           'init.loadingTags' => TranslationOverrides.string(_root.$meta, 'init.loadingTags', {}) ?? 'Loading tags…',
           'init.restoringTabs' => TranslationOverrides.string(_root.$meta, 'init.restoringTabs', {}) ?? 'Restoring tabs…',
+          'permissions.localNetworkRequired' =>
+            TranslationOverrides.string(_root.$meta, 'permissions.localNetworkRequired', {}) ??
+                'Local network access is required to open this address. Allow Nearby devices permission, then retry.',
+          'permissions.localNetworkExplanationTitle' =>
+            TranslationOverrides.string(_root.$meta, 'permissions.localNetworkExplanationTitle', {}) ?? 'Local network access',
+          'permissions.localNetworkExplanation' => TranslationOverrides.string(_root.$meta, 'permissions.localNetworkExplanation', {}) ?? 'To open local booru servers or sync with another device, the app needs access to your local network. Android will show this as a “Nearby devices” permission request.',
           'permissions.noAccessToCustomStorageDirectory' =>
             TranslationOverrides.string(_root.$meta, 'permissions.noAccessToCustomStorageDirectory', {}) ?? 'No access to custom storage directory',
           'permissions.pleaseSetStorageDirectoryAgain' =>
@@ -5708,11 +5700,9 @@ extension on Translations {
           'searchHandler.restoredTabsCount' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'searchHandler.restoredTabsCount', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
                   count,
                   one: 'Restored ${count} tab from previous session',
-                  few: 'Restored ${count} tabs from previous session',
-                  many: 'Restored ${count} tabs from previous session',
                   other: 'Restored ${count} tabs from previous session',
                 ),
           'searchHandler.someRestoredTabsHadIssues' =>
@@ -5726,22 +5716,18 @@ extension on Translations {
           'searchHandler.addedTabsCount' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'searchHandler.addedTabsCount', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
                   count,
                   one: 'Added ${count} new tab',
-                  few: 'Added ${count} new tabs',
-                  many: 'Added ${count} new tabs',
                   other: 'Added ${count} new tabs',
                 ),
           'searchHandler.tabsReplaced' => TranslationOverrides.string(_root.$meta, 'searchHandler.tabsReplaced', {}) ?? 'Tabs replaced',
           'searchHandler.receivedTabsCount' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'searchHandler.receivedTabsCount', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
                   count,
                   one: 'Received ${count} tab',
-                  few: 'Received ${count} tabs',
-                  many: 'Received ${count} tabs',
                   other: 'Received ${count} tabs',
                 ),
           'serverFavouritesSync.title' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.title', {}) ?? 'Server favourites sync',
@@ -5992,41 +5978,33 @@ extension on Translations {
           'snatcher.snatchedCount' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'snatcher.snatchedCount', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
                   count,
                   one: 'Snatched: ${count} item',
-                  few: 'Snatched: ${count} items',
-                  many: 'Snatched: ${count} items',
                   other: 'Snatched: ${count} items',
                 ),
           'snatcher.filesAlreadySnatched' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'snatcher.filesAlreadySnatched', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
                   count,
                   one: '${count} file was already snatched',
-                  few: '${count} files were already snatched',
-                  many: '${count} files were already snatched',
                   other: '${count} files were already snatched',
                 ),
           'snatcher.failedToSnatchFiles' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'snatcher.failedToSnatchFiles', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
                   count,
                   one: 'Failed to snatch ${count} file',
-                  few: 'Failed to snatch ${count} files',
-                  many: 'Failed to snatch ${count} files',
                   other: 'Failed to snatch ${count} files',
                 ),
           'snatcher.cancelledFiles' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'snatcher.cancelledFiles', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
                   count,
                   one: 'Cancelled ${count} file',
-                  few: 'Cancelled ${count} files',
-                  many: 'Cancelled ${count} files',
                   other: 'Cancelled ${count} files',
                 ),
           'snatcher.snatchingImages' => TranslationOverrides.string(_root.$meta, 'snatcher.snatchingImages', {}) ?? 'Snatching images',
@@ -6035,11 +6013,9 @@ extension on Translations {
           'snatcher.addedItemsToQueue' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'snatcher.addedItemsToQueue', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
                   count,
                   one: 'Added ${count} item to snatch queue',
-                  few: 'Added ${count} items to snatch queue',
-                  many: 'Added ${count} items to snatch queue',
                   other: 'Added ${count} items to snatch queue',
                 ),
           'multibooru.title' => TranslationOverrides.string(_root.$meta, 'multibooru.title', {}) ?? 'Multibooru',
@@ -6093,7 +6069,7 @@ extension on Translations {
           'tabs.keepLastDuplicateTabs' => TranslationOverrides.string(_root.$meta, 'tabs.keepLastDuplicateTabs', {}) ?? 'Keep last',
           'tabs.skipDuplicateTabDelete' => TranslationOverrides.string(_root.$meta, 'tabs.skipDuplicateTabDelete', {}) ?? 'Skip',
           'tabs.shuffleTabs' => TranslationOverrides.string(_root.$meta, 'tabs.shuffleTabs', {}) ?? 'Shuffle tabs',
-          'tabs.tabRandomlyShuffled' => TranslationOverrides.string(_root.$meta, 'tabs.tabRandomlyShuffled', {}) ?? 'Tab randomly shuffled',
+          'tabs.tabRandomlyShuffled' => TranslationOverrides.string(_root.$meta, 'tabs.tabRandomlyShuffled', {}) ?? 'Tabs randomly shuffled',
           'tabs.tabOrderSaved' => TranslationOverrides.string(_root.$meta, 'tabs.tabOrderSaved', {}) ?? 'Tab order saved',
           'tabs.scrollToCurrent' => TranslationOverrides.string(_root.$meta, 'tabs.scrollToCurrent', {}) ?? 'Scroll to current tab',
           'tabs.scrollToTop' => TranslationOverrides.string(_root.$meta, 'tabs.scrollToTop', {}) ?? 'Scroll to top',
@@ -6144,11 +6120,9 @@ extension on Translations {
           'tabs.areYouSureDeleteTabs' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'tabs.areYouSureDeleteTabs', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
                   count,
                   one: 'Are you sure you want to delete ${count} tab?',
-                  few: 'Are you sure you want to delete ${count} tabs?',
-                  many: 'Are you sure you want to delete ${count} tabs?',
                   other: 'Are you sure you want to delete ${count} tabs?',
                 ),
           'tabs.filters.loaded' => TranslationOverrides.string(_root.$meta, 'tabs.filters.loaded', {}) ?? 'Loaded',
@@ -6209,22 +6183,18 @@ extension on Translations {
           'history.deleteItemsConfirm' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'history.deleteItemsConfirm', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
                   count,
                   one: 'Are you sure you want to delete ${count} item?',
-                  few: 'Are you sure you want to delete ${count} items?',
-                  many: 'Are you sure you want to delete ${count} items?',
                   other: 'Are you sure you want to delete ${count} items?',
                 ),
           'history.clearSelection' => TranslationOverrides.string(_root.$meta, 'history.clearSelection', {}) ?? 'Clear selection',
           'history.deleteItems' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'history.deleteItems', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
                   count,
                   one: 'Delete ${count} item',
-                  few: 'Delete ${count} items',
-                  many: 'Delete ${count} items',
                   other: 'Delete ${count} items',
                 ),
           'webview.title' => TranslationOverrides.string(_root.$meta, 'webview.title', {}) ?? 'Webview',
@@ -6485,15 +6455,15 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.interface.showSearchBarInPreviewGrid', {}) ?? 'Show search bar in preview grid',
           'settings.interface.moveInputToTopInSearchView' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.moveInputToTopInSearchView', {}) ?? 'Move input to top in search view',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.interface.searchViewQuickActionsPanel' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.searchViewQuickActionsPanel', {}) ?? 'Search view quick actions panel',
           'settings.interface.searchViewInputAutofocus' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.searchViewInputAutofocus', {}) ?? 'Search view input autofocus',
           'settings.interface.disableVibration' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.disableVibration', {}) ?? 'Disable vibration',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.interface.disableVibrationSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.disableVibrationSubtitle', {}) ??
                 'May still happen on some actions even when disabled',
@@ -6882,11 +6852,11 @@ extension on Translations {
           'settings.database.appRestartRequired' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.appRestartRequired', {}) ?? 'An app restart is required!',
           'settings.database.clearSnatchedItems' =>
-            TranslationOverrides.string(_root.$meta, 'settings.database.clearSnatchedItems', {}) ?? 'Clear snatched items',
+            TranslationOverrides.string(_root.$meta, 'settings.database.clearSnatchedItems', {}) ?? 'Clear download history',
           'settings.database.clearAllSnatchedConfirm' =>
-            TranslationOverrides.string(_root.$meta, 'settings.database.clearAllSnatchedConfirm', {}) ?? 'Clear all snatched items?',
+            TranslationOverrides.string(_root.$meta, 'settings.database.clearAllSnatchedConfirm', {}) ?? 'Clear all download history?',
           'settings.database.snatchedItemsCleared' =>
-            TranslationOverrides.string(_root.$meta, 'settings.database.snatchedItemsCleared', {}) ?? 'Snatched items cleared',
+            TranslationOverrides.string(_root.$meta, 'settings.database.snatchedItemsCleared', {}) ?? 'Download history cleared',
           'settings.database.appRestartMayBeRequired' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.appRestartMayBeRequired', {}) ?? 'An app restart may be required!',
           'settings.database.clearFavouritedItems' =>
@@ -6924,7 +6894,7 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.database.updateSankakuUrls', {}) ?? 'Update Sankaku URLs',
           'settings.database.updating' => ({
             required int count,
-          }) => TranslationOverrides.string(_root.$meta, 'settings.database.updating', {'count': count}) ?? 'Updating ${count} items:',
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.updating', {'count': count}) ?? 'Updating items: ${count}',
           'settings.database.left' => ({
             required int count,
           }) => TranslationOverrides.string(_root.$meta, 'settings.database.left', {'count': count}) ?? 'Left: ${count}',
@@ -7199,10 +7169,10 @@ extension on Translations {
           'settings.cache.cacheStats' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheStats', {}) ?? 'Cache stats:',
           'settings.cache.loading' => TranslationOverrides.string(_root.$meta, 'settings.cache.loading', {}) ?? 'Loading…',
           'settings.cache.empty' => TranslationOverrides.string(_root.$meta, 'settings.cache.empty', {}) ?? 'Empty',
-          'settings.cache.inFilesPlural' => ({
-            required String size,
-            required int count,
-          }) => TranslationOverrides.string(_root.$meta, 'settings.cache.inFilesPlural', {'size': size, 'count': count}) ?? '${size}, ${count} files',
+          'settings.cache.inFilesPlural' =>
+            ({required String size, required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.cache.inFilesPlural', {'size': size, 'count': count}) ??
+                '${size}, files: ${count}',
           'settings.cache.inFileSingular' => ({
             required String size,
           }) => TranslationOverrides.string(_root.$meta, 'settings.cache.inFileSingular', {'size': size}) ?? '${size}, 1 file',
@@ -7242,10 +7212,10 @@ extension on Translations {
           'settings.itemFilters.removeMarked' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarked', {}) ?? 'Completely hide items which match Marked filters',
           'settings.itemFilters.removeFavourited' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeFavourited', {}) ?? 'Remove favourited items',
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeFavourited', {}) ?? 'Hide favourited items',
           'settings.itemFilters.removeSnatched' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeSnatched', {}) ?? 'Remove snatched items',
-          'settings.itemFilters.removeAI' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeAI', {}) ?? 'Remove AI items',
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeSnatched', {}) ?? 'Hide downloaded items',
+          'settings.itemFilters.removeAI' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeAI', {}) ?? 'Hide AI-tagged items',
           'settings.sync.title' => TranslationOverrides.string(_root.$meta, 'settings.sync.title', {}) ?? 'Sync',
           'settings.sync.dbError' => TranslationOverrides.string(_root.$meta, 'settings.sync.dbError', {}) ?? 'Database must be enabled to use Sync',
           'settings.sync.errorTitle' => TranslationOverrides.string(_root.$meta, 'settings.sync.errorTitle', {}) ?? 'Error!',
@@ -7280,7 +7250,8 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText3', {}) ??
                 'Example: You have X amount of favourites, set this field to 100, sync will start from item #100 and go until it reaches X',
           'settings.sync.syncFavsFromHelpText4' =>
-            TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText4', {}) ?? 'Order of snatched: From oldest (0) to newest (X)',
+            TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText4', {}) ??
+                'Order of favourites: From oldest (0) to newest (X)',
           'settings.sync.sendSnatchedHistory' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.sendSnatchedHistory', {}) ?? 'Send snatched history',
           'settings.sync.snatchedCount' => ({
@@ -7323,7 +7294,7 @@ extension on Translations {
           'settings.sync.tagsSyncMode' => TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncMode', {}) ?? 'Tags sync mode',
           'settings.sync.tagsSyncModePreferTypeIfNone' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncModePreferTypeIfNone', {}) ??
-                'Preserve type: If the tag exists with a tag type on the other device and it doesn\'t on this device it will be skipped',
+                'Preserve type: Do not overwrite an existing known tag type with an unknown type during import',
           'settings.sync.tagsSyncModeOverwrite' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncModeOverwrite', {}) ??
                 'Overwrite: All tags will be added, if a tag and tag type exists on the other device it will be overwritten',
@@ -7468,13 +7439,13 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'comments.noBooruAPIForComments', {}) ??
                 'This Booru doesn\'t have comments or there is no API for them',
           'pageChanger.title' => TranslationOverrides.string(_root.$meta, 'pageChanger.title', {}) ?? 'Page changer',
+          _ => null,
+        } ??
+        switch (path) {
           'pageChanger.pageLabel' => TranslationOverrides.string(_root.$meta, 'pageChanger.pageLabel', {}) ?? 'Page #',
           'pageChanger.delayBetweenLoadings' =>
             TranslationOverrides.string(_root.$meta, 'pageChanger.delayBetweenLoadings', {}) ?? 'Delay between loadings (ms)',
           'pageChanger.delayInMs' => TranslationOverrides.string(_root.$meta, 'pageChanger.delayInMs', {}) ?? 'Delay in ms',
-          _ => null,
-        } ??
-        switch (path) {
           'pageChanger.currentPage' => ({
             required int number,
           }) => TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? 'Current page #${number}',
@@ -7512,11 +7483,9 @@ extension on Translations {
           'tagsManager.deleteTags' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'tagsManager.deleteTags', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
                   count,
                   one: 'Delete ${count} tag',
-                  few: 'Delete ${count} tags',
-                  many: 'Delete ${count} tags',
                   other: 'Delete ${count} tags',
                 ),
           'tagsManager.deleteTagsTitle' => TranslationOverrides.string(_root.$meta, 'tagsManager.deleteTagsTitle', {}) ?? 'Delete tags',
@@ -7812,11 +7781,9 @@ extension on Translations {
           'gallery.sources' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'gallery.sources', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
                   count,
                   one: 'Source',
-                  few: 'Sources',
-                  many: 'Sources',
                   other: 'Sources',
                 ),
           'galleryButtons.snatch' => TranslationOverrides.string(_root.$meta, 'galleryButtons.snatch', {}) ?? 'Snatch',
@@ -7906,11 +7873,9 @@ extension on Translations {
           'preview.error.startedAgo' =>
             ({required num seconds}) =>
                 TranslationOverrides.plural(_root.$meta, 'preview.error.startedAgo', {'seconds': seconds}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
                   seconds,
                   one: 'Started ${seconds} second ago',
-                  few: 'Started ${seconds} seconds ago',
-                  many: 'Started ${seconds} seconds ago',
                   other: 'Started ${seconds} seconds ago',
                 ),
           'preview.error.tapToRetryIfStuck' =>
