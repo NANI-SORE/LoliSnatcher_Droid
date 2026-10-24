@@ -20,6 +20,7 @@ import 'package:lolisnatcher/src/pages/settings/booru_edit_utils.dart';
 import 'package:lolisnatcher/src/pages/settings/booru_overrides_page.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/services/local_network_permission.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
@@ -297,6 +298,10 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
     if (!ContentPolicy.isBooruAllowed(testBooru)) {
       _showDetailsForError();
       showSourceUnavailableMessage();
+      return false;
+    }
+
+    if (!await LocalNetworkPermission.ensureForUrl(formController.url.text, retry: true)) {
       return false;
     }
 
