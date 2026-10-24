@@ -1,6 +1,7 @@
 package com.noaisu.loliSnatcher
 
 import android.annotation.SuppressLint
+import android.Manifest
 import android.app.Activity
 import android.content.ComponentName
 import android.content.ContentResolver
@@ -39,6 +40,9 @@ import java.util.*
 import java.util.concurrent.Executors
 
 class MainActivity: FlutterFragmentActivity() {
+    private val localNetworkPermissionRequestCode = 3701
+    private var localNetworkPermissionResult: MethodChannel.Result? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         CrashDetector.initialize(applicationContext)
         super.onCreate(savedInstanceState)
@@ -138,6 +142,21 @@ class MainActivity: FlutterFragmentActivity() {
                     "getPicturesPath" -> result.success(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)?.absolutePath)
                     "getCachePath" -> result.success(applicationContext.cacheDir.absolutePath)
                     "getSdkVersion" -> result.success(Build.VERSION.SDK_INT)
+                    "hasLocalNetworkPermission" -> result.success(
+                        Build.VERSION.SDK_INT < 37 ||
+                            checkSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK) == PackageManager.PERMISSION_GRANTED
+                    )
+                    "requestLocalNetworkPermission" -> {
+                        if (Build.VERSION.SDK_INT < 37 ||
+                            checkSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK) == PackageManager.PERMISSION_GRANTED) {
+                            result.success(true)
+                        } else if (localNetworkPermissionResult != null) {
+                            result.error("PERMISSION_REQUEST_IN_PROGRESS", "Local network permission request already in progress", null)
+                        } else {
+                            localNetworkPermissionResult = result
+                            requestPermissions(arrayOf(Manifest.permission.ACCESS_LOCAL_NETWORK), localNetworkPermissionRequestCode)
+                        }
+                    }
                     "writeImage" -> {
                         val imageBytes = call.argument<ByteArray>("imageData")
                         val fileName = call.argument<String>("fileName")
@@ -423,10 +442,12 @@ class MainActivity: FlutterFragmentActivity() {
                                 methodResult = result
                                 requestDirectoryAccess()
                             } else {
+                                var testFile: DocumentFile? = null
                                 try {
                                     val cr = this.contentResolver
                                     val docFile: DocumentFile? = DocumentFile.fromTreeUri(applicationContext, Uri.parse(uri))
                                     val newFile = docFile?.createFile("text/*", "testpersist")
+                                    testFile = newFile
                                     if (newFile == null) {
                                         result.error("FILE_NOT_FOUND", "File not found", null)
                                     } else {
@@ -435,15 +456,19 @@ class MainActivity: FlutterFragmentActivity() {
                                         if (stream == null) {
                                             result.error("IO_ERROR", "IO error", null)
                                         } else {
-                                            stream.write(output.toByteArray())
-                                            stream.close()
-                                            newFile.delete()
+                                            stream.use { it.write(output.toByteArray()) }
                                             result.success("ok")
                                         }
                                     }
                                 } catch (e: Exception) {
                                     Log.e("MainActivity", "Error testing SAF", e)
                                     result.error("ERROR", "Error testing SAF", null)
+                                } finally {
+                                    try {
+                                        testFile?.delete()
+                                    } catch (e: Exception) {
+                                        Log.e("MainActivity", "Error cleaning up SAF test file", e)
+                                    }
                                 }
                             }
                         } else {
@@ -544,6 +569,22 @@ class MainActivity: FlutterFragmentActivity() {
         }
 
         startActivityForResult(intent, 1)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == localNetworkPermissionRequestCode) {
+            localNetworkPermissionResult?.success(
+                checkSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK) == PackageManager.PERMISSION_GRANTED
+            )
+            localNetworkPermissionResult = null
+        }
+    }
+
+    override fun onDestroy() {
+        localNetworkPermissionResult?.error("ACTIVITY_DESTROYED", "Local network permission request was interrupted", null)
+        localNetworkPermissionResult = null
+        super.onDestroy()
     }
 
     @RequiresApi(Build.VERSION_CODES.KITKAT)

@@ -63,7 +63,7 @@
     "pageNumber": "Pagina #",
     "tags": "Labels",
     "type": "Type",
-    "name": "Naam\n",
+    "name": "Naam",
     "address": "Adres",
     "username": "Gebruikersnaam",
     "favourites": "Favorieten",
@@ -114,8 +114,6 @@
         "tabsRestored": "Tabbladen hersteld",
         "restoredTabsCount(param=count)": {
             "one": "${count} tabblad hersteld van vorige sessie",
-            "few": "${count} tabbladen hersteld van vorige sessie",
-            "many": "${count} tabbladen hersteld van vorige sessie",
             "other": "${count} tabbladen hersteld van vorige sessie"
         },
         "someRestoredTabsHadIssues": "Sommige herstelde tabbladen hadden onbekende boorus of gebroken karakters.",
@@ -124,15 +122,11 @@
         "tabsMerged": "Tabbladen samengevoegd",
         "addedTabsCount(param=count)": {
             "one": "${count} nieuwe tabbladen toegevoegd",
-            "few": "${count} nieuwe tabbladen toegevoegd",
-            "many": "${count} nieuwe tabbladen toegevoegd",
             "other": "${count} nieuwe tabbladen toegevoegd"
         },
         "tabsReplaced": "Tabbladen vervangen",
         "receivedTabsCount(param=count)": {
             "one": "${count} tabblad ontvangen",
-            "few": "${count} tabbladen ontvangen",
-            "many": "${count} tabbladen ontvangen",
             "other": "${count} tabbladen ontvangen"
         }
     },
@@ -152,26 +146,18 @@
         "itemsSnatched": "Items gedownload",
         "snatchedCount(param=count)": {
             "one": "Gedownload: ${count} item",
-            "few": "Gedownload: ${count} items",
-            "many": "Gedownload: ${count} items",
             "other": "Gedownload: ${count} items"
         },
         "filesAlreadySnatched(param=count)": {
             "one": "${count} bestand is al gedownload",
-            "few": "${count} bestanden zijn al gedownload",
-            "many": "${count} bestanden zijn al gedownload",
             "other": "${count} bestanden zijn al gedownload"
         },
         "failedToSnatchFiles(param=count)": {
             "one": "${count} bestand downloaden mislukt",
-            "few": "${count} bestanden downloaden mislukt",
-            "many": "${count} bestanden downloaden mislukt",
             "other": "${count} bestanden downloaden mislukt"
         },
         "cancelledFiles(param=count)": {
             "one": "${count} bestand geannuleerd",
-            "few": "${count} bestanden geannuleerd",
-            "many": "${count} bestanden geannuleerd",
             "other": "${count} bestanden geannuleerd"
         },
         "snatchingImages": "Afbeeldingen downloaden",
@@ -179,8 +165,6 @@
         "addedItemToQueue": "Item toegevoegd aan downloadwachtrij",
         "addedItemsToQueue(param=count)": {
             "one": "${count} item toegevoegd aan downloadwachtrij ",
-            "few": "${count} items toegevoegd aan downloadwachtrij",
-            "many": "${count} items toegevoegd aan downloadwachtrij",
             "other": "${count} items toegevoegd aan downloadwachtrij"
         }
     },
@@ -235,8 +219,12 @@
         "sortAlphabeticallyReversed": "Sorteer alfabetisch (omgekeerd)",
         "onTheBottomOfPage": "Beneden de pagina: ",
         "deleteSelectedTabs": "Wis geselecteerde tabbladen",
+        "specialFilters": "Speciale filters:",
+        "notLoadedItalic": "Tabbladen met schuine text zijn niet geladen",
+        "noTabsFound": "Tabbladen niet gevonde",
         "copy": "Kopieer",
         "moveAction": "Verplaats",
+        "remove": "Wis",
         "shuffle": "Husselen",
         "sort": "Sorteer",
         "byBooru": "Van booru",
@@ -244,8 +232,6 @@
         "reversed": "(omgekeerd)",
         "areYouSureDeleteTabs(param=count)": {
             "one": "Weet u zeker u wilt ${count} tabblad wissen?",
-            "few": "Weet u zeker u wilt ${count} tabbladen wissen?",
-            "many": "Weet u zeker u wilt ${count} tabbladen wissen?",
             "other": "Weet u zeker u wilt ${count} tabbladen wissen?"
         },
         "filters": {
@@ -292,33 +278,81 @@
         "clearSelection": "Leeg selectie",
         "deleteItems(param=count)": {
             "one": "Wis ${count} item",
-            "few": "Wis ${count} items",
-            "many": "Wis ${count} items",
             "other": "Wis ${count} items"
         }
     },
     "webview": {
         "navigation": {
-            "enterCustomUrl": "Voer aangepaste URL in"
+            "enterUrlLabel": "Voer een URL in",
+            "enterCustomUrl": "Voer aangepaste URL in",
+            "listCookies": "Lijst met cookies",
+            "clearCookies": "Leeg cookies",
+            "getFavicon": "Krijg favicon",
+            "noFaviconFound": "Favicon niet gevonden",
+            "textAboveSelectable": "(bovenstaande tekst is selecteerbar)",
+            "copyUrl": "Kopieer URL",
+            "copiedUrlToClipboard": "URL naar klembord gekopieerd",
+            "history": "Geschiedenis"
         }
     },
     "settings": {
+        "title": "Instellingen",
+        "language": {
+            "title": "Taal",
+            "system": "Systeem",
+            "helpUsTranslate": "Help ons vertalen"
+        },
         "booru": {
+            "defaultTags": "Standaard labels",
             "itemsPerPage": "Items downloaded per pagina",
             "itemsPerPageTip": "Soms zullen boorus dit weigeren",
             "addBooru": "Booru configuratie toevoegen",
+            "shareBooru": "Deel Booru configuratie",
+            "booruSharing": "Booru delen",
             "addedBoorus": "Boorus toegevoegd",
+            "editBooru": "Bewerk Booru configuratie",
+            "importBooru": "Importeer Booru configuratie van klembord",
+            "onlyLSURLsSupported": "Alleen loli.snatcher URLs worden ondersteund",
             "deleteBooru": "Wis Booru configuratie",
             "deleteBooruError": "Er ging iets mis tijdens het wissen van een Booru configuratie!",
             "booruDeleted": "Booru configuratie gewist",
-            "cantDeleteThisBooru": "Kan deze Booru niet wissen!"
+            "booruDropdownInfo": "Na het opslaan wordt de geselecteerde booru de standaard booru.\n\nDe standaard booru verschijnt als eerste in dropdown-menu's",
+            "changeDefaultBooru": "Verander standaard Booru?",
+            "changeTo": "Verander naar: ",
+            "keepCurrentBooru": "Druk op [nee] om de huidige te behouden: ",
+            "changeToNewBooru": "Druk op [ja] om te veranderen naar: ",
+            "booruConfigLinkCopied": "Booru configuratielink naar klembord gekopieerd",
+            "noBooruSelected": "Geen Booru geselecteerd!",
+            "cantDeleteThisBooru": "Kan deze Booru niet wissen!",
+            "removeRelatedTabsFirst": "Wis gerelateerde tabbladen eerst"
         },
         "booruEditor": {
+            "title": "Booru-bewerker",
+            "testBooruFailedTitle": "Booru test mislukt",
+            "saveBooru": "Sla Booru op",
+            "runningTest": "Test lopende…",
+            "booruConfigExistsError": "Deze Booru configuratie bestaat al",
+            "booruSameNameExistsError": "Een Booru configuratie met dezelfde naam bestaat al",
+            "booruSameUrlExistsError": "Een Booru configuratie met dezelfde URL bestaat al",
+            "thisBooruConfigWontBeAdded": "Deze booru configuratie zal niet worden toegevoegd",
+            "booruConfigSaved": "Booru configuratie opgeslagen",
+            "failedVerifyApiHydrus": "Verifiëren van API toegang tot Hydrus mislukt",
             "accessKeyRequestedTitle": "Toegangssleutel aangevraagd",
             "accessKeyFailedTitle": "Toegangssleutel ophalen mislukt",
-            "accessKeyFailedMsg": "Heeft u het aanvraagscherm open in Hydrus?"
+            "accessKeyFailedMsg": "Heeft u het aanvraagscherm open in Hydrus?",
+            "booruName": "Booru naam",
+            "booruNameRequired": "Booru naam is vereist!",
+            "booruUrl": "Booru URL",
+            "booruUrlRequired": "Booru URL is vereist!",
+            "booruType": "Booru type",
+            "booruDefTags": "Standaard labels"
+        },
+        "interface": {
+            "appUIMode": "App UI modus",
+            "appUIModeWarningTitle": "App UI modus"
         },
         "theme": {
+            "android12PlusOnly": "Alleen voor Android 12+",
             "setCustomMascot": "Stel aangepaste mascotte in",
             "removeCustomMascot": "Verwijder aangepaste mascotte",
             "custom": "Gepersonaliseerd",
@@ -328,7 +362,21 @@
         },
         "viewer": {
             "changePageButtonsPosition": "Verplaats positie van knoppen op pagina",
-            "usingCustomAnimation": "Aangepaste animatie van toepassing"
+            "shareActionsFileURL": "- Bestand URL - deelt een directe link met het originele bestand (dit werkt mogelijk niet op alle websites)",
+            "shareActionsPostURLFileURLFileWithTags": "- Bericht URL/Bestand URL/Bestand met labels - deelt de URL/Bestand en labels die te selecteren zijn",
+            "shareActionsFile": "- Bestand - deelt het bestand zelf, dit kan even duren om te laden, voortgang zal worden laten zien op de knop om te delen",
+            "shareActionsHydrus": "- Hydrus - om te plaatsen en importeren wordt de url naar Hydrus verzonden",
+            "usingCustomAnimation": "Aangepaste animatie van toepassing",
+            "shareActionValues": {
+                "ask": "Vraag",
+                "fileUrl": "Bestand URL",
+                "fileUrlWithTags": "Bestand URL met labels",
+                "file": "Bestand",
+                "fileWithTags": "Bestand met labels"
+            }
+        },
+        "video": {
+            "autoplayVideos": "Video"
         },
         "database": {
             "searchQuery": "Zoekopdracht",
@@ -336,14 +384,39 @@
             "searchHistoryTapInfo": "Druk optie voor actie (wis, favoriet…)",
             "deleteDatabase": "Wis database",
             "deleteDatabaseConfirm": "Wis database?",
-            "databaseDeleted": "Database gewist!"
+            "databaseDeleted": "Database gewist!",
+            "appRestartRequired": "De app moet opnieuw opgestart worden!",
+            "appRestartMayBeRequired": "De app moet mogelijk opnieuw opgestart worden!"
+        },
+        "backupAndRestore": {
+            "duplicateFileDetectedTitle": "Dubbel bestand gedetecteerd!",
+            "failedToGetBackupPath": "Pad naar reservekopie ophalen mislukt",
+            "restoreInfoMsg": "Bestanden moeten in de bron map staan",
+            "backupSettingsError": "Reservekopie van instellingen maken mislukt",
+            "restoreSettingsError": "Instelling herstellen mislukt",
+            "backupBoorusError": "Reservekopie van boorus maken mislukt",
+            "restoreBoorusError": "Boorus herstellen mislukt",
+            "backupDatabaseError": "Reserverkopie van database maken mislukt",
+            "restoreDatabaseError": "Database herstellen mislukt",
+            "databaseFileNotFound": "Database bestand kon niet gevonden of gelezen worden!",
+            "backupTagsError": "Reserverkopie van labels maken mislukt",
+            "restoreTagsError": "Labels herstellen mislukt",
+            "tagsFileNotFound": "Bestand met labels kon niet gevonden of gelezen worden!"
         },
         "network": {
             "allCookiesDeleted": "Alle cookies verwijderd"
         },
+        "privacy": {
+            "autoLockAfter": "Achteraf automatisch vergrendelen",
+            "autoLockAfterTip": "in seconden, 0 om uit te schakelen",
+            "appDisplayName": "App weergavenaam",
+            "appAliasChanged": "App naam veranderd",
+            "appAliasChangeFailed": "App-naam veranderen mislukt. Probeer alstublieft opnieuw"
+        },
         "cache": {
             "deleteCacheAfter": "Wis tijdelijk geheugen na:",
-            "neverDeleteDuration": "Nooit"
+            "neverDeleteDuration": "Nooit",
+            "appRestartRequired": "De app moet mogelijk opnieuw opgestart worden!"
         },
         "itemFilters": {
             "title": "Filters",
@@ -359,7 +432,11 @@
             "removeAI": "Verwijder AI items"
         },
         "debug": {
+            "alreadyEnabledSnackbarMsg": "Debug modus is al geactiveerd!",
             "deleteAllCookies": "Wis alle cookies"
+        },
+        "dirPicker": {
+            "failedToCreateDirectory": "Map aanmaken mislukt"
         }
     },
     "pageChanger": {
@@ -368,21 +445,28 @@
         "stopSearching": "Stop met zoeken"
     },
     "tagsManager": {
+        "addTag": "Label toevoegen",
         "add": "Toevoegen",
         "addedATab": "Tabblad toegevoegd",
         "addATab": "Tabblad toevoegen",
         "deleteTags(param=count)": {
             "one": "Wis ${count} label",
-            "few": "Wis ${count} labels",
-            "many": "Wis ${count} labels",
             "other": "Wis ${count} labels"
         },
         "deleteTagsTitle": "Wis labels"
     },
     "tagView": {
         "addedNewTab": "Tabblad toegevoegd:",
+        "addToSearch": "Aan zoeken toevoegen",
         "addedToSearchBar": "Aan zoekbalk toegevoegd:",
+        "addToMarked": "Aan gemarkeerd toevoegen",
+        "addToHidden": "Aan verborgen toevoegen",
         "failedToLoadPreviewPage": "Voorbeeld pagina mislukt te laden"
+    },
+    "pinnedTags": {
+        "all": "Alle",
+        "addTagManually": "Label handmatig toevoegen",
+        "addPinnedTag": "Vastgepinde labels toevoegen"
     },
     "mobileHome": {
         "clearAllRetryableItems": "Maak alle items voor een nieuwe poging vrij"
@@ -400,6 +484,8 @@
     },
     "viewer": {
         "appBar": {
+            "alreadyDownloadingThisFile": "Het huidige gedeelde bestand wordt al gedownload, wil je dit stoppen?",
+            "alreadyDownloadingFile": "Het huidige gedeelde bestand wordt al gedownload, wil je dit stoppen en een nieuw bestand delen?",
             "abort": "Afbreken"
         }
     },
@@ -411,5 +497,8 @@
             "failedToLoadItemData": "Kon item data niet laden",
             "loadingItemData": "Item data laden…"
         }
+    },
+    "tagType": {
+        "artist": "Artiest"
     }
 }
