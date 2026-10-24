@@ -10,6 +10,7 @@ import 'package:alice_lightweight/helper/alice_save_helper.dart';
 import 'package:fvp/fvp.dart' as fvp;
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
+import 'package:lolisnatcher/src/pages/settings/language_page.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import 'package:lolisnatcher/gen/strings.g.dart';
@@ -1091,11 +1092,10 @@ class SettingsHandler {
   }
 
   Future<void> setLocale(AppLocale? locale) async {
-    if (locale == null) {
-      await LocaleSettings.useDeviceLocale();
-    } else {
-      await LocaleSettings.setLocale(locale);
-    }
+    final enabledLocale = AppLocaleExt.allowedValues.contains(locale) ? locale : null;
+    SX.locale.state.value = enabledLocale;
+    // Device changes are handled by MainApp so they also respect the allowlist.
+    await LocaleSettings.setLocale(enabledLocale ?? AppLocaleExt.findDeviceLocale());
   }
 
   Future<void> initialize() async {

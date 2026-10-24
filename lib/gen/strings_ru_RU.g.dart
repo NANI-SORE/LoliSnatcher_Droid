@@ -6,6 +6,7 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
+import 'package:lolisnatcher/src/utils/localization_plural_rules.dart';
 import 'package:slang/generated.dart';
 import 'package:slang/overrides.dart';
 
@@ -355,6 +356,17 @@ class _Translations$permissions$ru_RU extends Translations$permissions$en {
 
   // Translations
   @override
+  String get localNetworkRequired =>
+      TranslationOverrides.string(_root.$meta, 'permissions.localNetworkRequired', {}) ??
+      'Для открытия этого адреса нужен доступ к локальной сети. Разреши доступ к устройствам поблизости и повтори попытку.';
+  @override
+  String get localNetworkExplanationTitle =>
+      TranslationOverrides.string(_root.$meta, 'permissions.localNetworkExplanationTitle', {}) ?? 'Доступ к локальной сети';
+  @override
+  String get localNetworkExplanation =>
+      TranslationOverrides.string(_root.$meta, 'permissions.localNetworkExplanation', {}) ??
+      'Для открытия локальных серверов и синхронизации с другими устройствами нужен доступ к твоей локальной сети. Для этого нужно дать разрешение использовать «Устройства поблизости».';
+  @override
   String get noAccessToCustomStorageDirectory =>
       TranslationOverrides.string(_root.$meta, 'permissions.noAccessToCustomStorageDirectory', {}) ?? 'Нет доступа к выбранной папке хранилища';
   @override
@@ -428,7 +440,7 @@ class _Translations$searchHandler$ru_RU extends Translations$searchHandler$en {
   @override
   String restoredTabsCount({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'searchHandler.restoredTabsCount', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
         count,
         one: 'Восстановлена ${count} вкладка из предыдущей сессии',
         few: 'Восстановлено ${count} вкладки из предыдущей сессии',
@@ -454,7 +466,7 @@ class _Translations$searchHandler$ru_RU extends Translations$searchHandler$en {
   @override
   String addedTabsCount({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'searchHandler.addedTabsCount', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
         count,
         one: 'Добавлена ${count} новая вкладка',
         few: 'Добавлены ${count} новых вкладки',
@@ -466,7 +478,7 @@ class _Translations$searchHandler$ru_RU extends Translations$searchHandler$en {
   @override
   String receivedTabsCount({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'searchHandler.receivedTabsCount', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
         count,
         one: 'Получена ${count} вкладка',
         few: 'Получены ${count} вкладки',
@@ -515,7 +527,7 @@ class _Translations$snatcher$ru_RU extends Translations$snatcher$en {
   @override
   String snatchedCount({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.snatchedCount', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
         count,
         one: 'Скачано: ${count} элемент',
         few: 'Скачано: ${count} элемента',
@@ -525,7 +537,7 @@ class _Translations$snatcher$ru_RU extends Translations$snatcher$en {
   @override
   String filesAlreadySnatched({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.filesAlreadySnatched', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
         count,
         one: '${count} файл уже был скачан',
         few: '${count} файла уже были скачаны',
@@ -535,7 +547,7 @@ class _Translations$snatcher$ru_RU extends Translations$snatcher$en {
   @override
   String failedToSnatchFiles({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.failedToSnatchFiles', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
         count,
         one: 'Не удалось скачать ${count} файл',
         few: 'Не удалось скачать ${count} файла',
@@ -545,7 +557,7 @@ class _Translations$snatcher$ru_RU extends Translations$snatcher$en {
   @override
   String cancelledFiles({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.cancelledFiles', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
         count,
         one: 'Отменён ${count} файл',
         few: 'Отменено ${count} файла',
@@ -561,7 +573,7 @@ class _Translations$snatcher$ru_RU extends Translations$snatcher$en {
   @override
   String addedItemsToQueue({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.addedItemsToQueue', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
         count,
         one: 'Добавлен ${count} элемент в очередь загрузки',
         few: 'Добавлено ${count} элемента в очередь загрузки',
@@ -781,7 +793,7 @@ class _Translations$tabs$ru_RU extends Translations$tabs$en {
   @override
   String areYouSureDeleteTabs({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'tabs.areYouSureDeleteTabs', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
         count,
         one: 'Ты уверен, что хочешь удалить ${count} вкладку?',
         few: 'Ты уверен, что хочешь удалить ${count} вкладки?',
@@ -838,7 +850,7 @@ class _Translations$history$ru_RU extends Translations$history$en {
   @override
   String deleteItemsConfirm({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'history.deleteItemsConfirm', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
         count,
         one: 'Ты уверен, что хочешь удалить ${count} элемент?',
         few: 'Ты уверен, что хочешь удалить ${count} элемента?',
@@ -850,7 +862,7 @@ class _Translations$history$ru_RU extends Translations$history$en {
   @override
   String deleteItems({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'history.deleteItems', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
         count,
         one: 'Удалить ${count} элемент',
         few: 'Удалить ${count} элемента',
@@ -1106,7 +1118,7 @@ class _Translations$tagsManager$ru_RU extends Translations$tagsManager$en {
   @override
   String deleteTags({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'tagsManager.deleteTags', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
         count,
         one: 'Удалить ${count} тег',
         few: 'Удалить ${count} тега',
@@ -1606,7 +1618,7 @@ class _Translations$gallery$ru_RU extends Translations$gallery$en {
   @override
   String sources({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'gallery.sources', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
         count,
         one: 'Источник',
         few: 'Источники',
@@ -2805,7 +2817,7 @@ class _Translations$settings$database$ru_RU extends Translations$settings$databa
   String get updateSankakuUrls => TranslationOverrides.string(_root.$meta, 'settings.database.updateSankakuUrls', {}) ?? 'Обновить ссылки из Sankaku';
   @override
   String updating({required int count}) =>
-      TranslationOverrides.string(_root.$meta, 'settings.database.updating', {'count': count}) ?? 'Обновление ${count} элементов:';
+      TranslationOverrides.string(_root.$meta, 'settings.database.updating', {'count': count}) ?? 'Обновление элементов: ${count}';
   @override
   String left({required int count}) => TranslationOverrides.string(_root.$meta, 'settings.database.left', {'count': count}) ?? 'Осталось: ${count}';
   @override
@@ -3146,7 +3158,7 @@ class _Translations$settings$backupAndTransfer$ru_RU extends Translations$settin
   @override
   String backupCount({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'settings.backupAndTransfer.backupCount', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
         count,
         one: '${count} резервная копия',
         few: '${count} резервные копии',
@@ -3736,7 +3748,7 @@ class _Translations$settings$cache$ru_RU extends Translations$settings$cache$en 
   String get empty => TranslationOverrides.string(_root.$meta, 'settings.cache.empty', {}) ?? 'Пусто';
   @override
   String inFilesPlural({required String size, required int count}) =>
-      TranslationOverrides.string(_root.$meta, 'settings.cache.inFilesPlural', {'size': size, 'count': count}) ?? '${size}, ${count} файлов';
+      TranslationOverrides.string(_root.$meta, 'settings.cache.inFilesPlural', {'size': size, 'count': count}) ?? '${size}, файлов: ${count}';
   @override
   String inFileSingular({required String size}) =>
       TranslationOverrides.string(_root.$meta, 'settings.cache.inFileSingular', {'size': size}) ?? '${size}, 1 файл';
@@ -4432,7 +4444,7 @@ class _Translations$preview$error$ru_RU extends Translations$preview$error$en {
   @override
   String startedAgo({required num seconds}) =>
       TranslationOverrides.plural(_root.$meta, 'preview.error.startedAgo', {'seconds': seconds}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
         seconds,
         one: 'Начато ${seconds} секунду назад',
         few: 'Начато ${seconds} секунды назад',
@@ -4822,6 +4834,12 @@ extension on TranslationsRuRu {
           'init.loadingBoorus' => TranslationOverrides.string(_root.$meta, 'init.loadingBoorus', {}) ?? 'Загрузка конфигов сайтов…',
           'init.loadingTags' => TranslationOverrides.string(_root.$meta, 'init.loadingTags', {}) ?? 'Загрузка тегов…',
           'init.restoringTabs' => TranslationOverrides.string(_root.$meta, 'init.restoringTabs', {}) ?? 'Восстановление вкладок…',
+          'permissions.localNetworkRequired' =>
+            TranslationOverrides.string(_root.$meta, 'permissions.localNetworkRequired', {}) ??
+                'Для открытия этого адреса нужен доступ к локальной сети. Разреши доступ к устройствам поблизости и повтори попытку.',
+          'permissions.localNetworkExplanationTitle' =>
+            TranslationOverrides.string(_root.$meta, 'permissions.localNetworkExplanationTitle', {}) ?? 'Доступ к локальной сети',
+          'permissions.localNetworkExplanation' => TranslationOverrides.string(_root.$meta, 'permissions.localNetworkExplanation', {}) ?? 'Для открытия локальных серверов и синхронизации с другими устройствами нужен доступ к твоей локальной сети. Для этого нужно дать разрешение использовать «Устройства поблизости».',
           'permissions.noAccessToCustomStorageDirectory' =>
             TranslationOverrides.string(_root.$meta, 'permissions.noAccessToCustomStorageDirectory', {}) ?? 'Нет доступа к выбранной папке хранилища',
           'permissions.pleaseSetStorageDirectoryAgain' =>
@@ -4865,7 +4883,7 @@ extension on TranslationsRuRu {
           'searchHandler.restoredTabsCount' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'searchHandler.restoredTabsCount', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
                   count,
                   one: 'Восстановлена ${count} вкладка из предыдущей сессии',
                   few: 'Восстановлено ${count} вкладки из предыдущей сессии',
@@ -4887,7 +4905,7 @@ extension on TranslationsRuRu {
           'searchHandler.addedTabsCount' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'searchHandler.addedTabsCount', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
                   count,
                   one: 'Добавлена ${count} новая вкладка',
                   few: 'Добавлены ${count} новых вкладки',
@@ -4898,7 +4916,7 @@ extension on TranslationsRuRu {
           'searchHandler.receivedTabsCount' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'searchHandler.receivedTabsCount', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
                   count,
                   one: 'Получена ${count} вкладка',
                   few: 'Получены ${count} вкладки',
@@ -4926,7 +4944,7 @@ extension on TranslationsRuRu {
           'snatcher.snatchedCount' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'snatcher.snatchedCount', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
                   count,
                   one: 'Скачано: ${count} элемент',
                   few: 'Скачано: ${count} элемента',
@@ -4936,7 +4954,7 @@ extension on TranslationsRuRu {
           'snatcher.filesAlreadySnatched' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'snatcher.filesAlreadySnatched', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
                   count,
                   one: '${count} файл уже был скачан',
                   few: '${count} файла уже были скачаны',
@@ -4946,7 +4964,7 @@ extension on TranslationsRuRu {
           'snatcher.failedToSnatchFiles' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'snatcher.failedToSnatchFiles', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
                   count,
                   one: 'Не удалось скачать ${count} файл',
                   few: 'Не удалось скачать ${count} файла',
@@ -4956,7 +4974,7 @@ extension on TranslationsRuRu {
           'snatcher.cancelledFiles' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'snatcher.cancelledFiles', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
                   count,
                   one: 'Отменён ${count} файл',
                   few: 'Отменено ${count} файла',
@@ -4970,7 +4988,7 @@ extension on TranslationsRuRu {
           'snatcher.addedItemsToQueue' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'snatcher.addedItemsToQueue', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
                   count,
                   one: 'Добавлен ${count} элемент в очередь загрузки',
                   few: 'Добавлено ${count} элемента в очередь загрузки',
@@ -5087,7 +5105,7 @@ extension on TranslationsRuRu {
           'tabs.areYouSureDeleteTabs' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'tabs.areYouSureDeleteTabs', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
                   count,
                   one: 'Ты уверен, что хочешь удалить ${count} вкладку?',
                   few: 'Ты уверен, что хочешь удалить ${count} вкладки?',
@@ -5154,7 +5172,7 @@ extension on TranslationsRuRu {
           'history.deleteItemsConfirm' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'history.deleteItemsConfirm', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
                   count,
                   one: 'Ты уверен, что хочешь удалить ${count} элемент?',
                   few: 'Ты уверен, что хочешь удалить ${count} элемента?',
@@ -5165,7 +5183,7 @@ extension on TranslationsRuRu {
           'history.deleteItems' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'history.deleteItems', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
                   count,
                   one: 'Удалить ${count} элемент',
                   few: 'Удалить ${count} элемента',
@@ -5592,14 +5610,14 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadHeightLimit', {}) ?? 'Лимит высоты предзагрузки',
           'settings.viewer.preloadHeightLimitSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadHeightLimitSubtitle', {}) ?? 'в пикселях, 0 для отключения',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.viewer.imageQuality' => TranslationOverrides.string(_root.$meta, 'settings.viewer.imageQuality', {}) ?? 'Качество изображения',
           'settings.viewer.viewerScrollDirection' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.viewerScrollDirection', {}) ?? 'Направление прокрутки просмотрщика',
           'settings.viewer.viewerToolbarPosition' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.viewerToolbarPosition', {}) ?? 'Позиция панели инструментов просмотрщика',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.viewer.zoomButtonPosition' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.zoomButtonPosition', {}) ?? 'Позиция кнопки масштабирования',
           'settings.viewer.changePageButtonsPosition' =>
@@ -5915,7 +5933,7 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.database.updateSankakuUrls', {}) ?? 'Обновить ссылки из Sankaku',
           'settings.database.updating' => ({
             required int count,
-          }) => TranslationOverrides.string(_root.$meta, 'settings.database.updating', {'count': count}) ?? 'Обновление ${count} элементов:',
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.updating', {'count': count}) ?? 'Обновление элементов: ${count}',
           'settings.database.left' => ({
             required int count,
           }) => TranslationOverrides.string(_root.$meta, 'settings.database.left', {'count': count}) ?? 'Осталось: ${count}',
@@ -6162,7 +6180,7 @@ extension on TranslationsRuRu {
           'settings.backupAndTransfer.backupCount' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'settings.backupAndTransfer.backupCount', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
                   count,
                   one: '${count} резервная копия',
                   few: '${count} резервные копии',
@@ -6603,7 +6621,7 @@ extension on TranslationsRuRu {
           'settings.cache.inFilesPlural' =>
             ({required String size, required int count}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.cache.inFilesPlural', {'size': size, 'count': count}) ??
-                '${size}, ${count} файлов',
+                '${size}, файлов: ${count}',
           'settings.cache.inFileSingular' => ({
             required String size,
           }) => TranslationOverrides.string(_root.$meta, 'settings.cache.inFileSingular', {'size': size}) ?? '${size}, 1 файл',
@@ -6718,14 +6736,14 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.sync.tabsSyncModeReplace', {}) ??
                 'Заменить: Полностью заменить вкладки на другом устройстве вкладками с этого устройства',
           'settings.sync.merge' => TranslationOverrides.string(_root.$meta, 'settings.sync.merge', {}) ?? 'Объединить',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.sync.replace' => TranslationOverrides.string(_root.$meta, 'settings.sync.replace', {}) ?? 'Заменить',
           'settings.sync.sendTags' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendTags', {}) ?? 'Отправить теги',
           'settings.sync.tagsCount' => ({
             required String count,
           }) => TranslationOverrides.string(_root.$meta, 'settings.sync.tagsCount', {'count': count}) ?? 'Теги: ${count}',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.sync.tagsSyncMode' => TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncMode', {}) ?? 'Режим синхронизации тегов',
           'settings.sync.tagsSyncModePreferTypeIfNone' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncModePreferTypeIfNone', {}) ??
@@ -6936,7 +6954,7 @@ extension on TranslationsRuRu {
           'tagsManager.deleteTags' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'tagsManager.deleteTags', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
                   count,
                   one: 'Удалить ${count} тег',
                   few: 'Удалить ${count} тега',
@@ -7242,7 +7260,7 @@ extension on TranslationsRuRu {
           'gallery.sources' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'gallery.sources', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
                   count,
                   one: 'Источник',
                   few: 'Источники',
@@ -7344,7 +7362,7 @@ extension on TranslationsRuRu {
           'preview.error.startedAgo' =>
             ({required num seconds}) =>
                 TranslationOverrides.plural(_root.$meta, 'preview.error.startedAgo', {'seconds': seconds}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ru'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
                   seconds,
                   one: 'Начато ${seconds} секунду назад',
                   few: 'Начато ${seconds} секунды назад',
