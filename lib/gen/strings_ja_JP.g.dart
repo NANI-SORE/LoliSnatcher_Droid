@@ -6,8 +6,10 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
+import 'package:lolisnatcher/src/utils/localization_plural_rules.dart';
 import 'package:slang/generated.dart';
 import 'package:slang/overrides.dart';
+
 import 'strings.g.dart';
 
 // Path: <root>
@@ -20,7 +22,7 @@ class TranslationsJaJp extends Translations with BaseTranslations<AppLocale, Tra
     PluralResolver? cardinalResolver,
     PluralResolver? ordinalResolver,
     TranslationMetadata<AppLocale, Translations>? meta,
-  }) : $meta =
+  }) : _meta =
            meta ??
            TranslationMetadata(
              locale: AppLocale.jaJp,
@@ -29,17 +31,17 @@ class TranslationsJaJp extends Translations with BaseTranslations<AppLocale, Tra
              ordinalResolver: ordinalResolver,
            ),
        super(cardinalResolver: cardinalResolver, ordinalResolver: ordinalResolver) {
-    super.$meta.setFlatMapFunction($meta.getTranslation); // copy base translations to super.$meta
-    $meta.setFlatMapFunction(_flatMapFunction);
+    _meta.setFlatMapFunction(_flatMapFunction);
   }
 
   /// Metadata for the translations of <ja-JP>.
+  final TranslationMetadata<AppLocale, Translations> _meta;
   @override
-  final TranslationMetadata<AppLocale, Translations> $meta;
+  TranslationMetadata<AppLocale, Translations> get $meta => _meta;
 
   /// Access flat map
   @override
-  dynamic operator [](String key) => $meta.getTranslation(key) ?? super.$meta.getTranslation(key);
+  dynamic operator [](String key) => _meta.getTranslation(key) ?? super[key];
 
   late final TranslationsJaJp _root = this; // ignore: unused_field
 
@@ -285,7 +287,7 @@ class _Translations$validationErrors$ja_JP extends Translations$validationErrors
 
   // Translations
   @override
-  String get required => TranslationOverrides.string(_root.$meta, 'validationErrors.required', {}) ?? '値を入力';
+  String get required => TranslationOverrides.string(_root.$meta, 'validationErrors.required', {}) ?? '値を入力してください';
   @override
   String get invalid => TranslationOverrides.string(_root.$meta, 'validationErrors.invalid', {}) ?? '有効な値を入力してください';
   @override
@@ -413,12 +415,9 @@ class _Translations$searchHandler$ja_JP extends Translations$searchHandler$en {
   @override
   String restoredTabsCount({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'searchHandler.restoredTabsCount', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
         count,
-        one: '以前のセッションから${count}個のタブを復元しました',
-        few: '以前のセッションから${count}個のタブを復元しました',
-        many: '以前のセッションから${count}個のタブを復元しました',
-        other: '以前のセッションから${count}個のタブを復元しました',
+        other: '以前のセッションから ${count} 個のタブを復元しました',
       );
   @override
   String get someRestoredTabsHadIssues =>
@@ -433,24 +432,18 @@ class _Translations$searchHandler$ja_JP extends Translations$searchHandler$en {
   @override
   String addedTabsCount({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'searchHandler.addedTabsCount', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
         count,
-        one: '${count}個の新しいタブを追加',
-        few: '${count}個の新しいタブを追加',
-        many: '${count}個の新しいタブを追加',
-        other: '${count}個の新しいタブを追加',
+        other: '${count} 個の新しいタブを追加',
       );
   @override
   String get tabsReplaced => TranslationOverrides.string(_root.$meta, 'searchHandler.tabsReplaced', {}) ?? 'タブを置き換えました';
   @override
   String receivedTabsCount({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'searchHandler.receivedTabsCount', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
         count,
-        one: '${count}個のタブを受け取りました',
-        few: '${count}個のタブを受け取りました',
-        many: '${count}個のタブを受け取りました',
-        other: '${count}個のタブを受け取りました',
+        other: '${count} 個のタブを受け取りました',
       );
 }
 
@@ -490,41 +483,29 @@ class _Translations$snatcher$ja_JP extends Translations$snatcher$en {
   @override
   String snatchedCount({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.snatchedCount', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
         count,
-        one: 'ダウンロード済み: ${count}個',
-        few: 'ダウンロード済み: ${count}個',
-        many: 'ダウンロード済み: ${count}個',
-        other: 'ダウンロード済み: ${count}個',
+        other: 'ダウンロード済み: ${count} アイテム',
       );
   @override
   String filesAlreadySnatched({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.filesAlreadySnatched', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
         count,
-        one: '${count} 個のファイルがすでに保存済みです',
-        few: '${count} 個のファイルがすでに保存済みです',
-        many: '${count} 個のファイルがすでに保存済みです',
         other: '${count} 個のファイルがすでに保存済みです',
       );
   @override
   String failedToSnatchFiles({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.failedToSnatchFiles', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
         count,
-        one: '${count} 個のファイルの保存に失敗',
-        few: '${count} 個のファイルの保存に失敗',
-        many: '${count} 個のファイルの保存に失敗',
         other: '${count} 個のファイルの保存に失敗',
       );
   @override
   String cancelledFiles({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.cancelledFiles', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
         count,
-        one: '${count} 個のファイルがキャンセルされました',
-        few: '${count} 個のファイルがキャンセルされました',
-        many: '${count} 個のファイルがキャンセルされました',
         other: '${count} 個のファイルがキャンセルされました',
       );
   @override
@@ -536,11 +517,8 @@ class _Translations$snatcher$ja_JP extends Translations$snatcher$en {
   @override
   String addedItemsToQueue({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.addedItemsToQueue', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
         count,
-        one: '${count} 個のアイテムをキューに追加しました',
-        few: '${count} 個のアイテムをキューに追加しました',
-        many: '${count} 個のアイテムをキューに追加しました',
         other: '${count} 個のアイテムをキューに追加しました',
       );
 }
@@ -608,7 +586,7 @@ class _Translations$tabs$ja_JP extends Translations$tabs$en {
   @override
   String get addPosition => TranslationOverrides.string(_root.$meta, 'tabs.addPosition', {}) ?? '追加する位置';
   @override
-  String get addModePrevTab => TranslationOverrides.string(_root.$meta, 'tabs.addModePrevTab', {}) ?? '以前のタブ';
+  String get addModePrevTab => TranslationOverrides.string(_root.$meta, 'tabs.addModePrevTab', {}) ?? '前のタブ';
   @override
   String get addModeNextTab => TranslationOverrides.string(_root.$meta, 'tabs.addModeNextTab', {}) ?? '次のタブ';
   @override
@@ -738,11 +716,8 @@ class _Translations$tabs$ja_JP extends Translations$tabs$en {
   @override
   String areYouSureDeleteTabs({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'tabs.areYouSureDeleteTabs', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
         count,
-        one: '${count} 個のタブを削除してよろしいですか？',
-        few: '${count} 個のタブを削除してよろしいですか？',
-        many: '${count} 個のタブを削除してよろしいですか？',
         other: '${count} 個のタブを削除してよろしいですか？',
       );
   @override
@@ -795,11 +770,8 @@ class _Translations$history$ja_JP extends Translations$history$en {
   @override
   String deleteItemsConfirm({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'history.deleteItemsConfirm', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
         count,
-        one: '${count} 個のアイテムを削除してよろしいですか？',
-        few: '${count} 個のアイテムを削除してよろしいですか？',
-        many: '${count} 個のアイテムを削除してよろしいですか？',
         other: '${count} 個のアイテムを削除してよろしいですか？',
       );
   @override
@@ -807,11 +779,8 @@ class _Translations$history$ja_JP extends Translations$history$en {
   @override
   String deleteItems({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'history.deleteItems', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
         count,
-        one: '${count} 個のアイテムを削除',
-        few: '${count} 個のアイテムを削除',
-        many: '${count} 個のアイテムを削除',
         other: '${count} 個のアイテムを削除',
       );
 }
@@ -932,7 +901,7 @@ class _Translations$pageChanger$ja_JP extends Translations$pageChanger$en {
   String get delayInMs => TranslationOverrides.string(_root.$meta, 'pageChanger.delayInMs', {}) ?? '間隔 (ms)';
   @override
   String currentPage({required int number}) =>
-      TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? '現在のベージ: #${number}';
+      TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? '現在のページ: #${number}';
   @override
   String possibleMaxPage({required int number}) =>
       TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? '最大可能ページ: #~${number}';
@@ -1002,11 +971,8 @@ class _Translations$tagsManager$ja_JP extends Translations$tagsManager$en {
   @override
   String deleteTags({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'tagsManager.deleteTags', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
         count,
-        one: '${count} 個のタグを削除',
-        few: '${count} 個のタグを削除',
-        many: '${count} 個のタグを削除',
         other: '${count} 個のタグを削除',
       );
   @override
@@ -1420,7 +1386,7 @@ class _Translations$mediaPreviews$ja_JP extends Translations$mediaPreviews$en {
   String get backupRestoreArticle => TranslationOverrides.string(_root.$meta, 'mediaPreviews.backupRestoreArticle', {}) ?? 'データをバックアップから復元する';
   @override
   String get backupRestoreArticleSubtitle =>
-      TranslationOverrides.string(_root.$meta, 'mediaPreviews.backupRestoreArticleSubtitle', {}) ?? '以前のアプリ/バージョンから移行するユーザー向けの手順です';
+      TranslationOverrides.string(_root.$meta, 'mediaPreviews.backupRestoreArticleSubtitle', {}) ?? '以前のアプリ/バージョンから移行するユーザー向けの説明です';
   @override
   String get restoringPreviousSession => TranslationOverrides.string(_root.$meta, 'mediaPreviews.restoringPreviousSession', {}) ?? '以前のセッションを復元中…';
   @override
@@ -1474,11 +1440,8 @@ class _Translations$gallery$ja_JP extends Translations$gallery$en {
   @override
   String sources({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'gallery.sources', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
         count,
-        one: 'ソース',
-        few: 'ソース',
-        many: 'ソース',
         other: 'ソース',
       );
 }
@@ -1981,7 +1944,7 @@ class _Translations$settings$interface$ja_JP extends Translations$settings$inter
       TranslationOverrides.string(_root.$meta, 'settings.interface.gifThumbnailsRequires', {}) ?? '«画像のスケーリングを行わない» が必要です';
   @override
   String get scrollPreviewsButtonsPosition =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.scrollPreviewsButtonsPosition', {}) ?? 'スクロールプレビューボタンの位置';
+      TranslationOverrides.string(_root.$meta, 'settings.interface.scrollPreviewsButtonsPosition', {}) ?? 'プレビューのスクロールボタンの位置';
   @override
   String get mouseWheelScrollModifier =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.mouseWheelScrollModifier', {}) ?? 'マウスホイールのスクロール乗数';
@@ -2454,7 +2417,7 @@ class _Translations$settings$database$ja_JP extends Translations$settings$databa
   String get updateSankakuUrls => TranslationOverrides.string(_root.$meta, 'settings.database.updateSankakuUrls', {}) ?? 'Sankaku URLをアップデート';
   @override
   String updating({required int count}) =>
-      TranslationOverrides.string(_root.$meta, 'settings.database.updating', {'count': count}) ?? '${count}個のアイテムを更新中:';
+      TranslationOverrides.string(_root.$meta, 'settings.database.updating', {'count': count}) ?? '項目を更新中: ${count}';
   @override
   String left({required int count}) => TranslationOverrides.string(_root.$meta, 'settings.database.left', {'count': count}) ?? '残り: ${count}';
   @override
@@ -2535,7 +2498,7 @@ class _Translations$settings$backupAndRestore$ja_JP extends Translations$setting
   String get restoreBoorus => TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreBoorus', {}) ?? 'Booruを復元';
   @override
   String get boorusBackedUp =>
-      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.boorusBackedUp', {}) ?? 'Booruを boorus.json にパックアップしました';
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.boorusBackedUp', {}) ?? 'Booruを boorus.json にバックアップしました';
   @override
   String get boorusRestored => TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.boorusRestored', {}) ?? 'Booruをバックアップから復元しました';
   @override
@@ -2669,9 +2632,10 @@ class _Translations$settings$privacy$ja_JP extends Translations$settings$privacy
   @override
   String get appLock => TranslationOverrides.string(_root.$meta, 'settings.privacy.appLock', {}) ?? 'アプリのロック';
   @override
-  String get appLockMsg => TranslationOverrides.string(_root.$meta, 'settings.privacy.appLockMsg', {}) ?? '手動で、またはアイドル状態の場合にアプリをロックします。PIN/生体認証が必要です';
+  String get appLockMsg =>
+      TranslationOverrides.string(_root.$meta, 'settings.privacy.appLockMsg', {}) ?? '手動で、または操作が行われない状態の場合にアプリをロックします。PIN/生体認証が必要です';
   @override
-  String get autoLockAfter => TranslationOverrides.string(_root.$meta, 'settings.privacy.autoLockAfter', {}) ?? 'ロックまでのアイドル時間';
+  String get autoLockAfter => TranslationOverrides.string(_root.$meta, 'settings.privacy.autoLockAfter', {}) ?? 'この時間後に自動でロック';
   @override
   String get autoLockAfterTip => TranslationOverrides.string(_root.$meta, 'settings.privacy.autoLockAfterTip', {}) ?? '(秒), 0で無効';
   @override
@@ -2817,7 +2781,7 @@ class _Translations$settings$cache$ja_JP extends Translations$settings$cache$en 
   String get empty => TranslationOverrides.string(_root.$meta, 'settings.cache.empty', {}) ?? '空';
   @override
   String inFilesPlural({required String size, required int count}) =>
-      TranslationOverrides.string(_root.$meta, 'settings.cache.inFilesPlural', {'size': size, 'count': count}) ?? '${size}, ${count} ファイル';
+      TranslationOverrides.string(_root.$meta, 'settings.cache.inFilesPlural', {'size': size, 'count': count}) ?? '${size}, ファイル数: ${count}';
   @override
   String inFileSingular({required String size}) =>
       TranslationOverrides.string(_root.$meta, 'settings.cache.inFileSingular', {'size': size}) ?? '${size}, 1 ファイル';
@@ -3464,11 +3428,8 @@ class _Translations$preview$error$ja_JP extends Translations$preview$error$en {
   @override
   String startedAgo({required num seconds}) =>
       TranslationOverrides.plural(_root.$meta, 'preview.error.startedAgo', {'seconds': seconds}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
         seconds,
-        one: '${seconds} 秒前から開始',
-        few: '${seconds} 秒前から開始',
-        many: '${seconds} 秒前から開始',
         other: '${seconds} 秒前から開始',
       );
   @override
@@ -3781,19 +3742,21 @@ extension on TranslationsJaJp {
           'pageWillCloseAutomatically' => TranslationOverrides.string(_root.$meta, 'pageWillCloseAutomatically', {}) ?? 'ページは自動で閉じられます',
           'stay' => TranslationOverrides.string(_root.$meta, 'stay', {}) ?? 'ページにとどまる',
           'leaveNow' => TranslationOverrides.string(_root.$meta, 'leaveNow', {}) ?? '今すぐ離れる',
-          'validationErrors.required' => TranslationOverrides.string(_root.$meta, 'validationErrors.required', {}) ?? '値を入力',
+          'validationErrors.required' => TranslationOverrides.string(_root.$meta, 'validationErrors.required', {}) ?? '値を入力してください',
           'validationErrors.invalid' => TranslationOverrides.string(_root.$meta, 'validationErrors.invalid', {}) ?? '有効な値を入力してください',
           'validationErrors.invalidNumber' => TranslationOverrides.string(_root.$meta, 'validationErrors.invalidNumber', {}) ?? '数字を入力',
           'validationErrors.invalidNumericValue' =>
             TranslationOverrides.string(_root.$meta, 'validationErrors.invalidNumericValue', {}) ?? '有効な数値を入力してください',
-          'validationErrors.tooSmall' =>
-            ({required double min}) =>
-                TranslationOverrides.string(_root.$meta, 'validationErrors.tooSmall', {'min': min}) ?? '${min} より大きい値を入力してください',
-          'validationErrors.tooBig' =>
-            ({required double max}) => TranslationOverrides.string(_root.$meta, 'validationErrors.tooBig', {'max': max}) ?? '${max} より小さい値を入力してください',
-          'validationErrors.rangeError' =>
-            ({required double min, required double max}) =>
-                TranslationOverrides.string(_root.$meta, 'validationErrors.rangeError', {'min': min, 'max': max}) ?? '${min} から ${max} までの値を入力してください',
+          'validationErrors.tooSmall' => ({
+            required double min,
+          }) => TranslationOverrides.string(_root.$meta, 'validationErrors.tooSmall', {'min': min}) ?? '${min} より大きい値を入力してください',
+          'validationErrors.tooBig' => ({
+            required double max,
+          }) => TranslationOverrides.string(_root.$meta, 'validationErrors.tooBig', {'max': max}) ?? '${max} より小さい値を入力してください',
+          'validationErrors.rangeError' => ({
+            required double min,
+            required double max,
+          }) => TranslationOverrides.string(_root.$meta, 'validationErrors.rangeError', {'min': min, 'max': max}) ?? '${min} から ${max} までの値を入力してください',
           'validationErrors.greaterThanOrEqualZero' =>
             TranslationOverrides.string(_root.$meta, 'validationErrors.greaterThanOrEqualZero', {}) ?? '0 以上の値を入力してください',
           'validationErrors.lessThan4' => TranslationOverrides.string(_root.$meta, 'validationErrors.lessThan4', {}) ?? '4 未満の値を入力してください',
@@ -3812,8 +3775,9 @@ extension on TranslationsJaJp {
             TranslationOverrides.string(_root.$meta, 'permissions.noAccessToCustomStorageDirectory', {}) ?? 'カスタムストレージディレクトリにアクセスできません',
           'permissions.pleaseSetStorageDirectoryAgain' =>
             TranslationOverrides.string(_root.$meta, 'permissions.pleaseSetStorageDirectoryAgain', {}) ?? 'アプリにアクセスを許可するには、ストレージディレクトリを再度設定する必要があります',
-          'permissions.currentPath' =>
-            ({required String path}) => TranslationOverrides.string(_root.$meta, 'permissions.currentPath', {'path': path}) ?? '現在のパス: ${path}',
+          'permissions.currentPath' => ({
+            required String path,
+          }) => TranslationOverrides.string(_root.$meta, 'permissions.currentPath', {'path': path}) ?? '現在のパス: ${path}',
           'permissions.setDirectory' => TranslationOverrides.string(_root.$meta, 'permissions.setDirectory', {}) ?? 'ディレクトリを設定',
           'permissions.currentlyNotAvailableForThisPlatform' =>
             TranslationOverrides.string(_root.$meta, 'permissions.currentlyNotAvailableForThisPlatform', {}) ?? 'このプラットフォームでは使用できません',
@@ -3826,9 +3790,9 @@ extension on TranslationsJaJp {
           'authentication.noBiometricHardwareAvailable' =>
             TranslationOverrides.string(_root.$meta, 'authentication.noBiometricHardwareAvailable', {}) ?? '生体認証ハードウェアは利用できません',
           'authentication.temporaryLockout' => TranslationOverrides.string(_root.$meta, 'authentication.temporaryLockout', {}) ?? '一時ロックアウト',
-          'authentication.somethingWentWrong' =>
-            ({required String error}) =>
-                TranslationOverrides.string(_root.$meta, 'authentication.somethingWentWrong', {'error': error}) ?? '認証中に問題が発生しました: ${error}',
+          'authentication.somethingWentWrong' => ({
+            required String error,
+          }) => TranslationOverrides.string(_root.$meta, 'authentication.somethingWentWrong', {'error': error}) ?? '認証中に問題が発生しました: ${error}',
           'searchHandler.removedLastTab' => TranslationOverrides.string(_root.$meta, 'searchHandler.removedLastTab', {}) ?? '最後のタブを削除しました',
           'searchHandler.resettingSearchToDefaultTags' =>
             TranslationOverrides.string(_root.$meta, 'searchHandler.resettingSearchToDefaultTags', {}) ?? 'デフォルトのタグにリセットします',
@@ -3845,12 +3809,9 @@ extension on TranslationsJaJp {
           'searchHandler.restoredTabsCount' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'searchHandler.restoredTabsCount', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
                   count,
-                  one: '以前のセッションから${count}個のタブを復元しました',
-                  few: '以前のセッションから${count}個のタブを復元しました',
-                  many: '以前のセッションから${count}個のタブを復元しました',
-                  other: '以前のセッションから${count}個のタブを復元しました',
+                  other: '以前のセッションから ${count} 個のタブを復元しました',
                 ),
           'searchHandler.someRestoredTabsHadIssues' =>
             TranslationOverrides.string(_root.$meta, 'searchHandler.someRestoredTabsHadIssues', {}) ?? '復元されたタブには、不明なBooruや壊れた文字が含まれているものがありました。',
@@ -3861,23 +3822,17 @@ extension on TranslationsJaJp {
           'searchHandler.addedTabsCount' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'searchHandler.addedTabsCount', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
                   count,
-                  one: '${count}個の新しいタブを追加',
-                  few: '${count}個の新しいタブを追加',
-                  many: '${count}個の新しいタブを追加',
-                  other: '${count}個の新しいタブを追加',
+                  other: '${count} 個の新しいタブを追加',
                 ),
           'searchHandler.tabsReplaced' => TranslationOverrides.string(_root.$meta, 'searchHandler.tabsReplaced', {}) ?? 'タブを置き換えました',
           'searchHandler.receivedTabsCount' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'searchHandler.receivedTabsCount', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
                   count,
-                  one: '${count}個のタブを受け取りました',
-                  few: '${count}個のタブを受け取りました',
-                  many: '${count}個のタブを受け取りました',
-                  other: '${count}個のタブを受け取りました',
+                  other: '${count} 個のタブを受け取りました',
                 ),
           'snatcher.title' => TranslationOverrides.string(_root.$meta, 'snatcher.title', {}) ?? 'ダウンローダー',
           'snatcher.snatchingHistory' => TranslationOverrides.string(_root.$meta, 'snatcher.snatchingHistory', {}) ?? 'ダウンロード履歴',
@@ -3895,41 +3850,29 @@ extension on TranslationsJaJp {
           'snatcher.snatchedCount' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'snatcher.snatchedCount', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
                   count,
-                  one: 'ダウンロード済み: ${count}個',
-                  few: 'ダウンロード済み: ${count}個',
-                  many: 'ダウンロード済み: ${count}個',
-                  other: 'ダウンロード済み: ${count}個',
+                  other: 'ダウンロード済み: ${count} アイテム',
                 ),
           'snatcher.filesAlreadySnatched' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'snatcher.filesAlreadySnatched', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
                   count,
-                  one: '${count} 個のファイルがすでに保存済みです',
-                  few: '${count} 個のファイルがすでに保存済みです',
-                  many: '${count} 個のファイルがすでに保存済みです',
                   other: '${count} 個のファイルがすでに保存済みです',
                 ),
           'snatcher.failedToSnatchFiles' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'snatcher.failedToSnatchFiles', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
                   count,
-                  one: '${count} 個のファイルの保存に失敗',
-                  few: '${count} 個のファイルの保存に失敗',
-                  many: '${count} 個のファイルの保存に失敗',
                   other: '${count} 個のファイルの保存に失敗',
                 ),
           'snatcher.cancelledFiles' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'snatcher.cancelledFiles', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
                   count,
-                  one: '${count} 個のファイルがキャンセルされました',
-                  few: '${count} 個のファイルがキャンセルされました',
-                  many: '${count} 個のファイルがキャンセルされました',
                   other: '${count} 個のファイルがキャンセルされました',
                 ),
           'snatcher.snatchingImages' => TranslationOverrides.string(_root.$meta, 'snatcher.snatchingImages', {}) ?? '画像を保存中',
@@ -3938,11 +3881,8 @@ extension on TranslationsJaJp {
           'snatcher.addedItemsToQueue' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'snatcher.addedItemsToQueue', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
                   count,
-                  one: '${count} 個のアイテムをキューに追加しました',
-                  few: '${count} 個のアイテムをキューに追加しました',
-                  many: '${count} 個のアイテムをキューに追加しました',
                   other: '${count} 個のアイテムをキューに追加しました',
                 ),
           'multibooru.title' => TranslationOverrides.string(_root.$meta, 'multibooru.title', {}) ?? 'Multibooru',
@@ -3966,7 +3906,7 @@ extension on TranslationsJaJp {
           'tabs.addNewTab' => TranslationOverrides.string(_root.$meta, 'tabs.addNewTab', {}) ?? '新しいタブを追加',
           'tabs.selectABooruOrLeaveEmpty' => TranslationOverrides.string(_root.$meta, 'tabs.selectABooruOrLeaveEmpty', {}) ?? 'Booruを選択するか空のままにする',
           'tabs.addPosition' => TranslationOverrides.string(_root.$meta, 'tabs.addPosition', {}) ?? '追加する位置',
-          'tabs.addModePrevTab' => TranslationOverrides.string(_root.$meta, 'tabs.addModePrevTab', {}) ?? '以前のタブ',
+          'tabs.addModePrevTab' => TranslationOverrides.string(_root.$meta, 'tabs.addModePrevTab', {}) ?? '前のタブ',
           'tabs.addModeNextTab' => TranslationOverrides.string(_root.$meta, 'tabs.addModeNextTab', {}) ?? '次のタブ',
           'tabs.addModeListEnd' => TranslationOverrides.string(_root.$meta, 'tabs.addModeListEnd', {}) ?? 'リストの最後',
           'tabs.usedQuery' => TranslationOverrides.string(_root.$meta, 'tabs.usedQuery', {}) ?? '使用されたクエリ',
@@ -4034,11 +3974,8 @@ extension on TranslationsJaJp {
           'tabs.areYouSureDeleteTabs' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'tabs.areYouSureDeleteTabs', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
                   count,
-                  one: '${count} 個のタブを削除してよろしいですか？',
-                  few: '${count} 個のタブを削除してよろしいですか？',
-                  many: '${count} 個のタブを削除してよろしいですか？',
                   other: '${count} 個のタブを削除してよろしいですか？',
                 ),
           'tabs.filters.loaded' => TranslationOverrides.string(_root.$meta, 'tabs.filters.loaded', {}) ?? 'ロード済み',
@@ -4067,23 +4004,26 @@ extension on TranslationsJaJp {
           'tabs.move.outOfRange' => TranslationOverrides.string(_root.$meta, 'tabs.move.outOfRange', {}) ?? '範囲外',
           'tabs.move.pleaseEnterValidTabNumber' =>
             TranslationOverrides.string(_root.$meta, 'tabs.move.pleaseEnterValidTabNumber', {}) ?? '有効なタブ番号を入力してください',
-          'tabs.move.moveTo' =>
-            ({required String formattedNumber}) =>
-                TranslationOverrides.string(_root.$meta, 'tabs.move.moveTo', {'formattedNumber': formattedNumber}) ?? '#${formattedNumber} に移動',
+          'tabs.move.moveTo' => ({
+            required String formattedNumber,
+          }) => TranslationOverrides.string(_root.$meta, 'tabs.move.moveTo', {'formattedNumber': formattedNumber}) ?? '#${formattedNumber} に移動',
           'tabs.move.preview' => TranslationOverrides.string(_root.$meta, 'tabs.move.preview', {}) ?? 'プレビュー:',
           'history.searchHistory' => TranslationOverrides.string(_root.$meta, 'history.searchHistory', {}) ?? '検索履歴',
           'history.searchHistoryIsEmpty' => TranslationOverrides.string(_root.$meta, 'history.searchHistoryIsEmpty', {}) ?? '検索履歴は空です',
           'history.searchHistoryIsDisabled' => TranslationOverrides.string(_root.$meta, 'history.searchHistoryIsDisabled', {}) ?? '検索履歴は無効です',
           'history.searchHistoryRequiresDatabase' =>
             TranslationOverrides.string(_root.$meta, 'history.searchHistoryRequiresDatabase', {}) ?? '設定で検索履歴のデータベースを有効化',
-          'history.lastSearch' =>
-            ({required String search}) => TranslationOverrides.string(_root.$meta, 'history.lastSearch', {'search': search}) ?? '最後の検索: ${search}',
-          'history.lastSearchWithDate' =>
-            ({required String date}) => TranslationOverrides.string(_root.$meta, 'history.lastSearchWithDate', {'date': date}) ?? '最後の検索日: ${date}',
+          'history.lastSearch' => ({
+            required String search,
+          }) => TranslationOverrides.string(_root.$meta, 'history.lastSearch', {'search': search}) ?? '最後の検索: ${search}',
+          'history.lastSearchWithDate' => ({
+            required String date,
+          }) => TranslationOverrides.string(_root.$meta, 'history.lastSearchWithDate', {'date': date}) ?? '最後の検索日: ${date}',
           'history.unknownBooruType' => TranslationOverrides.string(_root.$meta, 'history.unknownBooruType', {}) ?? '不明なBooruタイプです！',
-          'history.unknownBooru' =>
-            ({required String name, required String type}) =>
-                TranslationOverrides.string(_root.$meta, 'history.unknownBooru', {'name': name, 'type': type}) ?? '不明なBooru (${name}-${type})',
+          'history.unknownBooru' => ({
+            required String name,
+            required String type,
+          }) => TranslationOverrides.string(_root.$meta, 'history.unknownBooru', {'name': name, 'type': type}) ?? '不明なBooru (${name}-${type})',
           'history.open' => TranslationOverrides.string(_root.$meta, 'history.open', {}) ?? '開く',
           'history.openInNewTab' => TranslationOverrides.string(_root.$meta, 'history.openInNewTab', {}) ?? '新しいタブで開く',
           'history.removeFromFavourites' => TranslationOverrides.string(_root.$meta, 'history.removeFromFavourites', {}) ?? 'お気に入りから削除',
@@ -4094,22 +4034,16 @@ extension on TranslationsJaJp {
           'history.deleteItemsConfirm' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'history.deleteItemsConfirm', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
                   count,
-                  one: '${count} 個のアイテムを削除してよろしいですか？',
-                  few: '${count} 個のアイテムを削除してよろしいですか？',
-                  many: '${count} 個のアイテムを削除してよろしいですか？',
                   other: '${count} 個のアイテムを削除してよろしいですか？',
                 ),
           'history.clearSelection' => TranslationOverrides.string(_root.$meta, 'history.clearSelection', {}) ?? '選択を解除',
           'history.deleteItems' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'history.deleteItems', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
                   count,
-                  one: '${count} 個のアイテムを削除',
-                  few: '${count} 個のアイテムを削除',
-                  many: '${count} 個のアイテムを削除',
                   other: '${count} 個のアイテムを削除',
                 ),
           'webview.title' => TranslationOverrides.string(_root.$meta, 'webview.title', {}) ?? 'ウェブモード',
@@ -4120,8 +4054,9 @@ extension on TranslationsJaJp {
           'webview.captchaCompleted' => TranslationOverrides.string(_root.$meta, 'webview.captchaCompleted', {}) ?? '認証完了',
           'webview.navigation.enterUrlLabel' => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterUrlLabel', {}) ?? 'URLを入力',
           'webview.navigation.enterCustomUrl' => TranslationOverrides.string(_root.$meta, 'webview.navigation.enterCustomUrl', {}) ?? 'カスタムURLを入力',
-          'webview.navigation.navigateTo' =>
-            ({required String url}) => TranslationOverrides.string(_root.$meta, 'webview.navigation.navigateTo', {'url': url}) ?? '${url} へ移動',
+          'webview.navigation.navigateTo' => ({
+            required String url,
+          }) => TranslationOverrides.string(_root.$meta, 'webview.navigation.navigateTo', {'url': url}) ?? '${url} へ移動',
           'webview.navigation.listCookies' => TranslationOverrides.string(_root.$meta, 'webview.navigation.listCookies', {}) ?? 'Cookieのリスト',
           'webview.navigation.clearCookies' => TranslationOverrides.string(_root.$meta, 'webview.navigation.clearCookies', {}) ?? 'Cookieをクリア',
           'webview.navigation.cookiesGone' =>
@@ -4146,9 +4081,7 @@ extension on TranslationsJaJp {
           'settings.language.title' => TranslationOverrides.string(_root.$meta, 'settings.language.title', {}) ?? '言語',
           'settings.language.system' => TranslationOverrides.string(_root.$meta, 'settings.language.system', {}) ?? 'システム',
           'settings.language.helpUsTranslate' => TranslationOverrides.string(_root.$meta, 'settings.language.helpUsTranslate', {}) ?? '翻訳に協力',
-          'settings.language.visitForDetails' =>
-            TranslationOverrides.string(_root.$meta, 'settings.language.visitForDetails', {}) ??
-                '詳細については、 <a href=\'https://github.com/NO-ob/LoliSnatcher_Droid/blob/master/CONTRIBUTING.md#localization--translations\'>GitHub</a> を確認するか、下の画像をタップしてPOEditorにアクセスできます',
+          'settings.language.visitForDetails' => TranslationOverrides.string(_root.$meta, 'settings.language.visitForDetails', {}) ?? '詳細については、 <a href=\'https://github.com/NO-ob/LoliSnatcher_Droid/blob/master/CONTRIBUTING.md#localization--translations\'>GitHub</a> を確認するか、下の画像をタップしてPOEditorにアクセスできます',
           'settings.booru.title' => TranslationOverrides.string(_root.$meta, 'settings.booru.title', {}) ?? 'Booruと検索',
           'settings.booru.defaultTags' => TranslationOverrides.string(_root.$meta, 'settings.booru.defaultTags', {}) ?? 'デフォルトのタグ',
           'settings.booru.itemsPerPage' => TranslationOverrides.string(_root.$meta, 'settings.booru.itemsPerPage', {}) ?? 'ページごとに取得される項目数',
@@ -4327,7 +4260,7 @@ extension on TranslationsJaJp {
           'settings.interface.gifThumbnailsRequires' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.gifThumbnailsRequires', {}) ?? '«画像のスケーリングを行わない» が必要です',
           'settings.interface.scrollPreviewsButtonsPosition' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.scrollPreviewsButtonsPosition', {}) ?? 'スクロールプレビューボタンの位置',
+            TranslationOverrides.string(_root.$meta, 'settings.interface.scrollPreviewsButtonsPosition', {}) ?? 'プレビューのスクロールボタンの位置',
           'settings.interface.mouseWheelScrollModifier' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.mouseWheelScrollModifier', {}) ?? 'マウスホイールのスクロール乗数',
           'settings.interface.scrollModifier' => TranslationOverrides.string(_root.$meta, 'settings.interface.scrollModifier', {}) ?? 'スクロール乗数',
@@ -4623,9 +4556,9 @@ extension on TranslationsJaJp {
             TranslationOverrides.string(_root.$meta, 'settings.database.dropIndexesDebug', {}) ?? 'インデックスの削除 [デバッグ]',
           'settings.database.searchHistoryInfo' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryInfo', {}) ?? 'データベースが有効になっている必要があります。',
-          'settings.database.searchHistoryRecords' =>
-            ({required int limit}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryRecords', {'limit': limit}) ?? '過去 ${limit}件の検索を保存します',
+          'settings.database.searchHistoryRecords' => ({
+            required int limit,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryRecords', {'limit': limit}) ?? '過去 ${limit}件の検索を保存します',
           'settings.database.searchHistoryTapInfo' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.searchHistoryTapInfo', {}) ?? 'エントリーをタップしてアクションを実行できます (削除、お気に入り…)',
           'settings.database.searchHistoryFavouritesInfo' =>
@@ -4679,16 +4612,18 @@ extension on TranslationsJaJp {
             TranslationOverrides.string(_root.$meta, 'settings.database.failedItemsPurgeInfo', {}) ?? '更新に失敗したアイテムはデータベースから削除されます',
           'settings.database.updateSankakuUrls' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.updateSankakuUrls', {}) ?? 'Sankaku URLをアップデート',
-          'settings.database.updating' =>
-            ({required int count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.database.updating', {'count': count}) ?? '${count}個のアイテムを更新中:',
-          'settings.database.left' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'settings.database.left', {'count': count}) ?? '残り: ${count}',
-          'settings.database.done' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'settings.database.done', {'count': count}) ?? '完了: ${count}',
-          'settings.database.failedSkipped' =>
-            ({required int count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.database.failedSkipped', {'count': count}) ?? '失敗/スキップ: ${count}',
+          'settings.database.updating' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.updating', {'count': count}) ?? '項目を更新中: ${count}',
+          'settings.database.left' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.left', {'count': count}) ?? '残り: ${count}',
+          'settings.database.done' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.done', {'count': count}) ?? '完了: ${count}',
+          'settings.database.failedSkipped' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.failedSkipped', {'count': count}) ?? '失敗/スキップ: ${count}',
           'settings.database.sankakuRateLimitWarning' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.sankakuRateLimitWarning', {}) ??
                 '失敗の数が継続的に増加し始めた場合は、停止してしばらくしてから再試行してください。レート制限に達したか、Sankaku がIPからのリクエストをブロックしている可能性があります。',
@@ -4697,12 +4632,12 @@ extension on TranslationsJaJp {
           'settings.database.useIfStuck' =>
             TranslationOverrides.string(_root.$meta, 'settings.database.useIfStuck', {}) ?? 'アイテムでスタックしているように見える場合に使用します',
           'settings.database.pressToStop' => TranslationOverrides.string(_root.$meta, 'settings.database.pressToStop', {}) ?? 'ここをタップして停止',
-          'settings.database.purgeFailedItems' =>
-            ({required int count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.database.purgeFailedItems', {'count': count}) ?? '失敗したアイテムを消去します (${count})',
-          'settings.database.retryFailedItems' =>
-            ({required int count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.database.retryFailedItems', {'count': count}) ?? '失敗したアイテムを再試行します (${count})',
+          'settings.database.purgeFailedItems' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.purgeFailedItems', {'count': count}) ?? '失敗したアイテムを消去します (${count})',
+          'settings.database.retryFailedItems' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.database.retryFailedItems', {'count': count}) ?? '失敗したアイテムを再試行します (${count})',
           'settings.backupAndRestore.title' => TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.title', {}) ?? 'バックアップと復元',
           'settings.backupAndRestore.duplicateFileDetectedTitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.duplicateFileDetectedTitle', {}) ?? '重複ファイルが検出されました！',
@@ -4744,7 +4679,7 @@ extension on TranslationsJaJp {
           'settings.backupAndRestore.restoreBoorus' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreBoorus', {}) ?? 'Booruを復元',
           'settings.backupAndRestore.boorusBackedUp' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.boorusBackedUp', {}) ?? 'Booruを boorus.json にパックアップしました',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.boorusBackedUp', {}) ?? 'Booruを boorus.json にバックアップしました',
           'settings.backupAndRestore.boorusRestored' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.boorusRestored', {}) ?? 'Booruをバックアップから復元しました',
           'settings.backupAndRestore.backupBoorusError' =>
@@ -4804,9 +4739,9 @@ extension on TranslationsJaJp {
             TranslationOverrides.string(_root.$meta, 'settings.network.customUserAgentTitle', {}) ?? 'カスタム User-Agent',
           'settings.network.keepEmptyForDefault' =>
             TranslationOverrides.string(_root.$meta, 'settings.network.keepEmptyForDefault', {}) ?? '空でデフォルトを使用',
-          'settings.network.defaultUserAgent' =>
-            ({required String agent}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.network.defaultUserAgent', {'agent': agent}) ?? 'デフォルト: ${agent}',
+          'settings.network.defaultUserAgent' => ({
+            required String agent,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.network.defaultUserAgent', {'agent': agent}) ?? 'デフォルト: ${agent}',
           'settings.network.userAgentUsedOnRequests' =>
             TranslationOverrides.string(_root.$meta, 'settings.network.userAgentUsedOnRequests', {}) ?? 'ほとんどのBooruリクエストとアプリ内ブラウザに使用されます',
           'settings.network.valueSavedAfterLeaving' =>
@@ -4817,9 +4752,9 @@ extension on TranslationsJaJp {
           'settings.network.cookieCleaner' => TranslationOverrides.string(_root.$meta, 'settings.network.cookieCleaner', {}) ?? 'Cookie クリーナー',
           'settings.network.selectBooruToClearCookies' =>
             TranslationOverrides.string(_root.$meta, 'settings.network.selectBooruToClearCookies', {}) ?? 'Cookieを消去するBooruを選択するか、空白のままにしてすべてから消去',
-          'settings.network.cookiesFor' =>
-            ({required String booruName}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.network.cookiesFor', {'booruName': booruName}) ?? '${booruName} 上のCookie:',
+          'settings.network.cookiesFor' => ({
+            required String booruName,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.network.cookiesFor', {'booruName': booruName}) ?? '${booruName} 上のCookie:',
           'settings.network.cookieDeleted' =>
             ({required String cookieName}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.network.cookieDeleted', {'cookieName': cookieName}) ??
@@ -4838,8 +4773,8 @@ extension on TranslationsJaJp {
           'settings.privacy.title' => TranslationOverrides.string(_root.$meta, 'settings.privacy.title', {}) ?? 'プライバシー',
           'settings.privacy.appLock' => TranslationOverrides.string(_root.$meta, 'settings.privacy.appLock', {}) ?? 'アプリのロック',
           'settings.privacy.appLockMsg' =>
-            TranslationOverrides.string(_root.$meta, 'settings.privacy.appLockMsg', {}) ?? '手動で、またはアイドル状態の場合にアプリをロックします。PIN/生体認証が必要です',
-          'settings.privacy.autoLockAfter' => TranslationOverrides.string(_root.$meta, 'settings.privacy.autoLockAfter', {}) ?? 'ロックまでのアイドル時間',
+            TranslationOverrides.string(_root.$meta, 'settings.privacy.appLockMsg', {}) ?? '手動で、または操作が行われない状態の場合にアプリをロックします。PIN/生体認証が必要です',
+          'settings.privacy.autoLockAfter' => TranslationOverrides.string(_root.$meta, 'settings.privacy.autoLockAfter', {}) ?? 'この時間後に自動でロック',
           'settings.privacy.autoLockAfterTip' => TranslationOverrides.string(_root.$meta, 'settings.privacy.autoLockAfterTip', {}) ?? '(秒), 0で無効',
           'settings.privacy.bluronLeave' => TranslationOverrides.string(_root.$meta, 'settings.privacy.bluronLeave', {}) ?? 'アプリを離れるときに画面をぼかす',
           'settings.privacy.bluronLeaveMsg' =>
@@ -4895,8 +4830,9 @@ extension on TranslationsJaJp {
             TranslationOverrides.string(_root.$meta, 'settings.cache.requiresCustomStorageDirectory', {}) ?? 'カスタムディレクトリが必要です',
           'settings.cache.setStorageDirectory' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.setStorageDirectory', {}) ?? 'ストレージディレクトリを設定',
-          'settings.cache.currentPath' =>
-            ({required String path}) => TranslationOverrides.string(_root.$meta, 'settings.cache.currentPath', {'path': path}) ?? '現在: ${path}',
+          'settings.cache.currentPath' => ({
+            required String path,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.cache.currentPath', {'path': path}) ?? '現在: ${path}',
           'settings.cache.resetStorageDirectory' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.resetStorageDirectory', {}) ?? 'ストレージディレクトリをリセット',
           'settings.cache.cachePreviews' => TranslationOverrides.string(_root.$meta, 'settings.cache.cachePreviews', {}) ?? 'キャッシュプレビュー',
@@ -4925,10 +4861,11 @@ extension on TranslationsJaJp {
           'settings.cache.empty' => TranslationOverrides.string(_root.$meta, 'settings.cache.empty', {}) ?? '空',
           'settings.cache.inFilesPlural' =>
             ({required String size, required int count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.cache.inFilesPlural', {'size': size, 'count': count}) ?? '${size}, ${count} ファイル',
-          'settings.cache.inFileSingular' =>
-            ({required String size}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.cache.inFileSingular', {'size': size}) ?? '${size}, 1 ファイル',
+                TranslationOverrides.string(_root.$meta, 'settings.cache.inFilesPlural', {'size': size, 'count': count}) ??
+                '${size}, ファイル数: ${count}',
+          'settings.cache.inFileSingular' => ({
+            required String size,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.cache.inFileSingular', {'size': size}) ?? '${size}, 1 ファイル',
           'settings.cache.cacheTypeTotal' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeTotal', {}) ?? '合計',
           'settings.cache.cacheTypeFavicons' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeFavicons', {}) ?? 'サイトアイコン',
           'settings.cache.cacheTypeThumbnails' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeThumbnails', {}) ?? 'サムネイル',
@@ -4936,9 +4873,9 @@ extension on TranslationsJaJp {
           'settings.cache.cacheTypeMedia' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeMedia', {}) ?? 'メディア',
           'settings.cache.cacheTypeWebView' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeWebView', {}) ?? 'ウェブページ',
           'settings.cache.cacheCleared' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheCleared', {}) ?? 'キャッシュがクリアされました',
-          'settings.cache.clearedCacheType' =>
-            ({required String type}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.cache.clearedCacheType', {'type': type}) ?? '${type} キャッシュをクリアしました',
+          'settings.cache.clearedCacheType' => ({
+            required String type,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.cache.clearedCacheType', {'type': type}) ?? '${type} キャッシュをクリアしました',
           'settings.cache.clearAllCache' => TranslationOverrides.string(_root.$meta, 'settings.cache.clearAllCache', {}) ?? 'すべてのキャッシュをクリア',
           'settings.cache.clearedCacheCompletely' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.clearedCacheCompletely', {}) ?? 'キャッシュを完全にクリアしました',
@@ -4986,9 +4923,9 @@ extension on TranslationsJaJp {
           'settings.sync.port' => TranslationOverrides.string(_root.$meta, 'settings.sync.port', {}) ?? 'ポート',
           'settings.sync.portPlaceholder' => TranslationOverrides.string(_root.$meta, 'settings.sync.portPlaceholder', {}) ?? 'ホストのポート (例: 7777)',
           'settings.sync.sendFavourites' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendFavourites', {}) ?? 'お気に入りを送信',
-          'settings.sync.favouritesCount' =>
-            ({required String count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.sync.favouritesCount', {'count': count}) ?? 'お気に入り: ${count}',
+          'settings.sync.favouritesCount' => ({
+            required String count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.sync.favouritesCount', {'count': count}) ?? 'お気に入り: ${count}',
           'settings.sync.sendFavouritesLegacy' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.sendFavouritesLegacy', {}) ?? 'お気に入りを送信 (レガシー)',
           'settings.sync.syncFavsFrom' => TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFrom', {}) ?? '#... からお気に入りを同期',
@@ -5003,9 +4940,9 @@ extension on TranslationsJaJp {
           'settings.sync.syncFavsFromHelpText4' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText4', {}) ?? 'お気に入りの順序: 古いもの (0) から新しい順 (X)',
           'settings.sync.sendSnatchedHistory' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendSnatchedHistory', {}) ?? 'ダウンロード履歴を送信',
-          'settings.sync.snatchedCount' =>
-            ({required String count}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.sync.snatchedCount', {'count': count}) ?? 'ダウンロード済み: ${count}',
+          'settings.sync.snatchedCount' => ({
+            required String count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.sync.snatchedCount', {'count': count}) ?? 'ダウンロード済み: ${count}',
           'settings.sync.syncSnatchedFrom' => TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFrom', {}) ?? '#... からダウンロードを同期',
           'settings.sync.syncSnatchedFromHelpText1' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText1', {}) ??
@@ -5019,11 +4956,13 @@ extension on TranslationsJaJp {
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText4', {}) ?? '履歴の順序: 古いもの (0) から新しい順 (X)',
           'settings.sync.sendSettings' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendSettings', {}) ?? '設定を送信',
           'settings.sync.sendBooruConfigs' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendBooruConfigs', {}) ?? 'Booru設定を送信',
-          'settings.sync.configsCount' =>
-            ({required String count}) => TranslationOverrides.string(_root.$meta, 'settings.sync.configsCount', {'count': count}) ?? '設定: ${count}',
+          'settings.sync.configsCount' => ({
+            required String count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.sync.configsCount', {'count': count}) ?? '設定: ${count}',
           'settings.sync.sendTabs' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendTabs', {}) ?? 'タブを送信',
-          'settings.sync.tabsCount' =>
-            ({required String count}) => TranslationOverrides.string(_root.$meta, 'settings.sync.tabsCount', {'count': count}) ?? 'タブ: ${count}',
+          'settings.sync.tabsCount' => ({
+            required String count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.sync.tabsCount', {'count': count}) ?? 'タブ: ${count}',
           'settings.sync.tabsSyncMode' => TranslationOverrides.string(_root.$meta, 'settings.sync.tabsSyncMode', {}) ?? 'タブ同期モード',
           'settings.sync.tabsSyncModeMerge' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.tabsSyncModeMerge', {}) ?? '結合: このデバイスのタブを先のデバイスにマージします。不明なタブや既存のタブは無視されます',
@@ -5032,8 +4971,9 @@ extension on TranslationsJaJp {
           'settings.sync.merge' => TranslationOverrides.string(_root.$meta, 'settings.sync.merge', {}) ?? '結合',
           'settings.sync.replace' => TranslationOverrides.string(_root.$meta, 'settings.sync.replace', {}) ?? '置換',
           'settings.sync.sendTags' => TranslationOverrides.string(_root.$meta, 'settings.sync.sendTags', {}) ?? 'タグを送信',
-          'settings.sync.tagsCount' =>
-            ({required String count}) => TranslationOverrides.string(_root.$meta, 'settings.sync.tagsCount', {'count': count}) ?? 'タグ: ${count}',
+          'settings.sync.tagsCount' => ({
+            required String count,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.sync.tagsCount', {'count': count}) ?? 'タグ: ${count}',
           'settings.sync.tagsSyncMode' => TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncMode', {}) ?? 'タグ同期モード',
           'settings.sync.tagsSyncModePreferTypeIfNone' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncModePreferTypeIfNone', {}) ??
@@ -5058,9 +4998,9 @@ extension on TranslationsJaJp {
             TranslationOverrides.string(_root.$meta, 'settings.sync.receiverInstructions', {}) ?? 'サーバーを起動してデータを受信できます。セキュリティのため、公共Wi-Fiは使用しないでください',
           'settings.sync.availableNetworkInterfaces' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.availableNetworkInterfaces', {}) ?? '利用可能なネットワークインターフェース',
-          'settings.sync.selectedInterfaceIP' =>
-            ({required String ip}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.sync.selectedInterfaceIP', {'ip': ip}) ?? '選択されたインターフェースでのIP: ${ip}',
+          'settings.sync.selectedInterfaceIP' => ({
+            required String ip,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.sync.selectedInterfaceIP', {'ip': ip}) ?? '選択されたインターフェースでのIP: ${ip}',
           'settings.sync.serverPort' => TranslationOverrides.string(_root.$meta, 'settings.sync.serverPort', {}) ?? 'サーバーポート',
           'settings.sync.serverPortPlaceholder' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.serverPortPlaceholder', {}) ?? '(空の場合はデフォルトで\'8080\'になります)',
@@ -5123,16 +5063,17 @@ extension on TranslationsJaJp {
             TranslationOverrides.string(_root.$meta, 'settings.debug.blurImagesAndMuteVideosDevOnly', {}) ?? '画像のぼかし + 動画のミュート [DEV only]',
           'settings.debug.enableDragScrollOnListsDesktopOnly' =>
             TranslationOverrides.string(_root.$meta, 'settings.debug.enableDragScrollOnListsDesktopOnly', {}) ?? 'リストのドラッグスクロールを有効化 [デスクトップのみ]',
-          'settings.debug.animationSpeed' =>
-            ({required double speed}) =>
-                TranslationOverrides.string(_root.$meta, 'settings.debug.animationSpeed', {'speed': speed}) ?? 'アニメーション速度 (${speed})',
+          'settings.debug.animationSpeed' => ({
+            required double speed,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.debug.animationSpeed', {'speed': speed}) ?? 'アニメーション速度 (${speed})',
           'settings.debug.tagsManager' => TranslationOverrides.string(_root.$meta, 'settings.debug.tagsManager', {}) ?? 'タグマネージャー',
           'settings.debug.resolution' =>
             ({required String width, required String height}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.debug.resolution', {'width': width, 'height': height}) ??
                 '解像度: ${width}x${height}',
-          'settings.debug.pixelRatio' =>
-            ({required String ratio}) => TranslationOverrides.string(_root.$meta, 'settings.debug.pixelRatio', {'ratio': ratio}) ?? 'ピクセル比: ${ratio}',
+          'settings.debug.pixelRatio' => ({
+            required String ratio,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.debug.pixelRatio', {'ratio': ratio}) ?? 'ピクセル比: ${ratio}',
           'settings.debug.logger' => TranslationOverrides.string(_root.$meta, 'settings.debug.logger', {}) ?? 'ロガー',
           'settings.debug.webview' => TranslationOverrides.string(_root.$meta, 'settings.debug.webview', {}) ?? 'Webview',
           'settings.debug.deleteAllCookies' => TranslationOverrides.string(_root.$meta, 'settings.debug.deleteAllCookies', {}) ?? 'すべてのCookieを削除',
@@ -5171,23 +5112,23 @@ extension on TranslationsJaJp {
           'pageChanger.pageLabel' => TranslationOverrides.string(_root.$meta, 'pageChanger.pageLabel', {}) ?? 'ページ #',
           'pageChanger.delayBetweenLoadings' => TranslationOverrides.string(_root.$meta, 'pageChanger.delayBetweenLoadings', {}) ?? '読み込み間隔 (ms)',
           'pageChanger.delayInMs' => TranslationOverrides.string(_root.$meta, 'pageChanger.delayInMs', {}) ?? '間隔 (ms)',
-          'pageChanger.currentPage' =>
-            ({required int number}) =>
-                TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? '現在のベージ: #${number}',
-          'pageChanger.possibleMaxPage' =>
-            ({required int number}) =>
-                TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? '最大可能ページ: #~${number}',
+          'pageChanger.currentPage' => ({
+            required int number,
+          }) => TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? '現在のページ: #${number}',
+          'pageChanger.possibleMaxPage' => ({
+            required int number,
+          }) => TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? '最大可能ページ: #~${number}',
           'pageChanger.searchCurrentlyRunning' => TranslationOverrides.string(_root.$meta, 'pageChanger.searchCurrentlyRunning', {}) ?? '検索が進行中です！',
           'pageChanger.jumpToPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.jumpToPage', {}) ?? '指定ページへジャンプ',
           'pageChanger.searchUntilPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.searchUntilPage', {}) ?? '指定ページまで読み込み',
           'pageChanger.stopSearching' => TranslationOverrides.string(_root.$meta, 'pageChanger.stopSearching', {}) ?? '検索の停止',
           'tagsFiltersDialogs.emptyInput' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.emptyInput', {}) ?? '入力が空です！',
-          'tagsFiltersDialogs.addNewFilter' =>
-            ({required String type}) =>
-                TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.addNewFilter', {'type': type}) ?? '[${type} フィルターに新規追加]',
-          'tagsFiltersDialogs.newTagFilter' =>
-            ({required String type}) =>
-                TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.newTagFilter', {'type': type}) ?? '新規 ${type} タグフィルター',
+          'tagsFiltersDialogs.addNewFilter' => ({
+            required String type,
+          }) => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.addNewFilter', {'type': type}) ?? '[${type} フィルターに新規追加]',
+          'tagsFiltersDialogs.newTagFilter' => ({
+            required String type,
+          }) => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.newTagFilter', {'type': type}) ?? '新規 ${type} タグフィルター',
           'tagsFiltersDialogs.newFilter' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.newFilter', {}) ?? '追加するフィルター',
           'tagsFiltersDialogs.editFilter' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.editFilter', {}) ?? 'フィルターの編集',
           'tagsManager.title' => TranslationOverrides.string(_root.$meta, 'tagsManager.title', {}) ?? 'すべてのタグ',
@@ -5195,9 +5136,9 @@ extension on TranslationsJaJp {
           'tagsManager.name' => TranslationOverrides.string(_root.$meta, 'tagsManager.name', {}) ?? '名前',
           'tagsManager.type' => TranslationOverrides.string(_root.$meta, 'tagsManager.type', {}) ?? 'タイプ',
           'tagsManager.add' => TranslationOverrides.string(_root.$meta, 'tagsManager.add', {}) ?? '追加',
-          'tagsManager.staleAfter' =>
-            ({required String staleText}) =>
-                TranslationOverrides.string(_root.$meta, 'tagsManager.staleAfter', {'staleText': staleText}) ?? '期限切れ: ${staleText}',
+          'tagsManager.staleAfter' => ({
+            required String staleText,
+          }) => TranslationOverrides.string(_root.$meta, 'tagsManager.staleAfter', {'staleText': staleText}) ?? '期限切れ: ${staleText}',
           'tagsManager.addedATab' => TranslationOverrides.string(_root.$meta, 'tagsManager.addedATab', {}) ?? 'タブを追加しました',
           'tagsManager.addATab' => TranslationOverrides.string(_root.$meta, 'tagsManager.addATab', {}) ?? 'タブに追加',
           'tagsManager.copy' => TranslationOverrides.string(_root.$meta, 'tagsManager.copy', {}) ?? 'コピー',
@@ -5207,11 +5148,8 @@ extension on TranslationsJaJp {
           'tagsManager.deleteTags' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'tagsManager.deleteTags', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
                   count,
-                  one: '${count} 個のタグを削除',
-                  few: '${count} 個のタグを削除',
-                  many: '${count} 個のタグを削除',
                   other: '${count} 個のタグを削除',
                 ),
           'tagsManager.deleteTagsTitle' => TranslationOverrides.string(_root.$meta, 'tagsManager.deleteTagsTitle', {}) ?? 'タグの削除',
@@ -5233,19 +5171,21 @@ extension on TranslationsJaJp {
             ({required int statusCode, required String reasonPhrase}) =>
                 TranslationOverrides.string(_root.$meta, 'loliSync.testError', {'statusCode': statusCode, 'reasonPhrase': reasonPhrase}) ??
                 'テスト時エラー: ${statusCode} ${reasonPhrase}',
-          'loliSync.testErrorException' =>
-            ({required String error}) =>
-                TranslationOverrides.string(_root.$meta, 'loliSync.testErrorException', {'error': error}) ?? 'テスト時エラー: ${error}',
+          'loliSync.testErrorException' => ({
+            required String error,
+          }) => TranslationOverrides.string(_root.$meta, 'loliSync.testErrorException', {'error': error}) ?? 'テスト時エラー: ${error}',
           'loliSync.testSuccess' => TranslationOverrides.string(_root.$meta, 'loliSync.testSuccess', {}) ?? 'テストリクエストは正常な返答を受け取りました',
           'loliSync.testSuccessMessage' =>
             TranslationOverrides.string(_root.$meta, 'loliSync.testSuccessMessage', {}) ?? '先のデバイスに \'Test\' というメッセージが表示されるはずです',
           'imageSearch.title' => TranslationOverrides.string(_root.$meta, 'imageSearch.title', {}) ?? '画像検索',
           'tagView.tags' => TranslationOverrides.string(_root.$meta, 'tagView.tags', {}) ?? 'タグ',
           'tagView.comments' => TranslationOverrides.string(_root.$meta, 'tagView.comments', {}) ?? 'コメント',
-          'tagView.showNotes' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'tagView.showNotes', {'count': count}) ?? 'ノートを表示 (${count})',
-          'tagView.hideNotes' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'tagView.hideNotes', {'count': count}) ?? 'ノートを隠す (${count})',
+          'tagView.showNotes' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'tagView.showNotes', {'count': count}) ?? 'ノートを表示 (${count})',
+          'tagView.hideNotes' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'tagView.hideNotes', {'count': count}) ?? 'ノートを隠す (${count})',
           'tagView.loadNotes' => TranslationOverrides.string(_root.$meta, 'tagView.loadNotes', {}) ?? 'ノートを読み込み',
           'tagView.thisTagAlreadyInSearch' =>
             TranslationOverrides.string(_root.$meta, 'tagView.thisTagAlreadyInSearch', {}) ?? 'このタグは既に現在の検索に含まれています:',
@@ -5299,14 +5239,15 @@ extension on TranslationsJaJp {
           'pinnedTags.unpinTag' => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinTag', {}) ?? 'タグのピン留めを解除',
           'pinnedTags.pin' => TranslationOverrides.string(_root.$meta, 'pinnedTags.pin', {}) ?? 'ピン留め',
           'pinnedTags.unpin' => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpin', {}) ?? 'ピン留め解除',
-          'pinnedTags.pinQuestion' =>
-            ({required String tag}) =>
-                TranslationOverrides.string(_root.$meta, 'pinnedTags.pinQuestion', {'tag': tag}) ?? '«${tag}» をクイックアクセスにピン留めしますか？',
-          'pinnedTags.unpinQuestion' =>
-            ({required String tag}) =>
-                TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinQuestion', {'tag': tag}) ?? '«${tag}» をピン留めされたタグから解除しますか？',
-          'pinnedTags.onlyForBooru' =>
-            ({required String name}) => TranslationOverrides.string(_root.$meta, 'pinnedTags.onlyForBooru', {'name': name}) ?? '${name} のみで',
+          'pinnedTags.pinQuestion' => ({
+            required String tag,
+          }) => TranslationOverrides.string(_root.$meta, 'pinnedTags.pinQuestion', {'tag': tag}) ?? '«${tag}» をクイックアクセスにピン留めしますか？',
+          'pinnedTags.unpinQuestion' => ({
+            required String tag,
+          }) => TranslationOverrides.string(_root.$meta, 'pinnedTags.unpinQuestion', {'tag': tag}) ?? '«${tag}» をピン留めされたタグから解除しますか？',
+          'pinnedTags.onlyForBooru' => ({
+            required String name,
+          }) => TranslationOverrides.string(_root.$meta, 'pinnedTags.onlyForBooru', {'name': name}) ?? '${name} のみで',
           'pinnedTags.labelsOptional' => TranslationOverrides.string(_root.$meta, 'pinnedTags.labelsOptional', {}) ?? 'ラベル (オプション)',
           'pinnedTags.typeAndPressAdd' => TranslationOverrides.string(_root.$meta, 'pinnedTags.typeAndPressAdd', {}) ?? '入力して追加ボタンを押してラベルを追加',
           'pinnedTags.selectExistingLabel' => TranslationOverrides.string(_root.$meta, 'pinnedTags.selectExistingLabel', {}) ?? '既存のラベルを選択',
@@ -5315,9 +5256,9 @@ extension on TranslationsJaJp {
             ({required String name, required String labels}) =>
                 TranslationOverrides.string(_root.$meta, 'pinnedTags.pinnedForBooru', {'name': name, 'labels': labels}) ??
                 '${name} にピン留めしました ${labels}',
-          'pinnedTags.pinnedGloballyWithLabels' =>
-            ({required String labels}) =>
-                TranslationOverrides.string(_root.$meta, 'pinnedTags.pinnedGloballyWithLabels', {'labels': labels}) ?? '${labels} 全てにピン留めしました',
+          'pinnedTags.pinnedGloballyWithLabels' => ({
+            required String labels,
+          }) => TranslationOverrides.string(_root.$meta, 'pinnedTags.pinnedGloballyWithLabels', {'labels': labels}) ?? '${labels} 全てにピン留めしました',
           'pinnedTags.tagUnpinned' => TranslationOverrides.string(_root.$meta, 'pinnedTags.tagUnpinned', {}) ?? 'ピン留め解除',
           'pinnedTags.all' => TranslationOverrides.string(_root.$meta, 'pinnedTags.all', {}) ?? 'すべて',
           'pinnedTags.reorderPinnedTags' => TranslationOverrides.string(_root.$meta, 'pinnedTags.reorderPinnedTags', {}) ?? 'ピン留めタグの並び替え',
@@ -5333,15 +5274,15 @@ extension on TranslationsJaJp {
           'pinnedTags.tagQueryHint' => TranslationOverrides.string(_root.$meta, 'pinnedTags.tagQueryHint', {}) ?? 'tag_name',
           'pinnedTags.rawQueryHelp' => TranslationOverrides.string(_root.$meta, 'pinnedTags.rawQueryHelp', {}) ?? '複数のタグを含むどんな検索クエリでも入力できます',
           'searchBar.searchForTags' => TranslationOverrides.string(_root.$meta, 'searchBar.searchForTags', {}) ?? 'タグを検索',
-          'searchBar.failedToLoadSuggestions' =>
-            ({required String msg}) =>
-                TranslationOverrides.string(_root.$meta, 'searchBar.failedToLoadSuggestions', {'msg': msg}) ?? '候補が見つかりませんでした。タップして再試行 ${msg}',
+          'searchBar.failedToLoadSuggestions' => ({
+            required String msg,
+          }) => TranslationOverrides.string(_root.$meta, 'searchBar.failedToLoadSuggestions', {'msg': msg}) ?? '候補が見つかりませんでした。タップして再試行 ${msg}',
           'searchBar.noSuggestionsFound' => TranslationOverrides.string(_root.$meta, 'searchBar.noSuggestionsFound', {}) ?? '候補が見つかりませんでした',
           'searchBar.tagSuggestionsNotAvailable' =>
             TranslationOverrides.string(_root.$meta, 'searchBar.tagSuggestionsNotAvailable', {}) ?? 'このBooruではタグ候補を利用できません',
-          'searchBar.copiedTagToClipboard' =>
-            ({required String tag}) =>
-                TranslationOverrides.string(_root.$meta, 'searchBar.copiedTagToClipboard', {'tag': tag}) ?? 'タグ «${tag}» をクリップボードにコピーしました',
+          'searchBar.copiedTagToClipboard' => ({
+            required String tag,
+          }) => TranslationOverrides.string(_root.$meta, 'searchBar.copiedTagToClipboard', {'tag': tag}) ?? 'タグ «${tag}» をクリップボードにコピーしました',
           'searchBar.prefix' => TranslationOverrides.string(_root.$meta, 'searchBar.prefix', {}) ?? 'プレフィックス',
           'searchBar.exclude' => TranslationOverrides.string(_root.$meta, 'searchBar.exclude', {}) ?? '除外 (—)',
           'searchBar.booruNumberPrefix' => TranslationOverrides.string(_root.$meta, 'searchBar.booruNumberPrefix', {}) ?? 'Booru (N#)',
@@ -5365,8 +5306,9 @@ extension on TranslationsJaJp {
           'mobileHome.cancelledByUser' => TranslationOverrides.string(_root.$meta, 'mobileHome.cancelledByUser', {}) ?? 'ユーザーによるキャンセル',
           'mobileHome.saveAnyway' => TranslationOverrides.string(_root.$meta, 'mobileHome.saveAnyway', {}) ?? 'とにかく保存',
           'mobileHome.skip' => TranslationOverrides.string(_root.$meta, 'mobileHome.skip', {}) ?? 'スキップ',
-          'mobileHome.retryAll' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'mobileHome.retryAll', {'count': count}) ?? 'すべて再試行 (${count})',
+          'mobileHome.retryAll' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'mobileHome.retryAll', {'count': count}) ?? 'すべて再試行 (${count})',
           _ => null,
         } ??
         switch (path) {
@@ -5406,7 +5348,7 @@ extension on TranslationsJaJp {
           'mediaPreviews.backupRestoreArticle' =>
             TranslationOverrides.string(_root.$meta, 'mediaPreviews.backupRestoreArticle', {}) ?? 'データをバックアップから復元する',
           'mediaPreviews.backupRestoreArticleSubtitle' =>
-            TranslationOverrides.string(_root.$meta, 'mediaPreviews.backupRestoreArticleSubtitle', {}) ?? '以前のアプリ/バージョンから移行するユーザー向けの手順です',
+            TranslationOverrides.string(_root.$meta, 'mediaPreviews.backupRestoreArticleSubtitle', {}) ?? '以前のアプリ/バージョンから移行するユーザー向けの説明です',
           'mediaPreviews.restoringPreviousSession' =>
             TranslationOverrides.string(_root.$meta, 'mediaPreviews.restoringPreviousSession', {}) ?? '以前のセッションを復元中…',
           'mediaPreviews.copiedFileURL' => TranslationOverrides.string(_root.$meta, 'mediaPreviews.copiedFileURL', {}) ?? 'ファイルURLをクリップボードにコピーしました！',
@@ -5458,9 +5400,10 @@ extension on TranslationsJaJp {
           'viewer.appBar.selectTags' => TranslationOverrides.string(_root.$meta, 'viewer.appBar.selectTags', {}) ?? 'タグを選択',
           'viewer.notes.note' => TranslationOverrides.string(_root.$meta, 'viewer.notes.note', {}) ?? 'ノート',
           'viewer.notes.notes' => TranslationOverrides.string(_root.$meta, 'viewer.notes.notes', {}) ?? 'ノート',
-          'viewer.notes.coordinates' =>
-            ({required int posX, required int posY}) =>
-                TranslationOverrides.string(_root.$meta, 'viewer.notes.coordinates', {'posX': posX, 'posY': posY}) ?? 'X:${posX}, Y:${posY}',
+          'viewer.notes.coordinates' => ({
+            required int posX,
+            required int posY,
+          }) => TranslationOverrides.string(_root.$meta, 'viewer.notes.coordinates', {'posX': posX, 'posY': posY}) ?? 'X:${posX}, Y:${posY}',
           'common.selectABooru' => TranslationOverrides.string(_root.$meta, 'common.selectABooru', {}) ?? 'Booruを選択',
           'common.booruItemCopiedToClipboard' =>
             TranslationOverrides.string(_root.$meta, 'common.booruItemCopiedToClipboard', {}) ?? 'Booruアイテムがクリップボードにコピーされました',
@@ -5472,11 +5415,8 @@ extension on TranslationsJaJp {
           'gallery.sources' =>
             ({required num count}) =>
                 TranslationOverrides.plural(_root.$meta, 'gallery.sources', {'count': count}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
                   count,
-                  one: 'ソース',
-                  few: 'ソース',
-                  many: 'ソース',
                   other: 'ソース',
                 ),
           'galleryButtons.snatch' => TranslationOverrides.string(_root.$meta, 'galleryButtons.snatch', {}) ?? 'ダウンロード',
@@ -5499,9 +5439,9 @@ extension on TranslationsJaJp {
           'media.loading.loadAnyway' => TranslationOverrides.string(_root.$meta, 'media.loading.loadAnyway', {}) ?? 'とにかく読み込む',
           'media.loading.restartLoading' => TranslationOverrides.string(_root.$meta, 'media.loading.restartLoading', {}) ?? '再度読み込む',
           'media.loading.stopLoading' => TranslationOverrides.string(_root.$meta, 'media.loading.stopLoading', {}) ?? '読み込みを停止',
-          'media.loading.startedSecondsAgo' =>
-            ({required int seconds}) =>
-                TranslationOverrides.string(_root.$meta, 'media.loading.startedSecondsAgo', {'seconds': seconds}) ?? '${seconds} 秒前から開始',
+          'media.loading.startedSecondsAgo' => ({
+            required int seconds,
+          }) => TranslationOverrides.string(_root.$meta, 'media.loading.startedSecondsAgo', {'seconds': seconds}) ?? '${seconds} 秒前から開始',
           'media.loading.stopReasons.stoppedByUser' =>
             TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.stoppedByUser', {}) ?? 'ユーザーによる停止',
           'media.loading.stopReasons.loadingError' =>
@@ -5512,10 +5452,12 @@ extension on TranslationsJaJp {
             TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.hiddenByFilters', {}) ?? 'フィルターにより非表示:',
           'media.loading.stopReasons.videoError' => TranslationOverrides.string(_root.$meta, 'media.loading.stopReasons.videoError', {}) ?? '動画エラー',
           'media.loading.fileIsZeroBytes' => TranslationOverrides.string(_root.$meta, 'media.loading.fileIsZeroBytes', {}) ?? '空のファイル',
-          'media.loading.fileSize' =>
-            ({required String size}) => TranslationOverrides.string(_root.$meta, 'media.loading.fileSize', {'size': size}) ?? 'ファイルサイズ: ${size}',
-          'media.loading.sizeLimit' =>
-            ({required String limit}) => TranslationOverrides.string(_root.$meta, 'media.loading.sizeLimit', {'limit': limit}) ?? '制限: ${limit}',
+          'media.loading.fileSize' => ({
+            required String size,
+          }) => TranslationOverrides.string(_root.$meta, 'media.loading.fileSize', {'size': size}) ?? 'ファイルサイズ: ${size}',
+          'media.loading.sizeLimit' => ({
+            required String limit,
+          }) => TranslationOverrides.string(_root.$meta, 'media.loading.sizeLimit', {'limit': limit}) ?? '制限: ${limit}',
           'media.loading.tryChangingVideoBackend' =>
             TranslationOverrides.string(_root.$meta, 'media.loading.tryChangingVideoBackend', {}) ??
                 '再生時に問題が頻繁に発生しますか？ [設定 > 動画 > プレーヤーのバックエンド] を変更してみてください',
@@ -5535,14 +5477,18 @@ extension on TranslationsJaJp {
             ({required String fileExt}) =>
                 TranslationOverrides.string(_root.$meta, 'media.video.unknownFileFormat', {'fileExt': fileExt}) ??
                 '不明なファイルフォーマットです (.${fileExt})。ここをタップしてブラウザで開く',
-          'imageStats.live' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'imageStats.live', {'count': count}) ?? 'アクティブ: ${count}',
-          'imageStats.pending' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'imageStats.pending', {'count': count}) ?? '保留中: ${count}',
-          'imageStats.total' =>
-            ({required int count}) => TranslationOverrides.string(_root.$meta, 'imageStats.total', {'count': count}) ?? '合計: ${count}',
-          'imageStats.size' =>
-            ({required String size}) => TranslationOverrides.string(_root.$meta, 'imageStats.size', {'size': size}) ?? 'サイズ: ${size}',
+          'imageStats.live' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'imageStats.live', {'count': count}) ?? 'アクティブ: ${count}',
+          'imageStats.pending' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'imageStats.pending', {'count': count}) ?? '保留中: ${count}',
+          'imageStats.total' => ({
+            required int count,
+          }) => TranslationOverrides.string(_root.$meta, 'imageStats.total', {'count': count}) ?? '合計: ${count}',
+          'imageStats.size' => ({
+            required String size,
+          }) => TranslationOverrides.string(_root.$meta, 'imageStats.size', {'size': size}) ?? 'サイズ: ${size}',
           'imageStats.max' => ({required String max}) => TranslationOverrides.string(_root.$meta, 'imageStats.max', {'max': max}) ?? '最大: ${max}',
           'preview.error.noResults' => TranslationOverrides.string(_root.$meta, 'preview.error.noResults', {}) ?? '結果が見つかりませんでした',
           'preview.error.noResultsSubtitle' =>
@@ -5552,17 +5498,14 @@ extension on TranslationsJaJp {
             ({required int pageNum}) =>
                 TranslationOverrides.string(_root.$meta, 'preview.error.reachedEndSubtitle', {'pageNum': pageNum}) ??
                 '読み込まれたページ数: ${pageNum}\nここをタップして最後のページを再読み込み',
-          'preview.error.loadingPage' =>
-            ({required int pageNum}) =>
-                TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? 'ページ #${pageNum} の読み込み中…',
+          'preview.error.loadingPage' => ({
+            required int pageNum,
+          }) => TranslationOverrides.string(_root.$meta, 'preview.error.loadingPage', {'pageNum': pageNum}) ?? 'ページ #${pageNum} の読み込み中…',
           'preview.error.startedAgo' =>
             ({required num seconds}) =>
                 TranslationOverrides.plural(_root.$meta, 'preview.error.startedAgo', {'seconds': seconds}) ??
-                (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ja'))(
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ja_JP'))(
                   seconds,
-                  one: '${seconds} 秒前から開始',
-                  few: '${seconds} 秒前から開始',
-                  many: '${seconds} 秒前から開始',
                   other: '${seconds} 秒前から開始',
                 ),
           'preview.error.tapToRetryIfStuck' =>

@@ -6,8 +6,10 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
+import 'package:lolisnatcher/src/utils/localization_plural_rules.dart';
 import 'package:slang/generated.dart';
 import 'package:slang/overrides.dart';
+
 import 'strings.g.dart';
 
 // Path: <root>
@@ -20,7 +22,7 @@ class TranslationsKoKr extends Translations with BaseTranslations<AppLocale, Tra
     PluralResolver? cardinalResolver,
     PluralResolver? ordinalResolver,
     TranslationMetadata<AppLocale, Translations>? meta,
-  }) : $meta =
+  }) : _meta =
            meta ??
            TranslationMetadata(
              locale: AppLocale.koKr,
@@ -29,17 +31,17 @@ class TranslationsKoKr extends Translations with BaseTranslations<AppLocale, Tra
              ordinalResolver: ordinalResolver,
            ),
        super(cardinalResolver: cardinalResolver, ordinalResolver: ordinalResolver) {
-    super.$meta.setFlatMapFunction($meta.getTranslation); // copy base translations to super.$meta
-    $meta.setFlatMapFunction(_flatMapFunction);
+    _meta.setFlatMapFunction(_flatMapFunction);
   }
 
   /// Metadata for the translations of <ko-KR>.
+  final TranslationMetadata<AppLocale, Translations> _meta;
   @override
-  final TranslationMetadata<AppLocale, Translations> $meta;
+  TranslationMetadata<AppLocale, Translations> get $meta => _meta;
 
   /// Access flat map
   @override
-  dynamic operator [](String key) => $meta.getTranslation(key) ?? super.$meta.getTranslation(key);
+  dynamic operator [](String key) => _meta.getTranslation(key) ?? super[key];
 
   late final TranslationsKoKr _root = this; // ignore: unused_field
 
@@ -331,11 +333,8 @@ class _Translations$searchHandler$ko_KR extends Translations$searchHandler$en {
   @override
   String restoredTabsCount({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'searchHandler.restoredTabsCount', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ko'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ko_KR'))(
         count,
-        one: '이전 세션에서 ${count}개의 탭 복구됨',
-        few: '이전 세션에서 ${count}개의 탭 복구됨',
-        many: '이전 세션에서 ${count}개의 탭 복구됨',
         other: '이전 세션에서 ${count}개의 탭 복구됨',
       );
   @override
@@ -351,11 +350,8 @@ class _Translations$searchHandler$ko_KR extends Translations$searchHandler$en {
   @override
   String addedTabsCount({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'searchHandler.addedTabsCount', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ko'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ko_KR'))(
         count,
-        one: '${count}개의 새 탭 생성됨',
-        few: '${count}개의 새 탭 생성됨',
-        many: '${count}개의 새 탭 생성됨',
         other: '${count}개의 새 탭 생성됨',
       );
   @override
@@ -363,11 +359,8 @@ class _Translations$searchHandler$ko_KR extends Translations$searchHandler$en {
   @override
   String receivedTabsCount({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'searchHandler.receivedTabsCount', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ko'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ko_KR'))(
         count,
-        one: '${count}개의 탭 받음',
-        few: '${count}개의 탭 받음',
-        many: '${count}개의 탭 받음',
         other: '${count}개의 탭 받음',
       );
 }
@@ -408,41 +401,29 @@ class _Translations$snatcher$ko_KR extends Translations$snatcher$en {
   @override
   String snatchedCount({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.snatchedCount', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ko'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ko_KR'))(
         count,
-        one: '${count}개 항목 스내칭됨',
-        few: '${count}개 항목 스내칭됨',
-        many: '${count}개 항목 스내칭됨',
         other: '${count}개 항목 스내칭됨',
       );
   @override
   String filesAlreadySnatched({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.filesAlreadySnatched', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ko'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ko_KR'))(
         count,
-        one: '${count}개의 항목이 이미 스내칭되었습니다',
-        few: '${count}개의 항목이 이미 스내칭되었습니다',
-        many: '${count}개의 항목이 이미 스내칭되었습니다',
         other: '${count}개의 항목이 이미 스내칭되었습니다',
       );
   @override
   String failedToSnatchFiles({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.failedToSnatchFiles', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ko'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ko_KR'))(
         count,
-        one: '${count}개의 파일을 스내칭하는 데에 실패했습니다',
-        few: '${count}개의 파일을 스내칭하는 데에 실패했습니다',
-        many: '${count}개의 파일을 스내칭하는 데에 실패했습니다',
         other: '${count}개의 파일을 스내칭하는 데에 실패했습니다',
       );
   @override
   String cancelledFiles({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.cancelledFiles', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ko'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ko_KR'))(
         count,
-        one: '${count}개의 파일을 취소했습니다',
-        few: '${count}개의 파일을 취소했습니다',
-        many: '${count}개의 파일을 취소했습니다',
         other: '${count}개의 파일을 취소했습니다',
       );
   @override
@@ -454,11 +435,8 @@ class _Translations$snatcher$ko_KR extends Translations$snatcher$en {
   @override
   String addedItemsToQueue({required num count}) =>
       TranslationOverrides.plural(_root.$meta, 'snatcher.addedItemsToQueue', {'count': count}) ??
-      (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ko'))(
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ko_KR'))(
         count,
-        one: '${count}개의 항목이 스내칭 대기열에 추가됨',
-        few: '${count}개의 항목이 스내칭 대기열에 추가됨',
-        many: '${count}개의 항목이 스내칭 대기열에 추가됨',
         other: '${count}개의 항목이 스내칭 대기열에 추가됨',
       );
 }
@@ -680,13 +658,16 @@ extension on TranslationsKoKr {
       'validationErrors.invalidNumber' => TranslationOverrides.string(_root.$meta, 'validationErrors.invalidNumber', {}) ?? '숫자를 입력하세요',
       'validationErrors.invalidNumericValue' =>
         TranslationOverrides.string(_root.$meta, 'validationErrors.invalidNumericValue', {}) ?? '유효한 수 형식의 값을 입력하세요',
-      'validationErrors.tooSmall' =>
-        ({required double min}) => TranslationOverrides.string(_root.$meta, 'validationErrors.tooSmall', {'min': min}) ?? '${min}보다 큰 값을 입력하세요',
-      'validationErrors.tooBig' =>
-        ({required double max}) => TranslationOverrides.string(_root.$meta, 'validationErrors.tooBig', {'max': max}) ?? '${max}보다 작은 값을 입력하세요',
-      'validationErrors.rangeError' =>
-        ({required double min, required double max}) =>
-            TranslationOverrides.string(_root.$meta, 'validationErrors.rangeError', {'min': min, 'max': max}) ?? '${min}과 ${max} 사이의 값을 입력하세요',
+      'validationErrors.tooSmall' => ({
+        required double min,
+      }) => TranslationOverrides.string(_root.$meta, 'validationErrors.tooSmall', {'min': min}) ?? '${min}보다 큰 값을 입력하세요',
+      'validationErrors.tooBig' => ({
+        required double max,
+      }) => TranslationOverrides.string(_root.$meta, 'validationErrors.tooBig', {'max': max}) ?? '${max}보다 작은 값을 입력하세요',
+      'validationErrors.rangeError' => ({
+        required double min,
+        required double max,
+      }) => TranslationOverrides.string(_root.$meta, 'validationErrors.rangeError', {'min': min, 'max': max}) ?? '${min}과 ${max} 사이의 값을 입력하세요',
       'validationErrors.greaterThanOrEqualZero' =>
         TranslationOverrides.string(_root.$meta, 'validationErrors.greaterThanOrEqualZero', {}) ?? '0보다 크거나 작은 값을 입력하세요',
       'validationErrors.lessThan4' => TranslationOverrides.string(_root.$meta, 'validationErrors.lessThan4', {}) ?? '4보다 작은 값을 입력하세요',
@@ -705,8 +686,9 @@ extension on TranslationsKoKr {
         TranslationOverrides.string(_root.$meta, 'permissions.noAccessToCustomStorageDirectory', {}) ?? '커스텀 저장 디렉토리에 접근할 수 없습니다',
       'permissions.pleaseSetStorageDirectoryAgain' =>
         TranslationOverrides.string(_root.$meta, 'permissions.pleaseSetStorageDirectoryAgain', {}) ?? '저장할 디렉토리를 다시 설정하고 앱이 접근할 수 있도록 허용하세요',
-      'permissions.currentPath' =>
-        ({required String path}) => TranslationOverrides.string(_root.$meta, 'permissions.currentPath', {'path': path}) ?? '현재 경로: ${path}',
+      'permissions.currentPath' => ({
+        required String path,
+      }) => TranslationOverrides.string(_root.$meta, 'permissions.currentPath', {'path': path}) ?? '현재 경로: ${path}',
       'permissions.setDirectory' => TranslationOverrides.string(_root.$meta, 'permissions.setDirectory', {}) ?? '디렉토리 설정하기',
       'permissions.currentlyNotAvailableForThisPlatform' =>
         TranslationOverrides.string(_root.$meta, 'permissions.currentlyNotAvailableForThisPlatform', {}) ?? '이 플랫폼에서 지원하지 않음',
@@ -718,9 +700,9 @@ extension on TranslationsKoKr {
       'authentication.noBiometricHardwareAvailable' =>
         TranslationOverrides.string(_root.$meta, 'authentication.noBiometricHardwareAvailable', {}) ?? '사용 가능한 생체 인식 기기가 없습니다',
       'authentication.temporaryLockout' => TranslationOverrides.string(_root.$meta, 'authentication.temporaryLockout', {}) ?? '임시 폐쇄',
-      'authentication.somethingWentWrong' =>
-        ({required String error}) =>
-            TranslationOverrides.string(_root.$meta, 'authentication.somethingWentWrong', {'error': error}) ?? '인증 중 다음의 오류가 발생했습니다: ${error}',
+      'authentication.somethingWentWrong' => ({
+        required String error,
+      }) => TranslationOverrides.string(_root.$meta, 'authentication.somethingWentWrong', {'error': error}) ?? '인증 중 다음의 오류가 발생했습니다: ${error}',
       'searchHandler.removedLastTab' => TranslationOverrides.string(_root.$meta, 'searchHandler.removedLastTab', {}) ?? '마지막 탭 제거됨',
       'searchHandler.resettingSearchToDefaultTags' =>
         TranslationOverrides.string(_root.$meta, 'searchHandler.resettingSearchToDefaultTags', {}) ?? '기본 태그로 초기화',
@@ -733,11 +715,8 @@ extension on TranslationsKoKr {
       'searchHandler.restoredTabsCount' =>
         ({required num count}) =>
             TranslationOverrides.plural(_root.$meta, 'searchHandler.restoredTabsCount', {'count': count}) ??
-            (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ko'))(
+            (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ko_KR'))(
               count,
-              one: '이전 세션에서 ${count}개의 탭 복구됨',
-              few: '이전 세션에서 ${count}개의 탭 복구됨',
-              many: '이전 세션에서 ${count}개의 탭 복구됨',
               other: '이전 세션에서 ${count}개의 탭 복구됨',
             ),
       'searchHandler.someRestoredTabsHadIssues' =>
@@ -749,22 +728,16 @@ extension on TranslationsKoKr {
       'searchHandler.addedTabsCount' =>
         ({required num count}) =>
             TranslationOverrides.plural(_root.$meta, 'searchHandler.addedTabsCount', {'count': count}) ??
-            (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ko'))(
+            (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ko_KR'))(
               count,
-              one: '${count}개의 새 탭 생성됨',
-              few: '${count}개의 새 탭 생성됨',
-              many: '${count}개의 새 탭 생성됨',
               other: '${count}개의 새 탭 생성됨',
             ),
       'searchHandler.tabsReplaced' => TranslationOverrides.string(_root.$meta, 'searchHandler.tabsReplaced', {}) ?? '탭 대체됨',
       'searchHandler.receivedTabsCount' =>
         ({required num count}) =>
             TranslationOverrides.plural(_root.$meta, 'searchHandler.receivedTabsCount', {'count': count}) ??
-            (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ko'))(
+            (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ko_KR'))(
               count,
-              one: '${count}개의 탭 받음',
-              few: '${count}개의 탭 받음',
-              many: '${count}개의 탭 받음',
               other: '${count}개의 탭 받음',
             ),
       'snatcher.title' => TranslationOverrides.string(_root.$meta, 'snatcher.title', {}) ?? '스내처',
@@ -783,41 +756,29 @@ extension on TranslationsKoKr {
       'snatcher.snatchedCount' =>
         ({required num count}) =>
             TranslationOverrides.plural(_root.$meta, 'snatcher.snatchedCount', {'count': count}) ??
-            (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ko'))(
+            (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ko_KR'))(
               count,
-              one: '${count}개 항목 스내칭됨',
-              few: '${count}개 항목 스내칭됨',
-              many: '${count}개 항목 스내칭됨',
               other: '${count}개 항목 스내칭됨',
             ),
       'snatcher.filesAlreadySnatched' =>
         ({required num count}) =>
             TranslationOverrides.plural(_root.$meta, 'snatcher.filesAlreadySnatched', {'count': count}) ??
-            (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ko'))(
+            (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ko_KR'))(
               count,
-              one: '${count}개의 항목이 이미 스내칭되었습니다',
-              few: '${count}개의 항목이 이미 스내칭되었습니다',
-              many: '${count}개의 항목이 이미 스내칭되었습니다',
               other: '${count}개의 항목이 이미 스내칭되었습니다',
             ),
       'snatcher.failedToSnatchFiles' =>
         ({required num count}) =>
             TranslationOverrides.plural(_root.$meta, 'snatcher.failedToSnatchFiles', {'count': count}) ??
-            (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ko'))(
+            (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ko_KR'))(
               count,
-              one: '${count}개의 파일을 스내칭하는 데에 실패했습니다',
-              few: '${count}개의 파일을 스내칭하는 데에 실패했습니다',
-              many: '${count}개의 파일을 스내칭하는 데에 실패했습니다',
               other: '${count}개의 파일을 스내칭하는 데에 실패했습니다',
             ),
       'snatcher.cancelledFiles' =>
         ({required num count}) =>
             TranslationOverrides.plural(_root.$meta, 'snatcher.cancelledFiles', {'count': count}) ??
-            (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ko'))(
+            (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ko_KR'))(
               count,
-              one: '${count}개의 파일을 취소했습니다',
-              few: '${count}개의 파일을 취소했습니다',
-              many: '${count}개의 파일을 취소했습니다',
               other: '${count}개의 파일을 취소했습니다',
             ),
       'snatcher.snatchingImages' => TranslationOverrides.string(_root.$meta, 'snatcher.snatchingImages', {}) ?? '이미지 스내칭하기',
@@ -826,11 +787,8 @@ extension on TranslationsKoKr {
       'snatcher.addedItemsToQueue' =>
         ({required num count}) =>
             TranslationOverrides.plural(_root.$meta, 'snatcher.addedItemsToQueue', {'count': count}) ??
-            (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('ko'))(
+            (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ko_KR'))(
               count,
-              one: '${count}개의 항목이 스내칭 대기열에 추가됨',
-              few: '${count}개의 항목이 스내칭 대기열에 추가됨',
-              many: '${count}개의 항목이 스내칭 대기열에 추가됨',
               other: '${count}개의 항목이 스내칭 대기열에 추가됨',
             ),
       'multibooru.title' => TranslationOverrides.string(_root.$meta, 'multibooru.title', {}) ?? '멀티보루',
