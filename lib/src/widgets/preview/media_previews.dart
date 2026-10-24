@@ -266,7 +266,7 @@ class _LanguageSettingsTile extends StatelessWidget {
         child: Obx(
           () {
             final AppLocale? locale = SX.locale.value;
-            final AppLocale usedLocale = locale ?? AppLocaleUtils.findDeviceLocale();
+            final AppLocale usedLocale = locale ?? AppLocaleExt.findDeviceLocale();
             final String localeTitle = locale == null
                 ? context.loc.settings.language.system
                 : locale == AppLocale.en

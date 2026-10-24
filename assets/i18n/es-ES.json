@@ -3,9 +3,9 @@
     "localeName": "Español",
     "appName": "LoliSnatcher",
     "error": "Error",
-    "errorExclamation": "Error!",
+    "errorExclamation": "¡Error!",
     "success": "Éxito",
-    "successExclamation": "Éxito!",
+    "successExclamation": "¡Éxito!",
     "cancel": "Cancelar",
     "return": "Volver",
     "later": "Luego",
@@ -35,10 +35,10 @@
     "booru": "Booru",
     "goToSettings": "Ir a ajustes",
     "thisMayTakeSomeTime": "Esto puede tardar un poco...",
-    "exitTheAppQuestion": "Salir de la aplicación?",
+    "exitTheAppQuestion": "¿Salir de la aplicación?",
     "closeTheApp": "Cerrar la aplicación",
-    "invalidUrl": "URL invalida!",
-    "clipboardIsEmpty": "El portapapeles está vacío!",
+    "invalidUrl": "¡URL invalida!",
+    "clipboardIsEmpty": "¡El portapapeles está vacío!",
     "failedToOpenLink": "Error al abrir el enlace",
     "apiKey": "Clave API",
     "userId": "ID de usuario",
@@ -81,15 +81,236 @@
         "greaterThanOrEqualZero": "Por favor, introduzca un valor igual o mayor que 0",
         "lessThan4": "Por favor, introduzca un valor menor que 4",
         "biggerThan100": "Por favor, introduzca un valor mayor que 100",
-        "moreThan4ColumnsWarning": "Usar mas de 4 columnas puede afectar al rendimiento",
+        "moreThan4ColumnsWarning": "Usar mas de 4 columnas puede afectar el rendimiento",
         "moreThan8ColumnsWarning": "Usar mas de 8 columnas puede afectar al rendimiento"
     },
     "init": {
-        "initError": "Error de inicialización!",
+        "initError": "¡Error de inicialización!",
         "settingUpProxy": "Configurando proxy...",
         "loadingDatabase": "Cargando base de datos",
         "loadingBoorus": "Cargando boorus...",
         "loadingTags": "Cargando etiquetas...",
         "restoringTabs": "Restaurando pestañas..."
+    },
+    "permissions": {
+        "noAccessToCustomStorageDirectory": "Sin acceso a un directorio de almacenamiento personalizado",
+        "pleaseSetStorageDirectoryAgain": "Por favor, establezca el directorio de almacenamiento nuevamente para darle acceso a la app",
+        "currentPath(param=path)": "Ruta actual: ${path: String}",
+        "setDirectory": "Establecer directorio",
+        "currentlyNotAvailableForThisPlatform": "No disponible en esta plataforma",
+        "resetDirectory": "Reiniciar directorio",
+        "afterResetFilesWillBeSavedToDefaultDirectory": "Los archivos se guardarán en el directorio predeterminado después del reincio"
+    },
+    "authentication": {
+        "pleaseAuthenticateToUseTheApp": "Por favor, autentícate para utilizar la app",
+        "noBiometricHardwareAvailable": "Hardware biométrico no disponible",
+        "temporaryLockout": "Bloqueo temporalmente",
+        "somethingWentWrong(param=error)": "Algo salió mal durante la autentificación: ${error: String}"
+    },
+    "searchHandler": {
+        "removedLastTab": "Última pestaña removida",
+        "resettingSearchToDefaultTags": "Reiniciando a las etiquetas predeterminadas",
+        "uoh": "UOOOOOOOHHH\n",
+        "ratingsChanged": "Clasificación cambiada",
+        "ratingsChangedMessage(param=booruType)": "En ${booruType: String} [rating:safe] ahora es reemplazado con [rating:general] y [rating:sensitive]",
+        "appFixedRatingAutomatically": "La clasificación fue reparada automáticamente. Usa la clasificación correcta en futuras búsquedas",
+        "tabsRestored": "Pestañas restauradas",
+        "restoredTabsCount(param=count)": {
+            "one": "${count} pestaña restaurada de la sesión previa",
+            "many": "${count} pestañas restauradas de la sesión previa",
+            "other": "${count} pestañas restauradas de la sesión previa"
+        },
+        "someRestoredTabsHadIssues": "Algunas de las pestañas reestablecidas tienen boorus desconocidos o carácteres rotos",
+        "theyWereSetToDefaultOrIgnored": "Fueron ignoradas o restauradas a la opción predeterminada",
+        "listOfBrokenTabs": "Lista de páginas rotas:",
+        "tabsMerged": "Pestañas fusionadas",
+        "addedTabsCount(param=count)": {
+            "one": "Se han añadido ${count} nuevas pestañas",
+            "many": "Se han añadido ${count} nuevas pestañas",
+            "other": "Se han añadido ${count} nuevas pestañas"
+        },
+        "tabsReplaced": "Pestañas reemplazadas",
+        "receivedTabsCount(param=count)": {
+            "one": "${count} pestaña recibida",
+            "many": "${count} pestañas recibidas",
+            "other": "${count} pestañas recibidas"
+        }
+    },
+    "snatcher": {
+        "title": "Descargas",
+        "snatchingHistory": "Historial de descargas",
+        "enterTags": "Introducir etiquetas",
+        "amount": "Cantidad",
+        "amountOfFilesToSnatch": "Cantidad de archivos a descargar",
+        "delayInMs": "Retraso (en ms)",
+        "delayBetweenEachDownload": "Retraso entre cada descarga",
+        "snatchFiles": "Descargar archivos",
+        "itemWasAlreadySnatched": "Este elemento ha sido descargado anteriormente",
+        "failedToSnatchItem": "Fallo al descargar el elemento",
+        "itemWasCancelled": "El elemento ha sido cancelado",
+        "startingNextQueueItem": "Iniciando siguiente elemento en cola",
+        "itemsSnatched": "Elementos descargados",
+        "snatchedCount(param=count)": {
+            "one": "${count} elemento descargado",
+            "many": "${count} elementos descargados",
+            "other": "${count} elementos descargados"
+        },
+        "filesAlreadySnatched(param=count)": {
+            "one": "${count} archivo ha sido descargado anteriormente",
+            "many": "${count} archivos han sido descargados anteriormente",
+            "other": "${count} archivos han sido descargados anteriormente"
+        },
+        "failedToSnatchFiles(param=count)": {
+            "one": "${count} archivo ha fallado su descarga",
+            "many": "${count} archivo han fallado sus descargas",
+            "other": "${count} archivo han fallado sus descargas"
+        },
+        "cancelledFiles(param=count)": {
+            "one": "${count} archivo cancelado",
+            "many": "{count} archivos cancelados",
+            "other": "${count} archivos cancelados"
+        },
+        "snatchingImages": "Descargando imágenes",
+        "doNotCloseApp": "¡No cierres la app!",
+        "addedItemToQueue": "Elemento añadido a la cola de descargas",
+        "addedItemsToQueue(param=count)": {
+            "one": "${count} elemento añadido a la cola de descargas",
+            "many": "${count} elementos añadidos a la cola de descargas",
+            "other": "${count} elementos añadidos a la cola de descargas"
+        }
+    },
+    "multibooru": {
+        "title": "Multibooru",
+        "multibooruMode": "Modo Multibooru",
+        "multibooruRequiresAtLeastTwoBoorus": "Requiere al menos 2 boorus configurados",
+        "selectSecondaryBoorus": "Selecciona boorus adicionales:",
+        "akaMultibooruMode": "Aka modo Multibooru",
+        "labelSecondaryBoorusToInclude": "Boorus secundarios a incluir"
+    },
+    "hydrus": {
+        "importError": "Algo salió mal al importar a hydrus",
+        "apiPermissionsRequired": "Puede que no hayas establecido los permisos API correctos, esto puede ser editado en \"revisar servicios\"",
+        "addTagsToFile": "Añadir etiquetas al archivo",
+        "addUrls": "Añadir URLs"
+    },
+    "tabs": {
+        "tab": "Pestaña",
+        "addBoorusInSettings": "Añade boorus en las configuraciones ",
+        "selectABooru": "Selecciona un Booru",
+        "secondaryBoorus": "Boorus secundarios",
+        "addNewTab": "Nueva pestaña",
+        "selectABooruOrLeaveEmpty": "Selecciona un Booru, o deja en blanco",
+        "addPosition": "Añadir posición",
+        "addModePrevTab": "Pestaña anterior",
+        "addModeNextTab": "Siguiente pestaña",
+        "addModeListEnd": "Final de la lista",
+        "usedQuery": "Búsqueda usada",
+        "queryModeDefault": "Por defecto",
+        "queryModeCurrent": "Actual",
+        "queryModeCustom": "Personalizado",
+        "customQuery": "Búsqueda personalizada",
+        "empty": "[vacío]",
+        "addSecondaryBoorus": "Añadir boorus secundarios",
+        "keepSecondaryBoorus": "Mantener boorus secundarios",
+        "startFromCustomPageNumber": "Iniciar desde un número de página personalizado",
+        "switchToNewTab": "Cambiar a nueva pestaña",
+        "add": "Añadir",
+        "tabsManager": "Administrador de pestañas",
+        "selectMode": "Seleccionar modo",
+        "sortMode": "Organizar pestañas",
+        "help": "Ayuda",
+        "deleteTabs": "Eliminar pestañas",
+        "shuffleTabs": "Mezclar pestañas",
+        "tabRandomlyShuffled": "Pestaña mezclada aleatoriamente",
+        "tabOrderSaved": "Orden de pestañas guardado",
+        "scrollToCurrent": "Ir a la pestaña actual",
+        "scrollToTop": "Ir al inicio",
+        "scrollToBottom": "Ir al final",
+        "filterTabsByBooru": "Filtrar por Booru, estado, duplicados...",
+        "defaultTabsOrder": "Orden de pestañas por defecto",
+        "sortAlphabetically": "Ordenar alfabéticamente",
+        "sortAlphabeticallyReversed": "Ordenar alfabéticamente (invertido)",
+        "sortByBooruName": "Ordenar alfabéticamente por nombre de Booru",
+        "sortByBooruNameReversed": "Ordenar alfabéticamente por nombre de Booru (invertido)",
+        "longPressSortToSave": "Mantener presionado el botón de ordenar para guardar el orden actual",
+        "select": "Seleccionar:",
+        "toggleSelectMode": "Alternar modo de selección",
+        "onTheBottomOfPage": "Al final de la página:",
+        "selectDeselectAll": "Seleccionar/deseleccionar todas",
+        "deleteSelectedTabs": "Eliminar pestañas seleccionadas",
+        "longPressToMove": "Mantén presionado en una pestaña para moverla"
+    },
+    "settings": {
+        "title": "Ajustes",
+        "language": {
+            "title": "Idioma",
+            "system": "Sistema",
+            "helpUsTranslate": "Ayúdanos a traducir",
+            "visitForDetails": "Visita  <a href='https://github.com/NO-ob/LoliSnatcher_Droid/blob/master/CONTRIBUTING.md#localization--translations'>github</a> para más detalles o pulsa la imagen de abajo para ir a POEditor"
+        },
+        "booru": {
+            "title": "Boorus y búsqueda"
+        },
+        "interface": {
+            "title": "Interfaz"
+        },
+        "theme": {
+            "title": "Temas",
+            "themeMode": "Modo del tema",
+            "blackBg": "Fondo negro",
+            "useDynamicColor": "Usar color dinámico",
+            "android12PlusOnly": "Requiere Android 12+",
+            "theme": "Tema",
+            "primaryColor": "Color primario",
+            "secondaryColor": "Color secundario",
+            "system": "Sistema",
+            "light": "Claro",
+            "dark": "Oscuro",
+            "pink": "Rosa",
+            "purple": "Violeta",
+            "blue": "Azul",
+            "teal": "Verde azulado",
+            "red": "Rojo",
+            "green": "Verde",
+            "halloween": "Halloween",
+            "custom": "Personalizado",
+            "selectColor": "Seleccionar color",
+            "selectedColor": "Color seleccionado",
+            "fontFamily": "Fuente",
+            "systemDefault": "Predeterminada del sistema",
+            "viewMoreFonts": "Ver más fuentes",
+            "customFont": "Fuente personalizada",
+            "customFontSubtitle": "Ingrese el nombre de cualquier fuente de Google",
+            "fontName": "Nombre de la fuente",
+            "customFontHint": "Explora fuentes en fonts.google.com",
+            "fontNotFound": "Fuente no encontrada"
+        },
+        "about": {
+            "title": "Acerca",
+            "appDescription": "LoliSnatcher es de código abierto y licenciado bajo GPLv3. El código fuente está disponible en github. Reporta cualquier problema o sugerencia en la sección de problemas del repositorio.",
+            "appOnGitHub": "LoliSnatcher en Github",
+            "contact": "Contacto",
+            "emailCopied": "Correo copiado al portapapeles",
+            "logoArtistThanks": "Muchas gracias a Showers-U por dejarnos usar su arte para el logo de la app. Comprueba sus obras en Pixiv",
+            "developers": "Desarrolladores",
+            "localizers": "Traductores",
+            "releases": "Lanzamientos",
+            "releasesMsg": "La última versión y los registrros de cambios completos pueden encontrarse en la página de lanzamientos de Github:",
+            "licenses": "Licencias"
+        },
+        "checkForUpdates": {
+            "title": "Buscar actualizaciones",
+            "updateAvailable": "Actualización disponible!",
+            "whatsNew": "Novedades",
+            "updateCheckError": "Error al buscar actualizaciones!",
+            "youHaveLatestVersion": "Tienes la última versión",
+            "viewLatestChangelog": "Ver último registro de cambios",
+            "currentVersion": "Versión actual",
+            "changelog": "Registro de cambios"
+        },
+        "logs": {
+            "title": "Registros",
+            "shareLogs": "Compartir registros"
+        }
     }
 }

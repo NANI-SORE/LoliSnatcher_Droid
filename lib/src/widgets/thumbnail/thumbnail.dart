@@ -60,36 +60,50 @@ class Thumbnail extends StatelessWidget {
 
   Widget _buildThumbnail(BuildContext context, TagFilterEvaluation evaluation) {
     if (evaluation.isHidden) return const SizedBox.shrink();
-    return _FilteredThumbnail(
+    // Hero flights must own their loading state instead of sharing the source's notifiers.
+    final Widget child = _ThumbnailImage(
       item: item,
       booru: booru,
       filterEvaluation: evaluation,
       isStandalone: isStandalone,
-      useHero: useHero,
     );
+
+    if (isStandalone && useHero) {
+      return HeroMode(
+        enabled: SX.enableHeroTransitions.value && !SX.shitDevice.value,
+        child: Hero(
+          tag: 'imageHero${item.hashCode}',
+          placeholderBuilder: (BuildContext context, Size heroSize, Widget child) {
+            // Keep the image visible in the grid behind the gallery.
+            return child;
+          },
+          child: child,
+        ),
+      );
+    }
+
+    return child;
   }
 }
 
-class _FilteredThumbnail extends StatefulWidget {
-  const _FilteredThumbnail({
+class _ThumbnailImage extends StatefulWidget {
+  const _ThumbnailImage({
     required this.item,
     required this.booru,
     required this.filterEvaluation,
     required this.isStandalone,
-    required this.useHero,
   });
 
   final BooruItem item;
   final Booru? booru;
   final TagFilterEvaluation filterEvaluation;
   final bool isStandalone;
-  final bool useHero;
 
   @override
-  State<_FilteredThumbnail> createState() => _ThumbnailState();
+  State<_ThumbnailImage> createState() => _ThumbnailState();
 }
 
-class _ThumbnailState extends State<_FilteredThumbnail> {
+class _ThumbnailState extends State<_ThumbnailImage> {
   final ValueNotifier<int> total = ValueNotifier(0), received = ValueNotifier(0), startedAt = ValueNotifier(0);
   int restartedCount = 0;
   final ValueNotifier<bool?> isFromCache = ValueNotifier(null);
@@ -126,7 +140,7 @@ class _ThumbnailState extends State<_FilteredThumbnail> {
   }
 
   @override
-  void didUpdateWidget(_FilteredThumbnail oldWidget) {
+  void didUpdateWidget(_ThumbnailImage oldWidget) {
     super.didUpdateWidget(oldWidget);
     final oldEvaluation = oldWidget.filterEvaluation;
     final evaluation = widget.filterEvaluation;
@@ -431,6 +445,12 @@ class _ThumbnailState extends State<_FilteredThumbnail> {
 
     disposables();
 
+    // Reset providers only during reloads; disposal must not notify descendants.
+    if (widget.isStandalone) {
+      mainProvider.value = null;
+      extraProvider.value = null;
+    }
+
     total.value = 0;
     received.value = 0;
     startedAt.value = 0;
@@ -517,9 +537,7 @@ class _ThumbnailState extends State<_FilteredThumbnail> {
     // evict from memory cache only when in grid
     if (widget.isStandalone) {
       mainProvider.value?.evict();
-      mainProvider.value = null;
       extraProvider.value?.evict();
-      extraProvider.value = null;
     }
 
     debounceLoading?.cancel();
@@ -567,7 +585,7 @@ class _ThumbnailState extends State<_FilteredThumbnail> {
 
   @override
   Widget build(BuildContext context) {
-    Widget imageStack = LayoutBuilder(
+    final Widget imageStack = LayoutBuilder(
       builder: (context, constraints) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
@@ -832,27 +850,10 @@ class _ThumbnailState extends State<_FilteredThumbnail> {
       },
     );
 
-    imageStack = Material(
+    return Material(
       color: Colors.transparent,
       child: imageStack,
     );
-
-    if (widget.isStandalone && widget.useHero) {
-      return HeroMode(
-        enabled: SX.enableHeroTransitions.value && !SX.shitDevice.value,
-        child: Hero(
-          tag: 'imageHero${widget.item.hashCode}',
-          placeholderBuilder: (BuildContext context, Size heroSize, Widget child) {
-            // keep building the image since the images can be visible in the
-            // background of the image gallery
-            return child;
-          },
-          child: imageStack,
-        ),
-      );
-    } else {
-      return imageStack;
-    }
   }
 }
 

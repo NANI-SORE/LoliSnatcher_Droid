@@ -20,16 +20,29 @@
     "disable": "Désactiver",
     "add": "Ajouter",
     "edit": "Modifier",
+    "remove": "Supprimer",
+    "save": "Sauvegarder",
     "delete": "Supprimer",
     "confirm": "Confirmer",
+    "retry": "Rafraîchir",
+    "clear": "Effacer",
+    "copy": "Copier",
     "copied": "Copié",
     "copiedToClipboard": "Copié dans le presse-papiers",
+    "nothingFound": "Aucun Résultat",
+    "paste": "Coller",
+    "copyErrorText": "Erreur de Copie",
     "booru": "Booru",
     "goToSettings": "Allez dans les paramètres",
+    "thisMayTakeSomeTime": "Veuillez Patienter…",
     "exitTheAppQuestion": "Quitter l'application ?",
+    "closeTheApp": "Quitter l'application",
     "invalidUrl": "URL invalide !",
     "clipboardIsEmpty": "Le presse-papiers est vide !",
+    "failedToOpenLink": "Erreur lors de l'ouverture du lien",
     "apiKey": "Clé API",
+    "userId": "Identifiant de l'Utilisateur",
+    "login": "Se Connecter",
     "password": "Mot de passe",
     "pause": "Pause",
     "resume": "Reprendre",
@@ -44,8 +57,10 @@
     "move": "Déplacer",
     "shuffle": "Mélanger",
     "sort": "Trier",
+    "go": "Go",
     "search": "Rechercher",
     "filter": "Filtre",
+    "or": "Ou (~)",
     "page": "Page",
     "pageNumber": "Page n°",
     "tags": "Tags",
@@ -60,6 +75,9 @@
         "invalid": "Veuillez saisir une valeur valide",
         "invalidNumber": "Veuillez saisir un nombre",
         "invalidNumericValue": "Veuillez saisir une valeur numérique valide",
+        "tooSmall(param=min)": "Veuillez entrer une valeur plus grande que ${min: double}",
+        "tooBig(param=max)": "Veuillez entrer une valeur plus petite que ${max: double}",
+        "rangeError(param=min, param=max)": "Veuillez entrer une valeur entre ${min: double} et ${max: double}",
         "greaterThanOrEqualZero": "Veuillez saisir une valeur égale ou supérieure à 0",
         "lessThan4": "Veuillez saisir une valeur inférieure à 4",
         "biggerThan100": "Veuillez saisir une valeur supérieure à 100",
@@ -70,11 +88,14 @@
         "initError": "Erreur d'initialisation !",
         "settingUpProxy": "Configuration du proxy…",
         "loadingDatabase": "Chargement de la base de données…",
+        "loadingBoorus": "Chargement des boorus…",
+        "loadingTags": "Chargement des tags…",
         "restoringTabs": "Restauration des onglets…"
     },
     "permissions": {
         "noAccessToCustomStorageDirectory": "Aucun accès au répertoire de stockage personnalisé",
         "pleaseSetStorageDirectoryAgain": "Veuillez redéfinir le répertoire de stockage pour autoriser l'application à y accéder",
+        "currentPath(param=path)": "Chemin actuel: ${path: String}",
         "setDirectory": "Définir le répertoire",
         "currentlyNotAvailableForThisPlatform": "Non disponible sur cette plateforme",
         "resetDirectory": "Réinitialiser le répertoire",
@@ -83,31 +104,92 @@
     "authentication": {
         "pleaseAuthenticateToUseTheApp": "Veuillez vous authentifier pour utiliser l'application",
         "noBiometricHardwareAvailable": "Aucun matériel biométrique disponible",
-        "temporaryLockout": "Verrouillage temporaire"
+        "temporaryLockout": "Verrouillage temporaire",
+        "somethingWentWrong(param=error)": "Quelque-chose s'est mal passé durant l'authentification: ${error: String}"
     },
     "searchHandler": {
         "removedLastTab": "Onglet précédent supprimé",
+        "resettingSearchToDefaultTags": "Réinitialisation des tags par défaut",
         "uoh": "UOOOOOOOHHH",
+        "ratingsChanged": "Classification changée",
+        "ratingsChangedMessage(param=booruType)": "Sur ${booruType: String} [rating:safe] est remplacé par [rating:general] et [rating:sensitive]",
+        "appFixedRatingAutomatically": "Classification corrigée. Veuillez utiliser la bonne classification durant les futures recherches ",
         "tabsRestored": "Onglets restaurés",
+        "restoredTabsCount(param=count)": {
+            "one": "${count} onglet a été restauré de la session précédente",
+            "many": "Plusieurs onglets ont été restaurés de la session précédente",
+            "other": "Des onglets ont été restaurés de la session précédente"
+        },
         "someRestoredTabsHadIssues": "Certains onglets restaurés contenaient des boorus inconnus ou des caractères cassés.",
+        "theyWereSetToDefaultOrIgnored": "Il a été mis par défaut ou ignoré ",
+        "listOfBrokenTabs": "Liste des onglets cassés:",
         "tabsMerged": "Onglets fusionnés",
-        "tabsReplaced": "Onglets remplacés"
+        "addedTabsCount(param=count)": {
+            "one": "Plusieurs nouveaux onglets ajoutés ",
+            "many": "${count} nouveaux onglets ajoutés ",
+            "other": "Plusieurs nouveaux onglets ajoutés "
+        },
+        "tabsReplaced": "Onglets remplacés",
+        "receivedTabsCount(param=count)": {
+            "one": "${count} onglet reçu ",
+            "many": "${count} onglets reçus",
+            "other": "${count} onglets reçus"
+        }
     },
     "snatcher": {
+        "title": "Voler",
+        "snatchingHistory": "Historique de vol",
+        "enterTags": "Entrer les tags",
+        "amount": "Quantité",
+        "amountOfFilesToSnatch": "Quantité de fichiers à voler",
         "delayInMs": "Délai (en ms)",
         "delayBetweenEachDownload": "Délai entre chaque téléchargement",
-        "doNotCloseApp": "Ne fermez pas l'application !"
+        "snatchFiles": "Voler fichiers",
+        "itemWasAlreadySnatched": "L'objet a déjà été volé",
+        "failedToSnatchItem": "Échec du vol de l'objet ",
+        "itemWasCancelled": "L'objet a été annulé",
+        "startingNextQueueItem": "Début du prochain objet en file…",
+        "itemsSnatched": "Objets récupérés",
+        "snatchedCount(param=count)": {
+            "one": "Récupéré: ${count} objet",
+            "many": "Récupéré: ${count} objets",
+            "other": "Récupéré: ${count} objets"
+        },
+        "filesAlreadySnatched(param=count)": {
+            "one": "${count} fichier déjà récupéré",
+            "many": "${count} fichiers déjà récupérés",
+            "other": "${count} fichiers déjà récupérés"
+        },
+        "failedToSnatchFiles(param=count)": {
+            "one": "Échec de la récupération de ${count} fichier",
+            "many": "Échec de la récupération de ${count} fichiers",
+            "other": "Échec de la récupération de ${count} fichiers"
+        },
+        "cancelledFiles(param=count)": {
+            "one": "${count} fichier annulé",
+            "many": "${count} fichiers annulés",
+            "other": "${count} fichiers annulés"
+        },
+        "snatchingImages": "Récupération des images",
+        "doNotCloseApp": "Ne fermez pas l'application !",
+        "addedItemToQueue": "Objet ajouté à la file d'attente"
     },
     "multibooru": {
         "title": "Multibooru",
         "multibooruMode": "Mode multibooru",
-        "multibooruRequiresAtLeastTwoBoorus": "Nécessite au moins 2 boorus configurés"
+        "multibooruRequiresAtLeastTwoBoorus": "Nécessite au moins 2 boorus configurés",
+        "selectSecondaryBoorus": "Sélectionnez des boorus supplémentaires :",
+        "akaMultibooruMode": "aka mode Multibooru",
+        "labelSecondaryBoorusToInclude": "Booru secondaire à inclure"
     },
     "hydrus": {
+        "importError": "Une erreur s'est produite lors de l'importation dans Hydrus",
+        "addTagsToFile": "Ajouter des tags au fichier",
         "addUrls": "Ajouter des URL"
     },
     "tabs": {
         "tab": "Onglet",
+        "addBoorusInSettings": "Ajouter des boorus dans les paramètres",
         "selectABooru": "Sélectionnez un Booru",
         "secondaryBoorus": "Booru secondaire",
         "addNewTab": "Ajouter un nouvel onglet",
@@ -117,27 +199,62 @@
         "queryModeDefault": "Défaut",
         "customQuery": "Requête personnalisée",
         "empty": "[vide]",
+        "addSecondaryBoorus": "Ajouter Boorus secondaires ",
+        "keepSecondaryBoorus": "Garder Boorus secondaires",
+        "startFromCustomPageNumber": "Démarrer depuis le numéro de page personnalisé",
         "switchToNewTab": "Passer à un nouvel onglet",
         "add": "Ajouter",
         "tabsManager": "Gestionnaire d'onglets",
+        "selectMode": "Sele",
         "sortMode": "Trier les onglets",
         "help": "Aide",
         "deleteTabs": "Supprimer les onglets",
         "shuffleTabs": "Mélanger les onglets",
         "tabRandomlyShuffled": "Onglet mélangé aléatoirement",
         "scrollToCurrent": "Défilez jusqu'à l'onglet actuel",
+        "sorting": "Tri :",
+        "defaultTabsOrder": "Ordre par défaut des onglets",
         "sortAlphabetically": "Trier par ordre alphabétique",
         "sortAlphabeticallyReversed": "Trier par ordre alphabétique (inversé)",
+        "sortByBooruName": "Trier par nom de booru alphabétiquement",
+        "sortByBooruNameReversed": "Trier par nom de booru alphabétiquement (inversé)",
         "longPressSortToSave": "Appuyez longuement sur le bouton de tri pour enregistrer l'ordre actuel",
+        "select": "Sélectionner :",
+        "toggleSelectMode": "Activer le mode sélection",
+        "onTheBottomOfPage": "En bas de la page : ",
+        "selectDeselectAll": "Sélectionner/désélectionner tous les onglets",
         "deleteSelectedTabs": "Supprimer les onglets sélectionnés",
         "longPressToMove": "Appuyez longuement sur un onglet pour le déplacer",
+        "numbersInBottomRight": "Nombres en bas à droite de l'onglet :",
+        "firstNumberTabIndex": "Premier nombre - index de l'onglet dans l'ordre de liste par défaut",
+        "secondNumberTabIndex": "Deuxième nombre - index de l'onglet dans l'ordre actuel de la liste, apparaît quand le filtrage/tri est activé",
+        "specialFilters": "Filtres spéciaux :",
+        "loadedFilter": "« Chargé » - montre les onglets contenant des éléments chargés",
+        "notLoadedFilter": "« Non chargé » - montre les onglets non chargés et/ou ne contenant aucun élément",
+        "notLoadedItalic": "Les onglets non chargés ont un texte italique",
         "noTabsFound": "Aucun onglet trouvé",
+        "copy": "Copier",
+        "moveAction": "Déplacer",
+        "remove": "Supprimer",
+        "shuffle": "Mélanger",
+        "sort": "Trier",
         "filters": {
             "title": "Filtres d'onglets"
+        },
+        "move": {
+            "preview": "Aperçu :"
         }
     },
     "history": {
-        "unknownBooruType": "Type de Booru inconnu !"
+        "searchHistory": "Historique de recherche",
+        "searchHistoryIsEmpty": "L'historique de recherche est vide",
+        "searchHistoryIsDisabled": "Historique de recherche désactivé",
+        "searchHistoryRequiresDatabase": "Activez la base de données dans les paramètres pour l'historique de recherche",
+        "unknownBooruType": "Type de Booru inconnu !",
+        "open": "Ouvrir",
+        "openInNewTab": "Ouvrir dans un nouvel onglet",
+        "removeFromFavourites": "Retirer des favoris",
+        "setAsFavourite": "Ajouter aux favoris"
     },
     "settings": {
         "title": "Paramètres",
