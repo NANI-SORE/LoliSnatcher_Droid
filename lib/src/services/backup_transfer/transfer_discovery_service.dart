@@ -7,16 +7,19 @@ import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_models.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_transfer_logger.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/secure_transfer_connection.dart';
+import 'package:lolisnatcher/src/services/local_network_permission.dart';
 
 class TransferDiscoveryService {
   // Stable protocol identifier. Do not rebrand unless cross-app discovery is intentionally broken.
   static const serviceType = '_lolisync._tcp';
-  static const protocolVersion = 1;
+  static const protocolVersion = SecureTransferConnection.protocolVersion;
 
   BonsoirBroadcast? _broadcast;
   BonsoirDiscovery? _discovery;
   StreamSubscription<BonsoirDiscoveryEvent>? _discoverySub;
   final _devicesController = StreamController<List<DiscoveredTransferDevice>>.broadcast();
+  final _errorsController = StreamController<Object?>.broadcast();
   final Map<(String, String), DiscoveredTransferDevice> _devices = {};
   final Map<(String, String), int> _advertisedAt = {};
   final Map<String, int> _latestDeviceAdvertisements = {};
@@ -34,6 +37,7 @@ class TransferDiscoveryService {
   Set<String> _ignoredHosts = {};
 
   Stream<List<DiscoveredTransferDevice>> get devices => _devicesController.stream;
+  Stream<Object?> get errors => _errorsController.stream;
 
   Future<void> startBroadcast({
     required String deviceName,
@@ -48,6 +52,8 @@ class TransferDiscoveryService {
       if (_disposed || generation != _broadcastGeneration) return;
       await _broadcast?.stop();
       _broadcast = null;
+      await LocalNetworkPermission.ensureGranted();
+      if (_disposed || generation != _broadcastGeneration) return;
       // Ports change when the server restarts; the advertised device does not.
       final serviceName = 'LoliSnatcher $deviceId';
       BackupTransferLogger.info(
@@ -97,8 +103,10 @@ class TransferDiscoveryService {
   Future<void> startDiscovery({
     String? ignoredDeviceId,
     Set<String> ignoredHosts = const {},
+    bool retryPermission = false,
   }) async {
     if (_disposed) return;
+    _errorsController.add(null);
     _discoveryRequested = true;
     _discoveryRetry?.cancel();
     _discoveryReconcile?.cancel();
@@ -111,6 +119,8 @@ class TransferDiscoveryService {
       _discoverySub = null;
       await _discovery?.stop();
       _discovery = null;
+      await LocalNetworkPermission.ensureGranted(requestIfNeeded: retryPermission);
+      if (_disposed || generation != _discoveryGeneration) return;
       _ignoredDeviceId = ignoredDeviceId;
       _ignoredHosts = ignoredHosts.where((host) => host.isNotEmpty).toSet();
       BackupTransferLogger.info(
@@ -133,6 +143,7 @@ class TransferDiscoveryService {
         onError: (Object error, StackTrace stack) {
           if (_disposed || generation != _discoveryGeneration) return;
           BackupTransferLogger.error(error, 'TransferDiscoveryService', 'discovery', stackTrace: stack);
+          _errorsController.add(error);
           _scheduleDiscoveryRetry();
         },
         onDone: () {
@@ -160,7 +171,18 @@ class TransferDiscoveryService {
     _discoveryTail = operation.then<void>(
       (_) {},
       onError: (Object error, StackTrace stack) {
-        if (generation == _discoveryGeneration) _scheduleDiscoveryRetry();
+        if (!_disposed && generation == _discoveryGeneration) {
+          _errorsController.add(error);
+          if (error is LocalNetworkPermissionDenied) {
+            _discoveryRequested = false;
+            _devices.clear();
+            _advertisedAt.clear();
+            _seenServices.clear();
+            _emitDevices();
+          } else {
+            _scheduleDiscoveryRetry();
+          }
+        }
       },
     );
     return operation;
@@ -199,6 +221,7 @@ class TransferDiscoveryService {
     await stopBroadcast();
     await stopDiscovery();
     await _devicesController.close();
+    await _errorsController.close();
   }
 
   Future<void> refreshDiscovery() async {

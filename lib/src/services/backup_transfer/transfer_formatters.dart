@@ -18,7 +18,7 @@ class TransferFormatters {
     if (minutes > 0) {
       return '$minutes:${seconds.toString().padLeft(2, '0')}';
     }
-    return '$seconds';
+    return '0:${seconds.toString().padLeft(2, '0')}';
   }
 
   static String time(DateTime time) {

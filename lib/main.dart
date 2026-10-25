@@ -43,6 +43,9 @@ import 'package:lolisnatcher/src/pages/settings/performance_page.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/auto_backup_service.dart';
 import 'package:lolisnatcher/src/pages/settings/language_page.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/services/get_perms.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/backup_restore_journal.dart';
+import 'package:lolisnatcher/src/pages/settings/backup_recovery_failure_page.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -52,12 +55,38 @@ import 'package:lolisnatcher/src/widgets/root/image_stats.dart';
 import 'package:lolisnatcher/src/widgets/root/scroll_physics.dart';
 import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
 
-void main() async {
+Future<void> main() => _startApp();
+
+Future<void> _startApp({bool retryingRecovery = false}) async {
   CustomWidgetsBinding.ensureInitialized();
 
   if (Platform.isWindows || Platform.isLinux) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
+  }
+
+  Logger.Inst();
+  try {
+    // Android 10 and earlier keep config in shared storage. Permission must be
+    // settled before checking for a journal, not after settings have been read.
+    if (Platform.isAndroid && await ServiceHandler.getAndroidSDKVersion() <= 29 && !await getStoragePermission()) {
+      throw const FileSystemException('Storage access is required to check restore recovery');
+    }
+    // Recovery must precede settings initialization, which tolerates other load errors.
+    await BackupRestoreJournal(Directory(await ServiceHandler.getConfigDir())).recover();
+  } catch (error, stack) {
+    Logger.Inst().log(error, 'Main', 'backupRecovery', LogTypes.exception, s: stack);
+    if (retryingRecovery) rethrow;
+    await LocaleSettings.setLocale(AppLocaleExt.findDeviceLocale());
+    runApp(
+      TranslationProvider(
+        child: BackupRecoveryApp(
+          onRetry: () => _startApp(retryingRecovery: true),
+          error: error,
+        ),
+      ),
+    );
+    return;
   }
 
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
@@ -69,8 +98,6 @@ void main() async {
 
     webViewEnvironment = await WebViewEnvironment.create();
   }
-
-  Logger.Inst();
 
   // load settings before first render to get theme data early
   NavigationHandler.register();
@@ -272,38 +299,43 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
                     locale: TranslationProvider.of(context).flutterLocale,
                     supportedLocales: AppLocaleExt.supportedLocales,
                     localizationsDelegates: GlobalMaterialLocalizations.delegates,
-                    builder: (_, child) => Stack(
-                      children: [
-                        Overlay(
-                          initialEntries: [
-                            OverlayEntry(
-                              builder: (context) {
-                                registerGlobalOverlay(context);
+                    builder: (_, child) => ValueListenableBuilder(
+                      valueListenable: settingsHandler.backupRecoveryRetry,
+                      builder: (_, retry, content) =>
+                          retry == null ? content! : BackupRecoveryFailurePage(onRetry: retry),
+                      child: Stack(
+                        children: [
+                          Overlay(
+                            initialEntries: [
+                              OverlayEntry(
+                                builder: (context) {
+                                  registerGlobalOverlay(context);
 
-                                return child ?? const SizedBox.shrink();
-                              },
-                            ),
-                          ],
-                        ),
-                        // Blur overlay
-                        Overlay(
-                          initialEntries: [
-                            OverlayEntry(
-                              builder: (_) => AppLifecycleOverlay(
-                                shouldOverlay: SX.blurOnLeave.value,
+                                  return child ?? const SizedBox.shrink();
+                                },
                               ),
-                            ),
-                          ],
-                        ),
-                        // Lock screen overlay
-                        Overlay(
-                          initialEntries: [
-                            OverlayEntry(
-                              builder: (_) => const LockScreenPage(),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                          // Blur overlay
+                          Overlay(
+                            initialEntries: [
+                              OverlayEntry(
+                                builder: (_) => AppLifecycleOverlay(
+                                  shouldOverlay: SX.blurOnLeave.value,
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Lock screen overlay
+                          Overlay(
+                            initialEntries: [
+                              OverlayEntry(
+                                builder: (_) => const LockScreenPage(),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },

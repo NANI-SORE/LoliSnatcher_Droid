@@ -9,7 +9,7 @@ import 'package:lolisnatcher/src/services/backup_transfer/backup_package_service
 
 class BackupImportCompatService {
   BackupImportCompatService({BackupPackageService? packageService, BackupEntryRegistry? registry})
-    : packageService = packageService ?? BackupPackageService(),
+    : packageService = packageService ?? BackupPackageService(registry: registry),
       registry = registry ?? BackupEntryRegistry.instance;
   final BackupPackageService packageService;
   final BackupEntryRegistry registry;
@@ -24,6 +24,10 @@ class BackupImportCompatService {
   Future<List<BackupEntryId>> inspectNamedFile(String name, File file) async =>
       BackupFileNaming.isPackageFileName(name) ? packageService.inspectPackageFile(file) : [legacyEntryId(name)];
 
+  Future<BackupPreview> inspectNamedPreview(String name, File file) async => BackupFileNaming.isPackageFileName(name)
+      ? packageService.inspectPackagePreview(file)
+      : (entries: [legacyEntryId(name)], createdAt: null);
+
   Future<List<BackupEntryId>> importNamedBytes(
     String fileName,
     Uint8List bytes, {
@@ -32,10 +36,18 @@ class BackupImportCompatService {
     if (BackupFileNaming.isPackageFileName(fileName)) return packageService.importPackage(bytes, options: options);
     final id = legacyEntryId(fileName);
     await registry.ensureImportAllowed(id, options);
-    await registry.validateEntry(id, bytes: bytes);
-    await registry.byId(id).importEntry(bytes, options);
-    await registry.refreshAfterImport({id});
-    return [id];
+    await registry.validateEntry(id, bytes: bytes, onProgress: options.onProgress);
+    final applyOptions = _applyOptions(options);
+    return registry.runImport(
+      () async {
+        options.onProgress?.call(BackupImportProgress(phase: BackupImportPhase.importing, entryId: id));
+        await registry.byId(id).importEntry(bytes, applyOptions);
+        options.onProgress?.call(const BackupImportProgress(phase: BackupImportPhase.refreshing));
+        await registry.refreshAfterImport({id}, options: applyOptions);
+        return [id];
+      },
+      onProgress: options.onProgress,
+    );
   }
 
   Future<List<BackupEntryId>> importNamedFile(
@@ -46,14 +58,28 @@ class BackupImportCompatService {
     if (BackupFileNaming.isPackageFileName(fileName)) return packageService.importPackageFile(file, options: options);
     final id = legacyEntryId(fileName);
     await registry.ensureImportAllowed(id, options);
-    await registry.validateEntry(id, file: file);
-    final definition = registry.byId(id);
-    if (definition.importFile != null) {
-      await definition.importFile!(file, options);
-    } else {
-      await definition.importEntry(await file.readAsBytes(), options);
-    }
-    await registry.refreshAfterImport({id});
-    return [id];
+    await registry.validateEntry(id, file: file, onProgress: options.onProgress);
+    final applyOptions = _applyOptions(options);
+    return registry.runImport(() async {
+      options.onProgress?.call(BackupImportProgress(phase: BackupImportPhase.importing, entryId: id));
+      final definition = registry.byId(id);
+      if (definition.importFile != null) {
+        await definition.importFile!(file, applyOptions);
+      } else {
+        await definition.importEntry(await file.readAsBytes(), applyOptions);
+      }
+      options.onProgress?.call(const BackupImportProgress(phase: BackupImportPhase.refreshing));
+      await registry.refreshAfterImport({id}, options: applyOptions);
+      return [id];
+    }, onProgress: options.onProgress);
   }
+
+  BackupImportOptions _applyOptions(BackupImportOptions options) => BackupImportOptions(
+    tabsMode: options.tabsMode,
+    tagsMode: options.tagsMode,
+    allowedEntryIds: options.allowedEntryIds,
+    rejectUnexpectedEntries: options.rejectUnexpectedEntries,
+    booruNameRemap: {},
+    onProgress: options.onProgress,
+  );
 }

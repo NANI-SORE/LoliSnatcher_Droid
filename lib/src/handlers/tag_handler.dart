@@ -49,6 +49,11 @@ class TagHandler {
   ValueNotifier<List<UntypedCollection>> untypedQueue = ValueNotifier([]);
   ValueNotifier<bool> tagFetchActive = ValueNotifier(false);
   bool tagSaveActive = false;
+  bool _isInitialized = false;
+  bool get isInitialized => _isInitialized;
+  Future<void> _tagSaveWrites = Future.value();
+
+  Future<void> waitForTagSaves() => _tagSaveWrites;
 
   void queueListener() {
     tryGetTagTypes();
@@ -98,7 +103,18 @@ class TagHandler {
     _tagMap[tag.fullString] = tag;
 
     if (dbEnabled && useDB && SearchHandler.instance.canBackup.value) {
-      await SettingsHandler.instance.dbHandler.updateTagsFromObjects([tag]);
+      final write = _tagSaveWrites.then((_) async {
+        if (SearchHandler.instance.canBackup.value) {
+          await SettingsHandler.instance.dbHandler.updateTagsFromObjects([tag]);
+        }
+      });
+      _tagSaveWrites = write.then<void>(
+        (_) {},
+        onError: (Object error, StackTrace stack) {
+          Logger.Inst().log(error, 'TagHandler', 'putTag', LogTypes.exception, s: stack);
+        },
+      );
+      await write;
     }
     return;
   }
@@ -230,6 +246,7 @@ class TagHandler {
           await loadTagsFile();
         }
       }
+      _isInitialized = true;
     } catch (e, s) {
       Logger.Inst().log(
         'Error loading tags: $e',
@@ -238,6 +255,7 @@ class TagHandler {
         LogTypes.exception,
         s: s,
       );
+      return false;
     }
 
     return true;
@@ -251,7 +269,7 @@ class TagHandler {
   Future<void> loadTagsFile() async {
     final File tagFile = File('${SettingsHandler.instance.path}tags.json');
     final String jsonString = await tagFile.readAsString();
-    await loadFromJSON(jsonString);
+    if (!await loadFromJSON(jsonString)) throw const FormatException('Could not load saved tags');
     return;
   }
 
@@ -314,35 +332,46 @@ class TagHandler {
     _tagMap.remove(tag.fullString);
   }
 
-  Future<void> saveTags() async {
+  Future<void> saveTags({bool duringRestore = false}) {
+    final write = _tagSaveWrites.then((_) => _saveTags(duringRestore: duringRestore));
+    _tagSaveWrites = write.then<void>(
+      (_) {},
+      onError: (Object error, StackTrace stack) {
+        Logger.Inst().log(error, 'TagHandler', 'saveTags', LogTypes.exception, s: stack);
+      },
+    );
+    return write;
+  }
+
+  Future<void> _saveTags({required bool duringRestore}) async {
+    if (!SearchHandler.instance.canBackup.value && !duringRestore) return;
     tagSaveActive = true;
     final SettingsHandler settings = SettingsHandler.instance;
-    await getStoragePermission();
-    prevLength = tagMap.entries.length;
-    if (SX.dbEnabled.value) {
-      //await settings.dbHandler.updateTagsFromObjects(toList());
-    } else {
-      try {
+    try {
+      await getStoragePermission();
+      if (!SearchHandler.instance.canBackup.value && !duringRestore) return;
+      prevLength = tagMap.entries.length;
+      if (!SX.dbEnabled.value) {
         if (settings.path == '') {
           await settings.setConfigDir();
         }
         await Directory(settings.path).create(recursive: true);
         final File tagFile = File('${settings.path}tags.json');
-        final writer = tagFile.openWrite();
-        writer.write(jsonEncode(toList()));
-        await writer.flush();
-        await writer.close();
-      } catch (e, s) {
-        Logger.Inst().log(
-          'FAILED TO WRITE TAG FILE: $e',
-          'TagHandler',
-          'saveTags',
-          LogTypes.exception,
-          s: s,
-        );
+        final temporary = File('${tagFile.path}.tmp');
+        await temporary.writeAsString(jsonEncode(toList()), flush: true);
+        await temporary.rename(tagFile.path);
       }
+    } catch (e, s) {
+      Logger.Inst().log(
+        'FAILED TO WRITE TAG FILE: $e',
+        'TagHandler',
+        'saveTags',
+        LogTypes.exception,
+        s: s,
+      );
+      if (duringRestore) rethrow;
+    } finally {
+      tagSaveActive = false;
     }
-    tagSaveActive = false;
-    return;
   }
 }

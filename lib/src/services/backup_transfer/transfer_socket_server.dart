@@ -15,6 +15,7 @@ import 'package:lolisnatcher/src/services/backup_transfer/backup_package_service
 import 'package:lolisnatcher/src/services/backup_transfer/backup_transfer_logger.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/transfer_history_service.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/transfer_socket_protocol.dart';
+import 'package:lolisnatcher/src/services/local_network_permission.dart';
 
 class TransferRequest {
   const TransferRequest({
@@ -22,12 +23,14 @@ class TransferRequest {
     required this.address,
     required this.entries,
     required this.cancelled,
+    required this.verificationPhrase,
   });
 
   final String deviceName;
   final String address;
   final List<BackupEntryId> entries;
   final Future<void> cancelled;
+  final String verificationPhrase;
 }
 
 class TransferSocketServer {
@@ -67,11 +70,13 @@ class TransferSocketServer {
   int? get port => _server?.port;
   InternetAddress? get address => _server?.address;
 
-  Future<void> start({String? host, int port = 0, String? deviceName}) async {
+  Future<void> start({String? host, int port = 0, String? deviceName, bool retryPermission = false}) async {
     if (_disposed) return;
     await stop();
     if (_disposed) return;
     final generation = ++_generation;
+    await LocalNetworkPermission.ensureGranted(requestIfNeeded: retryPermission);
+    if (_disposed || generation != _generation) return;
     final bindAddress = host == null || host.isEmpty ? InternetAddress.anyIPv4 : InternetAddress(host);
     final server = await ServerSocket.bind(bindAddress, port);
     if (_disposed || generation != _generation) {
@@ -105,7 +110,7 @@ class TransferSocketServer {
   Future<void> cancelTransfers() async {
     final active = _active;
     if (active == null) return;
-    active.cancel();
+    active.cancel(byUser: true);
     await active.connection.close();
     await active.done;
   }
@@ -129,6 +134,7 @@ class TransferSocketServer {
       return rejected;
     }
     final session = _SendSession(connection);
+    unawaited(connection.disconnected.then((_) => session.cancel()));
     _active = session;
     session.done = _serve(session).whenComplete(() {
       if (identical(_active, session)) {
@@ -141,15 +147,8 @@ class TransferSocketServer {
   }
 
   Future<void> _reject(TransferSocketConnection connection) async {
-    try {
-      await connection
-          .writeFrame({'type': 'error', 'message': loc.settings.backupAndTransfer.transferBusy})
-          .timeout(const Duration(seconds: 1));
-    } catch (_) {
-      // A busy server never retains a second connection.
-    } finally {
-      await connection.close();
-    }
+    // Unauthenticated peers receive no application frames, including errors.
+    await connection.close();
   }
 
   Future<void> _serve(_SendSession session) async {
@@ -161,8 +160,18 @@ class TransferSocketServer {
     Directory? packageDirectory;
     String? requestId;
     var transferred = 0;
+    var awaitingImportConfirmation = false;
     int? size;
-    void emit({bool complete = false, String entry = 'package'}) {
+    var stage = BackupTransferStage.connecting;
+    var selectedEntries = <BackupEntryId>[];
+    String? receiverDisplayName;
+    void emit({
+      bool complete = false,
+      String entry = 'package',
+      BackupTransferOutcome? outcome,
+      String? message,
+      String? details,
+    }) {
       if (!stats.isClosed) {
         stats.add(
           BackupTransferStats(
@@ -171,12 +180,21 @@ class TransferSocketServer {
             startedAt: startedAt,
             currentEntry: entry,
             isComplete: complete,
+            stage: stage,
+            outcome: outcome,
+            message: message,
+            details: details,
+            peerName: receiverDisplayName ?? peerAddress,
+            entryIds: List.unmodifiable(selectedEntries),
           ),
         );
       }
     }
 
     try {
+      emit();
+      await connection.establishAsSender();
+      session.checkCancelled();
       final available = <BackupEntryDefinition>[];
       for (final entry in registry.entries) {
         if (await entry.isAvailable()) available.add(entry);
@@ -193,7 +211,9 @@ class TransferSocketServer {
             .map((entry) => {'id': entry.id.name, 'title': entry.title(), 'supportsClipboard': entry.supportsClipboard})
             .toList(),
       });
-      final selection = await connection.readFrame();
+      stage = BackupTransferStage.selecting;
+      emit();
+      final selection = await connection.readFrame(timeout: TransferProtocol.approvalTimeout);
       if (selection['type'] != 'selectEntries' || !TransferProtocol.validRequestId(selection['requestId'])) {
         throw FormatException(loc.settings.backupAndTransfer.invalidTransferData);
       }
@@ -230,6 +250,10 @@ class TransferSocketServer {
           throw FormatException(loc.settings.backupAndTransfer.invalidTransferData);
         }
       }
+      selectedEntries = List.unmodifiable(entryIds);
+      receiverDisplayName = receiverName;
+      stage = BackupTransferStage.approval;
+      emit();
       session.checkCancelled();
       final approve = approveRequest;
       final accepted =
@@ -241,6 +265,7 @@ class TransferSocketServer {
                 address: peerAddress,
                 entries: List.unmodifiable(entryIds),
                 cancelled: session.cancelled.future,
+                verificationPhrase: connection.verificationPhrase,
               ),
             ),
             session.cancelled.future.then((_) => false),
@@ -249,6 +274,7 @@ class TransferSocketServer {
       if (!accepted) throw StateError(loc.settings.backupAndTransfer.transferDeclined);
       final includeDeviceSettings = includeDeviceSpecificSettings;
       await connection.writeFrame({'type': 'approved', 'requestId': requestId});
+      stage = BackupTransferStage.preparing;
       emit();
       _log(loc.settings.backupAndTransfer.exportingEntries(count: entryIds.length));
       final cacheDir = Directory('${await ServiceHandler.getCacheDir()}backup_transfer');
@@ -285,13 +311,18 @@ class TransferSocketServer {
         'size': packageSize,
         'sha256': digest.toString(),
       });
+      stage = BackupTransferStage.transferring;
       await connection.writeFile(packageFile, (sent) {
         transferred = sent;
         emit();
       }, isCancelled: () => session.isCancelled);
       session.checkCancelled();
+      awaitingImportConfirmation = true;
+      stage = BackupTransferStage.awaitingImport;
+      emit();
       await connection.writeFrame({'type': 'complete', 'requestId': requestId});
       final ack = await connection.readFrame(timeout: TransferProtocol.importTimeout);
+      awaitingImportConfirmation = false;
       if (ack['type'] != 'imported' || ack['requestId'] != requestId) {
         throw StateError(
           ack['type'] == 'error'
@@ -312,15 +343,31 @@ class TransferSocketServer {
       } catch (e, s) {
         BackupTransferLogger.error(e, 'TransferSocketServer', 'history', stackTrace: s);
       }
-      emit(complete: true);
+      emit(complete: true, outcome: BackupTransferOutcome.success);
       _log(loc.settings.backupAndTransfer.transferComplete);
     } catch (e, s) {
-      final message = session.isCancelled
+      final message = awaitingImportConfirmation
+          ? loc.settings.backupAndTransfer.transferAckUnknown
+          : session.cancelledByUser
           ? loc.settings.backupAndTransfer.transferCancelled
           : loc.settings.backupAndTransfer.transferFailed(error: e.toString());
       _log(message);
-      if (!session.isCancelled) BackupTransferLogger.error(e, 'TransferSocketServer', 'serveSocket', stackTrace: s);
-      emit(complete: true, entry: 'error');
+      if (!session.cancelledByUser) BackupTransferLogger.error(e, 'TransferSocketServer', 'serveSocket', stackTrace: s);
+      emit(
+        complete: true,
+        entry: 'error',
+        outcome: awaitingImportConfirmation
+            ? BackupTransferOutcome.unconfirmed
+            : session.cancelledByUser
+            ? BackupTransferOutcome.cancelled
+            : BackupTransferOutcome.failed,
+        message: awaitingImportConfirmation
+            ? loc.settings.backupAndTransfer.transferAckUnknown
+            : session.cancelledByUser
+            ? loc.settings.backupAndTransfer.transferCancelled
+            : loc.settings.backupAndTransfer.operationFailed,
+        details: awaitingImportConfirmation || session.cancelledByUser ? null : e.toString(),
+      );
       try {
         await connection
             .writeFrame({'type': 'error', 'requestId': requestId, 'message': message})
@@ -351,9 +398,11 @@ class _SendSession {
   _SendSession(this.connection);
   final TransferSocketConnection connection;
   final cancelled = Completer<void>();
+  bool cancelledByUser = false;
   late Future<void> done;
   bool get isCancelled => cancelled.isCompleted;
-  void cancel() {
+  void cancel({bool byUser = false}) {
+    cancelledByUser = cancelledByUser || byUser;
     if (!isCancelled) cancelled.complete();
   }
 

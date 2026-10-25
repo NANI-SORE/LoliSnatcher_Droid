@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:lolisnatcher/src/pages/settings/backup_feedback.dart';
+import 'package:lolisnatcher/src/pages/settings/backup_theme.dart';
 
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_entry_registry.dart';
@@ -24,34 +28,26 @@ class BackupSelectionDialog extends StatelessWidget {
   final Widget? warning;
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    icon: icon,
-    title: title,
-    constraints: const BoxConstraints(maxWidth: 720),
-    insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-    scrollable: true,
-    content: SizedBox(width: 720, child: content),
-    actions: warning == null
-        ? actions
-        : [
-            SizedBox(
-              width: 720,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(padding: const EdgeInsets.only(bottom: 12), child: warning),
-                  OverflowBar(
-                    alignment: MainAxisAlignment.end,
-                    spacing: 8,
-                    overflowSpacing: 8,
-                    overflowAlignment: OverflowBarAlignment.end,
-                    children: actions,
-                  ),
-                ],
-              ),
-            ),
+  Widget build(BuildContext context) => BackupControlsTheme(
+    child: AlertDialog(
+      icon: icon,
+      title: title,
+      constraints: const BoxConstraints(maxWidth: 720),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      scrollable: true,
+      content: SizedBox(
+        width: 720,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            content,
+            if (warning != null) Padding(padding: const EdgeInsets.only(top: 16), child: warning),
           ],
+        ),
+      ),
+      actions: actions,
+    ),
   );
 }
 
@@ -63,17 +59,19 @@ class BackupPageBody extends StatelessWidget {
   final ScrollController? controller;
 
   @override
-  Widget build(BuildContext context) => SafeArea(
-    top: false,
-    child: Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: fullWidth ? double.infinity : 720),
-        child: ListView(
-          controller: controller,
-          padding: EdgeInsets.symmetric(horizontal: fullWidth ? 0 : 16, vertical: 16),
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          children: children,
+  Widget build(BuildContext context) => BackupControlsTheme(
+    child: SafeArea(
+      top: false,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: fullWidth ? double.infinity : 720),
+          child: ListView(
+            controller: controller,
+            padding: EdgeInsets.symmetric(horizontal: fullWidth ? 0 : 16, vertical: 16),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            children: children,
+          ),
         ),
       ),
     ),
@@ -166,28 +164,34 @@ class BackupNotice extends StatelessWidget {
 }
 
 class BackupBusyOverlay extends StatelessWidget {
-  const BackupBusyOverlay({required this.label, super.key});
+  const BackupBusyOverlay({required this.label, this.content, super.key});
   final String label;
+  final Widget? content;
 
   @override
   Widget build(BuildContext context) => Stack(
     children: [
       ModalBarrier(dismissible: false, color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.35)),
       Center(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 20),
-                  Semantics(liveRegion: true, child: Text(label, textAlign: TextAlign.center)),
-                ],
-              ),
-            ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child:
+                content ??
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 20),
+                        Semantics(liveRegion: true, child: Text(label, textAlign: TextAlign.center)),
+                      ],
+                    ),
+                  ),
+                ),
           ),
         ),
       ),
@@ -331,7 +335,14 @@ class _DatabaseTreePainter extends CustomPainter {
 }
 
 class BackupEntryCheckbox extends StatelessWidget {
-  const BackupEntryCheckbox({required this.entry, required this.selected, required this.onChanged, super.key});
+  const BackupEntryCheckbox({
+    required this.entry,
+    required this.selected,
+    required this.onChanged,
+    this.disabledReason,
+    super.key,
+  });
+  final String? disabledReason;
   final BackupEntryDefinition entry;
   final bool selected;
   final ValueChanged<bool>? onChanged;
@@ -343,7 +354,7 @@ class BackupEntryCheckbox extends StatelessWidget {
     controlAffinity: ListTileControlAffinity.leading,
     secondary: Icon(entry.icon),
     title: Text(entry.title()),
-    subtitle: Text(entry.description()),
+    subtitle: Text(disabledReason ?? entry.description()),
     value: selected,
     onChanged: onChanged == null ? null : (value) => onChanged!(value ?? false),
   );
@@ -375,7 +386,7 @@ class BackupRestoreOptions extends StatelessWidget {
       children: [
         if (showTabs) ...[
           const SizedBox(height: 16),
-          DropdownButtonFormField<BackupTabsMode>(
+          BackupDropdown<BackupTabsMode>(
             initialValue: tabsMode,
             isExpanded: true,
             decoration: InputDecoration(labelText: t.tabsImportMode, border: const OutlineInputBorder()),
@@ -412,7 +423,7 @@ class BackupRestoreOptions extends StatelessWidget {
   }
 }
 
-class BackupTransferProgress extends StatelessWidget {
+class BackupTransferProgress extends StatefulWidget {
   const BackupTransferProgress({
     required this.stats,
     required this.isReceiving,
@@ -428,44 +439,87 @@ class BackupTransferProgress extends StatelessWidget {
   final String? errorMessage;
 
   @override
+  State<BackupTransferProgress> createState() => _BackupTransferProgressState();
+}
+
+class _BackupTransferProgressState extends State<BackupTransferProgress> {
+  Timer? _heartbeat;
+  BackupTransferStats? get stats => widget.stats;
+  bool get isReceiving => widget.isReceiving;
+  VoidCallback? get onCancel => widget.onCancel;
+  VoidCallback? get onClearError => widget.onClearError;
+  String? get errorMessage => widget.errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateTimer();
+  }
+
+  @override
+  void didUpdateWidget(BackupTransferProgress oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _updateTimer();
+  }
+
+  void _updateTimer() {
+    if (stats?.isComplete == true) {
+      _heartbeat?.cancel();
+      _heartbeat = null;
+    } else {
+      _heartbeat ??= Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _heartbeat?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final t = context.loc.settings.backupAndTransfer;
     final current = stats;
-    final failed = current?.currentEntry == 'error';
+    final outcome = current?.outcome;
     final complete = current?.isComplete == true;
-    final importing = current?.currentEntry == 'importing';
-    final importProgress = importing ? current?.importProgress : null;
-    final importTotal = importProgress?.totalItems;
-    final importRatio = importTotal != null && importTotal > 0
-        ? ((importProgress?.processedItems ?? 0) / importTotal).clamp(0.0, 1.0)
-        : null;
+    final failed = outcome == BackupTransferOutcome.failed;
+    final cancelled = outcome == BackupTransferOutcome.cancelled;
+    final uncertain =
+        outcome == BackupTransferOutcome.unconfirmed || outcome == BackupTransferOutcome.restoredNotNotified;
+    final stage = current?.stage ?? BackupTransferStage.connecting;
+    final importing = stage == BackupTransferStage.importing;
+    final progress = importing ? current?.importProgress : null;
+    final totalItems = progress?.totalItems;
     final total = current?.totalBytes;
-    final ratio = total != null && total > 0 ? ((current?.bytesTransferred ?? 0) / total).clamp(0.0, 1.0) : null;
-    final String title;
-    if (failed) {
-      title = t.transferNotCompleted;
-    } else if (complete) {
-      title = t.transferComplete;
-    } else if (importing) {
-      title = switch (importProgress?.phase) {
-        BackupImportPhase.extracting => t.importExtracting,
-        BackupImportPhase.verifying => t.verifyingTransfer,
-        BackupImportPhase.validating => t.importValidating,
-        BackupImportPhase.rechecking => t.importRechecking,
-        BackupImportPhase.preparingDatabase => t.importPreparingDatabase,
-        BackupImportPhase.cleaningUp => t.importCleaningUp,
-        BackupImportPhase.refreshing => t.importRefreshing,
-        BackupImportPhase.importing || null => t.importingPackage,
-      };
-    } else if (current == null) {
-      title = t.waitingForApproval;
-    } else if (total == null) {
-      title = t.preparingTransfer;
-    } else if (ratio == 1) {
-      title = isReceiving ? t.verifyingTransfer : t.waitingForImport;
-    } else {
-      title = isReceiving ? t.receiveDataTitle : t.sendDataTitle;
-    }
+    final title = switch (outcome) {
+      BackupTransferOutcome.unconfirmed => t.restoreUnconfirmed,
+      BackupTransferOutcome.restoredNotNotified => t.dataRestored,
+      BackupTransferOutcome.failed => t.transferNotCompleted,
+      BackupTransferOutcome.cancelled => t.transferCancelled,
+      BackupTransferOutcome.success => isReceiving ? t.dataRestored : t.transferComplete,
+      null => switch (stage) {
+        BackupTransferStage.connecting => t.connecting,
+        BackupTransferStage.selecting => t.choosingData,
+        BackupTransferStage.approval => t.waitingForApproval,
+        BackupTransferStage.preparing => t.preparingTransfer,
+        BackupTransferStage.transferring => isReceiving ? t.receiveDataTitle : t.sendDataTitle,
+        BackupTransferStage.verifying => t.verifyingTransfer,
+        BackupTransferStage.importing => backupImportPhaseTitle(context, progress?.phase),
+        BackupTransferStage.awaitingImport => t.waitingForImport,
+      },
+    };
+    final ratio = importing && totalItems != null && totalItems > 0
+        ? ((progress?.processedItems ?? 0) / totalItems).clamp(0.0, 1.0)
+        : stage == BackupTransferStage.transferring && total != null && total > 0
+        ? ((current?.bytesTransferred ?? 0) / total).clamp(0.0, 1.0)
+        : null;
+    final colors = Theme.of(context).colorScheme;
+    final message = failed && current?.message == t.operationFailed && current?.details != null
+        ? backupFailureMessage(context, current!.details!, transfer: true)
+        : current?.message;
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Card(
@@ -478,12 +532,20 @@ class BackupTransferProgress extends StatelessWidget {
               Row(
                 children: [
                   Icon(
-                    failed
+                    cancelled
+                        ? Icons.cancel_outlined
+                        : failed
                         ? Icons.error_outline
+                        : uncertain
+                        ? Icons.info_outline
                         : complete
                         ? Icons.check_circle_outline
                         : Icons.sync,
-                    color: failed ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.primary,
+                    color: cancelled
+                        ? colors.onSurfaceVariant
+                        : failed
+                        ? colors.error
+                        : colors.secondary,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -494,83 +556,89 @@ class BackupTransferProgress extends StatelessWidget {
                   ),
                 ],
               ),
+              if (current?.peerName case final name?) ...[
+                const SizedBox(height: 8),
+                Text(name, style: Theme.of(context).textTheme.titleSmall),
+              ],
+              if (current != null && current.entryIds.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  current.entryIds.map((id) => BackupEntryRegistry.instance.byId(id).title()).join(', '),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
               if (!complete) ...[
                 const SizedBox(height: 16),
                 LinearProgressIndicator(
-                  value: importing ? importRatio : (ratio == 1 ? null : ratio),
+                  value: ratio,
                   semanticsLabel: title,
                   borderRadius: BorderRadius.circular(4),
                   minHeight: 6,
                 ),
               ],
-              if (importProgress != null && !complete) ...[
-                if (importProgress.entryId case final entryId?) ...[
-                  const SizedBox(height: 12),
-                  Text(BackupEntryRegistry.instance.byId(entryId).title()),
-                ],
-                if (importProgress.processedItems case final count?) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    importTotal == null
-                        ? t.importRecordsProcessed(count: count)
-                        : t.importRecordsTotal(count: count, total: importTotal),
-                  ),
-                ],
+              if (progress?.entryId case final id?) ...[
                 const SizedBox(height: 8),
-                Text('${t.elapsed}: ${TransferFormatters.duration(DateTime.now().difference(current!.startedAt))}'),
-                if (current.importProgressUpdatedAt case final updatedAt?)
+                Text(BackupEntryRegistry.instance.byId(id).title()),
+              ],
+              if (progress?.processedItems case final count? when !complete) ...[
+                const SizedBox(height: 8),
+                Text(
+                  totalItems == null
+                      ? t.importRecordsProcessed(count: count)
+                      : t.importRecordsTotal(count: count, total: totalItems),
+                ),
+              ],
+              if (current != null && total != null) ...[
+                const SizedBox(height: 12),
+                Text('${TransferFormatters.bytes(current.bytesTransferred)} / ${TransferFormatters.bytes(total)}'),
+              ],
+              if (current != null && !complete) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 4,
+                  children: [
+                    Text('${t.elapsed}: ${TransferFormatters.duration(DateTime.now().difference(current.startedAt))}'),
+                    if (stage == BackupTransferStage.transferring)
+                      Text('${t.speed}: ${TransferFormatters.bytes(current.bytesPerSecond.round())}/s'),
+                  ],
+                ),
+                if (current.importProgressUpdatedAt case final updatedAt?
+                    when importing && DateTime.now().difference(updatedAt).inSeconds >= 10)
                   Text(
                     t.importLastProgress(elapsed: TransferFormatters.duration(DateTime.now().difference(updatedAt))),
                   ),
-              ],
-              if (current != null && !failed) ...[
-                const SizedBox(height: 12),
-                Text(
-                  [
-                    TransferFormatters.bytes(current.bytesTransferred),
-                    if (total != null) TransferFormatters.bytes(total),
-                  ].join(' / '),
-                ),
-                if (!complete && !importing && ratio != 1) ...[
+                if (importing) ...[
                   const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 4,
-                    children: [
-                      Text('${t.speed}: ${TransferFormatters.bytes(current.bytesPerSecond.round())}/s'),
-                      Text(
-                        '${t.elapsed}: ${TransferFormatters.duration(DateTime.now().difference(current.startedAt))}',
-                      ),
-                    ],
-                  ),
+                  Text(t.finishRestoreFirst, style: Theme.of(context).textTheme.bodySmall),
+                ],
+                if (stage == BackupTransferStage.awaitingImport) ...[
+                  const SizedBox(height: 8),
+                  Text(t.otherDeviceMayFinish, style: Theme.of(context).textTheme.bodySmall),
                 ],
               ],
-              if (failed && errorMessage != null) ...[
+              if (message != null) ...[
                 const SizedBox(height: 12),
-                SelectableText(errorMessage!),
+                Text(message),
+              ] else if (failed && errorMessage != null) ...[
+                const SizedBox(height: 12),
+                Text(errorMessage!),
               ],
-              if (failed && complete && onClearError != null) ...[
-                const SizedBox(height: 12),
+              if (current?.details case final details? when failed) BackupErrorDetails(details: details),
+              if (complete && onClearError != null)
                 Align(
                   alignment: AlignmentDirectional.centerEnd,
-                  child: TextButton.icon(
-                    onPressed: onClearError,
-                    icon: const Icon(Icons.close),
-                    label: Text(t.clearTransferError),
-                  ),
+                  child: TextButton(onPressed: onClearError, child: Text(t.done)),
                 ),
-              ],
-              if (onCancel != null && !complete) ...[
-                const SizedBox(height: 12),
+              if (onCancel != null && !complete)
                 Align(
                   alignment: AlignmentDirectional.centerEnd,
                   child: TextButton.icon(
                     onPressed: onCancel,
                     icon: const Icon(Icons.close),
-                    label: Text(context.loc.cancel),
+                    label: Text(stage == BackupTransferStage.awaitingImport ? t.stopWaiting : context.loc.cancel),
                   ),
                 ),
-              ],
             ],
           ),
         ),
@@ -615,7 +683,7 @@ class BackupTransferActivity extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child: ExpansionTile(
             leading: const Icon(Icons.history),
-            title: Text(t.history),
+            title: Text(t.recentHistory),
             subtitle: history.isEmpty ? Text(t.noHistory) : null,
             children: [
               for (final entry in history.take(20))
@@ -624,7 +692,7 @@ class BackupTransferActivity extends StatelessWidget {
                   subtitle: Text(
                     [
                       entry.peerAddress,
-                      TransferFormatters.dateTime(entry.createdAt),
+                      backupDateTime(context, entry.createdAt),
                       entry.entryIds
                           .map(
                             (id) =>

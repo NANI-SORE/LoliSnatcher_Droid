@@ -24,6 +24,8 @@ enum BackupEntrySource {
   transfer,
 }
 
+typedef BackupPreview = ({List<BackupEntryId> entries, DateTime? createdAt});
+
 class BackupEntryPayload {
   const BackupEntryPayload({
     required this.fileName,
@@ -101,6 +103,15 @@ class BackupImportOptions {
   final Map<String, String>? booruNameRemap;
 
   final ValueChanged<BackupImportProgress>? onProgress;
+
+  BackupImportOptions withProgress(ValueChanged<BackupImportProgress> callback) => BackupImportOptions(
+    tabsMode: tabsMode,
+    tagsMode: tagsMode,
+    allowedEntryIds: allowedEntryIds,
+    rejectUnexpectedEntries: rejectUnexpectedEntries,
+    booruNameRemap: booruNameRemap,
+    onProgress: callback,
+  );
 }
 
 enum BackupImportPhase {
@@ -112,6 +123,8 @@ enum BackupImportPhase {
   importing,
   cleaningUp,
   refreshing,
+  snapshotting,
+  rollingBack,
 }
 
 class BackupImportProgress {
@@ -121,6 +134,14 @@ class BackupImportProgress {
   final BackupEntryId? entryId;
   final int? processedItems;
   final int? totalItems;
+}
+
+class BackupRestoreFailure implements Exception {
+  const BackupRestoreFailure(this.cause);
+  final Object cause;
+
+  @override
+  String toString() => cause.toString();
 }
 
 enum BackupTabsMode {
@@ -149,6 +170,12 @@ class BackupTransferStats {
     this.isComplete = false,
     this.importProgress,
     this.importProgressUpdatedAt,
+    this.stage = BackupTransferStage.preparing,
+    this.outcome,
+    this.message,
+    this.details,
+    this.peerName,
+    this.entryIds = const [],
   });
 
   final int bytesTransferred;
@@ -158,6 +185,12 @@ class BackupTransferStats {
   final bool isComplete;
   final BackupImportProgress? importProgress;
   final DateTime? importProgressUpdatedAt;
+  final BackupTransferStage stage;
+  final BackupTransferOutcome? outcome;
+  final String? message;
+  final String? details;
+  final String? peerName;
+  final List<BackupEntryId> entryIds;
 
   double get bytesPerSecond {
     final elapsedMs = DateTime.now().difference(startedAt).inMilliseconds;
@@ -173,6 +206,12 @@ class BackupTransferStats {
     bool? isComplete,
     BackupImportProgress? importProgress,
     DateTime? importProgressUpdatedAt,
+    BackupTransferStage? stage,
+    BackupTransferOutcome? outcome,
+    String? message,
+    String? details,
+    String? peerName,
+    List<BackupEntryId>? entryIds,
   }) {
     return BackupTransferStats(
       bytesTransferred: bytesTransferred ?? this.bytesTransferred,
@@ -182,8 +221,39 @@ class BackupTransferStats {
       isComplete: isComplete ?? this.isComplete,
       importProgress: importProgress ?? this.importProgress,
       importProgressUpdatedAt: importProgressUpdatedAt ?? this.importProgressUpdatedAt,
+      stage: stage ?? this.stage,
+      outcome: outcome ?? this.outcome,
+      message: message ?? this.message,
+      details: details ?? this.details,
+      peerName: peerName ?? this.peerName,
+      entryIds: entryIds ?? this.entryIds,
     );
   }
+}
+
+enum BackupTransferStage {
+  connecting,
+  selecting,
+  approval,
+  preparing,
+  transferring,
+  verifying,
+  importing,
+  awaitingImport,
+}
+
+enum BackupTransferOutcome { success, restoredNotNotified, unconfirmed, failed, cancelled }
+
+class TransferReceiveSelection {
+  const TransferReceiveSelection({
+    required this.entries,
+    this.transferOptions = const {},
+    this.importOptions = const BackupImportOptions(),
+  });
+
+  final List<BackupEntryId> entries;
+  final Map<String, Object?> transferOptions;
+  final BackupImportOptions importOptions;
 }
 
 class DiscoveredTransferDevice {

@@ -53,6 +53,12 @@ class LocalNetworkPermission {
     });
   }
 
+  static Future<void> ensureGranted({bool requestIfNeeded = false}) async {
+    // Background retries only check; prompting requires an explicit user action.
+    final granted = requestIfNeeded ? await request(retry: true) : await ServiceHandler.hasLocalNetworkPermission();
+    if (!granted) throw const LocalNetworkPermissionDenied();
+  }
+
   static Future<bool> _requestWithExplanation() async {
     if (await ServiceHandler.hasLocalNetworkPermission()) {
       _promptDeferred = false;
@@ -90,4 +96,11 @@ class LocalNetworkPermission {
     _promptDeferred = !granted;
     return granted;
   }
+}
+
+class LocalNetworkPermissionDenied implements Exception {
+  const LocalNetworkPermissionDenied();
+
+  @override
+  String toString() => 'Local network permission denied';
 }

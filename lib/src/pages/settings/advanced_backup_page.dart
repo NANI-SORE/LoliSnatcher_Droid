@@ -11,7 +11,9 @@ import 'package:lolisnatcher/src/services/backup_transfer/backup_file_naming.dar
 import 'package:lolisnatcher/src/services/backup_transfer/backup_import_compat_service.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_models.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_package_service.dart';
-import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/transfer_formatters.dart';
+import 'package:lolisnatcher/src/pages/settings/backup_feedback.dart';
+import 'package:lolisnatcher/src/pages/settings/backup_theme.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 
 class AdvancedBackupPage extends StatefulWidget {
@@ -25,7 +27,25 @@ class _AdvancedBackupPageState extends State<AdvancedBackupPage> {
   final registry = BackupEntryRegistry.instance;
   final packageService = BackupPackageService();
   final compatService = BackupImportCompatService();
-  bool busy = false;
+  final operation = BackupOperationController();
+  bool get busy => operation.busy;
+
+  @override
+  void initState() {
+    super.initState();
+    operation.addListener(_onOperationChanged);
+  }
+
+  void _onOperationChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    operation.removeListener(_onOperationChanged);
+    operation.dispose();
+    super.dispose();
+  }
 
   Future<void> _showActions(BackupEntryDefinition entry) async {
     if (busy) return;
@@ -37,56 +57,58 @@ class _AdvancedBackupPageState extends State<AdvancedBackupPage> {
       isScrollControlled: true,
       constraints: BoxConstraints(maxWidth: 640, maxHeight: MediaQuery.sizeOf(context).height * 0.85),
       builder: (context) {
-        return SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: Icon(entry.icon),
-                  title: Text(entry.title(), style: Theme.of(context).textTheme.titleLarge),
-                  subtitle: Text(entry.description()),
-                ),
-                const Divider(),
-                if (available)
+        return BackupControlsTheme(
+          child: SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                   ListTile(
-                    enabled: available,
-                    leading: const Icon(Icons.save_as),
-                    title: Text(context.loc.settings.backupAndTransfer.exportToFile),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      _exportEntryFile(entry);
-                    },
+                    leading: Icon(entry.icon),
+                    title: Text(entry.title(), style: Theme.of(context).textTheme.titleLarge),
+                    subtitle: Text(entry.description()),
                   ),
-                ListTile(
-                  leading: const Icon(Icons.file_open_rounded),
-                  title: Text(context.loc.settings.backupAndTransfer.importFromFile),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _importEntryFile(entry);
-                  },
-                ),
-                if (entry.supportsClipboard) ...[
+                  const Divider(),
                   if (available)
                     ListTile(
                       enabled: available,
-                      leading: const Icon(Icons.content_copy),
-                      title: Text(context.loc.settings.backupAndTransfer.exportToClipboard),
+                      leading: const Icon(Icons.save_as),
+                      title: Text(context.loc.settings.backupAndTransfer.exportToFile),
                       onTap: () {
                         Navigator.of(context).pop();
-                        _exportClipboard(entry);
+                        _exportEntryFile(entry);
                       },
                     ),
                   ListTile(
-                    leading: const Icon(Icons.content_paste),
-                    title: Text(context.loc.settings.backupAndTransfer.importFromClipboard),
+                    leading: const Icon(Icons.file_open_rounded),
+                    title: Text(context.loc.settings.backupAndTransfer.importFromFile),
                     onTap: () {
                       Navigator.of(context).pop();
-                      _importClipboard(entry);
+                      _importEntryFile(entry);
                     },
                   ),
+                  if (entry.supportsClipboard) ...[
+                    if (available)
+                      ListTile(
+                        enabled: available,
+                        leading: const Icon(Icons.content_copy),
+                        title: Text(context.loc.settings.backupAndTransfer.exportToClipboard),
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          _exportClipboard(entry);
+                        },
+                      ),
+                    ListTile(
+                      leading: const Icon(Icons.content_paste),
+                      title: Text(context.loc.settings.backupAndTransfer.importFromClipboard),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        _importClipboard(entry);
+                      },
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         );
@@ -98,6 +120,7 @@ class _AdvancedBackupPageState extends State<AdvancedBackupPage> {
     await _runBusy(() async {
       final path = await packageService.exportPackageFileWithPicker(entryIds: [entry.id]);
       if (path != null && mounted) {
+        operation.source = path;
         _snack(context.loc.settings.backupAndTransfer.entryExported(entry: entry.title()), false);
       }
     });
@@ -106,15 +129,26 @@ class _AdvancedBackupPageState extends State<AdvancedBackupPage> {
   Future<void> _importEntryFile(BackupEntryDefinition entry) async {
     await _runBusy(() async {
       await packageService.withPickedBackup((name, file) async {
+        operation.source = name;
         final isPackage = BackupFileNaming.isPackageFileName(name);
-        final entries = isPackage ? await packageService.inspectPackageFile(file) : [entry.id];
+        final preview = isPackage
+            ? await packageService.inspectPackagePreview(file)
+            : (entries: [entry.id], createdAt: null);
+        final entries = preview.entries;
         if (!entries.contains(entry.id)) {
           throw const FormatException('The backup does not contain the selected category');
         }
+        final size = TransferFormatters.bytes(await file.length());
         if (!mounted) return;
-        final options = await showBackupImportDialog(context, entries, restrictedTo: {entry.id});
+        final options = await showBackupImportDialog(
+          context,
+          entries,
+          restrictedTo: {entry.id},
+          sourceName: '$name · $size',
+          createdAt: preview.createdAt,
+        );
         if (options == null) return;
-        await compatService.importNamedFile(isPackage ? name : entry.fileName, file, options: options);
+        await compatService.importNamedFile(isPackage ? name : entry.fileName, file, options: operation.track(options));
         if (mounted) _snack(context.loc.settings.backupAndTransfer.entryImported(entry: entry.title()), false);
       });
     });
@@ -122,7 +156,7 @@ class _AdvancedBackupPageState extends State<AdvancedBackupPage> {
 
   Future<void> _exportClipboard(BackupEntryDefinition entry) async {
     await _runBusy(() async {
-      final payload = await entry.exportEntry(const BackupExportOptions());
+      final payload = await registry.runExclusive(() => entry.exportEntry(const BackupExportOptions()));
       await Clipboard.setData(ClipboardData(text: utf8.decode(payload.bytes)));
       if (mounted) _snack(context.loc.settings.backupAndTransfer.entryCopied(entry: entry.title()), false);
     });
@@ -132,60 +166,60 @@ class _AdvancedBackupPageState extends State<AdvancedBackupPage> {
     await _runBusy(() async {
       final data = await Clipboard.getData(Clipboard.kTextPlain);
       final text = data?.text;
-      if (text == null || text.isEmpty) return;
+      if (text == null || text.isEmpty) {
+        if (mounted) operation.showMessage(context.loc.settings.backupAndTransfer.clipboardEmpty);
+        return;
+      }
       if (!mounted) return;
-      final options = await showBackupImportDialog(context, [entry.id]);
+      final options = await showBackupImportDialog(context, [
+        entry.id,
+      ], sourceName: context.loc.settings.backupAndTransfer.importFromClipboard);
       if (options == null) return;
-      await compatService.importNamedBytes(entry.fileName, Uint8List.fromList(utf8.encode(text)), options: options);
+      await compatService.importNamedBytes(
+        entry.fileName,
+        Uint8List.fromList(utf8.encode(text)),
+        options: operation.track(options),
+      );
       if (mounted) _snack(context.loc.settings.backupAndTransfer.entryImported(entry: entry.title()), false);
     });
   }
 
-  Future<void> _runBusy(Future<void> Function() action) async {
-    if (busy) return;
-    setState(() => busy = true);
-    try {
-      await action();
-    } catch (e) {
-      if (mounted) _snack(e.toString(), true);
-    } finally {
-      if (mounted) setState(() => busy = false);
-    }
-  }
+  Future<void> _runBusy(Future<void> Function() action) => operation.run(action);
 
-  void _snack(String message, bool isError) {
-    FlashElements.showSnackbar(
-      context: context,
-      title: Text(isError ? context.loc.error : context.loc.settings.backupAndTransfer.done),
-      content: Text(message),
-      leadingIcon: isError ? Icons.error_outline : Icons.check_circle_outline,
-      leadingIconColor: isError ? Colors.red : Colors.green,
-      sideColor: isError ? Colors.red : Colors.green,
-    );
-  }
+  void _snack(String message, bool isError) => operation.showMessage(message, isError: isError);
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: !busy,
       child: Scaffold(
-        appBar: SettingsAppBar(title: context.loc.settings.backupAndTransfer.advancedExportImport),
+        appBar: SettingsAppBar(
+          title: context.loc.settings.backupAndTransfer.advancedExportImport,
+          leading: busy ? const IconButton(onPressed: null, icon: BackButtonIcon()) : null,
+        ),
         body: Stack(
           children: [
-            BackupPageBody(
-              children: [
-                BackupNotice(message: context.loc.settings.backupAndTransfer.advancedBackupHint),
-                const SizedBox(height: 24),
-                BackupEntryTree(
-                  entryIds: registry.entries.map((entry) => entry.id),
-                  sectionSpacing: 12,
-                  entryBuilder: (entry) => _AdvancedEntryTile(entry: entry, onTap: () => _showActions(entry)),
-                ),
-              ],
+            ExcludeFocus(
+              excluding: busy,
+              child: BackupPageBody(
+                children: [
+                  if (!busy) BackupOperationFeedback(operation: operation),
+                  BackupNotice(message: context.loc.settings.backupAndTransfer.advancedBackupHint),
+                  const SizedBox(height: 24),
+                  BackupEntryTree(
+                    entryIds: registry.entries.map((entry) => entry.id),
+                    sectionSpacing: 12,
+                    entryBuilder: (entry) => _AdvancedEntryTile(entry: entry, onTap: () => _showActions(entry)),
+                  ),
+                ],
+              ),
             ),
             if (busy)
               Positioned.fill(
-                child: BackupBusyOverlay(label: context.loc.settings.backupAndTransfer.operationInProgress),
+                child: BackupBusyOverlay(
+                  label: context.loc.settings.backupAndTransfer.operationInProgress,
+                  content: BackupOperationFeedback(operation: operation),
+                ),
               ),
           ],
         ),
@@ -211,7 +245,7 @@ class _AdvancedEntryTile extends StatelessWidget {
         builder: (context, snapshot) => ListTile(
           shape: shape,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          leading: Icon(entry.icon, color: Theme.of(context).colorScheme.primary),
+          leading: Icon(entry.icon, color: Theme.of(context).colorScheme.secondary),
           title: Text(entry.title()),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

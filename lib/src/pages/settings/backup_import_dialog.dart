@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/pages/settings/backup_transfer_widgets.dart';
+import 'package:lolisnatcher/src/pages/settings/backup_feedback.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_entry_registry.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_models.dart';
 
@@ -9,10 +11,15 @@ Future<BackupImportOptions?> showBackupImportDialog(
   BuildContext context,
   List<BackupEntryId> entries, {
   Set<BackupEntryId>? restrictedTo,
+  String? sourceName,
+  DateTime? createdAt,
 }) {
   final available = entries.where((id) => restrictedTo == null || restrictedTo.contains(id)).toList();
   final registry = BackupEntryRegistry.instance;
   final selected = registry.normalizeSelection(available);
+  if (!SX.dbEnabled.value && !selected.contains(BackupEntryId.database)) {
+    selected.removeAll(BackupEntryRegistry.databaseRequiredIds);
+  }
   var tabsMode = BackupTabsMode.merge;
   var tagsMode = BackupTagsMode.preferTypeIfNone;
   return showDialog<BackupImportOptions>(
@@ -29,6 +36,11 @@ Future<BackupImportOptions?> showBackupImportDialog(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (sourceName != null) ...[
+                SelectableText(sourceName, style: Theme.of(context).textTheme.titleSmall),
+                if (createdAt != null) Text(backupDateTime(context, createdAt)),
+                const SizedBox(height: 12),
+              ],
               Text(t.selectedImportOnly),
               const SizedBox(height: 12),
               BackupEntryTree(
@@ -49,10 +61,12 @@ Future<BackupImportOptions?> showBackupImportDialog(
                 },
                 entryBuilder: (entry) {
                   final includedInDatabase = fullDatabase && registry.isDatabaseChild(entry.id);
+                  final needsDatabase = !fullDatabase && !SX.dbEnabled.value && registry.requiresDatabase(entry.id);
                   return BackupEntryCheckbox(
                     entry: entry,
                     selected: includedInDatabase || selected.contains(entry.id),
-                    onChanged: includedInDatabase
+                    disabledReason: needsDatabase ? t.enableDatabaseFirst : null,
+                    onChanged: includedInDatabase || needsDatabase
                         ? null
                         : (value) => update(() {
                             if (value) {
@@ -84,7 +98,7 @@ Future<BackupImportOptions?> showBackupImportDialog(
                         tagsMode: tagsMode,
                       ),
                     ),
-              label: Text(t.import),
+              label: Text(fullDatabase ? t.replaceLibrary : t.import),
             ),
           ],
         );

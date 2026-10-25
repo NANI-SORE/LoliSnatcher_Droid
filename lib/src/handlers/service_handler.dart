@@ -560,22 +560,60 @@ class ServiceHandler {
   }
 
   static Future<String> getIP() async {
-    String ip = '';
-    // TODO WIP
-    if (Platform.isAndroid) {
-      ip = await platform.invokeMethod('getIP');
-    } else {
-      final interfaces = await NetworkInterface.list(type: InternetAddressType.IPv4);
-      final candidates = interfaces
-          .expand((networkInterface) => networkInterface.addresses.map((address) => (networkInterface.name, address)))
-          .where((entry) => !entry.$2.isLoopback && !entry.$2.isLinkLocal)
-          .toList();
-      for (final prefix in ['en0', 'en', 'bridge']) {
-        final preferred = candidates.where((entry) => entry.$1.startsWith(prefix)).firstOrNull;
-        if (preferred != null) return preferred.$2.address;
+    if (Platform.isAndroid) return await platform.invokeMethod<String>('getIP') ?? '';
+
+    final interfaces = await NetworkInterface.list(type: InternetAddressType.IPv4);
+    InternetAddress? preferred;
+    var preferredRank = 3;
+    for (final network in interfaces) {
+      final name = network.name.toLowerCase();
+      // Interface names are a heuristic; never present a known tunnel as the LAN address.
+      if ([
+            'utun',
+            'tun',
+            'tap',
+            'wg',
+            'veth',
+            'vmnet',
+            'vbox',
+            'docker',
+            'tailscale',
+            'zerotier',
+          ].any(name.startsWith) ||
+          ['vpn', 'virtual', 'wireguard', 'wintun', 'hyper-v', 'loopback'].any(name.contains)) {
+        continue;
+      }
+      final physical = [
+        'en',
+        'eth',
+        'wl',
+        'wi-fi',
+        'wi fi',
+        'wifi',
+        'bridge',
+        'ap',
+        'usb',
+        'rndis',
+      ].any(name.startsWith);
+      for (final address in network.addresses) {
+        if (address.isLoopback || address.isLinkLocal) continue;
+        final bytes = address.rawAddress;
+        final private =
+            bytes[0] == 10 ||
+            (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) ||
+            (bytes[0] == 192 && bytes[1] == 168);
+        final rank = physical
+            ? 0
+            : private
+            ? 1
+            : 2;
+        if (rank < preferredRank) {
+          preferred = address;
+          preferredRank = rank;
+        }
       }
     }
-    return ip;
+    return preferred?.address ?? '';
   }
 
   static Future<List<NetworkInterface>> getIPList() async {

@@ -11,6 +11,8 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_entry_registry.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_file_naming.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_models.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/backup_payload_limits.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/backup_transfer_logger.dart';
 
 class BackupPackageService {
   BackupPackageService({
@@ -22,14 +24,24 @@ class BackupPackageService {
   static const extension = BackupFileNaming.extension;
   static const manifestFileName = 'manifest.json';
   static const formatVersion = 1;
-  static const maximumPackageBytes = 8 * 1024 * 1024 * 1024;
-  static const maximumJsonBytes = 64 * 1024 * 1024;
-  static const maximumManifestBytes = 1024 * 1024;
+  static const maximumPackageBytes = BackupPayloadLimits.maximumPackageBytes;
+  static const maximumJsonBytes = BackupPayloadLimits.maximumJsonBytes;
+  static const maximumManifestBytes = BackupPayloadLimits.maximumManifestBytes;
 
   Future<Directory> _stage() async {
     final root = Directory('${await ServiceHandler.getCacheDir()}backup_transfer');
     await root.create(recursive: true);
     return root.createTemp('package-');
+  }
+
+  Future<void> _cleanupTemporary(FileSystemEntity entity) async {
+    try {
+      if (await entity.exists()) await entity.delete(recursive: entity is Directory);
+    } on FileSystemException catch (error, stack) {
+      // Cleanup is not part of the commit: keep a successful import/export
+      // successful, and never replace the original failure with a cache error.
+      BackupTransferLogger.error(error, 'BackupPackageService', 'cleanup', stackTrace: stack);
+    }
   }
 
   Future<Uint8List> exportPackage({
@@ -48,7 +60,7 @@ class BackupPackageService {
       if (await file.length() > maximumJsonBytes) throw const FormatException('Use file export for large backups');
       return await file.readAsBytes();
     } finally {
-      await stage.delete(recursive: true);
+      await _cleanupTemporary(stage);
     }
   }
 
@@ -57,6 +69,20 @@ class BackupPackageService {
     required File outputFile,
     BackupExportOptions options = const BackupExportOptions(),
     Map<BackupEntryId, BackupExportOptions> entryOptions = const {},
+  }) => registry.runExclusive(
+    () => _exportPackageFile(
+      entryIds: entryIds,
+      outputFile: outputFile,
+      options: options,
+      entryOptions: entryOptions,
+    ),
+  );
+
+  Future<File> _exportPackageFile({
+    required List<BackupEntryId> entryIds,
+    required File outputFile,
+    required BackupExportOptions options,
+    required Map<BackupEntryId, BackupExportOptions> entryOptions,
   }) async {
     await outputFile.parent.create(recursive: true);
     final stage = await outputFile.parent.createTemp('.backup-export-');
@@ -77,12 +103,14 @@ class BackupPackageService {
           if (definition.exportFileIsTemporary) owned.add(source);
         } else {
           final payload = await definition.exportEntry(option);
+          BackupPayloadLimits.validateEntrySize(definition.fileName, payload.bytes.length);
           source = File('${stage.path}/${definition.fileName}');
           await source.writeAsBytes(payload.bytes, flush: true);
           mime = payload.mimeType;
           metadata = payload.metadata;
         }
         final size = await source.length();
+        BackupPayloadLimits.validateEntrySize(definition.fileName, size);
         total += size;
         if (total > maximumPackageBytes - maximumManifestBytes) throw const FormatException('Backup exceeds 8 GiB');
         files.add({'sourcePath': source.path, 'archivePath': definition.fileName});
@@ -102,12 +130,13 @@ class BackupPackageService {
         jsonEncode({
           'format': BackupFileNaming.currentFormatId,
           'formatVersion': formatVersion,
-          'createdAt': DateTime.now().toIso8601String(),
+          'createdAt': DateTime.now().toUtc().toIso8601String(),
           'entries': entries,
         }),
         flush: true,
       );
       files.add({'sourcePath': manifest.path, 'archivePath': manifestFileName});
+      BackupPayloadLimits.validateEntrySize(manifestFileName, await manifest.length());
       final encoded = File('${stage.path}/encoded.$extension');
       await compute(_encodeBackupPackageFile, {'outputPath': encoded.path, 'files': files});
       if (await encoded.length() > maximumPackageBytes) throw const FormatException('Backup exceeds 8 GiB');
@@ -115,15 +144,8 @@ class BackupPackageService {
       await encoded.rename(outputFile.path);
       return outputFile;
     } finally {
-      try {
-        await Future.wait(
-          owned.map((file) async {
-            if (await file.exists()) await file.delete();
-          }),
-        );
-      } finally {
-        await stage.delete(recursive: true);
-      }
+      await Future.wait(owned.map(_cleanupTemporary));
+      await _cleanupTemporary(stage);
     }
   }
 
@@ -138,7 +160,7 @@ class BackupPackageService {
       await file.writeAsBytes(bytes, flush: true);
       return await importPackageFile(file, options: options);
     } finally {
-      await stage.delete(recursive: true);
+      await _cleanupTemporary(stage);
     }
   }
 
@@ -187,12 +209,18 @@ class BackupPackageService {
     return result;
   }
 
-  Future<List<BackupEntryId>> inspectPackageFile(File file) async {
+  Future<List<BackupEntryId>> inspectPackageFile(File file) async => (await inspectPackagePreview(file)).entries;
+
+  Future<BackupPreview> inspectPackagePreview(File file) async {
     final stage = await _stage();
     try {
-      return _entries(await _extract(file, stage)).map((entry) => entry.id).toList();
+      final decoded = await _extract(file, stage);
+      final entries = _entries(decoded).map((entry) => entry.id).toList();
+      final manifest = decoded['manifest'];
+      final createdAt = manifest is Map ? manifest['createdAt'] : null;
+      return (entries: entries, createdAt: createdAt is String ? DateTime.tryParse(createdAt) : null);
     } finally {
-      await stage.delete(recursive: true);
+      await _cleanupTemporary(stage);
     }
   }
 
@@ -267,21 +295,26 @@ class BackupPackageService {
         booruNameRemap: {},
         onProgress: options.onProgress,
       );
-      for (final entry in selected) {
-        options.onProgress?.call(BackupImportProgress(phase: BackupImportPhase.importing, entryId: entry.id));
-        final definition = registry.byId(entry.id);
-        if (definition.importFile != null) {
-          await definition.importFile!(entry.file, applyOptions);
-        } else {
-          await definition.importEntry(await entry.file.readAsBytes(), applyOptions);
-        }
-        imported.add(entry.id);
-      }
-      options.onProgress?.call(const BackupImportProgress(phase: BackupImportPhase.refreshing));
-      await registry.refreshAfterImport(imported.toSet(), options: applyOptions);
-      return imported;
+      return await registry.runImport(
+        () async {
+          for (final entry in selected) {
+            options.onProgress?.call(BackupImportProgress(phase: BackupImportPhase.importing, entryId: entry.id));
+            final definition = registry.byId(entry.id);
+            if (definition.importFile != null) {
+              await definition.importFile!(entry.file, applyOptions);
+            } else {
+              await definition.importEntry(await entry.file.readAsBytes(), applyOptions);
+            }
+            imported.add(entry.id);
+          }
+          options.onProgress?.call(const BackupImportProgress(phase: BackupImportPhase.refreshing));
+          await registry.refreshAfterImport(imported.toSet(), options: applyOptions);
+          return imported;
+        },
+        onProgress: options.onProgress,
+      );
     } finally {
-      await stage.delete(recursive: true);
+      await _cleanupTemporary(stage);
     }
   }
 
@@ -339,10 +372,10 @@ class BackupPackageService {
         await staged.rename(output.path);
         return output.path;
       } finally {
-        await copyStage.delete(recursive: true);
+        await _cleanupTemporary(copyStage);
       }
     } finally {
-      await stage.delete(recursive: true);
+      await _cleanupTemporary(stage);
     }
   }
 
@@ -369,7 +402,7 @@ class BackupPackageService {
       }
       return await action(picked.name, file);
     } finally {
-      await stage.delete(recursive: true);
+      await _cleanupTemporary(stage);
     }
   }
 }
@@ -422,15 +455,9 @@ Map<String, Object?> _extractBackupPackageFile(Map<String, String> data) {
           ((header.externalFileAttributes >> 16) & 0xf000) == 0xa000) {
         throw const FormatException('Unsafe or duplicate archive path');
       }
-      final limit = name == BackupPackageService.manifestFileName
-          ? BackupPackageService.maximumManifestBytes
-          : (name == 'store.db' || name == 'favourites.json' || name == 'snatched.json')
-          ? BackupPackageService.maximumPackageBytes
-          : BackupPackageService.maximumJsonBytes;
+      BackupPayloadLimits.validateEntrySize(name, file.uncompressedSize);
       total += file.uncompressedSize;
-      if (file.uncompressedSize < 0 ||
-          file.uncompressedSize > limit ||
-          total > BackupPackageService.maximumPackageBytes) {
+      if (total > BackupPackageService.maximumPackageBytes) {
         throw const FormatException('Backup extraction size limit exceeded');
       }
     }

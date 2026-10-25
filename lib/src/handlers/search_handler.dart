@@ -12,6 +12,7 @@ import 'package:get_it/get_it.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:uuid/uuid.dart';
+import 'package:path/path.dart' as p;
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
@@ -835,6 +836,9 @@ class SearchHandler {
   // bool to notify the main build that tab restoratiuon is complete
   RxBool isRestored = false.obs;
   RxBool canBackup = false.obs;
+  Future<void> _tabBackupWrites = Future.value();
+
+  Future<void> waitForTabBackups() => _tabBackupWrites;
 
   // keeps track of the last time tabs were backupped
   DateTime lastBackupTime = DateTime.now();
@@ -1201,7 +1205,18 @@ class SearchHandler {
     // TODO restoring database from the backup may have corrupted tab data when there are a lot of tabs?
     final settingsHandler = SettingsHandler.instance;
     try {
-      final String? result = await settingsHandler.dbHandler.getTabRestore();
+      final String? result;
+      if (!SX.dbEnabled.value) {
+        final file = File(p.join(await ServiceHandler.getConfigDir(), 'tabs.json'));
+        if (await file.exists()) {
+          if (await file.length() > 64 * 1024 * 1024) throw const FormatException('Saved tabs exceed 64 MiB');
+          result = await file.readAsString();
+        } else {
+          result = null;
+        }
+      } else {
+        result = await settingsHandler.dbHandler.getTabRestore();
+      }
       if (result == null || result.startsWith('[')) {
         await restoreTabsNew(result);
       } else {
@@ -1269,21 +1284,35 @@ class SearchHandler {
   void replaceTabs(String text, {bool resetIfEmpty = false}) =>
       _importExternalTabs(text, replace: true, resetIfEmpty: resetIfEmpty);
 
-  Future<void> backupTabs() async {
-    if (!canBackup.value) {
-      return;
-    }
-
+  Future<void> backupTabs({bool duringRestore = false}) {
+    if (!canBackup.value && !duringRestore) return Future.value();
     final String? backupString = generateBackupJson();
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
-    // print('backupString: $backupString');
-    if (backupString != null) {
-      await settingsHandler.dbHandler.addTabRestore(backupString);
-    } else {
-      await settingsHandler.dbHandler.clearTabRestore();
-    }
-
-    lastBackupTime = DateTime.now();
+    final write = _tabBackupWrites.then((_) async {
+      // A restore may have started while this snapshot was queued.
+      if (!canBackup.value && !duringRestore) return;
+      final settingsHandler = SettingsHandler.instance;
+      if (!SX.dbEnabled.value) {
+        final file = File(p.join(await ServiceHandler.getConfigDir(), 'tabs.json'));
+        await file.parent.create(recursive: true);
+        final temporary = File('${file.path}.tmp');
+        await temporary.writeAsString(backupString ?? '[]', flush: true);
+        await temporary.rename(file.path);
+      } else if (backupString != null) {
+        if (settingsHandler.dbHandler.db == null) throw StateError('Cannot persist tabs without an open database');
+        await settingsHandler.dbHandler.addTabRestore(backupString);
+      } else {
+        if (settingsHandler.dbHandler.db == null) throw StateError('Cannot clear tabs without an open database');
+        await settingsHandler.dbHandler.clearTabRestore();
+      }
+      lastBackupTime = DateTime.now();
+    });
+    _tabBackupWrites = write.then<void>(
+      (_) {},
+      onError: (Object error, StackTrace stack) {
+        Logger.Inst().log(error, 'SearchHandler', 'backupTabs', LogTypes.exception, s: stack);
+      },
+    );
+    return write;
   }
 
   // --- Page restore logic ---

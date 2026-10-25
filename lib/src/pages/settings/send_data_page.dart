@@ -15,6 +15,9 @@ import 'package:lolisnatcher/src/services/backup_transfer/transfer_history_servi
 import 'package:lolisnatcher/src/services/backup_transfer/transfer_socket_server.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
+import 'package:lolisnatcher/src/pages/settings/transfer_verification_notice.dart';
+import 'package:lolisnatcher/src/pages/settings/backup_feedback.dart';
+import 'package:lolisnatcher/src/services/local_network_permission.dart';
 
 class SendDataPage extends StatefulWidget {
   const SendDataPage({super.key});
@@ -32,6 +35,7 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
   List<TransferHistoryEntry> history = [];
   BackupTransferStats? stats;
   String? transferError;
+  Object? startupError;
   StreamSubscription<BackupTransferLog>? logSub;
   StreamSubscription<BackupTransferStats>? statsSub;
   bool includeDeviceSpecificSettings = false;
@@ -63,6 +67,8 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
               ),
             ),
             const SizedBox(height: 16),
+            TransferVerificationNotice(phrase: request.verificationPhrase),
+            const SizedBox(height: 16),
             BackupEntryTree(
               entryIds: {
                 ...request.entries,
@@ -81,7 +87,7 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
           TextButton(onPressed: () => navigator.pop(false), child: Text(dialogContext.loc.cancel)),
           FilledButton(
             onPressed: () => navigator.pop(true),
-            child: Text(dialogContext.loc.settings.backupAndTransfer.allowTransfer),
+            child: Text(dialogContext.loc.settings.backupAndTransfer.allowVerifiedTransfer),
           ),
         ],
       ),
@@ -115,7 +121,7 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
       final transferStarting = !newStats.isComplete && stats?.startedAt != newStats.startedAt;
       setState(() {
         stats = newStats;
-        transferError = newStats.currentEntry == 'error' ? logs.firstOrNull?.message : null;
+        transferError = newStats.message;
       });
       if (transferStarting) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -153,6 +159,7 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
         starting = true;
         stats = null;
         transferError = null;
+        startupError = null;
       });
     } else {
       starting = true;
@@ -163,7 +170,7 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
       deviceName = await TransferDeviceInfo.displayName();
       deviceId = await TransferDeviceInfo.instanceId();
       if (!mounted || generation != _startGeneration) return;
-      await server.start(deviceName: deviceName);
+      await server.start(deviceName: deviceName, retryPermission: true);
       if (!mounted || generation != _startGeneration || server.port == null) return;
       _setKeepAwake(true);
       started = true;
@@ -171,6 +178,7 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
         await discovery.startBroadcast(deviceName: deviceName, deviceId: deviceId, port: server.port!, hostIPv4: ip);
       }
     } catch (error) {
+      startupError = error;
       await server.stop();
       _setKeepAwake(false);
       started = false;
@@ -192,10 +200,15 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
     SX.syncVisibleOnNetwork.state.value = value;
     await SettingsHandler.instance.saveSettings(restate: false);
 
-    if (visible && started) {
-      await discovery.startBroadcast(deviceName: deviceName, deviceId: deviceId, port: server.port!, hostIPv4: ip);
-    } else {
-      await discovery.stopBroadcast();
+    try {
+      if (visible && started) {
+        await discovery.startBroadcast(deviceName: deviceName, deviceId: deviceId, port: server.port!, hostIPv4: ip);
+      } else {
+        await discovery.stopBroadcast();
+      }
+    } on LocalNetworkPermissionDenied catch (error) {
+      await _stop();
+      startupError = error;
     }
     if (mounted) setState(() {});
   }
@@ -227,11 +240,12 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
     setState(() {
       started = false;
       starting = false;
+      startupError = null;
     });
   }
 
   void _clearTransferError() {
-    if (_hasActiveTransfer || stats?.isComplete != true || stats?.currentEntry != 'error') return;
+    if (_hasActiveTransfer || stats?.isComplete != true) return;
     setState(() {
       stats = null;
       transferError = null;
@@ -241,10 +255,7 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
   Future<void> _cancelTransfer() async {
     await server.cancelTransfers();
     if (!mounted) return;
-    setState(() {
-      stats = null;
-      transferError = null;
-    });
+    setState(() {});
   }
 
   @override
@@ -307,7 +318,18 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
                 onClearError: _hasActiveTransfer ? null : _clearTransferError,
                 onCancel: _hasActiveTransfer ? _cancelTransfer : null,
               ),
+            if (!starting && !started && startupError != null) ...[
+              BackupNotice(
+                message: startupError is LocalNetworkPermissionDenied
+                    ? context.loc.permissions.localNetworkRequired
+                    : t.sharingStartFailed,
+                isWarning: true,
+              ),
+              BackupErrorDetails(details: startupError.toString()),
+            ],
             BackupNotice(message: t.sendInstructions, icon: Icons.devices),
+            const SizedBox(height: 12),
+            BackupNotice(message: t.vpnNotice, icon: Icons.vpn_lock_outlined),
             const SizedBox(height: 24),
             BackupSection(
               title: t.deviceInfo,
@@ -319,16 +341,18 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
                   title: Text(deviceName.isEmpty ? t.sendDataTitle : deviceName),
                   subtitle: Semantics(liveRegion: true, child: Text(status)),
                 ),
-                if (address != null)
+                if (port != null)
                   ListTile(
                     leading: const Icon(Icons.link),
                     title: Text(t.address),
-                    subtitle: SelectableText(address),
-                    trailing: IconButton(
-                      tooltip: context.loc.copy,
-                      icon: const Icon(Icons.copy),
-                      onPressed: () => _copyAddress(address),
-                    ),
+                    subtitle: SelectableText(address ?? t.noLocalAddress),
+                    trailing: address == null
+                        ? null
+                        : IconButton(
+                            tooltip: context.loc.copy,
+                            icon: const Icon(Icons.copy),
+                            onPressed: () => _copyAddress(address),
+                          ),
                   ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -390,8 +414,8 @@ class _SendDataPageState extends State<SendDataPage> with WidgetsBindingObserver
       title: Text(context.loc.copied),
       content: Text(context.loc.copiedToClipboard),
       leadingIcon: Icons.copy,
-      leadingIconColor: Colors.green,
-      sideColor: Colors.green,
+      leadingIconColor: Theme.of(context).colorScheme.secondary,
+      sideColor: Theme.of(context).colorScheme.secondary,
     );
   }
 }

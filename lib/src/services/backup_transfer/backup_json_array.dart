@@ -1,5 +1,9 @@
 import 'dart:convert';
 
+// This parser is also exercised from the isolated pure-Dart recovery tests.
+// ignore: always_use_package_imports
+import 'backup_payload_limits.dart';
+
 /// Reads one JSON object at a time without retaining the whole exported library.
 /// Syntax and UTF-8 errors propagate; callers preflight before writing any rows.
 Stream<Map<String, dynamic>> readBackupJsonArray(Stream<List<int>> bytes) async* {
@@ -73,7 +77,9 @@ Stream<Map<String, dynamic>> readBackupJsonArray(Stream<List<int>> bytes) async*
           : code >= 0xdc00 && code <= 0xdfff
           ? 1
           : 3;
-      if (length > 8 * 1024 * 1024) throw const FormatException('Backup record exceeds 8 MiB');
+      if (length > BackupPayloadLimits.maximumRecordBytes) {
+        throw const FormatException('Backup record exceeds 8 MiB');
+      }
       if (inString) {
         if (escaped) {
           escaped = false;

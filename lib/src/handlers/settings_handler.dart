@@ -101,6 +101,8 @@ class SettingsHandler {
   final Map<String, Future<void>> _fileWriteQueues = {};
   Future<void> _settingsSaveQueue = Future<void>.value();
   bool _settingsSaveBatchScheduled = false;
+  bool scheduledSettingsSavesPaused = false;
+  final backupRecoveryRetry = ValueNotifier<Future<void> Function()?>(null);
 
   static const Duration updateCheckInterval = Duration(hours: 12);
   Timer? _updateCheckTimer;
@@ -269,6 +271,9 @@ class SettingsHandler {
     bool restate = false,
     String? booruName,
   }) {
+    // Restore explicitly checkpoints state. Do not retain callbacks that could
+    // persist partially imported values after a rollback.
+    if (scheduledSettingsSavesPaused) return;
     Future<void> save() async {
       if (booruName != null) {
         Booru? booru;
@@ -352,6 +357,11 @@ class SettingsHandler {
       final queue = _settingsSaveQueue;
       await queue;
       if (identical(queue, _settingsSaveQueue) && !_settingsSaveBatchScheduled && _pendingSettingsSaves.isEmpty) {
+        // Direct saveSettings/saveBooru calls also use these per-file queues.
+        if (_fileWriteQueues.isNotEmpty) {
+          await Future.wait(_fileWriteQueues.values.toList());
+          continue;
+        }
         return;
       }
     }

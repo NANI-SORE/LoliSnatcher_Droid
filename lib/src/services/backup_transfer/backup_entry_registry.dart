@@ -20,7 +20,10 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_models.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/backup_payload_limits.dart';
 import 'package:lolisnatcher/src/services/backup_transfer/backup_transfer_logger.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/backup_settings_policy.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/backup_restore_journal.dart';
 
 class BackupEntryRegistry {
   BackupEntryRegistry._();
@@ -45,6 +48,129 @@ class BackupEntryRegistry {
   final SettingsHandler _settingsHandler = SettingsHandler.instance;
   final SearchHandler _searchHandler = SearchHandler.instance;
   final TagHandler _tagHandler = TagHandler.instance;
+  Future<void> _operations = Future.value();
+
+  Future<T> runExclusive<T>(Future<T> Function() operation) {
+    final result = _operations.then((_) {
+      if (_settingsHandler.backupRecoveryRetry.value != null) {
+        throw StateError('Restore recovery must finish before another backup operation');
+      }
+      return operation();
+    });
+    _operations = result.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    return result;
+  }
+
+  Future<T> runImport<T>(Future<T> Function() operation, {ValueChanged<BackupImportProgress>? onProgress}) =>
+      runExclusive(() async {
+        final journal = BackupRestoreJournal(Directory(await ServiceHandler.getConfigDir()));
+        final originalTabs = _searchHandler.generateBackupJson(includeDefaultTab: true) ?? '[]';
+        final wasReady = _searchHandler.canBackup.value;
+        final savesWerePaused = _settingsHandler.scheduledSettingsSavesPaused;
+        _settingsHandler.scheduledSettingsSavesPaused = true;
+        _searchHandler.canBackup.value = false;
+        var resumePersistence = true;
+        var prepared = false;
+        try {
+          onProgress?.call(const BackupImportProgress(phase: BackupImportPhase.snapshotting));
+          await Future.wait([_searchHandler.waitForTabBackups(), _tagHandler.waitForTagSaves()]);
+          await _settingsHandler.flushPendingSettingsSaves();
+          if (wasReady) {
+            if (!await _settingsHandler.saveSettings(restate: false)) throw StateError('Could not checkpoint settings');
+            for (final booru in _settingsHandler.booruList.where((booru) => BooruType.saveable.contains(booru.type))) {
+              if (!await _settingsHandler.saveBooru(booru, onlySave: true)) {
+                throw StateError('Could not checkpoint profile');
+              }
+            }
+            // Checkpoint live state before capturing rollback originals.
+            await _searchHandler.backupTabs(duringRestore: true);
+            if (_tagHandler.isInitialized) await _tagHandler.saveTags(duringRestore: true);
+          }
+          await journal.prepare(
+            snapshotDatabase: (destination) async {
+              await const DatabaseBackupService().createSnapshot(
+                File('${await ServiceHandler.getConfigDir()}store.db'),
+                destination,
+                database: _settingsHandler.dbHandler.db,
+              );
+            },
+          );
+          prepared = true;
+          final result = await operation();
+          await _settingsHandler.flushPendingSettingsSaves();
+          // Publish imported tabs durably before the journal's commit point.
+          await _searchHandler.backupTabs(duringRestore: true);
+          if (_tagHandler.isInitialized) await _tagHandler.saveTags(duringRestore: true);
+          await journal.commit();
+          return result;
+        } catch (error, stack) {
+          var previousDataRestored = false;
+          try {
+            onProgress?.call(const BackupImportProgress(phase: BackupImportPhase.rollingBack));
+            previousDataRestored = await journal.recover(beforeRestore: _settingsHandler.dbHandler.closeDb);
+            if (prepared) await _reloadAfterRollback(originalTabs);
+          } catch (recoveryError, recoveryStack) {
+            resumePersistence = false;
+            try {
+              await _settingsHandler.dbHandler.closeDb();
+            } catch (_) {}
+            _settingsHandler.backupRecoveryRetry.value = () async {
+              try {
+                await _settingsHandler.dbHandler.closeDb();
+                await journal.recover(beforeRestore: _settingsHandler.dbHandler.closeDb);
+                await _reloadAfterRollback(originalTabs);
+                await _settingsHandler.flushPendingSettingsSaves();
+                _settingsHandler.scheduledSettingsSavesPaused = savesWerePaused;
+                _searchHandler.canBackup.value = wasReady;
+                _settingsHandler.backupRecoveryRetry.value = null;
+              } catch (_) {
+                // Reload can open a handle after the journal has been removed.
+                // Retain the gate/paused flags and avoid leaking it on the next retry.
+                try {
+                  await _settingsHandler.dbHandler.closeDb();
+                } catch (_) {}
+                rethrow;
+              }
+            };
+            BackupTransferLogger.error(error, 'BackupEntryRegistry', 'import', stackTrace: stack);
+            BackupTransferLogger.error(recoveryError, 'BackupEntryRegistry', 'recovery', stackTrace: recoveryStack);
+            throw StateError('Restore recovery failed. Original data is retained; restart to retry recovery.');
+          }
+          if (prepared && previousDataRestored) Error.throwWithStackTrace(BackupRestoreFailure(error), stack);
+          rethrow;
+        } finally {
+          _searchHandler.canBackup.value = resumePersistence && wasReady;
+          if (resumePersistence) _settingsHandler.scheduledSettingsSavesPaused = savesWerePaused;
+        }
+      });
+
+  Future<void> _reloadAfterRollback(String originalTabs) async {
+    final registry = SettingsRegistry.instance;
+    for (final state in registry.all) {
+      state.clearAllOverrides();
+    }
+    if (!await _settingsHandler.loadSettings() || !await _settingsHandler.loadBoorus()) {
+      throw StateError('Could not reload recovered configuration');
+    }
+    if (SX.dbEnabled.value) {
+      await _settingsHandler.dbHandler.dbConnect(await ServiceHandler.getConfigDir());
+      if (_settingsHandler.dbHandler.db == null) throw StateError('Could not reopen recovered database');
+    }
+    _tagHandler.tagMap.clear();
+    if (!await _tagHandler.loadTags()) throw StateError('Could not reload recovered tags');
+    if (_settingsHandler.booruList.isEmpty && TabBackup.parseImport(originalTabs).isEmpty) {
+      // A fresh installation legitimately has no profiles or tabs. Rollback
+      // must restore that state without demanding a default booru.
+      _searchHandler.reset();
+      _searchHandler.tabId.value = null;
+      _searchHandler.searchTextController.clear();
+      _searchHandler.isLoading.value = false;
+      registry.setCurrentBooru(null);
+    } else {
+      _searchHandler.replaceTabs(originalTabs, resetIfEmpty: true);
+    }
+    await _settingsHandler.flushPendingSettingsSaves();
+  }
 
   late final List<BackupEntryDefinition> entries = [
     BackupEntryDefinition(
@@ -198,7 +324,7 @@ class BackupEntryRegistry {
     return selected;
   }
 
-  static const maximumJsonBytes = 64 * 1024 * 1024;
+  static const maximumJsonBytes = BackupPayloadLimits.maximumJsonBytes;
   String _text(Uint8List bytes) => utf8.decode(bytes).trim().replaceFirst(RegExp(r'^\uFEFF'), '').trimLeft();
 
   Future<File> _temporaryFile(String suffix) async {
@@ -441,6 +567,21 @@ class BackupEntryRegistry {
       }
       if (!SX.dbEnabled.value) await _saveTagsWithoutDatabase();
     }
+    if (ids.contains(BackupEntryId.booruProfiles) &&
+        _searchHandler.tabs.isEmpty &&
+        _settingsHandler.booruList.isNotEmpty) {
+      final booru = _settingsHandler.booruList.firstWhere(
+        (booru) => booru.name == SX.prefBooru.value,
+        orElse: () => _settingsHandler.booruList.first,
+      );
+      final tab = TabBackup(
+        tags: booru.defTags?.isNotEmpty == true ? booru.defTags! : SX.defTags.value,
+        booru: booru.name!,
+        selected: true,
+        savePageEnabled: SX.defaultSavePageEnabled.value,
+      );
+      _searchHandler.replaceTabs(jsonEncode([tab.toJson()]), resetIfEmpty: true);
+    }
     await _searchHandler.backupTabs();
   }
 
@@ -463,16 +604,12 @@ class BackupEntryRegistry {
   }
 
   Future<BackupEntryPayload> _exportSettings(BackupExportOptions options) async {
-    final json = SettingsRegistry.instance.toJson();
-    final beforeFilterCount = json.length;
-    if (options.excludeDeviceSpecificSettings) {
-      for (final state in SettingsRegistry.instance.deviceSpecific) {
-        json.remove(state.def.jsonKey);
-      }
-    }
-    for (final key in _alwaysLocalSettingKeys) {
-      json.remove(key.jsonKey);
-    }
+    final values = SettingsRegistry.instance.toJson();
+    final beforeFilterCount = values.length;
+    final json = BackupSettingsPolicy.exportValues(
+      values,
+      excludeDeviceSpecificSettings: options.excludeDeviceSpecificSettings,
+    );
     BackupTransferLogger.info(
       'Exporting settings count=${json.length} filtered=${beforeFilterCount - json.length} excludeDeviceSpecific=${options.excludeDeviceSpecificSettings}',
       'BackupEntryRegistry',
@@ -489,13 +626,16 @@ class BackupEntryRegistry {
     );
     await ensureImportAllowed(BackupEntryId.settings, options);
     await validateEntry(BackupEntryId.settings, bytes: bytes);
-    final json = Map<String, dynamic>.from(jsonDecode(utf8.decode(bytes).replaceFirst(RegExp(r'^\uFEFF'), '')));
-    for (final key in _alwaysLocalSettingKeys) {
-      final def = SettingsRegistry.instance.get<dynamic>(key)?.def;
-      json.remove(key.jsonKey);
-      for (final alias in def?.legacyJsonKeys ?? <String>[]) {
-        json.remove(alias);
+    final json = BackupSettingsPolicy.exportValues(
+      Map<String, dynamic>.from(jsonDecode(utf8.decode(bytes).replaceFirst(RegExp(r'^\uFEFF'), ''))),
+      excludeDeviceSpecificSettings: false,
+    );
+    final databaseWasEnabled = SX.dbEnabled.value;
+    if (json['dbEnabled'] is bool && json['dbEnabled'] != databaseWasEnabled && !_tagHandler.isInitialized) {
+      if (databaseWasEnabled && _settingsHandler.dbHandler.db == null) {
+        await _settingsHandler.dbHandler.dbConnect(await ServiceHandler.getConfigDir());
       }
+      if (!await _tagHandler.loadTags()) throw StateError('Could not load tags before changing their storage');
     }
     SettingsRegistry.instance.loadFromJson(json);
     if (SX.dbEnabled.value && _settingsHandler.dbHandler.db == null) {
@@ -504,6 +644,17 @@ class BackupEntryRegistry {
       await _settingsHandler.dbHandler.closeDb();
     }
     final db = _settingsHandler.dbHandler.db;
+    if (SX.dbEnabled.value && db == null) throw StateError('Could not open imported database storage');
+    if (!databaseWasEnabled && SX.dbEnabled.value) {
+      // Persist the active file-backed cache before committing the storage
+      // change. Later tag imports may merge more records into this database.
+      await _settingsHandler.dbHandler.updateTagsFromObjects(_tagHandler.toList());
+      for (final tag in await _settingsHandler.dbHandler.getAllTags()) {
+        if (!_tagHandler.hasTag(tag.fullString)) {
+          await _tagHandler.putTag(tag, dbEnabled: true, useDB: false, preferTypeIfNone: false);
+        }
+      }
+    }
     if (SX.dbEnabled.value &&
         db != null &&
         (Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM BooruItem')) ?? 0) > 10000) {
@@ -512,27 +663,6 @@ class BackupEntryRegistry {
     }
     if (!await _settingsHandler.saveSettings(restate: true)) throw StateError('Could not save imported settings');
   }
-
-  static const Set<SettingKey> _alwaysLocalSettingKeys = {
-    // system-dependant
-    .appMode,
-    .proxyType,
-    .proxyAddress,
-    .proxyUsername,
-    .proxyPassword,
-    .useLockscreen,
-    .autoLockTimeout,
-    .incognitoKeyboard,
-    .shitDevice,
-    .appAlias,
-    .usePredictiveBack,
-    .captureLogcat,
-    .useImageLogging,
-    // paths
-    .drawerMascotPathOverride,
-    .extPathOverride,
-    .backupPath,
-  };
 
   Future<BackupEntryPayload> _exportBoorus(BackupExportOptions options) async {
     final booruList = _settingsHandler.booruList.isEmpty
@@ -543,7 +673,25 @@ class BackupEntryRegistry {
       'BackupEntryRegistry',
       '_exportBoorus',
     );
-    return _jsonPayload('boorus.json', booruList.map((b) => b.toJson()).toList());
+    final profiles = booruList.map((booru) {
+      final json = booru.toJson();
+      final live = _settingsHandler.booruList.any((item) => item.name == booru.name);
+      final overrides = live && booru.name != null
+          ? SettingsRegistry.instance.saveOverridesToMap(booru.name!)
+          : booru.settingOverrides;
+      json.remove('settingOverrides');
+      if (overrides != null) {
+        final portable = BackupSettingsPolicy.exportValues(
+          overrides,
+          excludeDeviceSpecificSettings: options.excludeDeviceSpecificSettings,
+        );
+        if (portable.isNotEmpty) {
+          json['settingOverrides'] = portable;
+        }
+      }
+      return json;
+    }).toList();
+    return _jsonPayload('boorus.json', profiles);
   }
 
   Future<List<Booru>> _readBoorusFromFiles() async {
@@ -570,6 +718,9 @@ class BackupEntryRegistry {
     final dir = await Directory('${await ServiceHandler.getConfigDir()}boorus').create(recursive: true);
     final existing = await _readBoorusFromFiles();
     final writes = <({File target, String data})>[];
+    final changedNames = <String>{};
+    final registry = SettingsRegistry.instance;
+    final originalRemap = Map<String, String>.from(options.booruNameRemap ?? const {});
     final used = existing.map((booru) => booru.name!.toLowerCase()).toSet();
     final incomingNames = decoded.map((raw) => ((raw as Map)['name'] as String).toLowerCase()).toSet();
     await for (final file in dir.list(followLinks: false)) {
@@ -591,15 +742,22 @@ class BackupEntryRegistry {
           suffix++;
         }
       } else if (match != null) {
-        // Same identity explicitly restores backed-up credentials and overrides.
         booru.name = match.name;
       }
+      final existingOverrides = match != null && booru.name == match.name
+          ? (_settingsHandler.booruList.any((item) => item.name == match.name)
+                ? registry.saveOverridesToMap(match.name!)
+                : match.settingOverrides)
+          : null;
+      booru.settingOverrides = BackupSettingsPolicy.importOverrides(booru.settingOverrides, existingOverrides);
+      changedNames.add(booru.name!);
       used.add(booru.name!.toLowerCase());
       if (booru.name != originalName) options.booruNameRemap?[originalName] = booru.name!;
       writes.add((target: File('${dir.path}/${booru.name}.json'), data: jsonEncode(booru.toJson())));
     }
     final stage = await dir.createTemp('.profile-import-');
     final originals = <File, List<int>?>{};
+    final originalOverrides = {for (final name in changedNames) name: registry.saveOverridesToMap(name)};
     try {
       for (var i = 0; i < writes.length; i++) {
         final entry = writes[i];
@@ -607,6 +765,9 @@ class BackupEntryRegistry {
         final file = File('${stage.path}/$i.json');
         await file.writeAsString(entry.data, flush: true);
         await file.rename(entry.target.path);
+      }
+      for (final name in changedNames) {
+        registry.removeAllOverridesForBooru(name, save: false);
       }
       await _settingsHandler.loadBoorus();
     } catch (_) {
@@ -617,7 +778,16 @@ class BackupEntryRegistry {
           await entry.key.writeAsBytes(entry.value!, flush: true);
         }
       }
+      for (final name in changedNames) {
+        registry.removeAllOverridesForBooru(name, save: false);
+      }
       await _settingsHandler.loadBoorus();
+      for (final entry in originalOverrides.entries) {
+        registry.loadOverridesFromMap(entry.key, entry.value);
+      }
+      options.booruNameRemap
+        ?..clear()
+        ..addAll(originalRemap);
       rethrow;
     } finally {
       await stage.delete(recursive: true);
@@ -801,8 +971,10 @@ class BackupEntryRegistry {
             final json = row.item.toJson();
             json['tags'] = row.item.tagsList.map((tag) => tag.fullString).toList();
             if (!isDownloads) json['isSnatched'] = false;
+            final encoded = utf8.encode(jsonEncode(json));
+            BackupPayloadLimits.validateRecordSize(encoded.length);
             if (!first) await output.writeString(',');
-            await output.writeString(jsonEncode(json));
+            await output.writeFrom(encoded);
             first = false;
           }
           cursor = batch.last.id;
@@ -865,7 +1037,19 @@ class BackupEntryRegistry {
   }
 
   Future<BackupEntryPayload> _exportTabs(BackupExportOptions options) async {
-    final tabs = _searchHandler.generateBackupJson(includeDefaultTab: true) ?? '[]';
+    String tabs;
+    if (!_searchHandler.isRestored.value && !SX.dbEnabled.value) {
+      final file = File('${await ServiceHandler.getConfigDir()}tabs.json');
+      if (await file.exists()) {
+        if (await file.length() > maximumJsonBytes) throw const FormatException('Saved tabs exceed 64 MiB');
+        tabs = await file.readAsString();
+        TabBackup.parseImport(tabs);
+      } else {
+        tabs = '[]';
+      }
+    } else {
+      tabs = _searchHandler.generateBackupJson(includeDefaultTab: true) ?? '[]';
+    }
     BackupTransferLogger.info(
       'Exporting tabs bytes=${tabs.length}',
       'BackupEntryRegistry',
@@ -903,7 +1087,24 @@ class BackupEntryRegistry {
   }
 
   Future<BackupEntryPayload> _exportTags(BackupExportOptions options) async {
-    final cachedTags = _tagHandler.toList();
+    List<Tag> cachedTags;
+    if (!_tagHandler.isInitialized && !SX.dbEnabled.value) {
+      // Update backups run before TagHandler loads the DB-disabled tag file.
+      final file = File('${await ServiceHandler.getConfigDir()}tags.json');
+      if (await file.exists()) {
+        if (await file.length() > maximumJsonBytes) {
+          throw const FormatException('JSON backup exceeds 64 MiB');
+        }
+        final bytes = await file.readAsBytes();
+        await validateEntry(BackupEntryId.tags, bytes: bytes);
+        final rows = jsonDecode(_text(bytes)) as List;
+        cachedTags = rows.cast<Map<String, dynamic>>().map(_tagFromBackupJson).whereType<Tag>().toList();
+      } else {
+        cachedTags = [];
+      }
+    } else {
+      cachedTags = _tagHandler.toList();
+    }
     final tags = cachedTags.where((tag) => tag.fullString.trim().isNotEmpty).toList();
     BackupTransferLogger.info(
       'Exporting tags count=${tags.length} skippedBlank=${cachedTags.length - tags.length}',
@@ -923,6 +1124,7 @@ class BackupEntryRegistry {
     );
     final rows = jsonDecode(_text(bytes)) as List;
     var skippedBlank = 0;
+    final persisted = <Tag>[];
     for (final row in rows) {
       final tag = _tagFromBackupJson(Map<String, dynamic>.from(row as Map));
       if (tag == null) {
@@ -933,7 +1135,9 @@ class BackupEntryRegistry {
         tag,
         preferTypeIfNone: options.tagsMode == BackupTagsMode.preferTypeIfNone,
         dbEnabled: SX.dbEnabled.value,
+        useDB: false,
       );
+      persisted.add(_tagHandler.getTag(tag.fullString));
     }
     if (skippedBlank > 0) {
       BackupTransferLogger.info(
@@ -942,7 +1146,14 @@ class BackupEntryRegistry {
         '_importTags',
       );
     }
-    if (!SX.dbEnabled.value) await _saveTagsWithoutDatabase();
+    if (SX.dbEnabled.value) {
+      if (_settingsHandler.dbHandler.db == null) throw StateError('Cannot import tags without an open database');
+      // Normal putTag persistence is paused for the whole restore. Persist the
+      // selected merge result explicitly before the journal commit point.
+      await _settingsHandler.dbHandler.updateTagsFromObjects(persisted);
+    } else {
+      await _saveTagsWithoutDatabase();
+    }
   }
 
   Future<void> _saveTagsWithoutDatabase() async {
