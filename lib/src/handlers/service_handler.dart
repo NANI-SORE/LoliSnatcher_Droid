@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/services/ios_storage.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
@@ -40,15 +41,16 @@ class ServiceHandler {
     if (!Platform.isIOS) return false;
 
     try {
-      return await platform.invokeMethod('saveFileToGallery', {
-            'path': path,
-            'mediaType': mediaType,
-          }) ??
-          false;
+      return await publishFileToPhotos(path, mediaType) != null;
     } catch (e) {
       log(e);
       return false;
     }
+  }
+
+  static Future<String?> publishFileToPhotos(String path, String mediaType) async {
+    if (!Platform.isIOS) return null;
+    return platform.invokeMethod<String>('saveFileToGallery', {'path': path, 'mediaType': mediaType});
   }
 
   static Future<void> restartApp({String? alias}) async {
@@ -350,7 +352,7 @@ class ServiceHandler {
     } else if (Platform.isWindows) {
       result = '${await getExtDir()}/LoliSnatcher/config/';
     } else if (Platform.isIOS) {
-      result = '${await getExtDir()}/LoliSnatcher/config/';
+      result = '${(await IOSStorage.initialize()).config.path}/';
     }
     return result;
   }
@@ -378,6 +380,11 @@ class ServiceHandler {
   }
 
   static Future<String> getPicturesDir() async {
+    if (Platform.isIOS) {
+      final directory = (await IOSStorage.initialize()).downloads;
+      await directory.create(recursive: true);
+      return '${directory.path}/';
+    }
     String result = '';
     try {
       if (Platform.isAndroid) {
@@ -385,8 +392,6 @@ class ServiceHandler {
       } else if (Platform.isLinux) {
         result = '${await getExtDir()}/Pictures/LoliSnatcher/';
       } else if (Platform.isWindows) {
-        result = '${await getExtDir()}/LoliSnatcher/Pictures/';
-      } else if (Platform.isIOS) {
         result = '${await getExtDir()}/LoliSnatcher/Pictures/';
       }
     } catch (e) {
@@ -396,6 +401,11 @@ class ServiceHandler {
   }
 
   static Future<String> getCacheDir() async {
+    if (Platform.isIOS) {
+      final directory = (await IOSStorage.initialize()).cachedFiles;
+      await directory.create(recursive: true);
+      return '${directory.path}/';
+    }
     String result = '';
     try {
       if (Platform.isAndroid) {
@@ -404,8 +414,6 @@ class ServiceHandler {
         result = '${await getExtDir()}/.loliSnatcher/cache/';
       } else if (Platform.isWindows) {
         result = '${await getExtDir()}/LoliSnatcher/cache/';
-      } else if (Platform.isIOS) {
-        result = '${await getExtDir()}/LoliSnatcher/cache/';
       }
     } catch (e) {
       log(e);
@@ -413,23 +421,32 @@ class ServiceHandler {
     return result;
   }
 
-  static Future<void> loadShareTextIntent(String text) async {
+  static Future<String> getBackupsDir() async {
+    if (Platform.isIOS) {
+      final directory = (await IOSStorage.initialize()).backups;
+      await directory.create(recursive: true);
+      return '${directory.path}/';
+    }
+    return '${await getConfigDir()}update_backups/';
+  }
+
+  static Future<bool> loadShareTextIntent(String text) async {
     try {
-      await platform.invokeMethod('shareText', {'text': text});
-      return;
+      final result = await platform.invokeMethod('shareText', {'text': text});
+      return Platform.isIOS ? result == true : true;
     } catch (e) {
       log(e);
-      return;
+      return false;
     }
   }
 
-  static Future<void> loadShareFileIntent(
+  static Future<bool> loadShareFileIntent(
     String filePath,
     String mimeType, {
     String? text,
   }) async {
     try {
-      await platform.invokeMethod(
+      final result = await platform.invokeMethod(
         'shareFile',
         {
           'path': filePath,
@@ -437,11 +454,11 @@ class ServiceHandler {
           'text': ?text,
         },
       );
-      return;
+      return Platform.isIOS ? result == true : true;
       // log('share closed');
     } catch (e) {
       log(e);
-      return;
+      return false;
     }
   }
 

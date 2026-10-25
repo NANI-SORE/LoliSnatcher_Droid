@@ -1,0 +1,3 @@
+"NSFaceIDUsageDescription" = "Unlock LoliSnatcher with Face ID.";
+"NSPhotoLibraryAddUsageDescription" = "Save downloaded images and videos to Photos.";
+"NSLocalNetworkUsageDescription" = "Share app data between devices.";

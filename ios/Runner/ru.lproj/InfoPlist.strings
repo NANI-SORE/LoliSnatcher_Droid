@@ -1,0 +1,3 @@
+"NSFaceIDUsageDescription" = "Разблокировка LoliSnatcher с помощью Face ID.";
+"NSPhotoLibraryAddUsageDescription" = "Сохранение изображений и видео в Фото.";
+"NSLocalNetworkUsageDescription" = "Передача данных между устройствами.";

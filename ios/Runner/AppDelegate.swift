@@ -39,42 +39,96 @@ import UIKit
       }
 
       let mediaType = arguments["mediaType"] as? String
-      saveFileToGallery(path: path, mediaType: mediaType) { success, error in
+      saveFileToGallery(path: path, mediaType: mediaType) { identifier, error in
         if let error = error {
           result(FlutterError(code: "photos_save_failed", message: error.localizedDescription, details: nil))
         } else {
-          result(success)
+          result(identifier)
         }
       }
+    case "shareText":
+      guard let arguments = call.arguments as? [String: Any], let text = arguments["text"] as? String else {
+        result(FlutterError(code: "bad_args", message: "Missing text", details: nil))
+        return
+      }
+      presentShareSheet(items: [text], result: result)
+    case "shareFile":
+      guard let arguments = call.arguments as? [String: Any], let path = arguments["path"] as? String else {
+        result(FlutterError(code: "bad_args", message: "Missing file path", details: nil))
+        return
+      }
+      guard FileManager.default.fileExists(atPath: path) else {
+        result(FlutterError(code: "file_missing", message: "File not found", details: nil))
+        return
+      }
+      var items: [Any] = [URL(fileURLWithPath: path)]
+      if let text = arguments["text"] as? String, !text.isEmpty { items.append(text) }
+      presentShareSheet(items: items, result: result)
     default:
       result(FlutterMethodNotImplemented)
     }
   }
 
+  private func presentShareSheet(items: [Any], result: @escaping FlutterResult) {
+    guard var presenter = UIApplication.shared.connectedScenes
+      .compactMap({ $0 as? UIWindowScene })
+      .filter({ $0.activationState == .foregroundActive })
+      .flatMap({ $0.windows })
+      .first(where: { $0.isKeyWindow })?.rootViewController
+    else {
+      result(FlutterError(code: "no_presenter", message: "No active window", details: nil))
+      return
+    }
+    while let presented = presenter.presentedViewController {
+      presenter = presented
+    }
+    guard !(presenter is UIActivityViewController), !presenter.isBeingDismissed else {
+      result(FlutterError(code: "share_busy", message: "A share sheet is already open", details: nil))
+      return
+    }
+    let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+    controller.completionWithItemsHandler = { _, completed, _, error in
+      if let error = error {
+        result(FlutterError(code: "share_failed", message: error.localizedDescription, details: nil))
+      } else {
+        result(completed)
+      }
+    }
+    // iPad requires an anchor; leave iPhone sheet presentation to UIKit.
+    if UIDevice.current.userInterfaceIdiom == .pad, let popover = controller.popoverPresentationController {
+      popover.sourceView = presenter.view
+      popover.sourceRect = CGRect(x: presenter.view.bounds.midX, y: presenter.view.bounds.midY, width: 1, height: 1)
+      popover.permittedArrowDirections = []
+    }
+    presenter.present(controller, animated: true)
+  }
+
   private func saveFileToGallery(
     path: String,
     mediaType: String?,
-    completion: @escaping (Bool, Error?) -> Void
+    completion: @escaping (String?, Error?) -> Void
   ) {
     let fileURL = URL(fileURLWithPath: path)
     guard FileManager.default.fileExists(atPath: fileURL.path) else {
-      completion(false, GallerySaveError.fileNotFound)
+      completion(nil, GallerySaveError.fileNotFound)
       return
     }
 
     requestPhotoLibraryAddAccess { authorized in
       guard authorized else {
-        completion(false, GallerySaveError.permissionDenied)
+        completion(nil, GallerySaveError.permissionDenied)
         return
       }
 
       let resourceType = self.photoResourceType(for: fileURL, mediaType: mediaType)
+      var identifier: String?
       PHPhotoLibrary.shared().performChanges({
         let request = PHAssetCreationRequest.forAsset()
         request.addResource(with: resourceType, fileURL: fileURL, options: nil)
+        identifier = request.placeholderForCreatedAsset?.localIdentifier
       }) { success, error in
         DispatchQueue.main.async {
-          completion(success, error)
+          completion(success ? identifier : nil, error)
         }
       }
     }

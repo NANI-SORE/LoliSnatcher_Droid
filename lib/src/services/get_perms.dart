@@ -19,9 +19,8 @@ import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 ///
 /// The dialog will not show if the user has already accepted perms or android sdk is below 33
 Future<bool> getStoragePermission() async {
-  if (Platform.isIOS) {
-    return Permission.photosAddOnly.request().isGranted;
-  }
+  // iOS sandbox writes need no Photos permission. The native Photos exporter
+  // requests add-only access only when publishing a downloaded file.
 
   if (Platform.isAndroid && await ServiceHandler.getAndroidSDKVersion() < 33) {
     return Permission.storage.request().isGranted;
@@ -32,6 +31,7 @@ Future<bool> getStoragePermission() async {
 }
 
 Future<bool> checkStorageAvailability() async {
+  if (Platform.isIOS) return true;
   final extPath = SettingsHandler.instance.extPathOverride;
   if (extPath.isEmpty) {
     return true;

@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 
 import 'package:dio/dio.dart';
+import 'package:path/path.dart' as p;
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
@@ -13,6 +14,7 @@ import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
+import 'package:lolisnatcher/src/services/ios_photos_export.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -42,7 +44,7 @@ class ImageWriter {
     // print(path! + fileName);
     final bool fileExists = await image.exists();
     // if (fileExists) return null;
-    if (!ignoreExists && (fileExists || item.isSnatched.value == true)) {
+    if (!Platform.isIOS && !ignoreExists && (fileExists || item.isSnatched.value == true)) {
       item.isSnatched.value = true;
       if (settingsHandler.dbEnabled) {
         await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
@@ -50,6 +52,14 @@ class ImageWriter {
       return null;
     }
     try {
+      // A sandbox download and a Photos asset are separate durable outcomes.
+      // Reuse complete local bytes after a failed publication, even if an old
+      // app version incorrectly marked the item as snatched.
+      if (Platform.isIOS && !ignoreExists && fileExists && await image.length() > 0) {
+        final published = await _publishToPhotos(image, item);
+        await _markSnatched(item);
+        return published ? fileName : null;
+      }
       final fileNameSplit = fileName.split('.');
       final fileNameWoutExt = fileNameSplit.sublist(0, fileNameSplit.length - 1).join('.');
 
@@ -83,6 +93,29 @@ class ImageWriter {
           onReceiveProgress: onProgress,
           cancelToken: cancelToken,
         );
+      } else if (Platform.isIOS) {
+        // Publish only complete downloads. Failed retries keep existing files.
+        final staging = await Directory(await ServiceHandler.getCacheDir()).createTemp('download-');
+        try {
+          final temporary = File(p.join(staging.path, fileName));
+          await DioNetwork.download(
+            url,
+            temporary.path,
+            options: Options(responseType: ResponseType.bytes, contentType: '*/*'),
+            headers: headers,
+            onReceiveProgress: onProgress,
+            cancelToken: cancelToken,
+          );
+          // Files can remove or move Downloads while the app is running.
+          await image.parent.create(recursive: true);
+          await temporary.rename(image.path);
+        } finally {
+          try {
+            await staging.delete(recursive: true);
+          } catch (e) {
+            ServiceHandler.log(e);
+          }
+        }
       } else {
         await DioNetwork.download(
           url,
@@ -149,13 +182,7 @@ class ImageWriter {
             await ServiceHandler.callMediaScanner(image.path);
           }
         } else if (Platform.isIOS) {
-          final bool savedToGallery = await ServiceHandler.saveFileToGallery(
-            image.path,
-            item.mediaType.toJson(),
-          );
-          if (!savedToGallery) {
-            throw Exception('Failed to save file to Photos');
-          }
+          await _publishToPhotos(image, item, force: ignoreExists);
         }
       } catch (e, s) {
         Logger.Inst().log(
@@ -168,10 +195,7 @@ class ImageWriter {
         return e;
       }
 
-      item.isSnatched.value = true;
-      if (settingsHandler.dbEnabled) {
-        await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
-      }
+      await _markSnatched(item);
     } catch (e, s) {
       Logger.Inst().log(
         e.toString(),
@@ -183,6 +207,21 @@ class ImageWriter {
       return e;
     }
     return fileName;
+  }
+
+  Future<bool> _publishToPhotos(File file, BooruItem item, {bool force = false}) async {
+    final exporter = IOSPhotosExport(
+      receipts: Directory(p.join(await ServiceHandler.getConfigDir(), 'photos_exports')),
+      publish: (file) => ServiceHandler.publishFileToPhotos(file.path, item.mediaType.toJson()),
+    );
+    return exporter.export(file, force: force);
+  }
+
+  Future<void> _markSnatched(BooruItem item) async {
+    item.isSnatched.value = true;
+    if (settingsHandler.dbEnabled) {
+      await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
+    }
   }
 
   String getFilename(
@@ -582,7 +621,7 @@ class ImageWriter {
 
   Future<bool> setPaths() async {
     if (path.isEmpty) {
-      if (settingsHandler.extPathOverride.isEmpty) {
+      if (Platform.isIOS || settingsHandler.extPathOverride.isEmpty) {
         path = await ServiceHandler.getPicturesDir();
       } else {
         path = settingsHandler.extPathOverride;

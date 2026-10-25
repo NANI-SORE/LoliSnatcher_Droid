@@ -24,10 +24,30 @@ fi
 
 output_ipa="${2:-$(dirname "$app_path")/Payload.ipa}"
 output_dir="$(dirname "$output_ipa")"
-payload_dir="$output_dir/Payload"
 
 mkdir -p "$output_dir"
-rm -rf "$payload_dir" "$output_ipa"
+app_path="$(cd "$app_path" && pwd -P)"
+output_dir="$(cd "$output_dir" && pwd -P)"
+output_ipa="$output_dir/$(basename "$output_ipa")"
+case "$output_ipa" in
+    "$app_path"|"$app_path"/*)
+        echo "The IPA output must be outside Runner.app" >&2
+        exit 1
+        ;;
+esac
+case "$output_ipa" in
+    *.ipa) ;;
+    *) echo "Output must have an .ipa extension: $output_ipa" >&2; exit 1 ;;
+esac
+if [ -L "$output_ipa" ] || { [ -e "$output_ipa" ] && [ ! -f "$output_ipa" ]; }; then
+    echo "Output must be a regular file: $output_ipa" >&2
+    exit 1
+fi
+
+# Own a unique staging directory. Never remove a caller's existing Payload.
+staging_dir="$(mktemp -d "$output_dir/.ios-ipa.XXXXXX")"
+trap 'rm -rf -- "$staging_dir"' EXIT
+payload_dir="$staging_dir/Payload"
 mkdir -p "$payload_dir"
 
 echo "Copying $app_path to $payload_dir/Runner.app"
@@ -37,8 +57,9 @@ find "$payload_dir" \( -name ".DS_Store" -o -name "._*" \) -delete
 
 echo "Creating $output_ipa"
 (
-    cd "$output_dir"
-    COPYFILE_DISABLE=1 zip -qry --symlinks "$(basename "$output_ipa")" Payload -x "*/.DS_Store" "*/._*" "__MACOSX/*"
+    cd "$staging_dir"
+    COPYFILE_DISABLE=1 zip -qry --symlinks archive.ipa Payload -x "*/.DS_Store" "*/._*" "__MACOSX/*"
 )
+mv -f -- "$staging_dir/archive.ipa" "$output_ipa"
 
 echo "Created IPA: $output_ipa"
