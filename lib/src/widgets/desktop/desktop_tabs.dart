@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
+import 'package:lolisnatcher/src/utils/theme_colors.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
 import 'package:lolisnatcher/src/data/tab_group.dart';
@@ -128,12 +129,11 @@ class _DesktopTabsState extends State<DesktopTabs> {
     return items;
   }
 
-  Widget _buildTabPill(SearchTab tab, {bool insideGroup = false, Color? groupColor}) {
+  Widget _buildTabPill(SearchTab tab, {required bool isSelected, bool insideGroup = false, Color? groupColor}) {
     final isNotEmptyBooru = tab.selectedBooru.value.faviconURL != null;
     final totalCount = tab.booruHandler.totalCount.value;
     final totalCountText = (totalCount > 0) ? ' ($totalCount)' : '';
     final tagText = '${tab.tags.isEmpty ? context.loc.tabs.empty : tab.tags}$totalCountText';
-    final isSelected = searchHandler.currentIndex == searchHandler.tabs.indexOf(tab);
 
     final borderColor = isSelected ? Colors.red : (insideGroup ? Colors.transparent : Colors.grey);
 
@@ -205,6 +205,7 @@ class _DesktopTabsState extends State<DesktopTabs> {
       final name = group.name.value;
       final collapsed = group.collapsed.value;
       final scheme = Theme.of(context).colorScheme;
+      final background = Color.alphaBlend(color.withValues(alpha: 0.2), scheme.surface);
 
       return GestureDetector(
         onTap: () => searchHandler.toggleGroupCollapsed(group.id),
@@ -214,8 +215,16 @@ class _DesktopTabsState extends State<DesktopTabs> {
           margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: Color.alphaBlend(color.withValues(alpha: 0.2), scheme.surface),
-            border: Border.all(color: color, width: 1.5),
+            color: background,
+            border: Border.all(
+              color: contrastingThemeColor(
+                scheme,
+                background: background,
+                adjacentBackground: scheme.surface,
+                preferred: color,
+              ),
+              width: 1.5,
+            ),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Row(
@@ -383,6 +392,8 @@ class _DesktopTabsState extends State<DesktopTabs> {
       child: Obx(() {
         // Touch tabGroups so structural changes rebuild.
         searchHandler.tabGroups.length;
+        // Read selection inside Obx; lazy item builders run outside its tracking.
+        final activeTab = searchHandler.currentTabOrNull;
         final items = _buildItems();
         return Row(
           children: [
@@ -407,6 +418,7 @@ class _DesktopTabsState extends State<DesktopTabs> {
                       child: switch (item) {
                         _DesktopTabItem(:final tab, :final group) => _buildTabPill(
                           tab,
+                          isSelected: identical(tab, activeTab),
                           insideGroup: group != null,
                           groupColor: group?.color.value,
                         ),
@@ -447,7 +459,7 @@ class _DesktopTabsState extends State<DesktopTabs> {
                 return searchHandler.tabs.map((SearchTab choice) {
                   return PopupMenuItem<SearchTab>(
                     value: choice,
-                    child: _buildTabPill(choice),
+                    child: _buildTabPill(choice, isSelected: identical(choice, activeTab)),
                   );
                 }).toList();
               },

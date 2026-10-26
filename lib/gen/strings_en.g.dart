@@ -833,6 +833,15 @@ class Translations$tabs$en {
   /// en: 'Tab order saved'
   String get tabOrderSaved => TranslationOverrides.string(_root.$meta, 'tabs.tabOrderSaved', {}) ?? 'Tab order saved';
 
+  /// en: 'Save order'
+  String get saveOrder => TranslationOverrides.string(_root.$meta, 'tabs.saveOrder', {}) ?? 'Save order';
+
+  /// en: 'Order actions'
+  String get orderActions => TranslationOverrides.string(_root.$meta, 'tabs.orderActions', {}) ?? 'Order actions';
+
+  /// en: 'Tabs changed. Try again.'
+  String get tabsChanged => TranslationOverrides.string(_root.$meta, 'tabs.tabsChanged', {}) ?? 'Tabs changed. Try again.';
+
   /// en: 'Scroll to current tab'
   String get scrollToCurrent => TranslationOverrides.string(_root.$meta, 'tabs.scrollToCurrent', {}) ?? 'Scroll to current tab';
 
@@ -2169,6 +2178,29 @@ class Translations$tabs$groups$en {
   /// en: 'Group name'
   String get groupName => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupName', {}) ?? 'Group name';
 
+  /// en: 'Enter a group name.'
+  String get nameRequired => TranslationOverrides.string(_root.$meta, 'tabs.groups.nameRequired', {}) ?? 'Enter a group name.';
+
+  /// en: 'Previous group'
+  String get previousGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.previousGroup', {}) ?? 'Previous group';
+
+  /// en: 'Next group'
+  String get nextGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.nextGroup', {}) ?? 'Next group';
+
+  Map<String, String> get colorNames =>
+      TranslationOverrides.map(_root.$meta, 'tabs.groups.colorNames') ??
+      {
+        '#FF5F6368': 'Grey',
+        '#FFD93025': 'Red',
+        '#FFE8710A': 'Orange',
+        '#FFF9AB00': 'Yellow',
+        '#FF188038': 'Green',
+        '#FF007B83': 'Cyan',
+        '#FF1A73E8': 'Blue',
+        '#FF8430CE': 'Purple',
+        '#FFD01884': 'Pink',
+      };
+
   /// en: 'Collapse group'
   String get collapse => TranslationOverrides.string(_root.$meta, 'tabs.groups.collapse', {}) ?? 'Collapse group';
 
@@ -2703,10 +2735,6 @@ class Translations$settings$interface$en {
   String get drawerLayoutSubtitle =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutSubtitle', {}) ??
       'Choose and reorder the items shown in the side drawer.';
-
-  /// en: 'Pinned — cannot be hidden'
-  String get drawerLayoutPinned =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutPinned', {}) ?? 'Pinned — cannot be hidden';
 
   /// en: 'Restore defaults'
   String get drawerLayoutRestoreDefaults =>
@@ -5510,6 +5538,9 @@ extension on Translations {
           'tabs.shuffleTabs' => TranslationOverrides.string(_root.$meta, 'tabs.shuffleTabs', {}) ?? 'Shuffle tabs',
           'tabs.tabRandomlyShuffled' => TranslationOverrides.string(_root.$meta, 'tabs.tabRandomlyShuffled', {}) ?? 'Tabs randomly shuffled',
           'tabs.tabOrderSaved' => TranslationOverrides.string(_root.$meta, 'tabs.tabOrderSaved', {}) ?? 'Tab order saved',
+          'tabs.saveOrder' => TranslationOverrides.string(_root.$meta, 'tabs.saveOrder', {}) ?? 'Save order',
+          'tabs.orderActions' => TranslationOverrides.string(_root.$meta, 'tabs.orderActions', {}) ?? 'Order actions',
+          'tabs.tabsChanged' => TranslationOverrides.string(_root.$meta, 'tabs.tabsChanged', {}) ?? 'Tabs changed. Try again.',
           'tabs.scrollToCurrent' => TranslationOverrides.string(_root.$meta, 'tabs.scrollToCurrent', {}) ?? 'Scroll to current tab',
           'tabs.scrollToTop' => TranslationOverrides.string(_root.$meta, 'tabs.scrollToTop', {}) ?? 'Scroll to top',
           'tabs.scrollToBottom' => TranslationOverrides.string(_root.$meta, 'tabs.scrollToBottom', {}) ?? 'Scroll to bottom',
@@ -5612,6 +5643,18 @@ extension on Translations {
           'tabs.groups.newGroupFromTab' => TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupFromTab', {}) ?? 'New group from this tab',
           'tabs.groups.groupColor' => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupColor', {}) ?? 'Color',
           'tabs.groups.groupName' => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupName', {}) ?? 'Group name',
+          'tabs.groups.nameRequired' => TranslationOverrides.string(_root.$meta, 'tabs.groups.nameRequired', {}) ?? 'Enter a group name.',
+          'tabs.groups.previousGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.previousGroup', {}) ?? 'Previous group',
+          'tabs.groups.nextGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.nextGroup', {}) ?? 'Next group',
+          'tabs.groups.colorNames.#FF5F6368' => TranslationOverrides.string(_root.$meta, 'tabs.groups.colorNames.#FF5F6368', {}) ?? 'Grey',
+          'tabs.groups.colorNames.#FFD93025' => TranslationOverrides.string(_root.$meta, 'tabs.groups.colorNames.#FFD93025', {}) ?? 'Red',
+          'tabs.groups.colorNames.#FFE8710A' => TranslationOverrides.string(_root.$meta, 'tabs.groups.colorNames.#FFE8710A', {}) ?? 'Orange',
+          'tabs.groups.colorNames.#FFF9AB00' => TranslationOverrides.string(_root.$meta, 'tabs.groups.colorNames.#FFF9AB00', {}) ?? 'Yellow',
+          'tabs.groups.colorNames.#FF188038' => TranslationOverrides.string(_root.$meta, 'tabs.groups.colorNames.#FF188038', {}) ?? 'Green',
+          'tabs.groups.colorNames.#FF007B83' => TranslationOverrides.string(_root.$meta, 'tabs.groups.colorNames.#FF007B83', {}) ?? 'Cyan',
+          'tabs.groups.colorNames.#FF1A73E8' => TranslationOverrides.string(_root.$meta, 'tabs.groups.colorNames.#FF1A73E8', {}) ?? 'Blue',
+          'tabs.groups.colorNames.#FF8430CE' => TranslationOverrides.string(_root.$meta, 'tabs.groups.colorNames.#FF8430CE', {}) ?? 'Purple',
+          'tabs.groups.colorNames.#FFD01884' => TranslationOverrides.string(_root.$meta, 'tabs.groups.colorNames.#FFD01884', {}) ?? 'Pink',
           'tabs.groups.collapse' => TranslationOverrides.string(_root.$meta, 'tabs.groups.collapse', {}) ?? 'Collapse group',
           'tabs.groups.expand' => TranslationOverrides.string(_root.$meta, 'tabs.groups.expand', {}) ?? 'Expand group',
           'tabs.groups.filterByGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.filterByGroup', {}) ?? 'Group',
@@ -5913,8 +5956,6 @@ extension on Translations {
           'settings.interface.drawerLayoutSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutSubtitle', {}) ??
                 'Choose and reorder the items shown in the side drawer.',
-          'settings.interface.drawerLayoutPinned' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutPinned', {}) ?? 'Pinned — cannot be hidden',
           'settings.interface.drawerLayoutRestoreDefaults' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutRestoreDefaults', {}) ?? 'Restore defaults',
           'settings.interface.drawerLayoutBottomAlignHint' =>
@@ -6041,6 +6082,9 @@ extension on Translations {
           'settings.theme.fontPreviewText' =>
             TranslationOverrides.string(_root.$meta, 'settings.theme.fontPreviewText', {}) ?? 'The quick brown fox jumps over the lazy dog',
           'settings.theme.customFont' => TranslationOverrides.string(_root.$meta, 'settings.theme.customFont', {}) ?? 'Custom font',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.theme.customFontSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.theme.customFontSubtitle', {}) ?? 'Enter any Google Font name',
           'settings.theme.fontName' => TranslationOverrides.string(_root.$meta, 'settings.theme.fontName', {}) ?? 'Font name',
@@ -6064,9 +6108,6 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.viewerToolbarPosition', {}) ?? 'Viewer toolbar position',
           'settings.viewer.zoomButtonPosition' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.zoomButtonPosition', {}) ?? 'Zoom button position',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.viewer.changePageButtonsPosition' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.changePageButtonsPosition', {}) ?? 'Change page buttons position',
           'settings.viewer.hideToolbarWhenOpeningViewer' =>
@@ -7013,6 +7054,9 @@ extension on Translations {
           'tagView.addToSearch' => TranslationOverrides.string(_root.$meta, 'tagView.addToSearch', {}) ?? 'Add to Search',
           'tagView.addedToSearchBar' => TranslationOverrides.string(_root.$meta, 'tagView.addedToSearchBar', {}) ?? 'Added to search bar:',
           'tagView.excludeFromSearch' => TranslationOverrides.string(_root.$meta, 'tagView.excludeFromSearch', {}) ?? 'Exclude from Search',
+          _ => null,
+        } ??
+        switch (path) {
           'tagView.exclusionAddedToSearchBar' =>
             TranslationOverrides.string(_root.$meta, 'tagView.exclusionAddedToSearchBar', {}) ?? 'Added exclusion to search bar:',
           'tagView.addToMarked' => TranslationOverrides.string(_root.$meta, 'tagView.addToMarked', {}) ?? 'Add to Marked',
@@ -7028,9 +7072,6 @@ extension on Translations {
           'tagView.tapToTryAgain' => TranslationOverrides.string(_root.$meta, 'tagView.tapToTryAgain', {}) ?? 'Tap to try again',
           'tagView.copiedFileURL' => TranslationOverrides.string(_root.$meta, 'tagView.copiedFileURL', {}) ?? 'Copied file URL to clipboard',
           'tagView.tagPreviews' => TranslationOverrides.string(_root.$meta, 'tagView.tagPreviews', {}) ?? 'Tag previews',
-          _ => null,
-        } ??
-        switch (path) {
           'tagView.currentState' => TranslationOverrides.string(_root.$meta, 'tagView.currentState', {}) ?? 'Current state',
           'tagView.history' => TranslationOverrides.string(_root.$meta, 'tagView.history', {}) ?? 'History',
           'tagView.failedToLoadPreviewPage' =>

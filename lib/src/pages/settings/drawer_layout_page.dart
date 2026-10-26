@@ -139,15 +139,6 @@ class _DrawerLayoutPageState extends State<DrawerLayoutPage> {
                           ),
                         ),
                         title: Text(_labelFor(item)),
-                        subtitle: pinned
-                            ? Text(
-                                context.loc.settings.interface.drawerLayoutPinned,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                ),
-                              )
-                            : null,
                         trailing: pinned
                             ? const Icon(Icons.lock)
                             : Switch(

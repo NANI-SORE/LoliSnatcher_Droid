@@ -5,9 +5,11 @@ import 'package:get/get.dart';
 import 'package:lolisnatcher/src/data/tab_group.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/theme_colors.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/delete_button.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
+import 'package:lolisnatcher/src/widgets/tabs/tab_group_editor.dart';
 
 const double tabGroupHeaderHeight = 52;
 
@@ -17,6 +19,9 @@ class TabGroupHeader extends StatelessWidget {
     required this.tabsInGroupCount,
     required this.onToggleCollapse,
     required this.onMenuTap,
+    this.collapsed,
+    this.totalTabsInGroupCount,
+    this.dragBuilder,
     this.onPreviousGroup,
     this.onNextGroup,
     super.key,
@@ -24,6 +29,9 @@ class TabGroupHeader extends StatelessWidget {
 
   final TabGroup group;
   final int tabsInGroupCount;
+  final int? totalTabsInGroupCount;
+  final bool? collapsed;
+  final Widget Function(Widget child, Widget feedback)? dragBuilder;
   final VoidCallback onToggleCollapse;
   final VoidCallback onMenuTap;
   final VoidCallback? onPreviousGroup;
@@ -34,16 +42,26 @@ class TabGroupHeader extends StatelessWidget {
     return Obx(() {
       final color = group.color.value;
       final name = group.name.value;
-      final collapsed = group.collapsed.value;
+      final collapsed = this.collapsed ?? group.collapsed.value;
       final scheme = Theme.of(context).colorScheme;
+      final background = Color.alphaBlend(color.withValues(alpha: 0.15), scheme.surface);
+      final feedbackBackground = Color.alphaBlend(color.withValues(alpha: 0.3), scheme.surface);
 
       final header = Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         child: Material(
-          color: Color.alphaBlend(color.withValues(alpha: 0.15), scheme.surface),
+          color: background,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
-            side: BorderSide(color: color, width: 1.5),
+            side: BorderSide(
+              color: contrastingThemeColor(
+                scheme,
+                background: background,
+                adjacentBackground: scheme.surface,
+                preferred: color,
+              ),
+              width: 1.5,
+            ),
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(8),
@@ -83,7 +101,7 @@ class TabGroupHeader extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(left: 6, right: 2),
                     child: Text(
-                      '$tabsInGroupCount',
+                      totalTabsInGroupCount == null ? '$tabsInGroupCount' : '$tabsInGroupCount/$totalTabsInGroupCount',
                       style: TextStyle(
                         fontSize: 13,
                         color: scheme.onSurface.withValues(alpha: 0.6),
@@ -93,10 +111,12 @@ class TabGroupHeader extends StatelessWidget {
                   if (onPreviousGroup != null || onNextGroup != null) ...[
                     _GroupNavigationButton(
                       icon: Icons.keyboard_arrow_up,
+                      label: context.loc.tabs.groups.previousGroup,
                       onPressed: onPreviousGroup,
                     ),
                     _GroupNavigationButton(
                       icon: Icons.keyboard_arrow_down,
+                      label: context.loc.tabs.groups.nextGroup,
                       onPressed: onNextGroup,
                     ),
                   ],
@@ -116,53 +136,64 @@ class TabGroupHeader extends StatelessWidget {
         ),
       );
 
+      final accessibleHeader = Semantics(button: true, expanded: !collapsed, child: header);
+      final feedback = Material(
+        color: Colors.transparent,
+        child: Container(
+          width: 220,
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: feedbackBackground,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: contrastingThemeColor(
+                scheme,
+                background: feedbackBackground,
+                adjacentBackground: scheme.surface,
+                preferred: color,
+              ),
+              width: 2,
+            ),
+            boxShadow: const [
+              BoxShadow(blurRadius: 8, color: Colors.black26, offset: Offset(0, 3)),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 6,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (dragBuilder != null) return dragBuilder!(accessibleHeader, feedback);
       return LongPressDraggable<TabGroup>(
         data: group,
         axis: Axis.vertical,
         dragAnchorStrategy: pointerDragAnchorStrategy,
-        feedback: Material(
-          color: Colors.transparent,
-          child: Container(
-            width: 220,
-            height: 44,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: Color.alphaBlend(color.withValues(alpha: 0.3), scheme.surface),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: color, width: 2),
-              boxShadow: const [
-                BoxShadow(blurRadius: 8, color: Colors.black26, offset: Offset(0, 3)),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 6,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: scheme.onSurface,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        childWhenDragging: Opacity(opacity: 0.35, child: header),
-        child: header,
+        feedback: feedback,
+        childWhenDragging: Opacity(opacity: 0.35, child: accessibleHeader),
+        child: accessibleHeader,
       );
     });
   }
@@ -174,6 +205,7 @@ class TabGroupHeader extends StatelessWidget {
 class TabGroupUngroupedHeader extends StatelessWidget {
   const TabGroupUngroupedHeader({
     required this.tabsInUngroupedCount,
+    this.totalTabsInUngroupedCount,
     this.collapsed = false,
     this.onToggleCollapse,
     this.onPreviousGroup,
@@ -182,6 +214,7 @@ class TabGroupUngroupedHeader extends StatelessWidget {
   });
 
   final int tabsInUngroupedCount;
+  final int? totalTabsInUngroupedCount;
   final bool collapsed;
   final VoidCallback? onToggleCollapse;
   final VoidCallback? onPreviousGroup;
@@ -216,7 +249,9 @@ class TabGroupUngroupedHeader extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Text(
-            '$tabsInUngroupedCount',
+            totalTabsInUngroupedCount == null
+                ? '$tabsInUngroupedCount'
+                : '$tabsInUngroupedCount/$totalTabsInUngroupedCount',
             style: TextStyle(
               fontSize: 13,
               color: muted,
@@ -226,10 +261,12 @@ class TabGroupUngroupedHeader extends StatelessWidget {
             const Spacer(),
             _GroupNavigationButton(
               icon: Icons.keyboard_arrow_up,
+              label: context.loc.tabs.groups.previousGroup,
               onPressed: onPreviousGroup,
             ),
             _GroupNavigationButton(
               icon: Icons.keyboard_arrow_down,
+              label: context.loc.tabs.groups.nextGroup,
               onPressed: onNextGroup,
             ),
           ],
@@ -241,12 +278,16 @@ class TabGroupUngroupedHeader extends StatelessWidget {
       return row;
     }
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: onToggleCollapse,
-        child: row,
+    return Semantics(
+      button: true,
+      expanded: !collapsed,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onToggleCollapse,
+          child: row,
+        ),
       ),
     );
   }
@@ -256,15 +297,18 @@ class _GroupNavigationButton extends StatelessWidget {
   const _GroupNavigationButton({
     required this.icon,
     required this.onPressed,
+    required this.label,
   });
 
   final IconData icon;
   final VoidCallback? onPressed;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
       icon: Icon(icon, size: 20),
+      tooltip: label,
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints.tightFor(width: 32, height: 32),
       visualDensity: VisualDensity.compact,
@@ -274,169 +318,40 @@ class _GroupNavigationButton extends StatelessWidget {
   }
 }
 
-/// Renders the 9-color palette picker as a 3-column grid of color swatches.
-class TabGroupColorPicker extends StatelessWidget {
-  const TabGroupColorPicker({
-    required this.selectedColor,
-    required this.onChanged,
-    super.key,
-  });
-
-  final Color selectedColor;
-  final ValueChanged<Color> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = tabGroupPalette;
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: palette.map((c) {
-        final selected = c.toARGB32() == selectedColor.toARGB32();
-        return InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () => onChanged(c),
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: c,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: selected ? Theme.of(context).colorScheme.onSurface : Colors.transparent,
-                width: 3,
-              ),
-            ),
-            child: selected ? const Icon(Icons.check, size: 18, color: Colors.white) : null,
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-
-/// Dialog to create a new group. Returns the created group's id, or null if
-/// cancelled.
+/// Opens the shared validated name/color editor and creates a group.
 Future<String?> showCreateTabGroupDialog(BuildContext context) async {
   final searchHandler = SearchHandler.instance;
-  final defaultColor = nextDefaultGroupColor(searchHandler.tabGroups.length);
-  final nameController = TextEditingController();
-  Color color = defaultColor;
-
-  String? createdId;
-
-  await showDialog(
+  final result = await showDialog<TabGroupEdit>(
     context: context,
-    builder: (context) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return SettingsDialog(
-            title: Text(context.loc.tabs.groups.newGroupTitle),
-            contentItems: [
-              SettingsTextInput(
-                title: context.loc.tabs.groups.groupName,
-                titleAsLabel: true,
-                controller: nameController,
-                drawBottomBorder: false,
-                margin: const EdgeInsets.fromLTRB(2, 0, 2, 8),
-                autofocus: true,
-                clearable: true,
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text(context.loc.tabs.groups.groupColor, style: const TextStyle(fontWeight: FontWeight.w500)),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: TabGroupColorPicker(
-                  selectedColor: color,
-                  onChanged: (c) => setState(() => color = c),
-                ),
-              ),
-            ],
-            actionButtons: [
-              const CancelButton(withIcon: true),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.add),
-                label: Text(context.loc.tabs.groups.create),
-                onPressed: () {
-                  final name = nameController.text.trim();
-                  if (name.isEmpty) return;
-                  final group = searchHandler.createGroup(name: name, color: color);
-                  createdId = group.id;
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      );
-    },
+    builder: (context) => TabGroupEditor(
+      title: context.loc.tabs.groups.newGroupTitle,
+      actionLabel: context.loc.tabs.groups.create,
+      actionIcon: Icons.add,
+      initialColor: nextDefaultGroupColor(searchHandler.tabGroups.length),
+    ),
   );
-
-  return createdId;
+  if (result == null) return null;
+  return searchHandler.createGroup(name: result.name, color: result.color).id;
 }
 
-/// Dialog to edit an existing group's name and color.
+/// Uses the same editor and validation for existing groups.
 Future<void> showEditTabGroupDialog(BuildContext context, String groupId) async {
   final searchHandler = SearchHandler.instance;
   final group = searchHandler.groupById(groupId);
   if (group == null) return;
-
-  final nameController = TextEditingController(text: group.name.value);
-  Color color = group.color.value;
-
-  await showDialog(
+  final result = await showDialog<TabGroupEdit>(
     context: context,
-    builder: (context) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return SettingsDialog(
-            title: Text(context.loc.tabs.groups.editGroup),
-            contentItems: [
-              SettingsTextInput(
-                title: context.loc.tabs.groups.groupName,
-                titleAsLabel: true,
-                controller: nameController,
-                drawBottomBorder: false,
-                margin: const EdgeInsets.fromLTRB(2, 0, 2, 8),
-                autofocus: true,
-                clearable: true,
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text(context.loc.tabs.groups.groupColor, style: const TextStyle(fontWeight: FontWeight.w500)),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: TabGroupColorPicker(
-                  selectedColor: color,
-                  onChanged: (c) => setState(() => color = c),
-                ),
-              ),
-            ],
-            actionButtons: [
-              const CancelButton(withIcon: true),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.check),
-                label: Text(context.loc.tabs.groups.save),
-                onPressed: () {
-                  final name = nameController.text.trim();
-                  if (name.isNotEmpty) searchHandler.renameGroup(groupId, name);
-                  searchHandler.recolorGroup(groupId, color);
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      );
-    },
+    builder: (context) => TabGroupEditor(
+      title: context.loc.tabs.groups.editGroup,
+      actionLabel: context.loc.tabs.groups.save,
+      actionIcon: Icons.check,
+      initialName: group.name.value,
+      initialColor: group.color.value,
+    ),
   );
+  if (result == null || searchHandler.groupById(groupId) == null) return;
+  searchHandler.renameGroup(groupId, result.name);
+  searchHandler.recolorGroup(groupId, result.color);
 }
 
 /// Confirm-and-delete dialog. The user picks whether to also delete contained
@@ -488,9 +403,15 @@ Future<void> showDeleteTabGroupDialog(BuildContext context, String groupId) asyn
 }
 
 /// Bottom-sheet menu shown when ⋯ is tapped on a group header.
-Future<void> showTabGroupActionsSheet(BuildContext context, String groupId) async {
+Future<void> showTabGroupActionsSheet(
+  BuildContext context,
+  String groupId, {
+  bool? collapsed,
+  VoidCallback? onToggleCollapse,
+}) async {
   final group = SearchHandler.instance.groupById(groupId);
   if (group == null) return;
+  final isCollapsed = collapsed ?? group.collapsed.value;
 
   await showModalBottomSheet<void>(
     context: context,
@@ -508,11 +429,15 @@ Future<void> showTabGroupActionsSheet(BuildContext context, String groupId) asyn
               },
             ),
             ListTile(
-              leading: Icon(group.collapsed.value ? Icons.unfold_more : Icons.unfold_less),
-              title: Text(group.collapsed.value ? context.loc.tabs.groups.expand : context.loc.tabs.groups.collapse),
+              leading: Icon(isCollapsed ? Icons.unfold_more : Icons.unfold_less),
+              title: Text(isCollapsed ? context.loc.tabs.groups.expand : context.loc.tabs.groups.collapse),
               onTap: () {
                 Navigator.of(context).pop();
-                SearchHandler.instance.toggleGroupCollapsed(groupId);
+                if (onToggleCollapse != null) {
+                  onToggleCollapse();
+                } else {
+                  SearchHandler.instance.toggleGroupCollapsed(groupId);
+                }
               },
             ),
             ListTile(

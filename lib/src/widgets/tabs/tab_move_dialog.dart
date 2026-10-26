@@ -81,9 +81,7 @@ class _TabMoveDialogState extends State<TabMoveDialog> {
                     ),
                   ),
                   label: Text(g.name.value),
-                  backgroundColor: currentGroup?.id == g.id
-                      ? g.color.value.withValues(alpha: 0.18)
-                      : null,
+                  backgroundColor: currentGroup?.id == g.id ? g.color.value.withValues(alpha: 0.18) : null,
                   onPressed: () {
                     searchHandler.assignTabToGroup(tab, g.id);
                     Navigator.of(context).pop(true);
@@ -239,6 +237,16 @@ class TabMovePreview extends StatelessWidget {
     const tabHeightPlaceholder = SizedBox(height: 80);
 
     final List<Widget> children = <Widget>[];
+    if (searchHandler.tabGroups.isNotEmpty) {
+      final destination = searchHandler.getTabByIndex(enteredIndex);
+      final name = searchHandler.groupById(destination?.groupId.value)?.name.value ?? context.loc.tabs.groups.ungrouped;
+      children.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text('${context.loc.tabs.groups.moveToGroup}: $name', maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
+      );
+    }
     // first tab - show only when input is not on first
     if (enteredIndex != 0) {
       children.add(

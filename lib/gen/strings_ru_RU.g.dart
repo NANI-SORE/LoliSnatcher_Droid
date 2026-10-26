@@ -697,6 +697,12 @@ class _Translations$tabs$ru_RU extends Translations$tabs$en {
   @override
   String get tabOrderSaved => TranslationOverrides.string(_root.$meta, 'tabs.tabOrderSaved', {}) ?? 'Порядок вкладок сохранён';
   @override
+  String get saveOrder => TranslationOverrides.string(_root.$meta, 'tabs.saveOrder', {}) ?? 'Сохранить порядок';
+  @override
+  String get orderActions => TranslationOverrides.string(_root.$meta, 'tabs.orderActions', {}) ?? 'Порядок вкладок';
+  @override
+  String get tabsChanged => TranslationOverrides.string(_root.$meta, 'tabs.tabsChanged', {}) ?? 'Вкладки изменились. Повтори.';
+  @override
   String get scrollToCurrent => TranslationOverrides.string(_root.$meta, 'tabs.scrollToCurrent', {}) ?? 'Прокрутить к текущей вкладке';
   @override
   String get scrollToTop => TranslationOverrides.string(_root.$meta, 'tabs.scrollToTop', {}) ?? 'Прокрутить вверх';
@@ -1776,6 +1782,26 @@ class _Translations$tabs$groups$ru_RU extends Translations$tabs$groups$en {
   @override
   String get groupName => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupName', {}) ?? 'Название группы';
   @override
+  String get nameRequired => TranslationOverrides.string(_root.$meta, 'tabs.groups.nameRequired', {}) ?? 'Введи название группы.';
+  @override
+  String get previousGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.previousGroup', {}) ?? 'Предыдущая группа';
+  @override
+  String get nextGroup => TranslationOverrides.string(_root.$meta, 'tabs.groups.nextGroup', {}) ?? 'Следующая группа';
+  @override
+  Map<String, String> get colorNames =>
+      TranslationOverrides.map(_root.$meta, 'tabs.groups.colorNames') ??
+      {
+        '#FF5F6368': 'Серый',
+        '#FFD93025': 'Красный',
+        '#FFE8710A': 'Оранжевый',
+        '#FFF9AB00': 'Жёлтый',
+        '#FF188038': 'Зелёный',
+        '#FF007B83': 'Бирюзовый',
+        '#FF1A73E8': 'Синий',
+        '#FF8430CE': 'Фиолетовый',
+        '#FFD01884': 'Розовый',
+      };
+  @override
   String get collapse => TranslationOverrides.string(_root.$meta, 'tabs.groups.collapse', {}) ?? 'Свернуть группу';
   @override
   String get expand => TranslationOverrides.string(_root.$meta, 'tabs.groups.expand', {}) ?? 'Развернуть группу';
@@ -2194,9 +2220,6 @@ class _Translations$settings$interface$ru_RU extends Translations$settings$inter
   String get drawerLayoutSubtitle =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutSubtitle', {}) ??
       'Выбери нужные пункты и расставь их в удобном порядке.';
-  @override
-  String get drawerLayoutPinned =>
-      TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutPinned', {}) ?? 'Закреплено — скрыть нельзя';
   @override
   String get drawerLayoutRestoreDefaults =>
       TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutRestoreDefaults', {}) ?? 'По умолчанию';
@@ -4501,6 +4524,9 @@ extension on TranslationsRuRu {
           'tabs.shuffleTabs' => TranslationOverrides.string(_root.$meta, 'tabs.shuffleTabs', {}) ?? 'Перемешать вкладки',
           'tabs.tabRandomlyShuffled' => TranslationOverrides.string(_root.$meta, 'tabs.tabRandomlyShuffled', {}) ?? 'Вкладки случайно перемешаны',
           'tabs.tabOrderSaved' => TranslationOverrides.string(_root.$meta, 'tabs.tabOrderSaved', {}) ?? 'Порядок вкладок сохранён',
+          'tabs.saveOrder' => TranslationOverrides.string(_root.$meta, 'tabs.saveOrder', {}) ?? 'Сохранить порядок',
+          'tabs.orderActions' => TranslationOverrides.string(_root.$meta, 'tabs.orderActions', {}) ?? 'Порядок вкладок',
+          'tabs.tabsChanged' => TranslationOverrides.string(_root.$meta, 'tabs.tabsChanged', {}) ?? 'Вкладки изменились. Повтори.',
           'tabs.scrollToCurrent' => TranslationOverrides.string(_root.$meta, 'tabs.scrollToCurrent', {}) ?? 'Прокрутить к текущей вкладке',
           'tabs.scrollToTop' => TranslationOverrides.string(_root.$meta, 'tabs.scrollToTop', {}) ?? 'Прокрутить вверх',
           'tabs.scrollToBottom' => TranslationOverrides.string(_root.$meta, 'tabs.scrollToBottom', {}) ?? 'Прокрутить вниз',
@@ -4615,6 +4641,18 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'tabs.groups.newGroupFromTab', {}) ?? 'Создать группу из этой вкладки',
           'tabs.groups.groupColor' => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupColor', {}) ?? 'Цвет',
           'tabs.groups.groupName' => TranslationOverrides.string(_root.$meta, 'tabs.groups.groupName', {}) ?? 'Название группы',
+          'tabs.groups.nameRequired' => TranslationOverrides.string(_root.$meta, 'tabs.groups.nameRequired', {}) ?? 'Введи название группы.',
+          'tabs.groups.previousGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.previousGroup', {}) ?? 'Предыдущая группа',
+          'tabs.groups.nextGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.nextGroup', {}) ?? 'Следующая группа',
+          'tabs.groups.colorNames.#FF5F6368' => TranslationOverrides.string(_root.$meta, 'tabs.groups.colorNames.#FF5F6368', {}) ?? 'Серый',
+          'tabs.groups.colorNames.#FFD93025' => TranslationOverrides.string(_root.$meta, 'tabs.groups.colorNames.#FFD93025', {}) ?? 'Красный',
+          'tabs.groups.colorNames.#FFE8710A' => TranslationOverrides.string(_root.$meta, 'tabs.groups.colorNames.#FFE8710A', {}) ?? 'Оранжевый',
+          'tabs.groups.colorNames.#FFF9AB00' => TranslationOverrides.string(_root.$meta, 'tabs.groups.colorNames.#FFF9AB00', {}) ?? 'Жёлтый',
+          'tabs.groups.colorNames.#FF188038' => TranslationOverrides.string(_root.$meta, 'tabs.groups.colorNames.#FF188038', {}) ?? 'Зелёный',
+          'tabs.groups.colorNames.#FF007B83' => TranslationOverrides.string(_root.$meta, 'tabs.groups.colorNames.#FF007B83', {}) ?? 'Бирюзовый',
+          'tabs.groups.colorNames.#FF1A73E8' => TranslationOverrides.string(_root.$meta, 'tabs.groups.colorNames.#FF1A73E8', {}) ?? 'Синий',
+          'tabs.groups.colorNames.#FF8430CE' => TranslationOverrides.string(_root.$meta, 'tabs.groups.colorNames.#FF8430CE', {}) ?? 'Фиолетовый',
+          'tabs.groups.colorNames.#FFD01884' => TranslationOverrides.string(_root.$meta, 'tabs.groups.colorNames.#FFD01884', {}) ?? 'Розовый',
           'tabs.groups.collapse' => TranslationOverrides.string(_root.$meta, 'tabs.groups.collapse', {}) ?? 'Свернуть группу',
           'tabs.groups.expand' => TranslationOverrides.string(_root.$meta, 'tabs.groups.expand', {}) ?? 'Развернуть группу',
           'tabs.groups.filterByGroup' => TranslationOverrides.string(_root.$meta, 'tabs.groups.filterByGroup', {}) ?? 'Группа',
@@ -4930,8 +4968,6 @@ extension on TranslationsRuRu {
           'settings.interface.drawerLayoutSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutSubtitle', {}) ??
                 'Выбери нужные пункты и расставь их в удобном порядке.',
-          'settings.interface.drawerLayoutPinned' =>
-            TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutPinned', {}) ?? 'Закреплено — скрыть нельзя',
           'settings.interface.drawerLayoutRestoreDefaults' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.drawerLayoutRestoreDefaults', {}) ?? 'По умолчанию',
           'settings.interface.drawerLayoutBottomAlignHint' =>
@@ -5059,6 +5095,9 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.theme.fontPreviewText', {}) ??
                 'Съешь ещё этих мягких французских булок, да выпей же чаю',
           'settings.theme.customFont' => TranslationOverrides.string(_root.$meta, 'settings.theme.customFont', {}) ?? 'Свой шрифт',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.theme.customFontSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.theme.customFontSubtitle', {}) ?? 'Введи имя любого шрифта Google',
           'settings.theme.fontName' => TranslationOverrides.string(_root.$meta, 'settings.theme.fontName', {}) ?? 'Имя шрифта',
@@ -5083,9 +5122,6 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.viewerToolbarPosition', {}) ?? 'Позиция панели инструментов просмотрщика',
           'settings.viewer.zoomButtonPosition' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.zoomButtonPosition', {}) ?? 'Позиция кнопки масштабирования',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.viewer.changePageButtonsPosition' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.changePageButtonsPosition', {}) ?? 'Позиция кнопок смены страниц',
           'settings.viewer.hideToolbarWhenOpeningViewer' =>
@@ -6055,6 +6091,9 @@ extension on TranslationsRuRu {
           'tagView.addToSearch' => TranslationOverrides.string(_root.$meta, 'tagView.addToSearch', {}) ?? 'Добавить в поиск',
           'tagView.addedToSearchBar' => TranslationOverrides.string(_root.$meta, 'tagView.addedToSearchBar', {}) ?? 'Добавлено в строку поиска:',
           'tagView.excludeFromSearch' => TranslationOverrides.string(_root.$meta, 'tagView.excludeFromSearch', {}) ?? 'Исключить из поиска',
+          _ => null,
+        } ??
+        switch (path) {
           'tagView.exclusionAddedToSearchBar' =>
             TranslationOverrides.string(_root.$meta, 'tagView.exclusionAddedToSearchBar', {}) ?? 'Исключение добавлено в строку поиска:',
           'tagView.addToMarked' => TranslationOverrides.string(_root.$meta, 'tagView.addToMarked', {}) ?? 'Добавить в Отмеченные',
@@ -6072,9 +6111,6 @@ extension on TranslationsRuRu {
           'tagView.copiedFileURL' =>
             TranslationOverrides.string(_root.$meta, 'tagView.copiedFileURL', {}) ?? 'Ссылка на файл скопирована в буфер обмена',
           'tagView.tagPreviews' => TranslationOverrides.string(_root.$meta, 'tagView.tagPreviews', {}) ?? 'Предпросмотры тегов',
-          _ => null,
-        } ??
-        switch (path) {
           'tagView.currentState' => TranslationOverrides.string(_root.$meta, 'tagView.currentState', {}) ?? 'Текущее состояние',
           'tagView.history' => TranslationOverrides.string(_root.$meta, 'tagView.history', {}) ?? 'История',
           'tagView.failedToLoadPreviewPage' =>

@@ -18,6 +18,7 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
+import 'package:lolisnatcher/src/utils/theme_colors.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/close_dialog_button.dart';
 import 'package:lolisnatcher/src/widgets/common/delete_button.dart';
@@ -35,6 +36,7 @@ import 'package:lolisnatcher/src/widgets/tabs/tab_drag_feedback_geometry.dart';
 import 'package:lolisnatcher/src/widgets/tabs/tab_drop_position.dart';
 import 'package:lolisnatcher/src/widgets/tabs/tab_filters_dialog.dart';
 import 'package:lolisnatcher/src/widgets/tabs/tab_group_header.dart';
+import 'package:lolisnatcher/src/widgets/tabs/tab_manager_draggable.dart';
 import 'package:lolisnatcher/src/widgets/tabs/tab_manager_scroll_metrics.dart';
 import 'package:lolisnatcher/src/widgets/tabs/tab_move_dialog.dart';
 import 'package:lolisnatcher/src/widgets/tabs/tab_row.dart';
@@ -172,6 +174,7 @@ class _TabGroupChooserSheet extends StatelessWidget {
                 title: Text(group.name.value),
                 trailing: currentGroupId == group.id ? const Icon(Icons.check, size: 20) : null,
                 selected: currentGroupId == group.id,
+                selectedColor: Theme.of(context).colorScheme.onSurface,
                 onTap: () => Navigator.of(context).pop(group.id),
               ),
             const Divider(height: 1),
@@ -257,7 +260,15 @@ class _TabDropPreview extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: color.withValues(alpha: 0.72), width: 1.5),
+                  border: Border.all(
+                    color: contrastingThemeColor(
+                      scheme,
+                      background: Color.alphaBlend(color.withValues(alpha: 0.05), scheme.surface),
+                      adjacentBackground: scheme.surface,
+                      preferred: color,
+                    ),
+                    width: 1.5,
+                  ),
                 ),
                 child: showLabel
                     ? Center(
@@ -294,98 +305,6 @@ class _TabDropPreview extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _AdaptiveTabDraggable extends StatefulWidget {
-  const _AdaptiveTabDraggable({
-    required this.tab,
-    required this.originalIndex,
-    required this.child,
-    required this.childWhenDragging,
-    required this.pointerPosition,
-    required this.dragResultLabel,
-    required this.onDragStarted,
-    required this.onDragUpdate,
-    required this.onDragEnded,
-    super.key,
-  });
-
-  final SearchTab tab;
-  final int originalIndex;
-  final Widget child;
-  final Widget childWhenDragging;
-  final ValueNotifier<Offset> pointerPosition;
-  final ValueListenable<String> dragResultLabel;
-  final void Function(Offset globalPosition, int? pointer) onDragStarted;
-  final ValueChanged<Offset> onDragUpdate;
-  final VoidCallback onDragEnded;
-
-  @override
-  State<_AdaptiveTabDraggable> createState() => _AdaptiveTabDraggableState();
-}
-
-class _AdaptiveTabDraggableState extends State<_AdaptiveTabDraggable> {
-  int? _activePointer;
-
-  void _handlePointerDown(PointerDownEvent event) {
-    _activePointer ??= event.pointer;
-  }
-
-  void _handlePointerFinished(PointerEvent event) {
-    if (event.pointer == _activePointer) {
-      _activePointer = null;
-    }
-  }
-
-  void _updatePointer(Offset position) {
-    if (widget.pointerPosition.value == position) return;
-    widget.pointerPosition.value = position;
-    widget.onDragUpdate(position);
-  }
-
-  void _startDrag() {
-    widget.onDragStarted(widget.pointerPosition.value, _activePointer);
-  }
-
-  void _finishDrag() {
-    _activePointer = null;
-    widget.onDragEnded();
-  }
-
-  Offset _captureDragStart(
-    Draggable<Object> draggable,
-    BuildContext context,
-    Offset position,
-  ) {
-    widget.pointerPosition.value = position;
-    return Offset.zero;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Listener(
-      onPointerDown: _handlePointerDown,
-      onPointerUp: _handlePointerFinished,
-      onPointerCancel: _handlePointerFinished,
-      child: LongPressDraggable<SearchTab>(
-        data: widget.tab,
-        dragAnchorStrategy: _captureDragStart,
-        rootOverlay: true,
-        maxSimultaneousDrags: 1,
-        feedback: _AdaptiveTabDragFeedback(
-          tab: widget.tab,
-          originalIndex: widget.originalIndex,
-          pointerPosition: widget.pointerPosition,
-          dragResultLabel: widget.dragResultLabel,
-        ),
-        onDragStarted: _startDrag,
-        onDragUpdate: (details) => _updatePointer(details.globalPosition),
-        onDragEnd: (_) => _finishDrag(),
-        childWhenDragging: widget.childWhenDragging,
-        child: widget.child,
-      ),
     );
   }
 }
@@ -909,6 +828,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
   bool? isMultiBooruMode;
   TabGroupFilter groupFilter = const TabGroupFilterAll();
   bool showGroupedTabs = true;
+  final Set<String?> _revealedSections = {};
   bool selectMode = false;
   bool showScrollbarContext = false;
   bool isScrollbarContextHeld = false;
@@ -932,6 +852,23 @@ class _TabManagerPageState extends State<TabManagerPage> {
   List<int> _scrollMetricTabCounts = const [];
 
   static const double tabHeight = 72 + 8;
+
+  bool _sectionCollapsed(TabGroup? group) {
+    if (group == null && searchHandler.tabGroups.isEmpty) return false;
+    final stored = group?.collapsed.value ?? searchHandler.ungroupedCollapsed.value;
+    return stored && !_revealedSections.contains(group?.id);
+  }
+
+  void _toggleSection(TabGroup? group) {
+    final collapse = !_sectionCollapsed(group);
+    _revealedSections.remove(group?.id);
+    if (group == null) {
+      searchHandler.toggleUngroupedCollapsed(forcedValue: collapse);
+    } else {
+      searchHandler.toggleGroupCollapsed(group.id, forcedValue: collapse);
+    }
+    getTabs();
+  }
 
   int get totalTabs => searchHandler.total;
   int get totalFilteredTabs => filteredTabs.length;
@@ -996,9 +933,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
                 ? _ungroupedHeaderHeight
                 : 0,
             tabCount: section.tabs.length,
-            collapsed: section.group != null
-                ? section.group!.collapsed.value
-                : (searchHandler.tabGroups.isNotEmpty && searchHandler.ungroupedCollapsed.value),
+            collapsed: _sectionCollapsed(section.group),
           ),
       ],
     );
@@ -1039,12 +974,9 @@ class _TabManagerPageState extends State<TabManagerPage> {
     // see their active tab when entering the manager.
     final currentTab = searchHandler.currentTabOrNull;
     final currentGroup = currentTab == null ? null : searchHandler.groupOf(currentTab);
-    if (currentGroup != null && currentGroup.collapsed.value) {
-      currentGroup.collapsed.value = false;
-      // no backupTabs() — auto-expand is a UI preference, not user intent.
-    } else if (currentTab != null && currentGroup == null && searchHandler.ungroupedCollapsed.value) {
-      // current tab is ungrouped — auto-expand the ungrouped section too.
-      searchHandler.ungroupedCollapsed.value = false;
+    if (currentTab != null && _sectionCollapsed(currentGroup)) {
+      // Reveal only in this manager session; backups retain the user's choice.
+      _revealedSections.add(currentGroup?.id);
     }
     _updateScrollMetrics();
 
@@ -1129,13 +1061,13 @@ class _TabManagerPageState extends State<TabManagerPage> {
       return;
     }
     if (event is PointerMoveEvent) {
-      _updateTabDrag(event.position);
+      _updateManagerDrag(event.position);
     } else if (event is PointerUpEvent || event is PointerCancelEvent) {
-      _endTabDrag();
+      _endManagerDrag();
     }
   }
 
-  void _startTabDrag(Offset globalPosition, int? pointer) {
+  void _startManagerDrag(Offset globalPosition, int? pointer) {
     _dragAutoScrollTimer?.cancel();
     _dragAutoScrollTimer = null;
     _dragPointerPosition = globalPosition;
@@ -1148,19 +1080,19 @@ class _TabManagerPageState extends State<TabManagerPage> {
     if (_dragResultLabel.value.isNotEmpty) {
       _dragResultLabel.value = '';
     }
-    _syncTabDragAutoScrollTimer();
+    _syncDragAutoScrollTimer();
   }
 
-  void _updateTabDrag(Offset globalPosition) {
+  void _updateManagerDrag(Offset globalPosition) {
     if (_dragPointerPosition == globalPosition) return;
     if (_dragFeedbackPointerPosition.value != globalPosition) {
       _dragFeedbackPointerPosition.value = globalPosition;
     }
     _dragPointerPosition = globalPosition;
-    _syncTabDragAutoScrollTimer();
+    _syncDragAutoScrollTimer();
   }
 
-  void _endTabDrag() {
+  void _endManagerDrag() {
     _dragAutoScrollTimer?.cancel();
     _dragAutoScrollTimer = null;
     if (_dragGlobalPointerRouteRegistered) {
@@ -1175,7 +1107,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
     }
   }
 
-  double _currentTabDragAutoScrollDelta() {
+  double _currentDragAutoScrollDelta() {
     final globalPosition = _dragPointerPosition;
     final viewportContext = _dragViewportKey.currentContext;
     if (globalPosition == null || viewportContext == null) {
@@ -1194,8 +1126,8 @@ class _TabManagerPageState extends State<TabManagerPage> {
     );
   }
 
-  void _syncTabDragAutoScrollTimer() {
-    if (_currentTabDragAutoScrollDelta() == 0) {
+  void _syncDragAutoScrollTimer() {
+    if (_currentDragAutoScrollDelta() == 0) {
       _dragAutoScrollTimer?.cancel();
       _dragAutoScrollTimer = null;
       return;
@@ -1203,12 +1135,12 @@ class _TabManagerPageState extends State<TabManagerPage> {
 
     _dragAutoScrollTimer ??= Timer.periodic(
       const Duration(milliseconds: 24),
-      (_) => _autoScrollTabDrag(),
+      (_) => _autoScrollDrag(),
     );
   }
 
-  void _autoScrollTabDrag() {
-    final delta = _currentTabDragAutoScrollDelta();
+  void _autoScrollDrag() {
+    final delta = _currentDragAutoScrollDelta();
     if (delta == 0) {
       _dragAutoScrollTimer?.cancel();
       _dragAutoScrollTimer = null;
@@ -1638,6 +1570,58 @@ class _TabManagerPageState extends State<TabManagerPage> {
     }
   }
 
+  Future<void> _persistOrder({required bool shuffle}) async {
+    if (isFilterActive) return;
+    final order = filteredTabs.toList();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => SettingsDialog(
+        title: Text(shuffle ? context.loc.tabs.shuffleTabs : context.loc.tabs.saveOrder),
+        contentItems: [Text(shuffle ? context.loc.tabs.shuffleTabsQuestion : context.loc.tabs.saveTabsInCurrentOrder)],
+        actionButtons: [
+          const CancelButton(withIcon: true),
+          ElevatedButton.icon(
+            icon: Icon(shuffle ? Icons.shuffle : Icons.save_outlined),
+            label: Text(shuffle ? context.loc.tabs.shuffle : context.loc.tabs.saveOrder),
+            onPressed: () => Navigator.of(context).pop(true),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+    if (shuffle) {
+      final buckets = <String?, List<SearchTab>>{};
+      for (final tab in order) {
+        (buckets[tab.groupId.value] ??= []).add(tab);
+      }
+      for (final bucket in buckets.values) {
+        bucket.shuffle();
+      }
+      order
+        ..clear()
+        ..addAll([
+          ...?buckets[null],
+          for (final group in searchHandler.tabGroups) ...?buckets[group.id],
+        ]);
+    }
+    final applied = searchHandler.applyTabOrder(order);
+    if (applied) sortingMode = TabSortingMode.none;
+    getTabs();
+    FlashElements.showSnackbar(
+      context: context,
+      duration: const Duration(seconds: 2),
+      title: Text(
+        applied
+            ? shuffle
+                  ? context.loc.tabs.tabRandomlyShuffled
+                  : context.loc.tabs.tabOrderSaved
+            : context.loc.tabs.tabsChanged,
+      ),
+      leadingIcon: applied ? Icons.sort : Icons.warning_amber,
+      sideColor: applied ? Colors.green : Colors.orange,
+    );
+  }
+
   Future<void> _onAddGroupTapped() async {
     final newId = await showCreateTabGroupDialog(context);
     if (newId != null) {
@@ -1834,6 +1818,10 @@ class _TabManagerPageState extends State<TabManagerPage> {
     }
 
     final sections = visibleSections;
+    final totalCounts = <String?, int>{};
+    for (final tab in searchHandler.tabs) {
+      totalCounts.update(tab.groupId.value, (count) => count + 1, ifAbsent: () => 1);
+    }
     _updateScrollMetrics(sections);
     final widgets = <Widget>[];
     final navigableSectionIndexes = <int>[
@@ -1934,15 +1922,31 @@ class _TabManagerPageState extends State<TabManagerPage> {
                             child: TabGroupHeader(
                               key: ValueKey('header-${group.id}'),
                               group: group,
+                              collapsed: _sectionCollapsed(group),
                               tabsInGroupCount: sectionTabs.length,
+                              totalTabsInGroupCount: isFilterActive ? (totalCounts[group.id] ?? 0) : null,
+                              dragBuilder: (child, feedback) => TabManagerDraggable<TabGroup>(
+                                data: group,
+                                pointerPosition: _dragFeedbackPointerPosition,
+                                onDragStarted: _startManagerDrag,
+                                onDragUpdate: _updateManagerDrag,
+                                onDragEnded: _endManagerDrag,
+                                feedback: feedback,
+                                childWhenDragging: Opacity(opacity: 0.35, child: child),
+                                child: child,
+                              ),
                               onPreviousGroup: onPreviousGroup,
                               onNextGroup: onNextGroup,
                               onToggleCollapse: () {
-                                searchHandler.toggleGroupCollapsed(group.id);
-                                setState(() {});
+                                _toggleSection(group);
                               },
                               onMenuTap: () async {
-                                await showTabGroupActionsSheet(context, group.id);
+                                await showTabGroupActionsSheet(
+                                  context,
+                                  group.id,
+                                  collapsed: _sectionCollapsed(group),
+                                  onToggleCollapse: () => _toggleSection(group),
+                                );
                                 if (mounted) getTabs();
                               },
                             ),
@@ -1996,12 +2000,12 @@ class _TabManagerPageState extends State<TabManagerPage> {
                 child: showUngroupedHeader
                     ? TabGroupUngroupedHeader(
                         tabsInUngroupedCount: sectionTabs.length,
-                        collapsed: searchHandler.ungroupedCollapsed.value,
+                        totalTabsInUngroupedCount: isFilterActive ? (totalCounts[null] ?? 0) : null,
+                        collapsed: _sectionCollapsed(null),
                         onPreviousGroup: onPreviousGroup,
                         onNextGroup: onNextGroup,
                         onToggleCollapse: () {
-                          searchHandler.toggleUngroupedCollapsed();
-                          setState(() {});
+                          _toggleSection(null);
                         },
                       )
                     : SizedBox(
@@ -2037,9 +2041,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
 
       // Tabs sliver (skipped if collapsed). The ungrouped section is only
       // collapsible when a group exists (its header is shown then).
-      final isCollapsed = group != null
-          ? group.collapsed.value
-          : (searchHandler.tabGroups.isNotEmpty && searchHandler.ungroupedCollapsed.value);
+      final isCollapsed = _sectionCollapsed(group);
       if (!isCollapsed && sectionTabs.isNotEmpty) {
         sectionSlivers.add(
           SliverPadding(
@@ -2210,7 +2212,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
       filterText: filterTextController.text,
       onTap: selectMode
           ? () {
-              if (isSelected || isCurrent) {
+              if (isSelected) {
                 selectedTabs.removeWhere((item) => item == tab);
               } else {
                 selectedTabs.add(tab);
@@ -2225,10 +2227,6 @@ class _TabManagerPageState extends State<TabManagerPage> {
             },
       optionsWidgetBuilder: selectMode
           ? (_, onTap) {
-              if (isCurrent) {
-                return const SizedBox.shrink();
-              }
-
               return Padding(
                 padding: const EdgeInsets.only(right: 4),
                 child: Checkbox(
@@ -2272,16 +2270,20 @@ class _TabManagerPageState extends State<TabManagerPage> {
       );
     }
 
-    return _AdaptiveTabDraggable(
+    return TabManagerDraggable<SearchTab>(
       key: ValueKey('item-${tab.id}'),
-      tab: tab,
-      originalIndex: localIndex,
+      data: tab,
+      feedback: _AdaptiveTabDragFeedback(
+        tab: tab,
+        originalIndex: localIndex,
+        pointerPosition: _dragFeedbackPointerPosition,
+        dragResultLabel: _dragResultLabel,
+      ),
       childWhenDragging: Opacity(opacity: 0.35, child: item),
       pointerPosition: _dragFeedbackPointerPosition,
-      dragResultLabel: _dragResultLabel,
-      onDragStarted: _startTabDrag,
-      onDragUpdate: _updateTabDrag,
-      onDragEnded: _endTabDrag,
+      onDragStarted: _startManagerDrag,
+      onDragUpdate: _updateManagerDrag,
+      onDragEnded: _endManagerDrag,
       child: dropTarget,
     );
   }
@@ -2349,6 +2351,12 @@ class _TabManagerPageState extends State<TabManagerPage> {
   void showOptionsDialog(int index) {
     final SearchTab tab = filteredTabs[index];
     final int originalIndex = tabSortData[tab]?.index ?? searchHandler.tabs.indexOf(tab);
+    final theme = Theme.of(context);
+    final optionBorder = contrastingThemeColor(
+      theme.colorScheme,
+      background: theme.dialogTheme.backgroundColor ?? theme.colorScheme.surfaceContainerHigh,
+      preferred: theme.colorScheme.secondary,
+    );
 
     final Widget optionsDialog = SettingsDialog(
       scrollable: false,
@@ -2363,7 +2371,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
         ListTile(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(5),
-            side: BorderSide(color: Theme.of(context).colorScheme.secondary),
+            side: BorderSide(color: optionBorder),
           ),
           onTap: () async {
             await ClipboardUtils.copyTextToClipboard(tab.tags);
@@ -2377,7 +2385,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
         ListTile(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(5),
-            side: BorderSide(color: Theme.of(context).colorScheme.secondary),
+            side: BorderSide(color: optionBorder),
           ),
           onTap: () async {
             await showDialog(
@@ -2401,7 +2409,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
         ListTile(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(5),
-            side: BorderSide(color: Theme.of(context).colorScheme.secondary),
+            side: BorderSide(color: optionBorder),
           ),
           onTap: () async {
             // Pop the options dialog first; group chooser is a separate dialog.
@@ -2411,7 +2419,6 @@ class _TabManagerPageState extends State<TabManagerPage> {
           },
           leading: Icon(
             tab.groupId.value == null ? Icons.create_new_folder_outlined : Icons.drive_file_move_outlined,
-            color: Theme.of(context).colorScheme.primary,
           ),
           title: Text(
             tab.groupId.value == null ? context.loc.tabs.groups.addToGroup : context.loc.tabs.groups.moveToGroupAction,
@@ -2422,7 +2429,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
           ListTile(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(5),
-              side: BorderSide(color: Theme.of(context).colorScheme.secondary),
+              side: BorderSide(color: optionBorder),
             ),
             onTap: () {
               searchHandler.assignTabToGroup(tab, null);
@@ -2437,7 +2444,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
         ListTile(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(5),
-            side: BorderSide(color: Theme.of(context).colorScheme.secondary),
+            side: BorderSide(color: optionBorder),
           ),
           onTap: () {
             selectedTabs.remove(tab);
@@ -2451,7 +2458,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
         ListTile(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(5),
-            side: BorderSide(color: Theme.of(context).colorScheme.secondary),
+            side: BorderSide(color: optionBorder),
           ),
           onTap: () {
             Navigator.of(context).pop();
@@ -2470,12 +2477,13 @@ class _TabManagerPageState extends State<TabManagerPage> {
   }
 
   void showDeleteDialog() {
-    if (selectedTabs.isEmpty) {
+    final deleting = selectedTabs.where((tab) => !identical(tab, searchHandler.currentTabOrNull)).toList();
+    if (deleting.isEmpty) {
       return;
     }
 
     // sort selected tabs in order of appearance in the list instead of order of selection
-    selectedTabs.sort((a, b) => (tabSortData[a]?.index ?? -1).compareTo(tabSortData[b]?.index ?? -1));
+    deleting.sort((a, b) => (tabSortData[a]?.index ?? -1).compareTo(tabSortData[b]?.index ?? -1));
 
     final Widget deleteDialog = SettingsDialog(
       title: Column(
@@ -2484,7 +2492,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
         children: [
           Text(context.loc.tabs.deleteTabs),
           Text(
-            context.loc.tabs.areYouSureDeleteTabs(count: selectedTabs.length),
+            context.loc.tabs.areYouSureDeleteTabs(count: deleting.length),
             style: const TextStyle(fontSize: 16),
           ),
         ],
@@ -2500,9 +2508,9 @@ class _TabManagerPageState extends State<TabManagerPage> {
         child: ListView.builder(
           clipBehavior: Clip.hardEdge,
           shrinkWrap: true,
-          itemCount: selectedTabs.length,
+          itemCount: deleting.length,
           itemBuilder: (_, index) {
-            final item = selectedTabs[index];
+            final item = deleting[index];
 
             final int itemIndex = tabSortData[item]?.index ?? searchHandler.tabs.indexOf(item);
 
@@ -2520,7 +2528,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
         DeleteButton(
           withIcon: true,
           action: () {
-            searchHandler.removeTabs(selectedTabs);
+            searchHandler.removeTabs(deleting);
             selectedTabs.clear();
             getTabs();
             Navigator.of(context).pop();
@@ -2738,12 +2746,8 @@ class _TabManagerPageState extends State<TabManagerPage> {
   /// actions (add to group, delete) in the conventional top-bar location so
   /// they are discoverable regardless of the optional bottom action bar.
   PreferredSizeWidget _buildSelectionAppBar(BuildContext context) {
-    final currentTab = searchHandler.currentTabOrNull;
-    final filteredTabsMinusCurrent = [...filteredTabs];
-    if (currentTab != null) {
-      filteredTabsMinusCurrent.remove(currentTab);
-    }
-    final bool selectedAll = selectedTabs.isNotEmpty && selectedTabs.length == filteredTabsMinusCurrent.length;
+    final bool selectedAll = filteredTabs.isNotEmpty && filteredTabs.every(selectedTabs.contains);
+    final bool hasDeletable = selectedTabs.any((tab) => !identical(tab, searchHandler.currentTabOrNull));
     final bool hasSelected = selectedTabs.isNotEmpty;
 
     return AppBar(
@@ -2769,7 +2773,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
               if (selectedAll) {
                 selectedTabs.clear();
               } else {
-                selectedTabs = [...filteredTabsMinusCurrent];
+                selectedTabs = [...filteredTabs];
               }
             });
           },
@@ -2782,7 +2786,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
         IconButton(
           icon: const Icon(Icons.delete_forever),
           tooltip: context.loc.tabs.deleteSelectedTabs,
-          onPressed: hasSelected ? showDeleteDialog : null,
+          onPressed: hasDeletable ? showDeleteDialog : null,
         ),
         const SizedBox(width: 8),
       ],
@@ -2837,94 +2841,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
                 ),
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onLongPress: isFilterActive
-                      ? null
-                      : () async {
-                          final currentTab = searchHandler.currentTabOrNull;
-                          if (currentTab == null) {
-                            return;
-                          }
-
-                          final res = await showDialog(
-                            context: context,
-                            builder: (context) {
-                              return SettingsDialog(
-                                title: Text(
-                                  sortingMode.isNone ? context.loc.tabs.shuffleTabs : context.loc.tabs.sortMode,
-                                ),
-                                contentItems: [
-                                  Text(
-                                    sortingMode.isNone
-                                        ? context.loc.tabs.shuffleTabsQuestion
-                                        : context.loc.tabs.saveTabsInCurrentOrder,
-                                  ),
-                                  if (!sortingMode.isNone)
-                                    Text(
-                                      '${sortingMode.isAnyBooru ? context.loc.tabs.byBooru : ''} ${context.loc.tabs.alphabetically} ${sortingMode.isAnyReverse ? context.loc.tabs.reversed : ''}'
-                                          .trim(),
-                                    ),
-                                ],
-                                actionButtons: [
-                                  const CancelButton(withIcon: true),
-                                  ElevatedButton.icon(
-                                    label: Text(sortingMode.isNone ? context.loc.tabs.shuffle : context.loc.tabs.sort),
-                                    icon: TabSortingIcon(sortingMode),
-                                    onPressed: () {
-                                      Navigator.of(context).pop('allow');
-                                    },
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-
-                          if (res != 'allow') {
-                            return;
-                          }
-
-                          if (sortingMode.isNone) {
-                            // §0.7: shuffle within each group bucket, never across,
-                            // to preserve the contiguous-block invariant.
-                            final ungroupedBucket = filteredTabs.where((t) => t.groupId.value == null).toList()
-                              ..shuffle();
-                            final byGroup = <String, List<SearchTab>>{
-                              for (final g in searchHandler.tabGroups) g.id: <SearchTab>[],
-                            };
-                            for (final t in filteredTabs) {
-                              final gid = t.groupId.value;
-                              if (gid != null && byGroup.containsKey(gid)) byGroup[gid]!.add(t);
-                            }
-                            for (final list in byGroup.values) {
-                              list.shuffle();
-                            }
-                            filteredTabs = [
-                              ...ungroupedBucket,
-                              for (final g in searchHandler.tabGroups) ...byGroup[g.id]!,
-                            ];
-
-                            FlashElements.showSnackbar(
-                              context: context,
-                              duration: const Duration(seconds: 2),
-                              title: Text(context.loc.tabs.tabRandomlyShuffled, style: const TextStyle(fontSize: 20)),
-                              leadingIcon: Icons.sort_by_alpha,
-                              sideColor: Colors.green,
-                            );
-                          } else {
-                            FlashElements.showSnackbar(
-                              context: context,
-                              duration: const Duration(seconds: 2),
-                              title: Text(context.loc.tabs.tabOrderSaved, style: const TextStyle(fontSize: 20)),
-                              leadingIcon: Icons.sort,
-                              sideColor: Colors.green,
-                            );
-                          }
-
-                          final int newIndex = filteredTabs.indexOf(currentTab);
-                          searchHandler.tabs.value = [...filteredTabs];
-                          searchHandler.changeTabIndex(newIndex);
-
-                          getTabs();
-                        },
+                  onLongPress: isFilterActive ? null : () => _persistOrder(shuffle: sortingMode.isNone),
                   child: IconButton(
                     icon: TabSortingIcon(sortingMode),
                     tooltip: context.loc.tabs.sortMode,
@@ -2951,10 +2868,26 @@ class _TabManagerPageState extends State<TabManagerPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.help_center_outlined),
-                  tooltip: context.loc.tabs.help,
-                  onPressed: showHelpDialog,
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  tooltip: context.loc.tabs.orderActions,
+                  onSelected: (action) {
+                    if (action == 'help') {
+                      showHelpDialog();
+                    } else {
+                      _persistOrder(shuffle: action == 'shuffle');
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'save',
+                      enabled: !isFilterActive && !sortingMode.isNone,
+                      child: Text(context.loc.tabs.saveOrder),
+                    ),
+                    PopupMenuItem(value: 'shuffle', enabled: !isFilterActive, child: Text(context.loc.tabs.shuffle)),
+                    const PopupMenuDivider(),
+                    PopupMenuItem(value: 'help', child: Text(context.loc.tabs.help)),
+                  ],
                 ),
                 const SizedBox(width: 8),
               ],
@@ -3036,7 +2969,11 @@ class _TabManagerPageState extends State<TabManagerPage> {
                                         color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.66),
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
-                                          color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.4),
+                                          color: contrastingThemeColor(
+                                            Theme.of(context).colorScheme,
+                                            background: Theme.of(context).colorScheme.surface,
+                                            preferred: Theme.of(context).colorScheme.secondary,
+                                          ),
                                         ),
                                       ),
                                       child: Padding(
@@ -3519,6 +3456,7 @@ class _DuplicateTabsDeleteDialogState extends State<_DuplicateTabsDeleteDialog> 
                             isCurrent: tab == widget.searchHandler.currentTabOrNull,
                             isFiltered: true,
                             originalIndex: tabIndexes[tab] ?? -1,
+                            showGroup: true,
                             onTap: toggleTab,
                             optionsWidgetBuilder: (_, onTap) {
                               return IconButton(
@@ -3556,6 +3494,7 @@ class TabManagerItem extends StatelessWidget {
     this.onOptionsTap,
     this.onCloseTap,
     this.filterText,
+    this.showGroup = false,
     super.key,
   }) : assert(
          !isFiltered || (index != null && originalIndex != null),
@@ -3572,12 +3511,20 @@ class TabManagerItem extends StatelessWidget {
   final VoidCallback? onOptionsTap;
   final VoidCallback? onCloseTap;
   final String? filterText;
+  final bool showGroup;
 
   @override
   Widget build(BuildContext context) {
     // print('tab selector item build $index');
 
     final BorderRadius radius = BorderRadius.circular(10);
+    final theme = Theme.of(context);
+    final background = Color.lerp(
+      theme.cardColor,
+      theme.brightness == Brightness.dark ? Colors.transparent : Colors.grey[200],
+      0.66,
+    )!;
+    final paintedBackground = Color.alphaBlend(background, theme.colorScheme.surface);
 
     final subtitleStyle = Theme.of(context).textTheme.bodySmall!.copyWith(
       color: Theme.of(context).textTheme.bodySmall!.color,
@@ -3589,16 +3536,12 @@ class TabManagerItem extends StatelessWidget {
         height: 72,
         width: double.maxFinite,
         child: Material(
-          color: Color.lerp(
-            Theme.of(context).cardColor,
-            Theme.of(context).brightness == Brightness.dark ? Colors.transparent : Colors.grey[200],
-            0.66,
-          ),
+          color: background,
           shape: RoundedRectangleBorder(
             borderRadius: radius,
             side: isCurrent
                 ? BorderSide(
-                    color: Theme.of(context).colorScheme.secondary,
+                    color: contrastingThemeColor(theme.colorScheme, background: paintedBackground),
                     width: 2,
                   )
                 : BorderSide.none,
@@ -3665,7 +3608,12 @@ class TabManagerItem extends StatelessWidget {
                                   //
                                   for (final Booru booru in (tab.secondaryBoorus.value ?? [])) booru.name ?? '',
                                 ];
-                                final String booruNamesStr = booruNames.join(', ');
+                                final groupName = showGroup
+                                    ? (SearchHandler.instance.groupOf(tab)?.name.value ??
+                                          context.loc.tabs.groups.ungrouped)
+                                    : null;
+                                final String booruNamesStr =
+                                    '${groupName == null ? '' : '$groupName • '}${booruNames.join(', ')}';
 
                                 return MarqueeText(
                                   key: ValueKey(booruNamesStr),
@@ -3735,7 +3683,16 @@ class TabSortingIcon extends StatelessWidget {
       padding: withBorder ? const EdgeInsets.all(3) : null,
       decoration: BoxDecoration(
         borderRadius: withBorder ? BorderRadius.circular(10) : null,
-        border: withBorder ? Border.all(color: Theme.of(context).colorScheme.secondary, width: 2) : null,
+        border: withBorder
+            ? Border.all(
+                color: contrastingThemeColor(
+                  Theme.of(context).colorScheme,
+                  background: Theme.of(context).colorScheme.surface,
+                  preferred: Theme.of(context).colorScheme.secondary,
+                ),
+                width: 2,
+              )
+            : null,
       ),
       child: Stack(
         alignment: Alignment.center,

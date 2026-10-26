@@ -555,6 +555,14 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       case AppLifecycleState.hidden:
       case AppLifecycleState.inactive:
       case AppLifecycleState.paused:
+        // Flush pending group/tab changes before the debounce timer is suspended.
+        if (state != AppLifecycleState.inactive) {
+          unawaited(
+            searchHandler.backupTabs().catchError((Object error, StackTrace stackTrace) {
+              Logger.Inst().log(error, 'MainApp', 'backupTabsOnLeave', LogTypes.exception, s: stackTrace);
+            }),
+          );
+        }
         // record time when user left the app
         localAuthHandler.onLeave();
         break;
