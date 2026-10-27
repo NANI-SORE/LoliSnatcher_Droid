@@ -141,6 +141,9 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
 
   @override
   void dispose() {
+    if (!isAdding) {
+      unawaited(Future<void>.microtask(() => settingsHandler.applyBooruSettings(overrideScopeName)));
+    }
     _connectionTestCancelToken?.cancel('Booru editor closed');
     sectionController
       ..removeListener(_onSectionChanged)

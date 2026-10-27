@@ -38,12 +38,13 @@ object CrashDetector {
     fun consumePreviousCrash(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         var crashed = prefs.getBoolean(CRASH_PENDING, false)
-        var newestExitTimestamp = prefs.getLong(LAST_CHECKED_EXIT, 0L)
+        val lastCheckedExitTimestamp = prefs.getLong(LAST_CHECKED_EXIT, 0L)
+        var newestExitTimestamp = lastCheckedExitTimestamp
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
             for (exit in activityManager.getHistoricalProcessExitReasons(context.packageName, 0, 8)) {
-                if (exit.timestamp <= newestExitTimestamp) continue
+                if (exit.timestamp <= lastCheckedExitTimestamp) continue
                 newestExitTimestamp = maxOf(newestExitTimestamp, exit.timestamp)
                 if (
                     exit.reason == android.app.ApplicationExitInfo.REASON_CRASH ||

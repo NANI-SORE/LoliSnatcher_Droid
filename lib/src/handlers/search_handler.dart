@@ -1274,6 +1274,12 @@ class SearchTab {
 
   bool get hasSelectedItems => _selectedIndices.isNotEmpty;
 
+  bool shouldSnatchOnFavourite(BooruItem item) =>
+      SX.snatchOnFavourite.valueForBooru(booruHandler.sourceBooruFor(item).name);
+
+  bool shouldFavouriteOnSnatch(BooruItem item) =>
+      SX.favouriteOnSnatch.valueForBooru(booruHandler.sourceBooruFor(item).name);
+
   void _updateSelectedIndices() {
     _selectedIndices.update(selected);
   }
@@ -1315,12 +1321,14 @@ class SearchTab {
       item.isFavourite.value = newValue;
 
       final SettingsHandler settingsHandler = SettingsHandler.instance;
-      if (!skipSnatching && SX.snatchOnFavourite.value && newValue && item.isSnatched.value != true) {
+      if (!skipSnatching && shouldSnatchOnFavourite(item) && newValue && item.isSnatched.value != true) {
         SnatchHandler.instance.queue(
           [item],
           booruHandler.booru,
           SX.snatchCooldown.value,
           false,
+          sourceFor: booruHandler.sourceBooruFor,
+          useSourceCooldown: true,
         );
       }
       await settingsHandler.dbHandler.updateBooruItem(
@@ -1343,12 +1351,14 @@ class SearchTab {
     bool skipSnatching = false,
   }) async {
     final SettingsHandler settingsHandler = SettingsHandler.instance;
-    if (!skipSnatching && SX.snatchOnFavourite.value && newValue) {
+    if (!skipSnatching && newValue) {
       SnatchHandler.instance.queue(
-        items.where((e) => e.isSnatched.value != true).toList(),
+        items.where((item) => item.isSnatched.value != true && shouldSnatchOnFavourite(item)).toList(),
         booruHandler.booru,
         SX.snatchCooldown.value,
         false,
+        sourceFor: booruHandler.sourceBooruFor,
+        useSourceCooldown: true,
       );
     }
 

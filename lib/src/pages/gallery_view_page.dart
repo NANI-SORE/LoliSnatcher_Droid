@@ -304,8 +304,10 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                         widget.tab.booruHandler.booru,
                         SX.snatchCooldown.value,
                         false,
+                        sourceFor: widget.tab.booruHandler.sourceBooruFor,
+                        useSourceCooldown: true,
                       );
-                      if (SX.favouriteOnSnatch.value) {
+                      if (widget.tab.shouldFavouriteOnSnatch(widget.tab.booruHandler.filteredFetched[page.value])) {
                         await widget.tab.toggleItemFavourite(
                           page.value,
                           forcedValue: true,

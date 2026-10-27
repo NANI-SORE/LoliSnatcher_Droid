@@ -169,6 +169,7 @@ class _DesktopImageListenerState extends State<DesktopImageListener> {
                         currentBooru,
                         0,
                         false,
+                        sourceFor: currentTab.booruHandler.sourceBooruFor,
                       );
                     },
                     child: const Icon(Icons.save),
