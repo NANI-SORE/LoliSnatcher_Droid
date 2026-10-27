@@ -389,11 +389,22 @@ class SnatchHandler {
     List<BooruItem> booruItems,
     Booru booru,
     int cooldown,
-    bool ignoreExists,
-  ) {
+    bool ignoreExists, {
+    Booru Function(BooruItem)? sourceFor,
+    bool useSourceCooldown = false,
+  }) {
     if (booruItems.isNotEmpty) {
-      final SnatchItem item = SnatchItem(booruItems, cooldown, booru, ignoreExists);
-      queuedList.add(item);
+      final batches = <SnatchItem>[];
+      for (final item in booruItems) {
+        final source = sourceFor?.call(item) ?? booru;
+        if (batches.isNotEmpty && identical(batches.last.booru, source)) {
+          batches.last.booruItems.add(item);
+        } else {
+          final sourceCooldown = useSourceCooldown ? SX.snatchCooldown.valueForBooru(source.name) : cooldown;
+          batches.add(SnatchItem([item], sourceCooldown, source, ignoreExists));
+        }
+      }
+      queuedList.addAll(batches);
 
       if (booruItems.length > 1) {
         if (SX.downloadNotifications.value) {

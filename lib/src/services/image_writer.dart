@@ -14,6 +14,7 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
+import 'package:lolisnatcher/src/services/download_policy.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -35,6 +36,7 @@ class ImageWriter {
     bool ignoreExists,
     void Function(CancelToken)? onCancelTokenCreate,
   ) async {
+    final policy = DownloadPolicy.forBooru(booru);
     final String fileName = getFilename(item, booru);
     await setPaths();
 
@@ -60,7 +62,7 @@ class ImageWriter {
         ...await Tools.getFileCustomHeaders(booru, item: item, checkForReferer: true),
       };
 
-      final String url = ((SX.snatchMode.value.isSample && item.sampleURL.isNotEmpty) ? item.sampleURL : item.fileURL);
+      final String url = policy.urlFor(item);
 
       final cancelToken = CancelToken();
       if (onCancelTokenCreate != null) {
@@ -97,7 +99,7 @@ class ImageWriter {
       }
 
       try {
-        if (SX.jsonWrite.value) {
+        if (policy.writeJson) {
           if (Platform.isAndroid &&
               SX.extPathOverride.value.isNotEmpty &&
               await ServiceHandler.getAndroidSDKVersion() >= 31) {

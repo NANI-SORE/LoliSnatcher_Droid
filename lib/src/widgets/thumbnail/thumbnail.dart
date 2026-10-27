@@ -606,7 +606,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
         final double iconBgSize =
             (constraints.maxHeight < constraints.maxWidth ? constraints.maxHeight : constraints.maxWidth) * 0.75;
 
-        final double iconSize = min(iconBgSize - 4, 24);
+        final double iconSize = (iconBgSize - 4).clamp(0.0, 24.0);
 
         final double blurAmount = (SettingsHandler.instance.blurImages && !widget.isStandalone)
             ? 40

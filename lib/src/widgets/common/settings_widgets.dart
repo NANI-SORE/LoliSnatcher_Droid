@@ -1020,6 +1020,7 @@ class SettingsTextInput extends StatefulWidget {
     this.onChanged,
     this.onSubmitted,
     this.onSubmittedLongTap,
+    this.onNumberChanged,
     this.drawTopBorder = false,
     this.drawBottomBorder = true,
     this.margin = const EdgeInsets.symmetric(vertical: 8),
@@ -1062,6 +1063,7 @@ class SettingsTextInput extends StatefulWidget {
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final ValueChanged<String>? onSubmittedLongTap;
+  final ValueChanged<String>? onNumberChanged;
   final bool drawTopBorder;
   final bool drawBottomBorder;
   final EdgeInsets margin;
@@ -1128,8 +1130,12 @@ class _SettingsTextInputState extends State<SettingsTextInput> {
     super.dispose();
   }
 
-  void onChangedCallback(String value) {
-    widget.onChanged?.call(value);
+  void onChangedCallback(String value, {bool numberStep = false}) {
+    if (numberStep && widget.onNumberChanged != null) {
+      widget.onNumberChanged!(value);
+    } else {
+      widget.onChanged?.call(value);
+    }
     setState(() {});
   }
 
@@ -1138,7 +1144,7 @@ class _SettingsTextInputState extends State<SettingsTextInput> {
       final double valueWithStep = (double.tryParse(widget.controller.text) ?? 0) - widget.numberStep;
       final double newValue = valueWithStep >= widget.numberMin ? valueWithStep : widget.numberMin;
       widget.controller.text = newValue.toStringAsFixed(newValue.truncateToDouble() == newValue ? 0 : 1);
-      onChangedCallback(widget.controller.text);
+      onChangedCallback(widget.controller.text, numberStep: true);
     }
   }
 
@@ -1147,7 +1153,7 @@ class _SettingsTextInputState extends State<SettingsTextInput> {
       final double valueWithStep = (double.tryParse(widget.controller.text) ?? 0) + widget.numberStep;
       final double newValue = valueWithStep <= widget.numberMax ? valueWithStep : widget.numberMax;
       widget.controller.text = newValue.toStringAsFixed(newValue.truncateToDouble() == newValue ? 0 : 1);
-      onChangedCallback(widget.controller.text);
+      onChangedCallback(widget.controller.text, numberStep: true);
     }
   }
 

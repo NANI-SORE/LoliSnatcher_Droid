@@ -111,10 +111,13 @@ class DesktopHome extends StatelessWidget {
                           currentBooru,
                           SX.snatchCooldown.value,
                           false,
+                          sourceFor: currentTab.booruHandler.sourceBooruFor,
+                          useSourceCooldown: true,
                         );
-                        if (SX.favouriteOnSnatch.value) {
+                        final toFavourite = currentSelected.where(currentTab.shouldFavouriteOnSnatch).toList();
+                        if (toFavourite.isNotEmpty) {
                           await currentTab.updateFavForMultipleItems(
-                            currentSelected,
+                            toFavourite,
                             newValue: true,
                             skipSnatching: true,
                           );

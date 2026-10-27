@@ -284,7 +284,7 @@ class _ReactiveSettingSubcategoryList extends StatelessWidget {
       for (final depKey in dependsOn) {
         final depState = registry.get<dynamic>(depKey);
         if (depState != null) {
-          notifiers.add(depState.scopedNotifier(context));
+          notifiers.addAll({depState.scopedNotifier(context), depState.globalNotifier});
         }
       }
     }

@@ -213,7 +213,7 @@ class ThumbnailBuild extends StatelessWidget {
                                       MaterialPageRoute(
                                         builder: (context) => InAppWebviewView(
                                           initialUrl: url,
-                                          userAgent: Tools.browserUserAgent,
+                                          userAgent: Tools.browserUserAgentForBooru(possibleBooru.name),
                                         ),
                                       ),
                                     );

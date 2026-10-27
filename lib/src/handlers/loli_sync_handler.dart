@@ -254,7 +254,11 @@ class LoliSync {
           final bool alreadyExists =
               settingsHandler.booruList.indexWhere((el) => el.baseURL == booru.baseURL && el.name == booru.name) != -1;
           if (!alreadyExists) {
-            await settingsHandler.saveBooru(booru);
+            if (!await settingsHandler.importBooru(booru, syncableOnly: true)) {
+              req.response.statusCode = 400;
+              req.response.write('Invalid or conflicting config');
+              return 'Config not imported';
+            }
           }
         }
         req.response.statusCode = 200;
@@ -433,10 +437,17 @@ class LoliSync {
 
   Future<String> sendBooru(Booru booru, int booruCount, int current) async {
     Logger.Inst().log('Sending item $current / $booruCount', 'LoliSync', 'sendBooru', LogTypes.loliSyncInfo);
+    final registry = SettingsRegistry.instance;
+    final json = booru.toJson()..remove('settingOverrides');
+    final overrides = registry.normalizeOverrides(
+      registry.saveOverridesToMap(booru.name ?? ''),
+      syncableOnly: true,
+    );
+    if (overrides != null) json['settingOverrides'] = overrides;
     final HttpClientRequest request =
         await HttpClient().post(ip, port, '/lolisync/booru?amount=$booruCount&current=$current')
           ..headers.contentType = ContentType.json
-          ..write(jsonEncode(booru.toJson()));
+          ..write(jsonEncode(json));
     final HttpClientResponse response = await request.close();
     final String responseStr = await utf8.decoder.bind(response).join();
     return responseStr;

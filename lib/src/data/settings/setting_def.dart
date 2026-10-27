@@ -150,6 +150,12 @@ class SettingDef<T> {
   /// JSON key for serialization (delegates to the enum).
   String get jsonKey => key.jsonKey;
 
+  /// Normalizes persisted input without exposing a type-specific callback.
+  dynamic normalizeJsonValue(dynamic json) {
+    final parsed = valueFromJson(json);
+    return valueToJson(validate?.call(parsed) ?? parsed);
+  }
+
   /// Collect all text that should be searchable for this setting.
   /// Includes title, subtitle, keywords, and category names.
   /// All strings are localized via [BuildContext].

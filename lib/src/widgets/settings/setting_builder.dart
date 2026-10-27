@@ -26,9 +26,9 @@ class SettingBuilder<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<dynamic>(
-      valueListenable: setting.scopedNotifier(context),
-      builder: (context, _, _) => builder(context, setting.scopedValue(context)),
+    return ListenableBuilder(
+      listenable: Listenable.merge({setting.scopedNotifier(context), setting.globalNotifier}.toList()),
+      builder: (context, _) => builder(context, setting.scopedValue(context)),
     );
   }
 }
@@ -63,7 +63,7 @@ class MultiSettingBuilder extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: Listenable.merge(
-        settings.map((s) => s.scopedNotifier(context)).toList(),
+        settings.expand((s) => [s.scopedNotifier(context), s.globalNotifier]).toSet().toList(),
       ),
       builder: (context, _) => builder(context),
     );
