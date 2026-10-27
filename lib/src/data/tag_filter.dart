@@ -3,73 +3,14 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
+import 'package:lolisnatcher/src/data/booru_identity.dart';
+
+export 'package:lolisnatcher/src/data/booru_identity.dart';
 import 'package:lolisnatcher/src/data/tag_filter_query.dart';
 
 enum TagFilterEffect { hide, blur, mark }
 
 enum TagFilterScopeKind { global, source, view }
-
-@immutable
-class BooruIdentity {
-  const BooruIdentity({this.name, this.type, this.baseUrl});
-
-  factory BooruIdentity.fromBooru(Booru booru) => BooruIdentity(
-    name: booru.name?.trim(),
-    type: booru.type,
-    baseUrl: normalizeBaseUrl(booru.baseURL),
-  );
-
-  factory BooruIdentity.fromJson(Map<String, dynamic> json) => BooruIdentity(
-    name: json['name']?.toString(),
-    type: BooruType.values.where((value) => value.name == json['type']).firstOrNull,
-    baseUrl: normalizeBaseUrl(json['baseUrl']?.toString()),
-  );
-
-  final String? name;
-  final BooruType? type;
-  final String? baseUrl;
-
-  static String? normalizeBaseUrl(String? value) {
-    final trimmed = value?.trim().toLowerCase();
-    if (trimmed == null || trimmed.isEmpty) return null;
-    return trimmed.endsWith('/') ? trimmed.substring(0, trimmed.length - 1) : trimmed;
-  }
-
-  bool matches(Booru? booru) {
-    if (booru == null) return false;
-    return _matchesSourceIdentity(
-      this,
-      name: booru.name?.trim().toLowerCase(),
-      type: booru.type,
-      baseUrl: normalizeBaseUrl(booru.baseURL),
-    );
-  }
-
-  String get stableKey => '${type?.name ?? ''}|${baseUrl ?? ''}|${name?.toLowerCase() ?? ''}';
-
-  Map<String, dynamic> toJson() => {'name': name, 'type': type?.name, 'baseUrl': baseUrl};
-
-  @override
-  bool operator ==(Object other) => other is BooruIdentity && stableKey == other.stableKey;
-
-  @override
-  int get hashCode => stableKey.hashCode;
-}
-
-bool _matchesSourceIdentity(
-  BooruIdentity identity, {
-  required String? name,
-  required BooruType? type,
-  required String? baseUrl,
-}) {
-  // A display name can only stand in for an identity that lacks type or URL.
-  if (identity.type != null && identity.baseUrl != null && type != null && baseUrl != null) {
-    return identity.type == type && identity.baseUrl == baseUrl;
-  }
-  if (identity.type != null && type != null && identity.type != type) return false;
-  final identityName = identity.name?.trim().toLowerCase();
-  return identityName?.isNotEmpty == true && identityName == name;
-}
 
 class TagFilterScope {
   const TagFilterScope._({required this.kind, this.targets = const [], this.viewType, this.excludedSources = const []});
@@ -622,7 +563,7 @@ class FilterContext {
       return identity.type == viewBooru.type;
     }
     if (sourceBooru == null) return false;
-    return _matchesSourceIdentity(identity, name: _sourceName, type: _sourceType, baseUrl: _sourceBaseUrl);
+    return identity.matchesIdentity(BooruIdentity(name: _sourceName, type: _sourceType, baseUrl: _sourceBaseUrl));
   }
 }
 

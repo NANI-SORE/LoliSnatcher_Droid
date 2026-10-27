@@ -124,6 +124,8 @@ class TagFilterHandler {
   TagFilterConfiguration get configuration => _configuration;
   List<TagFilterRule> get rules => _configuration.rules;
   FilterRepository get repository => _repository!;
+  FilterRecovery? get recovery =>
+      _repository is JsonFilterRepository ? (_repository! as JsonFilterRepository).recovery : null;
 
   Future<void> initialize() async {
     _repository ??= JsonFilterRepository(SettingsHandler.instance.path);
@@ -336,7 +338,7 @@ class TagFilterHandler {
   TagFilterEvaluation evaluate(BooruItem item, FilterContext context, {Set<String>? normalizedTags}) {
     final now = _clock().toUtc();
     final usedTags = normalizedTags ?? normalizeTags(item);
-    final rating = normalizeBooruRating(item.rating, booru: context.sourceBooru);
+    final rating = normalizeBooruRating(item.rating, booru: context.sourceBooru, sourceType: item.sourceIdentity?.type);
     final matches = <TagFilterRuleMatch>[];
 
     for (final index in _orderedCandidateIndexes(rating, usedTags)) {

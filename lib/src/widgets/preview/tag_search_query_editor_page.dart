@@ -72,6 +72,7 @@ class TagSearchQueryEditorPage extends StatefulWidget {
     this.readOnlyPreview = false,
     this.showPinnedTags = true,
     this.suggestionInputTransform,
+    this.suggestionOutputTransform,
     this.inputTokenizer,
     this.onTagsSelected,
     super.key,
@@ -97,6 +98,7 @@ class TagSearchQueryEditorPage extends StatefulWidget {
   /// Transforms only the text used to fetch suggestions. The original input is
   /// retained when adding or returning a tag.
   final String Function(String input)? suggestionInputTransform;
+  final String Function(String tag)? suggestionOutputTransform;
 
   /// Optional syntax-aware tokenizer used to preserve compound query tokens.
   final List<String> Function(String input)? inputTokenizer;
@@ -191,15 +193,18 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
   void onSuggestionTap(
     TagSuggestion tag, {
     bool raw = false,
+    bool negated = false,
   }) {
-    String tagText = tag.tag;
+    String tagText = raw || tag.isMetatag ? tag.tag : widget.suggestionOutputTransform?.call(tag.tag) ?? tag.tag;
 
     if (!raw) {
-      final String extrasFromInput = queryController.suggestionTextController.text
+      String extrasFromInput = queryController.suggestionTextController.text
           .replaceAll(queryController.suggestionTextControllerRawInput, '')
           .trim();
+      if (negated) extrasFromInput = extrasFromInput.replaceFirst(RegExp('^-'), '');
       tagText = '$extrasFromInput$tagText';
     }
+    if (negated) tagText = '-$tagText';
 
     if (widget.allowMultipleTags) {
       final int? itemIndex = tagToEditIndex;
@@ -294,8 +299,7 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
                 color: Colors.red,
               ),
               onTap: () async {
-                tag = tag.copyWith(tag: '-${tag.tag}');
-                onSuggestionTap(tag);
+                onSuggestionTap(tag, negated: true);
                 Navigator.of(context).pop();
               },
             ),
@@ -341,7 +345,7 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
       result.value,
     );
     if (result.shouldAddDirectly) {
-      onSuggestionTap(TagSuggestion(tag: tag));
+      onSuggestionTap(TagSuggestion(tag: tag, isMetatag: true));
     } else {
       queryController.suggestionTextController.text = tag;
     }
@@ -745,6 +749,7 @@ class TagSearchBox extends StatefulWidget {
     this.titleAsLabel = false,
     this.showPinnedTags = true,
     this.suggestionInputTransform,
+    this.suggestionOutputTransform,
     this.inputTokenizer,
     this.suffixActions = const [],
     super.key,
@@ -784,6 +789,7 @@ class TagSearchBox extends StatefulWidget {
   final bool titleAsLabel;
   final bool showPinnedTags;
   final String Function(String input)? suggestionInputTransform;
+  final String Function(String tag)? suggestionOutputTransform;
   final List<String> Function(String input)? inputTokenizer;
   final List<Widget> suffixActions;
 
@@ -824,6 +830,7 @@ class _TagSearchBoxState extends State<TagSearchBox> {
           readOnlyPreview: widget.readOnlyPreview,
           showPinnedTags: widget.showPinnedTags,
           suggestionInputTransform: widget.suggestionInputTransform,
+          suggestionOutputTransform: widget.suggestionOutputTransform,
           inputTokenizer: widget.inputTokenizer,
           onTagsSelected: (tags, booru) {
             setState(() {

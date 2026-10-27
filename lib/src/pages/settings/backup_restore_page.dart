@@ -450,6 +450,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                         inProgress = true;
                         setState(() {});
                         try {
+                          final contents = utf8.encode(await TagFilterHandler.instance.export());
                           if (await ServiceHandler.existsFileFromSAFDirectory(backupPath, 'filters.json')) {
                             final bool res = await detectedDuplicateFile('filters.json');
                             if (!res) {
@@ -463,13 +464,14 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                             }
                           }
 
-                          await ServiceHandler.writeImage(
-                            utf8.encode(await TagFilterHandler.instance.export()),
+                          final writtenPath = await ServiceHandler.writeImage(
+                            contents,
                             'filters',
                             'text/json',
                             'json',
                             backupPath,
                           );
+                          if (writtenPath?.isNotEmpty != true) throw const FileSystemException('Filter backup failed');
                           showSnackbar(
                             context.loc.settings.itemFilters.filtersBackedUp,
                             isError: false,

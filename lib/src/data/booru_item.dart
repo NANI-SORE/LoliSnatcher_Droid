@@ -6,6 +6,7 @@ import 'package:equatable/equatable.dart';
 import 'package:get/get.dart';
 
 import 'package:lolisnatcher/src/data/note_item.dart';
+import 'package:lolisnatcher/src/data/booru_identity.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -38,6 +39,7 @@ class BooruItem extends Equatable {
     this.score,
     this.uploaderId,
     this.uploaderName,
+    this.sourceIdentity,
     this.description,
     this.sources,
     this.md5String,
@@ -86,6 +88,7 @@ class BooruItem extends Equatable {
   String? score;
   String? uploaderId;
   String? uploaderName;
+  BooruIdentity? sourceIdentity;
   String? description;
   String? md5String;
   String? postDate;
@@ -178,6 +181,9 @@ class BooruItem extends Equatable {
       'serverId': serverId,
       'rating': rating,
       'score': score,
+      'uploaderId': uploaderId,
+      'uploaderName': uploaderName,
+      if (sourceIdentity != null) 'sourceIdentity': sourceIdentity!.toJson(),
       'sources': sources,
       'md5String': md5String,
       'postDate': postDate,
@@ -211,6 +217,7 @@ class BooruItem extends Equatable {
     score,
     uploaderId,
     uploaderName,
+    sourceIdentity,
     description,
     md5String,
     postDate,
@@ -238,19 +245,27 @@ class BooruItem extends Equatable {
   }
 
   static BooruItem fromMap(Map<String, dynamic> json) {
-    final List<String> tags = [];
-    final List tagz = json['tags'];
-    for (int i = 0; i < tagz.length; i++) {
-      tags.add(tagz[i].toString());
-    }
+    final tags = (json['tags'] as List? ?? const [])
+        .map((tag) => tag is Map ? Tag.fromJson(Map<String, dynamic>.from(tag)) : Tag(tag.toString()))
+        .toList();
     //BooruItem(this.fileURL,this.sampleURL,this.thumbnailURL,this.tagsList,this.postURL,this.fileExt
     final BooruItem item = BooruItem(
       fileURL: json['fileURL'].toString(),
       sampleURL: json['sampleURL'].toString(),
       thumbnailURL: json['thumbnailURL'].toString(),
-      tagsList: tags.map(Tag.new).toList(),
+      tagsList: tags,
       postURL: json['postURL'].toString(),
-      // TODO stringify other options here
+      fileExt: json['fileExt']?.toString(),
+      serverId: json['serverId']?.toString(),
+      rating: json['rating']?.toString(),
+      score: json['score']?.toString(),
+      uploaderId: json['uploaderId']?.toString(),
+      uploaderName: json['uploaderName']?.toString(),
+      sourceIdentity: _readSourceIdentity(json['sourceIdentity']),
+      sources: (json['sources'] as List?)?.map((source) => source.toString()).toList(),
+      md5String: json['md5String']?.toString(),
+      postDate: json['postDate']?.toString(),
+      postDateFormat: json['postDateFormat']?.toString(),
     );
     item.isFavourite.value = json['isFavourite'].toString() == 'true';
     item.isSnatched.value = json['isSnatched'].toString() == 'true';
@@ -266,10 +281,20 @@ class BooruItem extends Equatable {
       fileExt: row['fileURL'].toString().contains('Hydrus-Client-API') ? 'extra' : null,
       tagsList: tags.map(Tag.new).toList(),
       postURL: row['postURL'].toString(),
+      serverId: row['serverId']?.toString(),
     );
     item.isFavourite.value = Tools.intToBool(row['isFavourite']);
     item.isSnatched.value = Tools.intToBool(row['isSnatched']);
     return item;
+  }
+
+  static BooruIdentity? _readSourceIdentity(dynamic value) {
+    try {
+      final decoded = value is String ? jsonDecode(value) : value;
+      return decoded is Map ? BooruIdentity.fromJson(Map<String, dynamic>.from(decoded)) : null;
+    } on FormatException {
+      return null;
+    }
   }
 }
 

@@ -3316,7 +3316,7 @@ class _Translations$settings$itemFilters$ru_RU extends Translations$settings$ite
   @override
   String get queryHelpMetadata =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpMetadata', {}) ??
-      'Доступны score:>=N, rating:safe, rating:questionable, rating:explicit…';
+      'Используйте score:>=10, rating:explicit или user:ИМЯ.';
   @override
   String get queryHelpQuotes =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpQuotes', {}) ?? 'Теги с пробелами вноси в кавычки.';
@@ -3338,6 +3338,13 @@ class _Translations$settings$itemFilters$ru_RU extends Translations$settings$ite
   String get suspended => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.suspended', {}) ?? 'Временно отключено';
   @override
   String get invalidQuery => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.invalidQuery', {}) ?? 'Недопустимый запрос';
+  @override
+  String get saveError =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.saveError', {}) ?? 'Не удалось сохранить фильтры. Повторите попытку.';
+  @override
+  String get recoveryNotice =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.recoveryNotice', {}) ??
+      'Данные фильтров повреждены или запись прервана. Проверьте правила.';
   @override
   String get missingSource => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.missingSource', {}) ?? 'Источник не найден';
   @override
@@ -3377,13 +3384,13 @@ class _Translations$settings$itemFilters$ru_RU extends Translations$settings$ite
   @override
   String migrationNoticeMessage({required int count}) =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.migrationNoticeMessage', {'count': count}) ??
-      'Фильтры скрытых и отмеченных тегов перенесены в новую систему фильтрации как правила (${count}). Теперь можно объединять теги, размывать и скрывать элементы, настраивать маркеры, использовать шаблоны и выбирать, где применяется каждое правило.';
+      'Списки скрытых и отмеченных тегов преобразованы в правила (${count}). Теперь можно объединять теги, размывать и скрывать элементы, настраивать маркеры, использовать шаблоны и выбирать, где применяется каждое правило.';
   @override
   String get openFilters => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.openFilters', {}) ?? 'Открыть фильтры';
   @override
   String get syntaxHelp =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.syntaxHelp', {}) ??
-      'Поддерживаются пробелы для И, -тег для исключения, * как шаблон тега, rating:*, score:>=N…';
+      'Поддерживаются пробелы для И, -тег для исключения, * как шаблон тега, rating:*, score:>=10; user:ИМЯ';
   @override
   String get allEffects => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allEffects', {}) ?? 'Все действия';
   @override
@@ -6027,7 +6034,7 @@ extension on TranslationsRuRu {
                 'Используй * внутри тегов для подстановки любого числа символов.',
           'settings.itemFilters.queryHelpMetadata' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpMetadata', {}) ??
-                'Доступны score:>=N, rating:safe, rating:questionable, rating:explicit…',
+                'Используйте score:>=10, rating:explicit или user:ИМЯ.',
           'settings.itemFilters.queryHelpQuotes' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpQuotes', {}) ?? 'Теги с пробелами вноси в кавычки.',
           'settings.itemFilters.effect' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.effect', {}) ?? 'Действие',
@@ -6040,6 +6047,11 @@ extension on TranslationsRuRu {
           'settings.itemFilters.suspended' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.suspended', {}) ?? 'Временно отключено',
           'settings.itemFilters.invalidQuery' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.invalidQuery', {}) ?? 'Недопустимый запрос',
+          'settings.itemFilters.saveError' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.saveError', {}) ?? 'Не удалось сохранить фильтры. Повторите попытку.',
+          'settings.itemFilters.recoveryNotice' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.recoveryNotice', {}) ??
+                'Данные фильтров повреждены или запись прервана. Проверьте правила.',
           'settings.itemFilters.missingSource' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.missingSource', {}) ?? 'Источник не найден',
           'settings.itemFilters.customMarker' =>
@@ -6072,11 +6084,11 @@ extension on TranslationsRuRu {
           'settings.itemFilters.migrationNoticeMessage' =>
             ({required int count}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.itemFilters.migrationNoticeMessage', {'count': count}) ??
-                'Фильтры скрытых и отмеченных тегов перенесены в новую систему фильтрации как правила (${count}). Теперь можно объединять теги, размывать и скрывать элементы, настраивать маркеры, использовать шаблоны и выбирать, где применяется каждое правило.',
+                'Списки скрытых и отмеченных тегов преобразованы в правила (${count}). Теперь можно объединять теги, размывать и скрывать элементы, настраивать маркеры, использовать шаблоны и выбирать, где применяется каждое правило.',
           'settings.itemFilters.openFilters' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.openFilters', {}) ?? 'Открыть фильтры',
           'settings.itemFilters.syntaxHelp' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.syntaxHelp', {}) ??
-                'Поддерживаются пробелы для И, -тег для исключения, * как шаблон тега, rating:*, score:>=N…',
+                'Поддерживаются пробелы для И, -тег для исключения, * как шаблон тега, rating:*, score:>=10; user:ИМЯ',
           'settings.itemFilters.allEffects' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allEffects', {}) ?? 'Все действия',
           'settings.itemFilters.allStates' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allStates', {}) ?? 'Все состояния',
           'settings.itemFilters.allScopes' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allScopes', {}) ?? 'Все области',
@@ -6464,12 +6476,12 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.debug.getSessionString', {}) ?? 'Получить строку сессии',
           'settings.debug.setSessionString' =>
             TranslationOverrides.string(_root.$meta, 'settings.debug.setSessionString', {}) ?? 'Установить строку сессии',
-          'settings.debug.sessionString' => TranslationOverrides.string(_root.$meta, 'settings.debug.sessionString', {}) ?? 'Строка сессии',
-          'settings.debug.restoredSessionFromString' =>
-            TranslationOverrides.string(_root.$meta, 'settings.debug.restoredSessionFromString', {}) ?? 'Сессия восстановлена из строки',
           _ => null,
         } ??
         switch (path) {
+          'settings.debug.sessionString' => TranslationOverrides.string(_root.$meta, 'settings.debug.sessionString', {}) ?? 'Строка сессии',
+          'settings.debug.restoredSessionFromString' =>
+            TranslationOverrides.string(_root.$meta, 'settings.debug.restoredSessionFromString', {}) ?? 'Сессия восстановлена из строки',
           'settings.logging.logger' => TranslationOverrides.string(_root.$meta, 'settings.logging.logger', {}) ?? 'Логгер',
           'settings.logging.captureLogcat' => TranslationOverrides.string(_root.$meta, 'settings.logging.captureLogcat', {}) ?? 'Записывать logcat',
           'settings.logging.captureLogcatDescription' =>

@@ -11,6 +11,7 @@ import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/data/tag_filter.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_filter_handler.dart';
+import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
 import 'package:lolisnatcher/src/widgets/common/marquee_text.dart';
@@ -70,6 +71,30 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     countdownRevision.dispose();
     TagFilterHandler.instance.revision.removeListener(_refresh);
     super.dispose();
+  }
+
+  Future<bool> _saveChange(Future<void> Function() change) async {
+    try {
+      await change();
+      return true;
+    } catch (e, s) {
+      Logger.Inst().log(
+        e,
+        'TagsFiltersPage',
+        'saveChange',
+        LogTypes.exception,
+        s: s,
+      );
+      if (mounted) {
+        FlashElements.showSnackbar(
+          context: context,
+          title: Text(context.loc.settings.itemFilters.saveError),
+          sideColor: Theme.of(context).colorScheme.error,
+          leadingIcon: Icons.error_outline,
+        );
+      }
+      return false;
+    }
   }
 
   void _refresh() {
@@ -163,19 +188,31 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
   TagFilterMarker? _markerForKey(String key) => ruleList.markerForKey(key);
 
   Widget _markerVisual(TagFilterMarker? marker, {double size = 20, Color? color}) {
-    if (marker == null) return Icon(Icons.star, size: size, color: TagFilterMarkerColor.grey.color);
-    if (marker.kind == TagFilterMarkerKind.icon) {
-      return marker.icon!.build(size: size, color: marker.effectiveColor);
+    if (marker == null) {
+      return Icon(
+        Icons.star,
+        size: size,
+        color: color ?? TagFilterMarkerColor.grey.color,
+      );
     }
-    return SizedBox.square(
-      dimension: size,
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          marker.text ?? '',
-          style: TextStyle(color: marker.effectiveColor, fontWeight: FontWeight.w700, height: 1),
-        ),
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: marker.effectiveColor.computeLuminance() > 0.179 ? Colors.black : Colors.white,
+        borderRadius: BorderRadius.circular(4),
       ),
+      child: marker.kind == TagFilterMarkerKind.icon
+          ? marker.icon!.build(size: size, color: marker.effectiveColor)
+          : SizedBox.square(
+              dimension: size,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  marker.text ?? '',
+                  style: TextStyle(color: marker.effectiveColor, fontWeight: FontWeight.w700, height: 1),
+                ),
+              ),
+            ),
     );
   }
 
@@ -317,11 +354,15 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
           else
             const Icon(Icons.link_off, size: 16),
           const SizedBox(width: 5),
-          Text(
-            displayed[index].booru?.name ??
-                displayed[index].target.type?.alias ??
-                displayed[index].target.name ??
-                loc.missingSource,
+          Flexible(
+            child: Text(
+              displayed[index].booru?.name ??
+                  displayed[index].target.type?.alias ??
+                  displayed[index].target.name ??
+                  loc.missingSource,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           if (index < displayed.length - 1) const Text(',  '),
         ],
@@ -333,14 +374,26 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
   Widget _scopeChip(TagFilterRule rule) {
     final colors = Theme.of(context).colorScheme;
     final foreground = colors.onSurfaceVariant;
-    return Chip(
-      visualDensity: VisualDensity.compact,
-      backgroundColor: colors.surfaceContainerHighest,
-      side: BorderSide.none,
-      labelStyle: TextStyle(color: foreground),
-      label: IconTheme(
-        data: IconThemeData(color: foreground),
-        child: _ruleScopeLabel(rule),
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: (MediaQuery.sizeOf(context).width - 72).clamp(1.0, double.infinity),
+      ),
+      child: Tooltip(
+        message: rule.scope.kind == TagFilterScopeKind.source
+            ? _resolvedSources(rule)
+                  .map((source) => source.booru?.name ?? source.target.name ?? source.target.baseUrl ?? '')
+                  .join(', ')
+            : '',
+        child: Chip(
+          visualDensity: VisualDensity.compact,
+          backgroundColor: colors.surfaceContainerHighest,
+          side: BorderSide.none,
+          labelStyle: TextStyle(color: foreground),
+          label: IconTheme(
+            data: IconThemeData(color: foreground),
+            child: _ruleScopeLabel(rule),
+          ),
+        ),
       ),
     );
   }
@@ -533,7 +586,14 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                 children: [
                   Icon(Icons.timer_outlined, size: 16, color: foreground),
                   const SizedBox(width: 6),
-                  Text(expanded ? endDate : timeLeft, style: TextStyle(color: foreground)),
+                  Flexible(
+                    child: Text(
+                      expanded ? endDate : timeLeft,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: foreground),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -628,11 +688,11 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
       _ => null,
     };
     if (value == 'off') {
-      await TagFilterHandler.instance.setHideAsBlur(enabled: false);
+      await _saveChange(() => TagFilterHandler.instance.setHideAsBlur(enabled: false));
     } else if (value == 'forever') {
-      await TagFilterHandler.instance.setHideAsBlur(enabled: true);
+      await _saveChange(() => TagFilterHandler.instance.setHideAsBlur(enabled: true));
     } else if (until != null) {
-      await TagFilterHandler.instance.setHideAsBlur(enabled: true, until: until);
+      await _saveChange(() => TagFilterHandler.instance.setHideAsBlur(enabled: true, until: until));
     }
   }
 
@@ -684,7 +744,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
       case 'edit':
         await _openEditor(rule);
       case 'delete':
-        await handler.deleteRule(rule.id);
+        if (!await _saveChange(() => handler.deleteRule(rule.id))) return;
         if (!mounted) return;
         final messenger = ScaffoldMessenger.of(context);
         messenger.showSnackBar(
@@ -695,7 +755,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
               label: context.loc.undo,
               onPressed: () async {
                 if (handler.rules.any((item) => item.id == rule.id)) return;
-                await handler.addRule(rule);
+                await _saveChange(() => handler.addRule(rule));
               },
             ),
           ),
@@ -710,11 +770,13 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
       showReenable: !rule.enabled || activeTimer,
     );
     if (change == null) return;
-    await TagFilterHandler.instance.updateRule(
-      rule.copyWith(
-        enabled: change.enabled,
-        disabledUntil: change.disabledUntil,
-        clearDisabledUntil: change.disabledUntil == null,
+    await _saveChange(
+      () => TagFilterHandler.instance.updateRule(
+        rule.copyWith(
+          enabled: change.enabled,
+          disabledUntil: change.disabledUntil,
+          clearDisabledUntil: change.disabledUntil == null,
+        ),
       ),
     );
   }
@@ -861,7 +923,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
             clearDisabledUntil: disabledUntil == null,
           ),
         );
-    await TagFilterHandler.instance.updateRules(replacements);
+    await _saveChange(() => TagFilterHandler.instance.updateRules(replacements));
   }
 
   Future<void> _applyEffectToRules(TagFilterEffect effect, Set<String> ids) async {
@@ -869,7 +931,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     final replacements = TagFilterHandler.instance.rules
         .where((rule) => ids.contains(rule.id) && rule.effect != effect)
         .map((rule) => rule.copyWith(effect: effect));
-    await TagFilterHandler.instance.updateRules(replacements);
+    await _saveChange(() => TagFilterHandler.instance.updateRules(replacements));
   }
 
   Future<void> _suspendSelected(Set<String> ids) async {
@@ -921,8 +983,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
       ),
     );
     if (confirmed != true) return;
-    _closeSelection();
-    await TagFilterHandler.instance.deleteRules(ids);
+    if (await _saveChange(() => TagFilterHandler.instance.deleteRules(ids)) && mounted) _closeSelection();
   }
 
   Future<void> _showBatchActions() {
@@ -1077,7 +1138,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                               thumbIcon: temporaryUntil != null
                                   ? const WidgetStatePropertyAll<Icon?>(Icon(Icons.timer_outlined))
                                   : null,
-                              onChanged: (value) => handler.setHideAsBlur(enabled: value),
+                              onChanged: (value) => _saveChange(() => handler.setHideAsBlur(enabled: value)),
                             ),
                             IconButton(
                               icon: const Icon(Icons.more_vert),
@@ -1337,8 +1398,11 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                 IconButton(
                   tooltip: loc.importLegacy,
                   onPressed: () async {
-                    final count = await handler.importLegacy(force: true);
-                    if (context.mounted) {
+                    var count = 0;
+                    final saved = await _saveChange(() async {
+                      count = await handler.importLegacy(force: true);
+                    });
+                    if (saved && context.mounted) {
                       FlashElements.showSnackbar(
                         context: context,
                         title: Text(loc.legacyImported(count: count)),
@@ -1362,6 +1426,14 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
         child: CustomScrollView(
           controller: rulesScrollController,
           slivers: [
+            if (handler.recovery != null)
+              SliverToBoxAdapter(
+                child: MaterialBanner(
+                  content: Text(loc.recoveryNotice),
+                  leading: const Icon(Icons.restore),
+                  actions: const [SizedBox.shrink()],
+                ),
+              ),
             SliverFloatingHeader(
               snapMode: FloatingHeaderSnapMode.overlay,
               child: ColoredBox(
@@ -1380,6 +1452,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                               ? null
                               : IconButton(
                                   onPressed: () => setState(() {
+                                    debounce?.cancel();
                                     searchController.clear();
                                     search = '';
                                     _applyFilters();
@@ -1582,8 +1655,10 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                             thumbIcon: activeTimer
                                 ? const WidgetStatePropertyAll<Icon?>(Icon(Icons.timer_outlined))
                                 : null,
-                            onChanged: (value) => handler.updateRule(
-                              rule.copyWith(enabled: value, clearDisabledUntil: true),
+                            onChanged: (value) => _saveChange(
+                              () => handler.updateRule(
+                                rule.copyWith(enabled: value, clearDisabledUntil: true),
+                              ),
                             ),
                           ),
                           SizedBox.square(

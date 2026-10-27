@@ -54,7 +54,11 @@ abstract class BooruHandler {
   RxList<BooruItem> filteredFetched = RxList<BooruItem>([]);
 
   /// Merged searches override this to retain each item's source settings.
-  Booru sourceBooruFor(BooruItem item) => booru;
+  Booru sourceBooruFor(BooruItem item) =>
+      booru.type?.isFavouritesOrDownloads == true ? BooruSourceResolver.resolve(item) ?? booru : booru;
+
+  /// Local-view exclusions remain view settings, even inside a merged search.
+  Booru filterSettingsBooruFor(BooruItem item) => booru;
 
   bool Function(BooruItem, TagFilterEvaluation) _itemFilterFor(Booru source) {
     final filterMarked = SX.filterMarked.valueForBooru(source.name);
@@ -78,12 +82,13 @@ abstract class BooruHandler {
       String? rating,
       String? score,
       String? uploaderName,
+      String? sourceKey,
       String contextKey,
       TagFilterEvaluation evaluation,
     })
   >
   _filterEvaluationCache = Map.identity();
-  final Map<BooruItem, ({String catalogKey, String fileUrl, String postUrl, FilterContext context})>
+  final Map<BooruItem, ({String catalogKey, String fileUrl, String postUrl, String? sourceKey, FilterContext context})>
   _filterContextCache = Map.identity();
 
   FilterContext filterContextFor(BooruItem item) {
@@ -110,6 +115,7 @@ abstract class BooruHandler {
         cached.rating == item.rating &&
         cached.score == item.score &&
         cached.uploaderName == item.uploaderName &&
+        cached.sourceKey == item.sourceIdentity?.stableKey &&
         cached.contextKey == context.cacheKey) {
       return cached.evaluation;
     }
@@ -120,6 +126,7 @@ abstract class BooruHandler {
       rating: item.rating,
       score: item.score,
       uploaderName: item.uploaderName,
+      sourceKey: item.sourceIdentity?.stableKey,
       contextKey: context.cacheKey,
       evaluation: evaluation,
     );
@@ -186,7 +193,8 @@ abstract class BooruHandler {
         if (cachedContext != null &&
             cachedContext.catalogKey == contextCatalogKey &&
             cachedContext.fileUrl == item.fileURL &&
-            cachedContext.postUrl == item.postURL) {
+            cachedContext.postUrl == item.postURL &&
+            cachedContext.sourceKey == item.sourceIdentity?.stableKey) {
           context = cachedContext.context;
         } else {
           context = filterContextFor(item);
@@ -194,6 +202,7 @@ abstract class BooruHandler {
             catalogKey: contextCatalogKey,
             fileUrl: item.fileURL,
             postUrl: item.postURL,
+            sourceKey: item.sourceIdentity?.stableKey,
             context: context,
           );
         }
@@ -202,22 +211,33 @@ abstract class BooruHandler {
           ? _evaluateFilter(item, context, filterHandler)
           : const TagFilterEvaluation.empty();
 
-      final includeItem = filters.putIfAbsent(source, () => _itemFilterFor(source));
+      final settingsSource = filterSettingsBooruFor(item);
+      final includeItem = filters.putIfAbsent(settingsSource, () => _itemFilterFor(settingsSource));
       if (!includeItem(item, evaluation)) {
         continue;
       }
 
       final String? serverId = item.serverId;
       final bool duplicateFileUrl = item.fileURL.isNotEmpty && seenFileUrls.contains(item.fileURL);
-      final bool duplicateServerId = serverId != null && seenServerIds.contains(serverId);
+      final sourceKey = item.sourceIdentity ?? BooruIdentity.fromBooru(source);
+      final scopedServerId =
+          serverId == null ||
+              serverId.isEmpty ||
+              sourceKey.type == null ||
+              sourceKey.baseUrl?.isNotEmpty != true ||
+              sourceKey.type?.isFavouritesOrDownloads == true ||
+              sourceKey.type?.isMerge == true
+          ? null
+          : '${sourceKey.type?.name}|${sourceKey.baseUrl}|$serverId';
+      final bool duplicateServerId = scopedServerId != null && seenServerIds.contains(scopedServerId);
       if (duplicateFileUrl || duplicateServerId) {
         continue;
       }
       if (item.fileURL.isNotEmpty) {
         seenFileUrls.add(item.fileURL);
       }
-      if (serverId != null) {
-        seenServerIds.add(serverId);
+      if (scopedServerId != null) {
+        seenServerIds.add(scopedServerId);
       }
 
       filteredItems.add(item);
@@ -459,6 +479,11 @@ abstract class BooruHandler {
 
   Future<void> afterParseResponse(List<BooruItem> newItems) async {
     DioNetwork.throwIfCancelled();
+    if (booru.type?.isFavouritesOrDownloads != true && booru.type?.isMerge != true) {
+      for (final item in newItems) {
+        item.sourceIdentity = BooruIdentity.fromBooru(booru);
+      }
+    }
     final int lengthBefore = fetched.length;
     fetched.addAll(newItems);
     filterFetched();
@@ -965,33 +990,21 @@ abstract class BooruHandler {
   }
 
   Future<void> setMultipleTrackedValues(int beforeLength, int afterLength) async {
-    // beforeLength can be -1, clamp to 0
-    final int beforePos = max(0, beforeLength);
-    // diff can be negative, clamp to 0
-    int diff = max(0, afterLength - beforeLength);
-    diff = diff > 0 ? diff + 1 : diff;
-    // we need +1 to make sure we don't miss the last item, because sublist doesn't include the item with the end index
-    // so this way we exceed the possible length of fetched to get it
-
-    if (diff == 0) {
-      // do nothing if nothing was added
-      return;
+    final start = max(0, beforeLength);
+    final count = max(0, afterLength - start);
+    final items = fetched.skip(start).take(count).toList(growable: false);
+    final settingsHandler = SettingsHandler.instance;
+    if (items.isEmpty || !settingsHandler.dbHandler.isOpen) return;
+    // Keep the original objects across awaits: a new search may replace fetched.
+    final valuesList = await settingsHandler.dbHandler.getMultipleTrackedValues(items);
+    for (var index = 0; index < items.length; index++) {
+      final item = items[index];
+      final values = valuesList[index];
+      item.isSnatched.value = values[0];
+      item.isFavourite.value = values[1];
     }
-
-    // generate list of new fetched indexes
-    final List<int> fetchedIndexes = List.generate(diff, (index) => beforePos + index);
-
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
-    if (settingsHandler.dbHandler.db != null && diff > 0) {
-      final List<List<bool>> valuesList = await settingsHandler.dbHandler.getMultipleTrackedValues(
-        fetched.sublist(fetchedIndexes.first, fetchedIndexes.last),
-      ); //.map((e) => e.fileURL).toList()
-
-      valuesList.asMap().forEach((index, values) {
-        fetched[fetchedIndexes[index]].isSnatched.value = values[0];
-        fetched[fetchedIndexes[index]].isFavourite.value = values[1];
-      });
-    }
+    final current = HashSet<BooruItem>.identity()..addAll(fetched);
+    if (items.any(current.contains)) filterFetched();
 
     return;
   }

@@ -8,11 +8,9 @@ import 'package:flutter/material.dart';
 
 import 'package:dio/dio.dart';
 
-import 'package:lolisnatcher/src/boorus/booru_type.dart';
-import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
-import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/booru_identity.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/tag_filter_evaluation.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
@@ -22,6 +20,7 @@ import 'package:lolisnatcher/src/utils/debouncer.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
+import 'package:lolisnatcher/src/utils/booru_source_resolver.dart';
 import 'package:lolisnatcher/src/widgets/common/thumbnail_loading.dart';
 import 'package:lolisnatcher/src/widgets/image/custom_network_image.dart';
 import 'package:lolisnatcher/src/widgets/preview/shimmer_builder.dart';
@@ -863,21 +862,7 @@ Future<bool?> tryToLoadAndUpdateItem(
   CancelToken cancelToken,
 ) async {
   try {
-    final itemFileHost = Uri.tryParse(item.fileURL)?.host;
-    final itemPostHost = Uri.tryParse(item.postURL)?.host;
-    final Booru? possibleBooru = SettingsHandler.instance.booruList.firstWhereOrNull((e) {
-      final booruHost = Uri.tryParse(e.baseURL ?? '')?.host;
-
-      return (itemPostHost?.isNotEmpty == true &&
-              booruHost?.isNotEmpty == true &&
-              (itemPostHost! == booruHost! ||
-                  switch (e.type) {
-                    BooruType.IdolSankaku => IdolSankakuHandler.knownUrls.contains(itemPostHost),
-                    BooruType.Sankaku => SankakuHandler.knownPostUrls.contains(itemPostHost),
-                    _ => false,
-                  })) ||
-          (itemFileHost?.isNotEmpty == true && booruHost?.isNotEmpty == true && itemFileHost! == booruHost!);
-    });
+    final Booru? possibleBooru = BooruSourceResolver.resolve(item);
 
     if (possibleBooru != null) {
       final handler = BooruHandlerFactory().getBooruHandler([possibleBooru], null).booruHandler;
@@ -888,6 +873,9 @@ Future<bool?> tryToLoadAndUpdateItem(
           withCapcthaCheck: true,
         );
 
+        if (!result.failed && result.item != null) {
+          result.item!.sourceIdentity = BooruIdentity.fromBooru(possibleBooru);
+        }
         if (!result.failed &&
             result.item != null &&
             (result.item?.isSnatched.value == true || result.item?.isFavourite.value == true)) {

@@ -4144,10 +4144,9 @@ class Translations$settings$itemFilters$en {
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpWildcards', {}) ??
       'Use * inside tags to match zero or more characters.';
 
-  /// en: 'Use score:>=N, rating:safe, rating:questionable, rating:explicit…'
+  /// en: 'Use score:>=10, rating:explicit or user:NAME.'
   String get queryHelpMetadata =>
-      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpMetadata', {}) ??
-      'Use score:>=N, rating:safe, rating:questionable, rating:explicit…';
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpMetadata', {}) ?? 'Use score:>=10, rating:explicit or user:NAME.';
 
   /// en: 'Put tags containing spaces in quotes.'
   String get queryHelpQuotes =>
@@ -4179,6 +4178,14 @@ class Translations$settings$itemFilters$en {
 
   /// en: 'Invalid query'
   String get invalidQuery => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.invalidQuery', {}) ?? 'Invalid query';
+
+  /// en: 'Couldn't save filters. Try again.'
+  String get saveError => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.saveError', {}) ?? 'Couldn\'t save filters. Try again.';
+
+  /// en: 'Filter data was damaged or interrupted. Review your rules.'
+  String get recoveryNotice =>
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.recoveryNotice', {}) ??
+      'Filter data was damaged or interrupted. Review your rules.';
 
   /// en: 'Missing source'
   String get missingSource => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.missingSource', {}) ?? 'Missing source';
@@ -4231,18 +4238,18 @@ class Translations$settings$itemFilters$en {
   String get migrationNoticeTitle =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.migrationNoticeTitle', {}) ?? 'Your filters have been upgraded';
 
-  /// en: 'Your hidden and marked tag filters were migrated into ${count: int} rules in the new filtering system. You can now combine tags, blur/hide items, customize markers, use wildcards, and choose where each rule is used.'
+  /// en: 'Your hidden and marked lists became ${count: int} filter rules. You can now combine tags, blur/hide items, customize markers, use wildcards, and choose where each rule is used.'
   String migrationNoticeMessage({required int count}) =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.migrationNoticeMessage', {'count': count}) ??
-      'Your hidden and marked tag filters were migrated into ${count} rules in the new filtering system. You can now combine tags, blur/hide items, customize markers, use wildcards, and choose where each rule is used.';
+      'Your hidden and marked lists became ${count} filter rules. You can now combine tags, blur/hide items, customize markers, use wildcards, and choose where each rule is used.';
 
   /// en: 'View filters'
   String get openFilters => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.openFilters', {}) ?? 'View filters';
 
-  /// en: 'Supports spaces for AND, -tag for exclusion, * as a tag wildcard, rating:*, score:>=N…'
+  /// en: 'Supports spaces for AND, -tag for exclusion, * as a tag wildcard, rating:*, score:>=10, user:NAME'
   String get syntaxHelp =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.syntaxHelp', {}) ??
-      'Supports spaces for AND, -tag for exclusion, * as a tag wildcard, rating:*, score:>=N…';
+      'Supports spaces for AND, -tag for exclusion, * as a tag wildcard, rating:*, score:>=10, user:NAME';
 
   /// en: 'All effects'
   String get allEffects => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allEffects', {}) ?? 'All effects';
@@ -7083,8 +7090,7 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpWildcards', {}) ??
                 'Use * inside tags to match zero or more characters.',
           'settings.itemFilters.queryHelpMetadata' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpMetadata', {}) ??
-                'Use score:>=N, rating:safe, rating:questionable, rating:explicit…',
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpMetadata', {}) ?? 'Use score:>=10, rating:explicit or user:NAME.',
           'settings.itemFilters.queryHelpQuotes' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpQuotes', {}) ?? 'Put tags containing spaces in quotes.',
           'settings.itemFilters.effect' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.effect', {}) ?? 'Effect',
@@ -7096,6 +7102,11 @@ extension on Translations {
           'settings.itemFilters.disabled' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.disabled', {}) ?? 'Disabled',
           'settings.itemFilters.suspended' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.suspended', {}) ?? 'Suspended',
           'settings.itemFilters.invalidQuery' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.invalidQuery', {}) ?? 'Invalid query',
+          'settings.itemFilters.saveError' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.saveError', {}) ?? 'Couldn\'t save filters. Try again.',
+          'settings.itemFilters.recoveryNotice' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.recoveryNotice', {}) ??
+                'Filter data was damaged or interrupted. Review your rules.',
           'settings.itemFilters.missingSource' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.missingSource', {}) ?? 'Missing source',
           'settings.itemFilters.customMarker' =>
@@ -7127,11 +7138,11 @@ extension on Translations {
           'settings.itemFilters.migrationNoticeMessage' =>
             ({required int count}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.itemFilters.migrationNoticeMessage', {'count': count}) ??
-                'Your hidden and marked tag filters were migrated into ${count} rules in the new filtering system. You can now combine tags, blur/hide items, customize markers, use wildcards, and choose where each rule is used.',
+                'Your hidden and marked lists became ${count} filter rules. You can now combine tags, blur/hide items, customize markers, use wildcards, and choose where each rule is used.',
           'settings.itemFilters.openFilters' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.openFilters', {}) ?? 'View filters',
           'settings.itemFilters.syntaxHelp' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.syntaxHelp', {}) ??
-                'Supports spaces for AND, -tag for exclusion, * as a tag wildcard, rating:*, score:>=N…',
+                'Supports spaces for AND, -tag for exclusion, * as a tag wildcard, rating:*, score:>=10, user:NAME',
           'settings.itemFilters.allEffects' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allEffects', {}) ?? 'All effects',
           'settings.itemFilters.allStates' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allStates', {}) ?? 'All states',
           'settings.itemFilters.allScopes' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allScopes', {}) ?? 'All scopes',
@@ -7510,12 +7521,12 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.debug.getSessionString', {}) ?? 'Get session string',
           'settings.debug.setSessionString' =>
             TranslationOverrides.string(_root.$meta, 'settings.debug.setSessionString', {}) ?? 'Set session string',
-          'settings.debug.sessionString' => TranslationOverrides.string(_root.$meta, 'settings.debug.sessionString', {}) ?? 'Session string',
-          'settings.debug.restoredSessionFromString' =>
-            TranslationOverrides.string(_root.$meta, 'settings.debug.restoredSessionFromString', {}) ?? 'Restored session from string',
           _ => null,
         } ??
         switch (path) {
+          'settings.debug.sessionString' => TranslationOverrides.string(_root.$meta, 'settings.debug.sessionString', {}) ?? 'Session string',
+          'settings.debug.restoredSessionFromString' =>
+            TranslationOverrides.string(_root.$meta, 'settings.debug.restoredSessionFromString', {}) ?? 'Restored session from string',
           'settings.logging.logger' => TranslationOverrides.string(_root.$meta, 'settings.logging.logger', {}) ?? 'Logger',
           'settings.logging.captureLogcat' =>
             TranslationOverrides.string(_root.$meta, 'settings.logging.captureLogcat', {}) ?? 'Capture Android logcat',

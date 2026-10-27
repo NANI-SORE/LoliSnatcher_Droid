@@ -432,7 +432,11 @@ class LoliSync {
       ..headers.contentType = ContentType.json
       ..write(filtersJson);
     final HttpClientResponse response = await request.close();
-    return utf8.decoder.bind(response).join();
+    final body = await utf8.decoder.bind(response).join();
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw HttpException('Filter transfer rejected (${response.statusCode})');
+    }
+    return body;
   }
 
   Future<String> sendBooru(Booru booru, int booruCount, int current) async {

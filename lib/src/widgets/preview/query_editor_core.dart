@@ -154,7 +154,9 @@ class QueryEditorController {
 
         if (metaTag != null) {
           if (metaTag.hasAutoComplete) {
-            suggestedTags = await metaTag.getAutoComplete(searchInput);
+            suggestedTags = (await metaTag.getAutoComplete(searchInput))
+                .map((suggestion) => suggestion.copyWith(isMetatag: true))
+                .toList();
             suggestedTags.sort((a, b) => a.tag.compareTo(b.tag));
           } else {
             suggestedTags.clear();

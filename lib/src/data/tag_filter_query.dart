@@ -361,7 +361,9 @@ class UserCondition extends TagFilterCondition {
 
   @override
   ConditionMatch evaluate(BooruItem item, Set<String> tags) {
-    final result = item.uploaderName?.trim().toLowerCase() == username;
+    final uploader = item.uploaderName?.trim().toLowerCase();
+    if (uploader == null || uploader.isEmpty) return const ConditionMatch(false);
+    final result = uploader == username;
     return ConditionMatch(negated ? !result : result);
   }
 }
@@ -372,7 +374,8 @@ class RatingCondition extends TagFilterCondition {
 
   @override
   ConditionMatch evaluate(BooruItem item, Set<String> tags, {String? normalizedRating}) {
-    final normalized = normalizedRating ?? normalizeBooruRating(item.rating);
+    final normalized = normalizedRating ?? normalizeBooruRating(item.rating, sourceType: item.sourceIdentity?.type);
+    if (normalized == null || normalized.isEmpty) return const ConditionMatch(false);
     final result = normalized == rating;
     return ConditionMatch(negated ? !result : result);
   }
@@ -411,7 +414,8 @@ class ScoreCondition extends TagFilterCondition {
   @override
   ConditionMatch evaluate(BooruItem item, Set<String> tags) {
     final score = int.tryParse(item.score?.trim() ?? '');
-    final result = score != null && operator.compare(score, threshold);
+    if (score == null) return const ConditionMatch(false);
+    final result = operator.compare(score, threshold);
     return ConditionMatch(negated ? !result : result);
   }
 }

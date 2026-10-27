@@ -14,6 +14,8 @@ abstract interface class FilterRepository {
   Future<String> export();
 }
 
+enum FilterRecovery { temporary, backup, partial }
+
 class JsonFilterRepository implements FilterRepository {
   JsonFilterRepository(this.directoryPath);
 
@@ -21,6 +23,7 @@ class JsonFilterRepository implements FilterRepository {
 
   final String directoryPath;
   Future<void> _pendingWrites = Future.value();
+  FilterRecovery? recovery;
 
   File _fileNamed(String name) => File.fromUri(Directory(directoryPath).uri.resolve(name));
 
@@ -28,47 +31,85 @@ class JsonFilterRepository implements FilterRepository {
   File get backupFile => _fileNamed('filters.json.bak');
   File get temporaryFile => _fileNamed('filters.json.tmp');
 
-  @override
-  Future<TagFilterConfiguration> load() async {
-    await _pendingWrites;
-    return _loadNow();
+  Future<T> _enqueue<T>(Future<T> Function() operation) {
+    final completer = Completer<T>();
+    _pendingWrites = _pendingWrites.then((_) async {
+      try {
+        completer.complete(await operation());
+      } catch (error, stackTrace) {
+        completer.completeError(error, stackTrace);
+      }
+    });
+    return completer.future;
   }
 
+  @override
+  Future<TagFilterConfiguration> load() => _enqueue(_loadNow);
+
   Future<TagFilterConfiguration> _loadNow() async {
+    String? damagedPrimary;
     if (await file.exists()) {
       try {
-        return await decode(await file.readAsString());
+        damagedPrimary = await file.readAsString();
+        return await _decode(damagedPrimary, skipUnreadableRules: false);
       } catch (error, stackTrace) {
-        Logger.Inst().log(
-          'Failed to load filters.json: $error',
-          'JsonFilterRepository',
-          'load',
-          LogTypes.exception,
-          s: stackTrace,
-        );
+        _logRecovery('Primary filter configuration is damaged: $error', stackTrace);
       }
     }
-
-    if (await backupFile.exists()) {
+    // A fully flushed first save has no backup yet. A pending replacement can
+    // also be newer than the backup if the process stopped during rotation.
+    for (final candidate in [temporaryFile, backupFile]) {
+      if (!await candidate.exists()) continue;
+      TagFilterConfiguration configuration;
       try {
-        final configuration = await decode(await backupFile.readAsString());
-        await Directory(directoryPath).create(recursive: true);
-        await temporaryFile.writeAsString(await _encode(configuration), flush: true);
-        if (await file.exists()) await file.delete();
-        await temporaryFile.rename(file.path);
-        return configuration;
+        configuration = await _decode(await candidate.readAsString(), skipUnreadableRules: false);
       } catch (error, stackTrace) {
-        Logger.Inst().log(
-          'Failed to recover filters.json.bak: $error',
-          'JsonFilterRepository',
-          'load',
-          LogTypes.exception,
-          s: stackTrace,
-        );
+        _logRecovery('Cannot recover ${candidate.path}: $error', stackTrace);
+        continue;
       }
+      if (await file.exists()) await _preserveDamaged(file);
+      if (await temporaryFile.exists() && candidate.path != temporaryFile.path) {
+        await _preserveDamaged(temporaryFile);
+      }
+      await Directory(directoryPath).create(recursive: true);
+      await temporaryFile.writeAsString(await _encode(configuration), flush: true);
+      if (await file.exists()) await file.delete();
+      await temporaryFile.rename(file.path);
+      recovery = candidate.path == backupFile.path ? FilterRecovery.backup : FilterRecovery.temporary;
+      return configuration;
+    }
+    if (damagedPrimary != null) {
+      await _preserveDamaged(file);
+      try {
+        final readable = await decode(damagedPrimary);
+        recovery = FilterRecovery.partial;
+        return readable;
+      } catch (error, stackTrace) {
+        _logRecovery('No readable filter configuration: $error', stackTrace);
+      }
+      recovery = FilterRecovery.partial;
+    } else if (await file.exists() || await temporaryFile.exists() || await backupFile.exists()) {
+      // Preserve unparseable recovery files before a later save reuses them.
+      if (await file.exists()) await _preserveDamaged(file);
+      if (await temporaryFile.exists()) await _preserveDamaged(temporaryFile);
+      if (await backupFile.exists()) await _preserveDamaged(backupFile);
+      recovery = FilterRecovery.partial;
     }
     return const TagFilterConfiguration();
   }
+
+  Future<void> _preserveDamaged(File source) async {
+    final preserved = _fileNamed('filters.json.damaged-${DateTime.now().microsecondsSinceEpoch}');
+    await source.copy(preserved.path);
+  }
+
+  void _logRecovery(String message, StackTrace stackTrace) => Logger.Inst().log(
+    message,
+    'JsonFilterRepository',
+    'recover',
+    LogTypes.exception,
+    s: stackTrace,
+  );
 
   @override
   Future<TagFilterConfiguration> decode(String content) => _decode(content, skipUnreadableRules: true);
@@ -127,18 +168,7 @@ class JsonFilterRepository implements FilterRepository {
   }
 
   @override
-  Future<void> save(TagFilterConfiguration configuration) {
-    final completer = Completer<void>();
-    _pendingWrites = _pendingWrites.then((_) async {
-      try {
-        await _saveNow(configuration);
-        completer.complete();
-      } catch (error, stackTrace) {
-        completer.completeError(error, stackTrace);
-      }
-    });
-    return completer.future;
-  }
+  Future<void> save(TagFilterConfiguration configuration) => _enqueue(() => _saveNow(configuration));
 
   Future<void> _saveNow(TagFilterConfiguration configuration) async {
     if (configuration.schemaVersion != 1) {
@@ -153,10 +183,21 @@ class JsonFilterRepository implements FilterRepository {
 
     var movedPrimary = false;
     try {
-      if (await backupFile.exists()) await backupFile.delete();
       if (await file.exists()) {
-        await file.rename(backupFile.path);
-        movedPrimary = true;
+        var validPrimary = false;
+        try {
+          await _decode(await file.readAsString(), skipUnreadableRules: false);
+          validPrimary = true;
+        } catch (_) {
+          await _preserveDamaged(file);
+        }
+        if (validPrimary) {
+          if (await backupFile.exists()) await backupFile.delete();
+          await file.rename(backupFile.path);
+          movedPrimary = true;
+        } else {
+          await file.delete();
+        }
       }
       await temporaryFile.rename(file.path);
     } catch (_) {
@@ -165,7 +206,11 @@ class JsonFilterRepository implements FilterRepository {
       }
       rethrow;
     } finally {
-      if (await temporaryFile.exists()) await temporaryFile.delete();
+      try {
+        if (await temporaryFile.exists()) await temporaryFile.delete();
+      } catch (error, stackTrace) {
+        _logRecovery('Cannot remove temporary filter file: $error', stackTrace);
+      }
     }
   }
 

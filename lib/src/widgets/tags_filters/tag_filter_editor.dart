@@ -806,6 +806,7 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
                           drawBottomBorder: false,
                           margin: EdgeInsets.zero,
                           suggestionInputTransform: _suggestionInput,
+                          suggestionOutputTransform: TagFilterQuery.escapeExactTag,
                           inputTokenizer: TagFilterQuery.splitRawConditions,
                           suffixActions: [
                             IconButton(
@@ -823,7 +824,7 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
                           Padding(
                             padding: const EdgeInsets.only(top: 6),
                             child: Text(
-                              queryResult.error!.message,
+                              loc.invalidQuery,
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Theme.of(context).colorScheme.error,
                               ),

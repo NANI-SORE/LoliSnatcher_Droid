@@ -16,13 +16,10 @@ import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/boorus/danbooru_handler.dart';
 import 'package:lolisnatcher/src/boorus/downloads_handler.dart';
 import 'package:lolisnatcher/src/boorus/favourites_handler.dart';
-import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
 import 'package:lolisnatcher/src/boorus/mergebooru_handler.dart';
-import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/meta_tag.dart';
@@ -49,6 +46,7 @@ import 'package:lolisnatcher/src/utils/debouncer.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/text_parser/rules/url_rule.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
+import 'package:lolisnatcher/src/utils/booru_source_resolver.dart';
 import 'package:lolisnatcher/src/widgets/common/close_dialog_button.dart';
 import 'package:lolisnatcher/src/widgets/common/draggable_overflow_text.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
@@ -204,23 +202,7 @@ class _TagViewState extends State<TagView> {
       return;
     }
 
-    final itemFileHost = Uri.tryParse(item.fileURL)?.host;
-    final itemPostHost = Uri.tryParse(item.postURL)?.host;
-    final Booru? possibleBooru = isMergeHandler
-        ? getMergeBooruEntry()
-        : SettingsHandler.instance.booruList.firstWhereOrNull((e) {
-            final booruHost = Uri.tryParse(e.baseURL ?? '')?.host;
-
-            return (itemPostHost?.isNotEmpty == true &&
-                    booruHost?.isNotEmpty == true &&
-                    (itemPostHost! == booruHost! ||
-                        switch (e.type) {
-                          BooruType.IdolSankaku => IdolSankakuHandler.knownUrls.contains(itemPostHost),
-                          BooruType.Sankaku => SankakuHandler.knownPostUrls.contains(itemPostHost),
-                          _ => false,
-                        })) ||
-                (itemFileHost?.isNotEmpty == true && booruHost?.isNotEmpty == true && itemFileHost! == booruHost!);
-          });
+    final Booru? possibleBooru = isMergeHandler ? getMergeBooruEntry() : BooruSourceResolver.resolve(item);
 
     if (possibleBooru != null && (isMergeHandler || possibleBooru.type?.isFavouritesOrDownloads != true)) {
       possibleBooruHandler = BooruHandlerFactory().getBooruHandler([possibleBooru], null).booruHandler;
@@ -294,11 +276,18 @@ class _TagViewState extends State<TagView> {
       final owningHandler = handler;
       final loadingItem = item;
       try {
-        final res = await (possibleBooruHandler ?? handler).loadItem(
+        final refreshHandler = possibleBooruHandler ?? handler;
+        final res = await refreshHandler.loadItem(
           item: item,
           cancelToken: cancelToken,
           withCapcthaCheck: !initial,
         );
+        if (!res.failed &&
+            res.item != null &&
+            refreshHandler.booru.type?.isFavouritesOrDownloads != true &&
+            refreshHandler.booru.type?.isMerge != true) {
+          res.item!.sourceIdentity = BooruIdentity.fromBooru(refreshHandler.booru);
+        }
         if (res.failed) {
           failedUpdate = true;
         } else if (res.item != null && (res.item?.isSnatched.value == true || res.item?.isFavourite.value == true)) {

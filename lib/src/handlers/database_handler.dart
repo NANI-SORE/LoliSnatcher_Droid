@@ -78,7 +78,8 @@ class DBHandler {
       'postURL TEXT, '
       'mediaType TEXT, '
       'isSnatched INTEGER, '
-      'isFavourite INTEGER '
+      'isFavourite INTEGER, '
+      'serverId TEXT '
       ')',
     );
     await db?.execute(
@@ -123,6 +124,10 @@ class DBHandler {
       ')',
     );
     try {
+      // Server IDs are nullable for older saved posts.
+      if (!await columnExists('BooruItem', 'serverId')) {
+        await db?.execute('ALTER TABLE BooruItem ADD COLUMN serverId TEXT;');
+      }
       if (!await columnExists('SearchHistory', 'isFavourite')) {
         await db?.execute('ALTER TABLE SearchHistory ADD COLUMN isFavourite INTEGER;');
       }
@@ -187,7 +192,7 @@ class DBHandler {
     String resultStr = '';
     if (itemID == null || itemID.isEmpty) {
       final result = await db?.rawInsert(
-        'INSERT INTO BooruItem(thumbnailURL, sampleURL, fileURL, postURL, mediaType, isSnatched, isFavourite) VALUES(?,?,?,?,?,?,?)',
+        'INSERT INTO BooruItem(thumbnailURL, sampleURL, fileURL, postURL, mediaType, isSnatched, isFavourite, serverId) VALUES(?,?,?,?,?,?,?,?)',
         [
           item.thumbnailURL.replaceFirstMapped(RegExp('(?<!https?:)//'), (m) => '/'),
           item.sampleURL.replaceFirstMapped(RegExp('(?<!https?:)//'), (m) => '/'),
@@ -196,6 +201,7 @@ class DBHandler {
           item.mediaType.toJson(),
           Tools.boolToInt(item.isSnatched.value == true),
           Tools.boolToInt(item.isFavourite.value == true),
+          item.serverId,
         ],
       );
       itemID = result?.toString();
@@ -221,6 +227,7 @@ class DBHandler {
     } else {
       resultStr = 'Already Exists';
     }
+    await _updateServerId(item.serverId, itemID);
     await deleteUntracked();
     return resultStr;
   }
@@ -236,7 +243,7 @@ class DBHandler {
 
       if (itemID == null || itemID.isEmpty) {
         final result = await db?.rawInsert(
-          'INSERT INTO BooruItem(thumbnailURL, sampleURL, fileURL, postURL, mediaType, isSnatched, isFavourite) VALUES(?,?,?,?,?,?,?)',
+          'INSERT INTO BooruItem(thumbnailURL, sampleURL, fileURL, postURL, mediaType, isSnatched, isFavourite, serverId) VALUES(?,?,?,?,?,?,?,?)',
           [
             item.thumbnailURL.replaceFirstMapped(RegExp('(?<!https?:)//'), (m) => '/'),
             item.sampleURL.replaceFirstMapped(RegExp('(?<!https?:)//'), (m) => '/'),
@@ -245,6 +252,7 @@ class DBHandler {
             item.mediaType.toJson(),
             Tools.boolToInt(item.isSnatched.value == true),
             Tools.boolToInt(item.isFavourite.value == true),
+            item.serverId,
           ],
         );
         itemID = result?.toString();
@@ -268,11 +276,17 @@ class DBHandler {
       } else {
         exist++;
       }
+      await _updateServerId(item.serverId, itemID);
       await Future.delayed(const Duration(milliseconds: 1));
     }
     await deleteUntracked();
 
     return {'saved': saved, 'exist': exist};
+  }
+
+  Future<void> _updateServerId(String? serverId, String? itemID) async {
+    if (serverId == null || itemID == null || itemID.isEmpty) return;
+    await db?.rawUpdate('UPDATE BooruItem SET serverId = ? WHERE id = ?', [serverId, itemID]);
   }
 
   /// Gets a BooruItem id from the database based on a fileurl
@@ -330,7 +344,7 @@ class DBHandler {
     }
 
     final List? result = await db?.rawQuery(
-      'SELECT BooruItem.id as ItemID, thumbnailURL, sampleURL, fileURL, postURL, mediaType, isSnatched, isFavourite '
+      'SELECT BooruItem.id as ItemID, thumbnailURL, sampleURL, fileURL, postURL, mediaType, isSnatched, isFavourite, serverId '
       'FROM BooruItem '
       'WHERE $postURLCondition '
       'ORDER BY BooruItem.id DESC;',
@@ -396,7 +410,7 @@ class DBHandler {
 
     // --- 2. BUILD MAIN QUERY ---
     final StringBuffer sql = StringBuffer(
-      'SELECT bi.id as dbid, bi.thumbnailURL, bi.sampleURL, bi.fileURL, bi.postURL, bi.mediaType, bi.isSnatched, bi.isFavourite '
+      'SELECT bi.id as dbid, bi.thumbnailURL, bi.sampleURL, bi.fileURL, bi.postURL, bi.mediaType, bi.isSnatched, bi.isFavourite, bi.serverId '
       'FROM BooruItem AS bi ',
     );
     final List<String> whereClauses = [];

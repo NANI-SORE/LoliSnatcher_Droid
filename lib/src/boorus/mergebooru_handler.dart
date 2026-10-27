@@ -15,6 +15,7 @@ import 'package:lolisnatcher/src/data/tag_filter.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
+import 'package:lolisnatcher/src/utils/booru_source_resolver.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 
 class MergebooruHandler extends BooruHandler {
@@ -30,12 +31,20 @@ class MergebooruHandler extends BooruHandler {
   ({Booru booru, int index})? sourceFor(BooruItem item) => _itemSources[item];
 
   @override
-  Booru sourceBooruFor(BooruItem item) => sourceFor(item)?.booru ?? booru;
+  Booru sourceBooruFor(BooruItem item) {
+    final source = sourceFor(item)?.booru ?? booru;
+    return source.type?.isFavouritesOrDownloads == true ? BooruSourceResolver.resolve(item) ?? source : source;
+  }
+
+  @override
+  Booru filterSettingsBooruFor(BooruItem item) => sourceFor(item)?.booru ?? booru;
 
   @override
   FilterContext filterContextFor(BooruItem item) => FilterContext(
     viewBooru: booru,
-    sourceBooru: sourceFor(item)?.booru,
+    sourceBooru: sourceFor(item)?.booru.type?.isFavouritesOrDownloads == true
+        ? BooruSourceResolver.resolve(item)
+        : sourceFor(item)?.booru,
   );
 
   @override

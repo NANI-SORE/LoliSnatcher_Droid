@@ -38,7 +38,8 @@ Future<void> initProxy() async {
     findProxy: (_) => getProxyDirective(),
   );
 
-  if (SX.proxyType.value.isSystem && PlatformExt.isMobile) {
+  // A source may override Direct with System after startup or a tab switch.
+  if (PlatformExt.isMobile) {
     final HttpProxy httpProxy = await HttpProxy.createHttpProxy();
     if (httpProxy.host?.isNotEmpty == true && httpProxy.port?.isNotEmpty == true) {
       systemProxyAddress = '${httpProxy.host}:${httpProxy.port}';
