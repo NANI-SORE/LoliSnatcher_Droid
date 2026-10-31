@@ -3,14 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 
-import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/boorus/downloads_handler.dart';
 import 'package:lolisnatcher/src/boorus/favourites_handler.dart';
-import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
 import 'package:lolisnatcher/src/boorus/mergebooru_handler.dart';
-import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -58,22 +56,7 @@ class ThumbnailBuild extends StatelessWidget {
       return cached?.booru;
     }
 
-    final itemFileHost = Uri.tryParse(item.fileURL)?.host;
-    final itemPostHost = Uri.tryParse(item.postURL)?.host;
-    final possibleBooru = settingsHandler.booruList.firstWhereOrNull((e) {
-      final booruHost = Uri.tryParse(e.baseURL ?? '')?.host;
-
-      return (itemPostHost?.isNotEmpty == true &&
-              booruHost?.isNotEmpty == true &&
-              (itemPostHost == booruHost ||
-                  switch (e.type) {
-                    BooruType.IdolSankaku => IdolSankakuHandler.knownUrls.contains(itemPostHost),
-                    BooruType.Sankaku => SankakuHandler.knownPostUrls.contains(itemPostHost),
-                    _ => false,
-                  })) ||
-          (itemFileHost?.isNotEmpty == true && booruHost?.isNotEmpty == true && itemFileHost == booruHost);
-    });
-    final result = possibleBooru?.type?.isFavouritesOrDownloads == true ? null : possibleBooru;
+    final result = OfflineMediaResolver.instance.resolveSourceBooru(item);
     _sourceCache[item] = _SourceCacheEntry(settingsHandler.booruListVersion, result);
     return result;
   }
@@ -82,7 +65,7 @@ class ThumbnailBuild extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isFavsOrDls = handler is FavouritesHandler || handler is DownloadsHandler;
     final Booru? sourceBooru = isFavsOrDls ? _resolveSourceBooru() : null;
-    final Booru? statusBooru = sourceBooru ?? handler?.booru;
+    final Booru? statusBooru = sourceBooru ?? handler?.sourceBooruFor(item);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
@@ -441,14 +424,14 @@ class _ThumbnailBottomRightIcons extends StatelessWidget {
               //
               if (isCurrentlyBeingSnatched || isInQueueToBeSnatched)
                 const PulseWidget(child: snatchedIcon)
+              else if (isSnatched && booru != null)
+                SavedMediaStatusIcon(
+                  item: item,
+                  booru: booru!,
+                  size: 14,
+                )
               else if (isSnatched)
-                booru != null
-                    ? SavedMediaStatusIcon(
-                        item: item,
-                        booru: booru!,
-                        size: 14,
-                      )
-                    : snatchedIcon,
+                snatchedIcon,
               //
               if (isAi)
                 const FaIcon(

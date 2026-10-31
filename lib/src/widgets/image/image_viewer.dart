@@ -8,7 +8,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'package:dio/dio.dart';
-import 'package:flutter_avif/flutter_avif.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:photo_view/photo_view.dart';
@@ -22,6 +21,7 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/services/local_image_provider.dart';
 import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -113,6 +113,7 @@ class ImageViewerState extends State<ImageViewer> {
   CancelToken? loadItemCancelToken;
   File? localImageFile;
   bool _usingSavedFile = false;
+  bool _localIsDerived = false;
   bool didTryLocalSavedFallback = false;
 
   static const int kMaxTextureHeight = 4096;
@@ -254,7 +255,7 @@ class ImageViewerState extends State<ImageViewer> {
   Future<void> initViewer(
     bool ignoreTagsCheck, {
     bool withCaptchaCheck = false,
-    File? savedFallback,
+    OfflineMediaResolution? savedFallback,
     bool networkOnly = false,
   }) async {
     final int loadGeneration = ++_loadGeneration;
@@ -376,7 +377,7 @@ class ImageViewerState extends State<ImageViewer> {
   Future<ImageProvider?> getImageProvider({
     required int loadGeneration,
     bool withCaptchaCheck = false,
-    File? savedFallback,
+    OfflineMediaResolution? savedFallback,
     bool networkOnly = false,
   }) async {
     if (!_isCurrentLoad(loadGeneration)) return null;
@@ -386,7 +387,8 @@ class ImageViewerState extends State<ImageViewer> {
     cancelToken = token;
     final String url = useFullImage ? widget.booruItem.fileURL : widget.booruItem.sampleURL;
     final bool isAvif = Uri.tryParse(url)?.path.toLowerCase().endsWith('.avif') == true;
-    localImageFile = savedFallback;
+    localImageFile = savedFallback?.file;
+    _localIsDerived = savedFallback?.copiedFromSaf == true;
     _usingSavedFile = savedFallback != null;
     didTryLocalSavedFallback = savedFallback != null || networkOnly;
 
@@ -400,6 +402,7 @@ class ImageViewerState extends State<ImageViewer> {
       if (!_isCurrentLoad(loadGeneration)) return null;
       if (cachedPath != null) {
         localImageFile = File(cachedPath);
+        _localIsDerived = true;
       } else if (widget.allowOfflineLocalMedia) {
         final resolution = await OfflineMediaResolver.instance.resolve(
           widget.booruItem,
@@ -409,6 +412,7 @@ class ImageViewerState extends State<ImageViewer> {
         if (!_isCurrentLoad(loadGeneration)) return null;
         localImageFile = resolution.file;
         _usingSavedFile = resolution.isAvailable;
+        _localIsDerived = resolution.copiedFromSaf;
       }
     }
 
@@ -416,12 +420,10 @@ class ImageViewerState extends State<ImageViewer> {
     final localFile = localImageFile;
     if (localFile != null) {
       isFromCache.value = true;
-      final localIsAvif = _usingSavedFile
-          ? Uri.tryParse(widget.booruItem.fileURL)?.path.toLowerCase().endsWith('.avif') == true
-          : isAvif;
+      provider = await localImageProvider(localFile);
       if (!_isCurrentLoad(loadGeneration)) return null;
-      provider = localIsAvif ? FileAvifImage(localFile) : FileImage(localFile);
     } else {
+      isFromCache.value = false;
       final headers = await Tools.getFileCustomHeaders(widget.booru, item: widget.booruItem, checkForReferer: true);
       if (!_isCurrentLoad(loadGeneration)) return null;
       provider = isAvif
@@ -475,8 +477,14 @@ class ImageViewerState extends State<ImageViewer> {
     unawaited(() async {
       try {
         if (localImageFile != null) {
+          final failedFile = localImageFile!;
+          final wasDerived = _localIsDerived;
+          await mainProvider.value?.evict();
+          if (!_isCurrentLoad(loadGeneration)) return;
+          final removed = wasDerived && await ImageWriter().deleteDerivedCacheFile(failedFile);
+          if (!_isCurrentLoad(loadGeneration)) return;
           // A damaged network cache must not bypass a valid downloaded original.
-          if (!_usingSavedFile && await tryLocalSavedFallback(loadGeneration)) return;
+          if ((!_usingSavedFile || removed) && await tryLocalSavedFallback(loadGeneration)) return;
           if (!_isCurrentLoad(loadGeneration)) return;
           // A missing, unreadable, or corrupt local file must not prevent a network retry.
           disposables();
@@ -505,7 +513,7 @@ class ImageViewerState extends State<ImageViewer> {
     if (!_isCurrentLoad(loadGeneration) || !resolution.isAvailable) return false;
     disposables();
     isLoaded.value = false;
-    await initViewer(_ignoreTagsForCurrentLoad, savedFallback: resolution.file);
+    await initViewer(_ignoreTagsForCurrentLoad, savedFallback: resolution);
     return true;
   }
 
@@ -971,6 +979,7 @@ class ImageViewerState extends State<ImageViewer> {
                 child: ListenableBuilder(
                   listenable: Listenable.merge([isLoaded, isTilingProcessing, mainProvider]),
                   builder: (context, _) {
+                    final loadGeneration = _loadGeneration;
                     return AnimatedOpacity(
                       opacity: (SX.shitDevice.value || isLoaded.value) ? 1 : 0,
                       duration: Duration(
@@ -1015,8 +1024,8 @@ class ImageViewerState extends State<ImageViewer> {
                                       },
                                       errorBuilder: (_, error, _) {
                                         WidgetsBinding.instance.addPostFrameCallback((_) {
-                                          if (mounted) {
-                                            onError(error);
+                                          if (_isCurrentLoad(loadGeneration)) {
+                                            _handleProviderError(error, loadGeneration);
                                           }
                                         });
                                         return const SizedBox.shrink();

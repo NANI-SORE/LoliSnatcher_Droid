@@ -1,5 +1,4 @@
-import 'dart:isolate';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -36,58 +35,64 @@ class _CacheStatsWidgetState extends State<CacheStatsWidget> {
   ];
 
   List<Map<String, dynamic>> cacheStats = [];
-  Isolate? isolate;
+  int _statsGeneration = 0;
+  bool _isClearing = false;
 
   @override
   void initState() {
     super.initState();
-    getCacheStats(null);
+    getCacheStats();
   }
 
   @override
   void dispose() {
-    isolate?.kill(priority: Isolate.immediate);
-    isolate = null;
+    _statsGeneration++;
     super.dispose();
   }
 
-  Future<void> getCacheStats(String? folder) async {
-    if (folder != null) {
-      cacheStats.removeWhere((e) => e['type'] == folder || e['type'] == '' || e['type'] == null);
-    } else {
-      cacheStats = [];
-    }
-
-    final cacheTypesToGet = folder == null
-        ? cacheTypes
-        : cacheTypes.where((e) => e.folder == folder || e.folder == null).toList();
-
-    for (final _CacheType type in cacheTypesToGet) {
-      final ReceivePort receivePort = ReceivePort();
-      isolate = await Isolate.spawn(_isolateEntry, receivePort.sendPort);
-
-      receivePort.listen((dynamic data) async {
-        if (mounted) {
-          if (data is SendPort) {
-            data.send({
-              'path': await ServiceHandler.getCacheDir(),
-              'type': type.folder,
-            });
-          } else {
-            cacheStats.add(data);
-            setState(() {});
-          }
-        }
-      });
+  Future<void> getCacheStats() async {
+    if (!mounted) return;
+    final generation = ++_statsGeneration;
+    setState(() => cacheStats = []);
+    try {
+      final path = await ServiceHandler.getCacheDir();
+      if (!mounted || generation != _statsGeneration) return;
+      final stats = await compute(_readCacheStats, path);
+      if (!mounted || generation != _statsGeneration) return;
+      setState(() => cacheStats = stats);
+    } catch (_) {
+      if (mounted && generation == _statsGeneration) {
+        FlashElements.showSnackbar(context: context, title: Text(context.loc.error));
+      }
     }
   }
 
-  static Future<void> _isolateEntry(dynamic d) async {
-    final ReceivePort receivePort = ReceivePort();
-    d.send(receivePort.sendPort);
+  static Future<List<Map<String, dynamic>>> _readCacheStats(String path) async {
+    final writer = ImageWriterIsolate(path);
+    final stats = <Map<String, dynamic>>[];
+    for (final type in cacheTypes) {
+      stats.add(await writer.getCacheStat(type.folder));
+    }
+    return stats;
+  }
 
-    final config = await receivePort.first;
-    d.send(await ImageWriterIsolate(config['path']).getCacheStat(config['type']));
+  Future<bool> _clearCache(String folder) async {
+    if (_isClearing) return false;
+    setState(() => _isClearing = true);
+    final result = await imageWriter.deleteCacheFolder(folder);
+    if (!mounted) return false;
+    await getCacheStats();
+    if (!mounted) return false;
+    setState(() => _isClearing = false);
+    if (result == false) {
+      FlashElements.showSnackbar(
+        context: context,
+        title: Text(context.loc.error),
+        content: Text(context.loc.settings.cache.errorExclamation),
+      );
+      return false;
+    }
+    return true;
   }
 
   Widget buildCacheButton(_CacheType type) {
@@ -113,13 +118,15 @@ class _CacheStatsWidgetState extends State<CacheStatsWidget> {
                     ? context.loc.settings.cache.inFileSingular(size: size)
                     : context.loc.settings.cache.inFilesPlural(size: size, count: fileCount)));
 
-    final bool allowedToClear = folder != null && folder != 'favicons' && !isEmpty;
+    final bool allowedToClear = folder != null && folder != 'favicons' && !isEmpty && !isLoading && !_isClearing;
 
     return SettingsButton(
       name: '$label: $text',
+      enabled: allowedToClear,
       icon: isLoading ? const CircularProgressIndicator() : Icon(allowedToClear ? Icons.delete_forever : null),
       action: () async {
         if (allowedToClear) {
+          if (!await _clearCache(folder) || !mounted) return;
           FlashElements.showSnackbar(
             context: context,
             position: FlashPosition.top,
@@ -137,8 +144,6 @@ class _CacheStatsWidgetState extends State<CacheStatsWidget> {
             leadingIconSize: 40,
             sideColor: Colors.yellow,
           );
-          await imageWriter.deleteCacheFolder(folder);
-          await getCacheStats(folder);
         }
       },
     );
@@ -152,11 +157,13 @@ class _CacheStatsWidgetState extends State<CacheStatsWidget> {
         ...cacheTypes.map(buildCacheButton),
         SettingsButton(
           name: context.loc.settings.cache.clearAllCache,
+          enabled: !_isClearing,
           icon: Icon(
             Icons.delete_forever,
             color: Theme.of(context).colorScheme.error,
           ),
           action: () async {
+            if (!await _clearCache('') || !mounted) return;
             FlashElements.showSnackbar(
               context: context,
               position: FlashPosition.top,
@@ -182,8 +189,6 @@ class _CacheStatsWidgetState extends State<CacheStatsWidget> {
               leadingIconSize: 40,
               sideColor: Colors.yellow,
             );
-            await imageWriter.deleteCacheFolder('');
-            await getCacheStats(null);
           },
           drawBottomBorder: false,
         ),

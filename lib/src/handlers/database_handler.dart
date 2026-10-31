@@ -375,29 +375,6 @@ class DBHandler {
     return items;
   }
 
-  Future<List<BooruItem>> getFavouriteItemsForHost(
-    String host, {
-    int limit = 500,
-    int offset = 0,
-  }) async {
-    final db = this.db;
-    if (db == null || host.isEmpty) return [];
-
-    final hostPattern = '%$host%';
-    final results = await db.rawQuery(
-      'SELECT bi.id as dbid, bi.thumbnailURL, bi.sampleURL, bi.fileURL, bi.postURL, bi.mediaType, '
-      'bi.isSnatched, bi.isFavourite, bi.serverId, bi.savedFileName '
-      'FROM BooruItem AS bi '
-      'WHERE bi.isFavourite = 1 AND (bi.postURL LIKE ? OR bi.fileURL LIKE ? OR bi.sampleURL LIKE ? OR bi.thumbnailURL LIKE ?) '
-      'ORDER BY bi.id DESC LIMIT ? OFFSET ?',
-      [hostPattern, hostPattern, hostPattern, hostPattern, limit, offset],
-    );
-
-    if (results.isEmpty) return [];
-
-    return results.map((row) => BooruItem.fromDBRow(row, const [])).toList();
-  }
-
   Future<List<BooruItem>> searchDB(
     String searchTagsString,
     String offset,
@@ -572,65 +549,6 @@ class DBHandler {
     }
 
     // --- 5. MAP RESULTS ---
-    // Construct final objects using BooruItem.fromDBRow
-    return results.map((row) {
-      final id = row['dbid']! as int;
-      final itemTags = tagsMap[id] ?? [];
-      return BooruItem.fromDBRow(row, itemTags);
-    }).toList();
-  }
-
-  Future<int?> resolveFlaggedStartId({
-    required bool isDownloads,
-    required int startIndex,
-  }) async {
-    final db = this.db;
-    if (db == null) return null;
-    final flagColumn = isDownloads ? 'isSnatched' : 'isFavourite';
-    final result = await db.rawQuery(
-      'SELECT id FROM BooruItem WHERE $flagColumn = 1 ORDER BY id ASC LIMIT 1 OFFSET ?',
-      [max(0, startIndex)],
-    );
-    if (result.isEmpty) return null;
-    return result.first['id'] as int?;
-  }
-
-  Future<List<BooruItem>> getFlaggedItemsAfterId({
-    required bool isDownloads,
-    required int lastSeenId,
-    required int limit,
-  }) async {
-    final db = this.db;
-    if (db == null) return [];
-    final flagColumn = isDownloads ? 'isSnatched' : 'isFavourite';
-    final results = await db.rawQuery(
-      'SELECT id as dbid, thumbnailURL, sampleURL, fileURL, postURL, mediaType, isSnatched, isFavourite, serverId, savedFileName '
-      'FROM BooruItem '
-      'WHERE $flagColumn = 1 AND id > ? '
-      'ORDER BY id ASC LIMIT ?',
-      [lastSeenId, limit],
-    );
-    if (results.isEmpty) return [];
-
-    final itemIDs = results.map((r) => r['dbid']! as int).toList();
-    final tagPlaceholders = List.filled(itemIDs.length, '?').join(',');
-    final tagsResult = await db.rawQuery(
-      'SELECT it.booruItemID, t.name '
-      'FROM Tag AS t '
-      'INNER JOIN ImageTag AS it ON t.id = it.tagID '
-      'WHERE it.booruItemID IN ($tagPlaceholders)',
-      itemIDs,
-    );
-
-    // --- 5. MAP RESULTS ---
-    final Map<int, List<String>> tagsMap = {};
-    for (final row in tagsResult) {
-      final id = row['booruItemID']! as int;
-      final tagName = row['name'].toString();
-      if (!tagsMap.containsKey(id)) tagsMap[id] = [];
-      tagsMap[id]!.add(tagName);
-    }
-
     // Construct final objects using BooruItem.fromDBRow
     return results.map((row) {
       final id = row['dbid']! as int;
@@ -1223,14 +1141,21 @@ class DBHandler {
         item.fileURL.contains('rule34.xxx') ||
         item.fileURL.contains('paheal.net')) {
       // compare by post url, not file url (for example: r34xxx changes urls based on country)
-      result = await db?.rawQuery('SELECT isFavourite, isSnatched FROM BooruItem WHERE postURL = ?', [item.postURL]);
+      result = await db?.rawQuery(
+        'SELECT postURL, isFavourite, isSnatched, savedFileName FROM BooruItem WHERE postURL = ?',
+        [item.postURL],
+      );
     } else {
-      result = await db?.rawQuery('SELECT isFavourite, isSnatched FROM BooruItem WHERE fileURL = ?', [item.fileURL]);
+      result = await db?.rawQuery(
+        'SELECT postURL, isFavourite, isSnatched, savedFileName FROM BooruItem WHERE fileURL = ?',
+        [item.fileURL],
+      );
     }
     // print("getTrackedValues: ${DateTime.now().difference(startTime).inMilliseconds}ms"); // performance test
     if (result != null && result.isNotEmpty) {
       values[0] = Tools.intToBool(result.first['isSnatched']);
       values[1] = Tools.intToBool(result.first['isFavourite']);
+      if (result.first['postURL'] == item.postURL) _restoreSavedFileName(item, result.first['savedFileName']);
     }
     return values;
   }
@@ -1253,7 +1178,7 @@ class DBHandler {
 
     // DateTime startTime = DateTime.now();
     final List? result = await db?.rawQuery(
-      "SELECT fileURL, postURL, isFavourite, isSnatched FROM BooruItem WHERE ${queryParts.join(' OR ')};",
+      "SELECT fileURL, postURL, isFavourite, isSnatched, savedFileName FROM BooruItem WHERE ${queryParts.join(' OR ')};",
       queryArgs,
     );
     // print("Query took ${DateTime.now().difference(startTime).inMilliseconds}ms"); // performance test
@@ -1264,10 +1189,15 @@ class DBHandler {
           (el) => el['postURL'].toString() == item.postURL,
           orElse: () => {'isSnatched': 0, 'isFavourite': 0},
         );
+        _restoreSavedFileName(item, res['savedFileName']);
         values.add([Tools.intToBool(res['isSnatched']), Tools.intToBool(res['isFavourite'])]);
       }
     }
     return values;
+  }
+
+  void _restoreSavedFileName(BooruItem item, dynamic value) {
+    if (value is String && value.isNotEmpty && value != 'null') item.savedFileName = value;
   }
 
   /// Deletes booruItems which are no longer favourited or snatched

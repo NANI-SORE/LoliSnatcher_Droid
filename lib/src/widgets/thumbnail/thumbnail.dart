@@ -8,18 +8,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:dio/dio.dart';
-import 'package:flutter_avif/flutter_avif.dart';
 
-import 'package:lolisnatcher/src/boorus/booru_type.dart';
-import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
-import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/services/local_image_provider.dart';
 import 'package:lolisnatcher/src/services/offline_thumbnail_service.dart';
 import 'package:lolisnatcher/src/utils/debouncer.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -56,6 +54,8 @@ class Thumbnail extends StatelessWidget {
       item: item,
       booru: booru,
       isStandalone: isStandalone,
+      allowOfflineLocalMedia: allowOfflineLocalMedia,
+      allowOfflineThumbnailGeneration: allowOfflineThumbnailGeneration,
     );
 
     if (isStandalone && useHero) {
@@ -81,11 +81,16 @@ class _ThumbnailImage extends StatefulWidget {
     required this.item,
     required this.booru,
     required this.isStandalone,
+    required this.allowOfflineLocalMedia,
+    required this.allowOfflineThumbnailGeneration,
   });
 
   final BooruItem item;
   final Booru? booru;
   final bool isStandalone;
+
+  final bool allowOfflineLocalMedia;
+  final bool allowOfflineThumbnailGeneration;
 
   @override
   State<_ThumbnailImage> createState() => _ThumbnailState();
@@ -121,7 +126,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
   int _loadGeneration = 0;
   int? _handlingErrorGeneration;
   bool _mainFromLocal = false;
-  bool _mainFromOfflineThumbnail = false;
+  File? _mainLocalFile;
 
   bool isBlurred = true;
 
@@ -158,7 +163,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
       mainCancelToken ??= CancelToken();
       didTryOfflineThumbnailFallback = networkOnly;
       _mainFromLocal = false;
-      _mainFromOfflineThumbnail = false;
+      _mainLocalFile = null;
     } else {
       extraCancelToken ??= CancelToken();
     }
@@ -178,10 +183,12 @@ class _ThumbnailState extends State<_ThumbnailImage> {
     if (cachedPath != null) {
       if (isMain) {
         _mainFromLocal = true;
+        _mainLocalFile = File(cachedPath);
         isFromCache.value = true;
         isGeneratingOfflineThumbnail.value = false;
       }
-      return _resizeProvider(isAvif ? FileAvifImage(File(cachedPath)) : FileImage(File(cachedPath)));
+      final provider = await localImageProvider(File(cachedPath));
+      return _isCurrentLoad(loadGeneration) ? _resizeProvider(provider) : null;
     }
 
     final shouldTryOfflineThumbnail = isMain && widget.allowOfflineLocalMedia && widget.booru != null && !networkOnly;
@@ -205,11 +212,12 @@ class _ThumbnailState extends State<_ThumbnailImage> {
     final offlineThumbnail = lookup.file;
     if (offlineThumbnail != null) {
       _mainFromLocal = true;
-      _mainFromOfflineThumbnail = true;
+      _mainLocalFile = offlineThumbnail;
       isFromCache.value = true;
       return _resizeProvider(FileImage(offlineThumbnail));
     }
 
+    if (isMain) isFromCache.value = false;
     final headers = await Tools.getFileCustomHeaders(widget.booru, item: widget.item, checkForReferer: true);
     if (!_isCurrentLoad(loadGeneration)) return null;
     final ImageProvider provider = isAvif
@@ -270,7 +278,12 @@ class _ThumbnailState extends State<_ThumbnailImage> {
     unawaited(() async {
       try {
         if (_mainFromLocal) {
-          if (!_mainFromOfflineThumbnail && await tryOfflineThumbnailFallback(loadGeneration)) return;
+          final failedFile = _mainLocalFile;
+          await mainProvider.value?.evict();
+          if (!_isCurrentLoad(loadGeneration)) return;
+          if (failedFile != null) await ImageWriter().deleteDerivedCacheFile(failedFile);
+          if (!_isCurrentLoad(loadGeneration)) return;
+          if (await tryOfflineThumbnailFallback(loadGeneration)) return;
           if (!_isCurrentLoad(loadGeneration)) return;
           disposables();
           isLoaded.value = false;
@@ -366,7 +379,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
     disposables();
     final fallbackGeneration = _loadGeneration;
     _mainFromLocal = true;
-    _mainFromOfflineThumbnail = true;
+    _mainLocalFile = file;
     useExtra.value = false;
     isLoadedExtra.value = false;
     extraProvider.value = null;
@@ -604,6 +617,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
   }
 
   Future<void> restartLoading({bool withItemLoad = false}) async {
+    if (!mounted) return;
     if (failedRendering.value) {
       failedRendering.value = false;
       unawaited(cleanProviderCache());
@@ -1048,21 +1062,7 @@ Future<bool?> tryToLoadAndUpdateItem(
   CancelToken cancelToken,
 ) async {
   try {
-    final itemFileHost = Uri.tryParse(item.fileURL)?.host;
-    final itemPostHost = Uri.tryParse(item.postURL)?.host;
-    final Booru? possibleBooru = SettingsHandler.instance.booruList.firstWhereOrNull((e) {
-      final booruHost = Uri.tryParse(e.baseURL ?? '')?.host;
-
-      return (itemPostHost?.isNotEmpty == true &&
-              booruHost?.isNotEmpty == true &&
-              (itemPostHost! == booruHost! ||
-                  switch (e.type) {
-                    BooruType.IdolSankaku => IdolSankakuHandler.knownUrls.contains(itemPostHost),
-                    BooruType.Sankaku => SankakuHandler.knownPostUrls.contains(itemPostHost),
-                    _ => false,
-                  })) ||
-          (itemFileHost?.isNotEmpty == true && booruHost?.isNotEmpty == true && itemFileHost! == booruHost!);
-    });
+    final possibleBooru = OfflineMediaResolver.instance.resolveSourceBooru(item);
 
     if (possibleBooru != null) {
       final handler = BooruHandlerFactory().getBooruHandler([possibleBooru], null).booruHandler;

@@ -97,6 +97,7 @@ class VideoViewerState extends State<VideoViewer> {
   bool _ignoreTagsForCurrentLoad = false;
   bool _networkOnlyCurrentLoad = false;
   bool _usingSavedFile = false;
+  bool _localIsDerived = false;
   bool _fullscreenZoomResetQueued = false;
   bool _fullscreenDismissThresholdReached = false;
   bool didTryLocalSavedFallback = false;
@@ -123,6 +124,8 @@ class VideoViewerState extends State<VideoViewer> {
     startedAt.value = DateTime.now().millisecondsSinceEpoch;
     didTryLocalSavedFallback = networkOnly;
     _usingSavedFile = false;
+    _localIsDerived = false;
+    isFromCache.value = false;
 
     final cachedVideoPath = networkOnly
         ? null
@@ -135,6 +138,7 @@ class VideoViewerState extends State<VideoViewer> {
     if (!_isCurrentLoad(loadGeneration)) return;
     if (cachedVideoPath != null) {
       video = File(cachedVideoPath);
+      _localIsDerived = true;
       isFromCache.value = true;
       try {
         final fileSize = await video!.length();
@@ -158,6 +162,7 @@ class VideoViewerState extends State<VideoViewer> {
     if (!_isCurrentLoad(loadGeneration)) return;
     if (offlineResolution.isAvailable) {
       video = offlineResolution.file;
+      _localIsDerived = offlineResolution.copiedFromSaf;
       _usingSavedFile = true;
       isFromCache.value = true;
       try {
@@ -227,6 +232,7 @@ class VideoViewerState extends State<VideoViewer> {
         if (!_isCurrentLoad(loadGeneration)) return;
 
         video = file;
+        _localIsDerived = true;
         // save video from cache, but restate only if player is not initialized yet
         if (!isVideoInited) {
           unawaited(initPlayer(loadGeneration: loadGeneration));
@@ -335,8 +341,10 @@ class VideoViewerState extends State<VideoViewer> {
     _handlingErrorGeneration = loadGeneration;
     try {
       if (video != null && !_networkOnlyCurrentLoad) {
+        final removed = _localIsDerived && await ImageWriter().deleteDerivedCacheFile(video!);
+        if (!_isCurrentLoad(loadGeneration)) return;
         // Try the downloaded original before leaving a broken network-cache file.
-        if (!_usingSavedFile && await tryLocalSavedFallback(loadGeneration)) return;
+        if ((!_usingSavedFile || removed) && await tryLocalSavedFallback(loadGeneration)) return;
         if (!_isCurrentLoad(loadGeneration)) return;
         disposables();
         await initVideo(_ignoreTagsForCurrentLoad, networkOnly: true);
@@ -383,6 +391,7 @@ class VideoViewerState extends State<VideoViewer> {
     disposables();
     final fallbackGeneration = _loadGeneration;
     video = resolution.file;
+    _localIsDerived = resolution.copiedFromSaf;
     _usingSavedFile = true;
     isFromCache.value = true;
     try {

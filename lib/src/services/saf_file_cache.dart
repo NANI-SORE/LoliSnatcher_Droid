@@ -12,11 +12,18 @@ class SAFFileCache {
   Future<void>? _population;
   final Map<String, bool> _changesDuringPopulation = {};
 
-  Future<bool> existsFile(String safUri, String fileName) async {
-    if (safUri == _cachedUri && _isPopulated && _fileNames.contains(fileName)) return true;
+  Future<bool> existsFile(String safUri, String fileName, {bool refresh = false}) async {
+    if (!refresh && safUri == _cachedUri && _isPopulated && _fileNames.contains(fileName)) return true;
+    final generation = _generation;
     // A file may have appeared since the last directory listing.
     final result = await ServiceHandler.existsFileFromSAFDirectoryFast(safUri, fileName);
-    if (result && safUri == _cachedUri && _isPopulated) _fileNames.add(fileName);
+    if (safUri == _cachedUri && generation == _generation) {
+      if (result) {
+        onFileCreated(fileName, safUri: safUri);
+      } else {
+        onFileDeleted(fileName, safUri: safUri);
+      }
+    }
     return result;
   }
 

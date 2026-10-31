@@ -10,17 +10,14 @@ import 'package:preload_page_view/preload_page_view.dart';
 
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
-import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
-import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
-import 'package:lolisnatcher/src/data/booru.dart';
+import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
-import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/close_dialog_button.dart';
 import 'package:lolisnatcher/src/widgets/common/long_press_repeater.dart';
 import 'package:lolisnatcher/src/widgets/gallery/gallery_buttons.dart';
@@ -374,33 +371,10 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
 
                               final bool isFavsOrDls =
                                   widget.tab.booruHandler.booru.type?.isFavouritesOrDownloads == true;
-                              Booru? possibleBooru;
-                              if (isFavsOrDls) {
-                                final itemFileHost = Uri.tryParse(item.fileURL)?.host;
-                                final itemPostHost = Uri.tryParse(item.postURL)?.host;
-                                possibleBooru = SettingsHandler.instance.booruList.firstWhereOrNull((e) {
-                                  final booruHost = Uri.tryParse(e.baseURL ?? '')?.host;
-
-                                  return (itemPostHost?.isNotEmpty == true &&
-                                          booruHost?.isNotEmpty == true &&
-                                          (itemPostHost! == booruHost! ||
-                                              switch (e.type) {
-                                                BooruType.IdolSankaku => IdolSankakuHandler.knownUrls.contains(
-                                                  itemPostHost,
-                                                ),
-                                                BooruType.Sankaku => SankakuHandler.knownPostUrls.contains(
-                                                  itemPostHost,
-                                                ),
-                                                _ => false,
-                                              })) ||
-                                      (itemFileHost?.isNotEmpty == true &&
-                                          booruHost?.isNotEmpty == true &&
-                                          itemFileHost! == booruHost!);
-                                });
-                                if (possibleBooru?.type?.isFavouritesOrDownloads == true) {
-                                  possibleBooru = null;
-                                }
-                              }
+                              final possibleBooru = OfflineMediaResolver.instance.resolveSourceBooru(
+                                item,
+                                fallback: widget.tab.booruHandler.sourceBooruFor(item),
+                              );
 
                               return ValueListenableBuilder(
                                 valueListenable: item.mediaType,

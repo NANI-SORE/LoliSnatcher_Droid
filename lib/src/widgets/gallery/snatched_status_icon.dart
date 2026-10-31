@@ -55,17 +55,18 @@ class SavedMediaStatusIcon extends StatefulWidget {
   State<SavedMediaStatusIcon> createState() => _SavedMediaStatusIconState();
 }
 
-class _SavedMediaStatusIconState extends State<SavedMediaStatusIcon> {
+class _SavedMediaStatusIconState extends State<SavedMediaStatusIcon> with WidgetsBindingObserver {
   bool fileExists = false, running = false;
   int _checkGeneration = 0;
   int? _lookupKey;
 
   int get _currentLookupKey => Object.hash(
-    widget.item,
+    widget.item.key,
     widget.item.fileURL,
     widget.item.postURL,
     widget.item.savedFileName,
-    widget.booru,
+    widget.booru.name,
+    widget.booru.type,
     widget.booru.baseURL,
     SX.extPathOverride.value,
   );
@@ -73,7 +74,20 @@ class _SavedMediaStatusIconState extends State<SavedMediaStatusIcon> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    SX.extPathOverride.state.globalNotifier.addListener(_refresh);
     fileExistsCheck();
+  }
+
+  void _refresh() {
+    if (!mounted) return;
+    fileExistsCheck();
+    setState(() {});
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refresh();
   }
 
   Future<void> fileExistsCheck() async {
@@ -94,7 +108,7 @@ class _SavedMediaStatusIconState extends State<SavedMediaStatusIcon> {
 
       if (Platform.isAndroid && storagePath.isNotEmpty) {
         for (final fileName in fileNames) {
-          final found = await SAFFileCache.instance.existsFile(storagePath, fileName);
+          final found = await SAFFileCache.instance.existsFile(storagePath, fileName, refresh: true);
           if (!_isCurrentCheck(generation)) return;
           if (found) {
             exists = true;
@@ -142,6 +156,8 @@ class _SavedMediaStatusIconState extends State<SavedMediaStatusIcon> {
   @override
   void dispose() {
     _checkGeneration++;
+    SX.extPathOverride.state.globalNotifier.removeListener(_refresh);
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 

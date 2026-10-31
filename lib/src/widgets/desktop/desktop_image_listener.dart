@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -49,11 +50,17 @@ class _DesktopImageListenerState extends State<DesktopImageListener> {
       return null;
     }
 
+    final sourceBooru =
+        OfflineMediaResolver.instance.resolveSourceBooru(
+          item,
+          fallback: currentHandler.sourceBooruFor(item),
+        ) ??
+        currentBooru;
     if (item.mediaType.value.isImageOrAnimation) {
       return Obx(
         () => ImageViewer(
           item,
-          booru: currentBooru,
+          booru: sourceBooru,
           isViewed: ViewerHandler.instance.current.value?.key == item.key,
           allowOfflineLocalMedia: true,
           allowOfflineThumbnailGeneration: searchHandler.currentBooru.type?.isFavouritesOrDownloads == true,
@@ -64,7 +71,7 @@ class _DesktopImageListenerState extends State<DesktopImageListener> {
       return Obx(
         () => VideoViewer(
           item,
-          booru: currentBooru,
+          booru: sourceBooru,
           isViewed: ViewerHandler.instance.current.value?.key == item.key,
           enableFullscreen: true,
           allowOfflineLocalMedia: true,
@@ -76,7 +83,7 @@ class _DesktopImageListenerState extends State<DesktopImageListener> {
       return Obx(
         () => GuessExtensionViewer(
           item: item,
-          booru: currentBooru,
+          booru: sourceBooru,
           onMediaTypeGuessed: (MediaType mediaType) {
             item.mediaType.value = mediaType;
             item.possibleMediaType.value = mediaType.isUnknown ? item.possibleMediaType.value : null;
@@ -105,7 +112,7 @@ class _DesktopImageListenerState extends State<DesktopImageListener> {
       return Obx(
         () => GuessExtensionViewer(
           item: item,
-          booru: currentBooru,
+          booru: sourceBooru,
           onMediaTypeGuessed: (MediaType mediaType) {
             item.mediaType.value = mediaType;
             item.possibleMediaType.value = mediaType.isUnknown ? item.possibleMediaType.value : null;

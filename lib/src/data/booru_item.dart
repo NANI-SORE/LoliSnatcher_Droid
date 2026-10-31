@@ -203,7 +203,6 @@ class BooruItem extends Equatable {
     isUpdated,
     fileExt,
     serverId,
-    savedFileName,
     rating,
     score,
     uploaderId,

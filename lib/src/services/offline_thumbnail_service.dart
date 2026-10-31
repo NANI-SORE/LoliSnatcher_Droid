@@ -12,6 +12,7 @@ import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
+import 'package:lolisnatcher/src/services/offline_cache.dart';
 
 class OfflineThumbnailService {
   OfflineThumbnailService._();
@@ -30,12 +31,21 @@ class OfflineThumbnailService {
 
   bool get _isGenerationEnabled => SX.offlineThumbnailGeneration.value;
 
+  Future<void> invalidate(BooruItem item, Booru sourceBooru, String storageIdentity) async {
+    for (final fileName in OfflineMediaResolver.instance.filenameCandidates(item, sourceBooru)) {
+      final file = await _thumbnailFile(item, sourceBooru, fileName, storageIdentity);
+      await _imageWriter.deleteDerivedCacheFile(file);
+    }
+  }
+
   Future<File?> getOrGenerate(
     BooruItem item,
     Booru booru, {
     OfflineMediaResolution? resolution,
   }) async {
     final storageIdentity = OfflineMediaResolver.instance.storageIdentity;
+    final cacheGeneration = OfflineCache.generation;
+    if (!OfflineCache.isCurrent(cacheGeneration)) return null;
     final suppliedResolution = resolution?.storageIdentity == storageIdentity ? resolution : null;
     final sourceBooru =
         suppliedResolution?.sourceBooru ?? OfflineMediaResolver.instance.resolveSourceBooru(item, fallback: booru);
@@ -50,15 +60,15 @@ class OfflineThumbnailService {
     }
     final target = await _thumbnailFile(item, sourceBooru, fileName, storageIdentity);
     if (await _isUsableFile(target)) {
-      return _storageMatches(storageIdentity) ? target : null;
+      return _storageMatches(storageIdentity, cacheGeneration) ? target : null;
     }
     if (!_isGenerationEnabled) {
       return null;
     }
 
-    return _withInProgress(target, () {
+    return _withInProgress(target, cacheGeneration, () {
       return _withGenerationSlot(() async {
-        if (!_storageMatches(storageIdentity)) return null;
+        if (!_storageMatches(storageIdentity, cacheGeneration)) return null;
         final mediaResolution = suppliedResolution?.isAvailable == true
             ? suppliedResolution!
             : await OfflineMediaResolver.instance.resolve(
@@ -67,15 +77,21 @@ class OfflineThumbnailService {
                 allowUntrackedItem: true,
               );
 
-        if (!_isGenerationEnabled || !_storageMatches(storageIdentity)) return null;
+        if (!_isGenerationEnabled || !_storageMatches(storageIdentity, cacheGeneration)) return null;
         if (mediaResolution.isAvailable && mediaResolution.storageIdentity == storageIdentity) {
-          final generated = await _generateFromMedia(item, mediaResolution.file!, target, storageIdentity);
+          final generated = await _generateFromMedia(
+            item,
+            mediaResolution.file!,
+            target,
+            storageIdentity,
+            cacheGeneration,
+          );
           if (generated != null) {
             return generated;
           }
         }
 
-        return _copyExistingNetworkCache(item, target, storageIdentity);
+        return _copyExistingNetworkCache(item, target, storageIdentity, cacheGeneration);
       });
     });
   }
@@ -86,6 +102,8 @@ class OfflineThumbnailService {
     bool allowGeneration = true,
   }) async {
     final storageIdentity = OfflineMediaResolver.instance.storageIdentity;
+    final cacheGeneration = OfflineCache.generation;
+    if (!OfflineCache.isCurrent(cacheGeneration)) return const OfflineThumbnailLookup();
     final sourceBooru = OfflineMediaResolver.instance.resolveSourceBooru(item, fallback: booru);
     if (sourceBooru == null || sourceBooru.type?.isFavouritesOrDownloads == true) {
       return const OfflineThumbnailLookup();
@@ -95,7 +113,7 @@ class OfflineThumbnailService {
     for (final fileName in fileNames) {
       final target = await _thumbnailFile(item, sourceBooru, fileName, storageIdentity);
       if (await _isUsableFile(target)) {
-        return OfflineThumbnailLookup(file: _storageMatches(storageIdentity) ? target : null);
+        return OfflineThumbnailLookup(file: _storageMatches(storageIdentity, cacheGeneration) ? target : null);
       }
     }
 
@@ -103,22 +121,23 @@ class OfflineThumbnailService {
       return const OfflineThumbnailLookup();
     }
 
-    if (!allowGeneration || !_isGenerationEnabled || !_storageMatches(storageIdentity)) {
+    if (!allowGeneration || !_isGenerationEnabled || !_storageMatches(storageIdentity, cacheGeneration)) {
       return const OfflineThumbnailLookup();
     }
 
     final target = await _thumbnailFile(item, sourceBooru, fileNames.first, storageIdentity);
-    if (!_storageMatches(storageIdentity)) return const OfflineThumbnailLookup();
-    final existingGeneration = _pendingExistingCacheGenerations[target.path];
+    if (!_storageMatches(storageIdentity, cacheGeneration)) return const OfflineThumbnailLookup();
+    final key = '${target.path}:$cacheGeneration';
+    final existingGeneration = _pendingExistingCacheGenerations[key];
     if (existingGeneration != null) {
       return OfflineThumbnailLookup(generation: existingGeneration);
     }
 
     final generation = generateRuntimeThumbnail(item, booru).catchError((_) => null);
-    _pendingExistingCacheGenerations[target.path] = generation;
+    _pendingExistingCacheGenerations[key] = generation;
     unawaited(
       generation.whenComplete(() {
-        _pendingExistingCacheGenerations.remove(target.path);
+        _pendingExistingCacheGenerations.remove(key);
       }),
     );
     return OfflineThumbnailLookup(generation: generation);
@@ -137,6 +156,8 @@ class OfflineThumbnailService {
 
   Future<File?> generateFromExistingCache(BooruItem item, Booru booru) async {
     final storageIdentity = OfflineMediaResolver.instance.storageIdentity;
+    final cacheGeneration = OfflineCache.generation;
+    if (!OfflineCache.isCurrent(cacheGeneration)) return null;
     final sourceBooru = OfflineMediaResolver.instance.resolveSourceBooru(item, fallback: booru);
     if (sourceBooru == null || sourceBooru.type?.isFavouritesOrDownloads == true) {
       return null;
@@ -149,19 +170,21 @@ class OfflineThumbnailService {
     }
     final target = await _thumbnailFile(item, sourceBooru, fileName, storageIdentity);
     if (await _isUsableFile(target)) {
-      return _storageMatches(storageIdentity) ? target : null;
+      return _storageMatches(storageIdentity, cacheGeneration) ? target : null;
     }
     if (!_isGenerationEnabled) {
       return null;
     }
 
-    return _withInProgress(target, () {
-      return _withGenerationSlot(() => _copyExistingNetworkCache(item, target, storageIdentity));
+    return _withInProgress(target, cacheGeneration, () {
+      return _withGenerationSlot(() => _copyExistingNetworkCache(item, target, storageIdentity, cacheGeneration));
     });
   }
 
   Future<File?> generateRuntimeThumbnail(BooruItem item, Booru booru) async {
     final storageIdentity = OfflineMediaResolver.instance.storageIdentity;
+    final cacheGeneration = OfflineCache.generation;
+    if (!OfflineCache.isCurrent(cacheGeneration)) return null;
     final sourceBooru = OfflineMediaResolver.instance.resolveSourceBooru(item, fallback: booru);
     if (sourceBooru == null || sourceBooru.type?.isFavouritesOrDownloads == true) {
       return null;
@@ -174,21 +197,21 @@ class OfflineThumbnailService {
     }
     final target = await _thumbnailFile(item, sourceBooru, fileName, storageIdentity);
     if (await _isUsableFile(target)) {
-      return _storageMatches(storageIdentity) ? target : null;
+      return _storageMatches(storageIdentity, cacheGeneration) ? target : null;
     }
     if (!_isGenerationEnabled) {
       return null;
     }
 
-    return _withInProgress(target, () {
+    return _withInProgress(target, cacheGeneration, () {
       return _withGenerationSlot(() async {
-        if (!_storageMatches(storageIdentity)) return null;
-        final cached = await _copyExistingNetworkCache(item, target, storageIdentity);
+        if (!_storageMatches(storageIdentity, cacheGeneration)) return null;
+        final cached = await _copyExistingNetworkCache(item, target, storageIdentity, cacheGeneration);
         if (cached != null) {
           return cached;
         }
 
-        if (!_isGenerationEnabled || !_storageMatches(storageIdentity)) return null;
+        if (!_isGenerationEnabled || !_storageMatches(storageIdentity, cacheGeneration)) return null;
         final mediaResolution = await OfflineMediaResolver.instance.resolve(
           item,
           sourceBooru,
@@ -199,7 +222,7 @@ class OfflineThumbnailService {
           return null;
         }
 
-        return _generateFromMedia(item, mediaResolution.file!, target, storageIdentity);
+        return _generateFromMedia(item, mediaResolution.file!, target, storageIdentity, cacheGeneration);
       });
     });
   }
@@ -209,8 +232,9 @@ class OfflineThumbnailService {
     File mediaFile,
     File target,
     String storageIdentity,
+    int cacheGeneration,
   ) async {
-    if (!_isGenerationEnabled || !_storageMatches(storageIdentity)) return null;
+    if (!_isGenerationEnabled || !_storageMatches(storageIdentity, cacheGeneration)) return null;
     if (item.mediaType.value.isVideo) {
       final bytes = await ServiceHandler.makeVidThumb(mediaFile.path);
       if (bytes == null || bytes.isEmpty) {
@@ -220,7 +244,12 @@ class OfflineThumbnailService {
       if (thumbnailBytes == null || thumbnailBytes.isEmpty) {
         return null;
       }
-      return _publishThumbnail(target, storageIdentity, (file) => file.writeAsBytes(thumbnailBytes, flush: true));
+      return _publishThumbnail(
+        target,
+        storageIdentity,
+        cacheGeneration,
+        (file) => file.writeAsBytes(thumbnailBytes, flush: true),
+      );
     }
 
     if (!item.mediaType.value.isImageOrAnimation) {
@@ -231,11 +260,21 @@ class OfflineThumbnailService {
     if (thumbnailBytes == null || thumbnailBytes.isEmpty) {
       return null;
     }
-    return _publishThumbnail(target, storageIdentity, (file) => file.writeAsBytes(thumbnailBytes, flush: true));
+    return _publishThumbnail(
+      target,
+      storageIdentity,
+      cacheGeneration,
+      (file) => file.writeAsBytes(thumbnailBytes, flush: true),
+    );
   }
 
-  Future<File?> _copyExistingNetworkCache(BooruItem item, File target, String storageIdentity) async {
-    if (!_isGenerationEnabled || !_storageMatches(storageIdentity)) return null;
+  Future<File?> _copyExistingNetworkCache(
+    BooruItem item,
+    File target,
+    String storageIdentity,
+    int cacheGeneration,
+  ) async {
+    if (!_isGenerationEnabled || !_storageMatches(storageIdentity, cacheGeneration)) return null;
     final canCopyThumbnail = item.thumbnailURL.isNotEmpty && !item.thumbnailURL.toLowerCase().contains('.avif');
     final thumbnailPath = canCopyThumbnail
         ? await _imageWriter.getCachePath(
@@ -256,6 +295,7 @@ class OfflineThumbnailService {
             final generated = await _publishThumbnail(
               target,
               storageIdentity,
+              cacheGeneration,
               (file) => file.writeAsBytes(bytes, flush: true),
             );
             if (generated != null) return generated;
@@ -278,28 +318,35 @@ class OfflineThumbnailService {
         return null;
       }
 
-      if (!_isGenerationEnabled || !_storageMatches(storageIdentity)) return null;
+      if (!_isGenerationEnabled || !_storageMatches(storageIdentity, cacheGeneration)) return null;
       final thumbnailBytes = await _encodeOfflineThumbnail(file: source);
       if (thumbnailBytes == null || thumbnailBytes.isEmpty) {
         return null;
       }
 
-      return _publishThumbnail(target, storageIdentity, (file) => file.writeAsBytes(thumbnailBytes, flush: true));
+      return _publishThumbnail(
+        target,
+        storageIdentity,
+        cacheGeneration,
+        (file) => file.writeAsBytes(thumbnailBytes, flush: true),
+      );
     }
 
     return null;
   }
 
-  Future<File?> _withInProgress(File target, Future<File?> Function() action) async {
-    final existing = _inProgress[target.path];
+  Future<File?> _withInProgress(File target, int cacheGeneration, Future<File?> Function() action) async {
+    if (!OfflineCache.isCurrent(cacheGeneration)) return null;
+    final key = '${target.path}:$cacheGeneration';
+    final existing = _inProgress[key];
     if (existing != null) return existing;
 
     final generation = Future<File?>.sync(action);
-    _inProgress[target.path] = generation;
+    _inProgress[key] = generation;
     try {
       return await generation;
     } finally {
-      unawaited(_inProgress.remove(target.path));
+      unawaited(_inProgress.remove(key));
     }
   }
 
@@ -338,23 +385,27 @@ class OfflineThumbnailService {
     }
   }
 
-  bool _storageMatches(String identity) => OfflineMediaResolver.instance.storageIdentity == identity;
+  bool _storageMatches(String identity, int cacheGeneration) =>
+      OfflineMediaResolver.instance.storageIdentity == identity && OfflineCache.isCurrent(cacheGeneration);
 
   Future<File?> _publishThumbnail(
     File target,
     String storageIdentity,
+    int cacheGeneration,
     Future<File> Function(File temporaryFile) write,
   ) async {
-    if (!_isGenerationEnabled || !_storageMatches(storageIdentity)) return null;
+    if (!_isGenerationEnabled || !_storageMatches(storageIdentity, cacheGeneration)) return null;
     final temporaryDirectory = await target.parent.createTemp('.thumbnail-');
     final temporaryFile = File('${temporaryDirectory.path}/thumbnail');
     try {
       await write(temporaryFile);
-      if (!_isGenerationEnabled || !_storageMatches(storageIdentity) || !await _isUsableFile(temporaryFile)) {
+      if (!await _isUsableFile(temporaryFile) ||
+          !_isGenerationEnabled ||
+          !_storageMatches(storageIdentity, cacheGeneration)) {
         return null;
       }
       final published = await temporaryFile.rename(target.path);
-      return _storageMatches(storageIdentity) ? published : null;
+      return _storageMatches(storageIdentity, cacheGeneration) ? published : null;
     } finally {
       try {
         if (await temporaryFile.exists()) await temporaryFile.delete();
