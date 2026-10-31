@@ -10,6 +10,7 @@ import 'package:alice_lightweight/helper/alice_save_helper.dart';
 import 'package:fvp/fvp.dart' as fvp;
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
+import 'package:path/path.dart' as p;
 import 'package:lolisnatcher/src/pages/settings/language_page.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
@@ -104,6 +105,7 @@ class SettingsHandler {
   static const Duration updateCheckInterval = Duration(hours: 12);
   Timer? _updateCheckTimer;
   Future<void>? _activeUpdateCheck;
+  bool _updateFeedbackRequested = false;
 
   void dispose() {
     _updateCheckTimer?.cancel();
@@ -356,28 +358,46 @@ class SettingsHandler {
     }
   }
 
-  Future<void> _writeJsonAtomically(File file, Object? value) {
-    return _queueFileOperation(file, () async {
-      await file.parent.create(recursive: true);
-      final tempFile = File('${file.path}.tmp');
+  Future<void> _writeJsonAtomically(File file, Object? value) =>
+      _queueFileOperation(file, () => _writeJsonFile(file, value));
+
+  Future<void> _writeJsonFile(File file, Object? value) async {
+    await file.parent.create(recursive: true);
+    final tempFile = File('${file.path}.tmp');
+    try {
       await tempFile.writeAsString(jsonEncode(value), flush: true);
       await tempFile.rename(file.path);
-    });
+    } finally {
+      try {
+        if (await tempFile.exists()) await tempFile.delete();
+      } catch (e, s) {
+        Logger.Inst().log(
+          'Failed to clean temporary config: $e',
+          'SettingsHandler',
+          '_writeJsonAtomically',
+          LogTypes.settingsError,
+          s: s,
+        );
+      }
+    }
   }
 
   Future<void> _queueFileOperation(File file, Future<void> Function() operation) {
-    final previousWrite = _fileWriteQueues[file.path] ?? Future<void>.value();
+    // Serialize case aliases too, even when importing on a case-sensitive OS.
+    final queueKey = p.normalize(p.absolute(file.path)).toLowerCase();
+    final previousWrite = _fileWriteQueues[queueKey] ?? Future<void>.value();
     final write = previousWrite.catchError((Object _) {}).then((_) => operation());
-    _fileWriteQueues[file.path] = write;
+    _fileWriteQueues[queueKey] = write;
     return write.whenComplete(() {
-      if (identical(_fileWriteQueues[file.path], write)) {
-        _fileWriteQueues.remove(file.path);
+      if (identical(_fileWriteQueues[queueKey], write)) {
+        _fileWriteQueues.remove(queueKey);
       }
     });
   }
 
   Future<bool> loadBoorus() async {
     final List<Booru> tempList = [];
+    hasHydrus = false;
     try {
       if (path == '') {
         await setConfigDir();
@@ -386,25 +406,34 @@ class SettingsHandler {
       final Directory directory = Directory(boorusPath);
       List<FileSystemEntity> files = [];
       if (await directory.exists()) {
-        files = await directory.list().toList();
+        await _recoverBooruTempFiles(directory);
+        files = await directory.list(followLinks: false).toList();
       }
 
       if (files.isNotEmpty) {
         for (int i = 0; i < files.length; i++) {
-          if (files[i].path.contains('.json')) {
-            // && files[i].path != 'settings.json'
-            // print(files[i].toString());
-            final File booruFile = files[i] as File;
-            final Booru booruFromFile = Booru.fromJSON(await booruFile.readAsString());
-            final bool isSaveable = BooruType.saveable.contains(booruFromFile.type);
-            if (isSaveable) {
-              tempList.add(booruFromFile);
-            } else {
-              await booruFile.delete();
-            }
+          if (files[i] is File && p.extension(files[i].path) == '.json') {
+            final booruFile = files[i] as File;
+            try {
+              final Booru booruFromFile = Booru.fromJSON(await booruFile.readAsString());
+              final bool isSaveable = BooruType.saveable.contains(booruFromFile.type);
+              if (isSaveable &&
+                  _isSafeBooruName(booruFromFile.name) &&
+                  !tempList.any((booru) => booru.name == booruFromFile.name)) {
+                tempList.add(booruFromFile);
+              }
 
-            if (booruFromFile.type?.isHydrus == true) {
-              hasHydrus = true;
+              if (booruFromFile.type?.isHydrus == true) {
+                hasHydrus = true;
+              }
+            } catch (e, s) {
+              Logger.Inst().log(
+                'Failed to load config ${p.basename(booruFile.path)}: $e',
+                'SettingsHandler',
+                'loadBoorus',
+                LogTypes.settingsError,
+                s: s,
+              );
             }
           }
         }
@@ -412,9 +441,14 @@ class SettingsHandler {
 
       // Load per-booru setting overrides into the registry
       final registry = SettingsRegistry.instance;
+      for (final oldBooru in booruList) {
+        if (oldBooru.name != null && !tempList.any((booru) => booru.name == oldBooru.name)) {
+          registry.removeAllOverridesForBooru(oldBooru.name!, save: false);
+        }
+      }
       for (final booru in tempList) {
-        if (booru.name != null && booru.settingOverrides != null) {
-          registry.loadOverridesFromMap(booru.name!, booru.settingOverrides);
+        if (booru.name != null) {
+          registry.loadOverridesFromMap(booru.name!, booru.settingOverrides, replace: true);
         }
       }
 
@@ -449,15 +483,100 @@ class SettingsHandler {
       );
     }
 
-    booruList.value = tempList
-        .where((element) => !booruList.contains(element))
-        .toList(); // filter due to possibility of duplicates
+    booruList.value = tempList;
     booruListVersion++;
 
     if (tempList.isNotEmpty) {
       unawaited(sortBooruList());
     }
     return true;
+  }
+
+  Future<void> _recoverBooruTempFiles(Directory directory) async {
+    await for (final entity in directory.list(followLinks: false)) {
+      if (entity is! File || p.extension(entity.path, 2) != '.json.tmp') continue;
+      final primary = File(p.withoutExtension(entity.path));
+      await _queueFileOperation(primary, () async {
+        if (await primary.exists()) return;
+        try {
+          final booru = Booru.fromJSON(await entity.readAsString());
+          if (booru.type?.isSaveable != true ||
+              !_isSafeBooruName(booru.name) ||
+              p.basenameWithoutExtension(primary.path) != booru.name) {
+            return;
+          }
+          await entity.rename(primary.path);
+        } catch (e, s) {
+          Logger.Inst().log(
+            'Cannot recover config ${p.basename(entity.path)}: $e',
+            'SettingsHandler',
+            '_recoverBooruTempFiles',
+            LogTypes.settingsError,
+            s: s,
+          );
+        }
+      });
+    }
+  }
+
+  bool _isSafeBooruName(String? name) {
+    if (name == null ||
+        name.trim().isEmpty ||
+        name == '.' ||
+        name == '..' ||
+        RegExp(r'[\\/\x00-\x1F]').hasMatch(name)) {
+      return false;
+    }
+    if (!Platform.isWindows) return true;
+    return !RegExp('[:*?"<>|]').hasMatch(name) &&
+        !RegExp(r'^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)', caseSensitive: false).hasMatch(name);
+  }
+
+  /// Imports a new configuration without replacing its overrides with local state.
+  /// Sync imports exclude device-specific overrides; local imports retain them.
+  Future<bool> importBooru(Booru incoming, {bool syncableOnly = false}) async {
+    if (incoming.type?.isSaveable != true ||
+        !_isSafeBooruName(incoming.name) ||
+        !ContentPolicy.isBooruAllowed(incoming)) {
+      return false;
+    }
+    if (path.isEmpty) await setConfigDir();
+    final name = incoming.name!;
+    final file = File(p.join(boorusPath, '$name.json'));
+    return _queueBooruImport(file, name, incoming, syncableOnly: syncableOnly);
+  }
+
+  Future<bool> _queueBooruImport(File file, String name, Booru incoming, {required bool syncableOnly}) async {
+    var importedSuccessfully = false;
+    await _queueFileOperation(file, () async {
+      if (booruList.any((booru) => booru.name?.toLowerCase() == name.toLowerCase()) || await file.exists()) {
+        return;
+      }
+      final registry = SettingsRegistry.instance;
+      final imported = Booru.fromMap(incoming.toJson())
+        ..settingOverrides = registry.normalizeOverrides(incoming.settingOverrides, syncableOnly: syncableOnly);
+      await _writeJsonFile(file, imported.toJson());
+      registry.loadOverridesFromMap(name, imported.settingOverrides, replace: true);
+      booruList.add(imported);
+      booruListVersion++;
+      await sortBooruList();
+      importedSuccessfully = true;
+    });
+    return importedSuccessfully;
+  }
+
+  /// Publishes source settings to loaded tabs after an override editor closes.
+  Future<void> applyBooruSettings(String booruName) async {
+    await flushPendingSettingsSaves();
+    if (!GetIt.instance.isRegistered<SearchHandler>()) return;
+    final search = SearchHandler.instance;
+    for (final tab in search.tabs.toList(growable: false)) {
+      if (tab.booruHandler.booru.name == booruName ||
+          (tab.secondaryBoorus.value ?? <Booru>[]).any((booru) => booru.name == booruName)) {
+        tab.booruHandler.filterFetched();
+      }
+    }
+    search.rootRestate?.call();
   }
 
   Future<void> sortBooruList() async {
@@ -508,7 +627,7 @@ class SettingsHandler {
   }
 
   Future<bool> saveBooru(Booru booru, {bool onlySave = false}) async {
-    if (!ContentPolicy.isBooruAllowed(booru)) {
+    if (!_isSafeBooruName(booru.name) || !ContentPolicy.isBooruAllowed(booru)) {
       return false;
     }
 
@@ -543,7 +662,7 @@ class SettingsHandler {
 
     final oldName = original.name;
     final newName = replacement.name;
-    if (oldName == null || oldName.isEmpty || newName == null || newName.isEmpty) return false;
+    if (oldName == null || newName == null || !_isSafeBooruName(oldName) || !_isSafeBooruName(newName)) return false;
 
     final registry = SettingsRegistry.instance;
     final renamed = oldName != newName;
@@ -778,20 +897,23 @@ class SettingsHandler {
     }
 
     final activeCheck = _activeUpdateCheck;
+    if (withMessage) _updateFeedbackRequested = true;
     if (activeCheck != null) {
       return activeCheck;
     }
 
-    final check = _checkUpdate(withMessage: withMessage);
+    _updateFeedbackRequested = withMessage;
+    final check = _checkUpdate();
     _activeUpdateCheck = check;
     return check.whenComplete(() {
       if (identical(_activeUpdateCheck, check)) {
         _activeUpdateCheck = null;
+        _updateFeedbackRequested = false;
       }
     });
   }
 
-  Future<void> _checkUpdate({required bool withMessage}) async {
+  Future<void> _checkUpdate() async {
     // const String fakeUpdate = '123'; // for tests // broken string
     // const Map<String, dynamic> = {}; // for tests // full json here
 
@@ -882,7 +1004,7 @@ class SettingsHandler {
           // installed from store
           if (updateInfo.value!.isInStore) {
             // app is still in store
-            showUpdate(withMessage || updateInfo.value!.isImportant);
+            showUpdate(_updateFeedbackRequested || updateInfo.value!.isImportant);
           } else {
             // app was removed from store
             // then always notify user so they can move to github version and get news about removal
@@ -890,7 +1012,7 @@ class SettingsHandler {
           }
         } else {
           // installed from github
-          showUpdate(withMessage || updateInfo.value!.isImportant);
+          showUpdate(_updateFeedbackRequested || updateInfo.value!.isImportant);
         }
       } else {
         final secureStorageHandler = SecureStorageHandler.instance;
@@ -910,7 +1032,7 @@ class SettingsHandler {
           );
           showUpdate(true, isAfterUpdate: true);
         } else {
-          if (withMessage) {
+          if (_updateFeedbackRequested) {
             // otherwise show latest version message
             showLastVersionMessage();
           }
@@ -924,7 +1046,7 @@ class SettingsHandler {
         LogTypes.settingsError,
         s: s,
       );
-      if (withMessage) {
+      if (_updateFeedbackRequested) {
         FlashElements.showSnackbar(
           title: Text(
             loc.settings.checkForUpdates.updateCheckError,
