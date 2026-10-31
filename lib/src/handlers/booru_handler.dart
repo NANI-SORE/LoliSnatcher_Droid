@@ -810,7 +810,7 @@ abstract class BooruHandler {
   Map<String, String> getHeaders() {
     return {
       'Accept': 'text/html,application/xml,application/json',
-      'User-Agent': Tools.browserUserAgent,
+      'User-Agent': Tools.browserUserAgentForBooru(booru.name),
     };
   }
 
