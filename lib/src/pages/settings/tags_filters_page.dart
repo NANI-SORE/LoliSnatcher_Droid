@@ -7,6 +7,7 @@ import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/settings/setting_def.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/data/settings/setting_state.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/data/tag_filter.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -17,6 +18,7 @@ import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
 import 'package:lolisnatcher/src/widgets/common/marquee_text.dart';
 import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/compact_filter_sheet.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/filter_option_tile.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_editor.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_query_text.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_rule_list.dart';
@@ -35,7 +37,6 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
   static const String _downloadsScopeKey = TagFilterRuleList.downloadsScopeKey;
 
   final TextEditingController searchController = TextEditingController();
-  final ScrollController filterControlsScrollController = ScrollController();
   final ScrollController rulesScrollController = ScrollController();
   final ValueNotifier<int> countdownRevision = ValueNotifier(0);
   Timer? debounce;
@@ -66,7 +67,6 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     debounce?.cancel();
     countdownRefreshTimer?.cancel();
     searchController.dispose();
-    filterControlsScrollController.dispose();
     rulesScrollController.dispose();
     countdownRevision.dispose();
     TagFilterHandler.instance.revision.removeListener(_refresh);
@@ -114,6 +114,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     final nowUtc = now.toUtc();
     final handler = TagFilterHandler.instance;
     final hasActiveTimer =
+        handler.configuration.enabledUntil.values.any((until) => until.isAfter(nowUtc)) ||
         handler.rules.any((rule) => rule.enabled && rule.disabledUntil?.isAfter(nowUtc) == true) ||
         (handler.configuration.hideAsBlur.enabled && handler.configuration.hideAsBlur.until?.isAfter(nowUtc) == true);
     if (!hasActiveTimer) return;
@@ -318,12 +319,14 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
         children: [
           const Icon(Icons.public, size: 16),
           const SizedBox(width: 5),
-          Text(loc.allBoorus),
+          Flexible(child: Text(loc.allBoorus, maxLines: 1, overflow: TextOverflow.ellipsis)),
           if (excludedCount > 0) ...[
             const SizedBox(width: 6),
             const Icon(Icons.block, size: 14),
             const SizedBox(width: 4),
-            Text(loc.excludedBoorusCount(count: excludedCount)),
+            Flexible(
+              child: Text(loc.excludedBoorusCount(count: excludedCount), maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
           ],
         ],
       );
@@ -335,7 +338,13 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
         children: [
           Icon(isFavourites ? Icons.favorite : Icons.download, size: 16),
           const SizedBox(width: 5),
-          Text(isFavourites ? BooruType.Favourites.alias : BooruType.Downloads.alias),
+          Flexible(
+            child: Text(
+              isFavourites ? BooruType.Favourites.alias : BooruType.Downloads.alias,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       );
     }
@@ -659,21 +668,6 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     return loc.timeLeftMinutes(minutes: totalMinutes);
   }
 
-  Widget _hideAsBlurTimerBadge(BuildContext context, DateTime until) {
-    final colors = Theme.of(context).colorScheme;
-    final loc = context.loc.settings.itemFilters;
-    return Tooltip(
-      message: loc.endsAt(value: _formatTimerEnd(context, until)),
-      child: Chip(
-        backgroundColor: colors.tertiaryContainer,
-        side: BorderSide.none,
-        avatar: Icon(Icons.timer_outlined, size: 16, color: colors.onTertiaryContainer),
-        label: Text(_formatTimeLeft(context, until)),
-        labelStyle: TextStyle(color: colors.onTertiaryContainer),
-      ),
-    );
-  }
-
   Future<void> _setHideAsBlurDuration(String value) async {
     final now = DateTime.now().toUtc();
     final until = switch (value) {
@@ -699,6 +693,8 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
   Future<void> _showHideAsBlurOptions() => showCompactFilterSheet<void>(
     context: context,
     useSafeArea: true,
+    isScrollControlled: true,
+    constraints: const BoxConstraints(maxWidth: 600),
     builder: (sheetContext) {
       final loc = sheetContext.loc.settings.itemFilters;
       final options = <(String, String, IconData)>[
@@ -713,27 +709,43 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
         ('forever', loc.indefinitely, Icons.all_inclusive),
         ('off', loc.disabled, Icons.visibility_off_outlined),
       ];
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(title: Text(loc.hideAsBlur, style: Theme.of(sheetContext).textTheme.titleLarge)),
-          Flexible(
-            child: ListView(
-              shrinkWrap: true,
-              children: [
-                for (final option in options)
-                  ListTile(
-                    leading: Icon(option.$3),
-                    title: Text(option.$2),
-                    onTap: () {
-                      Navigator.of(sheetContext).pop();
-                      _setHideAsBlurDuration(option.$1);
-                    },
-                  ),
-              ],
+      return ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.85,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(
+                loc.hideAsBlur,
+                style: Theme.of(sheetContext).textTheme.titleLarge,
+              ),
+              trailing: IconButton(
+                tooltip: sheetContext.loc.close,
+                onPressed: () => Navigator.of(sheetContext).pop(),
+                icon: const Icon(Icons.close),
+              ),
             ),
-          ),
-        ],
+            const Divider(height: 1),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  for (final option in options)
+                    ListTile(
+                      leading: Icon(option.$3),
+                      title: Text(option.$2),
+                      onTap: () {
+                        Navigator.of(sheetContext).pop();
+                        _setHideAsBlurDuration(option.$1);
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       );
     },
   );
@@ -771,8 +783,9 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     );
     if (change == null) return;
     await _saveChange(
-      () => TagFilterHandler.instance.updateRule(
-        rule.copyWith(
+      () => TagFilterHandler.instance.changeRules(
+        {rule.id},
+        (current) => current.copyWith(
           enabled: change.enabled,
           disabledUntil: change.disabledUntil,
           clearDisabledUntil: change.disabledUntil == null,
@@ -913,25 +926,21 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
   Future<void> _applyAvailabilityToRules(TagFilterAvailabilityChange change, Set<String> ids) async {
     if (ids.isEmpty) return;
     final disabledUntil = change.disabledUntil?.toUtc();
-    final replacements = TagFilterHandler.instance.rules
-        .where((rule) => ids.contains(rule.id))
-        .where((rule) => rule.enabled != change.enabled || rule.disabledUntil != disabledUntil)
-        .map(
-          (rule) => rule.copyWith(
-            enabled: change.enabled,
-            disabledUntil: disabledUntil,
-            clearDisabledUntil: disabledUntil == null,
-          ),
-        );
-    await _saveChange(() => TagFilterHandler.instance.updateRules(replacements));
+    await _saveChange(
+      () => TagFilterHandler.instance.changeRules(
+        ids,
+        (rule) => rule.copyWith(
+          enabled: change.enabled,
+          disabledUntil: disabledUntil,
+          clearDisabledUntil: disabledUntil == null,
+        ),
+      ),
+    );
   }
 
   Future<void> _applyEffectToRules(TagFilterEffect effect, Set<String> ids) async {
     if (ids.isEmpty) return;
-    final replacements = TagFilterHandler.instance.rules
-        .where((rule) => ids.contains(rule.id) && rule.effect != effect)
-        .map((rule) => rule.copyWith(effect: effect));
-    await _saveChange(() => TagFilterHandler.instance.updateRules(replacements));
+    await _saveChange(() => TagFilterHandler.instance.changeRules(ids, (rule) => rule.copyWith(effect: effect)));
   }
 
   Future<void> _suspendSelected(Set<String> ids) async {
@@ -1025,6 +1034,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
               title: Text(loc.batchActions, style: Theme.of(sheetContext).textTheme.titleLarge),
               subtitle: Text(loc.selectedCount(count: selectedRules.length)),
               trailing: IconButton(
+                tooltip: sheetContext.loc.close,
                 icon: const Icon(Icons.close),
                 onPressed: () => Navigator.of(sheetContext).pop(),
               ),
@@ -1085,6 +1095,83 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
     );
   }
 
+  TimedFilterOption? _timedOption(SettingKey key) => switch (key) {
+    SettingKey.filterFavourites => TimedFilterOption.favourites,
+    SettingKey.filterSnatched => TimedFilterOption.snatched,
+    SettingKey.filterMarked => TimedFilterOption.marked,
+    SettingKey.filterAi => TimedFilterOption.ai,
+    _ => null,
+  };
+
+  Widget _timerControl(
+    BuildContext context, {
+    required String controlKey,
+    required DateTime? until,
+    required VoidCallback onPressed,
+  }) {
+    final active = until != null && until.isAfter(DateTime.now().toUtc());
+    final loc = context.loc.settings.itemFilters;
+    return Tooltip(
+      message: active ? loc.endsAt(value: _formatTimerEnd(context, until)) : loc.enableFor,
+      child: active
+          ? ActionChip(
+              key: ValueKey(controlKey),
+              avatar: const Icon(Icons.timer_outlined, size: 18),
+              label: Text(_formatTimeLeft(context, until)),
+              onPressed: onPressed,
+            )
+          : IconButton.outlined(
+              key: ValueKey(controlKey),
+              icon: const Icon(Icons.timer_outlined),
+              onPressed: onPressed,
+            ),
+    );
+  }
+
+  Widget _filterOptionControl(BuildContext context, SettingState<dynamic> state) {
+    final icon = switch (state.def.key) {
+      SettingKey.filterMarked => Icons.star_outline,
+      SettingKey.filterFavourites => Icons.favorite_border,
+      SettingKey.filterSnatched => Icons.file_download_outlined,
+      SettingKey.filterAi => Icons.auto_awesome_outlined,
+      _ => null,
+    };
+    if (icon == null || state is! SettingState<bool>) return state.buildWidget(context);
+    final option = _timedOption(state.def.key);
+    final until = TagFilterHandler.instance.configuration.enabledUntil[option];
+    return state.buildWidget(
+      context,
+      control: ValueListenableBuilder<bool>(
+        valueListenable: state.globalNotifier,
+        builder: (tileContext, value, _) => FilterOptionTile(
+          title: state.def.localization.title(tileContext),
+          icon: Icon(icon),
+          value: value,
+          onChanged: (value) => state.setScopedValue(tileContext, value),
+          timerAction: option == null
+              ? null
+              : _timerControl(
+                  tileContext,
+                  controlKey: 'enable-for-${option.name}',
+                  until: until,
+                  onPressed: () async {
+                    final change = await showTagFilterSuspensionSheet(
+                      context,
+                      enableFor: true,
+                      title: state.def.localization.title(tileContext),
+                    );
+                    if (change?.disabledUntil != null) {
+                      await _saveChange(
+                        () => TagFilterHandler.instance.enableOptionUntil(option, change!.disabledUntil!),
+                      );
+                    }
+                  },
+                ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _showFilterSettings() => showCompactFilterSheet<void>(
     context: context,
     useSafeArea: true,
@@ -1109,6 +1196,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                   title: Text(loc.filteringSettings, style: Theme.of(sheetContext).textTheme.titleLarge),
                   trailing: IconButton(
+                    tooltip: sheetContext.loc.close,
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.of(sheetContext).pop(),
                   ),
@@ -1118,34 +1206,17 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                   child: ListView(
                     shrinkWrap: true,
                     children: [
-                      ListTile(
-                        title: Text(loc.hideAsBlur),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(loc.hideAsBlurHelp),
-                            if (temporaryUntil != null) ...[
-                              const SizedBox(height: 6),
-                              _hideAsBlurTimerBadge(sheetContext, temporaryUntil),
-                            ],
-                          ],
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Switch(
-                              value: handler.configuration.hideAsBlur.isActiveAt(now),
-                              thumbIcon: temporaryUntil != null
-                                  ? const WidgetStatePropertyAll<Icon?>(Icon(Icons.timer_outlined))
-                                  : null,
-                              onChanged: (value) => _saveChange(() => handler.setHideAsBlur(enabled: value)),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.more_vert),
-                              tooltip: loc.customDuration,
-                              onPressed: _showHideAsBlurOptions,
-                            ),
-                          ],
+                      FilterOptionTile(
+                        title: loc.hideAsBlur,
+                        subtitle: loc.hideAsBlurHelp,
+                        icon: const Icon(Icons.blur_on),
+                        value: handler.configuration.hideAsBlur.isActiveAt(now),
+                        onChanged: (value) => _saveChange(() => handler.setHideAsBlur(enabled: value)),
+                        timerAction: _timerControl(
+                          sheetContext,
+                          controlKey: 'hide-as-blur-timer',
+                          until: temporaryUntil,
+                          onPressed: _showHideAsBlurOptions,
                         ),
                       ),
                       const Divider(height: 1),
@@ -1156,8 +1227,10 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                               SettingKey.hiddenTags,
                               SettingKey.markedTags,
                               SettingKey.filterHated,
-                            }.contains(state.def.key))
-                          state.buildWidget(sheetContext),
+                            }.contains(state.def.key)) ...[
+                          _filterOptionControl(sheetContext, state),
+                          const Divider(height: 1, indent: 16, endIndent: 16),
+                        ],
                     ],
                   ),
                 ),
@@ -1390,14 +1463,9 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                   onPressed: () => setState(() => _selectionMode = true),
                   icon: const Icon(Icons.checklist_rtl),
                 ),
-                IconButton(
-                  tooltip: loc.filteringSettings,
-                  onPressed: _showFilterSettings,
-                  icon: const Icon(Icons.settings_outlined),
-                ),
-                IconButton(
-                  tooltip: loc.importLegacy,
-                  onPressed: () async {
+                PopupMenuButton<String>(
+                  tooltip: context.loc.searchBar.more,
+                  onSelected: (_) async {
                     var count = 0;
                     final saved = await _saveChange(() async {
                       count = await handler.importLegacy(force: true);
@@ -1411,7 +1479,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                       );
                     }
                   },
-                  icon: const Icon(Icons.file_download_outlined),
+                  itemBuilder: (_) => [PopupMenuItem(value: 'legacy', child: Text(loc.importLegacy))],
                 ),
               ],
       ),
@@ -1421,7 +1489,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
               icon: const Icon(Icons.playlist_add_check),
               label: Text(loc.batchActions),
             )
-          : FloatingActionButton(onPressed: _openEditor, child: const Icon(Icons.add)),
+          : FloatingActionButton(tooltip: loc.addRule, onPressed: _openEditor, child: const Icon(Icons.add)),
       body: FadingEdgeScrollView.fromScrollView(
         child: CustomScrollView(
           controller: rulesScrollController,
@@ -1442,7 +1510,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 24, 12, 4),
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
                       child: TextField(
                         controller: searchController,
                         decoration: InputDecoration(
@@ -1451,6 +1519,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                           suffixIcon: searchController.text.isEmpty
                               ? null
                               : IconButton(
+                                  tooltip: context.loc.clear,
                                   onPressed: () => setState(() {
                                     debounce?.cancel();
                                     searchController.clear();
@@ -1461,6 +1530,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                                 ),
                         ),
                         onChanged: (value) {
+                          setState(() {});
                           debounce?.cancel();
                           debounce = Timer(const Duration(milliseconds: 250), () {
                             if (mounted) {
@@ -1475,68 +1545,94 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                     ),
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        if (constraints.maxWidth < 1180) {
-                          return Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-                            child: Wrap(
-                              spacing: 8,
-                              runSpacing: 4,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                OutlinedButton.icon(
-                                  onPressed: _showListControls,
-                                  icon: const Icon(Icons.filter_alt_outlined),
-                                  label: Text(loc.filterList),
-                                ),
-                                for (final chip in activeFilterChips)
-                                  ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxWidth: constraints.maxWidth > 24 ? constraints.maxWidth - 24 : 0,
-                                    ),
-                                    child: chip,
+                        final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+                        final inline = constraints.maxWidth >= 1180 * scale;
+                        final stackButtons = constraints.maxWidth < 340 || scale > 1.3;
+                        final settingsButton = Tooltip(
+                          message: loc.filteringSettings,
+                          child: OutlinedButton.icon(
+                            onPressed: _showFilterSettings,
+                            icon: const Icon(Icons.tune),
+                            label: Text(loc.filteringSettings),
+                          ),
+                        );
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (!inline) ...[
+                                if (stackButtons) ...[
+                                  OutlinedButton.icon(
+                                    onPressed: _showListControls,
+                                    icon: const Icon(Icons.filter_alt_outlined),
+                                    label: Text(loc.filterList),
                                   ),
-                              ],
-                            ),
-                          );
-                        }
-                        final fields = _filterFields(compact: false);
-                        return Column(
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: FadingEdgeScrollView.fromSingleChildScrollView(
-                                    child: SingleChildScrollView(
-                                      controller: filterControlsScrollController,
-                                      scrollDirection: Axis.horizontal,
-                                      padding: const EdgeInsets.fromLTRB(12, 4, 8, 8),
-                                      child: Row(
-                                        children: [
-                                          for (var index = 0; index < fields.length; index++) ...[
-                                            if (index > 0) const SizedBox(width: 12),
-                                            fields[index],
-                                          ],
-                                        ],
+                                  const SizedBox(height: 8),
+                                  settingsButton,
+                                ] else
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton.icon(
+                                          onPressed: _showListControls,
+                                          icon: const Icon(Icons.filter_alt_outlined),
+                                          label: Text(loc.filterList),
+                                        ),
                                       ),
-                                    ),
+                                      const SizedBox(width: 8),
+                                      Expanded(child: settingsButton),
+                                    ],
                                   ),
+                              ] else ...[
+                                Row(
+                                  children: [
+                                    Text(loc.filterList, style: Theme.of(context).textTheme.titleSmall),
+                                    const Spacer(),
+                                    settingsButton,
+                                  ],
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(4, 4, 12, 8),
-                                  child: IconButton.outlined(
-                                    onPressed: hasModifiedListControls ? _resetListFilters : null,
-                                    tooltip: context.loc.reset,
-                                    icon: const Icon(Icons.restart_alt),
-                                  ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 12,
+                                  runSpacing: 12,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: [
+                                    ..._filterFields(compact: false),
+                                    IconButton.outlined(
+                                      onPressed: hasModifiedListControls ? _resetListFilters : null,
+                                      tooltip: context.loc.reset,
+                                      icon: const Icon(Icons.restart_alt),
+                                    ),
+                                  ],
                                 ),
                               ],
-                            ),
-                            if (activeFilterChips.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
-                                child: Wrap(spacing: 8, runSpacing: 4, children: activeFilterChips),
-                              ),
-                          ],
+                              if (activeFilterChips.isNotEmpty || (!inline && hasModifiedListControls))
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Wrap(
+                                    spacing: 6,
+                                    runSpacing: 4,
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    children: [
+                                      ...activeFilterChips.take(3),
+                                      if (activeFilterChips.length > 3)
+                                        ActionChip(
+                                          label: Text('+${activeFilterChips.length - 3}'),
+                                          tooltip: loc.filterList,
+                                          onPressed: _showListControls,
+                                        ),
+                                      if (!inline && hasModifiedListControls)
+                                        IconButton(
+                                          tooltip: context.loc.reset,
+                                          onPressed: _resetListFilters,
+                                          icon: const Icon(Icons.restart_alt),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
                         );
                       },
                     ),
@@ -1558,17 +1654,6 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                             Text(loc.counterBlur(count: ruleList.effectCounts[TagFilterEffect.blur] ?? 0)),
                             Text(loc.counterMark(count: ruleList.effectCounts[TagFilterEffect.mark] ?? 0)),
                           ],
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: _showFilterSettings,
-                          icon: const Icon(Icons.settings_outlined),
-                          label: Text(loc.filteringSettings),
                         ),
                       ),
                     ),
@@ -1621,9 +1706,12 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                         : null,
                     selectedTileColor: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.45),
                     leading: _isSelecting
-                        ? Checkbox(
-                            value: selected,
-                            onChanged: (_) => _toggleSelection(rule.id),
+                        ? Semantics(
+                            label: rule.displayName,
+                            child: Checkbox(
+                              value: selected,
+                              onChanged: (_) => _toggleSelection(rule.id),
+                            ),
                           )
                         : null,
                     title: Row(
@@ -1650,14 +1738,17 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
                         ),
                         if (!_isSelecting) ...[
                           const SizedBox(width: 4),
-                          Switch(
-                            value: rule.isActiveAt(now),
-                            thumbIcon: activeTimer
-                                ? const WidgetStatePropertyAll<Icon?>(Icon(Icons.timer_outlined))
-                                : null,
-                            onChanged: (value) => _saveChange(
-                              () => handler.updateRule(
-                                rule.copyWith(enabled: value, clearDisabledUntil: true),
+                          Semantics(
+                            label: rule.displayName,
+                            child: Switch(
+                              value: rule.isActiveAt(now),
+                              thumbIcon: activeTimer
+                                  ? const WidgetStatePropertyAll<Icon?>(Icon(Icons.timer_outlined))
+                                  : null,
+                              onChanged: (value) => _saveChange(
+                                () => handler.changeRules({
+                                  rule.id,
+                                }, (current) => current.copyWith(enabled: value, clearDisabledUntil: true)),
                               ),
                             ),
                           ),

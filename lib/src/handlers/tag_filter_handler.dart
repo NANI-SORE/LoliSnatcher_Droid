@@ -17,6 +17,7 @@ import 'package:lolisnatcher/src/data/tag_filter_query.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_filter_repository.dart';
+import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/utils/booru_rating.dart';
 
 class CompiledTagFilterRule {
@@ -109,6 +110,10 @@ class TagFilterHandler {
   bool _disposed = false;
   int _evaluationRevision = 0;
   final List<SettingState<bool>> _activeFilterSettings = [];
+  final List<VoidCallback> _optionListenerDisposers = [];
+  final Map<TimedFilterOption, int> _manualOptionVersions = {};
+  final Map<BooruHandler, int> _activeHandlers = Map.identity();
+  bool _applyingOptionTimers = false;
   StreamSubscription<List<Booru>>? _booruCatalogSubscription;
 
   final List<CompiledTagFilterRule> _compiled = [];
@@ -130,6 +135,7 @@ class TagFilterHandler {
   Future<void> initialize() async {
     _repository ??= JsonFilterRepository(SettingsHandler.instance.path);
     _configuration = await repository.load();
+    _applyOptionTimers();
     _compile();
     _scheduleExpiry();
     _listenForActiveFilterSettingChanges();
@@ -145,6 +151,11 @@ class TagFilterHandler {
       setting.overridesNotifier.removeListener(_activeFilterSettingChanged);
     }
     _activeFilterSettings.clear();
+    for (final dispose in _optionListenerDisposers) {
+      dispose();
+    }
+    _optionListenerDisposers.clear();
+    _activeHandlers.clear();
     unawaited(_booruCatalogSubscription?.cancel());
     _booruCatalogSubscription = null;
     revision.dispose();
@@ -165,6 +176,89 @@ class TagFilterHandler {
       setting.globalNotifier.addListener(_activeFilterSettingChanged);
       setting.overridesNotifier.addListener(_activeFilterSettingChanged);
     }
+    for (final option in TimedFilterOption.values) {
+      final setting = _optionSetting(option);
+      void changed() {
+        if (_disposed || _applyingOptionTimers) return;
+        final expected = configuration.enabledUntil[option];
+        if (expected == null) return;
+        final manualValue = setting.globalValue;
+        final version = (_manualOptionVersions[option] ?? 0) + 1;
+        _manualOptionVersions[option] = version;
+        unawaited(
+          _enqueueOperation(() async {
+            if (configuration.enabledUntil[option] != expected || _manualOptionVersions[option] != version) return;
+            final deadlines = {...configuration.enabledUntil}..remove(option);
+            await _commitNow(_copyConfiguration(enabledUntil: deadlines));
+            if (_manualOptionVersions[option] != version) return;
+            _applyingOptionTimers = true;
+            try {
+              setting.setValue(manualValue);
+            } finally {
+              _applyingOptionTimers = false;
+            }
+          }).catchError((Object error, StackTrace stackTrace) {
+            FlutterError.reportError(
+              FlutterErrorDetails(exception: error, stack: stackTrace, library: 'filter timers'),
+            );
+          }),
+        );
+      }
+
+      setting.globalNotifier.addListener(changed);
+      _optionListenerDisposers.add(() => setting.globalNotifier.removeListener(changed));
+    }
+  }
+
+  SettingState<bool> _optionSetting(TimedFilterOption option) => switch (option) {
+    TimedFilterOption.favourites => SX.filterFavourites.state,
+    TimedFilterOption.snatched => SX.filterSnatched.state,
+    TimedFilterOption.marked => SX.filterMarked.state,
+    TimedFilterOption.ai => SX.filterAi.state,
+  };
+
+  bool optionEnabled(TimedFilterOption option, {String? booruName}) {
+    final setting = _optionSetting(option);
+    if (booruName != null && setting.hasOverrideFor(booruName)) return setting.valueForBooru(booruName);
+    final until = configuration.enabledUntil[option];
+    return until == null ? setting.globalValue : _clock().toUtc().isBefore(until);
+  }
+
+  Future<void> enableOptionUntil(TimedFilterOption option, DateTime until) => _enqueueOperation(() async {
+    final deadline = until.toUtc();
+    if (!deadline.isAfter(_clock().toUtc())) {
+      throw ArgumentError.value(until, 'until', 'Deadline must be in the future');
+    }
+    await _commitNow(_copyConfiguration(enabledUntil: {...configuration.enabledUntil, option: deadline}));
+  });
+
+  void _applyOptionTimers() {
+    _applyingOptionTimers = true;
+    try {
+      for (final entry in configuration.enabledUntil.entries) {
+        final setting = _optionSetting(entry.key);
+        final enabled = _clock().toUtc().isBefore(entry.value);
+        if (setting.globalValue != enabled) setting.setValue(enabled);
+      }
+    } finally {
+      _applyingOptionTimers = false;
+    }
+  }
+
+  /// Keeps preview/viewer handlers current even when their tab is not in the catalog.
+  VoidCallback watchHandler(BooruHandler handler) {
+    final alreadyWatching = _activeHandlers.containsKey(handler);
+    _activeHandlers.update(handler, (count) => count + 1, ifAbsent: () => 1);
+    if (!alreadyWatching) _refilterLoadedTabs();
+    return () {
+      final count = _activeHandlers[handler];
+      if (count == null) return;
+      if (count == 1) {
+        _activeHandlers.remove(handler);
+      } else {
+        _activeHandlers[handler] = count - 1;
+      }
+    };
   }
 
   void _activeFilterSettingChanged() {
@@ -194,27 +288,46 @@ class TagFilterHandler {
     await _commitNow(_copyConfiguration(rules: [...rules, rule]));
   });
 
-  Future<void> updateRule(TagFilterRule rule) => _enqueueOperation(() async {
+  Future<void> updateRule(TagFilterRule rule, {TagFilterRule? original}) => _enqueueOperation(() async {
     final index = rules.indexWhere((item) => item.id == rule.id);
     if (index < 0) return;
-    final updated = [...rules]..[index] = rule;
+    final latest = rules[index];
+    // Content snapshots never implicitly change availability. The editor passes
+    // its original rule to distinguish explicit availability edits from stale data.
+    final enabled = original != null && rule.enabled != original.enabled ? rule.enabled : latest.enabled;
+    final until = original != null && rule.disabledUntil != original.disabledUntil
+        ? rule.disabledUntil
+        : latest.disabledUntil;
+    final merged = latest.copyWith(
+      name: original == null || rule.name != original.name ? rule.name : latest.name,
+      query: original == null || rule.query != original.query ? rule.query : latest.query,
+      effect: original == null || rule.effect != original.effect ? rule.effect : latest.effect,
+      scope: original == null || rule.scope.stableKey != original.scope.stableKey ? rule.scope : latest.scope,
+      marker: original == null || rule.marker?.stableKey != original.marker?.stableKey ? rule.marker : latest.marker,
+      clearMarker: rule.marker == null && (original == null || original.marker != null),
+      showMarkerInGrid: original == null || rule.showMarkerInGrid != original.showMarkerInGrid
+          ? rule.showMarkerInGrid
+          : latest.showMarkerInGrid,
+      enabled: enabled,
+      disabledUntil: until,
+      clearDisabledUntil: until == null,
+    );
+    final updated = [...rules]..[index] = merged;
     await _commitNow(_copyConfiguration(rules: updated));
   });
 
-  Future<void> updateRules(Iterable<TagFilterRule> replacements) => _enqueueOperation(() async {
-    final byId = {for (final rule in replacements) rule.id: rule};
-    if (byId.isEmpty) return;
-    var changed = false;
-    final updated = rules
-        .map((rule) {
-          final replacement = byId[rule.id];
-          if (replacement == null) return rule;
-          changed = true;
-          return replacement;
-        })
-        .toList(growable: false);
-    if (changed) await _commitNow(_copyConfiguration(rules: updated));
-  });
+  Future<void> changeRules(Set<String> ids, TagFilterRule Function(TagFilterRule) change) =>
+      _enqueueOperation(() async {
+        if (!rules.any((rule) => ids.contains(rule.id))) return;
+        await _commitNow(
+          _copyConfiguration(
+            rules: [
+              for (final rule in rules)
+                if (ids.contains(rule.id)) change(rule) else rule,
+            ],
+          ),
+        );
+      });
 
   Future<void> deleteRule(String id) => _enqueueOperation(
     () => _commitNow(_copyConfiguration(rules: rules.where((rule) => rule.id != id).toList())),
@@ -231,7 +344,7 @@ class TagFilterHandler {
     if (rule == null) return;
     final index = rules.indexOf(rule);
     final updated = [...rules]
-      ..[index] = rule.copyWith(disabledUntil: until?.toUtc(), clearDisabledUntil: until == null);
+      ..[index] = rule.copyWith(enabled: true, disabledUntil: until?.toUtc(), clearDisabledUntil: until == null);
     await _commitNow(_copyConfiguration(rules: updated));
   });
 
@@ -327,6 +440,7 @@ class TagFilterHandler {
         legacyImportVersion: importVersion,
         rules: [...rules, ...additions],
         hideAsBlur: _configuration.hideAsBlur,
+        enabledUntil: _configuration.enabledUntil,
       ),
     );
     return additions.length;
@@ -407,12 +521,17 @@ class TagFilterHandler {
     }
   }
 
-  TagFilterConfiguration _copyConfiguration({List<TagFilterRule>? rules, HideAsBlurState? hideAsBlur}) {
+  TagFilterConfiguration _copyConfiguration({
+    List<TagFilterRule>? rules,
+    HideAsBlurState? hideAsBlur,
+    Map<TimedFilterOption, DateTime>? enabledUntil,
+  }) {
     return TagFilterConfiguration(
       schemaVersion: _configuration.schemaVersion,
       legacyImportVersion: _configuration.legacyImportVersion,
       rules: rules ?? _configuration.rules,
       hideAsBlur: hideAsBlur ?? _configuration.hideAsBlur,
+      enabledUntil: Map.unmodifiable(enabledUntil ?? _configuration.enabledUntil),
     );
   }
 
@@ -436,6 +555,7 @@ class TagFilterHandler {
   }
 
   void _configurationChanged() {
+    _applyOptionTimers();
     _compile();
     if (_disposed) return;
     _evaluationRevision++;
@@ -499,6 +619,7 @@ class TagFilterHandler {
     _nextExpiry = null;
     final now = _clock().toUtc();
     final expiries = <DateTime>[
+      ...configuration.enabledUntil.values.where((time) => time.isAfter(now)),
       ...rules
           .where((rule) => rule.enabled)
           .map((rule) => rule.disabledUntil)
@@ -511,6 +632,7 @@ class TagFilterHandler {
     _nextExpiry = expiries.first;
     _expiryTimer = Timer(_nextExpiry!.difference(now), () {
       if (_disposed) return;
+      _applyOptionTimers();
       _evaluationRevision++;
       _scheduleExpiry();
       _refilterLoadedTabs();
@@ -523,10 +645,12 @@ class TagFilterHandler {
     final now = _clock().toUtc();
     final expiryReached = _nextExpiry != null && !now.isBefore(_nextExpiry!);
     if (!expiryReached) {
+      _applyOptionTimers();
       _scheduleExpiry();
       return;
     }
     _evaluationRevision++;
+    _applyOptionTimers();
     _scheduleExpiry();
     _refilterLoadedTabs();
     if (!_disposed) revision.value = _evaluationRevision;
@@ -544,16 +668,20 @@ class TagFilterHandler {
   }
 
   Future<void> _runRefilter(int generation, {required bool forceRefresh}) async {
-    if (_disposed || !GetIt.instance.isRegistered<SearchHandler>()) return;
-    final search = SearchHandler.instance;
+    if (_disposed) return;
+    final search = GetIt.instance.isRegistered<SearchHandler>() ? SearchHandler.instance : null;
     bool shouldCancel() => _disposed || generation != _refilterGeneration;
     try {
-      for (final tab in search.tabs.toList(growable: false)) {
+      final handlers = <BooruHandler>{..._activeHandlers.keys, ...?search?.tabs.map((tab) => tab.booruHandler)};
+      for (final handler in handlers) {
         if (shouldCancel()) return;
-        if (!search.tabs.contains(tab)) continue;
-        await tab.booruHandler.refilterFetched(
+        bool isPresent() =>
+            _activeHandlers.containsKey(handler) ||
+            (search?.tabs.any((tab) => identical(tab.booruHandler, handler)) ?? false);
+        if (!isPresent()) continue;
+        await handler.refilterFetched(
           forceRefresh: forceRefresh,
-          shouldCancel: () => shouldCancel() || !search.tabs.contains(tab),
+          shouldCancel: () => shouldCancel() || !isPresent(),
         );
         await Future<void>.delayed(Duration.zero);
       }

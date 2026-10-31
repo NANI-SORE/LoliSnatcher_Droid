@@ -12,6 +12,8 @@ enum TagFilterEffect { hide, blur, mark }
 
 enum TagFilterScopeKind { global, source, view }
 
+DateTime? tryParseFilterTimer(Object? value) => value is String ? DateTime.tryParse(value)?.toUtc() : null;
+
 class TagFilterScope {
   const TagFilterScope._({required this.kind, this.targets = const [], this.viewType, this.excludedSources = const []});
 
@@ -442,14 +444,6 @@ class TagFilterRule {
       return value;
     }
 
-    DateTime? optionalUtcDate(String key) {
-      final value = json[key];
-      if (value == null) return null;
-      final parsed = value is String ? DateTime.tryParse(value) : null;
-      if (parsed == null) throw FormatException('Rule $key must be a valid ISO-8601 date or null');
-      return parsed.toUtc();
-    }
-
     final effect = TagFilterEffect.values.byName(json['effect'].toString());
     return TagFilterRule(
       id: requiredString('id'),
@@ -458,7 +452,7 @@ class TagFilterRule {
       effect: effect,
       scope: TagFilterScope.fromJson(Map<String, dynamic>.from(json['scope'] as Map)),
       enabled: json['enabled'] as bool? ?? true,
-      disabledUntil: optionalUtcDate('disabledUntil'),
+      disabledUntil: tryParseFilterTimer(json['disabledUntil']),
       marker: effect == TagFilterEffect.mark && json['marker'] is Map
           ? TagFilterMarker.fromJson(Map<String, dynamic>.from(json['marker'] as Map))
           : null,
@@ -571,14 +565,9 @@ class HideAsBlurState {
   const HideAsBlurState({this.enabled = false, this.until});
 
   factory HideAsBlurState.fromJson(Map<String, dynamic>? json) {
-    final rawUntil = json?['until'];
-    final parsedUntil = rawUntil is String ? DateTime.tryParse(rawUntil) : null;
-    if (rawUntil != null && parsedUntil == null) {
-      throw const FormatException('Hide-as-blur until must be a valid ISO-8601 date or null');
-    }
     return HideAsBlurState(
-      enabled: json?['enabled'] as bool? ?? false,
-      until: parsedUntil?.toUtc(),
+      enabled: json?['enabled'] == true,
+      until: tryParseFilterTimer(json?['until']),
     );
   }
 
@@ -588,23 +577,30 @@ class HideAsBlurState {
   Map<String, dynamic> toJson() => {'enabled': enabled, 'until': until?.toIso8601String()};
 }
 
+/// Built-in options that support temporary enablement.
+enum TimedFilterOption { favourites, snatched, marked, ai }
+
 class TagFilterConfiguration {
   const TagFilterConfiguration({
     this.schemaVersion = 1,
     this.legacyImportVersion = 0,
     this.rules = const [],
     this.hideAsBlur = const HideAsBlurState(),
+    this.enabledUntil = const {},
   });
 
   final int schemaVersion;
   final int legacyImportVersion;
   final List<TagFilterRule> rules;
   final HideAsBlurState hideAsBlur;
+  final Map<TimedFilterOption, DateTime> enabledUntil;
 
   Map<String, dynamic> toJson() => {
     'schemaVersion': schemaVersion,
     'legacyImportVersion': legacyImportVersion,
     'rules': rules.map((rule) => rule.toJson()).toList(),
     'hideAsBlur': hideAsBlur.toJson(),
+    if (enabledUntil.isNotEmpty)
+      'enabledUntil': {for (final entry in enabledUntil.entries) entry.key.name: entry.value.toUtc().toIso8601String()},
   };
 }

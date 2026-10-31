@@ -49,6 +49,7 @@ class HideableAppBar extends StatefulWidget implements PreferredSizeWidget {
   const HideableAppBar({
     required this.tab,
     required this.pageController,
+    this.currentPage,
     this.canSelect = true,
     this.readOnly = false,
     this.onOpenDrawer,
@@ -57,6 +58,7 @@ class HideableAppBar extends StatefulWidget implements PreferredSizeWidget {
 
   final SearchTab tab;
   final PreloadPageController pageController;
+  final ValueListenable<int>? currentPage;
   final bool canSelect;
   final bool readOnly;
   final VoidCallback? onOpenDrawer;
@@ -98,7 +100,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
     autoScrollProgressController?.restart();
     autoScrollTimer = Timer.periodic(Duration(milliseconds: SX.galleryAutoScrollTime.value), (timer) {
       scrollToNextPage();
-      autoScrollProgressController?.restart();
+      if (autoScroll) autoScrollProgressController?.restart();
     });
   }
 
@@ -135,7 +137,8 @@ class _HideableAppBarState extends State<HideableAppBar> {
   }
 
   void pageListener() {
-    page.value = widget.pageController.page?.round() ?? 0;
+    if (!mounted) return;
+    page.value = widget.currentPage?.value ?? widget.pageController.page?.round() ?? 0;
     if (autoScroll) {
       if (autoScrollTimer?.isActive == true) {
         // reset slideshow timer if user scrolled earlier
@@ -149,6 +152,12 @@ class _HideableAppBarState extends State<HideableAppBar> {
   void scrollToNextPage() {
     // Not sure if video and gifs should be autoscrolled, could maybe add a listener for video playtime so it changes at the end
     final int viewedIndex = page.value;
+    if (viewedIndex < 0 ||
+        viewedIndex >= widget.tab.booruHandler.filteredFetched.length ||
+        !widget.pageController.hasClients) {
+      autoScrollState(false);
+      return;
+    }
     final bool isImage = widget.tab.booruHandler.filteredFetched[viewedIndex].mediaType.value.isImage;
     // TODO video and gifs support
     // TODO check if item is loaded
@@ -168,6 +177,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
   ////////// Toolbar Stuff ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   List<Widget> getActions() {
+    if (page.value < 0 || page.value >= widget.tab.booruHandler.filteredFetched.length) return [];
     final disabled = SX.disabledButtons.value.map(GalleryButton.fromString).whereType<GalleryButton>().toList();
     final filteredButtonOrder = SX.buttonOrder.value.map(GalleryButton.fromString).whereType<GalleryButton>().where((
       button,
@@ -1320,6 +1330,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
       (_) => pageListener(),
     );
     widget.pageController.addListener(pageListener);
+    widget.currentPage?.addListener(pageListener);
 
     autoScrollProgressController = TimedProgressController(
       duration: Duration(milliseconds: SX.galleryAutoScrollTime.value),
@@ -1334,10 +1345,12 @@ class _HideableAppBarState extends State<HideableAppBar> {
   @override
   void dispose() {
     widget.pageController.removeListener(pageListener);
+    widget.currentPage?.removeListener(pageListener);
     autoScrollProgressController?.dispose();
     autoScrollTimer?.cancel();
     viewerHandler.displayAppbar.removeListener(appbarListener);
     ServiceHandler.setSystemUiVisibility(true);
+    page.dispose();
 
     super.dispose();
   }

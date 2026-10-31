@@ -8,6 +8,12 @@ import 'package:lolisnatcher/src/widgets/common/clear_button.dart';
 import 'package:lolisnatcher/src/widgets/common/ok_button.dart';
 import 'package:lolisnatcher/src/widgets/common/return_button.dart';
 
+TextStyle _dropdownLabelStyle(ThemeData theme, TextStyle? style, Color? color) =>
+    (style ?? theme.inputDecorationTheme.labelStyle ?? theme.textTheme.bodySmall ?? const TextStyle()).copyWith(
+      color:
+          color ?? style?.color ?? theme.inputDecorationTheme.labelStyle?.color ?? theme.colorScheme.onSurfaceVariant,
+    );
+
 class LoliDropdown<T> extends StatelessWidget {
   const LoliDropdown({
     required this.value,
@@ -123,12 +129,9 @@ class LoliDropdown<T> extends StatelessWidget {
             label:
                 labelBuilder?.call() ??
                 RichText(
+                  textScaler: MediaQuery.textScalerOf(context),
                   text: TextSpan(
-                    style:
-                        labelStyle ??
-                        inputDecoration.labelStyle?.copyWith(
-                          color: labelColor ?? inputDecoration.labelStyle?.color,
-                        ),
+                    style: _dropdownLabelStyle(theme, labelStyle, labelColor),
                     children: [
                       TextSpan(
                         text: labelText,
@@ -136,11 +139,7 @@ class LoliDropdown<T> extends StatelessWidget {
                     ],
                   ),
                 ),
-            labelStyle:
-                labelStyle ??
-                inputDecoration.labelStyle?.copyWith(
-                  color: labelColor ?? inputDecoration.labelStyle?.color,
-                ),
+            labelStyle: _dropdownLabelStyle(theme, labelStyle, labelColor),
             contentPadding: contentPadding,
             border: inputDecoration.border?.copyWith(
               borderSide: BorderSide(
@@ -564,22 +563,15 @@ class LoliMultiselectDropdown<T> extends StatelessWidget {
             label:
                 labelBuilder?.call() ??
                 RichText(
+                  textScaler: MediaQuery.textScalerOf(context),
                   text: TextSpan(
-                    style:
-                        labelStyle ??
-                        inputDecoration.labelStyle?.copyWith(
-                          color: labelColor ?? inputDecoration.labelStyle?.color,
-                        ),
+                    style: _dropdownLabelStyle(theme, labelStyle, labelColor),
                     children: [
                       TextSpan(text: labelText),
                     ],
                   ),
                 ),
-            labelStyle:
-                labelStyle ??
-                inputDecoration.labelStyle?.copyWith(
-                  color: labelColor ?? inputDecoration.labelStyle?.color,
-                ),
+            labelStyle: _dropdownLabelStyle(theme, labelStyle, labelColor),
             hintText: hintText,
             contentPadding: contentPadding,
             border: inputDecoration.border?.copyWith(

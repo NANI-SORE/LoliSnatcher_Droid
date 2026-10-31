@@ -8,12 +8,10 @@ import 'package:get_it/get_it.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
-import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
-import 'package:lolisnatcher/src/handlers/tag_filter_handler.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_build.dart';
@@ -455,20 +453,16 @@ class SnatchHandler {
   }
 
   Future searchSnatch(String tags, String amount, int cooldown, Booru booru) async {
-    int count = 0, limit;
-    BooruHandler booruHandler;
-    List<BooruItem> booruItems = [];
-
-    if (int.parse(amount) <= 100) {
-      limit = int.parse(amount);
-    } else {
-      limit = 100;
-    }
+    final requestedCount = int.tryParse(amount);
+    if (requestedCount == null || requestedCount <= 0) return;
+    final limit = requestedCount > 100 ? 100 : requestedCount;
 
     final temp = BooruHandlerFactory().getBooruHandler([booru], limit);
-    booruHandler = temp.booruHandler;
+    final booruHandler = temp.booruHandler;
+    booruHandler.waitForTrackedValues = true;
     booruHandler.pageNum = temp.startingPage;
     booruHandler.pageNum++;
+    List<BooruItem> booruItems = [];
 
     final context = NavigationHandler.instance.navContext;
     FlashElements.showSnackbar(
@@ -485,16 +479,27 @@ class SnatchHandler {
       sideColor: Colors.yellow,
     );
 
-    while (count < int.parse(amount) && !booruHandler.locked) {
-      booruItems = await booruHandler.search(tags, null) ?? [];
-      booruItems = booruItems
-          .where((item) => !TagFilterHandler.instance.evaluate(item, booruHandler.filterContextFor(item)).isHidden)
-          .toList();
+    while (booruItems.length < requestedCount && !booruHandler.locked) {
+      final previousCount = booruHandler.fetched.length;
+      await booruHandler.search(tags, null);
       booruHandler.pageNum++;
-      count = booruItems.length;
-      // TODO error handling?
+      if (booruHandler.errorString.isNotEmpty) break;
+      booruHandler.filterFetched();
+      // Blurred media requires an explicit reveal in the viewer. Unattended
+      // downloads must not bypass it, including Hide rules shown as Blur.
+      booruItems = booruHandler.filteredFetched
+          .where((item) => !booruHandler.filterEvaluationFor(item).isBlurred)
+          .take(requestedCount)
+          .toList();
+      if (booruHandler.fetched.length == previousCount) break;
     }
-    queue(booruItems, booru, cooldown, false);
+    queue(
+      booruItems,
+      booru,
+      cooldown,
+      false,
+      sourceFor: booruHandler.sourceBooruFor,
+    );
   }
 
   void dispose() {

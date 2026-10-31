@@ -15,10 +15,13 @@ class TagFilterAvailabilityChange {
 Future<TagFilterAvailabilityChange?> showTagFilterSuspensionSheet(
   BuildContext context, {
   bool showReenable = true,
+  bool enableFor = false,
+  String? title,
 }) async {
   final value = await showCompactFilterSheet<String>(
     context: context,
     useSafeArea: true,
+    isScrollControlled: true,
     constraints: const BoxConstraints(maxWidth: 600),
     builder: (sheetContext) {
       final loc = sheetContext.loc.settings.itemFilters;
@@ -31,36 +34,44 @@ Future<TagFilterAvailabilityChange?> showTagFilterSuspensionSheet(
         ('1d', loc.daysPlural(count: 1), Icons.today_outlined),
         ('1w', loc.weeksPlural(count: 1), Icons.date_range_outlined),
         ('custom', loc.customDuration, Icons.edit_calendar_outlined),
-        ('off', loc.indefinitely, Icons.all_inclusive),
-        if (showReenable) ('on', loc.reenable, Icons.play_arrow_rounded),
+        if (!enableFor) ('off', loc.indefinitely, Icons.all_inclusive),
+        if (showReenable && !enableFor) ('on', loc.reenable, Icons.play_arrow_rounded),
       ];
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-            title: Text(loc.disableFor, style: Theme.of(sheetContext).textTheme.titleLarge),
-            trailing: IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.of(sheetContext).pop(),
+      return ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.85),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+              title: Text(
+                title ?? (enableFor ? loc.enableFor : loc.disableFor),
+                style: Theme.of(sheetContext).textTheme.titleLarge,
+              ),
+              subtitle: title == null ? null : Text(enableFor ? loc.enableFor : loc.disableFor),
+              trailing: IconButton(
+                tooltip: sheetContext.loc.close,
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.of(sheetContext).pop(),
+              ),
             ),
-          ),
-          const Divider(height: 1),
-          Flexible(
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: options.length,
-              itemBuilder: (_, index) {
-                final option = options[index];
-                return ListTile(
-                  leading: Icon(option.$3),
-                  title: Text(option.$2),
-                  onTap: () => Navigator.of(sheetContext).pop(option.$1),
-                );
-              },
+            const Divider(height: 1),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (_, index) {
+                  final option = options[index];
+                  return ListTile(
+                    leading: Icon(option.$3),
+                    title: Text(option.$2),
+                    onTap: () => Navigator.of(sheetContext).pop(option.$1),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
     },
   );
@@ -99,7 +110,8 @@ Future<DateTime?> showTagFilterCustomUntilSheet(BuildContext context) async {
     selectionMode: LoliDateTimePickerSelectionMode.single,
     firstDate: now,
     lastDate: now.add(const Duration(days: 365)),
-    validator: (values) => values.single.isAfter(now),
+    validator: (values) => values.single.isAfter(DateTime.now()),
   );
-  return values?.single.toUtc();
+  final until = values?.single.toUtc();
+  return until != null && until.isAfter(DateTime.now().toUtc()) ? until : null;
 }

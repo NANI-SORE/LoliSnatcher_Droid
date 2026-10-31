@@ -4043,8 +4043,8 @@ class Translations$settings$itemFilters$en {
   /// en: 'Content filters'
   String get title => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.title', {}) ?? 'Content filters';
 
-  /// en: 'Filtering settings'
-  String get filteringSettings => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filteringSettings', {}) ?? 'Filtering settings';
+  /// en: 'Extra filters'
+  String get filteringSettings => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filteringSettings', {}) ?? 'Extra filters';
 
   /// en: 'Hidden'
   String get hidden => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hidden', {}) ?? 'Hidden';
@@ -4077,10 +4077,9 @@ class Translations$settings$itemFilters$en {
   String get removeMarked =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarked', {}) ?? 'Completely hide items which match Marked filters';
 
-  /// en: 'Remove items which match filters with Mark effect'
+  /// en: 'Hide marked items'
   String get removeMarkFilteredItems =>
-      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarkFilteredItems', {}) ??
-      'Remove items which match filters with Mark effect';
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarkFilteredItems', {}) ?? 'Hide marked items';
 
   /// en: 'Hide favourited items'
   String get removeFavourited => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeFavourited', {}) ?? 'Hide favourited items';
@@ -4094,8 +4093,8 @@ class Translations$settings$itemFilters$en {
   /// en: 'Content filters'
   String get rules => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.rules', {}) ?? 'Content filters';
 
-  /// en: 'Filter list'
-  String get filterList => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filterList', {}) ?? 'Filter list';
+  /// en: 'Filter rules'
+  String get filterList => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filterList', {}) ?? 'Filter rules';
 
   /// en: 'Search rules'
   String get searchRules => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.searchRules', {}) ?? 'Search rules';
@@ -4118,10 +4117,9 @@ class Translations$settings$itemFilters$en {
   /// en: 'optional'
   String get optional => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.optional', {}) ?? 'optional';
 
-  /// en: 'Use a name to identify a complex rule in lists and match details. If empty - the query is shown instead.'
+  /// en: 'Shown instead of the query.'
   String get emptyNameUsesQuery =>
-      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.emptyNameUsesQuery', {}) ??
-      'Use a name to identify a complex rule in lists and match details. If empty - the query is shown instead.';
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.emptyNameUsesQuery', {}) ?? 'Shown instead of the query.';
 
   /// en: 'Query'
   String get query => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.query', {}) ?? 'Query';
@@ -4219,13 +4217,11 @@ class Translations$settings$itemFilters$en {
   /// en: 'Marker color'
   String get markerColor => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.markerColor', {}) ?? 'Marker color';
 
-  /// en: 'Treat hide filters as blur'
-  String get hideAsBlur => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlur', {}) ?? 'Treat hide filters as blur';
+  /// en: 'Blur hidden items'
+  String get hideAsBlur => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlur', {}) ?? 'Blur hidden items';
 
-  /// en: 'Temporarily show items matched by hide filters as blurred'
-  String get hideAsBlurHelp =>
-      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlurHelp', {}) ??
-      'Temporarily show items matched by hide filters as blurred';
+  /// en: 'Applies to Hide rules.'
+  String get hideAsBlurHelp => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlurHelp', {}) ?? 'Applies to Hide rules.';
 
   /// en: 'Import legacy hidden/marked lists'
   String get importLegacy => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.importLegacy', {}) ?? 'Import legacy hidden/marked lists';
@@ -4352,6 +4348,9 @@ class Translations$settings$itemFilters$en {
   /// en: 'Mark: ${count: int}'
   String counterMark({required int count}) =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterMark', {'count': count}) ?? 'Mark: ${count}';
+
+  /// en: 'Enable for...'
+  String get enableFor => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.enableFor', {}) ?? 'Enable for...';
 
   /// en: 'Disable for…'
   String get disableFor => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.disableFor', {}) ?? 'Disable for…';
@@ -7037,7 +7036,7 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.cache.notAvailableForPlatform', {}) ?? 'Currently not available for this platform',
           'settings.itemFilters.title' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.title', {}) ?? 'Content filters',
           'settings.itemFilters.filteringSettings' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filteringSettings', {}) ?? 'Filtering settings',
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filteringSettings', {}) ?? 'Extra filters',
           'settings.itemFilters.hidden' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hidden', {}) ?? 'Hidden',
           'settings.itemFilters.marked' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.marked', {}) ?? 'Marked',
           'settings.itemFilters.duplicateFilter' =>
@@ -7057,15 +7056,14 @@ extension on Translations {
           'settings.itemFilters.removeMarked' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarked', {}) ?? 'Completely hide items which match Marked filters',
           'settings.itemFilters.removeMarkFilteredItems' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarkFilteredItems', {}) ??
-                'Remove items which match filters with Mark effect',
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarkFilteredItems', {}) ?? 'Hide marked items',
           'settings.itemFilters.removeFavourited' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeFavourited', {}) ?? 'Hide favourited items',
           'settings.itemFilters.removeSnatched' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeSnatched', {}) ?? 'Hide downloaded items',
           'settings.itemFilters.removeAI' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeAI', {}) ?? 'Hide AI-tagged items',
           'settings.itemFilters.rules' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.rules', {}) ?? 'Content filters',
-          'settings.itemFilters.filterList' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filterList', {}) ?? 'Filter list',
+          'settings.itemFilters.filterList' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filterList', {}) ?? 'Filter rules',
           'settings.itemFilters.searchRules' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.searchRules', {}) ?? 'Search rules',
           'settings.itemFilters.noMatchingRules' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noMatchingRules', {}) ?? 'No matching rules',
@@ -7075,8 +7073,7 @@ extension on Translations {
           'settings.itemFilters.ruleName' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.ruleName', {}) ?? 'Name',
           'settings.itemFilters.optional' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.optional', {}) ?? 'optional',
           'settings.itemFilters.emptyNameUsesQuery' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.emptyNameUsesQuery', {}) ??
-                'Use a name to identify a complex rule in lists and match details. If empty - the query is shown instead.',
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.emptyNameUsesQuery', {}) ?? 'Shown instead of the query.',
           'settings.itemFilters.query' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.query', {}) ?? 'Query',
           'settings.itemFilters.queryHelpTitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpTitle', {}) ?? 'How filter queries work',
@@ -7122,11 +7119,9 @@ extension on Translations {
           'settings.itemFilters.symbol' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.symbol', {}) ?? 'Symbol',
           'settings.itemFilters.allMarkers' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allMarkers', {}) ?? 'All markers',
           'settings.itemFilters.markerColor' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.markerColor', {}) ?? 'Marker color',
-          'settings.itemFilters.hideAsBlur' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlur', {}) ?? 'Treat hide filters as blur',
+          'settings.itemFilters.hideAsBlur' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlur', {}) ?? 'Blur hidden items',
           'settings.itemFilters.hideAsBlurHelp' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlurHelp', {}) ??
-                'Temporarily show items matched by hide filters as blurred',
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlurHelp', {}) ?? 'Applies to Hide rules.',
           'settings.itemFilters.importLegacy' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.importLegacy', {}) ?? 'Import legacy hidden/marked lists',
           'settings.itemFilters.legacyImported' =>
@@ -7208,6 +7203,7 @@ extension on Translations {
           'settings.itemFilters.counterMark' => ({
             required int count,
           }) => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterMark', {'count': count}) ?? 'Mark: ${count}',
+          'settings.itemFilters.enableFor' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.enableFor', {}) ?? 'Enable for...',
           'settings.itemFilters.disableFor' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.disableFor', {}) ?? 'Disable for…',
           'settings.itemFilters.reenable' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.reenable', {}) ?? 'Re-enable',
           'settings.itemFilters.secondsPlural' =>
@@ -7519,11 +7515,11 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.debug.clearSecureStorage', {}) ?? 'Clear secure storage',
           'settings.debug.getSessionString' =>
             TranslationOverrides.string(_root.$meta, 'settings.debug.getSessionString', {}) ?? 'Get session string',
-          'settings.debug.setSessionString' =>
-            TranslationOverrides.string(_root.$meta, 'settings.debug.setSessionString', {}) ?? 'Set session string',
           _ => null,
         } ??
         switch (path) {
+          'settings.debug.setSessionString' =>
+            TranslationOverrides.string(_root.$meta, 'settings.debug.setSessionString', {}) ?? 'Set session string',
           'settings.debug.sessionString' => TranslationOverrides.string(_root.$meta, 'settings.debug.sessionString', {}) ?? 'Session string',
           'settings.debug.restoredSessionFromString' =>
             TranslationOverrides.string(_root.$meta, 'settings.debug.restoredSessionFromString', {}) ?? 'Restored session from string',

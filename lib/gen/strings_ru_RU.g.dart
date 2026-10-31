@@ -3240,7 +3240,7 @@ class _Translations$settings$itemFilters$ru_RU extends Translations$settings$ite
   @override
   String get title => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.title', {}) ?? 'Фильтры контента';
   @override
-  String get filteringSettings => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filteringSettings', {}) ?? 'Настройки фильтрации';
+  String get filteringSettings => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filteringSettings', {}) ?? 'Доп. фильтры';
   @override
   String get hidden => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hidden', {}) ?? 'Скрытые';
   @override
@@ -3267,8 +3267,7 @@ class _Translations$settings$itemFilters$ru_RU extends Translations$settings$ite
       'Полностью скрыть элементы, подпадающие под Отмеченные фильтры';
   @override
   String get removeMarkFilteredItems =>
-      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarkFilteredItems', {}) ??
-      'Скрыть элементы, подпадающие под фильтры с эффектом Отметить';
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarkFilteredItems', {}) ?? 'Скрыть отмеченное';
   @override
   String get removeFavourited => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeFavourited', {}) ?? 'Скрыть избранные элементы';
   @override
@@ -3278,7 +3277,7 @@ class _Translations$settings$itemFilters$ru_RU extends Translations$settings$ite
   @override
   String get rules => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.rules', {}) ?? 'Фильтры контента';
   @override
-  String get filterList => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filterList', {}) ?? 'Фильтр списка';
+  String get filterList => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filterList', {}) ?? 'Отбор правил';
   @override
   String get searchRules => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.searchRules', {}) ?? 'Поиск правил';
   @override
@@ -3295,8 +3294,7 @@ class _Translations$settings$itemFilters$ru_RU extends Translations$settings$ite
   String get optional => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.optional', {}) ?? 'Необязательно';
   @override
   String get emptyNameUsesQuery =>
-      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.emptyNameUsesQuery', {}) ??
-      'Название помогает отличать сложное правило в списках и описании совпадений. Если его не указать, вместо него показывается запрос.';
+      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.emptyNameUsesQuery', {}) ?? 'Показывается вместо запроса.';
   @override
   String get query => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.query', {}) ?? 'Запрос';
   @override
@@ -3368,11 +3366,9 @@ class _Translations$settings$itemFilters$ru_RU extends Translations$settings$ite
   @override
   String get markerColor => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.markerColor', {}) ?? 'Цвет маркера';
   @override
-  String get hideAsBlur => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlur', {}) ?? 'Размывать вместо скрытия';
+  String get hideAsBlur => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlur', {}) ?? 'Размывать скрытое';
   @override
-  String get hideAsBlurHelp =>
-      TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlurHelp', {}) ??
-      'Временно показывать размытыми элементы, попавшие под скрывающие фильтры';
+  String get hideAsBlurHelp => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlurHelp', {}) ?? 'Для правил «Скрыть».';
   @override
   String get importLegacy =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.importLegacy', {}) ?? 'Импортировать старые списки скрытых и отмеченных тегов';
@@ -3466,6 +3462,8 @@ class _Translations$settings$itemFilters$ru_RU extends Translations$settings$ite
   @override
   String counterMark({required int count}) =>
       TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterMark', {'count': count}) ?? 'Метки: ${count}';
+  @override
+  String get enableFor => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.enableFor', {}) ?? 'Включить на время...';
   @override
   String get disableFor => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.disableFor', {}) ?? 'Отключить на…';
   @override
@@ -5977,7 +5975,7 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.cache.notAvailableForPlatform', {}) ?? 'В данный момент недоступно для этой платформы',
           'settings.itemFilters.title' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.title', {}) ?? 'Фильтры контента',
           'settings.itemFilters.filteringSettings' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filteringSettings', {}) ?? 'Настройки фильтрации',
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filteringSettings', {}) ?? 'Доп. фильтры',
           'settings.itemFilters.hidden' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hidden', {}) ?? 'Скрытые',
           'settings.itemFilters.marked' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.marked', {}) ?? 'Отмеченные',
           'settings.itemFilters.duplicateFilter' =>
@@ -5999,8 +5997,7 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarked', {}) ??
                 'Полностью скрыть элементы, подпадающие под Отмеченные фильтры',
           'settings.itemFilters.removeMarkFilteredItems' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarkFilteredItems', {}) ??
-                'Скрыть элементы, подпадающие под фильтры с эффектом Отметить',
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeMarkFilteredItems', {}) ?? 'Скрыть отмеченное',
           'settings.itemFilters.removeFavourited' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeFavourited', {}) ?? 'Скрыть избранные элементы',
           'settings.itemFilters.removeSnatched' =>
@@ -6008,7 +6005,7 @@ extension on TranslationsRuRu {
           'settings.itemFilters.removeAI' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.removeAI', {}) ?? 'Скрыть элементы с ИИ-тегами',
           'settings.itemFilters.rules' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.rules', {}) ?? 'Фильтры контента',
-          'settings.itemFilters.filterList' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filterList', {}) ?? 'Фильтр списка',
+          'settings.itemFilters.filterList' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.filterList', {}) ?? 'Отбор правил',
           'settings.itemFilters.searchRules' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.searchRules', {}) ?? 'Поиск правил',
           'settings.itemFilters.noMatchingRules' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.noMatchingRules', {}) ?? 'Подходящих правил нет',
@@ -6018,8 +6015,7 @@ extension on TranslationsRuRu {
           'settings.itemFilters.ruleName' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.ruleName', {}) ?? 'Название',
           'settings.itemFilters.optional' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.optional', {}) ?? 'Необязательно',
           'settings.itemFilters.emptyNameUsesQuery' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.emptyNameUsesQuery', {}) ??
-                'Название помогает отличать сложное правило в списках и описании совпадений. Если его не указать, вместо него показывается запрос.',
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.emptyNameUsesQuery', {}) ?? 'Показывается вместо запроса.',
           'settings.itemFilters.query' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.query', {}) ?? 'Запрос',
           'settings.itemFilters.queryHelpTitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.queryHelpTitle', {}) ?? 'Как работают запросы фильтров',
@@ -6067,11 +6063,9 @@ extension on TranslationsRuRu {
           'settings.itemFilters.symbol' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.symbol', {}) ?? 'Символ',
           'settings.itemFilters.allMarkers' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.allMarkers', {}) ?? 'Все маркеры',
           'settings.itemFilters.markerColor' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.markerColor', {}) ?? 'Цвет маркера',
-          'settings.itemFilters.hideAsBlur' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlur', {}) ?? 'Размывать вместо скрытия',
+          'settings.itemFilters.hideAsBlur' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlur', {}) ?? 'Размывать скрытое',
           'settings.itemFilters.hideAsBlurHelp' =>
-            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlurHelp', {}) ??
-                'Временно показывать размытыми элементы, попавшие под скрывающие фильтры',
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.hideAsBlurHelp', {}) ?? 'Для правил «Скрыть».',
           'settings.itemFilters.importLegacy' =>
             TranslationOverrides.string(_root.$meta, 'settings.itemFilters.importLegacy', {}) ??
                 'Импортировать старые списки скрытых и отмеченных тегов',
@@ -6157,6 +6151,8 @@ extension on TranslationsRuRu {
           'settings.itemFilters.counterMark' => ({
             required int count,
           }) => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.counterMark', {'count': count}) ?? 'Метки: ${count}',
+          'settings.itemFilters.enableFor' =>
+            TranslationOverrides.string(_root.$meta, 'settings.itemFilters.enableFor', {}) ?? 'Включить на время...',
           'settings.itemFilters.disableFor' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.disableFor', {}) ?? 'Отключить на…',
           'settings.itemFilters.reenable' => TranslationOverrides.string(_root.$meta, 'settings.itemFilters.reenable', {}) ?? 'Включить снова',
           'settings.itemFilters.secondsPlural' =>
@@ -6474,11 +6470,11 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.debug.clearSecureStorage', {}) ?? 'Очистить защищённое хранилище',
           'settings.debug.getSessionString' =>
             TranslationOverrides.string(_root.$meta, 'settings.debug.getSessionString', {}) ?? 'Получить строку сессии',
-          'settings.debug.setSessionString' =>
-            TranslationOverrides.string(_root.$meta, 'settings.debug.setSessionString', {}) ?? 'Установить строку сессии',
           _ => null,
         } ??
         switch (path) {
+          'settings.debug.setSessionString' =>
+            TranslationOverrides.string(_root.$meta, 'settings.debug.setSessionString', {}) ?? 'Установить строку сессии',
           'settings.debug.sessionString' => TranslationOverrides.string(_root.$meta, 'settings.debug.sessionString', {}) ?? 'Строка сессии',
           'settings.debug.restoredSessionFromString' =>
             TranslationOverrides.string(_root.$meta, 'settings.debug.restoredSessionFromString', {}) ?? 'Сессия восстановлена из строки',

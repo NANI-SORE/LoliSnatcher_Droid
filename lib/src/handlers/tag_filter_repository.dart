@@ -146,10 +146,21 @@ class JsonFilterRepository implements FilterRepository {
       }
     }
 
+    final deadlines = <TimedFilterOption, DateTime>{};
+    final rawDeadlines = json['enabledUntil'];
+    if (rawDeadlines is Map) {
+      for (final entry in rawDeadlines.entries) {
+        final option = TimedFilterOption.values.where((option) => option.name == entry.key).firstOrNull;
+        final until = tryParseFilterTimer(entry.value);
+        if (option == null || until == null) continue;
+        deadlines[option] = until;
+      }
+    }
     return TagFilterConfiguration(
       schemaVersion: schemaVersion,
       legacyImportVersion: json['legacyImportVersion'] as int? ?? 0,
       rules: List.unmodifiable(rules),
+      enabledUntil: Map.unmodifiable(deadlines),
       hideAsBlur: HideAsBlurState.fromJson(
         json['hideAsBlur'] is Map ? Map<String, dynamic>.from(json['hideAsBlur'] as Map) : null,
       ),

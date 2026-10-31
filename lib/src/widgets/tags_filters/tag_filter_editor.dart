@@ -264,7 +264,7 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
       if (existing == null) {
         await TagFilterHandler.instance.addRule(rule);
       } else {
-        await TagFilterHandler.instance.updateRule(rule);
+        await TagFilterHandler.instance.updateRule(rule, original: existing);
       }
       if (mounted) {
         setState(() => _saving = false);
@@ -310,6 +310,7 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 20),
             title: Text(loc.queryHelpTitle, style: Theme.of(sheetContext).textTheme.titleLarge),
             trailing: IconButton(
+              tooltip: sheetContext.loc.close,
               icon: const Icon(Icons.close),
               onPressed: () => Navigator.of(sheetContext).pop(),
             ),
@@ -783,6 +784,7 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   trailing: IconButton(
+                    tooltip: context.loc.close,
                     icon: const Icon(Icons.close),
                     onPressed: _saving ? null : () => Navigator.of(context).pop(),
                   ),
@@ -1003,14 +1005,16 @@ class _TagFilterEditorState extends State<TagFilterEditor> {
                 const Divider(height: 1),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                  child: OverflowBar(
+                    alignment: MainAxisAlignment.end,
+                    overflowAlignment: OverflowBarAlignment.end,
+                    spacing: 8,
+                    overflowSpacing: 8,
                     children: [
                       TextButton(
                         onPressed: _saving ? null : () => Navigator.of(context).pop(),
                         child: Text(context.loc.cancel),
                       ),
-                      const SizedBox(width: 8),
                       FilledButton.icon(
                         onPressed: !_saving && queryResult.isValid && markerValid && !isDuplicate ? _save : null,
                         icon: _saving
@@ -1200,6 +1204,7 @@ class _MarkerPickerSheetState extends State<_MarkerPickerSheet> {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                   title: Text(loc.marker, style: theme.textTheme.titleLarge),
                   trailing: IconButton(
+                    tooltip: context.loc.close,
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.of(context).pop(),
                   ),

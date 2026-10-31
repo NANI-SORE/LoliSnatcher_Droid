@@ -43,6 +43,8 @@ abstract class BooruHandler {
   int limit = 20;
   String prevTags = '';
   bool locked = false;
+  // Non-interactive consumers can require local flags before search completes.
+  bool waitForTrackedValues = false;
   Booru booru;
 
   String errorString = '';
@@ -61,10 +63,20 @@ abstract class BooruHandler {
   Booru filterSettingsBooruFor(BooruItem item) => booru;
 
   bool Function(BooruItem, TagFilterEvaluation) _itemFilterFor(Booru source) {
-    final filterMarked = SX.filterMarked.valueForBooru(source.name);
-    final filterAi = SX.filterAi.valueForBooru(source.name);
-    final filterFavourites = SX.filterFavourites.valueForBooru(source.name) && source.type?.isFavourites != true;
-    final filterSnatched = SX.filterSnatched.valueForBooru(source.name) && source.type?.isDownloads != true;
+    final timers = GetIt.instance.isRegistered<TagFilterHandler>() ? TagFilterHandler.instance : null;
+    final filterMarked =
+        timers?.optionEnabled(TimedFilterOption.marked, booruName: source.name) ??
+        SX.filterMarked.valueForBooru(source.name);
+    final filterAi =
+        timers?.optionEnabled(TimedFilterOption.ai, booruName: source.name) ?? SX.filterAi.valueForBooru(source.name);
+    final filterFavourites =
+        (timers?.optionEnabled(TimedFilterOption.favourites, booruName: source.name) ??
+            SX.filterFavourites.valueForBooru(source.name)) &&
+        source.type?.isFavourites != true;
+    final filterSnatched =
+        (timers?.optionEnabled(TimedFilterOption.snatched, booruName: source.name) ??
+            SX.filterSnatched.valueForBooru(source.name)) &&
+        source.type?.isDownloads != true;
 
     return (item, evaluation) =>
         !evaluation.isHidden &&
@@ -487,8 +499,13 @@ abstract class BooruHandler {
     final int lengthBefore = fetched.length;
     fetched.addAll(newItems);
     filterFetched();
-    unawaited(setMultipleTrackedValues(lengthBefore, fetched.length));
     unawaited(populateTagHandler(newItems));
+    final trackedValues = setMultipleTrackedValues(lengthBefore, fetched.length);
+    if (waitForTrackedValues) {
+      await trackedValues;
+    } else {
+      unawaited(trackedValues);
+    }
 
     // TODO
     // notifyAboutFailed();

@@ -335,8 +335,8 @@ class SettingState<T> {
   ///
   /// When inside a [BooruEditingScope] and this setting supports per-booru
   /// overrides, the widget is automatically wrapped with override toggle controls.
-  Widget buildWidget(BuildContext context) {
-    final widget = def.widgetBuilder?.call(context, this);
+  Widget buildWidget(BuildContext context, {Widget? control}) {
+    final widget = control ?? def.widgetBuilder?.call(context, this);
     if (widget == null) return const SizedBox.shrink();
 
     // When inside a booru editing scope, wrap with override controls
