@@ -14,6 +14,7 @@ import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/dialogs/page_number_dialog.dart';
+import 'package:lolisnatcher/src/widgets/preview/page_loading_status.dart';
 
 class PageItemRange {
   const PageItemRange(this.start, this.end);
@@ -155,14 +156,17 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
     _scrollController.addListener(_onPageChanged);
     searchHandler.index.addListener(_observeCurrentItems);
     searchHandler.tabId.addListener(_observeCurrentItems);
+    searchHandler.tabs.addListener(_observeCurrentItems);
     _observeCurrentItems();
 
     pageWorker = ever(searchHandler.currentScrollPage, (_) => _onPageChanged());
   }
 
   void _observeCurrentItems() {
+    final items = searchHandler.currentFetchedOrNull;
+    if (identical(observedItems, items)) return;
     observedItems?.removeListener(_onItemsChanged);
-    observedItems = searchHandler.currentFetchedOrNull;
+    observedItems = items;
     observedItems?.addListener(_onItemsChanged);
     pageRanges
       ..clear()
@@ -305,6 +309,7 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
     observedItems?.removeListener(_onItemsChanged);
     searchHandler.index.removeListener(_observeCurrentItems);
     searchHandler.tabId.removeListener(_observeCurrentItems);
+    searchHandler.tabs.removeListener(_observeCurrentItems);
     _scrollController.removeListener(_onPageChanged);
     super.dispose();
   }
@@ -314,93 +319,107 @@ class _GridPageNumberOverlayState extends State<GridPageNumberOverlay> {
     return Obx(() {
       final tab = searchHandler.currentTabOrNull;
       if (tab == null) return const SizedBox.shrink();
+      if (searchHandler.isAutoSearchingTab(tab)) {
+        return ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: max(0, MediaQuery.sizeOf(context).width - 24)),
+          child: Material(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            elevation: 2,
+            child: PageLoadingStatus(tab: tab),
+          ),
+        );
+      }
       final int page = searchHandler.currentScrollPage.value;
       final bool show = showOverlay.value && page >= tab.firstPage;
 
-      return Material(
-        color: Colors.transparent,
-        child: AnimatedOpacity(
-          opacity: show ? 1 : 0,
-          duration: const Duration(milliseconds: 300),
-          child: IgnorePointer(
-            ignoring: !show,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: BackdropFilter(
-                enabled: !SX.shitDevice.value,
-                filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: context.theme.colorScheme.surface.withValues(alpha: 0.5),
-                        ),
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: Obx(
-                        () => FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: pageProgress.value,
-                          child: ColoredBox(
-                            color: context.theme.colorScheme.primaryContainer.withValues(alpha: 0.65),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: IgnorePointer(
+      return IgnorePointer(
+        ignoring: !show,
+        child: ExcludeFocus(
+          excluding: !show,
+          child: AnimatedOpacity(
+            opacity: show ? 1 : 0,
+            duration: const Duration(milliseconds: 300),
+            child: Material(
+              type: .transparency,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: BackdropFilter(
+                  enabled: !SX.shitDevice.value,
+                  filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: context.theme.colorScheme.outline.withValues(alpha: 0.3),
+                            color: context.theme.colorScheme.surface.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ),
+                      Positioned.fill(
+                        child: Obx(
+                          () => FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: pageProgress.value,
+                            child: ColoredBox(
+                              color: context.theme.colorScheme.primaryContainer.withValues(alpha: 0.65),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: show
-                          ? () => SettingsPageOpen(
-                              context: context,
-                              asBottomSheet: true,
-                              page: (_) => const PageNumberDialog(),
-                            ).open()
-                          : null,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        child: Row(
-                          mainAxisSize: .min,
-                          spacing: 2,
-                          crossAxisAlignment: .center,
-                          children: [
-                            Text(
-                              tab.displayPage(page).toString(),
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                height: 1,
-                                color: Theme.of(context).colorScheme.onSurface,
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: context.theme.colorScheme.outline.withValues(alpha: 0.3),
                               ),
                             ),
-                            Obx(
-                              () => Icon(
-                                tab.savePageEnabled.value ? Icons.bookmark : Icons.bookmark_border,
-                                size: 16,
-                              ),
-                            ),
-                            const Icon(
-                              Icons.chevron_right,
-                              size: 16,
-                            ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                      InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: show
+                            ? () => SettingsPageOpen(
+                                context: context,
+                                asBottomSheet: true,
+                                page: (_) => const PageNumberDialog(),
+                              ).open()
+                            : null,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          child: Row(
+                            mainAxisSize: .min,
+                            spacing: 2,
+                            crossAxisAlignment: .center,
+                            children: [
+                              Text(
+                                tab.displayPage(page).toString(),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                              Obx(
+                                () => Icon(
+                                  tab.savePageEnabled.value ? Icons.bookmark : Icons.bookmark_border,
+                                  size: 16,
+                                ),
+                              ),
+                              const Icon(
+                                Icons.chevron_right,
+                                size: 16,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
