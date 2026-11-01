@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fvp/fvp.dart' as fvp;
+import 'package:get_it/get_it.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
@@ -324,36 +325,6 @@ void registerAllSettings() {
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.saveTabViewedPageByDefault,
-      ),
-    ),
-  );
-
-  registry.register(
-    settingsEnumSetting<AppMode>(
-      key: .appMode,
-      getDefaultValue: () => AppMode.defaultValue,
-      values: AppMode.values,
-      fromString: AppMode.fromString,
-      // categories: [SettingCategory.interface], // TODO reenable when desktop is redesigned
-      categories: [],
-      isDeviceSpecific: true,
-      localization: SettingLocalization(
-        title: (ctx) => ctx.loc.settings.interface.appUIMode,
-      ),
-    ),
-  );
-
-  registry.register(
-    settingsEnumSetting<HandSide>(
-      key: .handSide,
-      getDefaultValue: () => HandSide.defaultValue,
-      values: HandSide.values,
-      fromString: HandSide.fromString,
-      categories: [SettingCategory.interface],
-      isDeviceSpecific: true,
-      localization: SettingLocalization(
-        title: (ctx) => ctx.loc.settings.interface.handSide,
-        helpText: (ctx) => ctx.loc.settings.interface.handSideHelp,
       ),
     ),
   );
@@ -1863,22 +1834,10 @@ void registerAllSettings() {
         subtitle: (ctx) => ctx.loc.settings.booru.itemsPerPageTip,
       ),
       onScopedChanged: (oldV, newV, booruName) {
-        if (oldV != newV) {
+        if (oldV != newV && GetIt.instance.isRegistered<SearchHandler>()) {
           SearchHandler.instance.invalidateSavedPages(booruName: booruName);
         }
       },
-    ),
-  );
-
-  registry.register(
-    boolSetting(
-      key: .loadingGif,
-      getDefaultValue: () => false,
-      categories: [SettingCategory.interface],
-      isDeviceSpecific: true,
-      localization: SettingLocalization(
-        title: (ctx) => ctx.loc.settings.viewer.kannaLoadingGif,
-      ),
     ),
   );
 

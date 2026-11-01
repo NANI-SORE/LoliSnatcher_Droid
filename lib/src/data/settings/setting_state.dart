@@ -79,7 +79,7 @@ class SettingState<T> {
     final validated = def.validate?.call(newValue) ?? newValue;
     final oldValue = _globalValue.value;
     _globalValue.value = validated;
-    if (oldValue != validated) {
+    if (!valuesEqual(oldValue, validated)) {
       def.onScopedChanged?.call(oldValue, validated, null);
     }
     if (!def.supportsPerBooru && !valuesEqual(oldValue, validated)) {
@@ -98,7 +98,7 @@ class SettingState<T> {
     final validated = def.validate?.call(newValue) ?? newValue;
     final oldValue = _globalValue.value;
     _globalValue.value = validated;
-    if (oldValue != validated) {
+    if (!valuesEqual(oldValue, validated)) {
       def.onScopedChanged?.call(oldValue, validated, null);
     }
     if (!def.supportsPerBooru && !valuesEqual(oldValue, validated)) {
@@ -181,6 +181,9 @@ class SettingState<T> {
     final map = Map<String, T>.from(_booruOverrides.value);
     map[booruName] = validated;
     _booruOverrides.value = map; // Triggers notification
+    if (!_suppressSideEffects && !valuesEqual(oldValue, validated)) {
+      def.onScopedChanged?.call(oldValue, validated, booruName);
+    }
     if (save && (!hadOverride || !valuesEqual(oldValue, validated))) {
       _scheduleSave(debounce: debounceSave, booruName: booruName);
     }
@@ -189,9 +192,13 @@ class SettingState<T> {
   /// Remove the override for a specific booru (will use global value).
   void removeOverrideFor(String booruName, {bool save = true}) {
     if (!_booruOverrides.value.containsKey(booruName)) return;
+    final oldValue = valueForBooru(booruName);
     final map = Map<String, T>.from(_booruOverrides.value);
     map.remove(booruName);
     _booruOverrides.value = map; // Triggers notification
+    if (!_suppressSideEffects && !valuesEqual(oldValue, globalValue)) {
+      def.onScopedChanged?.call(oldValue, globalValue, booruName);
+    }
     if (save) {
       _scheduleSave(booruName: booruName);
     }
@@ -208,7 +215,15 @@ class SettingState<T> {
   /// Remove all per-booru overrides.
   void clearAllOverrides() {
     if (_booruOverrides.value.isEmpty) return;
+    final previous = _booruOverrides.value;
     _booruOverrides.value = const {};
+    if (!_suppressSideEffects) {
+      for (final entry in previous.entries) {
+        if (!valuesEqual(entry.value, globalValue)) {
+          def.onScopedChanged?.call(entry.value, globalValue, entry.key);
+        }
+      }
+    }
   }
 
   // ============================================
