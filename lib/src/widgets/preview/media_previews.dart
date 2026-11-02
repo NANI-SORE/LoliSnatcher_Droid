@@ -263,9 +263,9 @@ class _LanguageSettingsTile extends StatelessWidget {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 360),
-        child: Obx(
-          () {
-            final AppLocale? locale = SX.locale.value;
+        child: ValueListenableBuilder<AppLocale?>(
+          valueListenable: SX.locale.state.globalNotifier,
+          builder: (context, locale, _) {
             final AppLocale usedLocale = locale ?? AppLocaleExt.findDeviceLocale();
             final String localeTitle = locale == null
                 ? context.loc.settings.language.system
@@ -336,40 +336,50 @@ class _ThemeModeToggle extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Center(
-      child: Obx(
-        () => Material(
-          color: colorScheme.surfaceContainerHighest,
-          clipBehavior: .antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-            side: BorderSide(color: colorScheme.outline),
-          ),
-          child: SizedBox(
-            height: kMinInteractiveDimension,
-            child: Row(
-              mainAxisSize: .min,
-              children: [
-                _ThemeModeSegmentButton(
-                  icon: Icons.brightness_auto_outlined,
-                  text: loc.system,
-                  selected: SX.themeMode.value.isSystem,
-                  onTap: () => onChanged(.system),
-                ),
-                _ThemeModeDivider(color: colorScheme.outline),
-                _ThemeModeSegmentButton(
-                  icon: Icons.light_mode_outlined,
-                  text: loc.light,
-                  selected: SX.themeMode.value.isLight,
-                  onTap: () => onChanged(.light),
-                ),
-                _ThemeModeDivider(color: colorScheme.outline),
-                _ThemeModeSegmentButton(
-                  icon: Icons.dark_mode_outlined,
-                  text: loc.dark,
-                  selected: SX.themeMode.value.isDark,
-                  onTap: () => onChanged(.dark),
-                ),
-              ],
+      child: ValueListenableBuilder<ThemeMode>(
+        valueListenable: SX.themeMode.state.effectiveNotifier,
+        builder: (context, mode, _) => SizedBox(
+          width: 360,
+          child: Material(
+            color: colorScheme.surfaceContainerHighest,
+            clipBehavior: .antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(color: colorScheme.outline),
+            ),
+            child: SizedBox(
+              height: kMinInteractiveDimension,
+              child: Row(
+                mainAxisSize: .min,
+                children: [
+                  Expanded(
+                    child: _ThemeModeSegmentButton(
+                      icon: Icons.brightness_auto_outlined,
+                      text: loc.system,
+                      selected: mode.isSystem,
+                      onTap: () => onChanged(.system),
+                    ),
+                  ),
+                  _ThemeModeDivider(color: colorScheme.outline),
+                  Expanded(
+                    child: _ThemeModeSegmentButton(
+                      icon: Icons.light_mode_outlined,
+                      text: loc.light,
+                      selected: mode.isLight,
+                      onTap: () => onChanged(.light),
+                    ),
+                  ),
+                  _ThemeModeDivider(color: colorScheme.outline),
+                  Expanded(
+                    child: _ThemeModeSegmentButton(
+                      icon: Icons.dark_mode_outlined,
+                      text: loc.dark,
+                      selected: mode.isDark,
+                      onTap: () => onChanged(.dark),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -461,7 +471,13 @@ class _ThemeModeSegmentLabel extends StatelessWidget {
         children: [
           Icon(icon, size: 18),
           const SizedBox(width: 6),
-          Text(text),
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );

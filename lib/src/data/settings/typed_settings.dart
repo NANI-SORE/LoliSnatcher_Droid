@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -6,6 +8,7 @@ import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/settings/setting_state.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/settings/setting_builder.dart';
+import 'package:lolisnatcher/src/widgets/settings/booru_editing_scope.dart';
 
 /// Builds a help icon button when [localization.helpText] is provided.
 /// Returns null otherwise, so it can be used as a fallback for trailingIcon.
@@ -181,7 +184,8 @@ SettingDef<int> intSetting({
     },
     widgetBuilder: (context, dynamic state) {
       final s = state as SettingState<int>;
-      return _IntSettingWidget(
+      return _NumericSettingWidget<int>(
+        parse: int.tryParse,
         state: s,
         localization: localization,
         widgetConfig: widgetConfig,
@@ -216,7 +220,7 @@ SettingDef<double> doubleSetting({
   bool Function([BuildContext? context])? enabledWhen,
   void Function(double oldValue, double newValue)? onChanged,
 }) {
-  double validate(double value) => value.clamp(min, max);
+  double validate(double value) => value.isFinite ? value.clamp(min, max) : getDefaultValue();
 
   return SettingDef<double>(
     key: key,
@@ -242,14 +246,16 @@ SettingDef<double> doubleSetting({
                 : json is int
                 ? json.toDouble()
                 : null);
-      if (parsed == null || parsed < min || parsed > max) {
+      if (parsed == null || !parsed.isFinite || parsed < min || parsed > max) {
         return getDefaultValue();
       }
       return parsed;
     },
     widgetBuilder: (context, dynamic state) {
       final s = state as SettingState<double>;
-      return _DoubleSettingWidget(
+      return _NumericSettingWidget<double>(
+        parse: double.tryParse,
+        decimal: true,
         state: s,
         localization: localization,
         widgetConfig: widgetConfig,
@@ -585,59 +591,180 @@ SettingDef<List<String>> stringListSetting({
 // ============================================
 // These manage TextEditingControllers for settings that use SettingsTextInput.
 
-class _IntSettingWidget extends StatefulWidget {
-  const _IntSettingWidget({
+class _NumericSettingWidget<T extends num> extends StatefulWidget {
+  const _NumericSettingWidget({
     required this.state,
     required this.localization,
     required this.min,
     required this.max,
     required this.step,
+    required this.parse,
+    this.decimal = false,
     this.widgetConfig,
     this.enabledWhen,
   });
 
-  final SettingState<int> state;
+  final SettingState<T> state;
   final SettingLocalization localization;
   final SettingWidgetConfig? widgetConfig;
-  final int min;
-  final int max;
-  final int step;
+  final num min;
+  final num max;
+  final num step;
+  final T? Function(String) parse;
+  final bool decimal;
   final bool Function([BuildContext? context])? enabledWhen;
 
   @override
-  State<_IntSettingWidget> createState() => _IntSettingWidgetState();
+  State<_NumericSettingWidget<T>> createState() => _NumericSettingWidgetState<T>();
 }
 
-class _IntSettingWidgetState extends State<_IntSettingWidget> {
+class _NumericSettingWidgetState<T extends num> extends State<_NumericSettingWidget<T>> with WidgetsBindingObserver {
   late final TextEditingController _controller;
+  final _focus = FocusNode();
+  late SettingState<T> _observed;
+  String? _scopeName;
+  bool _autosave = true;
+  bool _dirty = false;
+  bool _writing = false;
+  T? _lastValue;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: widget.state.value.toString());
-    widget.state.effectiveNotifier.addListener(_onValueChanged);
-    widget.state.overridesNotifier.addListener(_onValueChanged);
+    _controller = TextEditingController(text: widget.state.globalValue.toString());
+    _observe(widget.state);
+    _focus.addListener(_onFocusChanged);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  void _observe(SettingState<T> state) {
+    _observed = state;
+    state.globalNotifier.addListener(_onValueChanged);
+    state.overridesNotifier.addListener(_onValueChanged);
+  }
+
+  void _stopObserving() {
+    _observed.globalNotifier.removeListener(_onValueChanged);
+    _observed.overridesNotifier.removeListener(_onValueChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant _NumericSettingWidget<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.state, widget.state)) {
+      _commit(target: oldWidget.state, refresh: false);
+      _stopObserving();
+      _observe(widget.state);
+      _sync(force: true);
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _onValueChanged();
+    final scope = widget.state.def.supportsPerBooru ? BooruEditingScope.of(context) : null;
+    final scopeChanged = scope != _scopeName;
+    if (scopeChanged) _commit(refresh: false);
+    _scopeName = scope;
+    _autosave = BooruEditingScope.autosaveOf(context);
+    _sync(force: scopeChanged || _lastValue == null);
+  }
+
+  T _value(SettingState<T> state) => _scopeName == null ? state.globalValue : state.valueForBooru(_scopeName);
+
+  void _sync({bool force = false}) {
+    final value = _value(widget.state);
+    if (force || _lastValue == null || !widget.state.valuesEqual(_lastValue!, value)) {
+      _lastValue = value;
+      _dirty = false;
+      if (_controller.text != value.toString()) _controller.text = value.toString();
+    }
+  }
+
+  void _onValueChanged() {
+    if (_writing) return;
+    _sync();
+    if (mounted) setState(() {});
+  }
+
+  void _onFocusChanged() {
+    if (!_focus.hasFocus) _commit();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.hidden || state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      _commit();
+    }
+  }
+
+  void _commit({SettingState<T>? target, bool refresh = true}) {
+    final publish = _takeDraftCommit(target);
+    if (publish != null) {
+      _writing = true;
+      try {
+        publish();
+      } finally {
+        _writing = false;
+      }
+    }
+    if (refresh) {
+      _sync(force: true);
+      if (mounted) setState(() {});
+    }
+  }
+
+  VoidCallback? _takeDraftCommit([SettingState<T>? target]) {
+    if (!_dirty) return null;
+    _dirty = false;
+    final parsed = widget.parse(_controller.text.trim());
+    if (parsed == null || !parsed.isFinite) return null;
+    final state = target ?? widget.state;
+    final scope = _scopeName;
+    final autosave = _autosave;
+    return () {
+      if (scope == null) {
+        state.setValue(parsed, debounceSave: true);
+      } else {
+        // A cancelled draft's parent removes its overrides during unmount.
+        if (!autosave && !state.hasOverrideFor(scope)) return;
+        final validated = state.def.validate?.call(parsed) ?? parsed;
+        if (state.valuesEqual(validated, state.globalValue)) {
+          state.removeOverrideFor(scope, save: autosave);
+        } else {
+          state.setOverrideFor(scope, validated, save: autosave, debounceSave: true);
+        }
+      }
+    };
+  }
+
+  void _reset() {
+    _dirty = false;
+    _writing = true;
+    try {
+      if (_scopeName == null) {
+        widget.state.reset();
+      } else {
+        widget.state.removeOverrideFor(_scopeName!, save: _autosave);
+      }
+    } finally {
+      _writing = false;
+    }
+    _sync(force: true);
+    setState(() {});
   }
 
   @override
   void dispose() {
-    widget.state.effectiveNotifier.removeListener(_onValueChanged);
-    widget.state.overridesNotifier.removeListener(_onValueChanged);
+    // Publish after the locked unmount phase, without retaining widget state.
+    final publish = _takeDraftCommit();
+    WidgetsBinding.instance.removeObserver(this);
+    _stopObserving();
+    _focus.removeListener(_onFocusChanged);
+    _focus.dispose();
     _controller.dispose();
     super.dispose();
-  }
-
-  void _onValueChanged() {
-    final newText = widget.state.scopedValue(context).toString();
-    if (_controller.text != newText) {
-      _controller.text = newText;
-    }
+    if (publish != null) scheduleMicrotask(publish);
   }
 
   @override
@@ -647,103 +774,34 @@ class _IntSettingWidgetState extends State<_IntSettingWidget> {
       widget.widgetConfig,
       SettingsTextInput(
         controller: _controller,
+        focusNode: _focus,
         title: widget.localization.title(context),
         subtitle: widget.localization.subtitle != null ? Text(widget.localization.subtitle!(context)) : null,
         trailingIcon:
             widget.widgetConfig?.trailingIcon ??
             _buildHelpDialogButton(context, widget.localization, widget.widgetConfig) ??
             _buildHelpButton(context, widget.localization),
-        inputType: TextInputType.number,
-        numberButtons: true,
+        inputType: TextInputType.numberWithOptions(decimal: widget.decimal, signed: widget.min < 0),
+        textInputAction: TextInputAction.done,
+        enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
+        numberButtons: !widget.decimal,
         numberStep: widget.step.toDouble(),
         numberMin: widget.min.toDouble(),
         numberMax: widget.max.toDouble(),
         resetText: () => widget.state.resetValue(context).toString(),
-        onReset: () => widget.state.resetScoped(context),
-        onChanged: (newValue) {
-          final parsed = int.tryParse(newValue);
-          if (parsed != null) widget.state.setScopedValue(context, parsed, debounceSave: true);
+        onReset: _reset,
+        validator: (text) {
+          final parsed = widget.parse(text?.trim() ?? '');
+          return parsed == null || !parsed.isFinite || parsed < widget.min || parsed > widget.max
+              ? '${widget.min} – ${widget.max}'
+              : null;
         },
-      ),
-    );
-  }
-}
-
-class _DoubleSettingWidget extends StatefulWidget {
-  const _DoubleSettingWidget({
-    required this.state,
-    required this.localization,
-    required this.min,
-    required this.max,
-    required this.step,
-    this.widgetConfig,
-    this.enabledWhen,
-  });
-
-  final SettingState<double> state;
-  final SettingLocalization localization;
-  final SettingWidgetConfig? widgetConfig;
-  final double min;
-  final double max;
-  final double step;
-  final bool Function([BuildContext? context])? enabledWhen;
-
-  @override
-  State<_DoubleSettingWidget> createState() => _DoubleSettingWidgetState();
-}
-
-class _DoubleSettingWidgetState extends State<_DoubleSettingWidget> {
-  late final TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.state.value.toString());
-    widget.state.effectiveNotifier.addListener(_onValueChanged);
-    widget.state.overridesNotifier.addListener(_onValueChanged);
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _onValueChanged();
-  }
-
-  @override
-  void dispose() {
-    widget.state.effectiveNotifier.removeListener(_onValueChanged);
-    widget.state.overridesNotifier.removeListener(_onValueChanged);
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _onValueChanged() {
-    final newText = widget.state.scopedValue(context).toString();
-    if (_controller.text != newText) {
-      _controller.text = newText;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _withExtraWidgets(
-      context,
-      widget.widgetConfig,
-      SettingsTextInput(
-        controller: _controller,
-        title: widget.localization.title(context),
-        subtitle: widget.localization.subtitle != null ? Text(widget.localization.subtitle!(context)) : null,
-        trailingIcon:
-            widget.widgetConfig?.trailingIcon ??
-            _buildHelpDialogButton(context, widget.localization, widget.widgetConfig) ??
-            _buildHelpButton(context, widget.localization),
-        inputType: const TextInputType.numberWithOptions(decimal: true),
-        resetText: () => widget.state.resetValue(context).toString(),
-        onReset: () => widget.state.resetScoped(context),
-        onChanged: (newValue) {
-          final parsed = double.tryParse(newValue);
-          if (parsed != null) widget.state.setScopedValue(context, parsed, debounceSave: true);
+        onChanged: (_) => _dirty = true,
+        onNumberChanged: (_) {
+          _dirty = true;
+          _commit();
         },
+        onSubmitted: (_) => _commit(),
       ),
     );
   }
@@ -781,7 +839,7 @@ class _StringSettingWidgetState extends State<_StringSettingWidget> {
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.state.value);
-    widget.state.effectiveNotifier.addListener(_onValueChanged);
+    widget.state.globalNotifier.addListener(_onValueChanged);
     widget.state.overridesNotifier.addListener(_onValueChanged);
   }
 
@@ -792,8 +850,20 @@ class _StringSettingWidgetState extends State<_StringSettingWidget> {
   }
 
   @override
+  void didUpdateWidget(covariant _StringSettingWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.state, widget.state)) {
+      oldWidget.state.globalNotifier.removeListener(_onValueChanged);
+      oldWidget.state.overridesNotifier.removeListener(_onValueChanged);
+      widget.state.globalNotifier.addListener(_onValueChanged);
+      widget.state.overridesNotifier.addListener(_onValueChanged);
+      _onValueChanged();
+    }
+  }
+
+  @override
   void dispose() {
-    widget.state.effectiveNotifier.removeListener(_onValueChanged);
+    widget.state.globalNotifier.removeListener(_onValueChanged);
     widget.state.overridesNotifier.removeListener(_onValueChanged);
     _controller.dispose();
     super.dispose();
@@ -821,6 +891,9 @@ class _StringSettingWidgetState extends State<_StringSettingWidget> {
             _buildHelpButton(context, widget.localization),
         inputType: widget.inputType,
         obscureable: widget.obscureable,
+        enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
+        enableSuggestions: !widget.obscureable,
+        autocorrect: !widget.obscureable,
         copyable: widget.copyable,
         pasteable: widget.pasteable,
         resetText: () => widget.state.resetValue(context),

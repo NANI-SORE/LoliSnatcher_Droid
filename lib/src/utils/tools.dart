@@ -15,6 +15,7 @@ import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -126,7 +127,9 @@ class Tools {
     }
 
     // a few boorus don't work without a browser useragent
-    final Map<String, String> headers = {'User-Agent': browserUserAgent};
+    final Map<String, String> headers = {
+      'User-Agent': browserUserAgentForBooru(booru?.name),
+    };
     if (uri.host.contains('danbooru.donmai.us')) {
       headers['User-Agent'] = appUserAgent;
     } else if (IdolSankakuHandler.knownUrls.contains(uri.host)) {
@@ -221,6 +224,13 @@ class Tools {
   static final String appUserAgent = 'LoliSnatcher_Droid/${Constants.updateInfo.versionName}';
   static String get browserUserAgent {
     return (isTestMode || SX.customUserAgent.value.isEmpty) ? appUserAgent : SX.customUserAgent.value;
+  }
+
+  /// Resolves a request's source without using the foreground tab's override.
+  static String browserUserAgentForBooru(String? booruName) {
+    if (isTestMode && SettingsRegistry.instance.isEmpty) return appUserAgent;
+    final configured = SX.customUserAgent.valueForBooru(booruName);
+    return configured.isEmpty ? appUserAgent : configured;
   }
 
   static bool get isTestMode => Platform.environment.containsKey('FLUTTER_TEST');

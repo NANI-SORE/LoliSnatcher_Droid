@@ -441,11 +441,14 @@ class _GlobalOverridesWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Map<String, dynamic>>(
-      valueListenable: state._booruOverrides,
-      builder: (context, overrides, _) {
-        final entries = overrides.entries.where((entry) => !state.valuesEqual(entry.value, state.globalValue)).toList()
-          ..sort((a, b) => a.key.toLowerCase().compareTo(b.key.toLowerCase()));
+    return ListenableBuilder(
+      listenable: Listenable.merge([state._booruOverrides, state.globalNotifier]),
+      builder: (context, _) {
+        final entries =
+            state._booruOverrides.value.entries
+                .where((entry) => !state.valuesEqual(entry.value, state.globalValue))
+                .toList()
+              ..sort((a, b) => a.key.toLowerCase().compareTo(b.key.toLowerCase()));
 
         return SettingChromeScope(
           chip: entries.isEmpty ? null : _GlobalOverridesChip(state: state, entries: entries),
@@ -641,9 +644,10 @@ class _BooruOverrideWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Map<String, dynamic>>(
-      valueListenable: state._booruOverrides,
-      builder: (context, overrides, _) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([state._booruOverrides, state.globalNotifier]),
+      builder: (context, _) {
+        final overrides = state._booruOverrides.value;
         final hasOverride = overrides.containsKey(booruName);
         final globalValue = state.globalValue;
 

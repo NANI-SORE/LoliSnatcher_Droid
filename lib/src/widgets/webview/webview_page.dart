@@ -22,11 +22,17 @@ Map<String, List<Cookie>> globalWindowsCookies = {};
 
 final ValueNotifier<List<Key>> activeWebviews = ValueNotifier([]);
 bool get hasActiveWebviews => activeWebviews.value.isNotEmpty;
-void registerWebview(Key key) => activeWebviews.value.add(key);
+void registerWebview(Key key) {
+  // initState may run while a sibling route is building.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    activeWebviews.value = [...activeWebviews.value, key];
+  });
+}
+
 Future<void> unregisterWebview(Key key) async {
   // delayed to avoid performance problems from rendering heavy widgets (i.e. shimmer) while webview is closing
   await Future.delayed(const Duration(milliseconds: 300));
-  activeWebviews.value.remove(key);
+  activeWebviews.value = [...activeWebviews.value]..remove(key);
 }
 
 // ////

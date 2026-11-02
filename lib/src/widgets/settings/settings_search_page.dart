@@ -30,6 +30,13 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: Listenable.merge(SettingsRegistry.instance.all.map((state) => state.globalNotifier)),
+      builder: (context, _) => _buildSearch(context),
+    );
+  }
+
+  Widget _buildSearch(BuildContext context) {
     final registry = SettingsRegistry.instance;
     final results = _query.isEmpty ? <SettingState<dynamic>>[] : registry.search(_query, context);
 

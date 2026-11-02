@@ -603,8 +603,10 @@ class _HideableAppBarState extends State<HideableAppBar> {
             widget.tab.booruHandler.booru,
             SX.snatchCooldown.value,
             false,
+            sourceFor: widget.tab.booruHandler.sourceBooruFor,
+            useSourceCooldown: true,
           );
-          if (SX.favouriteOnSnatch.value) {
+          if (widget.tab.shouldFavouriteOnSnatch(item)) {
             await widget.tab.toggleItemFavourite(
               page.value,
               forcedValue: true,
@@ -716,8 +718,10 @@ class _HideableAppBarState extends State<HideableAppBar> {
                           widget.tab.booruHandler.booru,
                           SX.snatchCooldown.value,
                           true,
+                          sourceFor: widget.tab.booruHandler.sourceBooruFor,
+                          useSourceCooldown: true,
                         );
-                        if (SX.favouriteOnSnatch.value) {
+                        if (widget.tab.shouldFavouriteOnSnatch(item)) {
                           await widget.tab.toggleItemFavourite(
                             page.value,
                             forcedValue: true,
@@ -1003,8 +1007,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
 
   void shareTextAction(String text) {
     if (PlatformExt.isDesktop) {
-      final txt = Uri.encodeFull(text);
-      ClipboardUtils.copyTextToClipboard(txt, subtitle: txt);
+      ClipboardUtils.copyTextToClipboard(text, subtitle: text);
     } else if (Platform.isAndroid) {
       ServiceHandler.loadShareTextIntent(text);
     }
