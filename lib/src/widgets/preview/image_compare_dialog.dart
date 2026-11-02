@@ -455,7 +455,8 @@ class _ImageComparePageState extends State<_ImageComparePage> {
       return MediaQuery.paddingOf(context).bottom;
     }
 
-    final isCompact = MediaQuery.sizeOf(context).width < _CompareControls.compactWidthBreakpoint;
+    final isCompact =
+        mode != _ImageCompareMode.data && MediaQuery.sizeOf(context).width < _CompareControls.compactWidthBreakpoint;
     return MediaQuery.paddingOf(context).bottom +
         (isCompact ? _CompareControls.compactHeight : _CompareControls.height);
   }
@@ -902,18 +903,19 @@ class _CompareControls extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isCompact = constraints.maxWidth < compactWidthBreakpoint;
+          final stackControls = isCompact && selectedMode != _ImageCompareMode.data;
           final primaryControls = Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               _ModeDropdown(
                 mode: selectedMode,
                 modes: availableModes,
-                width: isCompact ? 190 : 190,
+                width: isCompact && selectedMode == _ImageCompareMode.data ? 140 : 190,
                 onModeChanged: onModeChanged,
               ),
               const SizedBox(width: 12),
               IconButton(
-                tooltip: 'Reset',
+                tooltip: context.loc.reset,
                 icon: const Icon(Icons.restart_alt),
                 onPressed: onResetView,
               ),
@@ -934,10 +936,10 @@ class _CompareControls extends StatelessWidget {
           );
 
           return SizedBox(
-            height: (isCompact ? compactHeight : height) + bottomPadding,
+            height: (stackControls ? compactHeight : height) + bottomPadding,
             child: Padding(
               padding: EdgeInsets.only(bottom: bottomPadding),
-              child: isCompact
+              child: stackControls
                   ? Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1009,9 +1011,17 @@ class _CompareControls extends StatelessWidget {
         selected: stackAxis,
         onChanged: onStackAxisChanged,
       ),
-      _ImageCompareMode.fade => Slider(
-        value: stackOpacity,
-        onChanged: onStackOpacityChanged,
+      _ImageCompareMode.fade => Row(
+        children: [
+          Expanded(
+            child: Slider(
+              value: stackOpacity,
+              label: '${(stackOpacity * 100).round()}%',
+              onChanged: onStackOpacityChanged,
+            ),
+          ),
+          Text('${(stackOpacity * 100).round()}%'),
+        ],
       ),
       _ImageCompareMode.flicker => Row(
         children: [
@@ -1030,9 +1040,11 @@ class _CompareControls extends StatelessWidget {
               min: 100,
               max: 2000,
               divisions: 19,
+              label: '${flickerIntervalMs.round()} ms',
               onChanged: onFlickerIntervalChanged,
             ),
           ),
+          Text('${flickerIntervalMs.round()} ms'),
         ],
       ),
       _ImageCompareMode.difference => Row(
@@ -1072,7 +1084,6 @@ class _CompareControls extends StatelessWidget {
       ),
       _ImageCompareMode.data => FilterChip(
         selected: dataOnlyDifferences,
-        tooltip: 'Differences only',
         label: const Icon(Icons.filter_alt),
         onSelected: onDataOnlyDifferencesChanged,
       ),
@@ -1112,46 +1123,43 @@ class _SwapImagesButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: 'Swap',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: onPressed,
-          child: SizedBox(
-            width: 82,
-            height: 48,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Positioned(
-                  left: 5,
-                  child: _CompareOrderThumbnail(
-                    item: firstItem,
-                    booru: firstBooru,
-                  ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onPressed,
+        child: SizedBox(
+          width: 82,
+          height: 48,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned(
+                left: 5,
+                child: _CompareOrderThumbnail(
+                  item: firstItem,
+                  booru: firstBooru,
                 ),
-                Positioned(
-                  right: 5,
-                  child: _CompareOrderThumbnail(
-                    item: secondItem,
-                    booru: secondBooru,
-                  ),
+              ),
+              Positioned(
+                right: 5,
+                child: _CompareOrderThumbnail(
+                  item: secondItem,
+                  booru: secondBooru,
                 ),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.86),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Theme.of(context).dividerColor),
-                  ),
-                  child: const Padding(
-                    padding: EdgeInsets.all(3),
-                    child: Icon(Icons.swap_horiz, size: 18),
-                  ),
+              ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.86),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Theme.of(context).dividerColor),
                 ),
-              ],
-            ),
+                child: const Padding(
+                  padding: EdgeInsets.all(3),
+                  child: Icon(Icons.swap_horiz, size: 18),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1236,30 +1244,31 @@ class _ItemDataDetails {
   final BooruItem item;
   final Booru booru;
 
-  List<({String label, String? value})> get rows {
+  List<({String label, String? value})> rows(BuildContext context) {
     return [
-      (label: 'Booru', value: booru.name),
-      (label: 'Server ID', value: item.serverId),
-      (label: 'Post URL', value: item.postURL),
-      (label: 'File URL', value: item.fileURL),
-      (label: 'Sample URL', value: item.sampleURL),
-      (label: 'Thumbnail URL', value: item.thumbnailURL),
-      (label: 'File type', value: item.fileExt),
-      (label: 'Media type', value: item.mediaType.value.name),
-      (label: 'File size', value: item.fileSize == null ? null : Tools.formatBytes(item.fileSize!, 2)),
-      (label: 'File resolution', value: _formatDimensions(item.fileWidth, item.fileHeight)),
-      (label: 'Sample resolution', value: _formatDimensions(item.sampleWidth, item.sampleHeight)),
-      (label: 'Preview resolution', value: _formatDimensions(item.previewWidth, item.previewHeight)),
-      (label: 'Rating', value: item.rating),
-      (label: 'Score', value: item.score),
+      (label: context.loc.booru, value: booru.name),
+      (label: context.loc.tagView.id, value: item.serverId),
+      (label: context.loc.tagView.postURL, value: item.postURL),
+      (label: context.loc.viewer.appBar.fileURL, value: item.fileURL),
+      (label: 'Sample', value: item.sampleURL),
+      (label: 'Thumbnail', value: item.thumbnailURL),
+      (label: context.loc.tagView.extension, value: item.fileExt),
+      (label: 'Type', value: item.mediaType.value.name),
+      (label: context.loc.tagView.size, value: item.fileSize == null ? null : Tools.formatBytes(item.fileSize!, 2)),
+      (label: context.loc.tagView.resolution, value: _formatDimensions(item.fileWidth, item.fileHeight)),
+      (label: context.loc.tagView.rating, value: item.rating),
+      (label: context.loc.tagView.score, value: item.score),
       (label: 'Uploader ID', value: item.uploaderId),
-      (label: 'Uploader', value: item.uploaderName),
-      (label: 'Post date', value: item.postDate),
-      (label: 'MD5', value: item.md5String),
-      (label: 'Sources', value: item.sources?.where((source) => source.trim().isNotEmpty).join('\n')),
+      (label: context.loc.tagView.uploader, value: item.uploaderName),
+      (label: context.loc.tagView.posted, value: item.postDate),
+      (label: context.loc.tagView.md5, value: item.md5String),
+      (
+        label: context.loc.tagView.sourceDialogTitle,
+        value: item.sources?.where((source) => source.trim().isNotEmpty).join('\n'),
+      ),
       (label: 'Description', value: item.description),
-      (label: 'Notes', value: item.hasNotes?.toString()),
-      (label: 'Comments', value: item.hasComments?.toString()),
+      (label: context.loc.viewer.notes.notes, value: item.hasNotes?.toString()),
+      (label: context.loc.tagView.comments, value: item.hasComments?.toString()),
     ];
   }
 }
@@ -1277,17 +1286,18 @@ class _MetadataComparison extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final firstRows = first.rows;
-    final secondRows = second.rows;
+    final firstRows = first.rows(context);
+    final secondRows = second.rows(context);
     final visibleIndexes = [
       for (var i = 0; i < firstRows.length; i++)
-        if (!onlyDifferences ||
-            _normalizeCompareValue(firstRows[i].value) != _normalizeCompareValue(secondRows[i].value))
+        if ((_normalizeCompareValue(firstRows[i].value) != '-' || _normalizeCompareValue(secondRows[i].value) != '-') &&
+            (!onlyDifferences ||
+                _normalizeCompareValue(firstRows[i].value) != _normalizeCompareValue(secondRows[i].value)))
           i,
     ];
 
     return _CompareDataPanel(
-      title: 'Item data',
+      title: context.loc.tagView.details,
       child: Column(
         children: [
           if (visibleIndexes.isEmpty)
@@ -1419,7 +1429,7 @@ class _TagsComparison extends StatelessWidget {
     final hasDifferences = comparison.onlyFirst.isNotEmpty || comparison.onlySecond.isNotEmpty;
 
     return _CompareDataPanel(
-      title: 'Tags',
+      title: context.loc.tags,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1427,12 +1437,21 @@ class _TagsComparison extends StatelessWidget {
             const _EmptyCompareText()
           else ...[
             if (!onlyDifferences) ...[
-              _TagGroup(title: 'Common (${comparison.common.length})', tags: comparison.common),
+              _TagGroup(
+                title: '${context.loc.settings.downloads.compareCommon} (${comparison.common.length})',
+                tags: comparison.common,
+              ),
               const SizedBox(height: 12),
             ],
-            _TagGroup(title: 'Only first (${comparison.onlyFirst.length})', tags: comparison.onlyFirst),
+            _TagGroup(
+              title: '${context.loc.settings.downloads.compareOnlyFirst} (${comparison.onlyFirst.length})',
+              tags: comparison.onlyFirst,
+            ),
             const SizedBox(height: 12),
-            _TagGroup(title: 'Only second (${comparison.onlySecond.length})', tags: comparison.onlySecond),
+            _TagGroup(
+              title: '${context.loc.settings.downloads.compareOnlySecond} (${comparison.onlySecond.length})',
+              tags: comparison.onlySecond,
+            ),
           ],
         ],
       ),
@@ -1446,7 +1465,7 @@ class _EmptyCompareText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      'None',
+      '...',
       style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
     );
   }
@@ -1473,7 +1492,7 @@ class _TagGroup extends StatelessWidget {
         const SizedBox(height: 6),
         if (tags.isEmpty)
           Text(
-            'None',
+            '...',
             style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           )
         else
@@ -2256,8 +2275,12 @@ class _RenderedCompareViewState extends State<_RenderedCompareView> {
               ),
               Positioned(
                 left: 16,
+                right: 16,
                 bottom: widget.badgeBottomInset + 16,
-                child: _MatchPercentBadge(matchPercent: snapshot.data!.matchPercent),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _MatchPercentBadge(matchPercent: snapshot.data!.matchPercent),
+                ),
               ),
             ],
           );

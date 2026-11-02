@@ -1521,9 +1521,11 @@ class SettingsBottomSheet extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         if (title != null)
-                          Padding(
-                            padding: titlePadding ?? const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                            child: title,
+                          Expanded(
+                            child: Padding(
+                              padding: titlePadding ?? const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                              child: title,
+                            ),
                           )
                         else
                           const SizedBox(height: 12),

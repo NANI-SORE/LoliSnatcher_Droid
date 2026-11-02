@@ -4,6 +4,7 @@ import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/hidden_item_viewer.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
 
@@ -164,6 +165,12 @@ class HiddenItemDetailsDialog extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
+          if (item.postURL.isNotEmpty)
+            IconButton(
+              tooltip: context.loc.tagView.copy,
+              onPressed: () => ClipboardUtils.copyTextToClipboard(item.postURL),
+              icon: const Icon(Icons.copy_outlined),
+            ),
           IconButton(
             tooltip: context.loc.close,
             onPressed: () => Navigator.of(context).pop(),
@@ -175,23 +182,21 @@ class HiddenItemDetailsDialog extends StatelessWidget {
   }
 
   Widget _footer(BuildContext context) {
-    final theme = Theme.of(context);
     final loc = context.loc.settings.downloads;
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            loc.hiddenRestoreHint,
-            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 12),
           Wrap(
             alignment: WrapAlignment.end,
             spacing: 8,
             runSpacing: 8,
             children: [
+              Tooltip(
+                message: loc.hiddenRestoreHint,
+                child: const SizedBox(width: 48, height: 48, child: Icon(Icons.info_outline)),
+              ),
               OutlinedButton.icon(
                 onPressed: () {
                   onRestore();

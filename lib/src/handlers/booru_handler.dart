@@ -87,6 +87,28 @@ abstract class BooruHandler {
   /// Merged searches override this to retain each item's source settings.
   Booru sourceBooruFor(BooruItem item) => booru;
 
+  /// Copies a completed search into an independent handler for the same source.
+  /// Handlers with cursors or cached result IDs also copy those in overrides.
+  void copySearchStateFrom(BooruHandler source) {
+    if (runtimeType != source.runtimeType || !booru.matchesIdentity(source.booru)) {
+      throw ArgumentError('Loaded search state must belong to the same source');
+    }
+    pageNum = source.pageNum;
+    limit = source.limit;
+    prevTags = source.prevTags;
+    locked = source.locked;
+    errorString = source.errorString;
+    totalCount.value = source.totalCount.value;
+    fetchedPageNumbers
+      ..clear()
+      ..addAll(source.fetchedPageNumbers);
+    fetched.assignAll(source.fetched);
+    _restoredFilterItems
+      ..clear()
+      ..addAll(source._restoredFilterItems);
+    refilterAll();
+  }
+
   List<BooruItemFilterReason> Function(BooruItem) _itemFilterFor(Booru source) {
     final filterHated = SX.filterHated.valueForBooru(source.name);
     final filterMarked = SX.filterMarked.valueForBooru(source.name);

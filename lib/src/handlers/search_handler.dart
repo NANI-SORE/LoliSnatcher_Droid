@@ -80,13 +80,15 @@ class SearchHandler {
   RxnString tabId = RxnString(null);
 
   // add new tab by the given search string
-  void addTabByString(
+  SearchTab addTabByString(
     String searchText, {
     bool switchToNew = false,
     Booru? customBooru,
     List<Booru>? secondaryBoorus,
     TabAddMode addMode = TabAddMode.end,
     int? customPage,
+    SearchTab? previewTab,
+    BooruItem? scrollToItem,
   }) {
     final Booru booru = customBooru ?? currentBooru;
 
@@ -97,6 +99,26 @@ class SearchHandler {
       searchText,
     );
     newTab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
+    if (customPage == null &&
+        previewTab != null &&
+        previewTab.tags == searchText &&
+        previewTab.selectedBooru.value.matchesIdentity(booru) &&
+        previewTab.secondaryBoorus.value?.isNotEmpty != true &&
+        secondaryBoorus?.isNotEmpty != true &&
+        previewTab.booruHandler.errorString.isEmpty &&
+        previewTab.booruHandler.filteredFetched.isNotEmpty) {
+      newTab.hiddenItems.addAll(previewTab.hiddenItems);
+      newTab.booruHandler.copySearchStateFrom(previewTab.booruHandler);
+      newTab.selected.assignAll(previewTab.selected);
+      newTab._pageSizes
+        ..clear()
+        ..addAll(previewTab._pageSizes);
+      newTab.hasValidPageCoordinates = previewTab.hasValidPageCoordinates;
+      if (scrollToItem != null && newTab.booruHandler.filteredFetched.contains(scrollToItem)) {
+        newTab.pendingScrollItem = scrollToItem;
+        newTab.scrollPage = scrollToItem.fetchedPage;
+      }
+    }
     if (customPage != null) {
       final targetPage = newTab.apiPage(max(customPage, 1));
       newTab.booruHandler.pageNum = targetPage - 1;
@@ -133,6 +155,7 @@ class SearchHandler {
     if (switchToNew) {
       changeTabIndex(newIndex);
     }
+    return newTab;
   }
 
   // remove tab (or current if not provided) index and set new index and search text values
@@ -1630,6 +1653,7 @@ class SearchTab {
   int apiPage(int displayPage) => displayPage + firstPage - 1;
 
   double scrollPosition = 0;
+  BooruItem? pendingScrollItem;
   int? scrollPage;
   RxList<BooruItem> selected = RxList<BooruItem>.from([]);
   // Preserve hide order without hashing BooruItem's mutable metadata.

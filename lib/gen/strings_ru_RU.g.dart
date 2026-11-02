@@ -2769,6 +2769,8 @@ class _Translations$settings$downloads$ru_RU extends Translations$settings$downl
   String get unblurThumbnails =>
       TranslationOverrides.string(_root.$meta, 'settings.downloads.unblurThumbnails', {}) ?? 'Убрать размытие всех миниатюр';
   @override
+  String get blurThumbnails => TranslationOverrides.string(_root.$meta, 'settings.downloads.blurThumbnails', {}) ?? 'Размыть все миниатюры';
+  @override
   String get openHiddenItemViewer => TranslationOverrides.string(_root.$meta, 'settings.downloads.openHiddenItemViewer', {}) ?? 'Открыть просмотр';
   @override
   String get hiddenMatchingFilters =>
@@ -2815,6 +2817,19 @@ class _Translations$settings$downloads$ru_RU extends Translations$settings$downl
   String get compareDifference => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareDifference', {}) ?? 'Разница';
   @override
   String get compareHeatmap => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareHeatmap', {}) ?? 'Тепловая карта';
+  @override
+  String get includeTags => TranslationOverrides.string(_root.$meta, 'settings.downloads.includeTags', {}) ?? 'Добавить теги';
+  @override
+  String get restoreAllHidden =>
+      TranslationOverrides.string(_root.$meta, 'settings.downloads.restoreAllHidden', {}) ?? 'Вернуть все скрытые элементы вкладки';
+  @override
+  String get compareOnlyDifferences => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareOnlyDifferences', {}) ?? 'Только различия';
+  @override
+  String get compareCommon => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareCommon', {}) ?? 'Общие';
+  @override
+  String get compareOnlyFirst => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareOnlyFirst', {}) ?? 'Только у первого';
+  @override
+  String get compareOnlySecond => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareOnlySecond', {}) ?? 'Только у второго';
   @override
   String get compareData => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareData', {}) ?? 'Данные';
   @override
@@ -5492,6 +5507,8 @@ extension on TranslationsRuRu {
           'settings.downloads.unhideItem' => TranslationOverrides.string(_root.$meta, 'settings.downloads.unhideItem', {}) ?? 'Вернуть элемент',
           'settings.downloads.unblurThumbnails' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.unblurThumbnails', {}) ?? 'Убрать размытие всех миниатюр',
+          'settings.downloads.blurThumbnails' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.blurThumbnails', {}) ?? 'Размыть все миниатюры',
           'settings.downloads.openHiddenItemViewer' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.openHiddenItemViewer', {}) ?? 'Открыть просмотр',
           'settings.downloads.hiddenMatchingFilters' =>
@@ -5528,6 +5545,16 @@ extension on TranslationsRuRu {
           'settings.downloads.compareDifference' => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareDifference', {}) ?? 'Разница',
           'settings.downloads.compareHeatmap' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.compareHeatmap', {}) ?? 'Тепловая карта',
+          'settings.downloads.includeTags' => TranslationOverrides.string(_root.$meta, 'settings.downloads.includeTags', {}) ?? 'Добавить теги',
+          'settings.downloads.restoreAllHidden' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.restoreAllHidden', {}) ?? 'Вернуть все скрытые элементы вкладки',
+          'settings.downloads.compareOnlyDifferences' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.compareOnlyDifferences', {}) ?? 'Только различия',
+          'settings.downloads.compareCommon' => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareCommon', {}) ?? 'Общие',
+          'settings.downloads.compareOnlyFirst' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.compareOnlyFirst', {}) ?? 'Только у первого',
+          'settings.downloads.compareOnlySecond' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.compareOnlySecond', {}) ?? 'Только у второго',
           'settings.downloads.compareData' => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareData', {}) ?? 'Данные',
           'settings.downloads.updatingData' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.updatingData', {}) ?? 'Обновление данных…',
@@ -6259,6 +6286,9 @@ extension on TranslationsRuRu {
           'pageNavigation.rememberTab' => TranslationOverrides.string(_root.$meta, 'pageNavigation.rememberTab', {}) ?? 'Запоминать страницу вкладки',
           'pageNavigation.freshSearchToRemember' =>
             TranslationOverrides.string(_root.$meta, 'pageNavigation.freshSearchToRemember', {}) ?? 'Для сохранения начните новый поиск',
+          _ => null,
+        } ??
+        switch (path) {
           'pageNavigation.loadingPage' => ({
             required int page,
           }) => TranslationOverrides.string(_root.$meta, 'pageNavigation.loadingPage', {'page': page}) ?? 'Загрузка страницы ${page}',
@@ -6277,9 +6307,6 @@ extension on TranslationsRuRu {
             ({required int requested, required int actual}) =>
                 TranslationOverrides.string(_root.$meta, 'pageNavigation.showingNearbyPage', {'requested': requested, 'actual': actual}) ??
                 'Страница ${requested} недоступна. Показана ${actual}.',
-          _ => null,
-        } ??
-        switch (path) {
           'tagsFiltersDialogs.emptyInput' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.emptyInput', {}) ?? 'Пустой ввод!',
           'tagsFiltersDialogs.addNewFilter' => ({
             required String type,

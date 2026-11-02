@@ -8,12 +8,15 @@ import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
+import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/fading_edge_reorderable_listview.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
+import 'package:lolisnatcher/src/widgets/drawers/downloads/hidden_item_viewer.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_build.dart';
 
 class SelectedPreviewSheet extends StatefulWidget {
   const SelectedPreviewSheet({
+    required this.tab,
     required this.itemsMatchingTagQuery,
     required this.selectedPreviewTags,
     required this.searchSuggestions,
@@ -26,6 +29,7 @@ class SelectedPreviewSheet extends StatefulWidget {
     super.key,
   });
 
+  final SearchTab tab;
   final List<BooruItem> Function(Iterable<BooruItem> items, String rawQuery) itemsMatchingTagQuery;
   final List<Tag> Function(BooruItem item) selectedPreviewTags;
   final List<Tag> Function(String token) searchSuggestions;
@@ -46,11 +50,13 @@ class SelectedPreviewSheet extends StatefulWidget {
 }
 
 class _SelectedPreviewSheetState extends State<SelectedPreviewSheet> {
-  final searchHandler = SearchHandler.instance;
+  SearchTab get tab => widget.tab;
 
   static const double _minSheetSize = 0.24;
 
   final TextEditingController _searchController = TextEditingController();
+  final _listKey = GlobalKey<_SelectedPreviewListState>();
+  bool _hideUnmatched = false;
   bool _isClosing = false;
 
   @override
@@ -83,14 +89,21 @@ class _SelectedPreviewSheetState extends State<SelectedPreviewSheet> {
 
   void _clearSearch() {
     _searchController.clear();
+    _onSearchChanged('');
+  }
+
+  void _onSearchChanged(String _) {
+    setState(() {
+      if (_searchQuery.isEmpty) _hideUnmatched = false;
+    });
   }
 
   List<BooruItem> _filteredSelectedItems() {
     if (_searchQuery.isEmpty) {
-      return [...searchHandler.currentSelected];
+      return [...tab.selected];
     }
 
-    return widget.itemsMatchingTagQuery(searchHandler.currentSelected, _searchQuery);
+    return widget.itemsMatchingTagQuery(tab.selected, _searchQuery);
   }
 
   @override
@@ -111,14 +124,14 @@ class _SelectedPreviewSheetState extends State<SelectedPreviewSheet> {
             expand: false,
             // The notification listener owns dismissal at the minimum size.
             shouldCloseOnMinExtent: false,
-            initialChildSize: 0.66,
+            initialChildSize: MediaQuery.viewInsetsOf(context).bottom > 0 ? 0.92 : 0.66,
             minChildSize: _minSheetSize,
             maxChildSize: 0.92,
             builder: (context, scrollController) => SettingsBottomSheet(
               onClosePressed: _close,
               pinActionButtonsToBottom: true,
               title: Obx(() {
-                final total = searchHandler.currentSelected.length;
+                final total = tab.selected.length;
                 final countText = _searchQuery.isEmpty
                     ? total.toFormattedString()
                     : '${_filteredSelectedItems().length.toFormattedString()}/${total.toFormattedString()}';
@@ -126,33 +139,62 @@ class _SelectedPreviewSheetState extends State<SelectedPreviewSheet> {
                 return _SelectionSheetTitle('${context.loc.tagView.preview} ($countText)');
               }),
               content: Expanded(
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                      child: _SelectedPreviewSearchInput(
-                        controller: _searchController,
-                        title: context.loc.search,
-                        hintText: context.loc.searchBar.searchForTags,
-                        suggestionsForToken: widget.searchSuggestions,
-                        onChanged: (_) => setState(() {}),
+                child: LayoutBuilder(
+                  builder: (context, constraints) => Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                        child: _SelectedPreviewSearchInput(
+                          controller: _searchController,
+                          maxSuggestionsHeight: (constraints.maxHeight - 160).clamp(0.0, 168.0),
+                          title: context.loc.search,
+                          hintText: context.loc.searchBar.searchForTags,
+                          suggestionsForToken: widget.searchSuggestions,
+                          onChanged: _onSearchChanged,
+                          actions: _searchQuery.isEmpty
+                              ? null
+                              : Obx(() {
+                                  final hasMatches = _filteredSelectedItems().isNotEmpty;
+                                  return Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.keyboard_arrow_up_rounded),
+                                        onPressed: hasMatches ? () => _listKey.currentState?.scrollToMatch(-1) : null,
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                                        onPressed: hasMatches ? () => _listKey.currentState?.scrollToMatch(1) : null,
+                                      ),
+                                      IconButton(
+                                        isSelected: _hideUnmatched,
+                                        icon: const Icon(Icons.filter_list),
+                                        selectedIcon: const Icon(Icons.filter_list_off),
+                                        onPressed: () => setState(() => _hideUnmatched = !_hideUnmatched),
+                                      ),
+                                    ],
+                                  );
+                                }),
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      child: _SelectedPreviewList(
-                        searchHandler: searchHandler,
-                        scrollController: scrollController,
-                        query: _searchQuery,
-                        itemsMatchingTagQuery: widget.itemsMatchingTagQuery,
-                        selectedPreviewTags: widget.selectedPreviewTags,
-                        onReorderItem: widget.onReorderItem,
-                        onShowItemInfo: widget.onShowItemInfo,
+                      Expanded(
+                        child: _SelectedPreviewList(
+                          key: _listKey,
+                          tab: tab,
+                          scrollController: scrollController,
+                          query: _searchQuery,
+                          hideUnmatched: _hideUnmatched,
+                          itemsMatchingTagQuery: widget.itemsMatchingTagQuery,
+                          selectedPreviewTags: widget.selectedPreviewTags,
+                          onReorderItem: widget.onReorderItem,
+                          onShowItemInfo: widget.onShowItemInfo,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-              actionSpacing: 16,
+              actionSpacing: 4,
               actionButtons: [
                 Tooltip(
                   message: context.loc.settings.downloads.reverseSelectedOrder,
@@ -165,7 +207,7 @@ class _SelectedPreviewSheetState extends State<SelectedPreviewSheet> {
                   ),
                 ),
                 Obx(() {
-                  final allSelected = [...searchHandler.currentSelected];
+                  final allSelected = [...tab.selected];
                   final filtered = _searchQuery.isEmpty ? const <BooruItem>[] : _filteredSelectedItems();
                   final canKeepFiltered = filtered.isNotEmpty && filtered.length < allSelected.length;
 
@@ -173,38 +215,32 @@ class _SelectedPreviewSheetState extends State<SelectedPreviewSheet> {
                     return const SizedBox.shrink();
                   }
 
-                  return Tooltip(
-                    message: context.loc.select,
-                    child: IconButton(
-                      icon: const Icon(Icons.filter_alt_outlined),
-                      onPressed: () {
-                        searchHandler.currentTab.selected.assignAll(filtered);
-                        _clearSearch();
-                      },
-                    ),
+                  return IconButton(
+                    icon: const Icon(Icons.filter_alt_outlined),
+                    onPressed: () {
+                      tab.selected.assignAll(filtered);
+                      _clearSearch();
+                    },
                   );
                 }),
                 Obx(() {
-                  final allSelected = [...searchHandler.currentSelected];
+                  final allSelected = [...tab.selected];
                   final filtered = _searchQuery.isEmpty ? const <BooruItem>[] : _filteredSelectedItems();
-                  final canKeepUnmatched = filtered.isNotEmpty && filtered.length < allSelected.length;
+                  final canKeepUnmatched = filtered.isNotEmpty;
 
                   if (!canKeepUnmatched) {
                     return const SizedBox.shrink();
                   }
 
-                  return Tooltip(
-                    message: context.loc.select,
-                    child: IconButton(
-                      icon: const Icon(Icons.filter_alt_off_outlined),
-                      onPressed: () {
-                        final filteredSet = Set<BooruItem>.identity()..addAll(filtered);
-                        searchHandler.currentTab.selected.assignAll(
-                          allSelected.where((item) => !filteredSet.contains(item)),
-                        );
-                        _clearSearch();
-                      },
-                    ),
+                  return IconButton(
+                    icon: const Icon(Icons.filter_alt_off_outlined),
+                    onPressed: () {
+                      final filteredSet = Set<BooruItem>.identity()..addAll(filtered);
+                      tab.selected.assignAll(
+                        allSelected.where((item) => !filteredSet.contains(item)),
+                      );
+                      _clearSearch();
+                    },
                   );
                 }),
                 Tooltip(
@@ -236,20 +272,23 @@ class _SelectedPreviewSheetState extends State<SelectedPreviewSheet> {
   }
 }
 
-class _SelectedPreviewList extends StatelessWidget {
+class _SelectedPreviewList extends StatefulWidget {
   const _SelectedPreviewList({
-    required this.searchHandler,
+    required this.tab,
     required this.scrollController,
     required this.query,
+    required this.hideUnmatched,
     required this.itemsMatchingTagQuery,
     required this.selectedPreviewTags,
     required this.onReorderItem,
     required this.onShowItemInfo,
+    super.key,
   });
 
-  final SearchHandler searchHandler;
+  final SearchTab tab;
   final ScrollController scrollController;
   final String query;
+  final bool hideUnmatched;
   final List<BooruItem> Function(Iterable<BooruItem> items, String rawQuery) itemsMatchingTagQuery;
   final List<Tag> Function(BooruItem item) selectedPreviewTags;
   final void Function({
@@ -261,37 +300,91 @@ class _SelectedPreviewList extends StatelessWidget {
   final void Function(BuildContext context, BooruItem item, int selectedIndex) onShowItemInfo;
 
   @override
+  State<_SelectedPreviewList> createState() => _SelectedPreviewListState();
+}
+
+class _SelectedPreviewListState extends State<_SelectedPreviewList> {
+  String? _scrolledQuery;
+  bool _scrolledHideUnmatched = false;
+  BooruItem? _focusedMatch;
+  int _scrollRequest = 0;
+
+  void _scrollToItem(int index) {
+    final request = ++_scrollRequest;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || request != _scrollRequest || !widget.scrollController.hasClients) return;
+      final rowExtent = _selectedPreviewRowHeight(context) + 8;
+      final target = (index * rowExtent).clamp(0.0, widget.scrollController.position.maxScrollExtent);
+      widget.scrollController.animateTo(
+        target,
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  void scrollToMatch(int direction) {
+    if (widget.query.isEmpty) return;
+    final selected = [...widget.tab.selected];
+    final matches = widget.itemsMatchingTagQuery(selected, widget.query);
+    if (matches.isEmpty) return;
+    final current = _focusedMatch == null ? -1 : matches.indexOf(_focusedMatch!);
+    final next = current < 0 ? (direction > 0 ? 0 : matches.length - 1) : (current + direction) % matches.length;
+    final item = matches[next];
+    setState(() => _focusedMatch = item);
+    _scrollToItem(widget.hideUnmatched ? next : selected.indexOf(item));
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final allSelected = [...searchHandler.currentSelected];
-    final orderKey = allSelected.map((item) => item.key).join('|');
-    final matchingItems = query.isEmpty
+    return Obx(() => _buildList(context));
+  }
+
+  Widget _buildList(BuildContext context) {
+    final allSelected = [...widget.tab.selected];
+    final matchingItems = widget.query.isEmpty
         ? null
-        : (Set<BooruItem>.identity()..addAll(itemsMatchingTagQuery(allSelected, query)));
+        : (Set<BooruItem>.identity()..addAll(widget.itemsMatchingTagQuery(allSelected, widget.query)));
+    final visibleItems = widget.hideUnmatched && matchingItems != null
+        ? allSelected.where(matchingItems.contains).toList()
+        : allSelected;
+    final rowExtent = _selectedPreviewRowHeight(context) + 8;
+    if (_scrolledQuery != widget.query || _scrolledHideUnmatched != widget.hideUnmatched) {
+      if (_scrolledQuery != widget.query) _focusedMatch = null;
+      _scrolledQuery = widget.query;
+      _scrolledHideUnmatched = widget.hideUnmatched;
+      ++_scrollRequest;
+      final matches = matchingItems == null ? const <BooruItem>[] : visibleItems.where(matchingItems.contains).toList();
+      if (!matches.contains(_focusedMatch)) _focusedMatch = matches.firstOrNull;
+      if (_focusedMatch != null) _scrollToItem(visibleItems.indexOf(_focusedMatch!));
+    }
     if (allSelected.isEmpty) {
       return Center(
         child: Text(context.loc.settings.downloads.noItemsSelected),
       );
     }
+    if (visibleItems.isEmpty) {
+      return Center(child: Text(context.loc.preview.error.noResults));
+    }
 
     return FadingEdgeScrollView.from(
-      key: ValueKey('selected-preview-fade-$orderKey'),
       child: ReorderableListView.builder(
-        key: ValueKey('selected-preview-list-$orderKey'),
-        scrollController: scrollController,
-        padding: const EdgeInsets.all(16),
+        scrollController: widget.scrollController,
+        padding: const EdgeInsets.all(12),
+        itemExtent: rowExtent,
         buildDefaultDragHandles: false,
         proxyDecorator: (child, index, animation) => child,
-        itemCount: allSelected.length,
-        onReorderItem: (oldIndex, newIndex) => onReorderItem(
-          visibleItems: allSelected,
+        itemCount: visibleItems.length,
+        onReorderItem: (oldIndex, newIndex) => widget.onReorderItem(
+          visibleItems: visibleItems,
           oldIndex: oldIndex,
           newIndex: newIndex,
         ),
         itemBuilder: (context, index) {
-          final item = allSelected[index];
+          final item = visibleItems[index];
           final isDimmed = matchingItems != null && !matchingItems.contains(item);
-          final selectedIndex = searchHandler.currentTab.selectedIndexOf(item) ?? index;
-          final previewTags = selectedPreviewTags(item);
+          final selectedIndex = widget.tab.selectedIndexOf(item) ?? index;
+          final previewTags = widget.selectedPreviewTags(item);
 
           return ReorderableDelayedDragStartListener(
             key: ValueKey(item.key),
@@ -301,8 +394,9 @@ class _SelectedPreviewList extends StatelessWidget {
               selectedIndex: selectedIndex,
               previewTags: previewTags,
               isDimmed: isDimmed,
-              searchHandler: searchHandler,
-              onTap: () => onShowItemInfo(context, item, selectedIndex),
+              isSearchTarget: matchingItems != null && identical(item, _focusedMatch),
+              tab: widget.tab,
+              onTap: () => widget.onShowItemInfo(context, item, selectedIndex),
             ),
           );
         },
@@ -317,7 +411,8 @@ class _SelectedPreviewCard extends StatelessWidget {
     required this.selectedIndex,
     required this.previewTags,
     required this.isDimmed,
-    required this.searchHandler,
+    required this.isSearchTarget,
+    required this.tab,
     required this.onTap,
   });
 
@@ -325,57 +420,72 @@ class _SelectedPreviewCard extends StatelessWidget {
   final int selectedIndex;
   final List<Tag> previewTags;
   final bool isDimmed;
-  final SearchHandler searchHandler;
+  final bool isSearchTarget;
+  final SearchTab tab;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final source = tab.booruHandler.sourceBooruFor(item);
+    final rowHeight = _selectedPreviewRowHeight(context);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: isSearchTarget ? BorderSide(color: colorScheme.primary, width: 2) : BorderSide.none,
+        ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
           child: SizedBox(
-            height: 120,
+            height: rowHeight,
             child: Stack(
               children: [
                 Row(
                   children: [
                     SizedBox(
-                      width: 96,
-                      height: 120,
+                      width: 76,
+                      height: rowHeight,
                       child: ThumbnailBuild(
                         item: item,
-                        handler: searchHandler.currentBooruHandler,
+                        handler: tab.booruHandler,
                         selectedIndex: selectedIndex,
-                        onSelected: () => searchHandler.currentTab.selected.remove(item),
+                        onSelected: () => tab.selected.remove(item),
                       ),
                     ),
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
-                                '#${selectedIndex + 1}',
-                                style: Theme.of(context).textTheme.titleMedium,
+                                '#${selectedIndex + 1} · ${source.name ?? ''} ${item.serverId ?? ''}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.labelLarge,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            Text(
+                              _previewMetadata(item),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            const SizedBox(height: 4),
                             Expanded(
                               child: LayoutBuilder(
                                 builder: (context, constraints) {
                                   final style = Theme.of(context).textTheme.bodySmall;
                                   final fontSize = style?.fontSize ?? 12;
-                                  final lineHeight = fontSize * (style?.height ?? 1.25);
+                                  final lineHeight =
+                                      MediaQuery.textScalerOf(context).scale(fontSize) * (style?.height ?? 1.25);
                                   final linesThatFit = (constraints.maxHeight / lineHeight).floor();
                                   final maxLines = linesThatFit < 1 ? 1 : linesThatFit;
 
@@ -403,11 +513,24 @@ class _SelectedPreviewCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Icon(
-                      Icons.drag_handle,
-                      color: colorScheme.onSurfaceVariant,
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          tooltip: context.loc.settings.downloads.clearSelected,
+                          icon: const Icon(Icons.close, size: 20),
+                          onPressed: () => tab.selected.remove(item),
+                        ),
+                        ReorderableDragStartListener(
+                          index: selectedIndex,
+                          child: SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: Icon(Icons.drag_handle, color: colorScheme.onSurfaceVariant),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
                   ],
                 ),
                 if (isDimmed) ...[
@@ -439,6 +562,7 @@ class _SelectedPreviewCard extends StatelessWidget {
 
 class SelectedItemPreviewSheet extends StatefulWidget {
   const SelectedItemPreviewSheet({
+    required this.tab,
     required this.initialItem,
     required this.initialIndex,
     required this.selectedPreviewTags,
@@ -446,6 +570,7 @@ class SelectedItemPreviewSheet extends StatefulWidget {
     super.key,
   });
 
+  final SearchTab tab;
   final BooruItem initialItem;
   final int initialIndex;
   final List<Tag> Function(BooruItem item) selectedPreviewTags;
@@ -456,7 +581,7 @@ class SelectedItemPreviewSheet extends StatefulWidget {
 }
 
 class _SelectedItemPreviewSheetState extends State<SelectedItemPreviewSheet> {
-  final searchHandler = SearchHandler.instance;
+  SearchTab get tab => widget.tab;
 
   late final RxInt _currentIndex;
   late final PageController _pageController;
@@ -464,7 +589,7 @@ class _SelectedItemPreviewSheetState extends State<SelectedItemPreviewSheet> {
   @override
   void initState() {
     super.initState();
-    final selected = [...searchHandler.currentSelected];
+    final selected = [...tab.selected];
     var initialIndex = selected.indexOf(widget.initialItem);
     if (initialIndex == -1) {
       initialIndex = widget.initialIndex;
@@ -487,7 +612,7 @@ class _SelectedItemPreviewSheetState extends State<SelectedItemPreviewSheet> {
   }
 
   void _goToPage(int targetIndex) {
-    final count = searchHandler.currentSelected.length;
+    final count = tab.selected.length;
     if (count == 0) {
       return;
     }
@@ -509,115 +634,182 @@ class _SelectedItemPreviewSheetState extends State<SelectedItemPreviewSheet> {
       child: DraggableScrollableSheet(
         expand: false,
         initialChildSize: 0.66,
-        minChildSize: 0.33,
+        minChildSize: 0.5,
         maxChildSize: 0.92,
         builder: (context, scrollController) => SettingsBottomSheet(
           pinActionButtonsToBottom: true,
+          actionSpacing: 0,
           title: Obx(() {
-            final count = searchHandler.currentSelected.length;
+            final count = tab.selected.length;
             final safeIndex = count == 0 ? 0 : _currentIndex.value.clamp(0, count - 1);
             return _SelectionSheetTitle('${context.loc.item} #${safeIndex + 1}/$count');
           }),
-          scrollController: scrollController,
-          contentItems: [
-            SizedBox(
-              height: 280,
-              child: Obx(() {
-                final selected = [...searchHandler.currentSelected];
-                if (selected.isEmpty) {
-                  return Center(
-                    child: Text(context.loc.settings.downloads.noItemsSelected),
-                  );
-                }
-
-                final canGoPrevious = _currentIndex.value > 0;
-                final canGoNext = _currentIndex.value < selected.length - 1;
-
-                return Stack(
-                  alignment: Alignment.center,
+          content: Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Column(
                   children: [
-                    PageView.builder(
-                      controller: _pageController,
-                      itemCount: selected.length,
-                      onPageChanged: (value) => _currentIndex.value = value,
-                      itemBuilder: (context, pageIndex) {
-                        final pageItem = selected[pageIndex];
+                    SizedBox(
+                      height: (constraints.maxHeight * 0.45).clamp(0.0, 220.0),
+                      child: Obx(() {
+                        final selected = [...tab.selected];
+                        if (selected.isEmpty) {
+                          return Center(
+                            child: Text(context.loc.settings.downloads.noItemsSelected),
+                          );
+                        }
 
-                        return Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              maxWidth: 220,
-                              maxHeight: 260,
+                        final canGoPrevious = _currentIndex.value > 0;
+                        final canGoNext = _currentIndex.value < selected.length - 1;
+
+                        return Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            PageView.builder(
+                              controller: _pageController,
+                              itemCount: selected.length,
+                              onPageChanged: (value) => _currentIndex.value = value,
+                              itemBuilder: (context, pageIndex) {
+                                final pageItem = selected[pageIndex];
+
+                                return Center(
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 220,
+                                      maxHeight: 260,
+                                    ),
+                                    child: AspectRatio(
+                                      aspectRatio:
+                                          pageItem.previewAspectRatio ??
+                                          pageItem.sampleAspectRatio ??
+                                          pageItem.fileAspectRatio ??
+                                          0.75,
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: ThumbnailBuild(
+                                          item: pageItem,
+                                          handler: tab.booruHandler,
+                                          selectable: false,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
-                            child: AspectRatio(
-                              aspectRatio:
-                                  pageItem.previewAspectRatio ??
-                                  pageItem.sampleAspectRatio ??
-                                  pageItem.fileAspectRatio ??
-                                  0.75,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: ThumbnailBuild(
-                                  item: pageItem,
-                                  handler: searchHandler.currentBooruHandler,
-                                  selectable: false,
-                                ),
+                            Positioned(
+                              left: 8,
+                              child: _PreviewPageArrowButton(
+                                icon: Icons.chevron_left_rounded,
+                                tooltip: MaterialLocalizations.of(context).previousPageTooltip,
+                                onPressed: canGoPrevious ? () => _goToPage(_currentIndex.value - 1) : null,
                               ),
                             ),
+                            Positioned(
+                              right: 8,
+                              child: _PreviewPageArrowButton(
+                                icon: Icons.chevron_right_rounded,
+                                tooltip: MaterialLocalizations.of(context).nextPageTooltip,
+                                onPressed: canGoNext ? () => _goToPage(_currentIndex.value + 1) : null,
+                              ),
+                            ),
+                          ],
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 4),
+                    if (constraints.maxHeight >= 180)
+                      Obx(() {
+                        final selected = [...tab.selected];
+                        if (selected.isEmpty) return const SizedBox.shrink();
+                        final item = selected[_currentIndex.value.clamp(0, selected.length - 1)];
+                        final source = tab.booruHandler.sourceBooruFor(item);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            '${source.name ?? ''} · ${item.serverId ?? ''}\n${_previewMetadata(item)}',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
                         );
-                      },
-                    ),
-                    Positioned(
-                      left: 8,
-                      child: _PreviewPageArrowButton(
-                        icon: Icons.chevron_left_rounded,
-                        tooltip: MaterialLocalizations.of(context).previousPageTooltip,
-                        onPressed: canGoPrevious ? () => _goToPage(_currentIndex.value - 1) : null,
-                      ),
-                    ),
-                    Positioned(
-                      right: 8,
-                      child: _PreviewPageArrowButton(
-                        icon: Icons.chevron_right_rounded,
-                        tooltip: MaterialLocalizations.of(context).nextPageTooltip,
-                        onPressed: canGoNext ? () => _goToPage(_currentIndex.value + 1) : null,
+                      }),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        controller: scrollController,
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Obx(() {
+                          final selected = [...tab.selected];
+                          if (selected.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+
+                          final safeIndex = _currentIndex.value.clamp(0, selected.length - 1);
+                          final tags = widget
+                              .selectedPreviewTags(selected[safeIndex])
+                              .where((t) => t.fullString.trim().isNotEmpty);
+
+                          return Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              for (final tag in tags)
+                                Chip(
+                                  label: Text(tag.fullString),
+                                  visualDensity: VisualDensity.compact,
+                                  backgroundColor: tag.tagType.getColour()?.withValues(alpha: 0.18),
+                                  side: BorderSide(
+                                    color: tag.tagType.getColour() ?? Theme.of(context).dividerColor,
+                                  ),
+                                ),
+                            ],
+                          );
+                        }),
                       ),
                     ),
                   ],
-                );
-              }),
+                ),
+              ),
             ),
-            const SizedBox(height: 12),
+          ),
+          actionButtons: [
             Obx(() {
-              final selected = [...searchHandler.currentSelected];
-              if (selected.isEmpty) {
-                return const SizedBox.shrink();
-              }
-
-              final safeIndex = _currentIndex.value.clamp(0, selected.length - 1);
-              final tags = widget.selectedPreviewTags(selected[safeIndex]).where((t) => t.fullString.trim().isNotEmpty);
-
-              return Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final tag in tags)
-                    Chip(
-                      label: Text(tag.fullString),
-                      visualDensity: VisualDensity.compact,
-                      backgroundColor: tag.tagType.getColour()?.withValues(alpha: 0.18),
-                      side: BorderSide(
-                        color: tag.tagType.getColour() ?? Theme.of(context).dividerColor,
-                      ),
-                    ),
-                ],
+              final selected = [...tab.selected];
+              if (selected.isEmpty) return const SizedBox.shrink();
+              final index = _currentIndex.value.clamp(0, selected.length - 1);
+              final item = selected[index];
+              return IconButton(
+                tooltip: context.loc.settings.downloads.openHiddenItemViewer,
+                icon: const Icon(Icons.open_in_full),
+                onPressed: () => Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (_) => HiddenItemViewer(item: item, booru: tab.booruHandler.sourceBooruFor(item)),
+                  ),
+                ),
               );
             }),
-          ],
-          actionButtons: [
+            Obx(() {
+              final selected = [...tab.selected];
+              if (selected.isEmpty) return const SizedBox.shrink();
+              final index = _currentIndex.value.clamp(0, selected.length - 1);
+              return IconButton(
+                tooltip: context.loc.settings.downloads.clearSelected,
+                icon: const Icon(Icons.deselect),
+                onPressed: () {
+                  tab.selected.remove(selected[index]);
+                  if (tab.selected.isEmpty) {
+                    Navigator.of(context).pop();
+                  } else {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) _goToPage(index);
+                    });
+                  }
+                },
+              );
+            }),
             _MoveItemButton(
-              searchHandler: searchHandler,
+              tab: tab,
               currentIndex: _currentIndex,
               icon: Icons.vertical_align_top,
               targetIndexFor: (_, _) => 0,
@@ -626,7 +818,7 @@ class _SelectedItemPreviewSheetState extends State<SelectedItemPreviewSheet> {
               goToPage: _goToPage,
             ),
             _MoveItemButton(
-              searchHandler: searchHandler,
+              tab: tab,
               currentIndex: _currentIndex,
               icon: Icons.keyboard_arrow_up_rounded,
               targetIndexFor: (index, _) => index - 1,
@@ -635,7 +827,7 @@ class _SelectedItemPreviewSheetState extends State<SelectedItemPreviewSheet> {
               goToPage: _goToPage,
             ),
             _MoveItemButton(
-              searchHandler: searchHandler,
+              tab: tab,
               currentIndex: _currentIndex,
               icon: Icons.keyboard_arrow_down_rounded,
               targetIndexFor: (index, count) => index + 1,
@@ -644,7 +836,7 @@ class _SelectedItemPreviewSheetState extends State<SelectedItemPreviewSheet> {
               goToPage: _goToPage,
             ),
             _MoveItemButton(
-              searchHandler: searchHandler,
+              tab: tab,
               currentIndex: _currentIndex,
               icon: Icons.vertical_align_bottom,
               targetIndexFor: (_, count) => count - 1,
@@ -661,7 +853,7 @@ class _SelectedItemPreviewSheetState extends State<SelectedItemPreviewSheet> {
 
 class _MoveItemButton extends StatelessWidget {
   const _MoveItemButton({
-    required this.searchHandler,
+    required this.tab,
     required this.currentIndex,
     required this.icon,
     required this.targetIndexFor,
@@ -670,7 +862,7 @@ class _MoveItemButton extends StatelessWidget {
     required this.goToPage,
   });
 
-  final SearchHandler searchHandler;
+  final SearchTab tab;
   final RxInt currentIndex;
   final IconData icon;
   final int Function(int index, int count) targetIndexFor;
@@ -681,7 +873,7 @@ class _MoveItemButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final selected = [...searchHandler.currentSelected];
+      final selected = [...tab.selected];
       if (selected.isEmpty) {
         return const SizedBox.shrink();
       }
@@ -736,6 +928,8 @@ class _SelectedPreviewSearchInput extends StatefulWidget {
     required this.hintText,
     required this.suggestionsForToken,
     required this.onChanged,
+    required this.maxSuggestionsHeight,
+    this.actions,
   });
 
   final TextEditingController controller;
@@ -743,6 +937,8 @@ class _SelectedPreviewSearchInput extends StatefulWidget {
   final String hintText;
   final List<Tag> Function(String token) suggestionsForToken;
   final ValueChanged<String> onChanged;
+  final double maxSuggestionsHeight;
+  final Widget? actions;
 
   @override
   State<_SelectedPreviewSearchInput> createState() => _SelectedPreviewSearchInputState();
@@ -896,7 +1092,7 @@ class _SelectedPreviewSearchInputState extends State<_SelectedPreviewSearchInput
 
   @override
   Widget build(BuildContext context) {
-    final List<Tag> suggestions = _focusNode.hasFocus
+    final List<Tag> suggestions = _focusNode.hasFocus && widget.maxSuggestionsHeight >= _suggestionItemExtent
         ? widget.suggestionsForToken(_currentSearchToken(_latestInputValue))
         : const <Tag>[];
     if (_highlightedSuggestionIndex >= suggestions.length) {
@@ -915,16 +1111,22 @@ class _SelectedPreviewSearchInputState extends State<_SelectedPreviewSearchInput
           decoration: InputDecoration(
             labelText: widget.title,
             hintText: widget.hintText,
-            prefixIcon: const Icon(Icons.search),
+            prefixIcon: widget.actions == null ? const Icon(Icons.search) : null,
             suffixIcon: widget.controller.text.isEmpty
                 ? null
-                : IconButton(
-                    key: const Key('selected-preview-search-clear'),
-                    icon: Icon(
-                      Icons.close_rounded,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    onPressed: () => _setText(''),
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ?widget.actions,
+                      IconButton(
+                        key: const Key('selected-preview-search-clear'),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        onPressed: () => _setText(''),
+                      ),
+                    ],
                   ),
           ),
         ),
@@ -940,7 +1142,7 @@ class _SelectedPreviewSearchInputState extends State<_SelectedPreviewSearchInput
                     clipBehavior: Clip.antiAlias,
                     color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 168),
+                      constraints: BoxConstraints(maxHeight: widget.maxSuggestionsHeight),
                       child: ListView.builder(
                         controller: _suggestionsScrollController,
                         padding: EdgeInsets.zero,
@@ -954,10 +1156,9 @@ class _SelectedPreviewSearchInputState extends State<_SelectedPreviewSearchInput
 
                           return MouseRegion(
                             onEnter: (_) => _highlightSuggestion(index),
-                            child: Listener(
-                              behavior: HitTestBehavior.opaque,
-                              onPointerDown: (_) => _selectSuggestion(option),
+                            child: TextFieldTapRegion(
                               child: ListTile(
+                                onTap: () => _selectSuggestion(option),
                                 dense: true,
                                 visualDensity: VisualDensity.compact,
                                 selected: isHighlighted,
@@ -1060,19 +1261,31 @@ class _PreviewConstrainedBottomSheet extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onDismiss ?? () => Navigator.of(context).pop(),
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: GestureDetector(
-          onTap: () {},
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxSheetWidth),
-            child: child,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: GestureDetector(
+            onTap: () {},
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxSheetWidth),
+              child: child,
+            ),
           ),
         ),
       ),
     );
   }
 }
+
+double _selectedPreviewRowHeight(BuildContext context) =>
+    96.0 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.8);
+
+String _previewMetadata(BooruItem item) => [
+  item.fileExt?.toUpperCase() ?? '',
+  if (item.fileWidth != null && item.fileHeight != null) '${item.fileWidth!.round()} × ${item.fileHeight!.round()}',
+  if (item.fileSize != null) Tools.formatBytes(item.fileSize!, 1),
+].where((part) => part.isNotEmpty).join(' · ');
 
 class _SelectionSheetTitle extends StatelessWidget {
   const _SelectionSheetTitle(this.text);

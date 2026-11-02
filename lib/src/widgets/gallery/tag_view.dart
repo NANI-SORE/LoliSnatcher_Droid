@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart' show kTouchSlop;
 
 import 'package:auto_size_text_plus/auto_size_text_plus.dart';
 import 'package:collection/collection.dart';
@@ -55,10 +56,12 @@ import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/desktop/desktop_scroll.dart';
 import 'package:lolisnatcher/src/widgets/dialogs/comments_dialog.dart';
 import 'package:lolisnatcher/src/widgets/gallery/notes_renderer.dart';
+import 'package:lolisnatcher/src/widgets/drawers/downloads/hidden_items_page.dart';
 import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_query_editor_page.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_tag_chip.dart';
 import 'package:lolisnatcher/src/widgets/preview/page_indicator.dart';
+import 'package:lolisnatcher/src/widgets/preview/waterfall_bottom_bar.dart';
 import 'package:lolisnatcher/src/widgets/tabs/tab_selector.dart';
 import 'package:lolisnatcher/src/widgets/tags_manager/tm_list_item_dialog.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_card_build.dart';
@@ -1847,7 +1850,16 @@ class _TagContentPreviewState extends State<TagContentPreview> {
   final settingsHandler = SettingsHandler.instance;
   final viewerHandler = ViewerHandler.instance;
 
-  final AutoScrollController scrollController = AutoScrollController();
+  final AutoScrollController scrollController = AutoScrollController(axis: Axis.horizontal);
+  final GlobalKey _viewportKey = GlobalKey();
+  final ValueNotifier<bool> _dragSelecting = ValueNotifier(false);
+  Timer? _dragTimer;
+  Offset? _dragStart, _dragPosition;
+  int? _dragAnchor, _dragLastIndex;
+  bool _dragAdds = true;
+  bool _dragArmed = false;
+  List<BooruItem> _selectionBeforeDrag = [];
+  SearchTab? _dragTab;
 
   Booru? selectedBooru;
 
@@ -1877,73 +1889,175 @@ class _TagContentPreviewState extends State<TagContentPreview> {
     }
   }
 
-  Future<void> loadPreview({
-    bool refresh = false,
-    bool retry = false,
-  }) async {
-    if (selectedBooru == null) {
-      return;
-    }
-
+  Future<void> loadPreview({bool refresh = false, bool retry = false}) async {
+    if (!mounted || selectedBooru == null) return;
     if (refresh || tab == null) {
-      tab = SearchTab(
-        selectedBooru!,
-        null,
-        widget.tag,
-      );
+      _endDragSelection();
+      tab = SearchTab(selectedBooru!, null, widget.tag);
+      viewedIndex.value = -1;
       loading = false;
       isLastPage = false;
       errorString = '';
-      setState(() {});
+      if (scrollController.hasClients) scrollController.jumpTo(0);
     }
-
-    if (loading) {
-      return;
-    }
-
+    if (loading) return;
+    final requestTab = tab!;
+    final handler = requestTab.booruHandler;
     if (retry) {
       errorString = '';
-      tab!.booruHandler.errorString = '';
-
+      handler.errorString = '';
       isLastPage = false;
-      tab!.booruHandler.locked = false;
-      tab!.booruHandler.pageNum--;
+      handler.locked = false;
+      handler.pageNum--;
     }
-
-    if (isLastPage || errorString.isNotEmpty) {
-      return;
+    if (isLastPage || errorString.isNotEmpty || handler.locked) return;
+    setState(() => loading = true);
+    handler.pageNum++;
+    try {
+      await handler.search(widget.tag, null);
+      if (!mounted || !identical(tab, requestTab)) return;
+      isLastPage = handler.locked;
+      errorString = handler.errorString;
+      if (handler.totalCount.value == 0 && errorString.isEmpty) {
+        unawaited(handler.searchCount(widget.tag));
+      }
+    } catch (error) {
+      if (!mounted || !identical(tab, requestTab)) return;
+      errorString = handler.errorString = error.toString();
+    } finally {
+      if (mounted && identical(tab, requestTab)) setState(() => loading = false);
     }
+  }
 
-    if (tab!.booruHandler.locked == false) {
-      loading = true;
-      tab!.booruHandler.pageNum++;
+  void _toggleSelected(int index) {
+    final previewTab = tab;
+    if (widget.readOnly || previewTab == null) return;
+    final items = previewTab.booruHandler.filteredFetched;
+    if (index < 0 || index >= items.length) return;
+    final item = items[index];
+    if (previewTab.selected.contains(item)) {
+      previewTab.selected.remove(item);
+    } else {
+      previewTab.selected.add(item);
     }
-    setState(() {});
+  }
 
-    await tab!.booruHandler.search(widget.tag, null);
+  int? _itemAt(Offset globalPosition) {
+    final viewport = _viewportKey.currentContext?.findRenderObject();
+    if (viewport is! RenderBox || !viewport.hasSize || !scrollController.hasClients) return null;
+    final local = viewport.globalToLocal(globalPosition);
+    if (local.dy < 0 || local.dy > viewport.size.height) return null;
+    final x = local.dx.clamp(0.0, viewport.size.width);
+    final index = ((x + scrollController.offset - 16) / 120).floor();
+    final count = tab?.booruHandler.filteredFetched.length ?? 0;
+    return index >= 0 && index < count ? index : null;
+  }
 
-    if (tab!.booruHandler.locked && !isLastPage) {
-      isLastPage = true;
-      if (mounted) setState(() {});
+  void _startDragSelection(LongPressStartDetails details) {
+    final index = _itemAt(details.globalPosition);
+    if (index == null || widget.readOnly || tab == null) return;
+    _dragTab = tab;
+    _dragAnchor = index;
+    _dragStart = _dragPosition = details.globalPosition;
+    _dragArmed = false;
+    _selectionBeforeDrag = [...tab!.selected];
+    _dragAdds = !_selectionBeforeDrag.contains(tab!.booruHandler.filteredFetched[index]);
+    _applyDragSelection(index);
+    _dragSelecting.value = true;
+  }
+
+  void _moveDragSelection(LongPressMoveUpdateDetails details) {
+    if (_dragAnchor == null) return;
+    _dragPosition = details.globalPosition;
+    _dragArmed = _dragArmed || (details.globalPosition - _dragStart!).distance >= kTouchSlop;
+    final index = _itemAt(details.globalPosition);
+    if (index != null) _applyDragSelection(index);
+    if (_dragArmed) _dragTimer ??= Timer.periodic(const Duration(milliseconds: 16), (_) => _dragScrollTick());
+  }
+
+  void _applyDragSelection(int index) {
+    if (_dragAnchor == null || _dragLastIndex == index || !identical(_dragTab, tab)) return;
+    final items = tab!.booruHandler.filteredFetched;
+    if (_dragAnchor! >= items.length || index >= items.length) return;
+    final range = <BooruItem>[];
+    final direction = index >= _dragAnchor! ? 1 : -1;
+    for (var i = _dragAnchor!; i != index + direction; i += direction) {
+      range.add(items[i]);
     }
+    final rangeSet = Set<BooruItem>.identity()..addAll(range);
+    final initialSet = Set<BooruItem>.identity()..addAll(_selectionBeforeDrag);
+    tab!.selected.assignAll(
+      _dragAdds
+          ? [..._selectionBeforeDrag, ...range.where((item) => !initialSet.contains(item))]
+          : _selectionBeforeDrag.where((item) => !rangeSet.contains(item)),
+    );
+    _dragLastIndex = index;
+  }
 
-    if (tab!.booruHandler.errorString.isNotEmpty) {
-      errorString = tab!.booruHandler.errorString;
-      if (mounted) setState(() {});
+  void _dragScrollTick() {
+    final viewport = _viewportKey.currentContext?.findRenderObject();
+    if (!_dragArmed || _dragPosition == null || viewport is! RenderBox || !scrollController.hasClients) return;
+    final local = viewport.globalToLocal(_dragPosition!);
+    if (local.dy < 0 || local.dy > viewport.size.height) return;
+    const edge = 56.0;
+    final delta = local.dx < edge
+        ? -12 * ((edge - local.dx) / edge).clamp(0.0, 1.0)
+        : local.dx > viewport.size.width - edge
+        ? 12 * ((local.dx - viewport.size.width + edge) / edge).clamp(0.0, 1.0)
+        : 0.0;
+    if (delta == 0) return;
+    final position = scrollController.position;
+    scrollController.jumpTo((position.pixels + delta).clamp(position.minScrollExtent, position.maxScrollExtent));
+    final index = _itemAt(_dragPosition!);
+    if (index != null) _applyDragSelection(index);
+  }
+
+  void _endDragSelection() {
+    _dragSelecting.value = false;
+    _dragTimer?.cancel();
+    _dragTimer = null;
+    _dragAnchor = _dragLastIndex = null;
+    _dragStart = _dragPosition = null;
+    _dragTab = null;
+    _dragArmed = false;
+    _selectionBeforeDrag = [];
+  }
+
+  BooruItem? _leftmostVisibleItem() {
+    final previewTab = tab;
+    final viewport = _viewportKey.currentContext?.findRenderObject();
+    if (previewTab == null || viewport is! RenderBox || !viewport.hasSize) return null;
+    final bounds = viewport.localToGlobal(Offset.zero) & viewport.size;
+    int? bestIndex;
+    var bestDistance = double.infinity;
+    for (final entry in scrollController.tagMap.entries) {
+      final box = entry.value.context.findRenderObject();
+      if (box is! RenderBox || !box.hasSize) continue;
+      final rect = box.localToGlobal(Offset.zero) & box.size;
+      if (!rect.overlaps(bounds)) continue;
+      final distance = (rect.left - bounds.left).abs();
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = entry.key;
+      }
     }
+    final items = previewTab.booruHandler.filteredFetched;
+    return bestIndex != null && bestIndex < items.length ? items[bestIndex] : null;
+  }
 
-    if (tab!.booruHandler.totalCount.value == 0) {
-      unawaited(tab!.booruHandler.searchCount(widget.tag));
-    }
-
-    Future.delayed(const Duration(milliseconds: 200), () {
-      loading = false;
-      if (mounted) setState(() {});
-    });
-    if (mounted) setState(() {});
+  SearchTab _createTab({bool restorePosition = false}) {
+    final canReuse = !loading && errorString.isEmpty && tab?.booruHandler.filteredFetched.isNotEmpty == true;
+    return SearchHandler.instance.addTabByString(
+      widget.tag,
+      customBooru: selectedBooru,
+      previewTab: canReuse ? tab : null,
+      scrollToItem: canReuse && restorePosition ? _leftmostVisibleItem() : null,
+    );
   }
 
   Future<void> onPreviewTap(int index) async {
+    final previewTab = tab;
+    if (previewTab == null || index >= previewTab.booruHandler.filteredFetched.length) return;
     viewedIndex.value = index;
     final viewerKey = GlobalKey(debugLabel: 'viewer-${tab!.tags.replaceAll(' ', '_')}');
     ViewerHandler.instance.addViewer(viewerKey);
@@ -1951,11 +2065,12 @@ class _TagContentPreviewState extends State<TagContentPreview> {
       PageRouteBuilder(
         pageBuilder: (_, _, _) => GalleryViewPage(
           key: viewerKey,
-          tab: tab!,
+          tab: previewTab,
           initialIndex: index,
-          canSelect: false,
+          canSelect: !widget.readOnly,
           readOnly: widget.readOnly,
           onPageChanged: (page) async {
+            if (!mounted || !identical(tab, previewTab)) return;
             viewedIndex.value = page;
             await scrollController.scrollToIndex(
               page,
@@ -1980,7 +2095,7 @@ class _TagContentPreviewState extends State<TagContentPreview> {
         },
       ),
     );
-    viewedIndex.value = -1;
+    if (mounted) viewedIndex.value = -1;
   }
 
   Future<void> onPreviewDoubleTap(int index) async {
@@ -2007,8 +2122,100 @@ class _TagContentPreviewState extends State<TagContentPreview> {
     );
   }
 
+  Widget _buildNewTabButton() => Builder(
+    builder: (context) {
+      final HasTabWithTagResult hasTabWithTag = SearchHandler.instance.hasTabWithTag(
+        widget.tag,
+        customBooru: selectedBooru,
+      );
+
+      return IconButton(
+        icon: Stack(
+          children: [
+            const Icon(Icons.fiber_new),
+            if (hasTabWithTag.hasTagInAnyForm)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Icon(
+                  Icons.circle,
+                  size: 6,
+                  color: hasTabWithTag.color(context),
+                ),
+              ),
+          ],
+        ),
+        onPressed: () {
+          final newTab = _createTab();
+
+          FlashElements.showSnackbar(
+            context: context,
+            isKeyUnique: true,
+            key: 'added_new_tab',
+            duration: const Duration(seconds: 2),
+            title: Text(
+              context.loc.tagView.addedNewTab,
+              style: const TextStyle(fontSize: 20),
+            ),
+            content: Text(widget.tag, style: const TextStyle(fontSize: 16)),
+            leadingIcon: Icons.fiber_new,
+            sideColor: Colors.green,
+            primaryActionBuilder: (context, controller) {
+              return Row(
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      ServiceHandler.vibrate();
+                      if (SX.appMode.value.isMobile) {
+                        Navigator.of(context).popUntil((r) => r.isFirst); // exit viewer
+                      }
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        final search = SearchHandler.instance;
+                        final index = search.tabs.indexOf(newTab);
+                        if (index >= 0) search.changeTabIndex(index);
+                      });
+                      controller.dismiss();
+                    },
+                    icon: Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    onPressed: () => controller.dismiss(),
+                    icon: Icon(
+                      Icons.close,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+        onLongPress: () async {
+          final newTab = _createTab(restorePosition: true);
+          unawaited(ServiceHandler.vibrate());
+          if (SX.appMode.value.isMobile) {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          }
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final search = SearchHandler.instance;
+            final index = search.tabs.indexOf(newTab);
+            if (index >= 0) search.changeTabIndex(index);
+          });
+        },
+      );
+    },
+  );
+
   @override
   void dispose() {
+    _endDragSelection();
+    _dragSelecting.dispose();
+    scrollController.dispose();
+    viewedIndex.dispose();
     viewerHandler.removeTagPreview(
       widget.parentTab?.id,
       previewId,
@@ -2018,23 +2225,26 @@ class _TagContentPreviewState extends State<TagContentPreview> {
 
   @override
   Widget build(BuildContext context) {
+    final previewTab = tab;
     return AnimatedSize(
       duration: const Duration(milliseconds: 200),
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
-        child: tab == null
+        child: previewTab == null
             ? ListTile(
                 leading: Icon(
                   Icons.search,
                   color: Theme.of(context).iconTheme.color,
                 ),
                 title: Text(context.loc.tagView.preview),
-                trailing: widget.parentTab == null
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.list),
-                        onPressed: showTagPreviewsListDialog,
-                      ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildNewTabButton(),
+                    if (widget.parentTab != null)
+                      IconButton(icon: const Icon(Icons.list), onPressed: showTagPreviewsListDialog),
+                  ],
+                ),
                 subtitle: isSingleBooru
                     ? null
                     : Container(
@@ -2056,20 +2266,21 @@ class _TagContentPreviewState extends State<TagContentPreview> {
                       ),
                 onTap: isSingleBooru ? loadPreview : null,
               )
-            : ((tab!.booruHandler.filteredFetched.isEmpty && (loading || errorString.isNotEmpty))
+            : ((previewTab.booruHandler.filteredFetched.isEmpty && (loading || errorString.isNotEmpty))
                   ? ListTile(
                       leading: Icon(
                         loading ? Icons.search : Icons.restart_alt,
                         color: Theme.of(context).iconTheme.color,
                       ),
-                      trailing: loading
-                          ? const CircularProgressIndicator()
-                          : (widget.parentTab == null
-                                ? null
-                                : IconButton(
-                                    icon: const Icon(Icons.list),
-                                    onPressed: showTagPreviewsListDialog,
-                                  )),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (loading) const SizedBox.square(dimension: 24, child: CircularProgressIndicator()),
+                          _buildNewTabButton(),
+                          if (widget.parentTab != null)
+                            IconButton(icon: const Icon(Icons.list), onPressed: showTagPreviewsListDialog),
+                        ],
+                      ),
                       title: loading
                           ? Text(context.loc.tagView.previewIsLoading)
                           : Text(context.loc.tagView.failedToLoadPreview),
@@ -2088,7 +2299,7 @@ class _TagContentPreviewState extends State<TagContentPreview> {
                               const Icon(Icons.search),
                               const SizedBox(width: 8),
                               Obx(() {
-                                final int count = tab!.booruHandler.totalCount.value;
+                                final int count = previewTab.booruHandler.totalCount.value;
                                 return AnimatedSize(
                                   duration: const Duration(milliseconds: 200),
                                   alignment: Alignment.centerLeft,
@@ -2119,6 +2330,7 @@ class _TagContentPreviewState extends State<TagContentPreview> {
                               IconButton(
                                 onPressed: () {
                                   setState(() {
+                                    _endDragSelection();
                                     tab = null;
                                     selectedBooru = null;
                                   });
@@ -2131,94 +2343,18 @@ class _TagContentPreviewState extends State<TagContentPreview> {
                                   icon: const Icon(Icons.list),
                                   onPressed: showTagPreviewsListDialog,
                                 ),
-                              Builder(
-                                builder: (context) {
-                                  final HasTabWithTagResult hasTabWithTag = SearchHandler.instance.hasTabWithTag(
-                                    widget.tag,
-                                    customBooru: selectedBooru,
-                                  );
-
-                                  return IconButton(
-                                    icon: Stack(
-                                      children: [
-                                        const Icon(Icons.fiber_new),
-                                        if (hasTabWithTag.hasTagInAnyForm)
-                                          Positioned(
-                                            right: 0,
-                                            top: 0,
-                                            child: Icon(
-                                              Icons.circle,
-                                              size: 6,
-                                              color: hasTabWithTag.color(context),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    onPressed: () {
-                                      SearchHandler.instance.addTabByString(
-                                        widget.tag,
-                                        customBooru: selectedBooru,
-                                      );
-
-                                      FlashElements.showSnackbar(
-                                        context: context,
-                                        isKeyUnique: true,
-                                        key: 'added_new_tab',
-                                        duration: const Duration(seconds: 2),
-                                        title: Text(
-                                          context.loc.tagView.addedNewTab,
-                                          style: const TextStyle(fontSize: 20),
+                              Obx(
+                                () => previewTab.hasHiddenItems
+                                    ? IconButton(
+                                        tooltip: context.loc.settings.downloads.hiddenItems,
+                                        icon: const Icon(Icons.visibility_off_outlined),
+                                        onPressed: () => Navigator.of(context).push<void>(
+                                          MaterialPageRoute(builder: (_) => HiddenItemsPage(tab: previewTab)),
                                         ),
-                                        content: Text(widget.tag, style: const TextStyle(fontSize: 16)),
-                                        leadingIcon: Icons.fiber_new,
-                                        sideColor: Colors.green,
-                                        primaryActionBuilder: (context, controller) {
-                                          return Row(
-                                            children: [
-                                              IconButton(
-                                                onPressed: () {
-                                                  ServiceHandler.vibrate();
-                                                  if (SX.appMode.value.isMobile) {
-                                                    Navigator.of(context).popUntil((r) => r.isFirst); // exit viewer
-                                                  }
-                                                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                                                    SearchHandler.instance.changeTabIndex(
-                                                      SearchHandler.instance.tabs.length - 1,
-                                                    );
-                                                  });
-                                                  controller.dismiss();
-                                                },
-                                                icon: Icon(
-                                                  Icons.arrow_forward_rounded,
-                                                  color: Theme.of(context).colorScheme.onSurface,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 4),
-                                              IconButton(
-                                                onPressed: () => controller.dismiss(),
-                                                icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      );
-                                    },
-                                    onLongPress: () async {
-                                      await ServiceHandler.vibrate();
-                                      if (SX.appMode.value.isMobile) {
-                                        Navigator.of(context).popUntil((route) => route.isFirst); // exit viewer
-                                      }
-                                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                                        SearchHandler.instance.addTabByString(
-                                          widget.tag,
-                                          customBooru: selectedBooru,
-                                          switchToNew: true,
-                                        );
-                                      });
-                                    },
-                                  );
-                                },
+                                      )
+                                    : const SizedBox.shrink(),
                               ),
+                              _buildNewTabButton(),
                             ],
                           ),
                         ),
@@ -2242,156 +2378,183 @@ class _TagContentPreviewState extends State<TagContentPreview> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        SizedBox(
-                          height: 180 + 10 + 16, // card + listview paddings
-                          width: MediaQuery.sizeOf(context).width,
-                          child: NotificationListener<ScrollUpdateNotification>(
-                            onNotification: (notif) {
-                              final bool isNotAtStart = notif.metrics.pixels > 0;
-                              final bool isAtOrNearEdge =
-                                  notif.metrics.atEdge ||
-                                  notif.metrics.pixels >
-                                      (notif.metrics.maxScrollExtent - (notif.metrics.extentInside * 2));
-                              final bool isScreenFilled =
-                                  notif.metrics.extentBefore != 0 || notif.metrics.extentAfter != 0;
+                        GestureDetector(
+                          onLongPressStart: widget.readOnly ? null : _startDragSelection,
+                          onLongPressMoveUpdate: widget.readOnly ? null : _moveDragSelection,
+                          onLongPressEnd: (_) => _endDragSelection(),
+                          onLongPressCancel: _endDragSelection,
+                          child: SizedBox(
+                            key: _viewportKey,
+                            height: 180 + 10 + 16, // card + listview paddings
+                            width: MediaQuery.sizeOf(context).width,
+                            child: NotificationListener<ScrollUpdateNotification>(
+                              onNotification: (notif) {
+                                final bool isNotAtStart = notif.metrics.pixels > 0;
+                                final bool isAtOrNearEdge =
+                                    notif.metrics.atEdge ||
+                                    notif.metrics.pixels >
+                                        (notif.metrics.maxScrollExtent - (notif.metrics.extentInside * 2));
+                                final bool isScreenFilled =
+                                    notif.metrics.extentBefore != 0 || notif.metrics.extentAfter != 0;
 
-                              if (!loading) {
-                                if (!isScreenFilled || (isNotAtStart && isAtOrNearEdge)) {
-                                  loadPreview();
+                                if (!loading) {
+                                  if (!isScreenFilled || (isNotAtStart && isAtOrNearEdge)) {
+                                    loadPreview();
+                                  }
                                 }
-                              }
 
-                              return true;
-                            },
-                            child: Scrollbar(
-                              controller: scrollController,
-                              interactive: true,
-                              thickness: 6,
-                              thumbVisibility: true,
-                              child: Listener(
-                                onPointerSignal: (event) => desktopPointerScroll(scrollController, event),
-                                child: FadingEdgeScrollView.from(
-                                  child: ListView.builder(
-                                    controller: scrollController,
-                                    shrinkWrap: true,
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: tab!.booruHandler.filteredFetched.isEmpty
-                                        ? 1
-                                        : tab!.booruHandler.filteredFetched.length +
-                                              ((loading || errorString.isNotEmpty) ? 1 : 0),
-                                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-                                    itemBuilder: (context, index) {
-                                      if (tab!.booruHandler.filteredFetched.isEmpty) {
-                                        return Center(
-                                          child: Column(
-                                            // mainAxisSize: MainAxisSize.max,
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              const Kaomoji(
-                                                category: KaomojiCategory.indifference,
-                                                style: TextStyle(fontSize: 24),
-                                              ),
-                                              Text(
-                                                context.loc.nothingFound,
-                                                style: const TextStyle(fontSize: 16),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      }
-
-                                      if (loading && index == tab!.booruHandler.filteredFetched.length) {
-                                        return const Center(
-                                          child: Padding(
-                                            padding: EdgeInsets.symmetric(horizontal: 32),
-                                            child: CircularProgressIndicator(),
-                                          ),
-                                        );
-                                      }
-
-                                      if (errorString.isNotEmpty && index == tab!.booruHandler.filteredFetched.length) {
-                                        return Center(
-                                          child: Container(
-                                            padding: const EdgeInsets.all(16),
-                                            margin: const EdgeInsets.all(16),
-                                            decoration: BoxDecoration(
-                                              color: Theme.of(context).colorScheme.surface,
-                                              border: Border.all(color: Theme.of(context).dividerColor),
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            child: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              spacing: 8,
-                                              children: [
-                                                const Icon(
-                                                  Icons.error_outline,
-                                                  size: 30,
-                                                ),
-                                                Text(
-                                                  context.loc.tagView.failedToLoadPreviewPage,
-                                                  style: const TextStyle(fontSize: 16),
-                                                ),
-                                                ElevatedButton(
-                                                  onPressed: () {
-                                                    loadPreview(retry: true);
-                                                  },
-                                                  child: Text(context.loc.tagView.tryAgain),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      }
-
-                                      final item = tab!.booruHandler.filteredFetched[index];
-                                      final currentFetched = tab!.booruHandler.filteredFetched;
-                                      final bool isFirstOfPage =
-                                          index == 0 || item.fetchedPage != currentFetched[index - 1].fetchedPage;
-
-                                      return Material(
-                                        color: Colors.transparent,
-                                        child: Container(
-                                          padding: const EdgeInsets.only(right: 8),
-                                          height: 180,
-                                          width: 120,
-                                          child: ValueListenableBuilder(
-                                            valueListenable: viewedIndex,
-                                            builder: (context, viewedIndex, _) {
-                                              return Stack(
+                                return true;
+                              },
+                              child: Scrollbar(
+                                controller: scrollController,
+                                interactive: true,
+                                thickness: 6,
+                                thumbVisibility: true,
+                                child: Listener(
+                                  onPointerSignal: (event) => desktopPointerScroll(scrollController, event),
+                                  child: Obx(
+                                    () => FadingEdgeScrollView.from(
+                                      child: ListView.builder(
+                                        controller: scrollController,
+                                        shrinkWrap: true,
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: previewTab.booruHandler.filteredFetched.isEmpty
+                                            ? 1
+                                            : previewTab.booruHandler.filteredFetched.length +
+                                                  ((loading || errorString.isNotEmpty) ? 1 : 0),
+                                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+                                        itemBuilder: (context, index) {
+                                          if (previewTab.booruHandler.filteredFetched.isEmpty) {
+                                            return Center(
+                                              child: Column(
+                                                // mainAxisSize: MainAxisSize.max,
+                                                mainAxisAlignment: MainAxisAlignment.center,
                                                 children: [
-                                                  ThumbnailCardBuild(
-                                                    index: index,
-                                                    item: item,
-                                                    handler: tab!.booruHandler,
-                                                    scrollController: scrollController,
-                                                    isHighlighted: viewedIndex == index,
-                                                    selectable: false,
-                                                    onTap: onPreviewTap,
-                                                    onDoubleTap: onPreviewDoubleTap,
-                                                    // onLongPress: onPreviewLongPress, // TODO use select here somehow?
-                                                    onSecondaryTap: onPreviewSecondaryTap,
+                                                  const Kaomoji(
+                                                    category: KaomojiCategory.indifference,
+                                                    style: TextStyle(fontSize: 24),
                                                   ),
-                                                  if (isFirstOfPage && item.fetchedPage > -1)
-                                                    Positioned(
-                                                      top: 2,
-                                                      left: 2,
-                                                      child: IgnorePointer(
-                                                        child: GridPageIndicator(item.fetchedPage, tab: tab!),
-                                                      ),
-                                                    ),
+                                                  Text(
+                                                    context.loc.nothingFound,
+                                                    style: const TextStyle(fontSize: 16),
+                                                  ),
                                                 ],
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      );
-                                    },
+                                              ),
+                                            );
+                                          }
+
+                                          if (loading && index == previewTab.booruHandler.filteredFetched.length) {
+                                            return const Center(
+                                              child: Padding(
+                                                padding: EdgeInsets.symmetric(horizontal: 32),
+                                                child: CircularProgressIndicator(),
+                                              ),
+                                            );
+                                          }
+
+                                          if (errorString.isNotEmpty &&
+                                              index == previewTab.booruHandler.filteredFetched.length) {
+                                            return Center(
+                                              child: Container(
+                                                padding: const EdgeInsets.all(16),
+                                                margin: const EdgeInsets.all(16),
+                                                decoration: BoxDecoration(
+                                                  color: Theme.of(context).colorScheme.surface,
+                                                  border: Border.all(color: Theme.of(context).dividerColor),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  spacing: 8,
+                                                  children: [
+                                                    const Icon(
+                                                      Icons.error_outline,
+                                                      size: 30,
+                                                    ),
+                                                    Text(
+                                                      context.loc.tagView.failedToLoadPreviewPage,
+                                                      style: const TextStyle(fontSize: 16),
+                                                    ),
+                                                    ElevatedButton(
+                                                      onPressed: () {
+                                                        loadPreview(retry: true);
+                                                      },
+                                                      child: Text(context.loc.tagView.tryAgain),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          }
+
+                                          final item = previewTab.booruHandler.filteredFetched[index];
+                                          final currentFetched = previewTab.booruHandler.filteredFetched;
+                                          final bool isFirstOfPage =
+                                              index == 0 || item.fetchedPage != currentFetched[index - 1].fetchedPage;
+
+                                          return Material(
+                                            color: Colors.transparent,
+                                            child: Container(
+                                              padding: const EdgeInsets.only(right: 8),
+                                              height: 180,
+                                              width: 120,
+                                              child: ValueListenableBuilder(
+                                                valueListenable: viewedIndex,
+                                                builder: (context, viewedIndex, _) {
+                                                  return Stack(
+                                                    children: [
+                                                      Obx(() {
+                                                        final hasSelection = previewTab.selected.isNotEmpty;
+                                                        return ThumbnailCardBuild(
+                                                          index: index,
+                                                          item: item,
+                                                          handler: previewTab.booruHandler,
+                                                          scrollController: scrollController,
+                                                          isHighlighted: viewedIndex == index,
+                                                          selectable: !widget.readOnly && hasSelection,
+                                                          // Selection must not replace the loaded image's Hero subtree.
+                                                          useHero: false,
+                                                          selectedIndex: previewTab.selectedIndexOf(item),
+                                                          onSelected: _toggleSelected,
+                                                          onTap: onPreviewTap,
+                                                          onDoubleTap: onPreviewDoubleTap,
+                                                          onSecondaryTap: onPreviewSecondaryTap,
+                                                        );
+                                                      }),
+                                                      if (isFirstOfPage && item.fetchedPage > -1)
+                                                        Positioned(
+                                                          top: 2,
+                                                          left: 2,
+                                                          child: IgnorePointer(
+                                                            child: GridPageIndicator(item.fetchedPage, tab: previewTab),
+                                                          ),
+                                                        ),
+                                                    ],
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
                         ),
+                        if (!widget.readOnly)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Center(
+                              child: ValueListenableBuilder(
+                                valueListenable: _dragSelecting,
+                                child: SelectionButtons(key: ValueKey(previewTab.id), tab: previewTab),
+                                builder: (_, selecting, child) => IgnorePointer(ignoring: selecting, child: child),
+                              ),
+                            ),
+                          ),
                         const SizedBox(height: 12),
                       ],
                     )),

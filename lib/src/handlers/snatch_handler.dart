@@ -51,9 +51,9 @@ class SnatchHandler {
   final RxInt shareReceived = 0.obs;
   final RxInt shareTotal = 0.obs;
 
-  final RxList<({BooruItem item, Booru booru})> existsItems = RxList([]);
-  final RxList<({BooruItem item, Booru booru})> failedItems = RxList([]);
-  final RxList<({BooruItem item, Booru booru})> cancelledItems = RxList([]);
+  final RxList<RetryableItem> existsItems = RxList([]);
+  final RxList<RetryableItem> failedItems = RxList([]);
+  final RxList<RetryableItem> cancelledItems = RxList([]);
 
   CancelToken? cancelToken;
   CancelToken? shareCancelToken;
@@ -63,6 +63,7 @@ class SnatchHandler {
   bool _retryCurrentShareRequested = false;
   int _shareOperationId = 0;
   bool _shareCancelled = false;
+  int _automaticShareRetries = 0;
 
   double get currentProgress {
     if (total.value == 0) return 0;
@@ -70,8 +71,8 @@ class SnatchHandler {
   }
 
   double get currentShareProgress {
-    if (shareTotal.value == 0) return 0;
-    return shareReceived.value / shareTotal.value;
+    if (shareTotal.value <= 0) return 0;
+    return (shareReceived.value / shareTotal.value).clamp(0.0, 1.0);
   }
 
   final RxList<SnatchItem> queuedList = RxList<SnatchItem>([]);
@@ -108,9 +109,7 @@ class SnatchHandler {
     }
   }
 
-  void onRemoveRetryItem(
-    ({BooruItem item, Booru booru}) record,
-  ) {
+  void onRemoveRetryItem(RetryableItem record) {
     existsItems.remove(record);
     failedItems.remove(record);
     cancelledItems.remove(record);
@@ -127,17 +126,28 @@ class SnatchHandler {
     List<BooruItem> exists = const [],
     List<BooruItem> failed = const [],
     List<BooruItem> cancelled = const [],
+    Future<bool> Function()? retryShare,
+    int shareItemCount = 1,
   }) {
-    existsItems.addAll(exists.map((e) => (booru: booru, item: e)));
-    failedItems.addAll(failed.map((e) => (booru: booru, item: e)));
-    cancelledItems.addAll(cancelled.map((e) => (booru: booru, item: e)));
+    RetryableItem record(BooruItem item) => RetryableItem(
+      item: item,
+      booru: booru,
+      retryShare: retryShare,
+      shareItemCount: shareItemCount,
+    );
+    existsItems.addAll(exists.map(record));
+    failedItems.addAll(failed.map(record));
+    cancelledItems.addAll(cancelled.map(record));
   }
 
   Future<void> onRetryAll({
     required int cooldown,
     bool ignoreExists = false,
   }) async {
-    final itemsToRetry = [...existsItems, ...failedItems, ...cancelledItems];
+    final snapshot = [...existsItems, ...failedItems, ...cancelledItems];
+    final shareRetries = snapshot.where((record) => record.retryShare != null).toList();
+    final itemsToRetry = snapshot.where((record) => record.retryShare == null).toList();
+    final existingSnapshot = [...existsItems];
     final Set<Booru> uniqueBoorus = itemsToRetry.map((i) => i.booru).toSet();
     final Map<Booru, List<BooruItem>> booruItemsMap = {};
     booruItemsMap.addEntries(uniqueBoorus.map((b) => MapEntry(b, [])));
@@ -175,22 +185,50 @@ class SnatchHandler {
             items,
             cooldown,
             booru,
-            ignoreExists || items.any((i) => existsItems.any((e) => e.item == i)),
+            ignoreExists || items.any((i) => existingSnapshot.any((e) => e.item == i)),
           ),
         );
       }),
     );
 
     queuedList.addAll(snatchItems);
+    for (final record in itemsToRetry) {
+      onRemoveRetryItem(record);
+    }
 
-    onClearRetryableItems();
+    for (final record in shareRetries) {
+      if (currentShare.value != null) break;
+      if (!await onRetryShare(record)) break;
+    }
+  }
+
+  Future<bool> onRetryShare(RetryableItem record) async {
+    final retry = record.retryShare;
+    if (retry == null ||
+        currentShare.value != null ||
+        record.retrying ||
+        (!failedItems.contains(record) && !cancelledItems.contains(record))) {
+      return false;
+    }
+    record.retrying = true;
+    onRemoveRetryItem(record);
+    try {
+      // The share service records a new retry entry if this attempt fails.
+      return await retry();
+    } catch (_) {
+      failedItems.add(record);
+      return false;
+    } finally {
+      record.retrying = false;
+    }
   }
 
   void onRetryItem(
-    ({BooruItem item, Booru booru}) record, {
+    RetryableItem record, {
     required int cooldown,
     bool ignoreExists = false,
   }) {
+    if (record.retryShare != null) return;
     queuedList.add(
       SnatchItem(
         [record.item],
@@ -217,6 +255,7 @@ class SnatchHandler {
     _stopShareProgressStuckTimer();
     _shareOperationId++;
     _shareCancelled = false;
+    _automaticShareRetries = 0;
     shareCancelToken = null;
     _retryCurrentShareRequested = false;
     currentShare.value = ShareItem(booruItems, booru, _shareOperationId);
@@ -236,11 +275,14 @@ class SnatchHandler {
   }) {
     if (!isShareActive(operationId)) return;
 
+    final itemChanged = !identical(shareActiveItem.value, item) || shareProgress.value != itemIndex;
+    final bytesIncreased = received > shareReceived.value;
+    if (itemChanged) _automaticShareRetries = 0;
     shareProgress.value = itemIndex;
     shareActiveItem.value = item;
     shareReceived.value = received;
-    shareTotal.value = total;
-    if (shareCancelToken != null && !shareCancelToken!.isCancelled) {
+    shareTotal.value = total > 0 ? total : 0;
+    if (bytesIncreased && shareCancelToken != null && !shareCancelToken!.isCancelled) {
       _restartShareProgressStuckTimer();
     }
   }
@@ -287,6 +329,11 @@ class SnatchHandler {
   }
 
   void onShareRetryCurrent() {
+    _automaticShareRetries = 0;
+    _retryShareCurrent();
+  }
+
+  void _retryShareCurrent() {
     final token = shareCancelToken;
     if (_shareCancelled || token == null || token.isCancelled) {
       return;
@@ -352,7 +399,14 @@ class SnatchHandler {
       const Duration(seconds: 10),
       () {
         _shareProgressStuckTimer = null;
-        onShareRetryCurrent();
+        if (_automaticShareRetries < 3) {
+          _automaticShareRetries++;
+          _retryShareCurrent();
+        } else {
+          // End a genuinely stalled transfer instead of restarting forever.
+          // This is a failure, not a user cancellation or a manual retry.
+          shareCancelToken?.cancel('Share download stalled');
+        }
       },
     );
   }
@@ -643,6 +697,21 @@ class SnatchHandler {
     onShareCancel();
     queuedList.removeListener(queuedListListener);
   }
+}
+
+class RetryableItem {
+  RetryableItem({
+    required this.item,
+    required this.booru,
+    this.retryShare,
+    this.shareItemCount = 1,
+  });
+
+  final BooruItem item;
+  final Booru booru;
+  final Future<bool> Function()? retryShare;
+  final int shareItemCount;
+  bool retrying = false;
 }
 
 class SnatchItem {

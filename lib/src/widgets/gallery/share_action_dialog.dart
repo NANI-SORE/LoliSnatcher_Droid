@@ -100,10 +100,17 @@ void showShareActionDialog({
   bool showHydrusOption = false,
   RememberShareActionCallback? onRememberAction,
 }) {
+  bool rememberChoice = false;
+  bool includeTags =
+      showTagOptions &&
+      {
+        ShareAction.postUrlWithTags,
+        ShareAction.fileUrlWithTags,
+        ShareAction.fileWithTags,
+      }.contains(currentAction);
   showDialog(
     context: context,
     builder: (dialogContext) {
-      bool rememberChoice = false;
       final bool showRememberChoice = currentAction.isAsk && onRememberAction != null;
       final ShareAction visibleCurrentAction = _visibleActionFor(
         currentAction,
@@ -113,104 +120,63 @@ void showShareActionDialog({
       return StatefulBuilder(
         builder: (context, setDialogState) {
           Future<void> onActionSelected(ShareAction action) async {
-            if (rememberChoice) {
-              await onRememberAction?.call(action);
-            }
+            if (rememberChoice) await onRememberAction?.call(action);
           }
 
+          final choices = [
+            if (showPostUrlOptions)
+              (
+                action: includeTags ? ShareAction.postUrlWithTags : ShareAction.postUrl,
+                icon: CupertinoIcons.link,
+                title: dialogContext.loc.viewer.appBar.postURL,
+              ),
+            (
+              action: includeTags ? ShareAction.fileUrlWithTags : ShareAction.fileUrl,
+              icon: Icons.link,
+              title: dialogContext.loc.viewer.appBar.fileURL,
+            ),
+            (
+              action: includeTags ? ShareAction.fileWithTags : ShareAction.file,
+              icon: Icons.file_present,
+              title: dialogContext.loc.viewer.appBar.file,
+            ),
+            if (showHydrusOption)
+              (
+                action: ShareAction.hydrus,
+                icon: Icons.cloud_upload_outlined,
+                title: dialogContext.loc.viewer.appBar.hydrus,
+              ),
+          ];
           return SettingsDialog(
             title: Text(dialogContext.loc.viewer.appBar.whatToShare),
+            contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
             contentItems: [
-              const SizedBox(height: 15),
-              Column(
-                children: [
-                  if (showPostUrlOptions) ...[
-                    _ShareActionTile(
-                      action: ShareAction.postUrl,
-                      currentAction: visibleCurrentAction,
-                      icon: const Icon(CupertinoIcons.link),
-                      title: dialogContext.loc.viewer.appBar.postURL,
-                      onSelected: onActionSelected,
-                      onTap: actions[ShareAction.postUrl],
-                    ),
-                    if (showTagOptions)
-                      _ShareActionTile(
-                        action: ShareAction.postUrlWithTags,
-                        currentAction: visibleCurrentAction,
-                        icon: const _TagOverlayIcon(child: Icon(CupertinoIcons.link)),
-                        title: dialogContext.loc.viewer.appBar.postURLWithTags,
-                        onSelected: onActionSelected,
-                        onTap: actions[ShareAction.postUrlWithTags],
-                      ),
-                  ],
-                  _ShareActionTile(
-                    action: ShareAction.fileUrl,
-                    currentAction: visibleCurrentAction,
-                    icon: const Icon(CupertinoIcons.link),
-                    title: dialogContext.loc.viewer.appBar.fileURL,
-                    onSelected: onActionSelected,
-                    onTap: actions[ShareAction.fileUrl],
-                  ),
-                  if (showTagOptions)
-                    _ShareActionTile(
-                      action: ShareAction.fileUrlWithTags,
-                      currentAction: visibleCurrentAction,
-                      icon: const _TagOverlayIcon(child: Icon(CupertinoIcons.link)),
-                      title: dialogContext.loc.viewer.appBar.fileURLWithTags,
-                      onSelected: onActionSelected,
-                      onTap: actions[ShareAction.fileUrlWithTags],
-                    ),
-                  _ShareActionTile(
-                    action: ShareAction.file,
-                    currentAction: visibleCurrentAction,
-                    icon: const Icon(Icons.file_present),
-                    title: dialogContext.loc.viewer.appBar.file,
-                    onSelected: onActionSelected,
-                    onTap: actions[ShareAction.file],
-                  ),
-                  if (showTagOptions)
-                    _ShareActionTile(
-                      action: ShareAction.fileWithTags,
-                      currentAction: visibleCurrentAction,
-                      icon: const _TagOverlayIcon(child: Icon(Icons.file_present)),
-                      title: dialogContext.loc.viewer.appBar.fileWithTags,
-                      onSelected: onActionSelected,
-                      onTap: actions[ShareAction.fileWithTags],
-                    ),
-                  if (showHydrusOption)
-                    _ShareActionTile(
-                      action: ShareAction.hydrus,
-                      currentAction: visibleCurrentAction,
-                      icon: const Icon(Icons.file_present),
-                      title: dialogContext.loc.viewer.appBar.hydrus,
-                      onSelected: onActionSelected,
-                      onTap: actions[ShareAction.hydrus],
-                    ),
-                ],
-              ),
+              for (final choice in choices)
+                _ShareActionTile(
+                  action: choice.action,
+                  currentAction: visibleCurrentAction,
+                  icon: Icon(choice.icon),
+                  title: choice.title,
+                  onSelected: onActionSelected,
+                  onTap: actions[choice.action],
+                ),
+              if (showTagOptions)
+                CheckboxListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: Text(context.loc.settings.downloads.includeTags),
+                  value: includeTags,
+                  onChanged: (value) => setDialogState(() => includeTags = value ?? false),
+                ),
               if (showRememberChoice)
-                Padding(
-                  padding: const EdgeInsets.only(top: 24, bottom: 15),
-                  child: ListTile(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(color: Theme.of(context).colorScheme.secondary),
-                    ),
-                    onTap: () {
-                      setDialogState(() {
-                        rememberChoice = !rememberChoice;
-                      });
-                    },
-                    leading: Checkbox(
-                      value: rememberChoice,
-                      onChanged: (value) {
-                        setDialogState(() {
-                          rememberChoice = value ?? false;
-                        });
-                      },
-                    ),
-                    title: Text(dialogContext.loc.viewer.appBar.rememberMyChoice),
-                  ),
+                CheckboxListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: Text(dialogContext.loc.viewer.appBar.rememberMyChoice),
+                  value: rememberChoice,
+                  onChanged: (value) => setDialogState(() => rememberChoice = value ?? false),
                 ),
             ],
           );
@@ -254,7 +220,7 @@ class _ShareActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.only(bottom: 6),
       child: ListTile(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
@@ -266,36 +232,14 @@ class _ShareActionTile extends StatelessWidget {
         onTap: onTap == null
             ? null
             : () async {
-                await onSelected?.call(action);
+                if (!context.mounted || ModalRoute.of(context)?.isCurrent != true) return;
                 Navigator.of(context).pop();
+                await onSelected?.call(action);
                 await onTap!();
               },
         leading: icon,
         title: Text(title),
       ),
-    );
-  }
-}
-
-class _TagOverlayIcon extends StatelessWidget {
-  const _TagOverlayIcon({
-    required this.child,
-  });
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        child,
-        const Positioned(
-          bottom: -10,
-          right: -10,
-          child: Icon(CupertinoIcons.tag, size: 14),
-        ),
-      ],
     );
   }
 }

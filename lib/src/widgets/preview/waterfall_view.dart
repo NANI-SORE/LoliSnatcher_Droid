@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/gestures.dart' show kTouchSlop;
 
 import 'package:get/get.dart' hide ContextExt;
 import 'package:scroll_to_index/scroll_to_index.dart';
@@ -69,7 +70,10 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   Timer? dragAutoScrollTimer;
   Timer? dragControlsUnblockTimer;
   Offset? latestDragGlobalPosition;
+  Offset? dragStartGlobalPosition;
+  bool dragScrollArmed = false;
   bool isDragSelecting = false;
+  SearchTab? dragTab;
   double dragAutoScrollDelta = 0;
   int? dragAnchorIndex;
   int? dragCurrentHitIndex;
@@ -147,23 +151,47 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   }
 
   void tabIndexListener() {
+    if (isDragSelecting && !identical(dragTab, searchHandler.currentTabOrNull)) {
+      endDragSelection();
+    }
+    if (isPinchResizing) {
+      pinchResizeAnchor = null;
+      endPinchResize();
+    }
     final tab = searchHandler.currentTabOrNull;
     final controller = searchHandler.gridScrollController;
+    if (controller is WaterfallScrollController) controller.cancelItemRestore();
     final generation = ++_tabScrollRestoreGeneration;
     final savedOffset = tab?.scrollPosition ?? 0;
 
-    void restoreScroll(int attemptsLeft) {
+    Future<void> restoreScroll(int attemptsLeft) async {
       if (!mounted ||
           generation != _tabScrollRestoreGeneration ||
           !identical(searchHandler.currentTabOrNull, tab) ||
           !identical(searchHandler.gridScrollController, controller)) {
         return;
       }
-      if (!controller.hasClients) {
+      if (!controller.hasClients || !controller.position.hasContentDimensions) {
         if (attemptsLeft > 0) {
           WidgetsBinding.instance.addPostFrameCallback((_) => restoreScroll(attemptsLeft - 1));
           WidgetsBinding.instance.ensureVisualUpdate();
         }
+        return;
+      }
+      final targetItem = tab?.pendingScrollItem;
+      if (targetItem != null) {
+        final targetIndex = tab!.booruHandler.filteredFetched.indexOf(targetItem);
+        if (targetIndex >= 0 && controller is WaterfallScrollController) {
+          await controller.restoreItem(
+            targetIndex,
+            isCurrent: () =>
+                mounted && generation == _tabScrollRestoreGeneration && searchHandler.currentTabOrNull == tab,
+          );
+        }
+        if (!mounted || generation != _tabScrollRestoreGeneration || searchHandler.currentTabOrNull != tab) return;
+        tab.pendingScrollItem = null;
+        searchHandler.refreshCurrentScrollPage();
+        _showFloatingBars();
         return;
       }
       controller.jumpTo(savedOffset.clamp(controller.position.minScrollExtent, controller.position.maxScrollExtent));
@@ -223,6 +251,8 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
 
   @override
   void dispose() {
+    final controller = searchHandler.gridScrollController;
+    if (controller is WaterfallScrollController) controller.cancelItemRestore();
     viewedItemCleanupTimer?.cancel();
     stopDragAutoScroll();
     dragControlsUnblockTimer?.cancel();
@@ -495,7 +525,14 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
     dragControlsUnblockTimer?.cancel();
     searchHandler.selectionControlsBlocked.value = true;
     isDragSelecting = true;
+    dragTab = searchHandler.currentTabOrNull;
+    if (dragTab == null) {
+      endDragSelection();
+      return;
+    }
     latestDragGlobalPosition = details.globalPosition;
+    dragStartGlobalPosition = details.globalPosition;
+    dragScrollArmed = false;
     dragAnchorIndex = null;
     dragCurrentHitIndex = null;
     dragSelectAdds = null;
@@ -528,11 +565,20 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
     }
 
     latestDragGlobalPosition = details.globalPosition;
+    if (!dragScrollArmed &&
+        dragStartGlobalPosition != null &&
+        (details.globalPosition - dragStartGlobalPosition!).distance >= kTouchSlop) {
+      dragScrollArmed = true;
+    }
     applyDragSelectionRangeAt(details.globalPosition);
     updateDragAutoScroll();
   }
 
   void applyDragSelectionRangeAt(Offset globalPosition) {
+    if (!identical(dragTab, searchHandler.currentTabOrNull)) {
+      endDragSelection();
+      return;
+    }
     final anchorIndex = dragAnchorIndex;
     if (anchorIndex == null) {
       return;
@@ -550,6 +596,11 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   }
 
   void applyDragSelectionRange(int hitIndex) {
+    final tab = dragTab;
+    if (tab == null || !identical(tab, searchHandler.currentTabOrNull)) {
+      endDragSelection();
+      return;
+    }
     final anchorIndex = dragAnchorIndex;
     final selectAdds = dragSelectAdds;
     if (anchorIndex == null || selectAdds == null) {
@@ -604,7 +655,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
       }
     }
 
-    searchHandler.currentTab.selected.assignAll(selectedAfterDrag);
+    tab.selected.assignAll(selectedAfterDrag);
     dragCurrentHitIndex = hitIndex;
     dragCurrentRangeItems
       ..clear()
@@ -614,7 +665,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   void updateDragAutoScroll() {
     final globalPosition = latestDragGlobalPosition;
     final viewportContext = dragSelectViewportKey.currentContext;
-    if (!isDragSelecting || globalPosition == null || viewportContext == null) {
+    if (!isDragSelecting || !dragScrollArmed || globalPosition == null || viewportContext == null) {
       stopDragAutoScroll();
       return;
     }
@@ -650,8 +701,13 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   }
 
   void dragAutoScrollTick() {
+    if (!identical(dragTab, searchHandler.currentTabOrNull)) {
+      endDragSelection();
+      return;
+    }
     final globalPosition = latestDragGlobalPosition;
     if (!isDragSelecting ||
+        !dragScrollArmed ||
         globalPosition == null ||
         dragAutoScrollDelta == 0 ||
         !searchHandler.gridScrollController.hasClients) {
@@ -688,7 +744,10 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
 
   void endDragSelection() {
     isDragSelecting = false;
+    dragTab = null;
     latestDragGlobalPosition = null;
+    dragStartGlobalPosition = null;
+    dragScrollArmed = false;
     dragAnchorIndex = null;
     dragCurrentHitIndex = null;
     dragSelectAdds = null;
@@ -894,13 +953,17 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
     if (anchor == null) {
       return;
     }
+    final tab = searchHandler.currentTabOrNull;
+    final controller = searchHandler.gridScrollController;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !searchHandler.gridScrollController.hasClients) {
+      if (!mounted ||
+          !identical(tab, searchHandler.currentTabOrNull) ||
+          !identical(controller, searchHandler.gridScrollController) ||
+          !controller.hasClients) {
         return;
       }
 
-      final controller = searchHandler.gridScrollController;
       final tag = controller.tagMap[anchor.index];
       final renderObject = tag?.context.findRenderObject();
       if (renderObject is! RenderBox || !renderObject.hasSize) {

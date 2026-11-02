@@ -19,6 +19,7 @@ class ThumbnailCardBuild extends StatelessWidget {
     required this.scrollController,
     this.isHighlighted = false,
     this.selectable = true,
+    this.useHero,
     this.selectedIndex,
     this.onSelected,
     this.onTap,
@@ -34,6 +35,7 @@ class ThumbnailCardBuild extends StatelessWidget {
   final AutoScrollController scrollController;
   final bool isHighlighted;
   final bool selectable;
+  final bool? useHero;
   final int? selectedIndex;
   final void Function(int)? onSelected;
   final void Function(int)? onTap;
@@ -84,6 +86,7 @@ class ThumbnailCardBuild extends StatelessWidget {
                   item: item,
                   handler: handler,
                   selectable: selectable,
+                  useHero: useHero,
                   selectedIndex: isSelected ? selectedIndex : null,
                   onSelected: onSelected == null ? null : () => onSelected!(index),
                 ),

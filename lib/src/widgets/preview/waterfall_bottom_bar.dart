@@ -81,7 +81,7 @@ class WaterfallBottomBarState extends State<WaterfallBottomBar> with TickerProvi
               padding: EdgeInsets.only(bottom: bottomPadding * animValue),
               child: child,
             ),
-            child: const _WaterfallSelectionButtons(),
+            child: const SelectionButtons(),
           ),
           WaterfallBottomSlide(
             animation: animation,
@@ -156,15 +156,17 @@ class WaterfallBottomSlide extends StatelessWidget {
   }
 }
 
-class _WaterfallSelectionButtons extends StatefulWidget {
-  const _WaterfallSelectionButtons();
+class SelectionButtons extends StatefulWidget {
+  const SelectionButtons({this.tab, super.key});
+
+  final SearchTab? tab;
 
   @override
-  State<_WaterfallSelectionButtons> createState() => _WaterfallSelectionButtonsState();
+  State<SelectionButtons> createState() => SelectionButtonsState();
 }
 
-class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> {
-  final DownloadsDrawerController downloadsController = DownloadsDrawerController();
+class SelectionButtonsState extends State<SelectionButtons> {
+  late final DownloadsDrawerController downloadsController = DownloadsDrawerController(selectionTab: widget.tab);
 
   @override
   void dispose() {
@@ -172,12 +174,12 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
     super.dispose();
   }
 
-  void selectAll(SearchHandler searchHandler) {
-    searchHandler.currentTab.selected.assignAll(searchHandler.currentFetched);
+  void selectAll() {
+    downloadsController.currentTab.selected.assignAll(downloadsController.currentFetched);
   }
 
-  void deselectAll(SearchHandler searchHandler) {
-    searchHandler.currentTab.selected.clear();
+  void deselectAll() {
+    downloadsController.currentTab.selected.clear();
   }
 
   void showOverflowDialog(
@@ -220,6 +222,23 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
                   ),
                   contentPadding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
                   contentItems: [
+                    if (selectedCount == 1)
+                      SettingsButton(
+                        name: context.loc.imageSearch.title,
+                        icon: const Icon(Icons.image_search_rounded),
+                        action: () {
+                          Navigator.of(sheetContext).pop();
+                          downloadsController.imageSearchSelected(context);
+                        },
+                      ),
+                    SettingsButton(
+                      name: context.loc.selectAll,
+                      icon: const Icon(Icons.select_all),
+                      action: () {
+                        Navigator.of(sheetContext).pop();
+                        selectAll();
+                      },
+                    ),
                     SettingsButton(
                       name: context.loc.tagView.preview,
                       icon: const Icon(Icons.grid_view),
@@ -319,12 +338,12 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
     final searchHandler = SearchHandler.instance;
 
     return Obx(() {
-      final selected = searchHandler.currentSelected;
+      final selected = downloadsController.currentSelected;
       final int selectedCount = selected.length;
-      final bool hasFetched = searchHandler.currentFetched.isNotEmpty;
+      final bool hasFetched = downloadsController.currentFetched.isNotEmpty;
       final bool hasSelected = selectedCount > 0;
 
-      final bool controlsBlocked = searchHandler.selectionControlsBlocked.value;
+      final bool controlsBlocked = widget.tab == null && searchHandler.selectionControlsBlocked.value;
       final int favSelectedCount = selected.where((item) => item.isFavourite.value == true).length;
       final int unfavSelectedCount = selected.where((item) => item.isFavourite.value == false).length;
       final bool hasFavsSelected = favSelectedCount > 0;
@@ -333,7 +352,8 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
       final bool hasDownloadsSelected = downloadsSelectedCount > 0;
       final bool canReverseOrder = selectedCount > 1;
       final bool canCompareSelected = selectedCount == 2;
-      final bool canRefreshSelected = searchHandler.currentBooru.type?.isFavouritesOrDownloads == true;
+      final bool canRefreshSelected =
+          downloadsController.currentTab.selectedBooru.value.type?.isFavouritesOrDownloads == true;
 
       return AnimatedSwitcher(
         duration: const Duration(milliseconds: 600),
@@ -361,12 +381,43 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
                       Container(
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.82),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                        padding: const EdgeInsets.all(4),
+                        child: Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 4,
+                          runSpacing: 4,
                           children: [
+                            Tooltip(
+                              message: '${context.loc.tagView.preview} (${selectedCount.toFormattedString()})',
+                              child: FilledButton.tonalIcon(
+                                onPressed: controlsBlocked
+                                    ? null
+                                    : () => downloadsController.showSelectedPreview(context),
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size(48, 48),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                ),
+                                icon: const Icon(Icons.photo_library_outlined, size: 20),
+                                label: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ConstrainedBox(
+                                      constraints: BoxConstraints(minWidth: MediaQuery.textScalerOf(context).scale(20)),
+                                      child: Text(
+                                        selectedCount.toFormattedString(),
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.expand_less, size: 20),
+                                  ],
+                                ),
+                              ),
+                            ),
                             Tooltip(
                               message:
                                   '${context.loc.settings.downloads.snatchSelected} (${selectedCount.toFormattedString()})',
@@ -396,12 +447,31 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
                                 ),
                               ),
                             ),
-                            Tooltip(
-                              message: context.loc.selectAll,
+                            SizedBox.square(
+                              dimension: kMinInteractiveDimension,
                               child: IconButton(
-                                icon: const Icon(Icons.select_all),
-                                onPressed: hasFetched && !controlsBlocked ? () => selectAll(searchHandler) : null,
-                                onLongPress: hasFetched && !controlsBlocked
+                                tooltip: canCompareSelected
+                                    ? context.loc.settings.downloads.compareSelected
+                                    : selectedCount == 1
+                                    ? context.loc.imageSearch.title
+                                    : context.loc.selectAll,
+                                icon: Icon(
+                                  canCompareSelected
+                                      ? Icons.compare
+                                      : selectedCount == 1
+                                      ? Icons.image_search_rounded
+                                      : Icons.select_all,
+                                ),
+                                onPressed: controlsBlocked
+                                    ? null
+                                    : canCompareSelected
+                                    ? () => downloadsController.compareSelected(context)
+                                    : selectedCount == 1
+                                    ? () => downloadsController.imageSearchSelected(context)
+                                    : hasFetched
+                                    ? selectAll
+                                    : null,
+                                onLongPress: selectedCount > 2 && hasFetched && !controlsBlocked
                                     ? () => downloadsController.selectFetchedByQuery(context)
                                     : null,
                               ),
@@ -410,7 +480,7 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
                               message: context.loc.settings.downloads.clearSelected,
                               child: IconButton(
                                 icon: const Icon(Icons.deselect),
-                                onPressed: !controlsBlocked ? () => deselectAll(searchHandler) : null,
+                                onPressed: !controlsBlocked ? deselectAll : null,
                               ),
                             ),
                             Tooltip(
@@ -436,38 +506,6 @@ class _WaterfallSelectionButtonsState extends State<_WaterfallSelectionButtons> 
                             ),
                           ],
                         ),
-                      ),
-                      Positioned(
-                        right: -10,
-                        top: -10,
-                        child: Obx(() {
-                          final selected = searchHandler.currentSelected;
-
-                          if (selected.isNotEmpty) {
-                            return IgnorePointer(
-                              child: Container(
-                                height: 20,
-                                constraints: const BoxConstraints(minWidth: 20),
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.secondary,
-                                  borderRadius: const BorderRadius.all(Radius.circular(4)),
-                                ),
-                                child: Text(
-                                  selected.length.toFormattedString(),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Theme.of(context).colorScheme.onSecondary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-
-                          return const SizedBox.shrink();
-                        }),
                       ),
                     ],
                   ),

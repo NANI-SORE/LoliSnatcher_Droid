@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
@@ -9,6 +10,7 @@ import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/services/share_staging.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -18,7 +20,7 @@ typedef GalleryShareProgressCallback = void Function({
   required BooruItem item,
   required int itemIndex,
   required int itemCount,
-  required double progress,
+  required double? progress,
 });
 
 class _ShareCachePathResult {
@@ -74,7 +76,7 @@ class GalleryShareService {
       await ServiceHandler.loadShareTextIntent(text);
     } else if (Platform.isIOS) {
       await SharePlus.instance.share(
-        ShareParams(text: text, sharePositionOrigin: _sharePositionOrigin(context)),
+        ShareParams(text: text, sharePositionOrigin: _sharePositionOrigin()),
       );
     }
   }
@@ -83,10 +85,10 @@ class GalleryShareService {
     required List<BooruItem> items,
     required Booru booru,
     Booru Function(BooruItem item)? sourceBooruFor,
-    BuildContext? context,
     String? text,
     GalleryShareProgressCallback? onProgress,
     VoidCallback? onCancelled,
+    VoidCallback? onCompleted,
   }) async {
     if (items.isEmpty) return false;
     items = List.of(items);
@@ -95,30 +97,32 @@ class GalleryShareService {
     if (operationId == null) return false;
     _operationId = operationId;
     bool dismissed = false;
+    ShareStaging? staging;
+    bool handedOff = false;
+    bool completed = false;
+    bool canRetry = false;
+    final sources = Map<BooruItem, Booru>.identity();
 
     try {
-      final sources = [for (final item in items) sourceBooruFor?.call(item) ?? booru];
+      for (final item in items) {
+        sources[item] = sourceBooruFor?.call(item) ?? booru;
+      }
       if (PlatformExt.isDesktop && (items.length != 1 || !items.single.mediaType.value.isImageOrAnimation)) {
         return false;
       }
-      if (PlatformExt.isDesktop && !Platform.isWindows) {
-        return await _copySingleImageToClipboard(
-          operationId: operationId,
-          item: items.single,
-          booru: sources.single,
-          onProgress: onProgress,
-        );
-      }
+      canRetry = true;
+      staging = await ShareStaging.create();
       final paths = <String>[];
       for (int i = 0; i < items.length; i++) {
         if (!snatchHandler.isShareActive(operationId)) return false;
         final item = items[i];
         final result = await _getOrDownloadCachePath(
           item: item,
-          booru: sources[i],
+          booru: sources[item]!,
           operationId: operationId,
           itemIndex: i,
           itemCount: items.length,
+          staging: staging,
           onProgress: onProgress,
         );
         if (result.retryCurrent) {
@@ -138,14 +142,14 @@ class GalleryShareService {
       if (PlatformExt.isDesktop) {
         try {
           await ClipboardUtils.copyImageFileToClipboard(paths.single, items.single, rethrowErrors: true);
-          return snatchHandler.isShareActive(operationId);
+          return completed = snatchHandler.isShareActive(operationId);
         } catch (_) {
-          snatchHandler.onAddRetryableItems(booru: sources.single, failed: [items.single]);
           return false;
         }
       }
 
-      if (context != null && !context.mounted) return false;
+      // Native consumers may continue reading after the share result arrives.
+      handedOff = true;
       final result = await SharePlus.instance.share(
         ShareParams(
           files: [
@@ -156,65 +160,37 @@ class GalleryShareService {
               ),
           ],
           text: text,
-          sharePositionOrigin: _sharePositionOrigin(context),
+          sharePositionOrigin: _sharePositionOrigin(),
         ),
       );
       dismissed = result.status == ShareResultStatus.dismissed;
-      return !dismissed && snatchHandler.isShareActive(operationId);
+      return completed = !dismissed && snatchHandler.isShareActive(operationId);
     } catch (_) {
       return false;
     } finally {
+      await staging?.release(handedOff: handedOff);
       final cancelled = dismissed || !snatchHandler.isShareActive(operationId);
+      if (canRetry && !completed && !handedOff) {
+        final item = snatchHandler.shareActiveItem.value ?? items.first;
+        snatchHandler.onAddRetryableItems(
+          booru: sources[item] ?? booru,
+          failed: cancelled ? const [] : [item],
+          cancelled: cancelled ? [item] : const [],
+          shareItemCount: items.length,
+          retryShare: () => shareFiles(
+            items: items,
+            booru: booru,
+            sourceBooruFor: (item) => sources[item]!,
+            text: text,
+            onCompleted: onCompleted,
+          ),
+        );
+      }
       snatchHandler.onShareDone(operationId);
       if (_operationId == operationId) _operationId = null;
+      if (completed) onCompleted?.call();
       if (cancelled) onCancelled?.call();
     }
-  }
-
-  Future<bool> _copySingleImageToClipboard({
-    required int operationId,
-    required BooruItem item,
-    required Booru booru,
-    GalleryShareProgressCallback? onProgress,
-  }) async {
-    while (snatchHandler.isShareActive(operationId)) {
-      final cancelToken = CancelToken();
-      snatchHandler.onShareCancelTokenCreate(cancelToken, operationId);
-      try {
-        await ClipboardUtils.copyImageToClipboard(
-          item,
-          booru: booru,
-          cancelToken: cancelToken,
-          rethrowErrors: true,
-          onReceiveProgress: (received, total) {
-            if (total != null && total > 0 && snatchHandler.isShareActive(operationId)) {
-              snatchHandler.onShareProgress(
-                operationId: operationId,
-                item: item,
-                itemIndex: 0,
-                received: received,
-                total: total,
-              );
-              onProgress?.call(item: item, itemIndex: 0, itemCount: 1, progress: received / total);
-            }
-          },
-        );
-        return snatchHandler.isShareActive(operationId);
-      } catch (e) {
-        if (e is DioException && CancelToken.isCancel(e) && snatchHandler.consumeShareRetryCurrent(operationId)) {
-          continue;
-        }
-        snatchHandler.onAddRetryableItems(
-          booru: booru,
-          failed: e is DioException && CancelToken.isCancel(e) ? const [] : [item],
-          cancelled: e is DioException && CancelToken.isCancel(e) ? [item] : const [],
-        );
-        return false;
-      } finally {
-        snatchHandler.onShareFileDone(operationId);
-      }
-    }
-    return false;
   }
 
   Future<_ShareCachePathResult> _getOrDownloadCachePath({
@@ -223,6 +199,7 @@ class GalleryShareService {
     required int operationId,
     required int itemIndex,
     required int itemCount,
+    required ShareStaging staging,
     GalleryShareProgressCallback? onProgress,
   }) async {
     if (!snatchHandler.isShareActive(operationId)) return const _ShareCachePathResult();
@@ -233,31 +210,7 @@ class GalleryShareService {
       received: 0,
       total: 0,
     );
-    final existingPath = await imageWriter.getCachePath(
-      item.fileURL,
-      'media',
-      fileNameExtras: item.fileNameExtras,
-    );
-    if (!snatchHandler.isShareActive(operationId)) return const _ShareCachePathResult();
-    if (existingPath != null) {
-      snatchHandler.onShareProgress(
-        operationId: operationId,
-        item: item,
-        itemIndex: itemIndex,
-        received: 1,
-        total: 1,
-      );
-      onProgress?.call(
-        item: item,
-        itemIndex: itemIndex,
-        itemCount: itemCount,
-        progress: 1,
-      );
-      return _ShareCachePathResult(path: existingPath);
-    }
-
     final cancelToken = CancelToken();
-    snatchHandler.onShareCancelTokenCreate(cancelToken, operationId);
 
     File? temporaryFile;
     try {
@@ -267,18 +220,50 @@ class GalleryShareService {
         clearName: true,
         fileNameExtras: item.fileNameExtras,
       );
-      temporaryFile = File('$cacheFilePath.temp_share_${operationId}_${DateTime.now().microsecondsSinceEpoch}');
+      final sharePath = staging.pathFor(itemIndex, cacheFilePath);
+      final existingPath = await imageWriter.getCachePath(
+        item.fileURL,
+        'media',
+        fileNameExtras: item.fileNameExtras,
+      );
+      if (!snatchHandler.isShareActive(operationId)) return const _ShareCachePathResult();
+      if (existingPath != null) {
+        try {
+          // Copy before collecting another item: the media cache has no lease.
+          final copy = await File(existingPath).copy(sharePath);
+          final length = await copy.length();
+          if (length > 0 && snatchHandler.isShareActive(operationId)) {
+            snatchHandler.onShareProgress(
+              operationId: operationId,
+              item: item,
+              itemIndex: itemIndex,
+              received: length,
+              total: length,
+            );
+            onProgress?.call(item: item, itemIndex: itemIndex, itemCount: itemCount, progress: 1);
+            return _ShareCachePathResult(path: sharePath);
+          }
+        } on FileSystemException {
+          // Cache eviction raced the copy; download directly into staging.
+        }
+      }
+      if (!snatchHandler.isShareActive(operationId)) return const _ShareCachePathResult();
+      temporaryFile = File('$sharePath.temp_share');
+      snatchHandler.onShareCancelTokenCreate(cancelToken, operationId);
       final response = await DioNetwork.download(
         item.fileURL,
         temporaryFile.path,
         cancelToken: cancelToken,
+        customInterceptor: PlatformExt.isDesktop && !Platform.isWindows
+            ? (client) => DioNetwork.captchaInterceptor(client, customUserAgent: Tools.appUserAgent)
+            : null,
         headers: await Tools.getFileCustomHeaders(
           booru,
           item: item,
           checkForReferer: true,
         ),
         onReceiveProgress: (received, total) {
-          if (total > 0 && snatchHandler.isShareActive(operationId)) {
+          if (snatchHandler.isShareActive(operationId) && !cancelToken.isCancelled) {
             snatchHandler.onShareProgress(
               operationId: operationId,
               item: item,
@@ -290,7 +275,7 @@ class GalleryShareService {
               item: item,
               itemIndex: itemIndex,
               itemCount: itemCount,
-              progress: received / total,
+              progress: total > 0 ? (received / total).clamp(0.0, 1.0) : null,
             );
           }
         },
@@ -309,26 +294,23 @@ class GalleryShareService {
         throw const FileSystemException('Share download is incomplete');
       }
 
-      final existingCompletedPath = await imageWriter.getCachePath(
-        item.fileURL,
-        'media',
-        fileNameExtras: item.fileNameExtras,
+      if (!snatchHandler.isShareActive(operationId)) return const _ShareCachePathResult();
+      await temporaryFile.rename(sharePath);
+      if (!snatchHandler.isShareActive(operationId)) return const _ShareCachePathResult();
+      snatchHandler.onShareProgress(
+        operationId: operationId,
+        item: item,
+        itemIndex: itemIndex,
+        received: length,
+        total: length,
       );
-      if (!snatchHandler.isShareActive(operationId)) return const _ShareCachePathResult();
-      if (existingCompletedPath == null) await temporaryFile.rename(cacheFilePath);
-      if (!snatchHandler.isShareActive(operationId)) return const _ShareCachePathResult();
-
-      return _ShareCachePathResult(path: existingCompletedPath ?? cacheFilePath);
+      onProgress?.call(item: item, itemIndex: itemIndex, itemCount: itemCount, progress: 1);
+      return _ShareCachePathResult(path: sharePath);
     } catch (e) {
       if (e is DioException && CancelToken.isCancel(e) && snatchHandler.consumeShareRetryCurrent(operationId)) {
         return const _ShareCachePathResult(retryCurrent: true);
       }
 
-      snatchHandler.onAddRetryableItems(
-        booru: booru,
-        failed: e is DioException && CancelToken.isCancel(e) ? const [] : [item],
-        cancelled: e is DioException && CancelToken.isCancel(e) ? [item] : const [],
-      );
       return const _ShareCachePathResult();
     } finally {
       snatchHandler.onShareFileDone(operationId);
@@ -340,7 +322,8 @@ class GalleryShareService {
     }
   }
 
-  Rect _sharePositionOrigin(BuildContext? context) {
+  Rect _sharePositionOrigin() {
+    final context = NavigationHandler.instance.navigatorKey.currentContext;
     if (context != null && context.mounted) {
       final renderObject = context.findRenderObject();
       if (renderObject is RenderBox && renderObject.attached && renderObject.hasSize) {
@@ -355,6 +338,15 @@ class GalleryShareService {
 
   String _mimeType(BooruItem item) {
     final type = item.mediaType.value.isVideo ? 'video' : 'image';
-    return '$type/${item.fileExt ?? '*'}';
+    final subtype = switch (item.fileExt?.toLowerCase()) {
+      'jpg' || 'jpeg' => 'jpeg',
+      'svg' => 'svg+xml',
+      'tif' || 'tiff' => 'tiff',
+      'mov' => 'quicktime',
+      'mkv' => 'x-matroska',
+      null || '' => '*',
+      final extension => extension,
+    };
+    return '$type/$subtype';
   }
 }

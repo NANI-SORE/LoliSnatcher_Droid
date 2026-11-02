@@ -3445,6 +3445,9 @@ class Translations$settings$downloads$en {
   /// en: 'Unblur all thumbnails'
   String get unblurThumbnails => TranslationOverrides.string(_root.$meta, 'settings.downloads.unblurThumbnails', {}) ?? 'Unblur all thumbnails';
 
+  /// en: 'Blur all thumbnails'
+  String get blurThumbnails => TranslationOverrides.string(_root.$meta, 'settings.downloads.blurThumbnails', {}) ?? 'Blur all thumbnails';
+
   /// en: 'Open viewer'
   String get openHiddenItemViewer => TranslationOverrides.string(_root.$meta, 'settings.downloads.openHiddenItemViewer', {}) ?? 'Open viewer';
 
@@ -3509,6 +3512,26 @@ class Translations$settings$downloads$en {
 
   /// en: 'Heatmap'
   String get compareHeatmap => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareHeatmap', {}) ?? 'Heatmap';
+
+  /// en: 'Include tags'
+  String get includeTags => TranslationOverrides.string(_root.$meta, 'settings.downloads.includeTags', {}) ?? 'Include tags';
+
+  /// en: 'Restore all hidden items in this tab'
+  String get restoreAllHidden =>
+      TranslationOverrides.string(_root.$meta, 'settings.downloads.restoreAllHidden', {}) ?? 'Restore all hidden items in this tab';
+
+  /// en: 'Differences only'
+  String get compareOnlyDifferences =>
+      TranslationOverrides.string(_root.$meta, 'settings.downloads.compareOnlyDifferences', {}) ?? 'Differences only';
+
+  /// en: 'Common'
+  String get compareCommon => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareCommon', {}) ?? 'Common';
+
+  /// en: 'Only first'
+  String get compareOnlyFirst => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareOnlyFirst', {}) ?? 'Only first';
+
+  /// en: 'Only second'
+  String get compareOnlySecond => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareOnlySecond', {}) ?? 'Only second';
 
   /// en: 'Data'
   String get compareData => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareData', {}) ?? 'Data';
@@ -6530,6 +6553,8 @@ extension on Translations {
           'settings.downloads.unhideItem' => TranslationOverrides.string(_root.$meta, 'settings.downloads.unhideItem', {}) ?? 'Restore item',
           'settings.downloads.unblurThumbnails' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.unblurThumbnails', {}) ?? 'Unblur all thumbnails',
+          'settings.downloads.blurThumbnails' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.blurThumbnails', {}) ?? 'Blur all thumbnails',
           'settings.downloads.openHiddenItemViewer' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.openHiddenItemViewer', {}) ?? 'Open viewer',
           'settings.downloads.hiddenMatchingFilters' =>
@@ -6564,6 +6589,16 @@ extension on Translations {
           'settings.downloads.compareDifference' =>
             TranslationOverrides.string(_root.$meta, 'settings.downloads.compareDifference', {}) ?? 'Difference',
           'settings.downloads.compareHeatmap' => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareHeatmap', {}) ?? 'Heatmap',
+          'settings.downloads.includeTags' => TranslationOverrides.string(_root.$meta, 'settings.downloads.includeTags', {}) ?? 'Include tags',
+          'settings.downloads.restoreAllHidden' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.restoreAllHidden', {}) ?? 'Restore all hidden items in this tab',
+          'settings.downloads.compareOnlyDifferences' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.compareOnlyDifferences', {}) ?? 'Differences only',
+          'settings.downloads.compareCommon' => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareCommon', {}) ?? 'Common',
+          'settings.downloads.compareOnlyFirst' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.compareOnlyFirst', {}) ?? 'Only first',
+          'settings.downloads.compareOnlySecond' =>
+            TranslationOverrides.string(_root.$meta, 'settings.downloads.compareOnlySecond', {}) ?? 'Only second',
           'settings.downloads.compareData' => TranslationOverrides.string(_root.$meta, 'settings.downloads.compareData', {}) ?? 'Data',
           'settings.downloads.updatingData' => TranslationOverrides.string(_root.$meta, 'settings.downloads.updatingData', {}) ?? 'Updating data…',
           'settings.database.title' => TranslationOverrides.string(_root.$meta, 'settings.database.title', {}) ?? 'Database',
@@ -7273,6 +7308,9 @@ extension on Translations {
           'pageNavigation.rememberTab' => TranslationOverrides.string(_root.$meta, 'pageNavigation.rememberTab', {}) ?? 'Remember this tab’s page',
           'pageNavigation.freshSearchToRemember' =>
             TranslationOverrides.string(_root.$meta, 'pageNavigation.freshSearchToRemember', {}) ?? 'Run a fresh search to resume saving',
+          _ => null,
+        } ??
+        switch (path) {
           'pageNavigation.loadingPage' => ({
             required int page,
           }) => TranslationOverrides.string(_root.$meta, 'pageNavigation.loadingPage', {'page': page}) ?? 'Loading page ${page}',
@@ -7291,9 +7329,6 @@ extension on Translations {
             ({required int requested, required int actual}) =>
                 TranslationOverrides.string(_root.$meta, 'pageNavigation.showingNearbyPage', {'requested': requested, 'actual': actual}) ??
                 'Page ${requested} unavailable. Showing ${actual}.',
-          _ => null,
-        } ??
-        switch (path) {
           'tagsFiltersDialogs.emptyInput' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.emptyInput', {}) ?? 'Empty input!',
           'tagsFiltersDialogs.addNewFilter' => ({
             required String type,

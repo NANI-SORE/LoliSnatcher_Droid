@@ -13,6 +13,15 @@ class WorldXyzHandler extends BooruHandler {
   WorldXyzHandler(super.booru, super.limit);
 
   @override
+  void copySearchStateFrom(BooruHandler source) {
+    super.copySearchStateFrom(source);
+    final original = source as WorldXyzHandler;
+    cursor = original.cursor;
+    isXyz = original.isXyz;
+    appConfig = Map.of(original.appConfig);
+  }
+
+  @override
   bool get hasTagSuggestions => true;
 
   @override

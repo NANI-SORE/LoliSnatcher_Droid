@@ -511,6 +511,11 @@ class _HideableAppBarState extends State<HideableAppBar> {
           }
 
           final itemCount = currentShare.booruItems.length;
+          if (snatchHandler.shareTotal.value <= 0) {
+            return CircularProgressIndicator(
+              color: Theme.of(context).progressIndicatorTheme.color?.withValues(alpha: 0.66),
+            );
+          }
           final progress = itemCount == 0
               ? 0.0
               : (snatchHandler.shareProgress.value + snatchHandler.currentShareProgress) / itemCount;
@@ -665,6 +670,8 @@ class _HideableAppBarState extends State<HideableAppBar> {
         return () async => showImageSearchDialog(
           context,
           item.fileURL,
+          item: item,
+          booru: widget.tab.booruHandler.sourceBooruFor(item),
         );
     }
   }
@@ -956,7 +963,6 @@ class _HideableAppBarState extends State<HideableAppBar> {
     final success = await galleryShareService.shareFiles(
       items: [item],
       booru: sourceBooru,
-      context: context,
       text: text,
       onCancelled: () => cancelled = true,
     );

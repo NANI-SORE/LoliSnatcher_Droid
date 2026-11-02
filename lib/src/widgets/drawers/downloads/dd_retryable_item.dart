@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:lolisnatcher/gen/strings.g.dart';
-import 'package:lolisnatcher/src/data/booru.dart';
-import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
+import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/retry_button.dart';
 import 'package:lolisnatcher/src/widgets/common/save_anyway_button.dart';
 import 'package:lolisnatcher/src/widgets/common/skip_button.dart';
@@ -21,7 +20,7 @@ class DDRetryableItem extends StatelessWidget {
     super.key,
   });
 
-  final ({BooruItem item, Booru booru}) record;
+  final RetryableItem record;
   final RetryableItemType type;
   final BooruHandler handler;
   final void Function(bool isLongTap) onRetry;
@@ -54,6 +53,11 @@ class DDRetryableItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 spacing: 8,
                 children: [
+                  if (record.retryShare != null)
+                    Text(
+                      '${context.loc.galleryButtons.share} · ${record.shareItemCount}',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
                   Text(
                     isExists
                         ? context.loc.mobileHome.fileAlreadyExists

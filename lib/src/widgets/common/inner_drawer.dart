@@ -5,17 +5,15 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-typedef InnerDrawerCallback =
-    void Function(
-      bool isOpened,
-      InnerDrawerDirection direction,
-    );
+typedef InnerDrawerCallback = void Function(
+  bool isOpened,
+  InnerDrawerDirection direction,
+);
 
-typedef InnerDragUpdateCallback =
-    void Function(
-      double value,
-      InnerDrawerDirection direction,
-    );
+typedef InnerDragUpdateCallback = void Function(
+  double value,
+  InnerDrawerDirection direction,
+);
 
 enum InnerDrawerDirection {
   start,
@@ -338,6 +336,7 @@ class InnerDrawerState extends State<InnerDrawer> with SingleTickerProviderState
   }
 
   void _handlePointerDown(PointerDownEvent event) {
+    if (_activePointers.isEmpty) _multiPointerDragActive = false;
     _activePointers.add(event.pointer);
     if (_activePointers.length > 1) {
       _multiPointerDragActive = true;

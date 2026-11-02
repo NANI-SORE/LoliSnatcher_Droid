@@ -7,6 +7,7 @@ import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart' show SettingsHandler, TagsListData;
 import 'package:lolisnatcher/src/widgets/common/kaomoji.dart';
+import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/hidden_item_details_dialog.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
 
@@ -75,24 +76,44 @@ class _HiddenItemsPageState extends State<HiddenItemsPage> {
     );
   }
 
+  List<BooruItem> _visibleItems() {
+    final tab = widget.tab;
+    final manual = tab.hiddenItems.value;
+    final filtered = tab.booruHandler.filterHiddenItems.value;
+    return tab.allHiddenItems.where((item) {
+      if (scope == .manual && !manual.contains(item)) return false;
+      if (scope == .filters && !filtered.containsKey(item)) return false;
+      return query.isEmpty ||
+          (item.serverId ?? '').toLowerCase().contains(query) ||
+          item.postURL.toLowerCase().contains(query) ||
+          item.tagsList.any((tag) => tag.fullString.toLowerCase().contains(query));
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final tab = widget.tab;
     final loc = context.loc.settings.downloads;
     return Scaffold(
       appBar: AppBar(
-        title: Text(loc.hiddenItems),
+        title: Obx(
+          () => Text(
+            '${loc.hiddenItems} (${_visibleItems().length}/${tab.allHiddenItems.length})',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
         actions: [
           Obx(
             () => IconButton(
-              tooltip: loc.unblurThumbnails,
-              icon: const Icon(Icons.blur_off),
-              onPressed: tab.hasHiddenItems && !unblurThumbnails ? () => setState(() => unblurThumbnails = true) : null,
+              tooltip: unblurThumbnails ? loc.blurThumbnails : loc.unblurThumbnails,
+              icon: Icon(unblurThumbnails ? Icons.blur_on : Icons.blur_off),
+              onPressed: tab.hasHiddenItems ? () => setState(() => unblurThumbnails = !unblurThumbnails) : null,
             ),
           ),
           Obx(
             () => IconButton(
-              tooltip: loc.unhideHidden,
+              tooltip: loc.restoreAllHidden,
               icon: const Icon(Icons.visibility_outlined),
               onPressed: tab.hasHiddenItems ? tab.unhideItems : null,
             ),
@@ -106,7 +127,7 @@ class _HiddenItemsPageState extends State<HiddenItemsPage> {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                   child: TextField(
                     decoration: InputDecoration(
                       labelText: context.loc.search,
@@ -134,21 +155,24 @@ class _HiddenItemsPageState extends State<HiddenItemsPage> {
                     ],
                   ),
                 ),
-                Padding(padding: const EdgeInsets.all(16), child: Text(loc.hiddenItemsInfo)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: [
+                      Tooltip(message: loc.hiddenItemsInfo, child: const Icon(Icons.info_outline, size: 20)),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(loc.hiddenRestoreHint, style: Theme.of(context).textTheme.bodySmall)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
               ],
             ),
           ),
           Obx(() {
             final manual = tab.hiddenItems.value;
             final filtered = tab.booruHandler.filterHiddenItems.value;
-            final items = tab.allHiddenItems.where((item) {
-              if (scope == .manual && !manual.contains(item)) return false;
-              if (scope == .filters && !filtered.containsKey(item)) return false;
-              return query.isEmpty ||
-                  (item.serverId ?? '').toLowerCase().contains(query) ||
-                  item.postURL.toLowerCase().contains(query) ||
-                  item.tagsList.any((tag) => tag.fullString.toLowerCase().contains(query));
-            }).toList();
+            final items = _visibleItems();
             if (items.isEmpty) {
               return SliverFillRemaining(
                 hasScrollBody: false,
@@ -185,15 +209,17 @@ class _HiddenItemsPageState extends State<HiddenItemsPage> {
                   key: ObjectKey(item),
                   onTap: () => _showDetails(item, matches),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     child: Row(
                       children: [
                         SizedBox(
-                          width: 120,
-                          height: 144,
+                          width: 76,
+                          height: 96,
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Thumbnail(
+                              // Reset individual reveal state when toggling the whole list.
+                              key: ValueKey(unblurThumbnails),
                               item: item,
                               booru: source,
                               isStandalone: true,
@@ -202,7 +228,7 @@ class _HiddenItemsPageState extends State<HiddenItemsPage> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,8 +242,24 @@ class _HiddenItemsPageState extends State<HiddenItemsPage> {
                                 overflow: TextOverflow.ellipsis,
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
-                              const SizedBox(height: 8),
-                              Text(reasonText, style: Theme.of(context).textTheme.bodyMedium),
+                              Text(
+                                [
+                                  item.fileExt?.toUpperCase() ?? '',
+                                  if (item.fileWidth != null && item.fileHeight != null)
+                                    '${item.fileWidth!.round()} × ${item.fileHeight!.round()}',
+                                  if (item.fileSize != null) Tools.formatBytes(item.fileSize!, 1),
+                                ].where((part) => part.isNotEmpty).join(' · '),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                reasonText,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
                             ],
                           ),
                         ),

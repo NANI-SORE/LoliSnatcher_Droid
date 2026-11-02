@@ -311,7 +311,7 @@ class _PageNumberDialogState extends State<PageNumberDialog> {
               ),
             ),
           ),
-          buttonPadding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          actionPadding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
           actionButtons: [
             SizedBox(
               width: double.infinity,

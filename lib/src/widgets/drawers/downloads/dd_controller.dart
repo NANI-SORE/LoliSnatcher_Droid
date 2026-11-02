@@ -17,6 +17,7 @@ import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
+import 'package:lolisnatcher/src/widgets/gallery/image_search_dialog.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/services/gallery_share_service.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
@@ -32,13 +33,18 @@ import 'package:lolisnatcher/src/widgets/preview/image_compare_dialog.dart';
 import 'package:lolisnatcher/src/widgets/preview/tag_search_query_editor_page.dart';
 
 class DownloadsDrawerController {
-  DownloadsDrawerController() {
+  DownloadsDrawerController({this.selectionTab}) {
     scrollController = ScrollController();
   }
 
   final SnatchHandler snatchHandler = SnatchHandler.instance;
   final SettingsHandler settingsHandler = SettingsHandler.instance;
   final SearchHandler searchHandler = SearchHandler.instance;
+  final SearchTab? selectionTab;
+  SearchTab? get currentTabOrNull => selectionTab ?? searchHandler.currentTabOrNull;
+  SearchTab get currentTab => currentTabOrNull!;
+  RxList<BooruItem> get currentSelected => currentTab.selected;
+  RxList<BooruItem> get currentFetched => currentTab.booruHandler.filteredFetched;
   final GalleryShareService galleryShareService = GalleryShareService();
 
   final RxBool updating = false.obs;
@@ -57,7 +63,7 @@ class DownloadsDrawerController {
   void clearHandlerCache() => _handlerCache.clear();
 
   Future<void> onStartSnatching(BuildContext context, bool isLongTap) async {
-    final currentTab = searchHandler.currentTabOrNull;
+    final currentTab = currentTabOrNull;
     if (currentTab == null) return;
     final currentBooru = currentTab.selectedBooru.value;
     final currentSelected = [...currentTab.selected];
@@ -112,7 +118,7 @@ class DownloadsDrawerController {
   }
 
   Future<bool> selectFetchedByQuery(BuildContext context) async {
-    final tab = searchHandler.currentTab;
+    final tab = currentTab;
     final fetched = [...tab.booruHandler.filteredFetched];
     final selected = [...tab.selected];
     final controller = TextEditingController();
@@ -165,26 +171,33 @@ class DownloadsDrawerController {
     return true;
   }
 
-  void showSelectedPreview(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      enableDrag: true,
-      isDismissible: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => SelectedPreviewSheet(
-        itemsMatchingTagQuery: _itemsMatchingTagQuery,
-        selectedPreviewTags: _selectedPreviewTags,
-        searchSuggestions: _selectedPreviewSearchSuggestions,
-        onReorderItem: _reorderSelectedPreviewItem,
-        onShowItemInfo: _showSelectedItemInfo,
-        onReverseSelected: reverseSelectedOrder,
-        onStartSnatching: onStartSnatching,
-        onShareSelected: onShareSelected,
-        onShareSelectedLongPress: onShareSelectedLongPress,
-      ),
-    );
+  Future<void> showSelectedPreview(BuildContext context) async {
+    // Keep both the displayed items and every action bound to the opening tab.
+    final controller = selectionTab == null ? DownloadsDrawerController(selectionTab: currentTab) : this;
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        enableDrag: true,
+        isDismissible: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => SelectedPreviewSheet(
+          tab: controller.currentTab,
+          itemsMatchingTagQuery: controller._itemsMatchingTagQuery,
+          selectedPreviewTags: controller._selectedPreviewTags,
+          searchSuggestions: controller._selectedPreviewSearchSuggestions,
+          onReorderItem: controller._reorderSelectedPreviewItem,
+          onShowItemInfo: controller._showSelectedItemInfo,
+          onReverseSelected: controller.reverseSelectedOrder,
+          onStartSnatching: controller.onStartSnatching,
+          onShareSelected: controller.onShareSelected,
+          onShareSelectedLongPress: controller.onShareSelectedLongPress,
+        ),
+      );
+    } finally {
+      if (!identical(controller, this)) controller.dispose();
+    }
   }
 
   void _showSelectedItemInfo(BuildContext context, BooruItem item, int index) {
@@ -196,6 +209,7 @@ class DownloadsDrawerController {
       isDismissible: true,
       backgroundColor: Colors.transparent,
       builder: (_) => SelectedItemPreviewSheet(
+        tab: currentTab,
         initialItem: item,
         initialIndex: index,
         selectedPreviewTags: _selectedPreviewTags,
@@ -205,7 +219,7 @@ class DownloadsDrawerController {
   }
 
   void _moveSelectedItem(BooruItem item, int targetIndex) {
-    final selected = [...searchHandler.currentSelected];
+    final selected = [...currentSelected];
     final currentIndex = selected.indexOf(item);
     if (currentIndex == -1) {
       return;
@@ -214,7 +228,7 @@ class DownloadsDrawerController {
     final clampedTarget = targetIndex.clamp(0, selected.length - 1);
     selected.removeAt(currentIndex);
     selected.insert(clampedTarget, item);
-    searchHandler.currentTab.selected.assignAll(selected);
+    currentTab.selected.assignAll(selected);
   }
 
   void _reorderSelectedPreviewItem({
@@ -224,7 +238,7 @@ class DownloadsDrawerController {
   }) {
     final item = visibleItems[oldIndex];
     final visibleAfterRemoval = [...visibleItems]..removeAt(oldIndex);
-    final selected = [...searchHandler.currentSelected]..remove(item);
+    final selected = [...currentSelected]..remove(item);
 
     int insertIndex;
     if (visibleAfterRemoval.isEmpty) {
@@ -242,7 +256,7 @@ class DownloadsDrawerController {
     }
 
     selected.insert(insertIndex.clamp(0, selected.length), item);
-    searchHandler.currentTab.selected.assignAll(selected);
+    currentTab.selected.assignAll(selected);
   }
 
   List<Tag> _selectedPreviewTags(BooruItem item) {
@@ -276,7 +290,7 @@ class DownloadsDrawerController {
     final normalizedToken = token.startsWith('-') ? token.substring(1) : token;
     final suggestionsByName = <String, Tag>{};
 
-    for (final item in searchHandler.currentSelected) {
+    for (final item in currentSelected) {
       for (final tag in _selectedPreviewTags(item)) {
         final name = tag.fullString.trim();
         if (name.isEmpty) {
@@ -332,7 +346,7 @@ class DownloadsDrawerController {
   }
 
   Future<void> onShareSelectedWithAction(BuildContext context, ShareAction shareAction) async {
-    if (searchHandler.currentSelected.isEmpty) {
+    if (currentSelected.isEmpty) {
       FlashElements.showSnackbar(
         context: context,
         title: Text(
@@ -445,9 +459,9 @@ class DownloadsDrawerController {
       items: selected,
       booru: tab.selectedBooru.value,
       sourceBooruFor: (item) => sources[item]!,
-      context: context,
       text: text,
       onCancelled: () => cancelled = true,
+      onCompleted: () => tab.selected.removeWhere(selected.contains),
     );
 
     if (!success) {
@@ -465,8 +479,6 @@ class DownloadsDrawerController {
       );
       return;
     }
-
-    tab.selected.removeWhere(selected.contains);
   }
 
   Future<void> _shareSelectedHydrus(BuildContext context, List<BooruItem> selected) async {
@@ -530,29 +542,29 @@ class DownloadsDrawerController {
   }
 
   void invertSelection() {
-    final selectedItems = Set<BooruItem>.identity()..addAll(searchHandler.currentSelected);
-    searchHandler.currentTab.selected.assignAll(
-      searchHandler.currentFetched.where((item) => !selectedItems.contains(item)),
+    final selectedItems = Set<BooruItem>.identity()..addAll(currentSelected);
+    currentTab.selected.assignAll(
+      currentFetched.where((item) => !selectedItems.contains(item)),
     );
   }
 
   void reverseSelectedOrder() {
-    searchHandler.currentTab.selected.assignAll([...searchHandler.currentSelected.reversed]);
+    currentTab.selected.assignAll([...currentSelected.reversed]);
   }
 
   void hideSelected() {
-    searchHandler.currentTab.hideItems([...searchHandler.currentSelected]);
+    currentTab.hideItems([...currentSelected]);
     searchHandler.rootRestate?.call();
   }
 
   void unhideItems() {
-    searchHandler.currentTab.unhideItems();
+    currentTab.unhideItems();
     searchHandler.rootRestate?.call();
   }
 
   void compareSelected(BuildContext context) {
-    final tab = searchHandler.currentTab;
-    final selected = [...searchHandler.currentSelected];
+    final tab = currentTab;
+    final selected = [...currentSelected];
     if (selected.length != 2) {
       return;
     }
@@ -645,7 +657,7 @@ class DownloadsDrawerController {
 
   Future<void> refreshSelectedMetadata(BuildContext context) async {
     if (updating.value) return;
-    final tab = searchHandler.currentTab;
+    final tab = currentTab;
     if (tab.selectedBooru.value.type?.isFavouritesOrDownloads != true) {
       _showNoRefreshableItems(context);
       return;
@@ -712,7 +724,7 @@ class DownloadsDrawerController {
   }
 
   ShareActionController shareActionController(BuildContext context) {
-    final tab = searchHandler.currentTab;
+    final tab = currentTab;
     final selected = [...tab.selected];
     final sources = Map<BooruItem, Booru>.identity()
       ..addEntries(selected.map((item) => MapEntry(item, _sourceBooruForTabItem(tab, item))));
@@ -848,45 +860,58 @@ class DownloadsDrawerController {
   }
 
   Future<void> onRetryFailedItem(
-    ({Booru booru, BooruItem item}) record,
+    RetryableItem record,
     bool isExists,
     bool isLongTap,
   ) async {
+    if (updating.value) return;
     updating.value = true;
-
-    final booruHandler = BooruHandlerFactory().getBooruHandler([record.booru], 10).booruHandler;
-    if (booruHandler.hasLoadItemSupport) {
-      try {
-        await booruHandler.loadItem(
-          item: record.item,
-          withCapcthaCheck: true,
-        );
-      } catch (_) {}
+    try {
+      if (record.retryShare != null) {
+        await snatchHandler.onRetryShare(record);
+        return;
+      }
+      final booruHandler = BooruHandlerFactory().getBooruHandler([record.booru], 10).booruHandler;
+      if (booruHandler.hasLoadItemSupport) {
+        try {
+          await booruHandler.loadItem(item: record.item, withCapcthaCheck: true);
+        } catch (_) {}
+      }
+      snatchHandler.onRetryItem(record, cooldown: SX.snatchCooldown.value, ignoreExists: isExists || isLongTap);
+    } finally {
+      updating.value = false;
     }
-    snatchHandler.onRetryItem(
-      record,
-      cooldown: SX.snatchCooldown.value,
-      ignoreExists: isExists || isLongTap,
-    );
-
-    updating.value = false;
   }
 
   Future<void> onRetryAllFailed(bool isLongTap) async {
+    if (updating.value) return;
     updating.value = true;
+    try {
+      await snatchHandler.onRetryAll(
+        cooldown: SX.snatchCooldown.value,
+        ignoreExists: isLongTap,
+      );
+    } finally {
+      updating.value = false;
+    }
+  }
 
-    await snatchHandler.onRetryAll(
-      cooldown: SX.snatchCooldown.value,
-      ignoreExists: isLongTap,
+  Future<void> imageSearchSelected(BuildContext context) async {
+    final selected = [...currentSelected];
+    if (selected.length != 1) return;
+    final item = selected.single;
+    await showImageSearchDialog(
+      context,
+      item.fileURL,
+      item: item,
+      booru: currentTab.booruHandler.sourceBooruFor(item),
     );
-
-    updating.value = false;
   }
 
   Future<void> removeSnatchedStatusFromSelected() async {
     if (updating.value) return;
-    final currentTab = searchHandler.currentTabOrNull;
-    final currentSelected = searchHandler.currentSelectedOrNull;
+    final currentTab = currentTabOrNull;
+    final currentSelected = currentTabOrNull?.selected;
     if (currentTab == null || currentSelected == null) return;
 
     final onlySnatched = currentSelected.where((e) => e.isSnatched.value == true).toList();
@@ -909,9 +934,9 @@ class DownloadsDrawerController {
 
   Future<void> favouriteSelected() async {
     if (updating.value) return;
-    final currentTab = searchHandler.currentTabOrNull;
-    final currentFetched = searchHandler.currentFetchedOrNull;
-    final currentSelected = searchHandler.currentSelectedOrNull;
+    final currentTab = currentTabOrNull;
+    final currentFetched = currentTabOrNull?.booruHandler.filteredFetched;
+    final currentSelected = currentTabOrNull?.selected;
     if (currentTab == null || currentFetched == null || currentSelected == null) return;
 
     final onlyUnfavs = currentSelected.where((e) => e.isFavourite.value == false).toList();
@@ -931,9 +956,9 @@ class DownloadsDrawerController {
 
   Future<void> unfavouriteSelected() async {
     if (updating.value) return;
-    final currentTab = searchHandler.currentTabOrNull;
-    final currentFetched = searchHandler.currentFetchedOrNull;
-    final currentSelected = searchHandler.currentSelectedOrNull;
+    final currentTab = currentTabOrNull;
+    final currentFetched = currentTabOrNull?.booruHandler.filteredFetched;
+    final currentSelected = currentTabOrNull?.selected;
     if (currentTab == null || currentFetched == null || currentSelected == null) return;
 
     final onlyFavs = currentSelected.where((e) => e.isFavourite.value == true).toList();

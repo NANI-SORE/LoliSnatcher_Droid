@@ -61,8 +61,8 @@ class DDShareItem extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(8),
                   child: SizedBox(
-                    width: 100,
-                    height: 150,
+                    width: 76,
+                    height: 100,
                     child: ThumbnailBuild(
                       item: item,
                       handler: handler,
@@ -73,7 +73,7 @@ class DDShareItem extends StatelessWidget {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
-                    spacing: 8,
+                    spacing: 2,
                     children: [
                       const Icon(Icons.share),
                       if (totalItems != 1)
@@ -103,22 +103,23 @@ class DDShareItem extends StatelessWidget {
                   padding: const EdgeInsets.only(left: 8, right: 8),
                   child: Row(
                     children: [
-                      if (snatchHandler.shareTotal.value != 0)
-                        Text(
+                      Expanded(
+                        child: Text(
                           '${Tools.formatBytes(
                             snatchHandler.shareReceived.value,
                             2,
                             withSpace: false,
-                          )}/${Tools.formatBytes(
-                            snatchHandler.shareTotal.value,
-                            2,
-                            withSpace: false,
-                          )}',
+                          )}${snatchHandler.shareTotal.value > 0 ? '/${Tools.formatBytes(
+                                  snatchHandler.shareTotal.value,
+                                  2,
+                                  withSpace: false,
+                                )}' : ''}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 16),
-                        )
-                      else
-                        const SizedBox.shrink(),
-                      const Spacer(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       if (snatchHandler.shareTotal.value != 0)
                         Text(
                           '${(snatchHandler.currentShareProgress * 100.0).toStringAsFixed(2)}%',
