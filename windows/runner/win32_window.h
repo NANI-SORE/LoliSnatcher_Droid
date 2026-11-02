@@ -29,10 +29,9 @@ class Win32Window {
   virtual ~Win32Window();
 
   // Creates a win32 window with |title| that is positioned and sized using
-  // |origin| and |size|. New windows are created on the default monitor. Window
-  // sizes are specified to the OS in physical pixels, hence to ensure a
-  // consistent size this function will scale the inputted width and height as
-  // as appropriate for the default monitor. The window is invisible until
+  // |origin| and |size| in physical screen pixels. Negative origins are valid
+  // for monitors to the left of or above the primary monitor. No DPI conversion
+  // is applied to saved desktop coordinates. The window is invisible until
   // |Show| is called. Returns true if the window was created successfully.
   bool Create(const std::wstring& title, const Point& origin, const Size& size);
 
@@ -52,10 +51,11 @@ class Win32Window {
   // If true, closing this window will quit the application.
   void SetQuitOnClose(bool quit_on_close);
 
-  // Calculates default bounds from the primary monitor.
+  // Calculates default bounds in physical pixels from the primary work area.
   static void GetDefaultWindowState(Point* origin, Size* size);
 
-  // Restores saved window bounds, falling back to the supplied values.
+  // Restores saved physical bounds, fitting them onto the nearest work area if
+  // less than half is visible. Invalid/missing bounds use the supplied values.
   static void LoadSavedWindowState(Point* origin, Size* size,
                                    bool* maximized);
 

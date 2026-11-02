@@ -3,6 +3,11 @@
 #include <dwmapi.h>
 #include <flutter_windows.h>
 
+#include <algorithm>
+#include <cstdint>
+#include <limits>
+#include <vector>
+
 #include "resource.h"
 
 namespace {
@@ -53,6 +58,82 @@ using EnableNonClientDpiScaling = BOOL __stdcall(HWND hwnd);
 // scale factor
 int Scale(int source, double scale_factor) {
   return static_cast<int>(source * scale_factor);
+}
+
+// Build a union so windows spanning displays (including mirrored displays)
+// count each visible pixel once, excluding taskbars and gaps between monitors.
+BOOL CALLBACK AddMonitorWorkArea(HMONITOR monitor, HDC, LPRECT, LPARAM data) {
+  MONITORINFO info{sizeof(info)};
+  if (!GetMonitorInfo(monitor, &info)) {
+    return FALSE;
+  }
+  HRGN work_area = CreateRectRgnIndirect(&info.rcWork);
+  if (work_area == nullptr) {
+    return FALSE;
+  }
+  HRGN visible_region = reinterpret_cast<HRGN>(data);
+  const int result = CombineRgn(visible_region, visible_region, work_area,
+                                RGN_OR);
+  DeleteObject(work_area);
+  return result != ERROR;
+}
+
+bool IsAtLeastHalfVisible(const RECT& bounds) {
+  HRGN visible_region = CreateRectRgn(0, 0, 0, 0);
+  HRGN window_region = CreateRectRgnIndirect(&bounds);
+  bool visible = false;
+  if (visible_region != nullptr && window_region != nullptr &&
+      EnumDisplayMonitors(nullptr, nullptr, AddMonitorWorkArea,
+                          reinterpret_cast<LPARAM>(visible_region)) &&
+      CombineRgn(visible_region, visible_region, window_region, RGN_AND) !=
+          ERROR) {
+    const DWORD data_size = GetRegionData(visible_region, 0, nullptr);
+    if (data_size != 0) {
+      std::vector<BYTE> buffer(data_size);
+      auto data = reinterpret_cast<RGNDATA*>(buffer.data());
+      if (GetRegionData(visible_region, data_size, data) != 0) {
+        const auto rects = reinterpret_cast<const RECT*>(data->Buffer);
+        int64_t visible_area = 0;
+        for (DWORD i = 0; i < data->rdh.nCount; ++i) {
+          visible_area +=
+              (static_cast<int64_t>(rects[i].right) - rects[i].left) *
+              (static_cast<int64_t>(rects[i].bottom) - rects[i].top);
+        }
+        const int64_t window_area =
+            (static_cast<int64_t>(bounds.right) - bounds.left) *
+            (static_cast<int64_t>(bounds.bottom) - bounds.top);
+        visible = visible_area >= (window_area + 1) / 2;
+      }
+    }
+  }
+  if (window_region != nullptr) {
+    DeleteObject(window_region);
+  }
+  if (visible_region != nullptr) {
+    DeleteObject(visible_region);
+  }
+  return visible;
+}
+
+bool EnsureWindowVisible(RECT* bounds) {
+  if (IsAtLeastHalfVisible(*bounds)) {
+    return true;
+  }
+  HMONITOR monitor = MonitorFromRect(bounds, MONITOR_DEFAULTTONEAREST);
+  MONITORINFO info{sizeof(info)};
+  if (!GetMonitorInfo(monitor, &info)) {
+    return false;
+  }
+  const RECT& work = info.rcWork;
+  const LONG width = std::min(bounds->right - bounds->left,
+                              work.right - work.left);
+  const LONG height = std::min(bounds->bottom - bounds->top,
+                               work.bottom - work.top);
+  bounds->left = std::clamp(bounds->left, work.left, work.right - width);
+  bounds->top = std::clamp(bounds->top, work.top, work.bottom - height);
+  bounds->right = bounds->left + width;
+  bounds->bottom = bounds->top + height;
+  return true;
 }
 
 // Dynamically loads the |EnableNonClientDpiScaling| from the User32 module.
@@ -146,16 +227,10 @@ bool Win32Window::Create(const std::wstring& title,
   const wchar_t* window_class =
       WindowClassRegistrar::GetInstance()->GetWindowClass();
 
-  const POINT target_point = {static_cast<LONG>(origin.x),
-                              static_cast<LONG>(origin.y)};
-  HMONITOR monitor = MonitorFromPoint(target_point, MONITOR_DEFAULTTONEAREST);
-  UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
-  double scale_factor = dpi / 96.0;
-
   HWND window = CreateWindow(
       window_class, title.c_str(), WS_OVERLAPPEDWINDOW,
-      Scale(origin.x, scale_factor), Scale(origin.y, scale_factor),
-      Scale(size.width, scale_factor), Scale(size.height, scale_factor),
+      origin.x, origin.y, static_cast<int>(size.width),
+      static_cast<int>(size.height),
       nullptr, nullptr, GetModuleHandle(nullptr), this);
 
   if (!window) {
@@ -182,15 +257,12 @@ void Win32Window::GetDefaultWindowState(Point* origin, Size* size) {
   }
 
   const double scale_factor = FlutterDesktopGetDpiForMonitor(monitor) / 96.0;
-  const RECT& bounds = monitor_info.rcMonitor;
-  origin->x =
-      static_cast<int>(bounds.left / scale_factor) + kDefaultOffset;
-  origin->y =
-      static_cast<int>(bounds.top / scale_factor) + kDefaultOffset;
-  size->width = static_cast<unsigned int>(
-      (bounds.right - bounds.left) / scale_factor / 2);
-  size->height = static_cast<unsigned int>(
-      (bounds.bottom - bounds.top) / scale_factor / 2);
+  const RECT& bounds = monitor_info.rcWork;
+  size->width = (bounds.right - bounds.left) / 2;
+  size->height = (bounds.bottom - bounds.top) / 2;
+  const int offset = Scale(kDefaultOffset, scale_factor);
+  origin->x = bounds.left + std::min(offset, static_cast<int>(size->width));
+  origin->y = bounds.top + std::min(offset, static_cast<int>(size->height));
 }
 
 void Win32Window::LoadSavedWindowState(Point* origin, Size* size,
@@ -224,37 +296,24 @@ void Win32Window::LoadSavedWindowState(Point* origin, Size* size,
       static_cast<LONG>(right),
       static_cast<LONG>(bottom),
   };
-  if (saved_rect.right <= saved_rect.left ||
-      saved_rect.bottom <= saved_rect.top) {
+  const int64_t width = static_cast<int64_t>(saved_rect.right) - saved_rect.left;
+  const int64_t height = static_cast<int64_t>(saved_rect.bottom) - saved_rect.top;
+  if (width <= 0 || height <= 0 ||
+      width > std::numeric_limits<int>::max() ||
+      height > std::numeric_limits<int>::max()) {
     return;
   }
 
-  HMONITOR monitor = MonitorFromRect(&saved_rect, MONITOR_DEFAULTTONULL);
-  if (monitor == nullptr) {
+  if (!EnsureWindowVisible(&saved_rect)) {
     return;
   }
 
-  MONITORINFO monitor_info{sizeof(monitor_info)};
-  if (!GetMonitorInfo(monitor, &monitor_info)) {
-    return;
-  }
-
-  RECT intersection{};
-  if (!IntersectRect(&intersection, &saved_rect, &monitor_info.rcWork) ||
-      intersection.right - intersection.left < 50 ||
-      intersection.bottom - intersection.top < 50) {
-    return;
-  }
-
-  const double scale_factor = FlutterDesktopGetDpiForMonitor(monitor) / 96.0;
-  origin->x = static_cast<int>(saved_rect.left / scale_factor);
-  origin->y = static_cast<int>(saved_rect.top / scale_factor);
-  size->width =
-      static_cast<unsigned int>((saved_rect.right - saved_rect.left) /
-                                scale_factor);
-  size->height =
-      static_cast<unsigned int>((saved_rect.bottom - saved_rect.top) /
-                                scale_factor);
+  // Persisted bounds and CreateWindow both use physical screen coordinates.
+  // Dividing the desktop origin by DPI can select a different monitor at launch.
+  origin->x = saved_rect.left;
+  origin->y = saved_rect.top;
+  size->width = saved_rect.right - saved_rect.left;
+  size->height = saved_rect.bottom - saved_rect.top;
   *maximized = saved_maximized != 0;
 }
 
@@ -264,10 +323,12 @@ void Win32Window::SaveWindowState() {
     return;
   }
 
+  const bool minimized = IsIconic(window_handle_) != FALSE;
   const bool maximized =
-      IsZoomed(window_handle_) || placement.showCmd == SW_SHOWMAXIMIZED;
+      IsZoomed(window_handle_) || placement.showCmd == SW_SHOWMAXIMIZED ||
+      (minimized && (placement.flags & WPF_RESTORETOMAXIMIZED) != 0);
   RECT bounds = placement.rcNormalPosition;
-  if (!maximized) {
+  if (!maximized && !minimized) {
     // GetWindowRect uses screen coordinates, unlike rcNormalPosition which
     // uses workspace coordinates and can be offset by the taskbar.
     if (!GetWindowRect(window_handle_, &bounds)) {
@@ -303,14 +364,9 @@ void Win32Window::ResetWindowState() {
   Size size(960, 540);
   GetDefaultWindowState(&origin, &size);
 
-  HMONITOR monitor = MonitorFromWindow(nullptr, MONITOR_DEFAULTTOPRIMARY);
-  const double scale_factor = FlutterDesktopGetDpiForMonitor(monitor) / 96.0;
-
   ShowWindow(window_handle_, SW_RESTORE);
-  SetWindowPos(window_handle_, nullptr, Scale(origin.x, scale_factor),
-               Scale(origin.y, scale_factor),
-               Scale(size.width, scale_factor),
-               Scale(size.height, scale_factor),
+  SetWindowPos(window_handle_, nullptr, origin.x, origin.y,
+               static_cast<int>(size.width), static_cast<int>(size.height),
                SWP_NOZORDER | SWP_NOACTIVATE);
   SaveWindowState();
 }
