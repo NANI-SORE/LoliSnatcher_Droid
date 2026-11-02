@@ -28,7 +28,6 @@ dependencies:
   country_flags: ^4.1.2
   crypto: ^3.0.7
   cryptography: ^2.9.0
-  path: ^1.9.1
   device_info_plus: ^13.3.0
   dio: ^5.11.1
   dio_http2_adapter: ^2.9.0
