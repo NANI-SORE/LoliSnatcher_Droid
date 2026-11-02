@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import 'package:dio/dio.dart';
 import 'package:intl/intl.dart';
 import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
@@ -38,7 +39,9 @@ class _CommentsDialogState extends State<CommentsDialog> {
   List<CommentItem> comments = [];
   late final AutoScrollController scrollController;
   bool isLoading = true, isCompleted = false, notSupported = false;
-  int page = 0;
+  CancelToken? request;
+  bool failed = false;
+  int page = -1;
   int? selectedIndex;
 
   @override
@@ -52,38 +55,51 @@ class _CommentsDialogState extends State<CommentsDialog> {
     getComments(initial: true);
   }
 
+  @override
+  void dispose() {
+    request?.cancel();
+    scrollController.dispose();
+    super.dispose();
+  }
+
   Future<void> getComments({bool initial = false}) async {
-    page = page + 1;
-    if (initial) {
-      page = 0;
-      isCompleted = false;
-      notSupported = false;
-      selectedIndex = null;
-      comments.clear();
-    }
-
-    isLoading = true;
-    if (!isCompleted) {
-      if (widget.item.serverId != null) {
-        setState(() {}); // set state to update the loading indicator
-        final List<CommentItem> fetched = await widget.handler.getComments(
-          widget.item.serverId!,
-          page,
-        );
-        if (fetched.isEmpty || comments.contains(fetched.first)) {
-          isCompleted = true;
-        }
-
-        if (!isCompleted) {
-          comments = [...comments, ...fetched];
-        }
-      } else {
+    if (!initial && (isLoading || isCompleted)) return;
+    request?.cancel();
+    final currentRequest = request = CancelToken();
+    final nextPage = initial ? 0 : page + 1;
+    setState(() {
+      isLoading = true;
+      failed = false;
+      if (initial) {
+        page = -1;
+        isCompleted = false;
+        notSupported = false;
+        selectedIndex = null;
+        comments.clear();
+      }
+    });
+    try {
+      if (widget.item.serverId == null) {
         notSupported = true;
+        return;
+      }
+      final fetched = await widget.handler.getComments(
+        widget.item.serverId!,
+        nextPage,
+        cancelToken: currentRequest,
+      );
+      if (!mounted || currentRequest.isCancelled || request != currentRequest) return;
+      page = nextPage;
+      isCompleted = fetched.isEmpty || comments.contains(fetched.first);
+      if (!isCompleted) comments = [...comments, ...fetched];
+    } catch (_) {
+      if (!mounted || currentRequest.isCancelled || request != currentRequest) return;
+      failed = true;
+    } finally {
+      if (mounted && request == currentRequest) {
+        setState(() => isLoading = false);
       }
     }
-
-    isLoading = false;
-    setState(() {});
   }
 
   Widget errorEntryBuild(BuildContext context, int index) {
@@ -92,6 +108,16 @@ class _CommentsDialogState extends State<CommentsDialog> {
         if (isLoading)
           const Center(
             child: Padding(padding: EdgeInsets.fromLTRB(18, 50, 18, 18), child: CircularProgressIndicator()),
+          )
+        else if (failed)
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Text(context.loc.error),
+                TextButton(onPressed: getComments, child: Text(context.loc.retry)),
+              ],
+            ),
           )
         else if (notSupported)
           Center(
@@ -130,7 +156,7 @@ class _CommentsDialogState extends State<CommentsDialog> {
         notif.metrics.pixels > (notif.metrics.maxScrollExtent - (notif.metrics.extentInside * 2));
     final bool isScreenFilled = notif.metrics.extentBefore != 0 || notif.metrics.extentAfter != 0;
 
-    if (!isLoading && !isCompleted) {
+    if (!isLoading && !isCompleted && !failed) {
       if (!isScreenFilled || (isNotAtStart && isAtOrNearEdge)) {
         getComments();
       }
@@ -296,6 +322,7 @@ class _CommentsDialogState extends State<CommentsDialog> {
                             }),
                           ),
                         ),
+                        if (failed && comments.isNotEmpty) SliverToBoxAdapter(child: errorEntryBuild(context, 0)),
                         SliverSafeArea(
                           top: false,
                           sliver: areThereErrors

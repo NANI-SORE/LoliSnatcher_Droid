@@ -7,13 +7,83 @@ import 'package:dio/dio.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/local_network_permission.dart';
+import 'package:lolisnatcher/src/services/cloudflare_refresh.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
+
+class _HeadlessRecovery {
+  RequestOptions? lastRequest;
+  bool replaying = false;
+}
 
 class DioNetwork {
   DioNetwork._();
 
   static final Object _cancelTokenZoneKey = Object();
+  static final Object _headlessRecoveryZoneKey = Object();
+  static const _headlessRetried = 'headlessCookieRetry';
+
+  static Future<T> runWithHeadlessRecovery<T>(
+    Future<T> Function() action, {
+    CancelToken? cancelToken,
+    bool Function(T)? failed,
+  }) {
+    final recovery = _HeadlessRecovery();
+    return runZoned(
+      () async {
+        Future<bool> recoverParsingFailure() async {
+          final request = recovery.lastRequest;
+          if (request == null || request.extra[_headlessRetried] == true || recovery.replaying) return false;
+          request.extra[_headlessRetried] = true;
+          final refreshed = await _refreshRequestCookies(request);
+          recovery.replaying = refreshed;
+          return refreshed;
+        }
+
+        final T result;
+        try {
+          result = await action();
+        } catch (_) {
+          if (await recoverParsingFailure()) return action();
+          rethrow;
+        }
+        if (failed?.call(result) == true && await recoverParsingFailure()) return action();
+        return result;
+      },
+      zoneValues: {
+        _headlessRecoveryZoneKey: recovery,
+        _cancelTokenZoneKey: ?cancelToken,
+      },
+    );
+  }
+
+  static String _requestUserAgent(RequestOptions request, [String? fallback]) =>
+      request.headers.entries
+          .where((entry) => entry.key.toLowerCase() == 'user-agent')
+          .firstOrNull
+          ?.value
+          ?.toString() ??
+      fallback ??
+      Tools.browserUserAgent;
+
+  static Future<bool> _refreshRequestCookies(RequestOptions request) async {
+    if (request.cancelToken?.isCancelled == true ||
+        !PlatformExt.hasWebviewSupport ||
+        !ContentPolicy.canOpenWebview ||
+        Tools.isTestMode) {
+      return false;
+    }
+    final refreshed = await CloudflareRefresh.refresh(
+      request.method == 'GET' || request.method == 'HEAD' ? request.uri : Uri.parse(request.uri.origin),
+      _requestUserAgent(request),
+      cancelToken: request.cancelToken,
+      requireNewClearance: false,
+      useCooldown: false,
+    );
+    return refreshed && request.cancelToken?.isCancelled != true;
+  }
 
   /// Shares cancellation with nested requests, including handler setup and parsing.
   /// The zone keeps concurrent operations outside this scope independent.
@@ -79,6 +149,7 @@ class DioNetwork {
       dio.interceptors.add(settingsHandler.alice.getDioInterceptor());
     }
     cookieInterceptor(dio);
+    if (Zone.current[_headlessRecoveryZoneKey] != null) captchaInterceptor(dio, headlessOnly: true);
 
     return dio;
   }
@@ -112,93 +183,141 @@ class DioNetwork {
     };
   }
 
-  static Dio captchaInterceptor(Dio client, {String? customUserAgent}) {
+  static Dio captchaInterceptor(
+    Dio client, {
+    String? customUserAgent,
+    bool headlessOnly = false,
+  }) {
+    final recovery = Zone.current[_headlessRecoveryZoneKey] as _HeadlessRecovery?;
+    // Scoped reads already have recovery installed by getClient. Keep legacy
+    // custom interceptors from opening a screen or duplicating the retry.
+    if (recovery != null && !headlessOnly) return client;
+    Future<Response?> recover(Response? response, RequestOptions request, {bool requestFailed = false}) async {
+      final cancelToken = request.cancelToken;
+      if (cancelToken?.isCancelled == true) throw cancelToken!.cancelError!;
+      if (request.headers[Tools.captchaCheckHeader] == 'done') return null;
+      final userAgent = _requestUserAgent(request, customUserAgent);
+      bool silent = false;
+      final bool recovered;
+      if (headlessOnly) {
+        if (recovery?.replaying == true || request.extra[_headlessRetried] == true) return null;
+        final status = response?.statusCode;
+        if (!requestFailed &&
+            response != null &&
+            status != null &&
+            status >= 200 &&
+            status < 300 &&
+            !CloudflareRefresh.isChallenge(response) &&
+            !Tools.hasCaptchaStrings(request.uri.host, response.data.toString())) {
+          return null;
+        }
+        request.extra[_headlessRetried] = true;
+        recovered = await _refreshRequestCookies(request);
+      } else {
+        recovered = await Tools.checkForCaptcha(
+          response,
+          response?.realUri ?? request.uri,
+          customUserAgent: userAgent,
+          cancelToken: cancelToken,
+          onSilentRefresh: () => silent = true,
+        );
+      }
+      if (cancelToken?.isCancelled == true) throw cancelToken!.cancelError!;
+      if (!recovered) return null;
+      final oldCookie = request.headers['Cookie'] as String? ?? '';
+      final newCookie = await Tools.getCookies(request.uri.toString());
+      final headers = {
+        for (final entry in request.headers.entries)
+          if (entry.key.toLowerCase() != 'user-agent' && entry.key.toLowerCase() != 'cookie') entry.key: entry.value,
+        'Cookie': mergeCookies(oldCookie, newCookie, discardClearance: true),
+        'User-Agent': userAgent,
+        Tools.captchaCheckHeader: silent ? 'silent' : 'done',
+      };
+      // Preserve response type, timeouts, progress callbacks, and cancellation.
+      return client.fetch(
+        request.copyWith(
+          headers: headers,
+          extra: {...request.extra, if (headlessOnly) _headlessRetried: true},
+          connectTimeout: headlessOnly ? request.connectTimeout ?? const Duration(seconds: 15) : request.connectTimeout,
+          receiveTimeout: headlessOnly ? request.receiveTimeout ?? const Duration(seconds: 15) : request.receiveTimeout,
+          sendTimeout: headlessOnly ? request.sendTimeout ?? const Duration(seconds: 15) : request.sendTimeout,
+        ),
+      );
+    }
+
     client.interceptors.add(
       InterceptorsWrapper(
-        onResponse: (Response response, ResponseInterceptorHandler handler) async {
-          final cancelToken = response.requestOptions.cancelToken;
-          if (cancelToken?.isCancelled == true) return handler.reject(cancelToken!.cancelError!);
-          // print('[response]');
-          final bool captchaWasDetected = await Tools.checkForCaptcha(
-            response,
-            response.realUri,
-            customUserAgent: customUserAgent,
-            cancelToken: cancelToken,
-          );
-          if (cancelToken?.isCancelled == true) return handler.reject(cancelToken!.cancelError!);
-          if (!captchaWasDetected) {
-            return handler.next(response);
+        onRequest: (request, handler) {
+          if (recovery != null) {
+            recovery.lastRequest = request;
+            request.connectTimeout ??= const Duration(seconds: 15);
+            request.receiveTimeout ??= const Duration(seconds: 15);
+            request.sendTimeout ??= const Duration(seconds: 15);
           }
-
-          final String oldCookie = response.requestOptions.headers['Cookie'] as String? ?? '';
-          final String newCookie = await Tools.getCookies(response.requestOptions.uri.toString());
-          final headers = {
-            ...response.requestOptions.headers,
-            'Cookie': '${oldCookie.replaceAll('cf_clearance', 'cf_clearance_old')} $newCookie'.trim(),
-            Tools.captchaCheckHeader: 'done',
-          };
-
-          final opts = Options(
-            method: response.requestOptions.method,
-            headers: headers,
-          );
-
-          try {
-            final cloneReq = await client.request(
-              response.requestOptions.path,
-              options: opts,
-              data: response.requestOptions.data,
-              queryParameters: response.requestOptions.queryParameters,
-              cancelToken: cancelToken,
-            );
-            return handler.resolve(cloneReq);
-          } catch (e) {
-            return handler.next(response);
-          }
+          handler.next(request);
         },
-        onError: (DioException error, ErrorInterceptorHandler handler) async {
-          final cancelToken = error.requestOptions.cancelToken;
-          if (cancelToken?.isCancelled == true) return handler.next(cancelToken!.cancelError!);
-          // print('[error]: ${error.message} ${error.response?.statusCode}');
-          final bool captchaWasDetected = await Tools.checkForCaptcha(
-            error.response,
-            error.requestOptions.uri,
-            cancelToken: cancelToken,
-          );
-          if (cancelToken?.isCancelled == true) return handler.next(cancelToken!.cancelError!);
-          if (!captchaWasDetected) {
-            return handler.next(error);
-          }
-
-          final String oldCookie = error.requestOptions.headers['Cookie'] as String? ?? '';
-          final String newCookie = await Tools.getCookies(error.requestOptions.uri.toString());
-          final headers = {
-            ...error.requestOptions.headers,
-            'Cookie': '${oldCookie.replaceAll('cf_clearance', 'cf_clearance_old')} $newCookie'.trim(),
-            Tools.captchaCheckHeader: 'done',
-          };
-
-          final opts = Options(
-            method: error.requestOptions.method,
-            headers: headers,
-          );
-
+        onResponse: (response, handler) async {
           try {
-            final cloneReq = await client.request(
-              error.requestOptions.path,
-              options: opts,
-              data: error.requestOptions.data,
-              queryParameters: error.requestOptions.queryParameters,
-              cancelToken: cancelToken,
-            );
-            return handler.resolve(cloneReq);
-          } catch (e) {
+            final recovered = await recover(response, response.requestOptions);
+            if (recovered != null) return handler.resolve(recovered);
+            if (headlessOnly &&
+                ((response.statusCode ?? 0) < 200 ||
+                    (response.statusCode ?? 0) >= 300 ||
+                    CloudflareRefresh.isChallenge(response) ||
+                    Tools.hasCaptchaStrings(response.requestOptions.uri.host, response.data.toString()))) {
+              return handler.reject(
+                DioException(
+                  requestOptions: response.requestOptions,
+                  response: response,
+                  type: DioExceptionType.badResponse,
+                  error: 'Request failed after headless cookie recovery',
+                ),
+              );
+            }
+          } on DioException catch (error) {
+            return handler.reject(error);
+          } catch (e, s) {
+            Logger.Inst().log(e.toString(), 'DioNetwork', 'captchaInterceptor', LogTypes.exception, s: s);
+          }
+          handler.next(response);
+        },
+        onError: (error, handler) async {
+          if (error.error == 'Local network permission denied') {
+            error.requestOptions.extra[_headlessRetried] = true;
             return handler.next(error);
           }
+          try {
+            final recovered = await recover(error.response, error.requestOptions, requestFailed: true);
+            if (recovered != null) return handler.resolve(recovered);
+          } on DioException catch (retryError) {
+            return handler.next(retryError);
+          } catch (e, s) {
+            Logger.Inst().log(e.toString(), 'DioNetwork', 'captchaInterceptor', LogTypes.exception, s: s);
+          }
+          handler.next(error);
         },
       ),
     );
     return client;
+  }
+
+  static String mergeCookies(
+    String previous,
+    String current, {
+    bool discardClearance = false,
+  }) {
+    List<String> parts(String header) =>
+        header.split(';').map((part) => part.trim()).where((part) => part.indexOf('=') > 0).toList();
+    String name(String part) => part.substring(0, part.indexOf('=')).trim();
+    final fresh = parts(current);
+    final freshNames = fresh.map(name).toSet();
+    final retained = parts(previous).where((part) {
+      final cookieName = name(part);
+      return !freshNames.contains(cookieName) &&
+          !(discardClearance && (cookieName == 'cf_clearance' || cookieName == 'cf_clearance_old'));
+    });
+    // Keep same-name cookies with different paths in native specificity order.
+    return [...fresh, ...retained].join('; ');
   }
 
   static Dio cookieInterceptor(Dio client) {
@@ -209,7 +328,7 @@ class DioNetwork {
           final String newCookie = await Tools.getCookies(options.uri.toString());
           final headers = {
             ...options.headers,
-            'Cookie': '$oldCookie $newCookie'.trim(),
+            'Cookie': mergeCookies(oldCookie, newCookie),
           };
           options.headers = headers;
           return handler.next(options);

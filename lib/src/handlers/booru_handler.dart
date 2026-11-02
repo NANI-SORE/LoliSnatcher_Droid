@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:get/get.dart' hide Response;
@@ -633,7 +635,18 @@ abstract class BooruHandler {
   ////////////////////////////////////////////////////////////////////////
 
   bool get hasCommentsSupport => false;
+  @nonVirtual
   Future<List<CommentItem>> getComments(
+    String postID,
+    int pageNum, {
+    CancelToken? cancelToken,
+  }) => DioNetwork.runWithHeadlessRecovery(
+    () => getCommentsInternal(postID, pageNum, cancelToken: cancelToken),
+    cancelToken: cancelToken,
+  );
+
+  @protected
+  Future<List<CommentItem>> getCommentsInternal(
     String postID,
     int pageNum, {
     CancelToken? cancelToken,
@@ -664,6 +677,8 @@ abstract class BooruHandler {
       response = await fetchComments(uri, cancelToken: cancelToken);
       if (response.statusCode == 200) {
         final rawComments = await parseCommentsList(response);
+        Object? parsingError;
+        StackTrace? parsingStack;
         for (int i = 0; i < rawComments.length; i++) {
           final rawComment = rawComments[i];
           try {
@@ -672,6 +687,8 @@ abstract class BooruHandler {
               comments.add(parsedComment);
             }
           } catch (e, s) {
+            parsingError = e;
+            parsingStack = s;
             Logger.Inst().log(
               '$e $rawComment',
               className,
@@ -681,10 +698,11 @@ abstract class BooruHandler {
             );
           }
         }
+        if (comments.isEmpty && parsingError != null) Error.throwWithStackTrace(parsingError, parsingStack!);
       } else {
         Logger.Inst().log('error fetching url: $url', className, 'getComments', LogTypes.booruHandlerFetchFailed);
         Logger.Inst().log('status: ${response.statusCode}', className, 'getComments', LogTypes.booruHandlerFetchFailed);
-        Logger.Inst().log('response: ${response.data}', className, 'getComments', LogTypes.booruHandlerFetchFailed);
+        throw StateError('Invalid comments status code ${response.statusCode}');
       }
     } catch (e, s) {
       Logger.Inst().log(
@@ -694,6 +712,7 @@ abstract class BooruHandler {
         LogTypes.booruHandlerFetchFailed,
         s: s,
       );
+      rethrow;
     }
     return comments;
   }
@@ -741,7 +760,19 @@ abstract class BooruHandler {
 
   bool get shouldUpdateIteminTagView => false;
 
+  @nonVirtual
   Future<({BooruItem? item, bool failed, String? error})> loadItem({
+    required BooruItem item,
+    CancelToken? cancelToken,
+    bool withCapcthaCheck = false,
+  }) => DioNetwork.runWithHeadlessRecovery(
+    () => loadItemInternal(item: item, cancelToken: cancelToken, withCapcthaCheck: withCapcthaCheck),
+    cancelToken: cancelToken,
+    failed: (result) => result.failed,
+  );
+
+  @protected
+  Future<({BooruItem? item, bool failed, String? error})> loadItemInternal({
     required BooruItem item,
     CancelToken? cancelToken,
     bool withCapcthaCheck = false,

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:io' as io;
 import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
@@ -17,6 +18,8 @@ import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/services/cloudflare_refresh.dart';
+import 'package:lolisnatcher/src/services/webview_cookies.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
@@ -236,6 +239,8 @@ class Tools {
   static bool get isTestMode => Platform.environment.containsKey('FLUTTER_TEST');
 
   static const String captchaCheckHeader = 'LSCaptchaCheck';
+  static Completer<bool>? _captchaClosed;
+  static String? _captchaOrigin;
 
   static bool hasCaptchaStrings(String host, String content) {
     final Map<String, List<String>> knownCaptchaStrings = {
@@ -257,11 +262,29 @@ class Tools {
     Uri uri, {
     String? customUserAgent,
     CancelToken? cancelToken,
+    void Function()? onSilentRefresh,
   }) async {
     bool isCancelled() => cancelToken?.isCancelled == true;
     if (isCancelled()) return false;
-    if (captchaScreenActive || isTestMode || response?.requestOptions.headers.containsKey(captchaCheckHeader) == true) {
+    final retryStage = response?.requestOptions.headers[captchaCheckHeader];
+    if (isTestMode || retryStage == 'done') {
       return false;
+    }
+    bool allowSilentRefresh = retryStage != 'silent';
+
+    Future<bool?> waitForScreen() async {
+      while (captchaScreenActive) {
+        if (_captchaOrigin != uri.origin || _captchaClosed == null) return false;
+        final completed = await Future.any([
+          _captchaClosed!.future,
+          if (cancelToken != null) cancelToken.whenCancel.then((_) => false),
+        ]);
+        if (isCancelled()) return false;
+        if (completed) return true;
+        // The owner may have cancelled while this request is still active.
+        // Join another waiter's replacement screen, or open one below.
+      }
+      return null;
     }
 
     final String host = uri.host;
@@ -270,101 +293,110 @@ class Tools {
 
     if (PlatformExt.hasWebviewSupport &&
         ContentPolicy.canOpenWebview &&
-        (response?.statusCode == HttpStatus.forbidden ||
+        (CloudflareRefresh.isChallenge(response) ||
+            response?.statusCode == HttpStatus.forbidden ||
             response?.statusCode == HttpStatus.serviceUnavailable ||
             hasCaptchaContent)) {
-      // delete invalid cloudflare cookie
-      final webUri = WebUri('${uri.scheme}://$host');
-      final bool res =
-          await CookieManager.instance(
-            webViewEnvironment: webViewEnvironment,
-          ).deleteCookie(
-            url: webUri,
-            name: 'cf_clearance',
-          );
-      if (isCancelled()) return false;
-      if (!res) {
-        Logger.Inst().log(
-          'Failed to delete cookie',
-          'Tools',
-          'checkForCaptcha',
-          LogTypes.exception,
-          s: StackTrace.current,
+      while (captchaScreenActive) {
+        final completed = await waitForScreen();
+        if (completed != null) return completed;
+        allowSilentRefresh = false;
+      }
+
+      if (allowSilentRefresh && CloudflareRefresh.isChallenge(response)) {
+        final method = response?.requestOptions.method.toUpperCase();
+        final refreshed = await CloudflareRefresh.refresh(
+          method == 'GET' || method == 'HEAD' ? uri : Uri.parse(uri.origin),
+          customUserAgent ?? browserUserAgent,
+          cancelToken: cancelToken,
         );
+        if (isCancelled()) return false;
+        if (refreshed) {
+          onSilentRefresh?.call();
+          return true;
+        }
+        // Another request can have opened the screen while this one refreshed.
+        while (captchaScreenActive) {
+          final completed = await waitForScreen();
+          if (completed != null) return completed;
+        }
       }
 
       captchaScreenActive = true;
+      _captchaOrigin = uri.origin;
+      final closedSignal = _captchaClosed = Completer<bool>();
+      bool completed = false;
+      try {
+        // Let the site renew clearance if needed. A failed request alone
+        // does not establish that the stored cookie should be deleted.
+        if (isCancelled()) return false;
 
-      bool userDecidedToStay = false;
-      final navigator = Navigator.of(NavigationHandler.instance.navContext);
-      final route = MaterialPageRoute<void>(
-        builder: (context) => InAppWebviewView(
-          initialUrl: '${uri.scheme}://$host${uri.hasPort && uri.port != 80 ? ':${uri.port}' : ''}',
-          userAgent: customUserAgent,
-          title: context.loc.webview.captcha,
-          subtitle: context.loc.webview.captchaCheckDescription,
-          onLoadStop: (context, controller, url) async {
-            // close cloudflare captcha automatically
-            if (url == null || isCancelled()) return;
+        bool userDecidedToStay = false;
+        final navigator = Navigator.of(NavigationHandler.instance.navContext);
+        final route = MaterialPageRoute<void>(
+          builder: (context) => InAppWebviewView(
+            initialUrl: uri.origin,
+            userAgent: customUserAgent,
+            title: context.loc.webview.captcha,
+            subtitle: context.loc.webview.captchaCheckDescription,
+            onLoadStop: (context, controller, url) async {
+              // close cloudflare captcha automatically
+              if (url == null || isCancelled()) return;
 
-            await Future.delayed(const Duration(milliseconds: 500));
-            if (!context.mounted || isCancelled()) return;
-
-            final CookieManager cookieManager = CookieManager.instance(webViewEnvironment: webViewEnvironment);
-            final List<Cookie> cookies = await cookieManager.getCookies(url: url);
-            if (!context.mounted || isCancelled()) return;
-            final bool hasClearanceCookie = [
-              ...cookies,
-              ...?globalWindowsCookies[url.host],
-            ].any((c) => c.name == 'cf_clearance');
-
-            final String? htmlContent = await controller.evaluateJavascript(
-              source: 'window.document.documentElement.outerHTML;',
-            );
-
-            if (htmlContent == null || !context.mounted || isCancelled()) return;
-
-            final bool isCloudflareChallengeActive =
-                htmlContent.contains('/cdn-cgi/challenge-platform/') ||
-                htmlContent.contains('id="cf-challenge-') ||
-                htmlContent.contains('cf-browser-verification');
-            final bool isKnownCaptchaRunning = hasCaptchaStrings(url.host, htmlContent);
-            if (context.mounted &&
-                hasClearanceCookie &&
-                !isCloudflareChallengeActive &&
-                !isKnownCaptchaRunning &&
-                !userDecidedToStay) {
-              // allow user to stay in webview through a dialog, in case of false positives, otherwise leave after a few seconds
-              final bool res = await showTimedLeaveDialog(
-                context,
-                title: context.loc.webview.captchaCompleted,
-                icon: const Icon(Icons.thumb_up_alt_rounded),
-                duration: const Duration(seconds: 4),
-              );
+              await Future.delayed(const Duration(milliseconds: 500));
               if (!context.mounted || isCancelled()) return;
 
-              if (res) {
-                Navigator.of(context).pop();
-              } else {
-                userDecidedToStay = true;
+              final List<Cookie> cookies = await WebviewCookies.read(url, controller: controller);
+              if (!context.mounted || isCancelled()) return;
+              final bool hasClearanceCookie = cookies.any((c) => c.name == 'cf_clearance');
+
+              final String? htmlContent = await controller.evaluateJavascript(
+                source: 'window.document.documentElement.outerHTML;',
+              );
+
+              if (htmlContent == null || !context.mounted || isCancelled()) return;
+
+              final bool isCloudflareChallengeActive = CloudflareRefresh.hasChallenge(htmlContent);
+              final bool isKnownCaptchaRunning = hasCaptchaStrings(url.host, htmlContent);
+              if (context.mounted &&
+                  hasClearanceCookie &&
+                  !isCloudflareChallengeActive &&
+                  !isKnownCaptchaRunning &&
+                  !userDecidedToStay) {
+                // allow user to stay in webview through a dialog, in case of false positives, otherwise leave after a few seconds
+                final bool res = await showTimedLeaveDialog(
+                  context,
+                  title: context.loc.webview.captchaCompleted,
+                  icon: const Icon(Icons.thumb_up_alt_rounded),
+                  duration: const Duration(seconds: 4),
+                );
+                if (!context.mounted || isCancelled()) return;
+
+                if (res) {
+                  Navigator.of(context).pop();
+                } else {
+                  userDecidedToStay = true;
+                }
               }
-            }
-          },
-        ),
-      );
-      final closed = navigator.push(route);
-      if (cancelToken != null) {
-        unawaited(
-          cancelToken.whenCancel.then((_) {
-            if (route.isActive) navigator.removeRoute(route);
-          }),
+            },
+          ),
         );
-      }
-      try {
+        final closed = navigator.push(route);
+        if (cancelToken != null) {
+          unawaited(
+            cancelToken.whenCancel.then((_) {
+              if (route.isActive) navigator.removeRoute(route);
+            }),
+          );
+        }
         await closed;
+        completed = !isCancelled();
         return !isCancelled();
       } finally {
         captchaScreenActive = false;
+        _captchaOrigin = null;
+        _captchaClosed = null;
+        closedSignal.complete(completed);
       }
     }
     return false;
@@ -374,12 +406,11 @@ class Tools {
     String cookieString = '';
     if (PlatformExt.hasWebviewSupport) {
       try {
-        final CookieManager cookieManager = CookieManager.instance(webViewEnvironment: webViewEnvironment);
         List<Cookie> cookies = [];
         if (Platform.isWindows) {
-          cookies.addAll(globalWindowsCookies[WebUri(uri).host] ?? []);
+          cookies.addAll(WebviewCookies.cachedForRequest(Uri.parse(uri)));
         } else {
-          cookies = await cookieManager.getCookies(url: WebUri(uri));
+          cookies = await WebviewCookies.read(Uri.parse(uri));
         }
         for (final Cookie cookie in cookies) {
           cookieString += '${cookie.name}=${cookie.value}; ';
@@ -404,51 +435,31 @@ class Tools {
     if (PlatformExt.hasWebviewSupport) {
       try {
         final CookieManager cookieManager = CookieManager.instance(webViewEnvironment: webViewEnvironment);
-        final List<Cookie?> parsedCookies = [];
-        for (final c in cookies) {
+        final url = Uri.parse(uri);
+        for (final value in cookies) {
+          final io.Cookie cookie;
           try {
-            final parts = c.split(';').map((p) => p.split('='));
-
-            final name = parts.first.first.trim();
-            final value = parts.first.last.trim();
-            final domain = parts.firstWhereOrNull((p) => p.first.toLowerCase() == 'domain')?.last.trim();
-            final path = parts.firstWhereOrNull((p) => p.first.toLowerCase() == 'path')?.last.trim();
-            final expires = DateTime.tryParse(
-              parts.firstWhereOrNull((p) => p.first.toLowerCase() == 'expires')?.last.trim() ?? '',
-            );
-            final isSecure = parts.firstWhereOrNull((p) => p.first.toLowerCase() == 'secure') != null;
-            final isHttpOnly = parts.firstWhereOrNull((p) => p.first.toLowerCase() == 'httponly') != null;
-
-            parsedCookies.add(
-              Cookie(
-                name: name,
-                value: value,
-                domain: domain,
-                path: path,
-                expiresDate: expires?.millisecondsSinceEpoch,
-                isSecure: isSecure,
-                isHttpOnly: isHttpOnly,
-              ),
-            );
-          } catch (_) {}
-        }
-
-        for (final cookie in parsedCookies) {
-          if (cookie == null) continue;
-          if (Platform.isWindows) {
-            globalWindowsCookies[WebUri(uri).host]?.add(cookie);
+            cookie = io.Cookie.fromSetCookieValue(value);
+          } on FormatException {
+            continue;
+          } on io.HttpException {
+            continue;
           }
+          final defaultPath = url.path.lastIndexOf('/') > 0 ? url.path.substring(0, url.path.lastIndexOf('/')) : '/';
+          final path = cookie.path?.startsWith('/') == true ? cookie.path! : defaultPath;
           await cookieManager.setCookie(
             url: WebUri(uri),
             name: cookie.name,
             value: cookie.value,
             domain: cookie.domain,
-            path: cookie.path ?? '/',
-            expiresDate: cookie.expiresDate,
-            isSecure: cookie.isSecure,
-            isHttpOnly: cookie.isHttpOnly,
+            path: path,
+            expiresDate: cookie.expires?.millisecondsSinceEpoch,
+            maxAge: cookie.maxAge,
+            isSecure: cookie.secure,
+            isHttpOnly: cookie.httpOnly,
           );
         }
+        if (Platform.isWindows) await WebviewCookies.read(url);
         return true;
       } catch (e, s) {
         Logger.Inst().log(
