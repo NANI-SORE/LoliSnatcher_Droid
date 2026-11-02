@@ -67,10 +67,13 @@ class DownloadsDrawerController {
         currentBooru,
         SX.snatchCooldown.value,
         isLongTap,
+        sourceFor: currentTab.booruHandler.sourceBooruFor,
+        useSourceCooldown: true,
       );
-      if (SX.favouriteOnSnatch.value) {
+      final toFavourite = currentSelected.where(currentTab.shouldFavouriteOnSnatch).toList();
+      if (toFavourite.isNotEmpty) {
         await currentTab.updateFavForMultipleItems(
-          currentSelected,
+          toFavourite,
           newValue: true,
           skipSnatching: true,
         );

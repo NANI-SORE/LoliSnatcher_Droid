@@ -166,9 +166,10 @@ class _TabRestoreDialogState extends State<TabRestoreDialog> {
         dense: true,
       ),
       const SizedBox(height: 16),
-      Row(
-        mainAxisAlignment: .end,
+      Wrap(
+        alignment: .end,
         spacing: 8,
+        runSpacing: 8,
         children: [
           CancelButton(
             withIcon: true,

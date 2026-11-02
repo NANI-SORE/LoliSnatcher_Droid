@@ -300,7 +300,12 @@ class SettingsRegistry {
   /// the in-memory [SettingState] instances.
   ///
   /// Call this after loading each booru config from disk.
-  void loadOverridesFromMap(String booruName, Map<String, dynamic>? overrides) {
+  void loadOverridesFromMap(
+    String booruName,
+    Map<String, dynamic>? overrides, {
+    bool replace = false,
+  }) {
+    if (replace) removeAllOverridesForBooru(booruName, save: false);
     if (overrides == null) return;
 
     for (final entry in overrides.entries) {
@@ -319,6 +324,36 @@ class SettingsRegistry {
         }
       }
     }
+  }
+
+  /// Validates external overrides and optionally excludes device-specific values.
+  Map<String, dynamic>? normalizeOverrides(
+    Map<String, dynamic>? overrides, {
+    bool syncableOnly = false,
+  }) {
+    final normalized = <String, dynamic>{};
+    for (final entry in (overrides ?? <String, dynamic>{}).entries) {
+      final state = getByJsonKey(entry.key);
+      if (state == null ||
+          !state.def.supportsPerBooru ||
+          state.def.isTransient ||
+          state.def.isWidgetSlot ||
+          (syncableOnly && state.def.isDeviceSpecific)) {
+        continue;
+      }
+      try {
+        normalized[state.def.jsonKey] = state.def.normalizeJsonValue(entry.value);
+      } catch (e, s) {
+        Logger.Inst().log(
+          'Invalid override ${state.def.jsonKey}: $e',
+          'SettingsRegistry',
+          'normalizeOverrides',
+          LogTypes.settingsError,
+          s: s,
+        );
+      }
+    }
+    return normalized.isEmpty ? null : normalized;
   }
 
   /// Collect all in-memory overrides for a booru into a JSON-compatible map.
