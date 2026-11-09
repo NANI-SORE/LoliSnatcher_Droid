@@ -178,6 +178,104 @@ class DBHandler {
     return true;
   }
 
+  Future<void> setFavourite(BooruItem item, bool value) async {
+    final database = db;
+    if (database == null || !database.isOpen) throw StateError('The favourites database is not open');
+    await database.transaction((txn) => _setFavourite(txn, item, value, {}));
+  }
+
+  Future<void> setFavouriteBatch(List<BooruItem> items) async {
+    if (items.length > 100) throw ArgumentError('Favourite batches are limited to 100 items');
+    final database = db;
+    if (database == null || !database.isOpen) throw StateError('The favourites database is not open');
+    await database.transaction((txn) async {
+      final tagIds = <String, int>{};
+      for (final item in items) {
+        await _setFavourite(txn, item, true, tagIds);
+      }
+      // Existing downloaded rows keep their links, but still receive missing tag types.
+      final typedTags = {
+        for (final item in items)
+          for (final tag in item.tagsList)
+            if (!tag.tagType.isNone) tag.fullString: tag,
+      };
+      final metadata = txn.batch();
+      for (final tag in typedTags.values) {
+        metadata.rawUpdate(
+          "UPDATE Tag SET tagType = ?, updatedAt = ? WHERE name = ? AND (tagType IS NULL OR tagType = 'none')",
+          [tag.tagType.name, tag.updatedAt, tag.fullString],
+        );
+      }
+      await metadata.commit(noResult: true);
+    });
+  }
+
+  Future<void> prepareFavouriteSync() async {
+    final database = db;
+    if (database == null || !database.isOpen) throw StateError('The favourites database is not open');
+    // Persistent, nonunique lookups preserve existing duplicate records. These
+    // are required by sync's per-item writes, independently of optional join indexes.
+    await database.execute('CREATE INDEX IF NOT EXISTS ServerFavorites_postURL ON BooruItem(postURL)');
+    await database.execute('CREATE INDEX IF NOT EXISTS ServerFavorites_tagName ON Tag(name)');
+  }
+
+  Future<void> _setFavourite(DatabaseExecutor txn, BooruItem item, bool value, Map<String, int> tagIds) async {
+    final existing = await txn.query('BooruItem', columns: ['id'], where: 'postURL = ?', whereArgs: [item.postURL]);
+    if (existing.isNotEmpty) {
+      await txn.rawUpdate(
+        'UPDATE BooruItem SET isFavourite = ?, serverId = COALESCE(?, serverId) WHERE postURL = ?',
+        [Tools.boolToInt(value), item.serverId, item.postURL],
+      );
+      return;
+    }
+    if (!value) return;
+    final itemId = await txn.rawInsert(
+      'INSERT INTO BooruItem(thumbnailURL, sampleURL, fileURL, postURL, mediaType, isSnatched, isFavourite, serverId) VALUES(?,?,?,?,?,?,?,?)',
+      [
+        item.thumbnailURL.replaceFirstMapped(RegExp('(?<!https?:)//'), (m) => '/'),
+        item.sampleURL.replaceFirstMapped(RegExp('(?<!https?:)//'), (m) => '/'),
+        item.fileURL.replaceFirstMapped(RegExp('(?<!https?:)//'), (m) => '/'),
+        item.postURL,
+        item.mediaType.toJson(),
+        Tools.boolToInt(item.isSnatched.value == true),
+        1,
+        item.serverId,
+      ],
+    );
+    final links = txn.batch();
+    for (final tag in {for (final tag in item.tagsList) tag.fullString: tag}.values) {
+      var tagId = tagIds[tag.fullString];
+      if (tagId == null) {
+        final rows = await txn.query('Tag', columns: ['id'], where: 'name = ?', whereArgs: [tag.fullString]);
+        tagId = rows.isEmpty
+            ? await txn.rawInsert('INSERT INTO Tag(name, tagType, updatedAt) VALUES(?,?,?)', [
+                tag.fullString,
+                tag.tagType.name,
+                tag.updatedAt,
+              ])
+            : rows.first['id']! as int;
+        tagIds[tag.fullString] = tagId;
+      }
+      links.rawInsert('INSERT INTO ImageTag(tagID, booruItemID) VALUES(?,?)', [tagId, itemId]);
+    }
+    await links.commit(noResult: true);
+  }
+
+  Future<void> clearFavouriteUrls(Iterable<String> postUrls) async {
+    final database = db;
+    if (database == null || !database.isOpen) throw StateError('The favourites database is not open');
+    await database.transaction((txn) async {
+      final urls = postUrls.toSet().toList();
+      for (var offset = 0; offset < urls.length; offset += 500) {
+        final chunk = urls.skip(offset).take(500).toList();
+        await txn.rawUpdate(
+          'UPDATE BooruItem SET isFavourite = 0 WHERE postURL IN (${List.filled(chunk.length, '?').join(',')})',
+          chunk,
+        );
+      }
+    });
+  }
+
   /// Inserts a new booruItem or updates the isSnatched and isFavourite values of an existing BooruItem in the database
   Future<String?> updateBooruItem(BooruItem item, BooruUpdateMode mode) async {
     final db = this.db;
@@ -337,11 +435,12 @@ class DBHandler {
       );
 
       if (result != null && result.isNotEmpty) {
+        final byUrl = <String, String>{};
         for (final Map<String, dynamic> item in result) {
-          final int chunkIndex = chunk.indexOf(item['postURL']);
-          if (chunkIndex != -1) {
-            ids[start + chunkIndex] = item['id'].toString();
-          }
+          byUrl.putIfAbsent(item['postURL'].toString(), () => item['id'].toString());
+        }
+        for (var index = 0; index < chunk.length; index++) {
+          ids[start + index] = byUrl[chunk[index]] ?? '';
         }
       }
     }
@@ -391,28 +490,21 @@ class DBHandler {
     return items;
   }
 
-  Future<List<BooruItem>> getFavouriteItemsForHost(
-    String host, {
+  Future<List<Map<String, Object?>>> getFavouriteIdentities({
+    int? beforeId,
     int limit = 500,
-    int offset = 0,
   }) async {
-    final db = this.db;
-    if (db == null || !db.isOpen) throw StateError('The favourites database is not open');
-    if (host.isEmpty) return [];
-
-    final hostPattern = '%$host%';
-    final results = await db.rawQuery(
-      'SELECT bi.id as dbid, bi.thumbnailURL, bi.sampleURL, bi.fileURL, bi.postURL, bi.mediaType, '
-      'bi.isSnatched, bi.isFavourite, bi.serverId '
-      'FROM BooruItem AS bi '
-      'WHERE bi.isFavourite = 1 AND (bi.postURL LIKE ? OR bi.fileURL LIKE ? OR bi.sampleURL LIKE ? OR bi.thumbnailURL LIKE ?) '
-      'ORDER BY bi.id DESC LIMIT ? OFFSET ?',
-      [hostPattern, hostPattern, hostPattern, hostPattern, limit, offset],
+    final database = db;
+    if (database == null || !database.isOpen) throw StateError('The favourites database is not open');
+    // Seek by the primary key, avoiding repeated scans of OFFSET rows and media URLs.
+    return database.query(
+      'BooruItem',
+      columns: ['id', 'postURL', 'serverId'],
+      where: 'isFavourite = 1${beforeId == null ? '' : ' AND id < ?'}',
+      whereArgs: beforeId == null ? null : [beforeId],
+      orderBy: 'id DESC',
+      limit: limit,
     );
-
-    if (results.isEmpty) return [];
-
-    return results.map((row) => BooruItem.fromDBRow(row, const [])).toList();
   }
 
   Future<List<BooruItem>> searchDB(

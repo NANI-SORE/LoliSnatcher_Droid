@@ -29,7 +29,7 @@ import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
-import 'package:lolisnatcher/src/services/server_favorite_feedback.dart';
+import 'package:lolisnatcher/src/services/server_favorites_request_gate.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/timed_progress_controller.dart';
@@ -767,131 +767,137 @@ class _HideableAppBarState extends State<HideableAppBar> {
     final adapter = widget.tab.serverFavoriteAdapterForItem(item, settingsHandler);
     final serverId = adapter?.serverIdFromItem(item);
 
-    await showDialog(
-      context: context,
-      builder: (dialogContext) {
-        final future = _loadServerFavoriteStatus(item);
-        return SettingsDialog(
-          title: Text(dialogContext.loc.serverFavouritesSync.serverStatusTitle),
-          actionButtons: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(dialogContext).colorScheme.surfaceContainerHighest,
-                foregroundColor: Theme.of(dialogContext).colorScheme.onSurface,
-              ),
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(dialogContext.loc.close),
-            ),
-          ],
-          content: FutureBuilder<_ServerFavoriteStatus>(
-            future: future,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 8),
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    Text(context.loc.serverFavouritesSync.serverStatusChecking),
-                    if (adapter != null)
-                      Text(context.loc.serverFavouritesSync.serverStatusBooru(booru: adapter.displayName)),
-                    if (serverId?.isNotEmpty == true)
-                      Text(context.loc.serverFavouritesSync.serverStatusServerId(id: serverId!)),
-                  ],
-                );
-              }
-
-              final status = snapshot.data;
-              final error = snapshot.error;
-              final lines = <Widget>[
-                Text(
-                  context.loc.serverFavouritesSync.serverStatusLocal(
-                    value: item.isFavourite.value == true ? context.loc.yes : context.loc.no,
-                  ),
-                ),
-                if (adapter != null)
-                  Text(context.loc.serverFavouritesSync.serverStatusBooru(booru: adapter.displayName)),
-                if (serverId?.isNotEmpty == true)
-                  Text(context.loc.serverFavouritesSync.serverStatusServerId(id: serverId!)),
-                const SizedBox(height: 12),
-              ];
-
-              if (status != null && status.isSupported) {
-                lines.add(
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(
-                      status.isFavoriteOnServer ? Icons.favorite : Icons.favorite_border,
-                      color: status.isFavoriteOnServer ? Colors.red : null,
-                    ),
-                    title: Text(
-                      status.isFavoriteOnServer
-                          ? context.loc.serverFavouritesSync.serverStatusPresent
-                          : context.loc.serverFavouritesSync.serverStatusAbsent,
-                    ),
-                  ),
-                );
-              } else if (status != null && !status.isSupported) {
-                lines.add(Text(context.loc.serverFavouritesSync.serverStatusUnsupported));
-              } else if (error != null) {
-                lines.add(Text(context.loc.serverFavouritesSync.serverStatusError(error: error.toString())));
-              } else {
-                lines.add(Text(context.loc.serverFavouritesSync.serverStatusUnsupported));
-              }
-
-              if (adapter != null &&
-                  (adapter.capabilities.canAdd || adapter.capabilities.canRemove) &&
-                  serverId?.isNotEmpty == true) {
-                final requestKey = ServerFavoriteFeedback.requestKey(
-                  booruName: adapter.displayName,
-                  serverId: serverId!,
-                );
-                lines.add(const SizedBox(height: 12));
-                lines.add(
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      alignment: WrapAlignment.end,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: !adapter.capabilities.canAdd || ServerFavoriteFeedback.isInFlight(requestKey)
-                              ? null
-                              : () {
-                                  Navigator.of(dialogContext).pop();
-                                  unawaited(_mutateCurrentItemServerFavorite(item, add: true));
-                                },
-                          icon: const Icon(Icons.favorite),
-                          label: Text(dialogContext.loc.serverFavouritesSync.serverAddFavourite),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: !adapter.capabilities.canRemove || ServerFavoriteFeedback.isInFlight(requestKey)
-                              ? null
-                              : () {
-                                  Navigator.of(dialogContext).pop();
-                                  unawaited(_mutateCurrentItemServerFavorite(item, add: false));
-                                },
-                          icon: const Icon(Icons.heart_broken),
-                          label: Text(dialogContext.loc.serverFavouritesSync.serverRemoveFavourite),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: lines,
-              );
-            },
-          ),
-        );
-      },
+    final token = CancelToken();
+    final future = ServerFavoritesRequestGate(token).run(
+      () => DioNetwork.runWithCancellation(token, () => _loadServerFavoriteStatus(item)),
     );
+    try {
+      await showDialog(
+        context: context,
+        builder: (dialogContext) {
+          return SettingsDialog(
+            title: Text(dialogContext.loc.serverFavouritesSync.serverStatusTitle),
+            actionButtons: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(dialogContext).colorScheme.surfaceContainerHighest,
+                  foregroundColor: Theme.of(dialogContext).colorScheme.onSurface,
+                ),
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(dialogContext.loc.close),
+              ),
+            ],
+            content: FutureBuilder<_ServerFavoriteStatus>(
+              future: future,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 8),
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(context.loc.serverFavouritesSync.serverStatusChecking),
+                      if (adapter != null)
+                        Text(context.loc.serverFavouritesSync.serverStatusBooru(booru: adapter.displayName)),
+                      if (serverId?.isNotEmpty == true)
+                        Text(context.loc.serverFavouritesSync.serverStatusServerId(id: serverId!)),
+                    ],
+                  );
+                }
+
+                final status = snapshot.data;
+                final error = snapshot.error;
+                final lines = <Widget>[
+                  Text(
+                    context.loc.serverFavouritesSync.serverStatusLocal(
+                      value: item.isFavourite.value == true ? context.loc.yes : context.loc.no,
+                    ),
+                  ),
+                  if (adapter != null)
+                    Text(context.loc.serverFavouritesSync.serverStatusBooru(booru: adapter.displayName)),
+                  if (serverId?.isNotEmpty == true)
+                    Text(context.loc.serverFavouritesSync.serverStatusServerId(id: serverId!)),
+                  const SizedBox(height: 12),
+                ];
+
+                if (status != null && status.isSupported) {
+                  lines.add(
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        status.isFavoriteOnServer ? Icons.favorite : Icons.favorite_border,
+                        color: status.isFavoriteOnServer ? Colors.red : null,
+                      ),
+                      title: Text(
+                        status.isFavoriteOnServer
+                            ? context.loc.serverFavouritesSync.serverStatusPresent
+                            : context.loc.serverFavouritesSync.serverStatusAbsent,
+                      ),
+                    ),
+                  );
+                } else if (status != null && !status.isSupported) {
+                  lines.add(Text(context.loc.serverFavouritesSync.serverStatusUnsupported));
+                } else if (error != null) {
+                  lines.add(Text(context.loc.serverFavouritesSync.serverStatusError(error: error.toString())));
+                } else {
+                  lines.add(Text(context.loc.serverFavouritesSync.serverStatusUnsupported));
+                }
+
+                if (adapter != null &&
+                    (adapter.capabilities.canAdd || adapter.capabilities.canRemove) &&
+                    serverId?.isNotEmpty == true) {
+                  lines.add(Text(context.loc.serverFavouritesSync.serverOnlyHint));
+                  lines.add(const SizedBox(height: 12));
+                  lines.add(
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        alignment: WrapAlignment.end,
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: !adapter.capabilities.canAdd
+                                ? null
+                                : () {
+                                    Navigator.of(dialogContext).pop();
+                                    unawaited(_mutateCurrentItemServerFavorite(item, add: true));
+                                  },
+                            icon: const Icon(Icons.favorite),
+                            label: Text(dialogContext.loc.serverFavouritesSync.serverAddFavourite),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: !adapter.capabilities.canRemove
+                                ? null
+                                : () {
+                                    Navigator.of(dialogContext).pop();
+                                    unawaited(_mutateCurrentItemServerFavorite(item, add: false));
+                                  },
+                            icon: const Icon(Icons.heart_broken),
+                            label: Text(dialogContext.loc.serverFavouritesSync.serverRemoveFavourite),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                return SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: lines,
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      );
+    } finally {
+      token.cancel();
+    }
   }
 
   Future<void> _mutateCurrentItemServerFavorite(BooruItem item, {required bool add}) async {
@@ -920,7 +926,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
 
   Future<_ServerFavoriteStatus> _loadServerFavoriteStatus(BooruItem item) async {
     final adapter = widget.tab.serverFavoriteAdapterForItem(item, settingsHandler);
-    if (adapter == null || !adapter.capabilities.canFetch || !adapter.capabilities.canCheckSingle) {
+    if (adapter == null || !adapter.capabilities.canCheckSingle) {
       return const _ServerFavoriteStatus(isSupported: false, isFavoriteOnServer: false);
     }
 
@@ -929,10 +935,10 @@ class _HideableAppBarState extends State<HideableAppBar> {
       return const _ServerFavoriteStatus(isSupported: false, isFavoriteOnServer: false);
     }
 
-    final entries = await adapter.fetchFavorites();
+    final isFavorite = await adapter.checkFavorite(serverId);
     return _ServerFavoriteStatus(
       isSupported: true,
-      isFavoriteOnServer: entries.any((entry) => entry.serverId == serverId),
+      isFavoriteOnServer: isFavorite,
     );
   }
 

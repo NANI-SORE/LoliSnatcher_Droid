@@ -18,7 +18,6 @@ import 'package:lolisnatcher/src/data/server_favorites/server_favorite_models.da
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
-import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/handlers/server_favorite_adapter.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
@@ -26,6 +25,7 @@ import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/services/server_favorite_feedback.dart';
+import 'package:lolisnatcher/src/services/server_favorite_coordinator.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/ordered_selection_index.dart';
@@ -1322,35 +1322,28 @@ class SearchTab {
       }
 
       final bool newValue = forcedValue ?? (item.isFavourite.value == true ? false : true);
-      final serverWriteKey = _serverFavouriteWriteKeyForItem(item, newValue);
-      if (serverWriteKey != null && !ServerFavoriteFeedback.tryStartRequest(serverWriteKey)) {
+      final expectedRequestKey = _serverFavouriteWriteKeyForItem(item, newValue);
+      final previousValue = item.isFavourite.value;
+      _updateLocalFavouriteViews(item, newValue);
+      try {
+        await SettingsHandler.instance.dbHandler.setFavourite(item, newValue);
+      } catch (_) {
+        if (item.isFavourite.value == newValue) _updateLocalFavouriteViews(item, previousValue);
+        FlashElements.showSnackbar(title: Text(loc.serverFavouritesSync.localSaveFailed));
         return item.isFavourite.value;
       }
-
-      try {
-        item.isFavourite.value = newValue;
-
-        final SettingsHandler settingsHandler = SettingsHandler.instance;
-        if (!skipSnatching && shouldSnatchOnFavourite(item) && newValue && item.isSnatched.value != true) {
-          SnatchHandler.instance.queue(
-            [item],
-            booruHandler.booru,
-            SX.snatchCooldown.value,
-            false,
-            sourceFor: booruHandler.sourceBooruFor,
-            useSourceCooldown: true,
-          );
-        }
-        await settingsHandler.dbHandler.updateBooruItem(
-          item,
-          BooruUpdateMode.local,
+      if (!skipSnatching && shouldSnatchOnFavourite(item) && newValue && item.isSnatched.value != true) {
+        SnatchHandler.instance.queue(
+          [item],
+          booruHandler.booru,
+          SX.snatchCooldown.value,
+          false,
+          sourceFor: booruHandler.sourceBooruFor,
+          useSourceCooldown: true,
         );
-      } catch (_) {
-        if (serverWriteKey != null) ServerFavoriteFeedback.finishRequest(serverWriteKey);
-        rethrow;
       }
-      if (serverWriteKey != null) {
-        unawaited(_sendFavouriteToServer(item, newValue, reservedRequestKey: serverWriteKey));
+      if (expectedRequestKey != null) {
+        unawaited(_sendFavouriteToServer(item, newValue, expectedRequestKey: expectedRequestKey));
       }
 
       WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -1367,45 +1360,32 @@ class SearchTab {
     required bool newValue,
     bool skipSnatching = false,
   }) async {
-    final reservedRequests = <BooruItem, String>{};
-    final writableItems = items.where((item) {
-      final serverWriteKey = _serverFavouriteWriteKeyForItem(item, newValue);
-      if (serverWriteKey == null) return true;
-      if (!ServerFavoriteFeedback.tryStartRequest(serverWriteKey)) return false;
-      reservedRequests[item] = serverWriteKey;
-      return true;
-    }).toList();
-    if (writableItems.isEmpty) return;
-
-    try {
-      final SettingsHandler settingsHandler = SettingsHandler.instance;
-      if (!skipSnatching && newValue) {
-        SnatchHandler.instance.queue(
-          writableItems.where((item) => item.isSnatched.value != true && shouldSnatchOnFavourite(item)).toList(),
-          booruHandler.booru,
-          SX.snatchCooldown.value,
-          false,
-          sourceFor: booruHandler.sourceBooruFor,
-          useSourceCooldown: true,
-        );
+    final savedItems = <BooruItem>[];
+    for (final item in List<BooruItem>.of(items)) {
+      final expectedRequestKey = _serverFavouriteWriteKeyForItem(item, newValue);
+      final previousValue = item.isFavourite.value;
+      _updateLocalFavouriteViews(item, newValue);
+      try {
+        await SettingsHandler.instance.dbHandler.setFavourite(item, newValue);
+      } catch (_) {
+        if (item.isFavourite.value == newValue) _updateLocalFavouriteViews(item, previousValue);
+        FlashElements.showSnackbar(title: Text(loc.serverFavouritesSync.localSaveFailed));
+        continue;
       }
-
-      for (final BooruItem item in writableItems) {
-        item.isFavourite.value = newValue;
+      savedItems.add(item);
+      if (expectedRequestKey != null) {
+        unawaited(_sendFavouriteToServer(item, newValue, expectedRequestKey: expectedRequestKey));
       }
-
-      await settingsHandler.dbHandler.updateMultipleBooruItems(
-        writableItems,
-        BooruUpdateMode.local,
-      );
-    } catch (_) {
-      for (final key in reservedRequests.values) {
-        ServerFavoriteFeedback.finishRequest(key);
-      }
-      rethrow;
     }
-    for (final entry in reservedRequests.entries) {
-      unawaited(_sendFavouriteToServer(entry.key, newValue, reservedRequestKey: entry.value));
+    if (!skipSnatching && newValue) {
+      SnatchHandler.instance.queue(
+        savedItems.where((item) => item.isSnatched.value != true && shouldSnatchOnFavourite(item)).toList(),
+        booruHandler.booru,
+        SX.snatchCooldown.value,
+        false,
+        sourceFor: booruHandler.sourceBooruFor,
+        useSourceCooldown: true,
+      );
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -1415,43 +1395,46 @@ class SearchTab {
     });
   }
 
+  void _updateLocalFavouriteViews(BooruItem item, bool? value) {
+    item.isFavourite.value = value;
+    for (final tab in SearchHandler.instance.tabs) {
+      for (final other in tab.booruHandler.fetched) {
+        if (other.postURL == item.postURL) other.isFavourite.value = value;
+      }
+    }
+  }
+
   Future<void> setItemServerFavourite(BooruItem item, {required bool isFavourite}) =>
       _sendFavouriteToServer(item, isFavourite, serverOnly: true);
 
   Future<void> _sendFavouriteToServer(
     BooruItem item,
     bool isFavourite, {
-    String? reservedRequestKey,
+    String? expectedRequestKey,
     bool serverOnly = false,
   }) async {
-    var serverWriteKey = reservedRequestKey;
-    var ownsReservation = reservedRequestKey != null;
+    final key = _serverFavouriteWriteKeyForItem(item, isFavourite, serverOnly: serverOnly);
+    if (key == null || (expectedRequestKey != null && expectedRequestKey != key)) return;
     try {
-      final currentKey = _serverFavouriteWriteKeyForItem(item, isFavourite, serverOnly: serverOnly);
-      if (currentKey == null || (serverWriteKey != null && serverWriteKey != currentKey)) return;
-      serverWriteKey = currentKey;
-      if (!ownsReservation) {
-        ownsReservation = ServerFavoriteFeedback.tryStartRequest(serverWriteKey);
-        if (!ownsReservation) return;
+      // An obsolete retry must not replace a newer pending intent.
+      if (!serverOnly && await SettingsHandler.instance.dbHandler.isFavouriteByPostUrl(item.postURL) != isFavourite) {
+        return;
       }
-      // Other tabs may hold a different item instance for the same post.
-      // Keep the reservation while checking the persisted local intent.
-      if (!serverOnly) {
-        try {
-          if (await SettingsHandler.instance.dbHandler.isFavouriteByPostUrl(item.postURL) != isFavourite) return;
-        } catch (e) {
-          Logger.Inst().log(
-            'Skipped server favourite write because the current local favourite state could not be read: $e',
-            'SearchTab',
-            '_sendFavouriteToServer',
-            LogTypes.exception,
-          );
+      await ServerFavoriteCoordinator.submit(key, () async {
+        // Re-check settings/account and persisted intent after waiting for an earlier request.
+        if (_serverFavouriteWriteKeyForItem(item, isFavourite, serverOnly: serverOnly) != key) return;
+        if (!serverOnly && await SettingsHandler.instance.dbHandler.isFavouriteByPostUrl(item.postURL) != isFavourite) {
           return;
         }
-      }
-      await _sendFavouriteToServerUnlocked(item, isFavourite, serverOnly: serverOnly);
-    } finally {
-      if (ownsReservation && serverWriteKey != null) ServerFavoriteFeedback.finishRequest(serverWriteKey);
+        await _sendFavouriteToServerUnlocked(item, isFavourite, serverOnly: serverOnly);
+      });
+    } catch (error) {
+      Logger.Inst().log(
+        'Could not send server favourite: $error',
+        'SearchTab',
+        '_sendFavouriteToServer',
+        LogTypes.exception,
+      );
     }
   }
 
@@ -1475,10 +1458,7 @@ class SearchTab {
     final serverId = adapter.serverIdFromItem(item);
     if (serverId == null || serverId.isEmpty) return null;
 
-    return ServerFavoriteFeedback.requestKey(
-      booruName: adapter.displayName,
-      serverId: serverId,
-    );
+    return adapter.requestKey(serverId);
   }
 
   Future<void> _sendFavouriteToServerUnlocked(BooruItem item, bool isFavourite, {required bool serverOnly}) async {
@@ -1490,6 +1470,7 @@ class SearchTab {
     final serverId = adapter.serverIdFromItem(item);
     if (serverId == null || serverId.isEmpty) return;
     item.serverId = serverId;
+    final expectedRequestKey = adapter.requestKey(serverId);
 
     ServerFavoriteMutationResult mutation;
     try {
@@ -1520,6 +1501,7 @@ class SearchTab {
         mutation: mutation,
         isFavourite: isFavourite,
         serverOnly: serverOnly,
+        expectedRequestKey: expectedRequestKey,
       );
     } else if (serverOnly) {
       FlashElements.showSnackbar(
@@ -1541,6 +1523,7 @@ class SearchTab {
     required ServerFavoriteMutationResult mutation,
     required bool isFavourite,
     required bool serverOnly,
+    required String expectedRequestKey,
   }) {
     final thumbnailUrl = item.thumbnailURL;
     FlashElements.showSnackbar(
@@ -1588,6 +1571,7 @@ class SearchTab {
                     adapter: adapter,
                     isFavourite: isFavourite,
                     serverOnly: serverOnly,
+                    expectedRequestKey: expectedRequestKey,
                   ),
                 );
               },
@@ -1597,7 +1581,14 @@ class SearchTab {
           ElevatedButton.icon(
             onPressed: () {
               controller.dismiss();
-              unawaited(_sendFavouriteToServer(item, isFavourite, serverOnly: serverOnly));
+              unawaited(
+                _sendFavouriteToServer(
+                  item,
+                  isFavourite,
+                  serverOnly: serverOnly,
+                  expectedRequestKey: expectedRequestKey,
+                ),
+              );
             },
             icon: const Icon(Icons.refresh),
             label: Text(loc.retry),
@@ -1612,24 +1603,31 @@ class SearchTab {
     required ServerFavoriteAdapter adapter,
     required bool isFavourite,
     required bool serverOnly,
+    required String expectedRequestKey,
   }) async {
     await Navigator.push(
       NavigationHandler.instance.navContext,
       MaterialPageRoute(
         builder: (context) => InAppWebviewView(
           initialUrl: _serverFavoriteWebviewUrl(adapter),
-          title: '${adapter.displayName} captcha',
+          title: loc.serverFavouritesSync.webviewTitle(booru: adapter.displayName),
           subtitle: loc.serverFavouritesSync.completeCaptchaThenRetry,
         ),
       ),
     );
 
-    await _sendFavouriteToServer(item, isFavourite, serverOnly: serverOnly);
+    await _sendFavouriteToServer(item, isFavourite, serverOnly: serverOnly, expectedRequestKey: expectedRequestKey);
   }
 
   String _serverFavoriteWebviewUrl(ServerFavoriteAdapter adapter) {
     final baseUrl = adapter.booru.baseURL;
-    if (baseUrl?.isNotEmpty == true) return baseUrl!;
+    if (baseUrl?.isNotEmpty == true) {
+      final uri = Uri.tryParse(baseUrl!);
+      if (uri?.host.toLowerCase() == 'api.rule34.xxx') {
+        return uri!.replace(host: 'rule34.xxx', path: '', query: '', fragment: '').toString();
+      }
+      return baseUrl;
+    }
 
     final host = adapter.host;
     if (host.startsWith('http://') || host.startsWith('https://')) return host;
@@ -1639,7 +1637,7 @@ class SearchTab {
   ServerFavoriteAdapter? serverFavoriteAdapterForItem(BooruItem item, SettingsHandler settingsHandler) {
     const factory = ServerFavoriteAdapterFactory();
 
-    final currentAdapter = factory.adapterFor(booruHandler.booru);
+    final currentAdapter = factory.adapterFor(booruHandler.sourceBooruFor(item));
     if (currentAdapter != null &&
         currentAdapter.ownsPostUrl(item.postURL) &&
         currentAdapter.serverIdFromItem(item)?.isNotEmpty == true) {

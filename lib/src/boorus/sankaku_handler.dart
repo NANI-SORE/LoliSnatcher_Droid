@@ -20,6 +20,9 @@ class SankakuHandler extends BooruHandler {
   SankakuHandler(super.booru, super.limit);
 
   String authToken = '';
+  String? authenticatedUserName;
+  String? authenticatedUserId;
+  DateTime? _authExpiresAt;
 
   @override
   Map<String, TagType> get tagTypeMap => {
@@ -221,6 +224,8 @@ class SankakuHandler extends BooruHandler {
     'beta.sankakucomplex.com',
     'chan.sankakucomplex.com',
     'sankaku.app',
+    'www.sankakucomplex.com',
+    'sankakuapi.com',
   ];
 
   static List<String> knownPostUrls = [
@@ -229,7 +234,19 @@ class SankakuHandler extends BooruHandler {
     'sankaku.app',
   ];
 
-  String get baseUrl => knownUrls.any(booru.baseURL!.contains) ? 'https://sankakuapi.com' : booru.baseURL!;
+  static String apiBaseUrlFor(String baseUrl) {
+    final uri = Uri.tryParse(baseUrl);
+    if (uri != null &&
+        (uri.scheme == 'https' || uri.scheme == 'http') &&
+        knownUrls.contains(uri.host.toLowerCase()) &&
+        (!uri.hasPort || uri.port == (uri.scheme == 'https' ? 443 : 80)) &&
+        (uri.path.isEmpty || uri.path == '/')) {
+      return 'https://sankakuapi.com';
+    }
+    return baseUrl.replaceFirst(RegExp(r'/+$'), '');
+  }
+
+  String get baseUrl => apiBaseUrlFor(booru.baseURL!);
 
   @override
   String makeURL(String tags) {
@@ -244,45 +261,60 @@ class SankakuHandler extends BooruHandler {
 
   @override
   Future<bool> isSignedIn() async {
-    return authToken.isNotEmpty;
+    return authToken.isNotEmpty && _authExpiresAt != null && DateTime.now().isBefore(_authExpiresAt!);
   }
 
   @override
   Future<bool> signIn() async {
-    bool success = false;
+    await signOut();
     try {
       final response = await DioNetwork.post(
         '$baseUrl/auth/token',
         queryParameters: {'lang': 'english'},
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': Constants.defaultBrowserUserAgent,
-        },
+        headers: {...getHeaders(), 'Content-Type': 'application/json'},
         data: {'login': booru.userID, 'password': booru.apiKey},
+        skipLogging: true,
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> parsedResponse = response.data;
-        if (parsedResponse['success']) {
-          authToken = "${parsedResponse["token_type"]} ${parsedResponse["access_token"]}";
+        final parsedResponse = response.data;
+        if (parsedResponse is Map && parsedResponse['success'] == true) {
+          final token = parsedResponse['access_token'];
+          final tokenType = parsedResponse['token_type'];
+          if (token is String && token.isNotEmpty && tokenType is String && tokenType.isNotEmpty) {
+            authToken = '$tokenType $token';
+            final ttl = int.tryParse(parsedResponse['access_token_ttl']?.toString() ?? '');
+            final seconds = ttl != null && ttl > 0 && ttl <= 31536000 ? ttl : 300;
+            _authExpiresAt = DateTime.now().add(Duration(seconds: seconds > 30 ? seconds - 30 : seconds));
+            final user = parsedResponse['current_user'];
+            if (user is Map) {
+              final name = user['name'];
+              final id = user['id'];
+              if (name is String && name.isNotEmpty) authenticatedUserName = name;
+              if (id is int || (id is String && id.isNotEmpty)) authenticatedUserId = id.toString();
+            }
+          }
         }
       }
     } catch (e) {
       Logger.Inst().log('Sankaku auth error: $e', className, 'signIn', LogTypes.booruHandlerInfo);
     }
-    if (authToken == '') {
-      Logger.Inst().log('Sankaku auth error: empty token ', className, 'signIn', LogTypes.booruHandlerInfo);
-      success = false;
-    } else {
-      Logger.Inst().log('Sankaku auth Got authtoken: $authToken', className, 'signIn', LogTypes.booruHandlerInfo);
-      success = true;
-    }
+    final success = await isSignedIn();
+    Logger.Inst().log(
+      success ? 'Sankaku authentication succeeded' : 'Sankaku authentication failed',
+      className,
+      'signIn',
+      LogTypes.booruHandlerInfo,
+    );
     return success;
   }
 
   @override
   Future<void> signOut({bool fromError = false}) async {
     authToken = '';
+    authenticatedUserName = null;
+    authenticatedUserId = null;
+    _authExpiresAt = null;
   }
 
   @override

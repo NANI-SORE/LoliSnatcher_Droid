@@ -54,35 +54,37 @@ class _RequestTile extends StatelessWidget {
         : loc.requestStatusFailed;
     final actionText = entry.action == ServerFavoriteRequestAction.add ? loc.requestActionAdd : loc.requestActionRemove;
 
-    return ListTile(
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(6),
-        child: SizedBox(
-          width: 48,
-          height: 48,
-          child: entry.item.thumbnailURL.isEmpty
-              ? const Icon(Icons.favorite)
-              // TODO replace with thumbnail
-              : Image.network(
-                  entry.item.thumbnailURL,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const Icon(Icons.favorite),
-                ),
+    return SelectionArea(
+      child: ListTile(
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: entry.item.thumbnailURL.isEmpty
+                ? const Icon(Icons.favorite)
+                // TODO replace with thumbnail
+                : Image.network(
+                    entry.item.thumbnailURL,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const Icon(Icons.favorite),
+                  ),
+          ),
         ),
-      ),
-      title: Text('$actionText: ${entry.booruName}'),
-      subtitle: Text(
-        [
-          '$statusText | ${entry.serverId}',
-          entry.timestamp.toLocal().toString(),
-          if (entry.message?.isNotEmpty == true) entry.message!,
-        ].join('\n'),
-      ),
-      trailing: Icon(
-        entry.status == ServerFavoriteRequestStatus.success ? Icons.check_circle : Icons.error,
-        color: entry.status == ServerFavoriteRequestStatus.success
-            ? Theme.of(context).colorScheme.primary
-            : Theme.of(context).colorScheme.error,
+        title: Text('$actionText: ${entry.booruName}'),
+        subtitle: Text(
+          [
+            '$statusText | ${entry.serverId}',
+            '${MaterialLocalizations.of(context).formatMediumDate(entry.timestamp.toLocal())} ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(entry.timestamp.toLocal()), alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context))}',
+            if (entry.message?.isNotEmpty == true) entry.message!,
+          ].join('\n'),
+        ),
+        trailing: Icon(
+          entry.status == ServerFavoriteRequestStatus.success ? Icons.check_circle : Icons.error,
+          color: entry.status == ServerFavoriteRequestStatus.success
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.error,
+        ),
       ),
     );
   }

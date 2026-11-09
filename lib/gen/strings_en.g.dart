@@ -572,6 +572,22 @@ class Translations$serverFavouritesSync$en {
 
   // Translations
 
+  /// en: 'Start a new export'
+  String get restartExport => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.restartExport', {}) ?? 'Start a new export';
+
+  /// en: 'Will send ${remaining: int} additions. Already confirmed in this export: ${confirmed: int}. The server favourite list is unavailable.'
+  String exportPreviewSummary({required int remaining, required int confirmed}) =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.exportPreviewSummary', {'remaining': remaining, 'confirmed': confirmed}) ??
+      'Will send ${remaining} additions. Already confirmed in this export: ${confirmed}. The server favourite list is unavailable.';
+
+  /// en: '${count: int} planned changes remain. Refresh the preview before continuing; an interrupted server request may already have taken effect.'
+  String remainingChanges({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.remainingChanges', {'count': count}) ??
+      '${count} planned changes remain. Refresh the preview before continuing; an interrupted server request may already have taken effect.';
+
+  /// en: 'Site / account'
+  String get source => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.source', {}) ?? 'Site / account';
+
   /// en: 'Server favourites sync'
   String get title => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.title', {}) ?? 'Server favourites sync';
 
@@ -697,25 +713,22 @@ class Translations$serverFavouritesSync$en {
   String get noSupportedBoorus =>
       TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.noSupportedBoorus', {}) ?? 'No configured boorus support server favourites yet';
 
-  /// en: 'Boorus'
-  String get boorus => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.boorus', {}) ?? 'Boorus';
+  /// en: 'Preview changes'
+  String get previewSelected => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.previewSelected', {}) ?? 'Preview changes';
 
-  /// en: 'Preview selected'
-  String get previewSelected => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.previewSelected', {}) ?? 'Preview selected';
-
-  /// en: 'Preview selected boorus before running sync.'
+  /// en: 'Preview this site before running sync.'
   String get previewRequiredBeforeRun =>
-      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.previewRequiredBeforeRun', {}) ?? 'Preview selected boorus before running sync.';
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.previewRequiredBeforeRun', {}) ?? 'Preview this site before running sync.';
 
   /// en: 'Run'
   String get run => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.run', {}) ?? 'Run';
 
-  /// en: 'Run selected'
-  String get runSelected => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.runSelected', {}) ?? 'Run selected';
+  /// en: 'Run sync'
+  String get runSelected => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.runSelected', {}) ?? 'Run sync';
 
-  /// en: 'Run selected (removes favourites)'
+  /// en: 'Run sync (removes favourites)'
   String get runSelectedRemoves =>
-      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.runSelectedRemoves', {}) ?? 'Run selected (removes favourites)';
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.runSelectedRemoves', {}) ?? 'Run sync (removes favourites)';
 
   /// en: 'Stop'
   String get stop => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.stop', {}) ?? 'Stop';
@@ -736,23 +749,8 @@ class Translations$serverFavouritesSync$en {
   /// en: 'Copy failure log'
   String get copyFailureLog => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.copyFailureLog', {}) ?? 'Copy failure log';
 
-  /// en: 'Retry failed actions'
-  String get retryFailedActions => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.retryFailedActions', {}) ?? 'Retry failed actions';
-
   /// en: 'Failure log copied'
   String get failureLogCopied => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.failureLogCopied', {}) ?? 'Failure log copied';
-
-  /// en: '${booru: String}: retrying failed actions'
-  String retryingFailedActions({required String booru}) =>
-      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.retryingFailedActions', {'booru': booru}) ?? '${booru}: retrying failed actions';
-
-  /// en: '${booru: String}: retry complete'
-  String retryComplete({required String booru}) =>
-      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.retryComplete', {'booru': booru}) ?? '${booru}: retry complete';
-
-  /// en: 'No retryable failures'
-  String get noRetryableFailures =>
-      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.noRetryableFailures', {}) ?? 'No retryable failures';
 
   /// en: 'matched ${matched: int}, local only ${localOnly: int}, server only ${serverOnly: int} will add local ${addLocal: int}, add server ${addServer: int}, remove local ${removeLocal: int}, remove server ${removeServer: int}'
   String previewSummary({
@@ -891,14 +889,10 @@ class Translations$serverFavouritesSync$en {
   String get sankakuMaintenance =>
       TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.sankakuMaintenance', {}) ?? 'Sankaku favourite URL maintenance';
 
-  /// en: 'Refreshes stale local Sankaku favourite URLs. This does not sync server favourite state.'
+  /// en: 'Refreshes stale local Sankaku favourite URLs using the selected account. This does not sync server favourite state.'
   String get sankakuMaintenanceSubtitle =>
       TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.sankakuMaintenanceSubtitle', {}) ??
-      'Refreshes stale local Sankaku favourite URLs. This does not sync server favourite state.';
-
-  /// en: 'Sankaku type to update'
-  String get sankakuTypeToUpdate =>
-      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.sankakuTypeToUpdate', {}) ?? 'Sankaku type to update';
+      'Refreshes stale local Sankaku favourite URLs using the selected account. This does not sync server favourite state.';
 
   /// en: 'Search query'
   String get searchQuery => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.searchQuery', {}) ?? 'Search query';
@@ -940,6 +934,100 @@ class Translations$serverFavouritesSync$en {
   /// en: 'Retry failed items (${count: int})'
   String retryFailedItems({required int count}) =>
       TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.retryFailedItems', {'count': count}) ?? 'Retry failed items (${count})';
+
+  /// en: 'Choose one site/account and a mode, preview the changes, then run. Requests are paced for large libraries. Imports read the server list again while saving. Stop keeps completed changes; preview again to continue. Counts refer to posts; local URL aliases are handled together.'
+  String get workflowHint =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.workflowHint', {}) ??
+      'Choose one site/account and a mode, preview the changes, then run. Requests are paced for large libraries. Imports read the server list again while saving. Stop keeps completed changes; preview again to continue. Counts refer to posts; local URL aliases are handled together.';
+
+  /// en: '${booru: String}: remove ${local: int} local favourites and ${server: int} server favourites.'
+  String confirmRemovalSummary({required String booru, required int local, required int server}) =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.confirmRemovalSummary', {'booru': booru, 'local': local, 'server': server}) ??
+      '${booru}: remove ${local} local favourites and ${server} server favourites.';
+
+  /// en: 'No changes needed.'
+  String get noChanges => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.noChanges', {}) ?? 'No changes needed.';
+
+  /// en: 'Preview remaining changes'
+  String get refreshPreview => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.refreshPreview', {}) ?? 'Preview remaining changes';
+
+  /// en: 'Import'
+  String get capabilityImport => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityImport', {}) ?? 'Import';
+
+  /// en: 'Export'
+  String get capabilityExport => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityExport', {}) ?? 'Export';
+
+  /// en: 'Remove on server'
+  String get capabilityRemove => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityRemove', {}) ?? 'Remove on server';
+
+  /// en: 'Login required'
+  String get capabilityAuth => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityAuth', {}) ?? 'Login required';
+
+  /// en: 'Read only'
+  String get capabilityReadOnly => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityReadOnly', {}) ?? 'Read only';
+
+  /// en: 'Export sends all local favourites without comparing the server list. It skips additions confirmed in the interrupted export. Progress is kept only while working on this account on this page. Starting a new export sends all local favourites again.'
+  String get writeOnlyHint =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.writeOnlyHint', {}) ??
+      'Export sends all local favourites without comparing the server list. It skips additions confirmed in the interrupted export. Progress is kept only while working on this account on this page. Starting a new export sends all local favourites again.';
+
+  /// en: 'This mode requires a verified complete favourites list. Use addition-only import or export where available.'
+  String get completeListRequired =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.completeListRequired', {}) ??
+      'This mode requires a verified complete favourites list. Use addition-only import or export where available.';
+
+  /// en: 'Gelbooru exposes only a limited favourites search, currently around 25,000 posts. Import reads at most 25,000 results and may miss favourites. Existing local favourites are kept. Mirrors and two-way merge are unavailable. Import needs a numeric user ID and API key; export uses website login cookies.'
+  String get gelbooruImportLimit =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.gelbooruImportLimit', {}) ??
+      'Gelbooru exposes only a limited favourites search, currently around 25,000 posts. Import reads at most 25,000 results and may miss favourites. Existing local favourites are kept. Mirrors and two-way merge are unavailable. Import needs a numeric user ID and API key; export uses website login cookies.';
+
+  /// en: 'Sankaku favourites listing is not currently verified, so import, two-way merge and mirrors are unavailable. Export and individual favourite status/actions are available with a valid login.'
+  String get sankakuListingUnavailable =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.sankakuListingUnavailable', {}) ??
+      'Sankaku favourites listing is not currently verified, so import, two-way merge and mirrors are unavailable. Export and individual favourite status/actions are available with a valid login.';
+
+  /// en: 'Among the available results: ${matched: int} already saved locally; ${addLocal: int} to import. This is not a complete server list. No favourites will be removed.'
+  String partialPreviewSummary({required int matched, required int addLocal}) =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.partialPreviewSummary', {'matched': matched, 'addLocal': addLocal}) ??
+      'Among the available results: ${matched} already saved locally; ${addLocal} to import. This is not a complete server list. No favourites will be removed.';
+
+  /// en: 'No new favourites in the available results. Other server favourites may be missing from this search.'
+  String get partialImportNoChanges =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.partialImportNoChanges', {}) ??
+      'No new favourites in the available results. Other server favourites may be missing from this search.';
+
+  /// en: 'Could not prepare a preview. No changes were applied. Check the log, then try again.'
+  String get previewFailedHint =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.previewFailedHint', {}) ??
+      'Could not prepare a preview. No changes were applied. Check the log, then try again.';
+
+  /// en: 'Delete these local records, including favourite and download history? A failed refresh can be temporary. Try again first. Downloaded files and server favourites are not deleted.'
+  String get purgeWarning =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.purgeWarning', {}) ??
+      'Delete these local records, including favourite and download history? A failed refresh can be temporary. Try again first. Downloaded files and server favourites are not deleted.';
+
+  /// en: 'These actions change server favourites only. Your local favourite stays unchanged.'
+  String get serverOnlyHint =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverOnlyHint', {}) ??
+      'These actions change server favourites only. Your local favourite stays unchanged.';
+
+  /// en: 'Could not save the local favourite. Please try again.'
+  String get localSaveFailed =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.localSaveFailed', {}) ?? 'Could not save the local favourite. Please try again.';
+
+  /// en: '${site: String} may be blocked by Cloudflare. Open the website, log in, complete any captcha, then retry.'
+  String cloudflareHelp({required String site}) =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.cloudflareHelp', {'site': site}) ??
+      '${site} may be blocked by Cloudflare. Open the website, log in, complete any captcha, then retry.';
+
+  /// en: 'Open ${site: String} in the in-app webview and log in, then retry. Valid login cookies are required.'
+  String cookiesRequired({required String site}) =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.cookiesRequired', {'site': site}) ??
+      'Open ${site} in the in-app webview and log in, then retry. Valid login cookies are required.';
+
+  /// en: '${booru: String}: sign-in / captcha'
+  String webviewTitle({required String booru}) =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.webviewTitle', {'booru': booru}) ?? '${booru}: sign-in / captcha';
 }
 
 // Path: snatcher
@@ -5730,6 +5818,20 @@ extension on Translations {
                   one: 'Received ${count} tab',
                   other: 'Received ${count} tabs',
                 ),
+          'serverFavouritesSync.restartExport' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.restartExport', {}) ?? 'Start a new export',
+          'serverFavouritesSync.exportPreviewSummary' =>
+            ({required int remaining, required int confirmed}) =>
+                TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.exportPreviewSummary', {
+                  'remaining': remaining,
+                  'confirmed': confirmed,
+                }) ??
+                'Will send ${remaining} additions. Already confirmed in this export: ${confirmed}. The server favourite list is unavailable.',
+          'serverFavouritesSync.remainingChanges' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.remainingChanges', {'count': count}) ??
+                '${count} planned changes remain. Refresh the preview before continuing; an interrupted server request may already have taken effect.',
+          'serverFavouritesSync.source' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.source', {}) ?? 'Site / account',
           'serverFavouritesSync.title' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.title', {}) ?? 'Server favourites sync',
           'serverFavouritesSync.sendChangesToServer' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.sendChangesToServer', {}) ?? 'Send favourites changes to server',
@@ -5805,16 +5907,14 @@ extension on Translations {
           'serverFavouritesSync.noSupportedBoorus' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.noSupportedBoorus', {}) ??
                 'No configured boorus support server favourites yet',
-          'serverFavouritesSync.boorus' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.boorus', {}) ?? 'Boorus',
           'serverFavouritesSync.previewSelected' =>
-            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.previewSelected', {}) ?? 'Preview selected',
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.previewSelected', {}) ?? 'Preview changes',
           'serverFavouritesSync.previewRequiredBeforeRun' =>
-            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.previewRequiredBeforeRun', {}) ??
-                'Preview selected boorus before running sync.',
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.previewRequiredBeforeRun', {}) ?? 'Preview this site before running sync.',
           'serverFavouritesSync.run' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.run', {}) ?? 'Run',
-          'serverFavouritesSync.runSelected' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.runSelected', {}) ?? 'Run selected',
+          'serverFavouritesSync.runSelected' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.runSelected', {}) ?? 'Run sync',
           'serverFavouritesSync.runSelectedRemoves' =>
-            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.runSelectedRemoves', {}) ?? 'Run selected (removes favourites)',
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.runSelectedRemoves', {}) ?? 'Run sync (removes favourites)',
           'serverFavouritesSync.stop' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.stop', {}) ?? 'Stop',
           'serverFavouritesSync.preview' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.preview', {}) ?? 'Preview',
           'serverFavouritesSync.result' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.result', {}) ?? 'Result',
@@ -5823,19 +5923,8 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.selectedModeNotSupported', {}) ?? 'Selected mode is not supported',
           'serverFavouritesSync.copyFailureLog' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.copyFailureLog', {}) ?? 'Copy failure log',
-          'serverFavouritesSync.retryFailedActions' =>
-            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.retryFailedActions', {}) ?? 'Retry failed actions',
           'serverFavouritesSync.failureLogCopied' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.failureLogCopied', {}) ?? 'Failure log copied',
-          'serverFavouritesSync.retryingFailedActions' =>
-            ({required String booru}) =>
-                TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.retryingFailedActions', {'booru': booru}) ??
-                '${booru}: retrying failed actions',
-          'serverFavouritesSync.retryComplete' => ({
-            required String booru,
-          }) => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.retryComplete', {'booru': booru}) ?? '${booru}: retry complete',
-          'serverFavouritesSync.noRetryableFailures' =>
-            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.noRetryableFailures', {}) ?? 'No retryable failures',
           'serverFavouritesSync.previewSummary' =>
             ({
               required int matched,
@@ -5925,9 +6014,7 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.sankakuMaintenance', {}) ?? 'Sankaku favourite URL maintenance',
           'serverFavouritesSync.sankakuMaintenanceSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.sankakuMaintenanceSubtitle', {}) ??
-                'Refreshes stale local Sankaku favourite URLs. This does not sync server favourite state.',
-          'serverFavouritesSync.sankakuTypeToUpdate' =>
-            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.sankakuTypeToUpdate', {}) ?? 'Sankaku type to update',
+                'Refreshes stale local Sankaku favourite URLs using the selected account. This does not sync server favourite state.',
           'serverFavouritesSync.searchQuery' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.searchQuery', {}) ?? 'Search query',
           'serverFavouritesSync.optional' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.optional', {}) ?? 'Optional',
           'serverFavouritesSync.updateSankakuUrls' =>
@@ -5958,6 +6045,63 @@ extension on Translations {
             ({required int count}) =>
                 TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.retryFailedItems', {'count': count}) ??
                 'Retry failed items (${count})',
+          'serverFavouritesSync.workflowHint' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.workflowHint', {}) ?? 'Choose one site/account and a mode, preview the changes, then run. Requests are paced for large libraries. Imports read the server list again while saving. Stop keeps completed changes; preview again to continue. Counts refer to posts; local URL aliases are handled together.',
+          'serverFavouritesSync.confirmRemovalSummary' =>
+            ({required String booru, required int local, required int server}) =>
+                TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.confirmRemovalSummary', {
+                  'booru': booru,
+                  'local': local,
+                  'server': server,
+                }) ??
+                '${booru}: remove ${local} local favourites and ${server} server favourites.',
+          'serverFavouritesSync.noChanges' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.noChanges', {}) ?? 'No changes needed.',
+          'serverFavouritesSync.refreshPreview' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.refreshPreview', {}) ?? 'Preview remaining changes',
+          'serverFavouritesSync.capabilityImport' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityImport', {}) ?? 'Import',
+          'serverFavouritesSync.capabilityExport' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityExport', {}) ?? 'Export',
+          'serverFavouritesSync.capabilityRemove' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityRemove', {}) ?? 'Remove on server',
+          'serverFavouritesSync.capabilityAuth' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityAuth', {}) ?? 'Login required',
+          'serverFavouritesSync.capabilityReadOnly' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityReadOnly', {}) ?? 'Read only',
+          'serverFavouritesSync.writeOnlyHint' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.writeOnlyHint', {}) ?? 'Export sends all local favourites without comparing the server list. It skips additions confirmed in the interrupted export. Progress is kept only while working on this account on this page. Starting a new export sends all local favourites again.',
+          'serverFavouritesSync.completeListRequired' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.completeListRequired', {}) ??
+                'This mode requires a verified complete favourites list. Use addition-only import or export where available.',
+          'serverFavouritesSync.gelbooruImportLimit' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.gelbooruImportLimit', {}) ?? 'Gelbooru exposes only a limited favourites search, currently around 25,000 posts. Import reads at most 25,000 results and may miss favourites. Existing local favourites are kept. Mirrors and two-way merge are unavailable. Import needs a numeric user ID and API key; export uses website login cookies.',
+          'serverFavouritesSync.sankakuListingUnavailable' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.sankakuListingUnavailable', {}) ?? 'Sankaku favourites listing is not currently verified, so import, two-way merge and mirrors are unavailable. Export and individual favourite status/actions are available with a valid login.',
+          'serverFavouritesSync.partialPreviewSummary' =>
+            ({required int matched, required int addLocal}) =>
+                TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.partialPreviewSummary', {'matched': matched, 'addLocal': addLocal}) ??
+                'Among the available results: ${matched} already saved locally; ${addLocal} to import. This is not a complete server list. No favourites will be removed.',
+          'serverFavouritesSync.partialImportNoChanges' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.partialImportNoChanges', {}) ??
+                'No new favourites in the available results. Other server favourites may be missing from this search.',
+          'serverFavouritesSync.previewFailedHint' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.previewFailedHint', {}) ??
+                'Could not prepare a preview. No changes were applied. Check the log, then try again.',
+          'serverFavouritesSync.purgeWarning' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.purgeWarning', {}) ?? 'Delete these local records, including favourite and download history? A failed refresh can be temporary. Try again first. Downloaded files and server favourites are not deleted.',
+          'serverFavouritesSync.serverOnlyHint' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverOnlyHint', {}) ??
+                'These actions change server favourites only. Your local favourite stays unchanged.',
+          'serverFavouritesSync.localSaveFailed' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.localSaveFailed', {}) ??
+                'Could not save the local favourite. Please try again.',
+          'serverFavouritesSync.cloudflareHelp' =>
+            ({required String site}) =>
+                TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.cloudflareHelp', {'site': site}) ??
+                '${site} may be blocked by Cloudflare. Open the website, log in, complete any captcha, then retry.',
+          'serverFavouritesSync.cookiesRequired' =>
+            ({required String site}) =>
+                TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.cookiesRequired', {'site': site}) ??
+                'Open ${site} in the in-app webview and log in, then retry. Valid login cookies are required.',
+          'serverFavouritesSync.webviewTitle' => ({
+            required String booru,
+          }) => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.webviewTitle', {'booru': booru}) ?? '${booru}: sign-in / captcha',
           'snatcher.title' => TranslationOverrides.string(_root.$meta, 'snatcher.title', {}) ?? 'Snatcher',
           'snatcher.snatchingHistory' => TranslationOverrides.string(_root.$meta, 'snatcher.snatchingHistory', {}) ?? 'Snatching history',
           'snatcher.enterTags' => TranslationOverrides.string(_root.$meta, 'snatcher.enterTags', {}) ?? 'Enter tags',
@@ -6417,6 +6561,9 @@ extension on Translations {
           'settings.booruEditor.booruNameRequired' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruNameRequired', {}) ?? 'Booru name is required!',
           'settings.booruEditor.booruUrl' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruUrl', {}) ?? 'Booru URL',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.booruEditor.booruUrlRequired' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruUrlRequired', {}) ?? 'Booru URL is required!',
           'settings.booruEditor.booruType' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruType', {}) ?? 'Booru type',
@@ -6455,9 +6602,6 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.interface.showSearchBarInPreviewGrid', {}) ?? 'Show search bar in preview grid',
           'settings.interface.moveInputToTopInSearchView' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.moveInputToTopInSearchView', {}) ?? 'Move input to top in search view',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.interface.searchViewQuickActionsPanel' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.searchViewQuickActionsPanel', {}) ?? 'Search view quick actions panel',
           'settings.interface.searchViewInputAutofocus' =>
@@ -7408,6 +7552,9 @@ extension on Translations {
           'settings.debug.sessionString' => TranslationOverrides.string(_root.$meta, 'settings.debug.sessionString', {}) ?? 'Session string',
           'settings.debug.restoredSessionFromString' =>
             TranslationOverrides.string(_root.$meta, 'settings.debug.restoredSessionFromString', {}) ?? 'Restored session from string',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.logging.logger' => TranslationOverrides.string(_root.$meta, 'settings.logging.logger', {}) ?? 'Logger',
           'settings.logging.captureLogcat' =>
             TranslationOverrides.string(_root.$meta, 'settings.logging.captureLogcat', {}) ?? 'Capture Android logcat',
@@ -7439,9 +7586,6 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'comments.noBooruAPIForComments', {}) ??
                 'This Booru doesn\'t have comments or there is no API for them',
           'pageChanger.title' => TranslationOverrides.string(_root.$meta, 'pageChanger.title', {}) ?? 'Page changer',
-          _ => null,
-        } ??
-        switch (path) {
           'pageChanger.pageLabel' => TranslationOverrides.string(_root.$meta, 'pageChanger.pageLabel', {}) ?? 'Page #',
           'pageChanger.delayBetweenLoadings' =>
             TranslationOverrides.string(_root.$meta, 'pageChanger.delayBetweenLoadings', {}) ?? 'Delay between loadings (ms)',

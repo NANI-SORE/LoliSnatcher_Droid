@@ -778,7 +778,13 @@ abstract class BooruHandler {
     return cookieString.trim();
   }
 
+  // Bulk identity scans must not enqueue unbounded background tag writes.
+  bool cacheParsedTagTypes = true;
+  void Function(List<String>, TagType)? onParsedTagTypes;
+
   void addTagsWithType(List<String> tags, TagType type) {
+    onParsedTagTypes?.call(tags, type);
+    if (!cacheParsedTagTypes) return;
     TagHandler.instance.addTagsWithType(tags, type);
   }
 

@@ -196,7 +196,7 @@ class BooruEditForm extends StatelessWidget {
 
   bool get _showAuthInputs {
     final host = Uri.tryParse(controller.url.text)?.host.toLowerCase() ?? controller.url.text.toLowerCase();
-    return host.contains('gelbooru.com') || host.contains('rule34.xxx');
+    return const ['gelbooru.com', 'www.gelbooru.com', 'rule34.xxx', 'api.rule34.xxx'].contains(host);
   }
 
   String _apiKeyTitle(BuildContext context) {

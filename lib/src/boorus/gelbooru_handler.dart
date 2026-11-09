@@ -97,7 +97,7 @@ class GelbooruHandler extends BooruHandler {
         headers: await Tools.getFileCustomHeaders(booru),
         customInterceptor: (dio) => DioNetwork.captchaInterceptor(DioNetwork.cookieInterceptor(dio)),
       );
-      return isSignedIn();
+      return await isSignedIn();
     } catch (e, s) {
       Logger.Inst().log(e.toString(), className, 'signIn', LogTypes.exception, s: s);
       return false;

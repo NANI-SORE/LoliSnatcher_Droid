@@ -42,22 +42,6 @@ class ServerFavoriteFeedback {
 
   static final ValueNotifier<List<ServerFavoriteRequestLogEntry>> requests = ValueNotifier([]);
   static final Random _random = Random();
-  static final Set<String> _inFlightRequestKeys = {};
-
-  static String requestKey({
-    required String booruName,
-    required String serverId,
-  }) {
-    return '${booruName.toLowerCase()}::$serverId';
-  }
-
-  static bool isInFlight(String key) => _inFlightRequestKeys.contains(key);
-
-  static bool tryStartRequest(String key) => _inFlightRequestKeys.add(key);
-
-  static void finishRequest(String key) {
-    _inFlightRequestKeys.remove(key);
-  }
 
   static void record({
     required ServerFavoriteRequestAction action,
@@ -99,7 +83,7 @@ class ServerFavoriteFeedback {
 
   static void showSuccessAnimation(BooruItem item) {
     final context = NavigationHandler.instance.navigatorKey.currentContext;
-    if (context == null) return;
+    if (context == null || MediaQuery.disableAnimationsOf(context)) return;
 
     final overlay = Overlay.maybeOf(context, rootOverlay: true);
     if (overlay == null) return;
@@ -118,7 +102,7 @@ class ServerFavoriteFeedback {
 
   static void showRemoveAnimation(BooruItem item) {
     final context = NavigationHandler.instance.navigatorKey.currentContext;
-    if (context == null) return;
+    if (context == null || MediaQuery.disableAnimationsOf(context)) return;
 
     final overlay = Overlay.maybeOf(context, rootOverlay: true);
     if (overlay == null) return;

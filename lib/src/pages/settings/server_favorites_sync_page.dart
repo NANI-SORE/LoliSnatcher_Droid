@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
-import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
 import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
@@ -17,10 +16,12 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
+import 'package:lolisnatcher/src/services/server_favorites_request_gate.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
+import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
 
 class ServerFavoritesSyncPage extends StatefulWidget {
   const ServerFavoritesSyncPage({super.key});
@@ -36,9 +37,13 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
   final sankakuSearchController = TextEditingController();
 
   late List<ServerFavoriteAdapter> adapters;
-  final selectedAdapters = <ServerFavoriteAdapter>{};
-  final previews = <ServerFavoriteAdapter, ServerFavoritesSyncPreview>{};
-  final results = <ServerFavoriteAdapter, ServerFavoritesSyncResult>{};
+  ServerFavoriteAdapter? selectedAdapter;
+  ServerFavoritesSyncPreview? preview;
+  bool previewFailed = false;
+  ServerFavoritesSyncResult? result;
+  Timer? statusTimer;
+  final acknowledgedExports = <String>{};
+  String? exportAccountIdentity;
   final logLines = <String>[];
   ServerFavoriteSyncMode mode = ServerFavoriteSyncMode.importServer;
   bool isWorking = false;
@@ -46,7 +51,7 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
 
   bool isUpdatingSankakuUrls = false;
   int updatingFailed = 0, updatingDone = 0;
-  BooruType? sankakuType;
+  String? get sankakuName => selectedAdapter?.displayName;
   CancelToken? cancelToken;
   List<BooruItem> updatingItems = [], failedItems = [];
 
@@ -55,15 +60,13 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
     super.initState();
     adapters = adapterFactory.adaptersFor(settingsHandler.booruList);
 
-    final sankakuBoorus = getSankakuBoorus();
-    if (sankakuBoorus.isNotEmpty) {
-      sankakuType = sankakuBoorus.first.type;
-    }
+    if (adapters.isNotEmpty) _selectAdapter(adapters.first);
   }
 
   @override
   void dispose() {
     cancelRequested = true;
+    statusTimer?.cancel();
     scrollController.dispose();
     sankakuSearchController.dispose();
     cancelToken?.cancel();
@@ -83,32 +86,56 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
   }
 
   void _setStatus(String value) {
+    if (!mounted) return;
     logLines.insert(0, value);
     if (logLines.length > 80) {
       logLines.removeRange(80, logLines.length);
     }
-    safeSetState(() {});
+    statusTimer ??= Timer(const Duration(milliseconds: 250), () {
+      statusTimer = null;
+      if (mounted) setState(() {});
+    });
   }
 
   bool get isBusy => isWorking || isUpdatingSankakuUrls;
 
   bool _modeSupported(ServerFavoriteAdapter adapter) => adapter.capabilities.supportsMode(mode);
 
-  List<ServerFavoriteAdapter> get selectedRunnableAdapters =>
-      selectedAdapters.where(_modeSupported).toList(growable: false);
+  bool get canPreviewSelected => !isBusy && selectedAdapter != null && _modeSupported(selectedAdapter!);
+  bool get canRunSelected => canPreviewSelected && preview?.hasChanges == true;
 
-  bool get canPreviewSelected => !isBusy && selectedRunnableAdapters.isNotEmpty;
-
-  bool get canRunSelected =>
-      !isBusy && selectedRunnableAdapters.isNotEmpty && selectedRunnableAdapters.every(previews.containsKey);
-
-  void _deselectUnsupportedAdaptersForMode() {
-    selectedAdapters.removeWhere((adapter) => !_modeSupported(adapter));
-    previews.removeWhere((adapter, _) => !selectedAdapters.contains(adapter) || !_modeSupported(adapter));
-    results.removeWhere((adapter, _) => !selectedAdapters.contains(adapter) || !_modeSupported(adapter));
+  void _selectAdapter(ServerFavoriteAdapter adapter) {
+    if (selectedAdapter != adapter) {
+      acknowledgedExports.clear();
+      exportAccountIdentity = null;
+    }
+    selectedAdapter = adapter;
+    if (!_modeSupported(adapter)) {
+      mode = ServerFavoriteSyncMode.values.firstWhere(
+        adapter.capabilities.supportsMode,
+        orElse: () => ServerFavoriteSyncMode.importServer,
+      );
+    }
+    preview = null;
+    previewFailed = false;
+    result = null;
+    logLines.clear();
+    failedItems.clear();
+    updatingItems.clear();
   }
 
-  Future<bool> _confirmDestructive(BuildContext context, ServerFavoriteSyncMode selectedMode) async {
+  Future<T> _runSync<T>(CancelToken token, Future<T> Function() action) {
+    return ServerFavoritesRequestGate(token, onStatus: _setStatus).run(
+      () => DioNetwork.runWithCancellation(token, action),
+    );
+  }
+
+  Future<bool> _confirmDestructive(
+    BuildContext context,
+    ServerFavoriteSyncMode selectedMode,
+    ServerFavoriteAdapter adapter,
+    ServerFavoritesSyncPreview selectedPreview,
+  ) async {
     if (!selectedMode.isDestructive) return true;
 
     final confirmed = await showDialog<bool>(
@@ -117,6 +144,13 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
         title: Text(context.loc.serverFavouritesSync.confirmDestructiveSync),
         contentItems: [
           Text(context.loc.serverFavouritesSync.destructiveSyncWarning(mode: selectedMode.title)),
+          Text(
+            context.loc.serverFavouritesSync.confirmRemovalSummary(
+              booru: adapter.displayName,
+              local: selectedPreview.removeLocal,
+              server: selectedPreview.removeServer,
+            ),
+          ),
         ],
         actionButtons: [
           const CancelButton(withIcon: true),
@@ -133,42 +167,47 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
 
   Future<void> previewSelected() async {
     if (!canPreviewSelected) return;
+    final adapter = selectedAdapter!;
     final selectedMode = mode;
-    final runnableAdapters = selectedRunnableAdapters;
-    final operationCancelToken = CancelToken();
-
+    final token = CancelToken();
     setState(() {
-      _deselectUnsupportedAdaptersForMode();
       isWorking = true;
       cancelRequested = false;
-      cancelToken = operationCancelToken;
-      previews.clear();
-      results.clear();
+      cancelToken = token;
+      preview = null;
+      previewFailed = false;
+      result = null;
       logLines.clear();
     });
-
     try {
-      for (final adapter in runnableAdapters) {
-        if (cancelRequested) break;
-        try {
-          final preview = await DioNetwork.runWithCancellation(
-            operationCancelToken,
-            () => ServerFavoritesSyncHandler(adapter: adapter).preview(
-              selectedMode,
-              onStatus: _setStatus,
-              shouldCancel: () => cancelRequested,
-            ),
-          );
-          if (cancelRequested) break;
-          previews[adapter] = preview;
-          _setStatus('${adapter.displayName}: preview ready');
-        } catch (e) {
-          if (!cancelRequested) _setStatus('${adapter.displayName}: preview failed - $e');
-        }
+      if (selectedMode == ServerFavoriteSyncMode.exportLocal &&
+          !adapter.capabilities.canEnumerateAll &&
+          await adapter.exportSessionIdentity() != exportAccountIdentity) {
+        acknowledgedExports.clear();
+        exportAccountIdentity = null;
+      }
+      final fresh = await _runSync(
+        token,
+        () => ServerFavoritesSyncHandler(adapter: adapter).preview(
+          selectedMode,
+          onStatus: _setStatus,
+          shouldCancel: () => cancelRequested,
+          acknowledgedExports: acknowledgedExports,
+          exportAccountIdentity: exportAccountIdentity,
+        ),
+      );
+      if (!cancelRequested) {
+        preview = fresh;
+        _setStatus('${adapter.displayName}: preview ready');
+      }
+    } catch (error) {
+      if (!cancelRequested) {
+        previewFailed = true;
+        _setStatus('${adapter.displayName}: preview failed — $error');
       }
     } finally {
       safeSetState(() {
-        if (cancelRequested) previews.clear();
+        if (cancelRequested) preview = null;
         cancelToken = null;
         isWorking = false;
       });
@@ -176,45 +215,68 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
   }
 
   Future<void> runSelected() async {
-    if (isBusy) return;
-    setState(_deselectUnsupportedAdaptersForMode);
-    if (!canRunSelected) {
-      _setStatus(context.loc.serverFavouritesSync.previewRequiredBeforeRun);
-      return;
-    }
-    final selectedMode = mode;
-    final selectedPreviews = selectedRunnableAdapters.map((adapter) => MapEntry(adapter, previews[adapter]!)).toList();
-    final operationCancelToken = CancelToken();
+    if (!canRunSelected) return;
+    final adapter = selectedAdapter!;
+    var selectedPreview = preview!;
+    final token = CancelToken();
     setState(() {
       isWorking = true;
       cancelRequested = false;
-      cancelToken = operationCancelToken;
+      cancelToken = token;
     });
     try {
-      if (!await _confirmDestructive(context, selectedMode) || !mounted || cancelRequested) return;
+      if (mode.isDestructive) {
+        final fresh = await _runSync(
+          token,
+          () => ServerFavoritesSyncHandler(adapter: adapter).preview(
+            mode,
+            onStatus: _setStatus,
+            shouldCancel: () => cancelRequested,
+          ),
+        );
+        preview = fresh;
+        if (!selectedPreview.sameSnapshot(fresh)) {
+          _setStatus('Favourites changed. Review the refreshed preview before running again.');
+          return;
+        }
+        selectedPreview = fresh;
+      }
+      if (!mounted || cancelRequested) return;
+      if (!await _confirmDestructive(context, mode, adapter, selectedPreview) || !mounted || cancelRequested) return;
       setState(() {
-        previews.clear();
-        results.clear();
+        preview = null;
+        result = null;
       });
-      for (final entry in selectedPreviews) {
-        if (cancelRequested) break;
-        try {
-          final result = await DioNetwork.runWithCancellation(
-            operationCancelToken,
-            () => ServerFavoritesSyncHandler(adapter: entry.key).apply(
-              entry.value,
-              onStatus: _setStatus,
-              shouldCancel: () => cancelRequested,
-            ),
-          );
-          results[entry.key] = result;
-          if (!cancelRequested && !result.cancelled) _setStatus('${entry.key.displayName}: sync complete');
-        } catch (e) {
-          if (!cancelRequested) _setStatus('${entry.key.displayName}: sync failed - $e');
+      result = await _runSync(
+        token,
+        () => ServerFavoritesSyncHandler(adapter: adapter).apply(
+          selectedPreview,
+          onStatus: _setStatus,
+          shouldCancel: () => cancelRequested,
+        ),
+      );
+      if (selectedPreview.mode == ServerFavoriteSyncMode.exportLocal && !adapter.capabilities.canEnumerateAll) {
+        if (result!.exportAccountIdentity != null) {
+          if (exportAccountIdentity != null && exportAccountIdentity != result!.exportAccountIdentity) {
+            acknowledgedExports.clear();
+          }
+          exportAccountIdentity = result!.exportAccountIdentity;
+          acknowledgedExports.addAll(result!.confirmedServerAdds);
+        }
+        if (result!.remaining == 0 && result!.failed == 0) {
+          acknowledgedExports.clear();
+          exportAccountIdentity = null;
         }
       }
+      _setStatus(
+        '${adapter.displayName}: ${result!.cancelled ? 'stopped' : 'finished'}, '
+        '${result!.remaining} changes remaining, ${result!.failed} errors',
+      );
+    } catch (error) {
+      if (!cancelRequested) _setStatus('${adapter.displayName}: sync failed — $error');
     } finally {
       safeSetState(() {
+        if (cancelRequested) preview = null;
         cancelToken = null;
         isWorking = false;
       });
@@ -224,15 +286,16 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
   void cancelWork() {
     setState(() {
       cancelRequested = true;
-      previews.clear();
+      preview = null;
       cancelToken?.cancel();
+      _setStatus('Stopped. Completed changes are kept; an interrupted server request may already have taken effect.');
     });
   }
 
   List<Booru> getSankakuBoorus() {
     final sankakuBoorus = <Booru>[];
 
-    for (final booru in settingsHandler.booruList) {
+    for (final booru in [if (selectedAdapter != null) selectedAdapter!.booru]) {
       if ((booru.type?.isSankaku == true || booru.type?.isIdolSankaku == true) &&
           [
             ...SankakuHandler.knownUrls,
@@ -247,7 +310,7 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
 
   Future<bool> updateSankakuItems({List<BooruItem>? customItems}) async {
     if (isBusy) return false;
-    final sankakuBoorus = getSankakuBoorus().where((e) => e.type == sankakuType).toList();
+    final sankakuBoorus = getSankakuBoorus();
     final search = sankakuSearchController.text;
 
     safeSetState(() {
@@ -257,7 +320,9 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
       updatingDone = 0;
       isUpdatingSankakuUrls = true;
       cancelRequested = false;
-      previews.clear();
+      preview = null;
+      result = null;
+      logLines.clear();
       cancelToken?.cancel();
     });
 
@@ -281,7 +346,10 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
           await Future.delayed(const Duration(milliseconds: 100));
           if (cancelRequested) break;
           cancelToken = CancelToken();
-          final result = await sankakuHandler.loadItem(item: item, cancelToken: cancelToken);
+          final result = await _runSync(
+            cancelToken!,
+            () => sankakuHandler.loadItem(item: item, cancelToken: cancelToken),
+          );
           if (cancelRequested) break;
           if (result.failed) {
             safeSetState(() {
@@ -309,6 +377,13 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
         }
       }
       return !cancelRequested;
+    } catch (error) {
+      if (!cancelRequested) {
+        FlashElements.showSnackbar(
+          title: Text('${sankakuName ?? ''}: sync failed — $error'),
+        );
+      }
+      return false;
     } finally {
       safeSetState(() {
         isUpdatingSankakuUrls = false;
@@ -319,11 +394,26 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
 
   Future<bool> purgeFailedSankakuItems() async {
     if (isBusy || failedItems.isEmpty) return false;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => SettingsDialog(
+        title: Text(context.loc.serverFavouritesSync.purgeFailedItems(count: failedItems.length)),
+        contentItems: [Text(context.loc.serverFavouritesSync.purgeWarning)],
+        actionButtons: [
+          const CancelButton(withIcon: true),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(context.loc.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted || isBusy) return false;
     final failedUrls = failedItems.map((e) => e.postURL).toList();
     setState(() {
       isWorking = true;
       cancelRequested = false;
-      previews.clear();
+      preview = null;
     });
     try {
       final failedIDs = await settingsHandler.dbHandler.getItemIDs(failedUrls);
@@ -333,6 +423,11 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
         failedItems = [];
       });
       return true;
+    } catch (error) {
+      FlashElements.showSnackbar(
+        title: Text('Local removal failed:  — $error'),
+      );
+      return false;
     } finally {
       safeSetState(() {
         isWorking = false;
@@ -353,9 +448,33 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
       child: Scaffold(
         resizeToAvoidBottomInset: true,
         appBar: SettingsAppBar(title: context.loc.serverFavouritesSync.title),
+        bottomNavigationBar: isBusy
+            ? SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const LinearProgressIndicator(),
+                      if (logLines.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(logLines.first, maxLines: 2, overflow: TextOverflow.ellipsis),
+                        ),
+                      TextButton.icon(
+                        onPressed: cancelRequested ? null : cancelWork,
+                        icon: const Icon(Icons.cancel),
+                        label: Text(context.loc.serverFavouritesSync.stop),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : null,
         body: ListView(
           controller: scrollController,
           children: [
+            Padding(padding: const EdgeInsets.all(16), child: Text(context.loc.serverFavouritesSync.workflowHint)),
             if (adapters.isEmpty)
               SettingsButton(
                 name: context.loc.serverFavouritesSync.noSupportedBoorus,
@@ -363,6 +482,27 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
                 trailingIcon: const Icon(Icons.favorite_border),
               )
             else ...[
+              SettingsDropdown<ServerFavoriteAdapter>(
+                value: selectedAdapter,
+                items: adapters,
+                title: context.loc.serverFavouritesSync.source,
+                itemTitleBuilder: (adapter) => adapter?.displayName ?? '',
+                itemSubtitleBuilder: (adapter) => adapter?.host ?? '',
+                itemBuilder: (adapter) => Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    BooruFavicon(adapter?.booru),
+                    const SizedBox(width: 8),
+                    Flexible(child: Text(adapter?.displayName ?? '', overflow: TextOverflow.ellipsis)),
+                  ],
+                ),
+                onChanged: isBusy
+                    ? null
+                    : (adapter) {
+                        if (adapter != null) setState(() => _selectAdapter(adapter));
+                      },
+              ),
+              if (selectedAdapter != null) _adapterTile(selectedAdapter!),
               SettingsDropdown<ServerFavoriteSyncMode>(
                 value: mode,
                 items: ServerFavoriteSyncMode.values,
@@ -374,43 +514,67 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
                         if (value == null) return;
                         setState(() {
                           mode = value;
-                          _deselectUnsupportedAdaptersForMode();
-                          previews.clear();
-                          results.clear();
+                          preview = null;
+                          previewFailed = false;
+                          result = null;
                         });
                       },
               ),
-              SettingsButton(name: context.loc.serverFavouritesSync.boorus, enabled: false),
-              ...adapters.map(_adapterTile),
               SettingsButton(
                 name: context.loc.serverFavouritesSync.previewSelected,
                 icon: const Icon(Icons.manage_search),
                 enabled: canPreviewSelected,
                 action: canPreviewSelected ? previewSelected : null,
               ),
+              if (previewFailed)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Text(
+                    context.loc.serverFavouritesSync.previewFailedHint,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ),
+              if (mode == ServerFavoriteSyncMode.exportLocal && acknowledgedExports.isNotEmpty)
+                SettingsButton(
+                  name: context.loc.serverFavouritesSync.restartExport,
+                  enabled: !isBusy,
+                  icon: const Icon(Icons.restart_alt),
+                  action: isBusy
+                      ? null
+                      : () {
+                          setState(() {
+                            acknowledgedExports.clear();
+                            exportAccountIdentity = null;
+                            preview = null;
+                            result = null;
+                          });
+                        },
+                ),
+              if (preview != null) ...[
+                SettingsButton(name: context.loc.serverFavouritesSync.preview, enabled: false),
+                _previewTile(selectedAdapter!, preview!),
+              ],
               SettingsButton(
                 name: mode.isDestructive
                     ? context.loc.serverFavouritesSync.runSelectedRemoves
                     : context.loc.serverFavouritesSync.runSelected,
-                subtitle: canRunSelected ? null : Text(context.loc.serverFavouritesSync.previewRequiredBeforeRun),
+                subtitle: preview?.hasChanges == true
+                    ? null
+                    : Text(
+                        preview?.hasChanges == false
+                            ? (mode == ServerFavoriteSyncMode.importServer &&
+                                      selectedAdapter?.capabilities.canEnumerateAll == false
+                                  ? context.loc.serverFavouritesSync.partialImportNoChanges
+                                  : context.loc.serverFavouritesSync.noChanges)
+                            : context.loc.serverFavouritesSync.previewRequiredBeforeRun,
+                      ),
                 icon: Icon(mode.isDestructive ? Icons.warning_amber : Icons.sync),
                 enabled: canRunSelected,
                 action: canRunSelected ? runSelected : null,
               ),
-              if (isWorking)
-                SettingsButton(
-                  name: context.loc.serverFavouritesSync.stop,
-                  icon: const Icon(Icons.cancel),
-                  enabled: !cancelRequested,
-                  action: cancelRequested ? null : cancelWork,
-                ),
-              if (previews.isNotEmpty) ...[
-                SettingsButton(name: context.loc.serverFavouritesSync.preview, enabled: false),
-                ...previews.entries.map((entry) => _previewTile(entry.key, entry.value)),
-              ],
-              if (results.isNotEmpty) ...[
+              if (result != null) ...[
                 SettingsButton(name: context.loc.serverFavouritesSync.result, enabled: false),
-                ...results.entries.expand((entry) => _resultSection(entry.key, entry.value)),
+                ..._resultSection(selectedAdapter!, result!),
               ],
               if (logLines.isNotEmpty) ...[
                 SettingsButton(name: context.loc.serverFavouritesSync.log, enabled: false),
@@ -420,7 +584,7 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
                 ),
               ],
             ],
-            if (sankakuType != null) ..._sankakuMaintenance(),
+            if (getSankakuBoorus().isNotEmpty) ..._sankakuMaintenance(),
           ],
         ),
       ),
@@ -428,64 +592,66 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
   }
 
   Widget _adapterTile(ServerFavoriteAdapter adapter) {
-    final selected = selectedAdapters.contains(adapter);
     final supported = _modeSupported(adapter);
-    return CheckboxListTile(
-      value: selected,
-      onChanged: isBusy || !supported
-          ? null
-          : (value) {
-              setState(() {
-                if (value == true) {
-                  selectedAdapters.add(adapter);
-                } else {
-                  selectedAdapters.remove(adapter);
-                }
-                previews.clear();
-                results.clear();
-              });
-            },
+    return ListTile(
       title: Text(adapter.displayName),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(adapter.host),
+          if (adapter.capabilities.listingHint != null) Text(adapter.capabilities.listingHint!),
+          if (mode == ServerFavoriteSyncMode.exportLocal &&
+              adapter.capabilities.canAdd &&
+              !adapter.capabilities.canEnumerateAll)
+            Text(context.loc.serverFavouritesSync.writeOnlyHint),
           Wrap(
             spacing: 6,
             runSpacing: 4,
             children: [
-              if (adapter.capabilities.canFetch) const Chip(label: Text('import')),
-              if (adapter.capabilities.canAdd) const Chip(label: Text('export')),
-              if (adapter.capabilities.canRemove) const Chip(label: Text('remove')),
-              if (adapter.capabilities.requiresAuth) const Chip(label: Text('auth')),
-              if (adapter.capabilities.isReadOnly) const Chip(label: Text('read-only')),
+              if (adapter.capabilities.canFetch) Chip(label: Text(context.loc.serverFavouritesSync.capabilityImport)),
+              if (adapter.capabilities.canAdd) Chip(label: Text(context.loc.serverFavouritesSync.capabilityExport)),
+              if (adapter.capabilities.canRemove) Chip(label: Text(context.loc.serverFavouritesSync.capabilityRemove)),
+              if (adapter.capabilities.requiresAuth) Chip(label: Text(context.loc.serverFavouritesSync.capabilityAuth)),
+              if (adapter.capabilities.isReadOnly)
+                Chip(label: Text(context.loc.serverFavouritesSync.capabilityReadOnly)),
             ],
           ),
           if (!supported)
             Text(
-              adapter.capabilities.unsupportedReason ?? context.loc.serverFavouritesSync.selectedModeNotSupported,
+              adapter.unavailableModeReason(mode) ?? context.loc.serverFavouritesSync.selectedModeNotSupported,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
         ],
       ),
-      secondary: const Icon(Icons.favorite),
-      controlAffinity: ListTileControlAffinity.leading,
+      leading: BooruFavicon(adapter.booru, size: 24),
     );
   }
 
   Widget _previewTile(ServerFavoriteAdapter adapter, ServerFavoritesSyncPreview preview) {
     return SettingsButton(
       name: adapter.displayName,
+      icon: BooruFavicon(adapter.booru, size: 24),
       enabled: false,
       subtitle: Text(
-        context.loc.serverFavouritesSync.previewSummary(
-          matched: preview.matched,
-          localOnly: preview.localOnly,
-          serverOnly: preview.serverOnly,
-          addLocal: preview.addLocal,
-          addServer: preview.addServer,
-          removeLocal: preview.removeLocal,
-          removeServer: preview.removeServer,
-        ),
+        !adapter.capabilities.usesServerSnapshot(preview.mode)
+            ? context.loc.serverFavouritesSync.exportPreviewSummary(
+                remaining: preview.addServer,
+                confirmed: preview.acknowledgedExports.length,
+              )
+            : !adapter.capabilities.canEnumerateAll
+            ? context.loc.serverFavouritesSync.partialPreviewSummary(
+                matched: preview.matched,
+                addLocal: preview.addLocal,
+              )
+            : context.loc.serverFavouritesSync.previewSummary(
+                matched: preview.matched,
+                localOnly: preview.localOnly,
+                serverOnly: preview.serverOnly,
+                addLocal: preview.addLocal,
+                addServer: preview.addServer,
+                removeLocal: preview.removeLocal,
+                removeServer: preview.removeServer,
+              ),
       ),
       trailingIcon: const Icon(Icons.summarize),
     );
@@ -494,6 +660,7 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
   Widget _resultTile(ServerFavoriteAdapter adapter, ServerFavoritesSyncResult result) {
     return SettingsButton(
       name: adapter.displayName,
+      icon: BooruFavicon(adapter.booru, size: 24),
       enabled: false,
       subtitle: Text(
         '${context.loc.serverFavouritesSync.resultSummary(
@@ -502,16 +669,20 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
           removedLocal: result.removedLocal,
           removedServer: result.removedServer,
           failed: result.failed,
-        )}${result.errors.isEmpty ? '' : '\n${result.errors.take(4).join('\n')}'}',
+        )}${result.remaining > 0 ? '\n${context.loc.serverFavouritesSync.remainingChanges(count: result.remaining)}' : ''}${result.errors.isEmpty ? '' : '\n${result.errors.take(4).join('\n')}'}',
       ),
-      trailingIcon: Icon(result.cancelled ? Icons.cancel : (result.failed == 0 ? Icons.check : Icons.warning_amber)),
+      trailingIcon: Icon(
+        result.cancelled
+            ? Icons.cancel
+            : (result.failed == 0 && result.remaining == 0 ? Icons.check : Icons.warning_amber),
+      ),
     );
   }
 
   List<Widget> _resultSection(ServerFavoriteAdapter adapter, ServerFavoritesSyncResult result) {
     return [
       _resultTile(adapter, result),
-      if (result.failed > 0) ...[
+      if (result.failed > 0 || result.remaining > 0 || result.cancelled) ...[
         SettingsButton(
           name: context.loc.serverFavouritesSync.copyFailureLog,
           icon: const Icon(Icons.copy),
@@ -519,39 +690,26 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
           action: () => _copyFailureLog(adapter, result),
         ),
         SettingsButton(
-          name: context.loc.serverFavouritesSync.retryFailedActions,
+          name: context.loc.serverFavouritesSync.refreshPreview,
           icon: const Icon(Icons.refresh),
           dense: true,
-          enabled: !isBusy && result.failures.isNotEmpty,
-          action: !isBusy && result.failures.isNotEmpty ? () => retryFailedActions(adapter, result) : null,
+          enabled: !isBusy,
+          action: isBusy ? null : previewSelected,
         ),
       ],
     ];
   }
 
   void _copyFailureLog(ServerFavoriteAdapter adapter, ServerFavoritesSyncResult result) {
-    final summary = context.loc.serverFavouritesSync.resultSummary(
-      addedLocal: result.addedLocal,
-      addedServer: result.addedServer,
-      removedLocal: result.removedLocal,
-      removedServer: result.removedServer,
-      failed: result.failed,
-    );
+    final summary =
+        'Added local: ${result.addedLocal}, added server: ${result.addedServer}, '
+        'removed local: ${result.removedLocal}, removed server: ${result.removedServer}, failed: ${result.failed}, remaining: ${result.remaining}';
     final buffer = StringBuffer()
-      ..writeln(context.loc.serverFavouritesSync.title)
+      ..writeln('Server favourites sync')
       ..writeln('Booru: ${adapter.displayName}')
-      ..writeln('Mode: ${result.preview.mode.title}')
+      ..writeln('Mode: ${result.preview.mode.name}')
       ..writeln('Generated: ${DateTime.now().toIso8601String()}')
       ..writeln(summary);
-
-    if (result.failures.isNotEmpty) {
-      buffer
-        ..writeln()
-        ..writeln('Retryable failures:');
-      for (final failure in result.failures) {
-        buffer.writeln(failure.logLine);
-      }
-    }
 
     if (result.errors.isNotEmpty) {
       buffer
@@ -570,45 +728,6 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
     );
   }
 
-  Future<void> retryFailedActions(ServerFavoriteAdapter adapter, ServerFavoritesSyncResult previousResult) async {
-    if (isBusy) return;
-    if (previousResult.failures.isEmpty) {
-      _setStatus('${adapter.displayName}: ${context.loc.serverFavouritesSync.noRetryableFailures}');
-      return;
-    }
-
-    final operationCancelToken = CancelToken();
-    setState(() {
-      isWorking = true;
-      cancelRequested = false;
-      cancelToken = operationCancelToken;
-      previews.clear();
-    });
-    _setStatus(context.loc.serverFavouritesSync.retryingFailedActions(booru: adapter.displayName));
-
-    try {
-      final retryResult = await DioNetwork.runWithCancellation(
-        operationCancelToken,
-        () => ServerFavoritesSyncHandler(adapter: adapter).retryFailures(
-          previousResult,
-          onStatus: _setStatus,
-          shouldCancel: () => cancelRequested,
-        ),
-      );
-      results[adapter] = retryResult;
-      if (!cancelRequested && !retryResult.cancelled) {
-        _setStatus(context.loc.serverFavouritesSync.retryComplete(booru: adapter.displayName));
-      }
-    } catch (e) {
-      if (!cancelRequested) _setStatus('${adapter.displayName}: sync retry failed - $e');
-    } finally {
-      safeSetState(() {
-        cancelToken = null;
-        isWorking = false;
-      });
-    }
-  }
-
   List<Widget> _sankakuMaintenance() {
     return [
       const SettingsButton(name: '', enabled: false),
@@ -625,17 +744,6 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
             ignoring: isBusy,
             child: Column(
               children: [
-                SettingsDropdown<BooruType?>(
-                  value: sankakuType,
-                  items: getSankakuBoorus().map((e) => e.type).toList(),
-                  itemTitleBuilder: (item) => item?.alias ?? '',
-                  onChanged: (newValue) {
-                    setState(() {
-                      sankakuType = newValue;
-                    });
-                  },
-                  title: context.loc.serverFavouritesSync.sankakuTypeToUpdate,
-                ),
                 SettingsTextInput(
                   controller: sankakuSearchController,
                   title: context.loc.serverFavouritesSync.searchQuery,
@@ -690,13 +798,6 @@ class _ServerFavoritesSyncPageState extends State<ServerFavoritesSyncPage> {
           action: () {
             cancelToken?.cancel();
           },
-        ),
-        SettingsButton(
-          name: context.loc.serverFavouritesSync.stop,
-          trailingIcon: const Icon(Icons.cancel),
-          drawTopBorder: true,
-          enabled: !cancelRequested,
-          action: cancelRequested ? null : cancelWork,
         ),
       ],
       if (!isUpdatingSankakuUrls && failedItems.isNotEmpty) ...[

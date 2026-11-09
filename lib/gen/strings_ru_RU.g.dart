@@ -490,6 +490,18 @@ class _Translations$serverFavouritesSync$ru_RU extends Translations$serverFavour
 
   // Translations
   @override
+  String get restartExport => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.restartExport', {}) ?? 'Начать новый экспорт';
+  @override
+  String exportPreviewSummary({required int remaining, required int confirmed}) =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.exportPreviewSummary', {'remaining': remaining, 'confirmed': confirmed}) ??
+      'Будет отправлено добавлений: ${remaining}. Уже подтверждено в этом экспорте: ${confirmed}. Список избранного сервера недоступен.';
+  @override
+  String remainingChanges({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.remainingChanges', {'count': count}) ??
+      'Осталось запланированных изменений: ${count}. Для продолжения обновите предпросмотр: прерванный запрос к серверу мог уже выполниться.';
+  @override
+  String get source => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.source', {}) ?? 'Сайт / аккаунт';
+  @override
   String get title => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.title', {}) ?? 'Синхронизация избранного с сервером';
   @override
   String get sendChangesToServer =>
@@ -586,20 +598,18 @@ class _Translations$serverFavouritesSync$ru_RU extends Translations$serverFavour
       TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.noSupportedBoorus', {}) ??
       'Пока нет настроенных сайтов с поддержкой серверного избранного';
   @override
-  String get boorus => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.boorus', {}) ?? 'Сайты';
-  @override
-  String get previewSelected => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.previewSelected', {}) ?? 'Предпросмотр выбранных';
+  String get previewSelected => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.previewSelected', {}) ?? 'Просмотреть изменения';
   @override
   String get previewRequiredBeforeRun =>
       TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.previewRequiredBeforeRun', {}) ??
-      'Сначала сделай предпросмотр выбранных сайтов.';
+      'Перед синхронизацией просмотрите изменения для этого сайта.';
   @override
   String get run => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.run', {}) ?? 'Запустить';
   @override
-  String get runSelected => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.runSelected', {}) ?? 'Запустить выбранные';
+  String get runSelected => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.runSelected', {}) ?? 'Запустить синхронизацию';
   @override
   String get runSelectedRemoves =>
-      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.runSelectedRemoves', {}) ?? 'Запустить выбранные (удаляет избранное)';
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.runSelectedRemoves', {}) ?? 'Запустить синхронизацию (удаляет избранное)';
   @override
   String get stop => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.stop', {}) ?? 'Остановить';
   @override
@@ -614,20 +624,7 @@ class _Translations$serverFavouritesSync$ru_RU extends Translations$serverFavour
   @override
   String get copyFailureLog => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.copyFailureLog', {}) ?? 'Скопировать лог ошибок';
   @override
-  String get retryFailedActions =>
-      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.retryFailedActions', {}) ?? 'Повторить неудачные действия';
-  @override
   String get failureLogCopied => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.failureLogCopied', {}) ?? 'Лог ошибок скопирован';
-  @override
-  String retryingFailedActions({required String booru}) =>
-      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.retryingFailedActions', {'booru': booru}) ??
-      '${booru}: повтор неудачных действий';
-  @override
-  String retryComplete({required String booru}) =>
-      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.retryComplete', {'booru': booru}) ?? '${booru}: повтор завершён';
-  @override
-  String get noRetryableFailures =>
-      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.noRetryableFailures', {}) ?? 'Нет ошибок, которые можно повторить';
   @override
   String previewSummary({
     required int matched,
@@ -742,10 +739,7 @@ class _Translations$serverFavouritesSync$ru_RU extends Translations$serverFavour
   @override
   String get sankakuMaintenanceSubtitle =>
       TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.sankakuMaintenanceSubtitle', {}) ??
-      'Обновляет устаревшие локальные URL избранных элементов Sankaku. Это не синхронизирует состояние серверного избранного.';
-  @override
-  String get sankakuTypeToUpdate =>
-      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.sankakuTypeToUpdate', {}) ?? 'Тип Sankaku для обновления';
+      'Обновляет устаревшие локальные URL избранного Sankaku через выбранный аккаунт. Не синхронизирует состояние избранного на сервере.';
   @override
   String get searchQuery => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.searchQuery', {}) ?? 'Поисковый запрос';
   @override
@@ -779,6 +773,80 @@ class _Translations$serverFavouritesSync$ru_RU extends Translations$serverFavour
   String retryFailedItems({required int count}) =>
       TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.retryFailedItems', {'count': count}) ??
       'Повторить неудачные элементы (${count})';
+  @override
+  String get workflowHint =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.workflowHint', {}) ??
+      'Выберите один сайт/аккаунт и режим, просмотрите изменения и запустите синхронизацию. Запросы выполняются с паузами. При импорте список сервера читается повторно во время сохранения. Остановка сохраняет выполненные изменения; для продолжения обновите предпросмотр. Счётчики показывают посты; локальные варианты URL обрабатываются вместе.';
+  @override
+  String confirmRemovalSummary({required String booru, required int local, required int server}) =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.confirmRemovalSummary', {'booru': booru, 'local': local, 'server': server}) ??
+      '${booru}: удалить ${local} локальных избранных и ${server} избранных на сервере.';
+  @override
+  String get noChanges => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.noChanges', {}) ?? 'Изменения не требуются.';
+  @override
+  String get refreshPreview =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.refreshPreview', {}) ?? 'Просмотреть оставшиеся изменения';
+  @override
+  String get capabilityImport => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityImport', {}) ?? 'Импорт';
+  @override
+  String get capabilityExport => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityExport', {}) ?? 'Экспорт';
+  @override
+  String get capabilityRemove => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityRemove', {}) ?? 'Удаление на сервере';
+  @override
+  String get capabilityAuth => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityAuth', {}) ?? 'Нужен вход';
+  @override
+  String get capabilityReadOnly => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityReadOnly', {}) ?? 'Только чтение';
+  @override
+  String get writeOnlyHint =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.writeOnlyHint', {}) ??
+      'Экспорт отправляет всё локальное избранное без сравнения со списком на сервере, пропуская подтверждённые добавления прерванного экспорта. Прогресс сохраняется только при работе с этим аккаунтом на этой странице. Новый экспорт снова отправит всё локальное избранное.';
+  @override
+  String get completeListRequired =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.completeListRequired', {}) ??
+      'Для этого режима нужен проверенный полный список избранного. Используйте импорт без удалений или экспорт, если они доступны.';
+  @override
+  String get gelbooruImportLimit =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.gelbooruImportLimit', {}) ??
+      'Поиск по избранному Gelbooru ограничен — сейчас примерно 25 000 постов. Импорт читает не более 25 000 результатов и может пропустить часть избранного. Локальное избранное сохраняется. Зеркалирование и двустороннее объединение недоступны. Для импорта нужны числовой ID пользователя и API-ключ, для экспорта — cookies входа на сайт.';
+  @override
+  String get sankakuListingUnavailable =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.sankakuListingUnavailable', {}) ??
+      'Получение списка избранного Sankaku пока не подтверждено, поэтому импорт, двустороннее объединение и зеркалирование недоступны. При действующем входе доступны экспорт, проверка статуса и действия с отдельными постами.';
+  @override
+  String partialPreviewSummary({required int matched, required int addLocal}) =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.partialPreviewSummary', {'matched': matched, 'addLocal': addLocal}) ??
+      'Среди доступных результатов: уже сохранено локально ${matched}, к импорту ${addLocal}. Это не полный список избранного на сервере. Ничего не будет удалено из избранного.';
+  @override
+  String get partialImportNoChanges =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.partialImportNoChanges', {}) ??
+      'В доступных результатах нет нового избранного. Поиск может не показывать остальные избранные посты на сервере.';
+  @override
+  String get previewFailedHint =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.previewFailedHint', {}) ??
+      'Не удалось подготовить предпросмотр. Изменения не применены. Проверьте журнал и попробуйте снова.';
+  @override
+  String get purgeWarning =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.purgeWarning', {}) ??
+      'Удалить эти локальные записи, включая отметки избранного и историю загрузок? Ошибка обновления может быть временной — сначала попробуйте ещё раз. Скачанные файлы и избранное на сервере не удаляются.';
+  @override
+  String get serverOnlyHint =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverOnlyHint', {}) ??
+      'Эти действия меняют избранное только на сервере. Локальная отметка не изменится.';
+  @override
+  String get localSaveFailed =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.localSaveFailed', {}) ??
+      'Не удалось сохранить локальное избранное. Попробуйте ещё раз.';
+  @override
+  String cloudflareHelp({required String site}) =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.cloudflareHelp', {'site': site}) ??
+      '${site} может быть заблокирован Cloudflare. Откройте сайт, войдите, пройдите капчу и повторите попытку.';
+  @override
+  String cookiesRequired({required String site}) =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.cookiesRequired', {'site': site}) ??
+      'Откройте ${site} во встроенном браузере, войдите и повторите попытку. Необходимы действительные cookie входа.';
+  @override
+  String webviewTitle({required String booru}) =>
+      TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.webviewTitle', {'booru': booru}) ?? '${booru}: вход / капча';
 }
 
 // Path: snatcher
@@ -4633,6 +4701,20 @@ extension on TranslationsRuRu {
                   many: 'Получено ${count} вкладок',
                   other: 'Получено ${count} вкладок',
                 ),
+          'serverFavouritesSync.restartExport' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.restartExport', {}) ?? 'Начать новый экспорт',
+          'serverFavouritesSync.exportPreviewSummary' =>
+            ({required int remaining, required int confirmed}) =>
+                TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.exportPreviewSummary', {
+                  'remaining': remaining,
+                  'confirmed': confirmed,
+                }) ??
+                'Будет отправлено добавлений: ${remaining}. Уже подтверждено в этом экспорте: ${confirmed}. Список избранного сервера недоступен.',
+          'serverFavouritesSync.remainingChanges' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.remainingChanges', {'count': count}) ??
+                'Осталось запланированных изменений: ${count}. Для продолжения обновите предпросмотр: прерванный запрос к серверу мог уже выполниться.',
+          'serverFavouritesSync.source' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.source', {}) ?? 'Сайт / аккаунт',
           'serverFavouritesSync.title' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.title', {}) ?? 'Синхронизация избранного с сервером',
           'serverFavouritesSync.sendChangesToServer' =>
@@ -4712,17 +4794,16 @@ extension on TranslationsRuRu {
           'serverFavouritesSync.noSupportedBoorus' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.noSupportedBoorus', {}) ??
                 'Пока нет настроенных сайтов с поддержкой серверного избранного',
-          'serverFavouritesSync.boorus' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.boorus', {}) ?? 'Сайты',
           'serverFavouritesSync.previewSelected' =>
-            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.previewSelected', {}) ?? 'Предпросмотр выбранных',
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.previewSelected', {}) ?? 'Просмотреть изменения',
           'serverFavouritesSync.previewRequiredBeforeRun' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.previewRequiredBeforeRun', {}) ??
-                'Сначала сделай предпросмотр выбранных сайтов.',
+                'Перед синхронизацией просмотрите изменения для этого сайта.',
           'serverFavouritesSync.run' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.run', {}) ?? 'Запустить',
           'serverFavouritesSync.runSelected' =>
-            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.runSelected', {}) ?? 'Запустить выбранные',
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.runSelected', {}) ?? 'Запустить синхронизацию',
           'serverFavouritesSync.runSelectedRemoves' =>
-            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.runSelectedRemoves', {}) ?? 'Запустить выбранные (удаляет избранное)',
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.runSelectedRemoves', {}) ?? 'Запустить синхронизацию (удаляет избранное)',
           'serverFavouritesSync.stop' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.stop', {}) ?? 'Остановить',
           'serverFavouritesSync.preview' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.preview', {}) ?? 'Предпросмотр',
           'serverFavouritesSync.result' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.result', {}) ?? 'Результат',
@@ -4731,19 +4812,8 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.selectedModeNotSupported', {}) ?? 'Выбранный режим не поддерживается',
           'serverFavouritesSync.copyFailureLog' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.copyFailureLog', {}) ?? 'Скопировать лог ошибок',
-          'serverFavouritesSync.retryFailedActions' =>
-            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.retryFailedActions', {}) ?? 'Повторить неудачные действия',
           'serverFavouritesSync.failureLogCopied' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.failureLogCopied', {}) ?? 'Лог ошибок скопирован',
-          'serverFavouritesSync.retryingFailedActions' =>
-            ({required String booru}) =>
-                TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.retryingFailedActions', {'booru': booru}) ??
-                '${booru}: повтор неудачных действий',
-          'serverFavouritesSync.retryComplete' => ({
-            required String booru,
-          }) => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.retryComplete', {'booru': booru}) ?? '${booru}: повтор завершён',
-          'serverFavouritesSync.noRetryableFailures' =>
-            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.noRetryableFailures', {}) ?? 'Нет ошибок, которые можно повторить',
           'serverFavouritesSync.previewSummary' =>
             ({
               required int matched,
@@ -4834,9 +4904,7 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.sankakuMaintenance', {}) ?? 'Обслуживание URL избранного Sankaku',
           'serverFavouritesSync.sankakuMaintenanceSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.sankakuMaintenanceSubtitle', {}) ??
-                'Обновляет устаревшие локальные URL избранных элементов Sankaku. Это не синхронизирует состояние серверного избранного.',
-          'serverFavouritesSync.sankakuTypeToUpdate' =>
-            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.sankakuTypeToUpdate', {}) ?? 'Тип Sankaku для обновления',
+                'Обновляет устаревшие локальные URL избранного Sankaku через выбранный аккаунт. Не синхронизирует состояние избранного на сервере.',
           'serverFavouritesSync.searchQuery' =>
             TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.searchQuery', {}) ?? 'Поисковый запрос',
           'serverFavouritesSync.optional' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.optional', {}) ?? 'Необязательно',
@@ -4869,6 +4937,64 @@ extension on TranslationsRuRu {
             ({required int count}) =>
                 TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.retryFailedItems', {'count': count}) ??
                 'Повторить неудачные элементы (${count})',
+          'serverFavouritesSync.workflowHint' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.workflowHint', {}) ?? 'Выберите один сайт/аккаунт и режим, просмотрите изменения и запустите синхронизацию. Запросы выполняются с паузами. При импорте список сервера читается повторно во время сохранения. Остановка сохраняет выполненные изменения; для продолжения обновите предпросмотр. Счётчики показывают посты; локальные варианты URL обрабатываются вместе.',
+          'serverFavouritesSync.confirmRemovalSummary' =>
+            ({required String booru, required int local, required int server}) =>
+                TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.confirmRemovalSummary', {
+                  'booru': booru,
+                  'local': local,
+                  'server': server,
+                }) ??
+                '${booru}: удалить ${local} локальных избранных и ${server} избранных на сервере.',
+          'serverFavouritesSync.noChanges' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.noChanges', {}) ?? 'Изменения не требуются.',
+          'serverFavouritesSync.refreshPreview' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.refreshPreview', {}) ?? 'Просмотреть оставшиеся изменения',
+          'serverFavouritesSync.capabilityImport' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityImport', {}) ?? 'Импорт',
+          'serverFavouritesSync.capabilityExport' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityExport', {}) ?? 'Экспорт',
+          'serverFavouritesSync.capabilityRemove' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityRemove', {}) ?? 'Удаление на сервере',
+          'serverFavouritesSync.capabilityAuth' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityAuth', {}) ?? 'Нужен вход',
+          'serverFavouritesSync.capabilityReadOnly' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.capabilityReadOnly', {}) ?? 'Только чтение',
+          'serverFavouritesSync.writeOnlyHint' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.writeOnlyHint', {}) ?? 'Экспорт отправляет всё локальное избранное без сравнения со списком на сервере, пропуская подтверждённые добавления прерванного экспорта. Прогресс сохраняется только при работе с этим аккаунтом на этой странице. Новый экспорт снова отправит всё локальное избранное.',
+          'serverFavouritesSync.completeListRequired' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.completeListRequired', {}) ??
+                'Для этого режима нужен проверенный полный список избранного. Используйте импорт без удалений или экспорт, если они доступны.',
+          'serverFavouritesSync.gelbooruImportLimit' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.gelbooruImportLimit', {}) ?? 'Поиск по избранному Gelbooru ограничен — сейчас примерно 25 000 постов. Импорт читает не более 25 000 результатов и может пропустить часть избранного. Локальное избранное сохраняется. Зеркалирование и двустороннее объединение недоступны. Для импорта нужны числовой ID пользователя и API-ключ, для экспорта — cookies входа на сайт.',
+          'serverFavouritesSync.sankakuListingUnavailable' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.sankakuListingUnavailable', {}) ?? 'Получение списка избранного Sankaku пока не подтверждено, поэтому импорт, двустороннее объединение и зеркалирование недоступны. При действующем входе доступны экспорт, проверка статуса и действия с отдельными постами.',
+          'serverFavouritesSync.partialPreviewSummary' =>
+            ({required int matched, required int addLocal}) =>
+                TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.partialPreviewSummary', {'matched': matched, 'addLocal': addLocal}) ??
+                'Среди доступных результатов: уже сохранено локально ${matched}, к импорту ${addLocal}. Это не полный список избранного на сервере. Ничего не будет удалено из избранного.',
+          'serverFavouritesSync.partialImportNoChanges' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.partialImportNoChanges', {}) ??
+                'В доступных результатах нет нового избранного. Поиск может не показывать остальные избранные посты на сервере.',
+          'serverFavouritesSync.previewFailedHint' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.previewFailedHint', {}) ??
+                'Не удалось подготовить предпросмотр. Изменения не применены. Проверьте журнал и попробуйте снова.',
+          'serverFavouritesSync.purgeWarning' => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.purgeWarning', {}) ?? 'Удалить эти локальные записи, включая отметки избранного и историю загрузок? Ошибка обновления может быть временной — сначала попробуйте ещё раз. Скачанные файлы и избранное на сервере не удаляются.',
+          'serverFavouritesSync.serverOnlyHint' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.serverOnlyHint', {}) ??
+                'Эти действия меняют избранное только на сервере. Локальная отметка не изменится.',
+          'serverFavouritesSync.localSaveFailed' =>
+            TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.localSaveFailed', {}) ??
+                'Не удалось сохранить локальное избранное. Попробуйте ещё раз.',
+          'serverFavouritesSync.cloudflareHelp' =>
+            ({required String site}) =>
+                TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.cloudflareHelp', {'site': site}) ??
+                '${site} может быть заблокирован Cloudflare. Откройте сайт, войдите, пройдите капчу и повторите попытку.',
+          'serverFavouritesSync.cookiesRequired' =>
+            ({required String site}) =>
+                TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.cookiesRequired', {'site': site}) ??
+                'Откройте ${site} во встроенном браузере, войдите и повторите попытку. Необходимы действительные cookie входа.',
+          'serverFavouritesSync.webviewTitle' => ({
+            required String booru,
+          }) => TranslationOverrides.string(_root.$meta, 'serverFavouritesSync.webviewTitle', {'booru': booru}) ?? '${booru}: вход / капча',
           'snatcher.title' => TranslationOverrides.string(_root.$meta, 'snatcher.title', {}) ?? 'Загрузчик',
           'snatcher.snatchingHistory' => TranslationOverrides.string(_root.$meta, 'snatcher.snatchingHistory', {}) ?? 'История загрузок',
           'snatcher.enterTags' => TranslationOverrides.string(_root.$meta, 'snatcher.enterTags', {}) ?? 'Введи теги',
@@ -5359,6 +5485,9 @@ extension on TranslationsRuRu {
           'settings.booruEditor.booruNameRequired' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruNameRequired', {}) ?? 'Имя конфига обязательно!',
           'settings.booruEditor.booruUrl' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruUrl', {}) ?? 'URL сайта',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.booruEditor.booruUrlRequired' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruUrlRequired', {}) ?? 'URL обязательно!',
           'settings.booruEditor.booruType' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruType', {}) ?? 'Тип конфига',
@@ -5404,9 +5533,6 @@ extension on TranslationsRuRu {
           'settings.interface.moveInputToTopInSearchView' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.moveInputToTopInSearchView', {}) ??
                 'Переместить поле ввода вверх на экране поиска',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.interface.searchViewQuickActionsPanel' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.searchViewQuickActionsPanel', {}) ??
                 'Панель быстрых действий на экране поиска',
@@ -6387,6 +6513,9 @@ extension on TranslationsRuRu {
           'settings.debug.sessionString' => TranslationOverrides.string(_root.$meta, 'settings.debug.sessionString', {}) ?? 'Строка сессии',
           'settings.debug.restoredSessionFromString' =>
             TranslationOverrides.string(_root.$meta, 'settings.debug.restoredSessionFromString', {}) ?? 'Сессия восстановлена из строки',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.logging.logger' => TranslationOverrides.string(_root.$meta, 'settings.logging.logger', {}) ?? 'Логгер',
           'settings.logging.captureLogcat' => TranslationOverrides.string(_root.$meta, 'settings.logging.captureLogcat', {}) ?? 'Записывать logcat',
           'settings.logging.captureLogcatDescription' =>
@@ -6415,9 +6544,6 @@ extension on TranslationsRuRu {
           'comments.noBooruAPIForComments' =>
             TranslationOverrides.string(_root.$meta, 'comments.noBooruAPIForComments', {}) ?? 'У этого сайта нет комментариев или API для них',
           'pageChanger.title' => TranslationOverrides.string(_root.$meta, 'pageChanger.title', {}) ?? 'Переключатель страниц',
-          _ => null,
-        } ??
-        switch (path) {
           'pageChanger.pageLabel' => TranslationOverrides.string(_root.$meta, 'pageChanger.pageLabel', {}) ?? 'Страница №',
           'pageChanger.delayBetweenLoadings' =>
             TranslationOverrides.string(_root.$meta, 'pageChanger.delayBetweenLoadings', {}) ?? 'Задержка между загрузками (мс)',

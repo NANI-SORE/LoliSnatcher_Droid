@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/local_network_permission.dart';
+import 'package:lolisnatcher/src/services/server_favorites_request_gate.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 
@@ -39,6 +40,13 @@ class DioNetwork {
     bool skipLogging = false,
   }) {
     final dio = Dio();
+    final syncGate = ServerFavoritesRequestGate.current;
+    if (syncGate != null) {
+      dio.options.connectTimeout = const Duration(seconds: 30);
+      dio.options.sendTimeout = const Duration(seconds: 30);
+      dio.options.receiveTimeout = const Duration(seconds: 60);
+      dio.interceptors.add(syncGate.interceptor);
+    }
 
     final settingsHandler = SettingsHandler.instance;
     // final proxyType = ProxyType.fromName(settingsHandler.proxyType);
@@ -74,7 +82,7 @@ class DioNetwork {
       ),
     );
 
-    if (!skipLogging) {
+    if (!skipLogging && syncGate == null) {
       dio.interceptors.add(Logger.dioInterceptor!);
       dio.interceptors.add(settingsHandler.alice.getDioInterceptor());
     }
@@ -113,6 +121,9 @@ class DioNetwork {
   }
 
   static Dio captchaInterceptor(Dio client, {String? customUserAgent}) {
+    // Some favourite mutations use GET. Do not replay any sync request, even
+    // after a captcha or cookie refresh: its remote outcome may be ambiguous.
+    if (ServerFavoritesRequestGate.current != null) return client;
     client.interceptors.add(
       InterceptorsWrapper(
         onResponse: (Response response, ResponseInterceptorHandler handler) async {
@@ -180,26 +191,26 @@ class DioNetwork {
     RequestOptions requestOptions,
     CancelToken? cancelToken,
   ) async {
-    final String oldCookie = requestOptions.headers['Cookie'] as String? ?? '';
-    final String newCookie = await Tools.getCookies(requestOptions.uri.toString());
     final headers = {
       ...requestOptions.headers,
-      'Cookie': '${oldCookie.replaceAll('cf_clearance', 'cf_clearance_old')} $newCookie'.trim(),
+      'Cookie': _mergeCookies(
+        requestOptions.headers['Cookie']?.toString() ?? '',
+        await Tools.getCookies(requestOptions.uri.toString()),
+      ),
       Tools.captchaCheckHeader: 'done',
     };
+    return client.fetch(requestOptions.copyWith(headers: headers, cancelToken: cancelToken));
+  }
 
-    final opts = Options(
-      method: requestOptions.method,
-      headers: headers,
-    );
-
-    return client.request(
-      requestOptions.path,
-      options: opts,
-      data: requestOptions.data,
-      queryParameters: requestOptions.queryParameters,
-      cancelToken: cancelToken,
-    );
+  static String _mergeCookies(String oldCookie, String newCookie) {
+    final cookies = <String, String>{};
+    for (final header in [oldCookie, newCookie]) {
+      for (final part in header.split(';')) {
+        final separator = part.indexOf('=');
+        if (separator > 0) cookies[part.substring(0, separator).trim()] = part.substring(separator + 1).trim();
+      }
+    }
+    return cookies.entries.map((entry) => '${entry.key}=${entry.value}').join('; ');
   }
 
   static Dio cookieInterceptor(Dio client) {
@@ -210,7 +221,7 @@ class DioNetwork {
           final String newCookie = await Tools.getCookies(options.uri.toString());
           final headers = {
             ...options.headers,
-            'Cookie': '$oldCookie $newCookie'.trim(),
+            'Cookie': _mergeCookies(oldCookie, newCookie),
           };
           options.headers = headers;
           return handler.next(options);
@@ -259,9 +270,12 @@ class DioNetwork {
     CancelToken? cancelToken,
     void Function(int, int)? onReceiveProgress,
     Dio Function(Dio)? customInterceptor,
+    bool skipLogging = false,
   }) async {
     cancelToken = _requestCancelToken(cancelToken);
-    final client = customInterceptor != null ? customInterceptor(getClient()) : getClient();
+    final client = customInterceptor != null
+        ? customInterceptor(getClient(skipLogging: skipLogging))
+        : getClient(skipLogging: skipLogging);
     final urlAndQuery = separateUrlAndQueryParams(url, queryParameters);
 
     try {
@@ -287,9 +301,12 @@ class DioNetwork {
     void Function(int, int)? onReceiveProgress,
     void Function(int, int)? onSendProgress,
     Dio Function(Dio)? customInterceptor,
+    bool skipLogging = false,
   }) async {
     cancelToken = _requestCancelToken(cancelToken);
-    final client = customInterceptor != null ? customInterceptor(getClient()) : getClient();
+    final client = customInterceptor != null
+        ? customInterceptor(getClient(skipLogging: skipLogging))
+        : getClient(skipLogging: skipLogging);
     final urlAndQuery = separateUrlAndQueryParams(url, queryParameters);
 
     try {
@@ -315,9 +332,12 @@ class DioNetwork {
     Map<String, dynamic>? headers = const {},
     CancelToken? cancelToken,
     Dio Function(Dio)? customInterceptor,
+    bool skipLogging = false,
   }) async {
     cancelToken = _requestCancelToken(cancelToken);
-    final client = customInterceptor != null ? customInterceptor(getClient()) : getClient();
+    final client = customInterceptor != null
+        ? customInterceptor(getClient(skipLogging: skipLogging))
+        : getClient(skipLogging: skipLogging);
 
     try {
       final urlAndQuery = separateUrlAndQueryParams(url, queryParameters);

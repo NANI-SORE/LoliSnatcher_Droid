@@ -36,27 +36,36 @@ class ServerFavoriteCapabilities {
     required this.canRemove,
     required this.requiresAuth,
     required this.isDestructiveMirrorAllowed,
-    this.canCheckSingle = true,
+    this.canEnumerateAll = false,
+    this.canCheckSingle = false,
+    this.listingHint,
     this.unsupportedReason,
   });
 
   final bool canFetch;
+  final bool canEnumerateAll;
   final bool canAdd;
   final bool canRemove;
   final bool requiresAuth;
   final bool isDestructiveMirrorAllowed;
   final bool canCheckSingle;
   final String? unsupportedReason;
+  final String? listingHint;
 
   bool get hasAnySupport => canFetch || canAdd || canRemove;
   bool get isReadOnly => canFetch && !canAdd && !canRemove;
 
   bool supportsMode(ServerFavoriteSyncMode mode) => switch (mode) {
-    ServerFavoriteSyncMode.importServer || ServerFavoriteSyncMode.mirrorServerToLocal => canFetch,
+    ServerFavoriteSyncMode.importServer => canFetch,
     ServerFavoriteSyncMode.exportLocal => canAdd,
-    ServerFavoriteSyncMode.twoWayMerge => canFetch && canAdd,
-    ServerFavoriteSyncMode.mirrorLocalToServer => canFetch && canAdd && canRemove && isDestructiveMirrorAllowed,
+    ServerFavoriteSyncMode.twoWayMerge => canFetch && canEnumerateAll && canAdd,
+    ServerFavoriteSyncMode.mirrorServerToLocal => canFetch && canEnumerateAll && isDestructiveMirrorAllowed,
+    ServerFavoriteSyncMode.mirrorLocalToServer =>
+      canFetch && canEnumerateAll && canAdd && canRemove && isDestructiveMirrorAllowed,
   };
+
+  bool usesServerSnapshot(ServerFavoriteSyncMode mode) =>
+      canFetch && (mode != ServerFavoriteSyncMode.exportLocal || canEnumerateAll);
 }
 
 class ServerFavoriteEntry {
@@ -75,16 +84,19 @@ class ServerFavoriteMutationResult {
     required this.message,
     this.statusCode,
     this.canRetryAfterWebview = false,
+    this.accountIdentity,
   });
 
   factory ServerFavoriteMutationResult.success({
     String message = 'OK',
     int? statusCode,
+    String? accountIdentity,
   }) {
     return ServerFavoriteMutationResult(
       success: true,
       message: message,
       statusCode: statusCode,
+      accountIdentity: accountIdentity,
     );
   }
 
@@ -105,6 +117,7 @@ class ServerFavoriteMutationResult {
   final String message;
   final int? statusCode;
   final bool canRetryAfterWebview;
+  final String? accountIdentity;
 
   static ServerFavoriteMutationResult get unsupported => ServerFavoriteMutationResult(
     success: false,
@@ -113,34 +126,49 @@ class ServerFavoriteMutationResult {
 }
 
 class ServerFavoritesDiff {
-  const ServerFavoritesDiff({
-    required this.localById,
-    required this.serverById,
-  });
+  ServerFavoritesDiff({required this.localUrlsById, required this.serverIds});
 
-  final Map<String, BooruItem> localById;
-  final Map<String, BooruItem> serverById;
+  final Map<String, Set<String>> localUrlsById;
+  final Set<String> serverIds;
 
-  Set<String> get localIds => localById.keys.toSet();
-  Set<String> get serverIds => serverById.keys.toSet();
-  Set<String> get matchedIds => localIds.intersection(serverIds);
-  Set<String> get localOnlyIds => localIds.difference(serverIds);
-  Set<String> get serverOnlyIds => serverIds.difference(localIds);
-
-  List<BooruItem> localOnlyItems() => localOnlyIds.map((id) => localById[id]).whereType<BooruItem>().toList();
-  List<BooruItem> serverOnlyItems() => serverOnlyIds.map((id) => serverById[id]).whereType<BooruItem>().toList();
+  // Snapshot membership never changes. Compute differences once, not on every rebuild.
+  late final Set<String> localIds = localUrlsById.keys.toSet();
+  late final Set<String> localOnlyIds = localIds.difference(serverIds);
+  late final Set<String> serverOnlyIds = serverIds.difference(localIds);
+  int get matched => localIds.length - localOnlyIds.length;
 }
 
 class ServerFavoritesSyncPreview {
-  const ServerFavoritesSyncPreview({
+  ServerFavoritesSyncPreview({
     required this.diff,
     required this.mode,
+    required this.sourceIdentity,
+    this.acknowledgedExports = const {},
+    this.exportAccountIdentity,
   });
 
   final ServerFavoritesDiff diff;
   final ServerFavoriteSyncMode mode;
+  final String sourceIdentity;
+  final Set<String> acknowledgedExports;
+  final String? exportAccountIdentity;
+  late final Set<String> serverAddIds = diff.localOnlyIds.difference(acknowledgedExports);
 
-  int get matched => diff.matchedIds.length;
+  bool sameSnapshot(ServerFavoritesSyncPreview other) {
+    bool sameSet(Set<String> a, Set<String> b) => a.length == b.length && a.containsAll(b);
+    return mode == other.mode &&
+        sourceIdentity == other.sourceIdentity &&
+        sameSet(diff.localIds, other.diff.localIds) &&
+        sameSet(diff.serverIds, other.diff.serverIds) &&
+        sameSet(
+          diff.localUrlsById.values.expand((urls) => urls).toSet(),
+          other.diff.localUrlsById.values.expand((urls) => urls).toSet(),
+        );
+  }
+
+  bool get hasChanges => addLocal + addServer + removeLocal + removeServer > 0;
+
+  int get matched => diff.matched;
   int get localOnly => diff.localOnlyIds.length;
   int get serverOnly => diff.serverOnlyIds.length;
 
@@ -161,7 +189,7 @@ class ServerFavoritesSyncPreview {
       case ServerFavoriteSyncMode.exportLocal:
       case ServerFavoriteSyncMode.twoWayMerge:
       case ServerFavoriteSyncMode.mirrorLocalToServer:
-        return localOnly;
+        return serverAddIds.length;
       case ServerFavoriteSyncMode.importServer:
       case ServerFavoriteSyncMode.mirrorServerToLocal:
         return 0;
@@ -182,31 +210,17 @@ class ServerFavoritesSyncResult {
   int removedServer = 0;
   int failed = 0;
   bool cancelled = false;
+  final Set<String> confirmedServerAdds = {};
+  String? exportAccountIdentity;
+  int get remaining =>
+      preview.addLocal +
+      preview.addServer +
+      preview.removeLocal +
+      preview.removeServer -
+      addedLocal -
+      addedServer -
+      removedLocal -
+      removedServer;
+
   final List<String> errors = [];
-  final List<ServerFavoritesSyncFailure> failures = [];
-}
-
-enum ServerFavoritesSyncFailureOperation {
-  addLocal,
-  addServer,
-  removeLocal,
-  removeServer,
-}
-
-class ServerFavoritesSyncFailure {
-  const ServerFavoritesSyncFailure({
-    required this.operation,
-    required this.message,
-    this.item,
-    this.serverId,
-  });
-
-  final ServerFavoritesSyncFailureOperation operation;
-  final String message;
-  final BooruItem? item;
-  final String? serverId;
-
-  String get target => serverId ?? item?.serverId ?? item?.postURL ?? '?';
-
-  String get logLine => '${operation.name}: $target - $message';
 }
