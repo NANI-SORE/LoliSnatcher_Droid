@@ -156,6 +156,10 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       await searchHandler.restoreTabs();
     });
 
+    if (mounted && settingsHandler.isPostInit.value && searchHandler.canBackup.value) {
+      unawaited(AutoBackupService().runIfDueSafely());
+    }
+
     SX.isDebug.state.effectiveNotifier.addListener(devOverlayListener);
   }
 
@@ -540,7 +544,6 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     // consider app launch as return to the app
     WidgetsBinding.instance.addObserver(this);
     localAuthHandler.onReturn();
-    unawaited(autoBackupService.runIfDueSafely());
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_offerPerformanceSettingsAfterCrash());
@@ -719,7 +722,10 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       case AppLifecycleState.resumed:
         // check if app needs to be locked when user returns to the app
         localAuthHandler.onReturn();
-        unawaited(autoBackupService.runIfDueSafely());
+        // The launch check runs after restoration; early resumes must not compete with it.
+        if (settingsHandler.isPostInit.value && searchHandler.canBackup.value) {
+          unawaited(autoBackupService.runIfDueSafely());
+        }
         break;
     }
   }

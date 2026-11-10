@@ -155,13 +155,50 @@ class DBHandler {
     return false;
   }
 
-  Future<bool> createIndexes() async {
-    await db?.execute('CREATE INDEX IF NOT EXISTS BooruItem_postURL_index ON BooruItem (postURL);');
-    await db?.execute('CREATE INDEX IF NOT EXISTS Tag_name_index ON Tag (name);');
-    await db?.execute('CREATE INDEX IF NOT EXISTS ImageTag_tagID_index ON ImageTag (tagID);');
-    await db?.execute('CREATE INDEX IF NOT EXISTS ImageTag_booruItemID_index ON ImageTag (booruItemID);');
-    await db?.execute('CREATE INDEX IF NOT EXISTS BooruItem_fav_id_idx ON BooruItem(id) WHERE isFavourite = 1;');
-    await db?.execute('CREATE INDEX IF NOT EXISTS BooruItem_snatched_id_idx ON BooruItem(id) WHERE isSnatched = 1;');
+  Future<bool> createIndexes({VoidCallback? onCreate}) async {
+    final database = db;
+    if (database == null) return false;
+    const indexes = {
+      'BooruItem_postURL_index': 'BooruItem (postURL)',
+      'Tag_name_index': 'Tag (name)',
+      'ImageTag_tagID_index': 'ImageTag (tagID)',
+      'ImageTag_booruItemID_index': 'ImageTag (booruItemID)',
+      'BooruItem_fav_id_idx': 'BooruItem(id) WHERE isFavourite = 1',
+      'BooruItem_snatched_id_idx': 'BooruItem(id) WHERE isSnatched = 1',
+    };
+    final timer = Stopwatch()..start();
+    Logger.Inst().log('Checking database indexes', 'DBHandler', 'createIndexes', LogTypes.settingsLoad);
+    final before = await database.rawQuery("SELECT name FROM sqlite_master WHERE type = 'index' ORDER BY name");
+    final existing = before.map((row) => row['name']! as String).toSet();
+    final missing = indexes.entries.where((entry) => !existing.contains(entry.key)).toList();
+    Logger.Inst().log(
+      'Database indexes before: ${existing.join(', ')}; missing: ${missing.map((entry) => entry.key).join(', ')}; '
+          'check took ${timer.elapsedMilliseconds}ms',
+      'DBHandler',
+      'createIndexes',
+      LogTypes.settingsLoad,
+    );
+    if (missing.isNotEmpty) onCreate?.call();
+    for (final index in missing) {
+      final createTimer = Stopwatch()..start();
+      Logger.Inst().log('Creating index ${index.key}', 'DBHandler', 'createIndexes', LogTypes.settingsLoad);
+      await database.execute('CREATE INDEX IF NOT EXISTS ${index.key} ON ${index.value};');
+      Logger.Inst().log(
+        'Index ${index.key} ready in ${createTimer.elapsedMilliseconds}ms',
+        'DBHandler',
+        'createIndexes',
+        LogTypes.settingsLoad,
+      );
+    }
+    final after = missing.isEmpty
+        ? before
+        : await database.rawQuery("SELECT name FROM sqlite_master WHERE type = 'index' ORDER BY name");
+    Logger.Inst().log(
+      'Database indexes after: ${after.map((row) => row['name']).join(', ')}; total ${timer.elapsedMilliseconds}ms',
+      'DBHandler',
+      'createIndexes',
+      LogTypes.settingsLoad,
+    );
     return true;
   }
 

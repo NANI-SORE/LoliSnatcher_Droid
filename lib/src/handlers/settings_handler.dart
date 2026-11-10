@@ -210,8 +210,12 @@ class SettingsHandler {
       if (!Tools.isTestMode) {
         if (SX.dbEnabled.value) {
           if (SX.indexesEnabled.value) {
-            postInitMessage.value = '${loc.settings.database.indexingDatabase}...\n${loc.thisMayTakeSomeTime}';
-            await dbHandler.createIndexes();
+            postInitMessage.value = '${loc.settings.database.indexingDatabase}...';
+            await dbHandler.createIndexes(
+              onCreate: () {
+                postInitMessage.value = '${loc.settings.database.indexingDatabase}...\n${loc.thisMayTakeSomeTime}';
+              },
+            );
           } else {
             postInitMessage.value = '${loc.settings.database.droppingIndexes}...\n${loc.thisMayTakeSomeTime}';
             await dbHandler.dropIndexes();
