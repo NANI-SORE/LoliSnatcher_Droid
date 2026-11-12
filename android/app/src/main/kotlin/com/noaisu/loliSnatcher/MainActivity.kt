@@ -40,6 +40,18 @@ import java.util.*
 import java.util.concurrent.Executors
 
 class MainActivity: FlutterFragmentActivity() {
+    override fun onResume() {
+        super.onResume()
+        DownloadHost.openFromIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        DownloadHost.openFromIntent(intent)
+    }
+
+
     private val localNetworkPermissionRequestCode = 3701
     private var localNetworkPermissionResult: MethodChannel.Result? = null
 
@@ -74,6 +86,7 @@ class MainActivity: FlutterFragmentActivity() {
     @SuppressLint("WrongThread")
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        DownloadHost.attach(applicationContext, flutterEngine)
         val servicesChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SERVICES_CHANNEL)
         servicesChannel.setMethodCallHandler { call, result ->
             try {
