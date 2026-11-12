@@ -9,6 +9,7 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/local_network_permission.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
+import 'package:lolisnatcher/src/utils/request_scope.dart';
 
 class DioNetwork {
   DioNetwork._();
@@ -38,6 +39,8 @@ class DioNetwork {
     String? baseUrl,
     bool skipLogging = false,
   }) {
+    final scoped = RequestScope.current;
+    if (scoped != null) return scoped.client()..options.baseUrl = baseUrl ?? '';
     final dio = Dio();
 
     final settingsHandler = SettingsHandler.instance;
@@ -113,6 +116,7 @@ class DioNetwork {
   }
 
   static Dio captchaInterceptor(Dio client, {String? customUserAgent}) {
+    if (RequestScope.current != null) return client;
     client.interceptors.add(
       InterceptorsWrapper(
         onResponse: (Response response, ResponseInterceptorHandler handler) async {

@@ -35,6 +35,7 @@ import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/http_overrides.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
+import 'package:lolisnatcher/src/utils/request_scope.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/data/settings/all_settings.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
@@ -48,11 +49,12 @@ export 'package:lolisnatcher/gen/strings.g.dart';
 
 /// This class is used loading from and writing settings to files
 class SettingsHandler {
-  SettingsHandler() {
-    setSettingsSaveScheduler(scheduleSettingsSave);
+  SettingsHandler({bool background = false}) {
+    if (!background) setSettingsSaveScheduler(scheduleSettingsSave);
   }
 
-  static SettingsHandler get instance => GetIt.instance<SettingsHandler>();
+  static SettingsHandler get instance =>
+      RequestScope.current?.settings as SettingsHandler? ?? GetIt.instance<SettingsHandler>();
 
   static SettingsHandler register() {
     if (!GetIt.instance.isRegistered<SettingsHandler>()) {
@@ -69,6 +71,7 @@ class SettingsHandler {
   }
 
   DBHandler dbHandler = DBHandler();
+  VoidCallback? onDownloadConfigurationChanged;
 
   late Alice alice;
 
@@ -252,6 +255,7 @@ class SettingsHandler {
 
     final File settingsFile = File('${path}settings.json');
     await _writeJsonAtomically(settingsFile, json);
+    onDownloadConfigurationChanged?.call();
 
     if (restate) {
       final searchHandler = SearchHandler.instance;
@@ -485,6 +489,7 @@ class SettingsHandler {
 
     booruList.value = tempList;
     booruListVersion++;
+    onDownloadConfigurationChanged?.call();
 
     if (tempList.isNotEmpty) {
       unawaited(sortBooruList());
@@ -643,6 +648,7 @@ class SettingsHandler {
     await Directory(boorusPath).create(recursive: true);
     final File booruFile = File('$boorusPath${booru.name}.json');
     await _writeJsonAtomically(booruFile, booru.toJson());
+    onDownloadConfigurationChanged?.call();
 
     if (!onlySave) {
       // used only to avoid duplication after migration to json format
@@ -773,6 +779,7 @@ class SettingsHandler {
     }
     booruList.remove(booru);
     booruListVersion++;
+    onDownloadConfigurationChanged?.call();
     unawaited(sortBooruList());
     return true;
   }

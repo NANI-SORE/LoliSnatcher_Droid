@@ -10,6 +10,7 @@ import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:lolisnatcher/src/widgets/common/compact_error_widget.dart';
+import 'package:lolisnatcher/src/utils/request_scope.dart';
 import 'package:talker/talker.dart';
 import 'package:talker_dio_logger/talker_dio_logger.dart';
 // ignore: implementation_imports
@@ -22,6 +23,7 @@ class Logger {
 
   // ignore: non_constant_identifier_names
   static Logger Inst() {
+    if (RequestScope.current?.headless == true) return _loggerInstance ??= Logger();
     final bool isInit = _loggerInstance == null;
 
     _loggerInstance ??= Logger();
@@ -108,6 +110,9 @@ class Logger {
     LogTypes? logType, {
     StackTrace? s,
   }) {
+    // Download diagnostics are persisted as classified, redacted task errors.
+    // Existing site parsers sometimes log credentials in headers and URLs.
+    if (RequestScope.current != null) return;
     String logStr = '';
     try {
       logStr = object is String ? object : '$object';

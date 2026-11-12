@@ -25,6 +25,7 @@ import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
+import 'package:lolisnatcher/src/utils/request_scope.dart';
 
 // TODO better naming for some functions (i.e. Search => getSearch or smth like that)
 
@@ -50,12 +51,18 @@ abstract class BooruHandler {
   /// Merged searches override this to retain each item's source settings.
   Booru sourceBooruFor(BooruItem item) => booru;
 
-  bool Function(BooruItem) _itemFilterFor(Booru source) {
+  bool Function(BooruItem) _itemFilterFor(Booru source, {Booru? traversal}) {
     final filterHated = SX.filterHated.valueForBooru(source.name);
     final filterMarked = SX.filterMarked.valueForBooru(source.name);
     final filterAi = SX.filterAi.valueForBooru(source.name);
-    final filterFavourites = SX.filterFavourites.valueForBooru(source.name) && source.type?.isFavourites != true;
-    final filterSnatched = SX.filterSnatched.valueForBooru(source.name) && source.type?.isDownloads != true;
+    final filterFavourites =
+        SX.filterFavourites.valueForBooru(source.name) &&
+        source.type?.isFavourites != true &&
+        traversal?.type?.isFavourites != true;
+    final filterSnatched =
+        SX.filterSnatched.valueForBooru(source.name) &&
+        source.type?.isDownloads != true &&
+        traversal?.type?.isDownloads != true;
 
     return (item) =>
         ContentPolicy.isItemAllowed(source, item) &&
@@ -65,6 +72,9 @@ abstract class BooruHandler {
         !(filterFavourites && item.isFavourite.value == true) &&
         !(filterSnatched && item.isSnatched.value == true);
   }
+
+  bool eligibleForDownload(BooruItem item, {Booru? source, Booru? traversal}) =>
+      _itemFilterFor(source ?? booru, traversal: traversal)(item);
 
   /// Filters the list of fetched items and stores them in filteredFetched
   ///
@@ -129,6 +139,30 @@ abstract class BooruHandler {
     return true;
   }
 
+  // Fetches one page without changing the browsing accumulator. Errors escape
+  // so a durable discovery checkpoint is never advanced on a failed request.
+  Future<List<BooruItem>> fetchDownloadPage(String query, int page) async {
+    pageNum = page;
+    if (!await searchSetup()) throw StateError('authentication');
+    final tags = validateTags(query.trim());
+    final uri = Uri.parse(makeURL(tags));
+    final response = await fetchSearch(uri, tags, withCaptchaCheck: false);
+    DioNetwork.throwIfCancelled();
+    if (response.statusCode != 200) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        response: response,
+        type: DioExceptionType.badResponse,
+      );
+    }
+    if (response.data is String && (response.data as String).contains('Missing authentication')) {
+      throw StateError('authentication');
+    }
+    final items = await parseSearchPage(response);
+    DioNetwork.throwIfCancelled();
+    return items;
+  }
+
   /// This function will call a http request using the tags and pagenumber parsed to it
   /// it will then create a list of booruItems
   Future search(String tags, int? pageNumCustom, {bool withCaptchaCheck = true}) async {
@@ -191,7 +225,7 @@ abstract class BooruHandler {
         }
 
         // parse response data
-        final List<BooruItem> newItems = await parseResponse(response);
+        final List<BooruItem> newItems = await parseSearchPage(response);
         DioNetwork.throwIfCancelled();
         await afterParseResponse(newItems);
 
@@ -269,6 +303,9 @@ abstract class BooruHandler {
     return null;
   }
 
+  // Shared boundary before browsing accumulation and its tracked-value hooks.
+  Future<List<BooruItem>> parseSearchPage(Response<dynamic> response) async => await parseResponse(response);
+
   FutureOr<List<BooruItem>> parseResponse(dynamic response) async {
     List posts = [];
     try {
@@ -297,6 +334,7 @@ abstract class BooruHandler {
             newItems.add(item);
           }
         } catch (e, s) {
+          if (RequestScope.current != null) rethrow;
           Logger.Inst().log(
             '$e $post',
             className,
@@ -779,12 +817,14 @@ abstract class BooruHandler {
   }
 
   void addTagsWithType(List<String> tags, TagType type) {
+    if (RequestScope.current != null) return;
     TagHandler.instance.addTagsWithType(tags, type);
   }
 
   bool get shouldPopulateTags => false;
 
   Future<void> populateTagHandler(List<BooruItem> items) async {
+    if (RequestScope.current != null) return;
     final List<String> unTyped = [];
     for (int x = 0; x < items.length; x++) {
       for (int i = 0; i < items[x].tagsList.length; i++) {
