@@ -1,16 +1,38 @@
 import Flutter
 import Photos
 import UIKit
+import UserNotifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private var servicesChannel: FlutterMethodChannel?
 
+  override func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void) {
+    if response.notification.request.content.userInfo["downloads"] as? Bool == true {
+      DownloadBackend.shared.openNotification(response.notification.request.content.userInfo)
+      completionHandler()
+    } else {
+      super.userNotificationCenter(center, didReceive: response, withCompletionHandler: completionHandler)
+    }
+  }
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    DownloadBackend.shared.launch()
+    UNUserNotificationCenter.current().delegate = self
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  override func application(_ application: UIApplication,
+    handleEventsForBackgroundURLSession identifier: String, completionHandler: @escaping () -> Void) {
+    if identifier == DownloadBackend.sessionIdentifier {
+      DownloadBackend.shared.handleEvents(completionHandler)
+    } else {
+      super.application(application, handleEventsForBackgroundURLSession: identifier, completionHandler: completionHandler)
+    }
   }
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
@@ -25,6 +47,7 @@ import UIKit
       binaryMessenger: registrar.messenger()
     )
     servicesChannel?.setMethodCallHandler(handleServicesCall)
+    DownloadBackend.shared.attach(registrar.messenger())
   }
 
   private func handleServicesCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {

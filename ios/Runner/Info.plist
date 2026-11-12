@@ -40,6 +40,10 @@
 	</array>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>LoliSnatcher saves downloaded images and videos to your photo library.</string>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER).downloads.discovery.*</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
