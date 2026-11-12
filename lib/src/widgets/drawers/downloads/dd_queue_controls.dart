@@ -1,103 +1,56 @@
 import 'package:flutter/material.dart';
 
-import 'package:get/get.dart';
-
-import 'package:lolisnatcher/gen/strings.g.dart';
-import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
+import 'package:lolisnatcher/src/downloads/download_localizations.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_controller.dart';
 
-class DDQueueControls extends StatelessWidget {
-  const DDQueueControls({
-    required this.controller,
-    super.key,
-  });
-
+class DDQueueControls extends StatefulWidget {
+  const DDQueueControls({required this.controller, super.key});
   final DownloadsDrawerController controller;
+  @override
+  State<DDQueueControls> createState() => _DDQueueControlsState();
+}
+
+class _DDQueueControlsState extends State<DDQueueControls> {
+  bool _busy = false;
+  bool _failed = false;
+
+  Future<void> _command(String command) async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _failed = false;
+    });
+    try {
+      await widget.controller.snatchHandler.command(command);
+    } catch (_) {
+      if (mounted) setState(() => _failed = true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
-  Widget build(BuildContext context) {
-    final snatchHandler = controller.snatchHandler;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Pause/Resume button
-        Obx(
-          () => AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            alignment: Alignment.bottomCenter,
-            child: snatchHandler.queuedList.isEmpty
-                ? const SizedBox.shrink()
-                : SettingsButton(
-                    drawBottomBorder: false,
-                    drawTopBorder: true,
-                    action: () {
-                      if (snatchHandler.active.value) {
-                        snatchHandler.active.value = false;
-                      } else {
-                        if (snatchHandler.current.value == null) {
-                          snatchHandler.trySnatch();
-                        } else {
-                          snatchHandler.active.value = true;
-                        }
-                      }
-                    },
-                    icon: snatchHandler.active.value ? const Icon(Icons.pause) : const Icon(Icons.play_arrow),
-                    name: snatchHandler.active.value ? context.loc.pause : context.loc.resume,
-                    subtitle: snatchHandler.active.value
-                        ? Text('(${context.loc.settings.downloads.fromNextItemInQueue})')
-                        : null,
-                  ),
-          ),
-        ),
-        // Retry All button
-        Obx(
-          () => AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            alignment: Alignment.bottomCenter,
-            child:
-                snatchHandler.active.value ||
-                    (snatchHandler.existsItems.isEmpty &&
-                        snatchHandler.failedItems.isEmpty &&
-                        snatchHandler.cancelledItems.isEmpty)
-                ? const SizedBox.shrink()
-                : SettingsButton(
-                    drawBottomBorder: false,
-                    drawTopBorder: true,
-                    action: () => controller.onRetryAllFailed(false),
-                    onLongPress: () => controller.onRetryAllFailed(true),
-                    icon: const Icon(Icons.refresh),
-                    name: context.loc.mobileHome.retryAll(
-                      count:
-                          snatchHandler.existsItems.length +
-                          snatchHandler.failedItems.length +
-                          snatchHandler.cancelledItems.length,
-                    ),
-                    subtitle: Text(context.loc.mobileHome.existingFailedOrCancelledItems),
-                  ),
-          ),
-        ),
-        // Clear Retryable Items button
-        Obx(
-          () => AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            alignment: Alignment.bottomCenter,
-            child:
-                snatchHandler.active.value ||
-                    (snatchHandler.existsItems.isEmpty &&
-                        snatchHandler.failedItems.isEmpty &&
-                        snatchHandler.cancelledItems.isEmpty)
-                ? const SizedBox.shrink()
-                : SettingsButton(
-                    drawBottomBorder: false,
-                    drawTopBorder: true,
-                    action: snatchHandler.onClearRetryableItems,
-                    icon: const Icon(Icons.delete_forever),
-                    name: context.loc.mobileHome.clearAllRetryableItems,
-                  ),
-          ),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      if (_busy) const LinearProgressIndicator(),
+      if (_failed) Padding(padding: const EdgeInsets.all(8), child: Text(downloadText('actionError'))),
+      Wrap(
+        alignment: WrapAlignment.center,
+        children: [
+          for (final action in const [
+            ('pause', 'pauseAll', Icons.pause),
+            ('resume', 'resume', Icons.play_arrow),
+            ('retry', 'retry', Icons.refresh),
+            ('clear', 'clearHistory', Icons.history),
+          ])
+            TextButton.icon(
+              onPressed: _busy ? null : () => _command(action.$1),
+              icon: Icon(action.$3),
+              label: Text(downloadText(action.$2)),
+            ),
+        ],
+      ),
+    ],
+  );
 }

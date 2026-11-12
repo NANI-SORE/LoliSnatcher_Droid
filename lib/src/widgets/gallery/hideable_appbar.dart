@@ -482,9 +482,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
 
         final item = widget.tab.booruHandler.filteredFetched[page.value];
         return Obx(() {
-          final bool isBeingSnatched =
-              snatchHandler.current.value?.booruItems[snatchHandler.queueProgress.value] == item &&
-              snatchHandler.total.value != 0;
+          final bool isBeingSnatched = snatchHandler.isActiveItem(item) && snatchHandler.total.value != 0;
 
           if (!isBeingSnatched) {
             return const SizedBox.shrink();
@@ -597,7 +595,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
           if (!await setPermissions()) return;
 
           // call a function to save the currently viewed image when the save button is pressed
-          snatchHandler.queue(
+          final saved = await snatchHandler.queue(
             [item],
             widget.tab.booruHandler.booru,
             SX.snatchCooldown.value,
@@ -605,6 +603,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
             sourceFor: widget.tab.booruHandler.sourceBooruFor,
             useSourceCooldown: true,
           );
+          if (!saved) return;
           if (widget.tab.shouldFavouriteOnSnatch(item)) {
             await widget.tab.toggleItemFavourite(
               page.value,
@@ -712,7 +711,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
                       onTap: () async {
                         if (!await setPermissions()) return;
 
-                        snatchHandler.queue(
+                        final saved = await snatchHandler.queue(
                           [item],
                           widget.tab.booruHandler.booru,
                           SX.snatchCooldown.value,
@@ -720,6 +719,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
                           sourceFor: widget.tab.booruHandler.sourceBooruFor,
                           useSourceCooldown: true,
                         );
+                        if (!saved) return;
                         if (widget.tab.shouldFavouriteOnSnatch(item)) {
                           await widget.tab.toggleItemFavourite(
                             page.value,

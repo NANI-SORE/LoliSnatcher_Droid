@@ -80,19 +80,27 @@ class _MainAppBarState extends State<MainAppBar> {
               alignment: Alignment.center,
               clipBehavior: Clip.none,
               children: [
+                if (snatchHandler.attention.value > 0)
+                  const Positioned(right: -3, top: -3, child: Icon(Icons.error, size: 16, color: Colors.orange)),
                 Obx(() {
-                  if (snatchHandler.active.value == false || snatchHandler.current.value == null) {
+                  if (snatchHandler.active.value == false) {
                     return const SizedBox.shrink();
                   }
 
-                  final double singleToTotalProgress = 1 / snatchHandler.current.value!.booruItems.length;
-                  final double currentCompleteProgress = snatchHandler.queueProgress.value * singleToTotalProgress;
-
-                  final double downloadProgress = snatchHandler.currentProgress;
-                  final double downloadToTotalProgress = singleToTotalProgress * downloadProgress;
-
+                  final counts = snatchHandler.summary;
+                  final done = (counts['completed'] as int? ?? 0) + (counts['skipped'] as int? ?? 0);
+                  final pending = [
+                    'queued',
+                    'prepared',
+                    'transferring',
+                    'finalizing',
+                    'waitingNetwork',
+                    'waitingRate',
+                  ].fold(0, (sum, state) => sum + (counts[state] as int? ?? 0));
                   return CircularProgressIndicator(
-                    value: currentCompleteProgress + downloadToTotalProgress,
+                    value: (counts['discovery'] as int? ?? 0) > 0 || done + pending == 0
+                        ? null
+                        : done / (done + pending),
                   );
                 }),
                 IconButton(

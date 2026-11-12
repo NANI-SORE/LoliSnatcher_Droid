@@ -21,7 +21,6 @@ class DDControlPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final settingsHandler = controller.settingsHandler;
     final searchHandler = controller.searchHandler;
-    final snatchHandler = controller.snatchHandler;
 
     return Stack(
       children: [
@@ -32,7 +31,7 @@ class DDControlPanel extends StatelessWidget {
             child: (settingsHandler.booruList.isNotEmpty && searchHandler.tabs.isNotEmpty)
                 ? ConstrainedBox(
                     constraints: BoxConstraints(
-                      maxHeight: MediaQuery.sizeOf(context).height * (snatchHandler.queuedList.isEmpty ? 0.7 : 0.5),
+                      maxHeight: MediaQuery.sizeOf(context).height * 0.4,
                     ),
                     child: Material(
                       color: Colors.transparent,

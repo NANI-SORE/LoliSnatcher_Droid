@@ -1110,8 +1110,8 @@ void registerAllSettings() {
   registry.register(
     intSetting(
       key: .snatchCooldown,
-      getDefaultValue: () => 250,
-      min: 0,
+      getDefaultValue: () => 1000,
+      min: 1000,
       max: 10000,
       step: 50,
       categories: [SettingCategory.cache],

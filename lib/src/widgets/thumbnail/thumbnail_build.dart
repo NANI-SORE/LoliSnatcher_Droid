@@ -361,7 +361,7 @@ class _ThumbnailBottomRightIcons extends StatelessWidget {
       final bool isSnatched = item.isSnatched.value == true;
 
       final bool isInQueueToBeSnatched = snatchHandler.currentItemKeys.contains(item.key);
-      final bool isCurrentlyBeingSnatched = snatchHandler.activeItem.value == item;
+      final bool isCurrentlyBeingSnatched = snatchHandler.isActiveItem(item);
 
       int bottomRightAmount = 0;
       if (isFavOrMarked) bottomRightAmount += 1;
