@@ -1,0 +1,60 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "NSFaceIDUsageDescription": {
+      "comment": "Generated from assets/i18n/*.json (ios(ignoreUnused)). Edit the JSON sources, then run loc_build.dart.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock LoliSnatcher with Face ID."
+          }
+        },
+        "ru-RU": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разблокировка LoliSnatcher с помощью Face ID."
+          }
+        }
+      }
+    },
+    "NSLocalNetworkUsageDescription": {
+      "comment": "Generated from assets/i18n/*.json (ios(ignoreUnused)). Edit the JSON sources, then run loc_build.dart.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share app data between devices."
+          }
+        },
+        "ru-RU": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Передача данных между устройствами."
+          }
+        }
+      }
+    },
+    "NSPhotoLibraryAddUsageDescription": {
+      "comment": "Generated from assets/i18n/*.json (ios(ignoreUnused)). Edit the JSON sources, then run loc_build.dart.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save downloaded images and videos to Photos."
+          }
+        },
+        "ru-RU": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохранение изображений и видео в Фото."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

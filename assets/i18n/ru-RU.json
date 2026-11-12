@@ -2,6 +2,11 @@
     "locale": "ru-RU",
     "localeName": "Русский",
     "appName": "LoliSnatcher",
+    "ios(ignoreUnused)": {
+        "NSFaceIDUsageDescription": "Разблокировка LoliSnatcher с помощью Face ID.",
+        "NSPhotoLibraryAddUsageDescription": "Сохранение изображений и видео в Фото.",
+        "NSLocalNetworkUsageDescription": "Передача данных между устройствами."
+    },
     "error": "Ошибка",
     "errorExclamation": "Ошибка!",
     "success": "Успешно",

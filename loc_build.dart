@@ -3,13 +3,21 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'loc_ios.dart';
+
 Future<void> main(List<String> args) async {
-  if (args.any((arg) => arg != '--watch')) {
-    stderr.writeln('Usage: loc_build.dart [--watch]');
+  const allowed = {'--watch', '--ios-only', '--check-ios'};
+  if (args.any((arg) => !allowed.contains(arg)) || (args.contains('--check-ios') && args.length != 1)) {
+    stderr.writeln('Usage: loc_build.dart [--watch] [--ios-only] | --check-ios');
     exitCode = 64;
     return;
   }
-  exitCode = await buildLocalizations();
+  if (args.contains('--check-ios')) {
+    exitCode = await _buildIOS(check: true);
+    return;
+  }
+  final iosOnly = args.contains('--ios-only');
+  exitCode = await buildLocalizations(iosOnly: iosOnly);
   if (exitCode != 0 || !args.contains('--watch')) return;
 
   Timer? debounce;
@@ -20,7 +28,7 @@ Future<void> main(List<String> args) async {
     debounce = Timer(const Duration(milliseconds: 300), () {
       // Serialize generation, including edits received during a running build.
       pending = pending.then((_) async {
-        exitCode = await buildLocalizations();
+        exitCode = await buildLocalizations(iosOnly: iosOnly);
       });
     });
   }
@@ -47,7 +55,20 @@ Future<void> main(List<String> args) async {
   }
 }
 
-Future<int> buildLocalizations() async {
+Future<int> _buildIOS({bool check = false}) async {
+  try {
+    return await buildIOSLocalizations(check: check) ? 0 : 1;
+  } on FormatException catch (error) {
+    stderr.writeln(error.message);
+    return 65;
+  } on FileSystemException catch (error) {
+    stderr.writeln(error);
+    return 74;
+  }
+}
+
+Future<int> buildLocalizations({bool iosOnly = false}) async {
+  if (iosOnly) return _buildIOS();
   final status = await runSlang([]);
   if (status != 0) return status;
 
@@ -78,29 +99,14 @@ Future<int> buildLocalizations() async {
     return 65;
   }
   stdout.writeln('Adapted $replacements cardinal resolver calls to Intl.');
-  return 0;
+  return _buildIOS();
 }
 
 Future<int> runSlang(List<String> arguments) async {
-  final useFvm = await checkFvmAvailability();
   final process = await Process.start(
-    useFvm ? 'fvm' : 'dart',
-    [if (useFvm) 'dart', 'run', 'slang', ...arguments],
+    Platform.resolvedExecutable,
+    ['run', 'slang', ...arguments],
     mode: ProcessStartMode.inheritStdio,
-    runInShell: Platform.isWindows,
   );
   return process.exitCode;
-}
-
-Future<bool> checkFvmAvailability() async {
-  try {
-    final result = await Process.run(
-      'fvm',
-      ['--version'],
-      runInShell: Platform.isWindows,
-    );
-    return result.exitCode == 0;
-  } on ProcessException {
-    return false;
-  }
 }

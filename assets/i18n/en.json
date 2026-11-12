@@ -2,6 +2,11 @@
     "locale": "en-US",
     "localeName": "English",
     "appName": "LoliSnatcher",
+    "ios(ignoreUnused)": {
+        "NSFaceIDUsageDescription": "Unlock LoliSnatcher with Face ID.",
+        "NSPhotoLibraryAddUsageDescription": "Save downloaded images and videos to Photos.",
+        "NSLocalNetworkUsageDescription": "Share app data between devices."
+    },
     "error": "Error",
     "errorExclamation": "Error!",
     "success": "Success",
