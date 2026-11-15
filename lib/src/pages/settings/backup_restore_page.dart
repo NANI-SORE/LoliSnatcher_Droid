@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
+import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -137,6 +138,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
     Directory? recovery;
     bool closedDatabase = false;
     bool installed = false;
+    bool downloadsPaused = false;
     try {
       if (!await ServiceHandler.existsFileFromSAFDirectory(backupPath, 'store.db')) {
         showSnackbar(context.loc.settings.backupAndRestore.backupFileNotFound, isError: true);
@@ -153,6 +155,8 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
       await databaseBackupService.validate(staged);
       recovery = await Directory('${staging.path}/original').create();
       searchHandler.canBackup.value = false;
+      downloadsPaused = true;
+      await SnatchHandler.instance.suspendForRestore();
       closedDatabase = true;
       await settingsHandler.dbHandler.closeDb();
       await databaseBackupService.install(
@@ -192,6 +196,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
         await _removeStagingDirectory(staging);
       }
       if (!installed) {
+        if (downloadsPaused) await SnatchHandler.instance.finishRestore();
         searchHandler.canBackup.value =
             previousCanBackup && (!SX.dbEnabled.value || settingsHandler.dbHandler.db != null);
       }
@@ -415,7 +420,14 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                           }
 
                           await ServiceHandler.writeImage(
-                            await file.readAsBytes(),
+                            Uint8List.fromList(
+                              utf8.encode(
+                                jsonEncode({
+                                  ...jsonDecode(await file.readAsString()) as Map<String, dynamic>,
+                                  'downloadPresets': await SnatchHandler.instance.portablePresets(),
+                                }),
+                              ),
+                            ),
                             'settings',
                             'text/json',
                             'json',
@@ -623,12 +635,16 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                             'settings.json',
                           );
                           if (settingsFileBytes != null) {
+                            final restored = jsonDecode(utf8.decode(settingsFileBytes)) as Map<String, dynamic>;
+                            await SnatchHandler.instance.suspendForRestore();
                             final File newFile = File('${await ServiceHandler.getConfigDir()}settings.json');
                             if (!(await newFile.exists())) {
                               await newFile.create();
                             }
                             await newFile.writeAsBytes(settingsFileBytes);
                             await settingsHandler.loadSettingsJson();
+                            await SnatchHandler.instance.importPresets(restored['downloadPresets']);
+                            await SnatchHandler.instance.finishRestore();
                             if (SX.expandedSourceCompatibilityEnabled.value) {
                               await settingsHandler.saveSettings(restate: false);
                             }
@@ -647,6 +663,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                             context.loc.settings.backupAndRestore.restoreSettingsError,
                             isError: true,
                           );
+                          await SnatchHandler.instance.finishRestore();
                           Logger.Inst().log(
                             e.toString(),
                             'BackupRestorePage',

@@ -20,6 +20,7 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
+import 'package:lolisnatcher/src/utils/request_scope.dart';
 import 'package:lolisnatcher/src/widgets/dialogs/timed_leave_dialog.dart';
 import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
 
@@ -372,7 +373,35 @@ class Tools {
     return false;
   }
 
+  static Future<List<Map<String, dynamic>>> downloadCookies(String value) async {
+    if (!PlatformExt.hasWebviewSupport) return [];
+    final uri = WebUri(value);
+    final cookies = Platform.isWindows
+        ? globalWindowsCookies[uri.host] ?? <Cookie>[]
+        : Platform.isIOS
+        ? (await CookieManager.instance(webViewEnvironment: webViewEnvironment).getAllCookies()).where((cookie) {
+            final domain = (cookie.domain ?? '').replaceFirst(RegExp(r'^\.'), '');
+            return domain == uri.host || cookie.domain?.startsWith('.') == true && uri.host.endsWith('.$domain');
+          }).toList()
+        : await CookieManager.instance(webViewEnvironment: webViewEnvironment).getCookies(url: uri);
+    return cookies
+        .map(
+          (cookie) => <String, dynamic>{
+            'name': cookie.name,
+            'value': cookie.value.toString(),
+            'domain': (cookie.domain ?? uri.host).replaceFirst(RegExp(r'^\.'), ''),
+            'hostOnly': cookie.domain?.startsWith('.') != true,
+            'path': cookie.path ?? '/',
+            'secure': cookie.isSecure == true,
+            'expires': cookie.expiresDate ?? 0,
+          },
+        )
+        .toList();
+  }
+
   static Future<String> getCookies(String uri) async {
+    final scope = RequestScope.current;
+    if (scope != null) return scope.cookies(uri);
     String cookieString = '';
     if (PlatformExt.hasWebviewSupport) {
       try {
@@ -401,6 +430,8 @@ class Tools {
   }
 
   static Future<bool> saveCookies(String uri, List<String> cookies) async {
+    final scope = RequestScope.current;
+    if (scope != null) return scope.saveCookies(uri, cookies);
     if (cookies.isEmpty) return true;
 
     if (PlatformExt.hasWebviewSupport) {

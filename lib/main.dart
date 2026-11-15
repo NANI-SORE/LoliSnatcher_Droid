@@ -21,6 +21,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
+import 'package:lolisnatcher/src/downloads/download_runtime.dart';
 import 'package:lolisnatcher/src/data/theme_item.dart';
 import 'package:lolisnatcher/src/handlers/local_auth_handler.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
@@ -53,6 +54,9 @@ import 'package:lolisnatcher/src/widgets/root/image_stats.dart';
 import 'package:lolisnatcher/src/widgets/root/scroll_physics.dart';
 import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_migration_sheet.dart';
 import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
+
+@pragma('vm:entry-point')
+void downloadMain() => unawaited(runDownloadWorker());
 
 void main() async {
   CustomWidgetsBinding.ensureInitialized();
@@ -133,6 +137,12 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       settingsHandler.postInitMessage.value = loc.init.restoringTabs;
       await searchHandler.restoreTabs();
     });
+    try {
+      await snatchHandler.initialize();
+    } catch (_) {
+      snatchHandler.status.value = 'storage';
+      snatchHandler.attention.value = 1;
+    }
 
     if (migratedLegacyFilterCount > 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {

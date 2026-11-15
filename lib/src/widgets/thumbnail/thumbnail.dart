@@ -39,6 +39,7 @@ class Thumbnail extends StatelessWidget {
     this.useHero = true,
     this.allowOfflineLocalMedia = false,
     this.allowOfflineThumbnailGeneration = false,
+    this.forceThumbnail = false,
     super.key,
   });
 
@@ -51,6 +52,7 @@ class Thumbnail extends StatelessWidget {
   final bool useHero;
   final bool allowOfflineLocalMedia;
   final bool allowOfflineThumbnailGeneration;
+  final bool forceThumbnail;
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +77,7 @@ class Thumbnail extends StatelessWidget {
       isStandalone: isStandalone,
       allowOfflineLocalMedia: allowOfflineLocalMedia,
       allowOfflineThumbnailGeneration: allowOfflineThumbnailGeneration,
+      forceThumbnail: forceThumbnail,
     );
 
     if (isStandalone && useHero) {
@@ -103,12 +106,14 @@ class _ThumbnailImage extends StatefulWidget {
     required this.isStandalone,
     required this.allowOfflineLocalMedia,
     required this.allowOfflineThumbnailGeneration,
+    required this.forceThumbnail,
   });
 
   final BooruItem item;
   final Booru? booru;
   final TagFilterEvaluation filterEvaluation;
   final bool isStandalone;
+  final bool forceThumbnail;
 
   final bool allowOfflineLocalMedia;
   final bool allowOfflineThumbnailGeneration;
@@ -170,7 +175,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
         oldEvaluation.primaryMatch?.rule.updatedAt != evaluation.primaryMatch?.rule.updatedAt ||
         oldEvaluation.loadingFilterDetails != evaluation.loadingFilterDetails;
     // force redraw on tab change
-    if (oldWidget.item != widget.item || filterChanged) {
+    if (oldWidget.item != widget.item || filterChanged || oldWidget.forceThumbnail != widget.forceThumbnail) {
       _loadGeneration++;
       isBlurred = true;
       currentUrl = widget.item.thumbnailURL;
@@ -529,6 +534,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
     startedAt.value = DateTime.now().millisecondsSinceEpoch;
 
     isThumbQuality =
+        widget.forceThumbnail ||
         SX.previewMode.value.isThumbnail ||
         (widget.item.mediaType.value.isVideo ||
             widget.item.mediaType.value.isNeedToGuess ||

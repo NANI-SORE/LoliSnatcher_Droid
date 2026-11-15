@@ -1,389 +1,289 @@
+import 'package:lolisnatcher/src/downloads/download_localizations.dart';
+
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
 
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
-
-import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
+import 'package:path/path.dart' as p;
+import 'package:permission_handler/permission_handler.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
-import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
-import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/downloads/contracts.dart';
+import 'package:lolisnatcher/src/downloads/download_configuration.dart';
+import 'package:lolisnatcher/src/downloads/download_runtime.dart';
+import 'package:lolisnatcher/src/downloads/download_notices.dart';
+import 'package:lolisnatcher/src/downloads/download_store.dart';
+import 'package:lolisnatcher/src/downloads/transfer_preparation.dart';
+import 'package:lolisnatcher/src/handlers/database_handler.dart';
+import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
+import 'package:lolisnatcher/src/handlers/local_auth_handler.dart';
+import 'package:lolisnatcher/src/handlers/search_handler.dart';
+import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
-import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/services/saf_file_cache.dart';
+import 'package:lolisnatcher/src/utils/request_scope.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
-import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_build.dart';
+import 'package:lolisnatcher/src/widgets/common/inner_drawer.dart';
 
-class SnatchHandler {
-  SnatchHandler() {
-    queuedList.addListener(queuedListListener);
-  }
-
+/// Foreground compatibility adapter. Execution and recovery live in downloads/.
+class SnatchHandler with WidgetsBindingObserver {
   static SnatchHandler get instance => GetIt.instance<SnatchHandler>();
-
   static SnatchHandler register() {
     if (!GetIt.instance.isRegistered<SnatchHandler>()) {
-      GetIt.instance.registerSingleton(
-        SnatchHandler(),
-        dispose: (snatchHandler) => snatchHandler.dispose(),
-      );
+      GetIt.instance.registerSingleton(SnatchHandler(), dispose: (value) => value.dispose());
     }
     return instance;
   }
 
   static void unregister() => GetIt.instance.unregister<SnatchHandler>();
-
-  final RxBool active = false.obs;
-  final RxString status = ''.obs;
-  final RxInt queueProgress = 0.obs;
-  final Rx<SnatchItem?> current = Rx<SnatchItem?>(null);
-  final RxSet<Key> currentItemKeys = <Key>{}.obs;
-  final Rxn<BooruItem> activeItem = Rxn<BooruItem>();
-  final RxInt received = 0.obs;
-  final RxInt total = 0.obs;
-
-  final RxList<({BooruItem item, Booru booru})> existsItems = RxList([]);
-  final RxList<({BooruItem item, Booru booru})> failedItems = RxList([]);
-  final RxList<({BooruItem item, Booru booru})> cancelledItems = RxList([]);
-
-  CancelToken? cancelToken;
-  Timer? _progressStuckTimer;
-  bool _retryCurrentRequested = false;
-
-  double get currentProgress {
-    if (total.value == 0) return 0;
-    return received.value / total.value;
+  final active = false.obs;
+  final status = ''.obs;
+  final queueProgress = 0.obs;
+  final current = Rx<SnatchItem?>(null);
+  final currentItemKeys = <Key>{}.obs;
+  final activeItem = Rxn<BooruItem>();
+  final received = 0.obs;
+  final total = 0.obs;
+  final revision = 0.obs;
+  final attention = 0.obs;
+  final summary = <String, dynamic>{}.obs;
+  final focusedBatch = RxnString();
+  // Compatibility views stay bounded; persistent history is queried in pages.
+  final queuedList = <SnatchItem>[].obs;
+  final existsItems = <({BooruItem item, Booru booru})>[].obs;
+  final failedItems = <({BooruItem item, Booru booru})>[].obs;
+  final cancelledItems = <({BooruItem item, Booru booru})>[].obs;
+  DownloadStore? _store;
+  DownloadNotices? _notices;
+  DownloadRuntime? _runtime;
+  Timer? _poller;
+  Timer? _configurationTimer;
+  Future<void>? _initialization;
+  bool _polling = false, _foreground = true, _continued = false, _restoring = false;
+  bool _launchFailed = false;
+  String? _activeTaskId;
+  Future<void> _operations = Future<void>.value();
+  Future<T> _serialize<T>(Future<T> Function() operation) {
+    final next = _operations.then((_) => operation());
+    _operations = next.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    return next;
   }
 
-  final RxList<SnatchItem> queuedList = RxList<SnatchItem>([]);
+  Future<void> Function(PreparedTransfer, TransferReceipt)? onCompleted;
+  double get currentProgress => total.value <= 0 ? 0 : (received.value / total.value).clamp(0, 1);
+  bool isActiveItem(BooruItem item) => activeItem.value?.postURL == item.postURL;
+  Future<DownloadStore> get store async {
+    await initialize();
+    return _store!;
+  }
 
-  Stream<Map<String, int>> writeMultipleFake(List<BooruItem> items, Booru booru, int cooldown) async* {
-    int snatchedCounter = 0;
-    for (int i = 0; i < items.length; i++) {
-      await Future.delayed(const Duration(milliseconds: 2000), () async {});
-      snatchedCounter++;
-      yield {
-        'snatched': snatchedCounter,
-      };
+  Future<void> initialize() => _initialization ??= _initialize().catchError((Object error, StackTrace stack) async {
+    WidgetsBinding.instance.removeObserver(this);
+    _poller?.cancel();
+    await _runtime?.dispose();
+    _runtime = null;
+    await _store?.close();
+    _store = null;
+    _initialization = null;
+    Error.throwWithStackTrace(error, stack);
+  });
+
+  Future<void> _initialize() async {
+    final paths = await DownloadPaths.open();
+    _store = await DownloadStore.open(paths.database);
+    _notices = DownloadNotices(_store!);
+    final configuration = await DownloadConfiguration.capture();
+    await configuration.attachCookies(_store!.db, seed: true);
+    await configuration.save();
+    await _configureNative(configuration);
+    if (!Platform.isAndroid) {
+      _runtime = DownloadRuntime(_store!, paths, configuration, SettingsHandler.instance);
+      await _runtime!.start();
     }
-
-    yield {
-      'snatched': snatchedCounter,
-      'exists': 0,
-      'failed': 0,
-      'cancelled': 0,
-    };
-  }
-
-  void onProgress(int newReceived, int newTotal) {
-    final progressChanged = received.value != newReceived || total.value != newTotal;
-    received.value = newReceived;
-    total.value = newTotal;
-    final currentValue = current.value;
-    final progress = queueProgress.value;
-    activeItem.value = newTotal > 0 && currentValue != null && progress < currentValue.booruItems.length
-        ? currentValue.booruItems[progress]
-        : null;
-    if (progressChanged && cancelToken != null && !cancelToken!.isCancelled) {
-      _restartProgressStuckTimer();
+    WidgetsBinding.instance.addObserver(this);
+    if (Platform.isIOS) {
+      downloadPlatform.setMethodCallHandler((call) async {
+        if (call.method == 'discoveryContinued') _continued = true;
+        if (call.method == 'discoveryExpired') _continued = false;
+        _runtime?.foreground = _foreground || _continued;
+        if (call.method == 'openDownloads') focusedBatch.value = downloadMap(call.arguments)['batchId'] as String?;
+      });
     }
-  }
-
-  void onRemoveRetryItem(
-    ({BooruItem item, Booru booru}) record,
-  ) {
-    existsItems.remove(record);
-    failedItems.remove(record);
-    cancelledItems.remove(record);
-  }
-
-  void onClearRetryableItems() {
-    existsItems.clear();
-    failedItems.clear();
-    cancelledItems.clear();
-  }
-
-  Future<void> onRetryAll({
-    required int cooldown,
-    bool ignoreExists = false,
-  }) async {
-    final itemsToRetry = [...existsItems, ...failedItems, ...cancelledItems];
-    final Set<Booru> uniqueBoorus = itemsToRetry.map((i) => i.booru).toSet();
-    final Map<Booru, List<BooruItem>> booruItemsMap = {};
-    booruItemsMap.addEntries(uniqueBoorus.map((b) => MapEntry(b, [])));
-    for (int i = 0; i < itemsToRetry.length; i++) {
-      final BooruItem item = itemsToRetry[i].item;
-      final Booru booru = itemsToRetry[i].booru;
-      final List<BooruItem> items = booruItemsMap[booru]!;
-      items.add(item);
-      booruItemsMap[booru] = items;
-    }
-
-    final List<SnatchItem> snatchItems = [];
-    await Future.wait(
-      booruItemsMap.entries.map((entry) async {
-        final booru = entry.key;
-        final items = entry.value;
-        final booruHandler = BooruHandlerFactory().getBooruHandler([booru], 10).booruHandler;
-        if (booruHandler.hasLoadItemSupport) {
-          try {
-            // refetch data only on smaller-ish batches, otherwise they will most likely rate limit the user
-            if (items.length <= 20) {
-              for (final item in items) {
-                await booruHandler.loadItem(
-                  item: item,
-                  withCapcthaCheck: true,
-                );
-                await Future.delayed(const Duration(milliseconds: 100));
-              }
-            }
-          } catch (_) {}
-        }
-
-        snatchItems.add(
-          SnatchItem(
-            items,
-            cooldown,
-            booru,
-            ignoreExists || items.any((i) => existsItems.any((e) => e.item == i)),
-          ),
-        );
-      }),
-    );
-
-    queuedList.addAll(snatchItems);
-
-    onClearRetryableItems();
-  }
-
-  void onRetryItem(
-    ({BooruItem item, Booru booru}) record, {
-    required int cooldown,
-    bool ignoreExists = false,
-  }) {
-    queuedList.add(
-      SnatchItem(
-        [record.item],
-        cooldown,
-        record.booru,
-        ignoreExists,
-      ),
-    );
-
-    onRemoveRetryItem(record);
-  }
-
-  void onCancel() {
-    _stopProgressStuckTimer();
-    _retryCurrentRequested = false;
-    cancelToken?.cancel();
-  }
-
-  void onRetryCurrent() {
-    final token = cancelToken;
-    if (token == null || token.isCancelled) {
-      return;
-    }
-
-    _stopProgressStuckTimer();
-    _retryCurrentRequested = true;
-    received.value = 0;
-    total.value = 0;
-    token.cancel();
-  }
-
-  bool _consumeRetryCurrent() {
-    final retryCurrent = _retryCurrentRequested;
-    _retryCurrentRequested = false;
-    return retryCurrent;
-  }
-
-  void onCancelTokenCreate(CancelToken token) {
-    cancelToken = token;
-    _restartProgressStuckTimer();
-  }
-
-  void _restartProgressStuckTimer() {
-    _progressStuckTimer?.cancel();
-    _progressStuckTimer = Timer(
-      const Duration(seconds: 10),
-      () {
-        _progressStuckTimer = null;
-        onRetryCurrent();
-      },
-    );
-  }
-
-  void _stopProgressStuckTimer() {
-    _progressStuckTimer?.cancel();
-    _progressStuckTimer = null;
-  }
-
-  Future snatch(SnatchItem item) async {
-    status.value = queuedList.isNotEmpty
-        ? '0/${item.booruItems.length}/${queuedList.length}'
-        : '0/${item.booruItems.length}';
-    current.value = item;
-    currentItemKeys.assignAll(item.booruItems.map((booruItem) => booruItem.key));
-
-    // writeMultipleFake(item.booruItems, item.booru, item.cooldown).listen(
-    ImageWriter()
-        .writeMultiple(
-          item.booruItems,
-          item.booru,
-          item.cooldown,
-          onProgress,
-          item.ignoreExists,
-          onCancelTokenCreate,
-          _consumeRetryCurrent,
-        )
-        .listen(
-          (Map<String, dynamic> data) {
-            final int snatched = data['snatched']! as int;
-            final List<BooruItem> exists = data['exists'] ?? [];
-            final List<BooruItem> failed = data['failed'] ?? [];
-            final List<BooruItem> cancelled = data['cancelled'] ?? [];
-            final bool isLastMessage = data['exists'] != null && data['failed'] != null && data['cancelled'] != null;
-
-            // last yield in stream will send fetch results counters
-            // but show this message only when queue is empty => snatching is complete
-            if (SX.downloadNotifications.value && isLastMessage) {
-              if (current.value!.booruItems.length == 1) {
-                final context = NavigationHandler.instance.navContext;
-                FlashElements.showSnackbar(
-                  duration: const Duration(seconds: 2),
-                  position: FlashPosition.top,
-                  title: Text(
-                    context.loc.snatcher.itemsSnatched,
-                    style: const TextStyle(fontSize: 20),
-                  ),
-                  content: Row(
-                    children: [
-                      if (exists.isNotEmpty || failed.isNotEmpty || cancelled.isNotEmpty || queuedList.isNotEmpty)
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (exists.isNotEmpty) Text(context.loc.snatcher.itemWasAlreadySnatched),
-                              if (failed.isNotEmpty) Text(context.loc.snatcher.failedToSnatchItem),
-                              if (cancelled.isNotEmpty) Text(context.loc.snatcher.itemWasCancelled),
-                              if (queuedList.isNotEmpty) Text(context.loc.snatcher.startingNextQueueItem),
-                            ],
-                          ),
-                        ),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        width: 64,
-                        height: 64,
-                        child: ThumbnailBuild(
-                          item: current.value!.booruItems.first,
-                          handler: BooruHandlerFactory().getBooruHandler(
-                            [current.value!.booru],
-                            null,
-                          ).booruHandler,
-                          selectable: false,
-                          simple: true,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                  ),
-                  leadingIcon: Icons.done_all,
-                  sideColor: failed.isNotEmpty
-                      ? Colors.red
-                      : ((exists.isNotEmpty || cancelled.isNotEmpty) ? Colors.yellow : Colors.green),
-                );
-              } else {
-                final context = NavigationHandler.instance.navContext;
-                FlashElements.showSnackbar(
-                  duration: const Duration(seconds: 2),
-                  position: FlashPosition.top,
-                  title: Text(context.loc.snatcher.itemsSnatched, style: const TextStyle(fontSize: 20)),
-                  content: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        context.loc.snatcher.snatchedCount(count: queueProgress.value),
-                      ),
-                      if (exists.isNotEmpty)
-                        Text(
-                          context.loc.snatcher.filesAlreadySnatched(count: exists.length),
-                        ),
-                      if (failed.isNotEmpty)
-                        Text(
-                          context.loc.snatcher.failedToSnatchFiles(count: failed.length),
-                        ),
-                      if (cancelled.isNotEmpty)
-                        Text(
-                          context.loc.snatcher.cancelledFiles(count: cancelled.length),
-                        ),
-                      if (queuedList.isNotEmpty) Text(context.loc.snatcher.startingNextQueueItem),
-                    ],
-                  ),
-                  leadingIcon: Icons.done_all,
-                  sideColor: failed.isNotEmpty
-                      ? Colors.red
-                      : ((exists.isNotEmpty || cancelled.isNotEmpty) ? Colors.yellow : Colors.green),
-                );
-              }
-            }
-
-            if (isLastMessage) {
-              existsItems.addAll(exists.map((e) => (booru: item.booru, item: e)));
-              failedItems.addAll(failed.map((e) => (booru: item.booru, item: e)));
-              cancelledItems.addAll(cancelled.map((e) => (booru: item.booru, item: e)));
-            }
-
-            _stopProgressStuckTimer();
-            cancelToken = null;
-            _retryCurrentRequested = false;
-            status.value = queuedList.isNotEmpty
-                ? '$snatched/${item.booruItems.length}/${queuedList.length}'
-                : '$snatched/${item.booruItems.length}';
-            queueProgress.value = queueProgress.value + 1;
-            activeItem.value = null;
-            received.value = 0;
-            total.value = 0;
-          },
-          onDone: () {
-            _stopProgressStuckTimer();
-            cancelToken = null;
-            _retryCurrentRequested = false;
-            status.value = '';
-            current.value = null;
-            currentItemKeys.clear();
-            activeItem.value = null;
-            queueProgress.value = 0;
-            received.value = 0;
-            total.value = 0;
-
-            if (active.value) {
-              if (queuedList.isNotEmpty) {
-                snatch(queuedList.removeAt(0));
-              } else {
-                active.value = false;
-              }
-            }
-          },
-        );
-  }
-
-  void queuedListListener() {
-    trySnatch();
-  }
-
-  void trySnatch() {
-    if (!active.value && current.value == null) {
-      if (queuedList.isNotEmpty) {
-        active.value = true;
-        snatch(queuedList.removeAt(0));
+    final presetFile = File(p.join(await ServiceHandler.getConfigDir(), 'download_presets.json'));
+    if (await presetFile.exists()) {
+      for (final raw in jsonDecode(await presetFile.readAsString()) as List) {
+        final preset = downloadMap(raw);
+        await _store!.putPreset(preset['id'] as String, preset['name'] as String, downloadMap(preset['payload']));
       }
     }
+    _poller = Timer.periodic(const Duration(milliseconds: 500), (_) => unawaited(refresh()));
+    SettingsHandler.instance.onDownloadConfigurationChanged = _configurationChanged;
+    await refresh();
   }
 
-  void queue(
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _foreground = state == AppLifecycleState.resumed;
+    _runtime?.foreground = _foreground || _continued;
+    if (_foreground) unawaited(refresh());
+  }
+
+  Future<void> refresh() async {
+    if (_polling || _store == null || _restoring) return;
+    _polling = true;
+    try {
+      final data = await _store!.summary();
+      summary.value = data;
+      attention.value =
+          (data['failed'] as int? ?? 0) +
+          (data['needsAction'] as int? ?? 0) +
+          (data['discoveryAttention'] as int? ?? 0);
+      final candidates = data['activeTasks'] as List? ?? [];
+      final first = candidates.isEmpty ? null : DownloadTask.fromRow(downloadMap(candidates.first));
+      _activeTaskId = first?.id;
+      activeItem.value = first == null ? null : BooruItem.fromMap(first.transfer.item);
+      received.value = first?.received ?? 0;
+      total.value = first?.total ?? 0;
+      active.value =
+          (data['transferring'] as int? ?? 0) +
+              (data['prepared'] as int? ?? 0) +
+              (data['finalizing'] as int? ?? 0) +
+              (data['discovery'] as int? ?? 0) >
+          0;
+      if (first != null) {
+        final source = SettingsHandler.instance.booruList.where((s) => s.name == first.transfer.sourceName).firstOrNull;
+        current.value = source == null
+            ? null
+            : SnatchItem([activeItem.value!], first.transfer.cooldownMs, source, first.transfer.overwrite);
+      } else {
+        current.value = null;
+      }
+      queueProgress.value = 0;
+      if (Platform.isAndroid || Platform.isIOS) {
+        status.value = await downloadPlatform.invokeMethod<String>('executionState') ?? '';
+        if (_launchFailed && status.value != 'running') status.value = 'resumeRequired';
+        if (status.value == 'resumeRequired') attention.value++;
+        if (_foreground &&
+            LocalAuthHandler.instance.isAuthenticated.value == true &&
+            SearchHandler.instance.mainDrawerKey.currentState is InnerDrawerState) {
+          final opened = await downloadPlatform.invokeMapMethod<String, dynamic>('consumeOpen');
+          if (opened != null) {
+            final id = opened['batchId'] as String?;
+            focusedBatch.value = id?.isEmpty == true ? null : id;
+            (SearchHandler.instance.mainDrawerKey.currentState! as InnerDrawerState).open(
+              direction: SX.handSide.value.isRight ? InnerDrawerDirection.start : InnerDrawerDirection.end,
+            );
+          }
+        }
+      }
+      await _completionEvents();
+      await _notices?.check();
+      revision.value++;
+    } catch (_) {
+      status.value = 'storage';
+      attention.value = max(1, attention.value);
+    } finally {
+      _polling = false;
+    }
+  }
+
+  Future<void> _completionEvents() async {
+    if (!_foreground) return;
+    final settings = SettingsHandler.instance;
+    final acknowledged = <String>[];
+    for (final event in await _store!.completionEvents()) {
+      final value = downloadMap(event['payload']);
+      final transfer = PreparedTransfer.fromJson(downloadMap(value['transfer']));
+      final receipt = TransferReceipt.fromJson(downloadMap(value['receipt']));
+      final item = BooruItem.fromMap(transfer.item)..isSnatched.value = true;
+      if (SX.dbEnabled.value && settings.dbHandler.db != null) {
+        final tracked = await settings.dbHandler.getTrackedValues(item);
+        item.isFavourite.value = tracked[1];
+        await settings.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
+      }
+      for (final tab in SearchHandler.instance.tabs) {
+        for (final shown in tab.booruHandler.fetched.where((e) => e.postURL == item.postURL)) {
+          shown.isSnatched.value = true;
+        }
+      }
+      SAFFileCache.instance.onFileCreated(receipt.filename ?? transfer.filename);
+      await onCompleted?.call(transfer, receipt);
+      acknowledged.add(event['id'] as String);
+    }
+    await _store!.acknowledgeEvents(acknowledged);
+  }
+
+  Future<DownloadConfiguration> _capture({Iterable<String> urls = const []}) async {
+    final configuration = await DownloadConfiguration.capture(mediaUrls: urls);
+    await configuration.attachCookies(_store!.db, seed: true);
+    await configuration.save();
+    await _configureNative(configuration);
+    if (_runtime != null) _runtime!.configuration = configuration;
+    if (Platform.isAndroid) await downloadPlatform.invokeMethod<void>('refresh');
+    return configuration;
+  }
+
+  Future<void> _configureNative(DownloadConfiguration configuration) async {
+    if (!Platform.isIOS) return;
+    await downloadPlatform.invokeMethod<void>('configure', {
+      'profiles': {
+        for (final source in configuration.sources) sourceIdentity(source): configuration.profile(source.name ?? ''),
+      },
+      'cookies': configuration.data['cookies'],
+      'cookieHosts': configuration.data['cookieHosts'],
+      'generation': configuration.data['version'],
+    });
+  }
+
+  void _configurationChanged() {
+    _configurationTimer?.cancel();
+    _configurationTimer = Timer(const Duration(milliseconds: 600), () {
+      unawaited(
+        _serialize(() async {
+          if (_restoring || _store == null) return;
+          try {
+            await _capture();
+          } catch (_) {
+            status.value = 'storage';
+            attention.value = max(1, attention.value);
+          }
+        }),
+      );
+    });
+  }
+
+  Future<void> _start({bool discovery = false}) async {
+    try {
+      _launchFailed = false;
+      if (Platform.isAndroid) {
+        await Permission.notification.request();
+        status.value = await downloadPlatform.invokeMethod<String>('start') ?? 'resumeRequired';
+      } else if (Platform.isIOS) {
+        await downloadPlatform.invokeMethod<void>('requestPermissions');
+        if (discovery) await downloadPlatform.invokeMethod<void>('beginDiscovery');
+        await downloadPlatform.invokeMethod<void>('start');
+        await _runtime?.reload();
+      } else {
+        await _runtime?.reload();
+      }
+    } catch (_) {
+      // Enqueue has already committed. A host launch failure must never make
+      // callers retry the enqueue and accidentally create another batch.
+      _launchFailed = true;
+      status.value = 'resumeRequired';
+    }
+    await refresh();
+  }
+
+  Future<bool> queue(
     List<BooruItem> booruItems,
     Booru booru,
     int cooldown,
@@ -391,131 +291,286 @@ class SnatchHandler {
     Booru Function(BooruItem)? sourceFor,
     bool useSourceCooldown = false,
   }) {
-    if (booruItems.isNotEmpty) {
-      final batches = <SnatchItem>[];
-      for (final item in booruItems) {
-        final source = sourceFor?.call(item) ?? booru;
-        if (batches.isNotEmpty && identical(batches.last.booru, source)) {
-          batches.last.booruItems.add(item);
-        } else {
-          final sourceCooldown = useSourceCooldown ? SX.snatchCooldown.valueForBooru(source.name) : cooldown;
-          batches.add(SnatchItem([item], sourceCooldown, source, ignoreExists));
-        }
-      }
-      queuedList.addAll(batches);
-
-      if (booruItems.length > 1) {
-        if (SX.downloadNotifications.value) {
-          final context = NavigationHandler.instance.navContext;
-          FlashElements.showSnackbar(
-            title: Text(
-              context.loc.snatcher.addedItemsToQueue(count: booruItems.length),
-              style: const TextStyle(fontSize: 20),
-            ),
-            position: FlashPosition.top,
-            duration: const Duration(seconds: 2),
-            leadingIcon: Icons.info_outline,
-            sideColor: Colors.green,
-          );
-        }
-      } else {
-        if (SX.downloadNotifications.value) {
-          final context = NavigationHandler.instance.navContext;
-          FlashElements.showSnackbar(
-            title: Text(
-              context.loc.snatcher.addedItemToQueue,
-              style: const TextStyle(fontSize: 20),
-            ),
-            position: FlashPosition.top,
-            duration: const Duration(seconds: 2),
-            leadingIcon: Icons.info_outline,
-            sideColor: Colors.green,
-            content: Row(
-              children: [
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 64,
-                  height: 64,
-                  child: ThumbnailBuild(
-                    item: booruItems.first,
-                    handler: BooruHandlerFactory().getBooruHandler([booru], null).booruHandler,
-                    selectable: false,
-                    simple: true,
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ],
-            ),
-          );
-        }
-      }
+    final snapshot = [...booruItems];
+    final provenance = Map<BooruItem, Booru>.identity();
+    for (final item in snapshot) {
+      provenance[item] = sourceFor?.call(item) ?? booru;
     }
-  }
-
-  Future searchSnatch(String tags, String amount, int cooldown, Booru booru) async {
-    final requestedCount = int.tryParse(amount);
-    if (requestedCount == null || requestedCount <= 0) return;
-    final limit = requestedCount > 100 ? 100 : requestedCount;
-
-    final temp = BooruHandlerFactory().getBooruHandler([booru], limit);
-    final booruHandler = temp.booruHandler;
-    booruHandler.waitForTrackedValues = true;
-    booruHandler.pageNum = temp.startingPage;
-    booruHandler.pageNum++;
-    List<BooruItem> booruItems = [];
-
-    final context = NavigationHandler.instance.navContext;
-    FlashElements.showSnackbar(
-      title: Text(context.loc.snatcher.snatchingImages, style: const TextStyle(fontSize: 20)),
-      position: FlashPosition.top,
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(context.loc.snatcher.doNotCloseApp),
-        ],
+    return _serialize(
+      () => _queue(
+        snapshot,
+        booru,
+        cooldown,
+        ignoreExists,
+        sourceFor: (item) => provenance[item]!,
+        useSourceCooldown: useSourceCooldown,
       ),
-      leadingIcon: Icons.warning_amber,
-      leadingIconColor: Colors.yellow,
-      sideColor: Colors.yellow,
-    );
-
-    while (booruItems.length < requestedCount && !booruHandler.locked) {
-      final previousCount = booruHandler.fetched.length;
-      await booruHandler.search(tags, null);
-      booruHandler.pageNum++;
-      if (booruHandler.errorString.isNotEmpty) break;
-      booruHandler.filterFetched();
-      // Blurred media requires an explicit reveal in the viewer. Unattended
-      // downloads must not bypass it, including Hide rules shown as Blur.
-      booruItems = booruHandler.filteredFetched
-          .where((item) => !booruHandler.filterEvaluationFor(item).isBlurred)
-          .take(requestedCount)
-          .toList();
-      if (booruHandler.fetched.length == previousCount) break;
-    }
-    queue(
-      booruItems,
-      booru,
-      cooldown,
-      false,
-      sourceFor: booruHandler.sourceBooruFor,
     );
   }
 
+  Future<bool> _queue(
+    List<BooruItem> booruItems,
+    Booru booru,
+    int cooldown,
+    bool ignoreExists, {
+    Booru Function(BooruItem)? sourceFor,
+    bool useSourceCooldown = false,
+  }) async {
+    if (booruItems.isEmpty) return false;
+    try {
+      await initialize();
+      final configuration = await _capture(urls: booruItems.take(100).map((e) => e.fileURL));
+      final id = const Uuid().v4();
+      final spec = DownloadBatchSpec(
+        id: id,
+        title: booru.name ?? '',
+        requestedCount: booruItems.length,
+        policy: {'notifications': SX.downloadNotifications.value},
+      );
+      await _store!.enqueueAtomic(spec, (offset, executor) async {
+        Future<String> cookies(String url) => configuration.cookies(url, executor: executor);
+        final scope = RequestScope(client: dio.Dio.new, cookies: cookies, saveCookies: configuration.saveCookies);
+        return scope.run(() async {
+          final page = <PreparedTransfer>[];
+          for (final item in booruItems.skip(offset).take(100)) {
+            final source = sourceFor?.call(item) ?? booru;
+            page.add(
+              await prepareTransfer(
+                source: source,
+                item: item,
+                batchId: id,
+                configuration: configuration,
+                cookiesOverride: cookies,
+                overwrite: ignoreExists,
+                cooldownMs: useSourceCooldown ? SX.snatchCooldown.valueForBooru(source.name) : cooldown,
+              ),
+            );
+          }
+          return page;
+        });
+      });
+      await _start();
+      _message(downloadText('added', {'count': booruItems.length}));
+      return true;
+    } catch (_) {
+      _message(downloadText('enqueueError'), error: true);
+      return false;
+    }
+  }
+
+  Future<String> searchSnatch(
+    String tags,
+    String amount,
+    int cooldown,
+    Booru booru, {
+    int startPage = 1,
+    String? quality,
+    bool overwrite = false,
+    List<Booru>? sources,
+  }) => _serialize(
+    () => _searchSnatch(
+      tags,
+      amount,
+      cooldown,
+      booru,
+      startPage: startPage,
+      quality: quality,
+      overwrite: overwrite,
+      sources: sources,
+    ),
+  );
+
+  Future<String> _searchSnatch(
+    String tags,
+    String amount,
+    int cooldown,
+    Booru booru, {
+    int startPage = 1,
+    String? quality,
+    bool overwrite = false,
+    List<Booru>? sources,
+  }) async {
+    final count = int.tryParse(amount);
+    if (count == null || count < 1 || startPage < 1) throw ArgumentError('Enter a positive amount and starting page.');
+    await initialize();
+    final configuration = await _capture();
+    final selected = sources ?? [booru];
+    final policies = <String, dynamic>{};
+    for (final source in selected) {
+      policies[source.name ?? ''] = {...configuration.policy(source.name ?? ''), 'quality': ?quality};
+    }
+    final id = const Uuid().v4();
+    await _store!.createBatch(
+      DownloadBatchSpec(
+        id: id,
+        title: selected.map((s) => s.name).join(', '),
+        requestedCount: count,
+        query: tags,
+        startPage: startPage,
+        sourceNames: selected.map((s) => s.name ?? '').toList(),
+        policy: {
+          'sources': policies,
+          'overwrite': overwrite,
+          'delayMs': cooldown,
+          'notifications': SX.downloadNotifications.value,
+        },
+      ),
+    );
+    await _start(discovery: true);
+    focusedBatch.value = id;
+    return id;
+  }
+
+  Future<void> command(String command, {String? taskId, String? batchId}) =>
+      _serialize(() => _command(command, taskId: taskId, batchId: batchId));
+
+  Future<void> _command(String command, {String? taskId, String? batchId}) async {
+    await initialize();
+    if (command == 'clear' && Platform.isIOS) {
+      while (true) {
+        final batches = await _store!.clearableBatches(batchId: batchId);
+        if (batches.isEmpty) break;
+        for (final batch in batches) {
+          await downloadPlatform.invokeMethod<void>('forgetBatch', {'batchId': batch['id']});
+          await _store!.command('clear', batchId: batch['id'] as String);
+        }
+      }
+      await refresh();
+      return;
+    }
+    if (const ['resume', 'retry', 'redownload'].contains(command)) await _capture();
+    if (Platform.isIOS) {
+      final fences = <String, int>{};
+      if (command == 'pause' || command == 'cancel') {
+        if (taskId != null) {
+          final task = await _store!.task(taskId);
+          if (task != null) fences['task:$taskId'] = task.generation + 1;
+        } else {
+          var offset = 0;
+          while (true) {
+            final rows = await _store!.db.query(
+              'batches',
+              columns: ['id', 'generation'],
+              where: batchId == null ? null : 'id = ?',
+              whereArgs: batchId == null ? null : [batchId],
+              orderBy: 'id',
+              limit: 100,
+              offset: offset,
+            );
+            for (final row in rows) {
+              fences['batch:${row['id']}'] = (row['generation']! as int) + 1;
+            }
+            if (rows.length < 100) break;
+            await downloadPlatform.invokeMethod<void>('fence', {...fences, 'command': command});
+            fences.clear();
+            offset += 100;
+          }
+        }
+        await downloadPlatform.invokeMethod<void>('fence', {...fences, 'command': command});
+      }
+      await downloadPlatform.invokeMethod<void>('command', {'command': command, 'taskId': taskId, 'batchId': batchId});
+    }
+    await _store!.command(command, taskId: taskId, batchId: batchId);
+    if (const ['resume', 'retry', 'redownload'].contains(command)) await _start(discovery: true);
+    await refresh();
+  }
+
+  Future<void> savePreset(String id, String name, Map<String, dynamic> payload) async {
+    await (await store).putPreset(id, name, payload);
+    await _persistPresets();
+  }
+
+  Future<void> deletePreset(String id) async {
+    await (await store).deletePreset(id);
+    await _persistPresets();
+  }
+
+  Future<void> _persistPresets() async {
+    final file = File(p.join(await ServiceHandler.getConfigDir(), 'download_presets.json'));
+    await file.parent.create(recursive: true);
+    final temporary = File('${file.path}.tmp');
+    await temporary.writeAsString(jsonEncode(await _store!.presets()), flush: true);
+    await temporary.rename(file.path);
+  }
+
+  Future<List<Map<String, dynamic>>> portablePresets() async => (await (await store).presets())
+      .map(
+        (row) => {
+          'id': row['id'],
+          'name': row['name'],
+          'payload': downloadMap(row['payload']),
+        },
+      )
+      .toList();
+  Future<void> importPresets(Object? value) async {
+    if (value is! List) return;
+    for (final raw in value) {
+      final row = downloadMap(raw);
+      if (row['id'] is! String || row['name'] is! String) continue;
+      final payload = downloadMap(row['payload']);
+      // Deliberately allow only portable form inputs, never paths or receipts.
+      final safe = {
+        for (final key in ['query', 'amount', 'delay', 'startPage', 'sourceNames', 'quality', 'overwrite'])
+          if (payload.containsKey(key)) key: payload[key],
+      };
+      await (await store).putPreset(row['id'] as String, row['name'] as String, safe);
+    }
+    await _persistPresets();
+  }
+
+  Future<void> suspendForRestore() async {
+    _restoring = true;
+    while (_polling) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
+    await command('pause');
+    if (Platform.isAndroid) await downloadPlatform.invokeMethod<void>('quiesce');
+    await _runtime?.quiesce();
+  }
+
+  Future<void> finishRestore() async {
+    _restoring = false;
+    await _capture();
+    await refresh();
+  }
+
+  Future<void> retryPhotos(String taskId) async {
+    final journal = File((await DownloadPaths.open()).journal(taskId));
+    final saved = await journal.exists() ? downloadMap(await journal.readAsString()) : <String, dynamic>{};
+    await downloadPlatform.invokeMethod<void>('retryPhotos', {'taskId': taskId, 'digest': saved['sha256']});
+    await command('retry', taskId: taskId);
+  }
+
+  void _message(String message, {bool error = false}) {
+    FlashElements.showSnackbar(
+      context: NavigationHandler.instance.navContext,
+      title: Text(message),
+      leadingIcon: error ? Icons.error_outline : Icons.download_done,
+      sideColor: error ? Colors.red : Colors.green,
+      duration: const Duration(seconds: 3),
+    );
+  }
+
+  void onCancel() => unawaited(command('cancel', taskId: _activeTaskId));
+  void onRetryCurrent() => unawaited(command('retry', taskId: _activeTaskId));
+  void trySnatch() => unawaited(command('resume'));
+  void onClearRetryableItems() => unawaited(command('clear'));
+  void onRemoveRetryItem(({BooruItem item, Booru booru}) record) {}
+  Future<void> onRetryAll({required int cooldown, bool ignoreExists = false}) =>
+      command(ignoreExists ? 'redownload' : 'retry');
+  void onRetryItem(({BooruItem item, Booru booru}) record, {required int cooldown, bool ignoreExists = false}) =>
+      unawaited(queue([record.item], record.booru, cooldown, ignoreExists));
   void dispose() {
-    _stopProgressStuckTimer();
-    queuedList.removeListener(queuedListListener);
+    SettingsHandler.instance.onDownloadConfigurationChanged = null;
+    _configurationTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _poller?.cancel();
+    unawaited(_runtime?.dispose() ?? Future<void>.value());
   }
 }
 
 class SnatchItem {
-  SnatchItem(
-    this.booruItems,
-    this.cooldown,
-    this.booru,
-    this.ignoreExists,
-  );
-
+  SnatchItem(this.booruItems, this.cooldown, this.booru, this.ignoreExists);
   final List<BooruItem> booruItems;
   final int cooldown;
   final Booru booru;

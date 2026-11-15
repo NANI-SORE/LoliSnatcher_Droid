@@ -1,137 +1,103 @@
 import 'package:flutter/material.dart';
-
-import 'package:get/get.dart' hide FirstWhereOrNullExt;
-
+import 'package:get/get.dart';
 import 'package:lolisnatcher/gen/strings.g.dart';
-import 'package:lolisnatcher/src/data/booru.dart';
+import 'package:lolisnatcher/src/downloads/download_localizations.dart';
 import 'package:lolisnatcher/src/pages/snatcher_page.dart';
-import 'package:lolisnatcher/src/utils/extensions.dart';
-import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_controller.dart';
 
 class DDSelectionActions extends StatelessWidget {
-  const DDSelectionActions({
-    required this.controller,
-    required this.toggleDrawer,
-    super.key,
-  });
-
+  const DDSelectionActions({required this.controller, required this.toggleDrawer, super.key});
   final DownloadsDrawerController controller;
   final VoidCallback toggleDrawer;
-
   @override
-  Widget build(BuildContext context) {
-    final searchHandler = controller.searchHandler;
-
-    return Obx(() {
-      final selected = searchHandler.currentSelectedOrNull ?? [];
-      if (selected.isNotEmpty) {
-        final int favSelectedCount = selected.where((item) => item.isFavourite.value == true).length;
-        final int unfavSelectedCount = selected.where((item) => item.isFavourite.value == false).length;
-        final bool hasFavsSelected = favSelectedCount > 0;
-        final bool isAllSelectedFavs = selected.length == favSelectedCount;
-
-        final int downloadsSelectedCount = selected.where((item) => item.isSnatched.value == true).length;
-        final bool hasDownloadsSelected = downloadsSelectedCount > 0;
-
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SettingsButton(
-              name: '${context.loc.settings.downloads.snatchSelected} (${selected.length.toFormattedString()})',
-              icon: const Icon(Icons.download_sharp),
-              action: () => controller.onStartSnatching(context, false),
-              onLongPress: () => controller.onStartSnatching(context, true),
-              drawTopBorder: true,
+  Widget build(BuildContext context) => Obx(() {
+    final selected = controller.searchHandler.currentSelectedOrNull ?? [];
+    if (selected.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 4, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: FilledButton.icon(
+              onPressed: () => controller.onStartSnatching(context, false),
+              icon: const Icon(Icons.download_outlined),
+              label: Text(downloadText('downloadSelected', {'count': selected.length})),
             ),
-            if (hasDownloadsSelected)
-              SettingsButton(
-                name:
-                    '${context.loc.settings.downloads.removeSnatchedStatusFromSelected} (${downloadsSelectedCount.toFormattedString()})',
-                icon: const Icon(Icons.file_download_off_outlined),
-                action: controller.removeSnatchedStatusFromSelected,
-              ),
-            if (!isAllSelectedFavs)
-              SettingsButton(
-                name: '${context.loc.settings.downloads.favouriteSelected} (${unfavSelectedCount.toFormattedString()})',
-                icon: const Icon(Icons.favorite, color: Colors.red),
-                action: controller.favouriteSelected,
-              ),
-            if (hasFavsSelected)
-              SettingsButton(
-                name: '${context.loc.settings.downloads.unfavouriteSelected} (${favSelectedCount.toFormattedString()})',
-                icon: const Icon(Icons.favorite_border),
-                action: controller.unfavouriteSelected,
-              ),
-            SettingsButton(
-              name: context.loc.settings.downloads.clearSelected,
-              icon: const Icon(Icons.delete_forever),
-              action: () => searchHandler.currentTabOrNull?.selected.clear(),
-            ),
-          ],
-        );
-      } else {
-        return SettingsButton(
-          name: context.loc.selectAll,
-          icon: const Icon(Icons.select_all),
-          action: () {
-            final currentTab = searchHandler.currentTabOrNull;
-            final currentFetched = searchHandler.currentFetchedOrNull;
-            if (currentTab == null || currentFetched == null) return;
-            currentTab.selected.addAll(currentFetched);
-          },
-          drawTopBorder: true,
-        );
-      }
-    });
-  }
+          ),
+          PopupMenuButton<String>(
+            tooltip: downloadText('selectionActions'),
+            onSelected: (action) async {
+              switch (action) {
+                case 'again':
+                  await controller.onStartSnatching(context, true);
+                case 'favourite':
+                  await controller.favouriteSelected();
+                case 'unfavourite':
+                  await controller.unfavouriteSelected();
+                case 'unmark':
+                  await controller.removeSnatchedStatusFromSelected();
+                case 'clear':
+                  controller.searchHandler.currentTabOrNull?.selected.clear();
+              }
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(value: 'again', child: Text(downloadText('redownload'))),
+              if (selected.any((e) => e.isFavourite.value != true))
+                PopupMenuItem(value: 'favourite', child: Text(context.loc.settings.downloads.favouriteSelected)),
+              if (selected.any((e) => e.isFavourite.value == true))
+                PopupMenuItem(value: 'unfavourite', child: Text(context.loc.settings.downloads.unfavouriteSelected)),
+              if (selected.any((e) => e.isSnatched.value == true))
+                PopupMenuItem(
+                  value: 'unmark',
+                  child: Text(context.loc.settings.downloads.removeSnatchedStatusFromSelected),
+                ),
+              PopupMenuItem(value: 'clear', child: Text(context.loc.settings.downloads.clearSelected)),
+            ],
+          ),
+        ],
+      ),
+    );
+  });
 }
 
 class DDNavigationButtons extends StatelessWidget {
-  const DDNavigationButtons({
-    required this.controller,
-    required this.toggleDrawer,
-    super.key,
-  });
-
+  const DDNavigationButtons({required this.controller, required this.toggleDrawer, super.key});
   final DownloadsDrawerController controller;
   final VoidCallback toggleDrawer;
-
   @override
-  Widget build(BuildContext context) {
-    final searchHandler = controller.searchHandler;
-    final settingsHandler = controller.settingsHandler;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    child: Row(
       children: [
-        SettingsButton(
-          name: context.loc.snatcher.title,
-          icon: const Icon(Icons.download_sharp),
-          page: () => const SnatcherPage(),
+        Expanded(
+          child: FilledButton.tonalIcon(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SnatcherPage())),
+            icon: const Icon(Icons.add),
+            label: Text(context.loc.snatcher.title),
+          ),
         ),
-        SettingsButton(
-          name: context.loc.snatcher.snatchingHistory,
-          icon: const Icon(Icons.file_download_outlined),
-          action: () {
-            final Booru? downloadsBooru = settingsHandler.booruList.firstWhereOrNull(
-              (booru) => booru.type?.isDownloads == true,
-            );
-            final bool hasDownloads = downloadsBooru != null;
-
-            if (!hasDownloads) {
-              return;
-            }
-
-            searchHandler.addTabByString(
-              '',
-              switchToNew: true,
-              customBooru: downloadsBooru,
-            );
-            toggleDrawer();
+        const SizedBox(width: 4),
+        IconButton(
+          tooltip: context.loc.selectAll,
+          onPressed: () {
+            final tab = controller.searchHandler.currentTabOrNull;
+            final items = controller.searchHandler.currentFetchedOrNull;
+            if (tab != null && items != null) tab.selected.addAll(items.where((item) => !tab.selected.contains(item)));
           },
+          icon: const Icon(Icons.select_all),
+        ),
+        IconButton(
+          tooltip: context.loc.snatcher.snatchingHistory,
+          onPressed: controller.settingsHandler.booruList.any((b) => b.type?.isDownloads == true)
+              ? () {
+                  final source = controller.settingsHandler.booruList.where((b) => b.type?.isDownloads == true).first;
+                  controller.searchHandler.addTabByString('', switchToNew: true, customBooru: source);
+                  toggleDrawer();
+                }
+              : null,
+          icon: const Icon(Icons.photo_library_outlined),
         ),
       ],
-    );
-  }
+    ),
+  );
 }

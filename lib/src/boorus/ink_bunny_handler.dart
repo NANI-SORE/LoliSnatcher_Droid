@@ -10,6 +10,7 @@ import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/data/tag_suggestion.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
+import 'package:lolisnatcher/src/utils/request_scope.dart';
 
 // This booru works weird, once you get a session id and do a search itll give you results with only partial data and a results id
 // We then need to get the is and do a search to get full info for all results from the search
@@ -89,6 +90,10 @@ class InkBunnyHandler extends BooruHandler {
         );
       }
     } catch (e, s) {
+      if (RequestScope.current != null) {
+        _gettingToken = false;
+        rethrow;
+      }
       Logger.Inst().log(
         'Exception getting session token: $url $e',
         'InkBunnyHandler',
@@ -116,6 +121,7 @@ class InkBunnyHandler extends BooruHandler {
         Logger.Inst().log('Inkbunny failed to set ratings', className, 'setRatingOptions', LogTypes.booruHandlerInfo);
       }
     } catch (e, s) {
+      if (RequestScope.current != null) rethrow;
       Logger.Inst().log(
         'Exception setting ratings $e',
         className,
@@ -159,6 +165,7 @@ class InkBunnyHandler extends BooruHandler {
         );
       }
     } catch (e, s) {
+      if (RequestScope.current != null) rethrow;
       Logger.Inst().log(
         e.toString(),
         className,
@@ -167,6 +174,7 @@ class InkBunnyHandler extends BooruHandler {
         s: s,
       );
     }
+    if (RequestScope.current != null) throw StateError('Failed to load submission details');
     Logger.Inst().log('returning null', className, 'getSubmissionResponse', LogTypes.booruHandlerInfo);
     return {};
   }
@@ -196,6 +204,9 @@ class InkBunnyHandler extends BooruHandler {
 
   // Inkbunny can have multiple images per posts so the response cannot be parsed like the other boorus
   List<BooruItem> parseItemsFromResponse(dynamic parsedResponse) {
+    if (RequestScope.current != null && parsedResponse['submissions'] is! List) {
+      throw StateError('authentication');
+    }
     // Api orders the results the wrong way
     final List rawItems = (parsedResponse['submissions'] ?? []).reversed.toList();
     final List<BooruItem> items = [];

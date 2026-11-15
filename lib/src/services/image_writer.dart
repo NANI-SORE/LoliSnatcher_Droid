@@ -12,7 +12,6 @@ import 'package:path/path.dart' as p;
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
-import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -31,178 +30,6 @@ class ImageWriter {
   }
   final SettingsHandler settingsHandler = SettingsHandler.instance;
   String path = '', cacheRootPath = '';
-
-  /// return null - file already exists
-  /// return String - file saved
-  /// return Error - something went wrong
-  Future write(
-    BooruItem item,
-    Booru booru,
-    void Function(int, int)? onProgress,
-    bool ignoreExists,
-    void Function(CancelToken)? onCancelTokenCreate,
-  ) async {
-    booru = OfflineMediaResolver.instance.resolveSourceBooru(item, fallback: booru) ?? booru;
-    final policy = DownloadPolicy.forBooru(booru);
-    final String fileName = getFilename(item, booru);
-    await setPaths();
-    final savedStorage = OfflineMediaResolver.instance.storageIdentity;
-    final selectedPath = SX.extPathOverride.value;
-    final usesSaf = Platform.isAndroid && selectedPath.isNotEmpty;
-    final savePath = selectedPath.isEmpty ? await ServiceHandler.getPicturesDir() : selectedPath;
-
-    // Don't do anything if file already exists
-    final File image = File(p.join(savePath, fileName));
-    // print(path! + fileName);
-    final bool fileExists = await image.exists();
-    // if (fileExists) return null;
-    if (!ignoreExists && (fileExists || item.isSnatched.value == true)) {
-      item.isSnatched.value = true;
-      if (fileExists) item.savedFileName = fileName;
-      if (SX.dbEnabled.value) {
-        await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
-      }
-      return null;
-    }
-    try {
-      final fileNameWoutExt = p.withoutExtension(fileName);
-
-      final headers = {
-        'Accept': '*/*',
-        'Content-Type': '*/*',
-        ...await Tools.getFileCustomHeaders(booru, item: item, checkForReferer: true),
-      };
-
-      final String url = policy.urlFor(item);
-
-      final cancelToken = CancelToken();
-      if (onCancelTokenCreate != null) {
-        onCancelTokenCreate(cancelToken);
-      }
-
-      if (usesSaf) {
-        await DioNetwork.downloadCustom(
-          url,
-          '$savePath/',
-          fileNameWoutExt,
-          item.fileExt!,
-          item.mediaType.toJson(),
-          options: Options(
-            responseType: ResponseType.bytes,
-            contentType: '*/*',
-          ),
-          headers: headers,
-          onReceiveProgress: onProgress,
-          cancelToken: cancelToken,
-        );
-      } else {
-        await DioNetwork.download(
-          url,
-          image.path,
-          options: Options(
-            responseType: ResponseType.bytes,
-            contentType: '*/*',
-          ),
-          headers: headers,
-          onReceiveProgress: onProgress,
-          cancelToken: cancelToken,
-        );
-      }
-
-      item.savedFileName = fileName;
-      // An explicit re-download can change the bytes without changing the name.
-      // Do not let a previous SAF playback copy or thumbnail mask the new file.
-      if (ignoreExists) {
-        OfflineCache.beginClear();
-        try {
-          await OfflineMediaResolver.instance.invalidateCopies(item, booru, savedStorage);
-          await OfflineThumbnailService.instance.invalidate(item, booru, savedStorage);
-        } catch (_) {
-          // Cache maintenance must not turn a successful save into a failed one.
-        } finally {
-          OfflineCache.endClear();
-        }
-      }
-
-      try {
-        if (policy.writeJson) {
-          if (usesSaf && await ServiceHandler.getAndroidSDKVersion() >= 31) {
-            final String? safPath = await ServiceHandler.createFileStreamFromSAFDirectory(
-              fileNameWoutExt,
-              'application/json',
-              'json',
-              '$savePath/',
-            );
-            if (safPath != null) {
-              await ServiceHandler.writeStreamToFileFromSAFDirectory(
-                safPath,
-                Uint8List.fromList(jsonEncode(item.toJson()).codeUnits),
-              );
-              await ServiceHandler.closeStreamToFileFromSAFDirectory(safPath);
-            }
-          } else if (Platform.isAndroid && await ServiceHandler.getAndroidSDKVersion() < 31) {
-            final File jsonFile = File(p.join(savePath, '$fileNameWoutExt.json'));
-            await jsonFile.writeAsString(
-              jsonEncode(item.toJson()),
-              mode: FileMode.write,
-              flush: true,
-            );
-          }
-        }
-      } catch (e, s) {
-        Logger.Inst().log(
-          e.toString(),
-          'ImageWriter',
-          'write',
-          LogTypes.exception,
-          s: s,
-        );
-      }
-
-      print('Image written: $savePath$fileName');
-      SAFFileCache.instance.onFileCreated(fileName, safUri: savePath);
-      item.isSnatched.value = true;
-      if (SX.dbEnabled.value) {
-        await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
-      }
-      if (savedStorage == OfflineMediaResolver.instance.storageIdentity) {
-        unawaited(OfflineThumbnailService.instance.generateAfterSave(item, booru));
-      }
-
-      try {
-        if (Platform.isAndroid) {
-          if (usesSaf && await ServiceHandler.getAndroidSDKVersion() >= 31) {
-            // TODO disabled for now, because it causes huge delays if user has a lot of saved files
-            // final bool result = await ServiceHandler.existsFileFromSAFDirectory(path, fileName);
-            // if (!result) {
-            //   throw Exception('SAF file not found');
-            // }
-          } else {
-            await ServiceHandler.callMediaScanner(image.path);
-          }
-        }
-      } catch (e, s) {
-        Logger.Inst().log(
-          e.toString(),
-          'ImageWriter',
-          'write',
-          LogTypes.exception,
-          s: s,
-        );
-        return e;
-      }
-    } catch (e, s) {
-      Logger.Inst().log(
-        e.toString(),
-        'ImageWriter',
-        'write',
-        LogTypes.exception,
-        s: s,
-      );
-      return e;
-    }
-    return fileName;
-  }
 
   String getFilename(
     BooruItem item,
@@ -256,66 +83,6 @@ class ImageWriter {
     await setPaths();
     final String fileName = getFilename(item, booru);
     return path + fileName;
-  }
-
-  Stream<Map<String, dynamic>> writeMultiple(
-    List<BooruItem> snatched,
-    Booru booru,
-    int cooldown,
-    void Function(int, int)? onProgress,
-    bool ignoreExists,
-    void Function(CancelToken)? onCancelTokenCreate,
-    bool Function()? onRetryCurrent,
-  ) async* {
-    int snatchedCounter = 1;
-    final List<BooruItem> existsList = [], failedList = [], cancelledList = [];
-    bool skipColldown = false;
-    for (int i = 0; i < snatched.length; i++) {
-      bool retryCurrent = false;
-
-      if (skipColldown) {
-        skipColldown = false;
-      } else {
-        await Future.delayed(Duration(milliseconds: cooldown));
-      }
-
-      final snatchResult = await write(
-        snatched.elementAt(i),
-        booru,
-        onProgress,
-        ignoreExists,
-        onCancelTokenCreate,
-      );
-      if (snatchResult == null) {
-        existsList.add(snatched[i]);
-        skipColldown = true;
-      } else if (snatchResult is! String) {
-        if (snatchResult is DioException && CancelToken.isCancel(snatchResult)) {
-          retryCurrent = onRetryCurrent?.call() ?? false;
-          if (!retryCurrent) {
-            cancelledList.add(snatched[i]);
-          }
-        } else {
-          failedList.add(snatched[i]);
-        }
-      }
-
-      if (retryCurrent) {
-        i--;
-        continue;
-      }
-      snatchedCounter++;
-      yield {
-        'snatched': snatchedCounter,
-      };
-    }
-
-    yield {
-      'snatched': snatchedCounter,
-      'exists': existsList,
-      'failed': failedList,
-      'cancelled': cancelledList,
-    };
   }
 
   Future<File?> writeCacheFromBytes(
@@ -686,7 +453,7 @@ class ImageWriter {
 
   Future<bool> setPaths() async {
     if (path.isEmpty) {
-      if (SX.extPathOverride.value.isEmpty) {
+      if (Platform.isIOS || SX.extPathOverride.value.isEmpty) {
         path = await ServiceHandler.getPicturesDir();
       } else {
         path = SX.extPathOverride.value;

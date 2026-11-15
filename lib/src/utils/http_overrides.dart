@@ -22,7 +22,7 @@ void scheduleProxyRefresh() {
   );
 }
 
-Future<void> initProxy() async {
+void initializeDownloadTrust() {
   if (Platform.isAndroid && !addedRootCert) {
     final List<int> cert = ascii.encode(_kIsrgRootX1);
     // add newer root certificate for older devices
@@ -30,6 +30,10 @@ Future<void> initProxy() async {
     SecurityContext.defaultContext.setTrustedCertificatesBytes(cert);
   }
   addedRootCert = true;
+}
+
+Future<void> initProxy() async {
+  initializeDownloadTrust();
 
   SocksProxy.initProxy(
     onCreate: (client) => client.badCertificateCallback = (_, _, _) {

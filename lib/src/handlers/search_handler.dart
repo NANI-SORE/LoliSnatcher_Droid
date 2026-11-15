@@ -1690,7 +1690,7 @@ class SearchTab {
 
       final SettingsHandler settingsHandler = SettingsHandler.instance;
       if (!skipSnatching && shouldSnatchOnFavourite(item) && newValue && item.isSnatched.value != true) {
-        SnatchHandler.instance.queue(
+        await SnatchHandler.instance.queue(
           [item],
           booruHandler.booru,
           SX.snatchCooldown.value,
@@ -1720,7 +1720,7 @@ class SearchTab {
   }) async {
     final SettingsHandler settingsHandler = SettingsHandler.instance;
     if (!skipSnatching && newValue) {
-      SnatchHandler.instance.queue(
+      await SnatchHandler.instance.queue(
         items.where((item) => item.isSnatched.value != true && shouldSnatchOnFavourite(item)).toList(),
         booruHandler.booru,
         SX.snatchCooldown.value,

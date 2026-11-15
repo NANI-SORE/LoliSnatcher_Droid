@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_content.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_control_panel.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_controller.dart';
+import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_queue_controls.dart';
 
 class DownloadsDrawer extends StatefulWidget {
   const DownloadsDrawer({
@@ -38,6 +39,7 @@ class _DownloadsDrawerState extends State<DownloadsDrawer> {
       child: SafeArea(
         child: Column(
           children: [
+            DDQueueControls(controller: controller),
             Expanded(child: DDContent(controller: controller)),
             DDControlPanel(
               controller: controller,

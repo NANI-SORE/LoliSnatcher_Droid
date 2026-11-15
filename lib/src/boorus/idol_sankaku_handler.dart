@@ -14,6 +14,7 @@ import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
+import 'package:lolisnatcher/src/utils/request_scope.dart';
 
 class IdolSankakuHandler extends SankakuHandler {
   IdolSankakuHandler(super.booru, super.limit);
@@ -63,6 +64,7 @@ class IdolSankakuHandler extends SankakuHandler {
   @override
   List parseListFromResponse(dynamic response) {
     if (response.data is String && (response.data as String).contains('post-premium-browsing_error')) {
+      if (RequestScope.current != null) throw StateError('authentication');
       // after page 10 they redirect anon users to "buy premium or login" page
       return [];
     }

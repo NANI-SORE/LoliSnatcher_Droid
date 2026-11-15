@@ -62,7 +62,7 @@ class DownloadsDrawerController {
     }
 
     if (currentSelected.isNotEmpty) {
-      snatchHandler.queue(
+      final saved = await snatchHandler.queue(
         [...currentSelected],
         currentBooru,
         SX.snatchCooldown.value,
@@ -70,6 +70,7 @@ class DownloadsDrawerController {
         sourceFor: currentTab.booruHandler.sourceBooruFor,
         useSourceCooldown: true,
       );
+      if (!saved) return;
       final toFavourite = currentSelected.where(currentTab.shouldFavouriteOnSnatch).toList();
       if (toFavourite.isNotEmpty) {
         await currentTab.updateFavForMultipleItems(

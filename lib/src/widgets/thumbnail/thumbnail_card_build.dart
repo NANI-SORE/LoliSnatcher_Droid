@@ -92,7 +92,7 @@ class ThumbnailCardBuild extends StatelessWidget {
             //
             Positioned.fill(
               child: Obx(() {
-                if (snatchHandler.activeItem.value != item) {
+                if (!snatchHandler.isActiveItem(item)) {
                   return const SizedBox.shrink();
                 }
 
