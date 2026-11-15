@@ -400,6 +400,7 @@ class _DecodeSession {
   bool isGif = false;
   int encodedBytes = 0;
   int transientBytes = 0;
+  ({int width, int height})? expectedOutput;
   ImageMemoryLease? outputLease;
   ImageMemoryLease? codecLease;
   ui.Image? pendingFrame;
@@ -415,6 +416,24 @@ class _DecodeSession {
   void releaseReservations() {
     outputLease?.release();
     codecLease?.release();
+  }
+
+  void reserveMemory({required int outputBytes, required int codecBytes}) {
+    final total = outputBytes + codecBytes;
+    if (total > ImageMemoryManager.maxRetainedBytes) {
+      throw ImageMemoryException(
+        'Image and codec require $total bytes; retained image limit is '
+        '${ImageMemoryManager.maxRetainedBytes} bytes.',
+      );
+    }
+    final memory = ImageMemoryManager.instance;
+    outputLease = memory.reserveImage(outputBytes);
+    try {
+      codecLease = memory.reserveImage(codecBytes);
+    } catch (_) {
+      outputLease?.release();
+      rethrow;
+    }
   }
 
   void dispose() {
@@ -589,13 +608,21 @@ class _MemoryImageCompleter extends MultiFrameImageStreamCompleter {
   }
 }
 
-({int width, int height}) _targetSize(int width, int height, ui.TargetImageSizeCallback? callback) {
-  final session = Zone.current[_decodeSessionZone] as _DecodeSession;
-  if (session.preserveSourceResolution) {
+({int width, int height}) _targetSize(
+  int width,
+  int height,
+  ui.TargetImageSizeCallback? callback, {
+  required bool preserveSourceResolution,
+}) {
+  if (preserveSourceResolution) {
     if (width > ImageMemoryManager.maxTextureDimension ||
         height > ImageMemoryManager.maxTextureDimension ||
         width * height > ImageMemoryManager.maxOutputPixels) {
-      throw const ImageMemoryException('Selected image resolution requires region decoding');
+      throw ImageMemoryException(
+        'Selected resolution ${width}x$height requires region decoding, which is unavailable for this image '
+        'on this device. Whole-image limit: ${ImageMemoryManager.maxOutputPixels} pixels; '
+        '${ImageMemoryManager.maxTextureDimension} pixels per side.',
+      );
     }
     return (width: width, height: height);
   }
@@ -669,7 +696,7 @@ Future<ui.Codec> _decodeBounded(ui.ImmutableBuffer buffer, {ui.TargetImageSizeCa
     if (animation.animated) {
       ImageMetadata.checkDimensions(width, height, pixelLimit: ImageMemoryManager.maxAnimatedSourcePixels);
     }
-    var target = _targetSize(width, height, getTargetSize);
+    var target = _targetSize(width, height, getTargetSize, preserveSourceResolution: session.preserveSourceResolution);
     // Codec construction reads metadata but does not request a frame. Reserve
     // output only after its actual frame count determines the allocation path.
     codec = await descriptor.instantiateCodec(targetWidth: target.width, targetHeight: target.height);
@@ -696,8 +723,7 @@ Future<ui.Codec> _decodeBounded(ui.ImmutableBuffer buffer, {ui.TargetImageSizeCa
       session.transientBytes = transientBase + targetBytes * 8;
       // Native and Picture.toImage textures may have mipmaps. Up to twice the
       // base RGBA bytes covers a complete mip chain, including narrow images.
-      session.outputLease = ImageMemoryManager.instance.reserveImage(targetBytes * 2);
-      session.codecLease = ImageMemoryManager.instance.reserveImage(retainedBase + targetBytes * 2);
+      session.reserveMemory(outputBytes: targetBytes * 2, codecBytes: retainedBase + targetBytes * 2);
       codec = BoundedImageCodec(
         codec,
         expectedSourceWidth: width,
@@ -706,14 +732,16 @@ Future<ui.Codec> _decodeBounded(ui.ImmutableBuffer buffer, {ui.TargetImageSizeCa
         targetHeight: target.height,
       );
     } else {
-      final targetBytes = target.width * target.height * 4;
-      session.transientBytes = session.encodedBytes + width * height * 4 + targetBytes;
+      // Static wide-gamut output may use eight-byte pixels, like the encoded
+      // region fallback. This ledger is an admission estimate, not process RSS.
+      final targetBytes = target.width * target.height * 8;
+      session.transientBytes = session.encodedBytes + width * height * 8 + targetBytes;
       if (session.transientBytes > ImageMemoryManager.maxTransientBytes) {
         throw const ImageMemoryException('Decode exceeds the transient memory budget');
       }
-      session.outputLease = ImageMemoryManager.instance.reserveImage(targetBytes);
-      session.codecLease = ImageMemoryManager.instance.reserveImage(session.encodedBytes);
+      session.reserveMemory(outputBytes: targetBytes, codecBytes: session.encodedBytes);
     }
+    session.expectedOutput = target;
     // The pinned engine's SingleFrameCodec keeps this descriptor until its
     // first frame is decoded. dispose() clears the generator even when the
     // native codec still references it, so transfer ownership to the codec.
@@ -761,6 +789,11 @@ class _ManagedCodec implements ui.Codec {
           _inFrame = true;
           try {
             final frame = await _codec.getNextFrame();
+            final expected = _session.expectedOutput;
+            if (expected != null && (frame.image.width != expected.width || frame.image.height != expected.height)) {
+              frame.image.dispose();
+              throw const ImageMemoryException('Decoded image dimensions do not match the selected resolution');
+            }
             if (_disposed || _session.cancelToken.isCancelled || _session.disposed) {
               frame.image.dispose();
               _session.checkCancelled();
@@ -838,16 +871,15 @@ Future<ui.Codec> _decodeAvif(_DecodeSession session, ui.TargetImageSizeCallback?
       dimensions.height > ImageMemoryManager.maxTextureDimension) {
     throw const ImageMemoryException('AVIF dimensions exceed the native frame limit');
   }
-  final target = _targetSize(dimensions.width, dimensions.height, callback);
-  final pixels = target.width * target.height;
-  session.transientBytes = session.encodedBytes * 2 + dimensions.width * dimensions.height * 16 + pixels * 8;
+  // Container properties bound allocation, but auxiliary items and transforms
+  // make them unsuitable as a display size. Reserve against the bound and fit
+  // the actual decoded frame only after validating it.
+  final pixels = dimensions.width * dimensions.height;
+  session.transientBytes = session.encodedBytes * 2 + pixels * 32;
   if (session.transientBytes > ImageMemoryManager.maxTransientBytes) {
     throw const ImageMemoryException('AVIF exceeds the transient memory budget');
   }
-  session.outputLease = ImageMemoryManager.instance.reserveImage(pixels * 4);
-  session.codecLease = ImageMemoryManager.instance.reserveImage(
-    session.encodedBytes + dimensions.width * dimensions.height * 4 + pixels * 4,
-  );
+  session.reserveMemory(outputBytes: pixels * 8, codecBytes: session.encodedBytes + pixels * 12);
   session.checkCancelled();
   final bytes = await session.file.readAsBytes();
   session.checkCancelled();
@@ -863,7 +895,10 @@ Future<ui.Codec> _decodeAvif(_DecodeSession session, ui.TargetImageSizeCallback?
       await avif!.ready();
     });
     session.checkCancelled();
-    return _ManagedCodec(_AvifCodecAdapter(avif!, target.width, target.height), session);
+    return _ManagedCodec(
+      _AvifCodecAdapter(avif!, dimensions, callback, preserveSourceResolution: session.preserveSourceResolution),
+      session,
+    );
   } catch (_) {
     avif?.dispose();
     rethrow;
@@ -871,11 +906,12 @@ Future<ui.Codec> _decodeAvif(_DecodeSession session, ui.TargetImageSizeCallback?
 }
 
 class _AvifCodecAdapter implements ui.Codec {
-  _AvifCodecAdapter(this.codec, this.width, this.height);
+  _AvifCodecAdapter(this.codec, this.bounds, this.getTargetSize, {required this.preserveSourceResolution});
 
   final AvifCodec codec;
-  final int width;
-  final int height;
+  final ImageDimensions bounds;
+  final ui.TargetImageSizeCallback? getTargetSize;
+  final bool preserveSourceResolution;
 
   @override
   int get frameCount => codec.frameCount;
@@ -885,21 +921,42 @@ class _AvifCodecAdapter implements ui.Codec {
   @override
   Future<ui.FrameInfo> getNextFrame() async {
     final frame = await _guardAvif(codec.getNextFrame);
-    if (frame.image.width == width && frame.image.height == height) return _FrameInfo(frame.image, frame.duration);
-    final recorder = ui.PictureRecorder();
-    final canvas = ui.Canvas(recorder);
-    canvas.drawImageRect(
-      frame.image,
-      ui.Rect.fromLTWH(0, 0, frame.image.width.toDouble(), frame.image.height.toDouble()),
-      ui.Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
-      ui.Paint()..filterQuality = ui.FilterQuality.medium,
-    );
-    final picture = recorder.endRecording();
+    final image = frame.image;
+    var transferred = false;
+    ui.PictureRecorder? recorder;
+    ui.Picture? picture;
     try {
-      return _FrameInfo(await picture.toImage(width, height), frame.duration);
+      // Rotation may swap the axes; neither axis nor pixel count may exceed
+      // the reservation, even for subsequent animation frames.
+      if (math.max(image.width, image.height) > math.max(bounds.width, bounds.height) ||
+          math.min(image.width, image.height) > math.min(bounds.width, bounds.height) ||
+          image.width * image.height > bounds.width * bounds.height) {
+        throw const ImageMemoryException('Decoded AVIF frame exceeds its reserved allocation bounds');
+      }
+      final target = _targetSize(
+        image.width,
+        image.height,
+        getTargetSize,
+        preserveSourceResolution: preserveSourceResolution,
+      );
+      if (image.width == target.width && image.height == target.height) {
+        transferred = true;
+        return _FrameInfo(image, frame.duration);
+      }
+      recorder = ui.PictureRecorder();
+      final canvas = ui.Canvas(recorder);
+      canvas.drawImageRect(
+        image,
+        ui.Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+        ui.Rect.fromLTWH(0, 0, target.width.toDouble(), target.height.toDouble()),
+        ui.Paint()..filterQuality = ui.FilterQuality.low,
+      );
+      picture = recorder.endRecording();
+      return _FrameInfo(await picture.toImage(target.width, target.height), frame.duration);
     } finally {
-      picture.dispose();
-      frame.image.dispose();
+      if (recorder?.isRecording ?? false) recorder!.endRecording().dispose();
+      picture?.dispose();
+      if (!transferred) image.dispose();
     }
   }
 

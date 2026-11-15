@@ -9,16 +9,18 @@ import 'package:lolisnatcher/src/services/image_memory_manager.dart';
 
 @immutable
 class ImageDimensions {
-  const ImageDimensions(this.width, this.height);
+  const ImageDimensions(this.width, this.height, {this.isAnimated = false});
 
   final int width;
   final int height;
+  final bool isAnimated;
 }
 
 /// Bounded metadata inspection and dimension checks before image decoding.
 class ImageMetadata {
   /// Reads ISO BMFF box headers using small, bounded file reads. Neither image
   /// data nor untrusted box lengths are materialized as a Dart byte array.
+  /// Returns allocation bounds across properties, not the display aspect ratio.
   static Future<ImageDimensions> inspectAvif(File file, CancelToken cancelToken) async {
     final input = await file.open();
     var maxWidth = 0;
@@ -115,7 +117,7 @@ class ImageMetadata {
         throw const ImageMemoryException('AVIF dimensions could not be verified before decoding');
       }
       checkDimensions(maxWidth, maxHeight, pixelLimit: ImageMemoryManager.maxAvifSourcePixels);
-      return ImageDimensions(maxWidth, maxHeight);
+      return ImageDimensions(maxWidth, maxHeight, isAnimated: animated);
     } finally {
       await input.close();
     }
@@ -159,7 +161,10 @@ class ImageMetadata {
         width > ImageMemoryManager.maxSourceDimension ||
         height > ImageMemoryManager.maxSourceDimension ||
         width * height > pixelLimit) {
-      throw const ImageMemoryException('Source dimensions exceed the safe whole-image decode limit');
+      throw ImageMemoryException(
+        'Source ${width}x$height exceeds the whole-image decode limit '
+        '($pixelLimit pixels; ${ImageMemoryManager.maxSourceDimension} pixels per side).',
+      );
     }
   }
 }

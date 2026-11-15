@@ -117,6 +117,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
   bool _useSafeThumbnail = false;
   late bool _firstFrameOnly;
   bool _playbackUpdateScheduled = false;
+  bool _retryAfterPressure = false;
   int? _rendererErrorGeneration;
 
   // Hidden thumbnails also use a tiny pixelated image on low-end devices.
@@ -146,12 +147,15 @@ class _ThumbnailState extends State<_ThumbnailImage> {
       _playbackUpdateScheduled = false;
       if (!mounted) return;
       final firstFrameOnly = _shouldShowFirstFrame;
-      if (_firstFrameOnly == firstFrameOnly) return;
+      final retry = _retryAfterPressure && !ImageMemoryManager.instance.underPressure.value;
+      if (_firstFrameOnly == firstFrameOnly && !retry) return;
+      _retryAfterPressure = false;
       _firstFrameOnly = firstFrameOnly;
       if (!firstFrameOnly) _useSafeThumbnail = false;
-      if (isFirstBuild.value || !widget.item.mediaType.value.isAnimation) return;
+      if (isFirstBuild.value) return;
       // Remove all owners of the animated stream before requesting its poster.
-      // TickerMode alone pauses painting but retains the native GIF codec.
+      // The payload can animate even when the post is tagged as a still or video.
+      // TickerMode alone pauses painting but retains the native codec.
       unawaited(mainProvider.value?.evict());
       unawaited(extraProvider.value?.evict());
       mainProvider.value = null;
@@ -317,6 +321,8 @@ class _ThumbnailState extends State<_ThumbnailImage> {
 
   void onError(Object error) {
     if (error is ImageMemoryException) {
+      _retryAfterPressure = error.isTransient;
+      if (error.isTransient) ImageMemoryManager.instance.handleMemoryPressure();
       failedRendering.value = false; // A valid oversized file must stay on disk.
       if (!_useSafeThumbnail && widget.item.thumbnailURL.isNotEmpty && thumbURL != widget.item.thumbnailURL) {
         _useSafeThumbnail = true;
@@ -498,6 +504,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
   }
 
   Future<void> restartLoading({bool withItemLoad = false}) async {
+    _retryAfterPressure = false;
     if (failedRendering.value) {
       failedRendering.value = false;
       unawaited(cleanProviderCache());

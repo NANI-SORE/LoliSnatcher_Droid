@@ -125,6 +125,8 @@ class RegionImageView extends StatefulWidget {
     required this.viewport,
     required this.isViewed,
     required this.onReady,
+    required this.onPreviewReady,
+    required this.onCoverageChanged,
     required this.onError,
     super.key,
   });
@@ -134,6 +136,8 @@ class RegionImageView extends StatefulWidget {
   final Size viewport;
   final bool isViewed;
   final VoidCallback onReady;
+  final VoidCallback onPreviewReady;
+  final ValueChanged<bool> onCoverageChanged;
   final void Function(Object) onError;
 
   @override
@@ -160,6 +164,7 @@ class _RegionImageViewState extends State<RegionImageView> {
   bool _scheduled = false;
   bool _ready = false;
   bool _failed = false;
+  bool? _coverageComplete;
   int _cacheHits = 0;
   int _decodedTiles = 0;
   int _cancelledTiles = 0;
@@ -219,6 +224,7 @@ class _RegionImageViewState extends State<RegionImageView> {
         return;
       }
       setState(() => _overview = tile);
+      widget.onPreviewReady();
       _schedule();
     } catch (error) {
       if (mounted && !_lifetime.isCancelled) _fail(error);
@@ -406,8 +412,13 @@ class _RegionImageViewState extends State<RegionImageView> {
   }
 
   void _trackCoverage() {
-    if (kReleaseMode) return;
     final missing = _wanted.where((key) => !_tiles.containsKey(key)).length;
+    final complete = _wanted.isNotEmpty && missing == 0;
+    if (_coverageComplete != complete) {
+      _coverageComplete = complete;
+      widget.onCoverageChanged(complete);
+    }
+    if (kReleaseMode) return;
     if (missing == 0) {
       _finishCoverage(complete: true);
     } else {

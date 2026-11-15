@@ -517,7 +517,10 @@ class ServiceHandler {
       return Size((result['width'] as num).toDouble(), (result['height'] as num).toDouble());
     } on PlatformException catch (error) {
       if (error.code == 'IMAGE_MEMORY_LIMIT') {
-        throw const ImageMemoryException('Native image metadata allocation exceeded the memory limit');
+        throw const ImageMemoryException(
+          'Native image metadata allocation exceeded available memory',
+          isTransient: true,
+        );
       }
       rethrow;
     }

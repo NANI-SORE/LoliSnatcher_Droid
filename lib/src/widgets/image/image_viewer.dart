@@ -19,6 +19,7 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/services/image_memory_manager.dart';
 import 'package:lolisnatcher/src/services/image_download_request.dart';
+import 'package:lolisnatcher/src/services/image_metadata.dart';
 import 'package:lolisnatcher/src/widgets/image/region_image_view.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -31,6 +32,7 @@ enum ViewerStopReason {
   user,
   error,
   tooBig,
+  memoryLimit,
   hidden,
   videoError,
   reset,
@@ -87,6 +89,8 @@ class ImageViewerState extends State<ImageViewer> {
   final ValueNotifier<int> total = ValueNotifier(0), received = ValueNotifier(0), startedAt = ValueNotifier(0);
   final ValueNotifier<bool> isFirstBuild = ValueNotifier(true);
   final ValueNotifier<bool> isLoaded = ValueNotifier(false);
+  final ValueNotifier<bool> isDisplayReady = ValueNotifier(false);
+  final ValueNotifier<bool> isDetailReady = ValueNotifier(false);
   final ValueNotifier<bool> isViewed = ValueNotifier(false);
   final ValueNotifier<bool> isFromCache = ValueNotifier(false);
   final ValueNotifier<bool> isZoomed = ValueNotifier(false);
@@ -113,6 +117,8 @@ class ImageViewerState extends State<ImageViewer> {
   int _loadRetries = 0;
   bool _ignoreTagsForLoad = false;
   bool _captchaForLoad = false;
+  bool _sourceIsAnimated = false;
+  bool get _hasAnimation => _sourceIsAnimated || widget.booruItem.mediaType.value.isAnimation;
   bool isTiled = false;
   final ValueNotifier<bool?> isTilingProcessing = ValueNotifier(null);
   Size? tiledSize;
@@ -195,7 +201,7 @@ class ImageViewerState extends State<ImageViewer> {
     if (error is ImageMemoryException) {
       // Keep the selected source and resolution. A lower-quality substitute
       // must never be reported as a successful viewer load.
-      stopLoading(reason: error.isTransient ? .error : .tooBig, details: error.reason);
+      stopLoading(reason: error.isTransient ? .error : .memoryLimit, details: error.reason);
       return;
     }
     if (cancelled) {
@@ -243,6 +249,8 @@ class ImageViewerState extends State<ImageViewer> {
     super.initState();
 
     isViewed.value = widget.isViewed;
+    widget.booruItem.isNoScale.addListener(noScaleListener);
+    widget.booruItem.toggleQuality.addListener(toggleQualityListener);
     _updateViewerFocus();
 
     viewerHandler.addViewed(widget.key);
@@ -262,10 +270,18 @@ class ImageViewerState extends State<ImageViewer> {
     super.didUpdateWidget(oldWidget);
     // force redraw on item data change
     if (oldWidget.booruItem != widget.booruItem) {
+      oldWidget.booruItem.isNoScale.removeListener(noScaleListener);
+      oldWidget.booruItem.toggleQuality.removeListener(toggleQualityListener);
+      disposables();
+      widget.booruItem.isNoScale.addListener(noScaleListener);
+      widget.booruItem.toggleQuality.addListener(toggleQualityListener);
       _loadRetries = 0;
       _ignoreTagsForLoad = false;
+      _sourceIsAnimated = false;
+      blockPreloadState = .initial;
+      final generation = _loadGeneration;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
+        if (!_isCurrentLoad(generation)) return;
 
         stopLoading(reason: .reset);
         initViewer(false);
@@ -274,7 +290,7 @@ class ImageViewerState extends State<ImageViewer> {
 
     if (oldWidget.isViewed != widget.isViewed) {
       isViewed.value = widget.isViewed;
-      if (widget.booruItem.mediaType.value.isAnimation) {
+      if (_hasAnimation) {
         if (widget.isViewed && oldWidget.booruItem == widget.booruItem) {
           _loadRetries = 0;
           unawaited(initViewer(false));
@@ -301,14 +317,10 @@ class ImageViewerState extends State<ImageViewer> {
   }) async {
     // An offscreen GIF needs only its thumbnail. Its native animation codec
     // must not reserve the memory needed by the currently viewed GIF.
-    if (widget.booruItem.mediaType.value.isAnimation && !widget.isViewed) return;
+    if (_hasAnimation && !widget.isViewed) return;
     _ignoreTagsForLoad = ignoreTagsCheck || _ignoreTagsForLoad || (widget.isRevealed?.call() ?? false);
     _captchaForLoad = withCaptchaCheck;
     final int loadGeneration = ++_loadGeneration;
-    widget.booruItem.isNoScale.addListener(noScaleListener);
-
-    widget.booruItem.toggleQuality.addListener(toggleQualityListener);
-
     if (widget.booruItem.isHidden && !_ignoreTagsForLoad) {
       if (widget.booruItem.isHidden) {
         stopLoading(
@@ -326,11 +338,13 @@ class ImageViewerState extends State<ImageViewer> {
     }
 
     isStopped.value = false;
+    isLoaded.value = false;
     _updateViewerFocus();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isCurrentLoad(loadGeneration)) return;
 
       viewerHandler.setStopped(widget.key, false);
+      if (!isLoaded.value) viewerHandler.setLoaded(widget.key, false);
     });
 
     startedAt.value = DateTime.now().millisecondsSinceEpoch;
@@ -369,6 +383,8 @@ class ImageViewerState extends State<ImageViewer> {
         if (!_isCurrentLoad(loadGeneration)) return;
 
         final prevIsLoaded = isLoaded.value;
+        isDisplayReady.value = true;
+        isDetailReady.value = true;
         isLoaded.value = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!_isCurrentLoad(loadGeneration)) return;
@@ -457,8 +473,20 @@ class ImageViewerState extends State<ImageViewer> {
     final preparationTrace = kReleaseMode ? null : (developer.TimelineTask()..start('Image viewer preparation'));
     try {
       final isAvif = url.toLowerCase().contains('.avif');
+      final sourceIsAnimated = isAvif
+          ? (await ImageMetadata.inspectAvif(download.file, token)).isAnimated
+          : (await ImageMetadata.inspectAnimation(download.file, token)).animated;
+      if (!_isCurrentLoad(loadGeneration)) return null;
+      _sourceIsAnimated = sourceIsAnimated;
+      if (_hasAnimation && !widget.isViewed) {
+        // Payload metadata, rather than booru tags, decides whether a neighbor
+        // would retain an animation codec or accidentally become static tiles.
+        disposables();
+        isLoaded.value = false;
+        return null;
+      }
       Size? sourceSize;
-      final canTryRegions = Platform.isAndroid && !widget.booruItem.mediaType.value.isAnimation && !isAvif;
+      final canTryRegions = Platform.isAndroid && !_hasAnimation && !isAvif;
       if (canTryRegions) {
         sourceSize = await ImageMemoryManager.instance.runDecode(
           ImageMemoryManager.maxEncodedBytes + 16 * 1024 * 1024,
@@ -478,7 +506,7 @@ class ImageViewerState extends State<ImageViewer> {
       preparationTrace?.instant('metadataReady');
       if (!_isCurrentLoad(loadGeneration)) return null;
       final heightLimit = settingsHandler.preloadHeight;
-      if (heightLimit != 0 && sourceSize.height >= heightLimit && !blockPreloadState.isIgnore) {
+      if (heightLimit != 0 && sourceSize.height > heightLimit && !blockPreloadState.isIgnore) {
         stopLoading(
           reason: .tooBig,
           details:
@@ -532,7 +560,7 @@ class ImageViewerState extends State<ImageViewer> {
 
       // A viewer opens a fresh playback session, even when a thumbnail has
       // already played a finite animation to its final frame.
-      final playbackKey = widget.booruItem.mediaType.value.isAnimation ? Object() : null;
+      final playbackKey = Object();
       final ImageProvider provider = isAvif
           ? CustomNetworkAvifImage(
               url,
@@ -590,8 +618,9 @@ class ImageViewerState extends State<ImageViewer> {
       blockPreloadState = .tooBig;
     }
 
+    final generation = _loadGeneration;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!_isCurrentLoad(generation)) return;
 
       viewerHandler.setStopped(widget.key, true);
       viewerHandler.setLoaded(widget.key, false);
@@ -601,6 +630,8 @@ class ImageViewerState extends State<ImageViewer> {
   @override
   void dispose() {
     ImageMemoryManager.instance.setImageViewerActive(this, false);
+    widget.booruItem.isNoScale.removeListener(noScaleListener);
+    widget.booruItem.toggleQuality.removeListener(toggleQualityListener);
     disposables();
 
     viewStateSubscription?.cancel();
@@ -615,6 +646,8 @@ class ImageViewerState extends State<ImageViewer> {
 
   void disposables() {
     _loadGeneration++;
+    isDisplayReady.value = false;
+    isDetailReady.value = false;
     _removeImageStreamListener();
 
     if (!(cancelToken?.isCancelled ?? true)) {
@@ -641,9 +674,6 @@ class ImageViewerState extends State<ImageViewer> {
     unawaited(mainProvider.value?.evict());
 
     mainProvider.value = null;
-
-    widget.booruItem.isNoScale.removeListener(noScaleListener);
-    widget.booruItem.toggleQuality.removeListener(toggleQualityListener);
   }
 
   bool _isCurrentLoad(int loadGeneration) {
@@ -665,6 +695,8 @@ class ImageViewerState extends State<ImageViewer> {
     startedAt.dispose();
     isFirstBuild.dispose();
     isLoaded.dispose();
+    isDisplayReady.dispose();
+    isDetailReady.dispose();
     isViewed.dispose();
     isFromCache.dispose();
     isZoomed.dispose();
@@ -720,6 +752,7 @@ class ImageViewerState extends State<ImageViewer> {
   }
 
   Future<void> onManualRestart() async {
+    if (stopReason.value == ViewerStopReason.memoryLimit) return;
     _ignoreTagsForLoad = true;
     widget.onReveal?.call();
     _loadRetries = 0;
@@ -742,43 +775,47 @@ class ImageViewerState extends State<ImageViewer> {
       _ => false,
     };
     bool shouldDoCaptchaCheck = false;
-    if (shouldUpdate) {
-      loadItemCancelToken = CancelToken();
-      final CancelToken itemLoadCancelToken = loadItemCancelToken!;
-      final updateRes = await tryToLoadAndUpdateItem(
-        widget.booruItem,
-        itemLoadCancelToken,
-      );
-
-      if (!_isCurrentLoad(loadGeneration) ||
-          itemLoadCancelToken.isCancelled ||
-          !identical(loadItemCancelToken, itemLoadCancelToken)) {
-        return;
-      }
-
-      shouldDoCaptchaCheck = updateRes != true;
-
-      if (updateRes != true && widget.booru.baseURL?.isNotEmpty == true) {
-        await DioNetwork.get(
-          widget.booru.baseURL ?? '',
-          headers: await Tools.getFileCustomHeaders(
-            widget.booru,
-            item: widget.booruItem,
-            checkForReferer: true,
-          ),
-          customInterceptor: (dio) => DioNetwork.captchaInterceptor(
-            dio,
-            customUserAgent: Tools.appUserAgent,
-          ),
+    try {
+      if (shouldUpdate) {
+        loadItemCancelToken = CancelToken();
+        final CancelToken itemLoadCancelToken = loadItemCancelToken!;
+        final updateRes = await tryToLoadAndUpdateItem(
+          widget.booruItem,
+          itemLoadCancelToken,
         );
-        if (!_isCurrentLoad(loadGeneration)) return;
-      }
-    }
 
-    await initViewer(
-      true,
-      withCaptchaCheck: shouldDoCaptchaCheck,
-    );
+        if (!_isCurrentLoad(loadGeneration) ||
+            itemLoadCancelToken.isCancelled ||
+            !identical(loadItemCancelToken, itemLoadCancelToken)) {
+          return;
+        }
+
+        shouldDoCaptchaCheck = updateRes != true;
+
+        if (updateRes != true && widget.booru.baseURL?.isNotEmpty == true) {
+          await DioNetwork.get(
+            widget.booru.baseURL ?? '',
+            headers: await Tools.getFileCustomHeaders(
+              widget.booru,
+              item: widget.booruItem,
+              checkForReferer: true,
+            ),
+            customInterceptor: (dio) => DioNetwork.captchaInterceptor(
+              dio,
+              customUserAgent: Tools.appUserAgent,
+            ),
+          );
+          if (!_isCurrentLoad(loadGeneration)) return;
+        }
+      }
+
+      await initViewer(
+        true,
+        withCaptchaCheck: shouldDoCaptchaCheck,
+      );
+    } catch (error) {
+      if (_isCurrentLoad(loadGeneration)) onError(error);
+    }
   }
 
   Future<void> onManualStop() async {
@@ -796,11 +833,11 @@ class ImageViewerState extends State<ImageViewer> {
           fit: StackFit.expand,
           children: [
             ListenableBuilder(
-              listenable: Listenable.merge([isTilingProcessing, isLoaded, isViewed]),
+              listenable: Listenable.merge([isTilingProcessing, isDisplayReady, isViewed]),
               builder: (context, child) {
                 return AnimatedOpacity(
                   duration: const Duration(milliseconds: 300),
-                  opacity: (isLoaded.value && isProviderLoaded) ? 0 : 1,
+                  opacity: (isDisplayReady.value && isProviderLoaded) ? 0 : 1,
                   child: Hero(
                     tag: 'imageHero${isViewed.value ? '' : '-ignore-'}${widget.booruItem.hashCode}',
                     child: child!,
@@ -847,7 +884,7 @@ class ImageViewerState extends State<ImageViewer> {
                     total: total,
                     received: received,
                     startedAt: startedAt,
-                    onRestart: onManualRestart,
+                    onRestart: stopReason.value == ViewerStopReason.memoryLimit ? null : onManualRestart,
                     onStop: onManualStop,
                   );
                 },
@@ -872,7 +909,7 @@ class ImageViewerState extends State<ImageViewer> {
                 ),
                 child: ListenableBuilder(
                   listenable: Listenable.merge([
-                    isLoaded,
+                    isDisplayReady,
                     isTilingProcessing,
                     mainProvider,
                     isViewed,
@@ -880,7 +917,7 @@ class ImageViewerState extends State<ImageViewer> {
                   builder: (context, _) {
                     final loadGeneration = _loadGeneration;
                     return AnimatedOpacity(
-                      opacity: (settingsHandler.shitDevice || isLoaded.value) ? 1 : 0,
+                      opacity: (settingsHandler.shitDevice || isDisplayReady.value) ? 1 : 0,
                       duration: Duration(
                         milliseconds: (settingsHandler.appMode.value.isDesktop || isViewed.value) ? 50 : 300,
                       ),
@@ -888,7 +925,7 @@ class ImageViewerState extends State<ImageViewer> {
                         // Release replaced image/tile owners before a retry
                         // needs their memory, rather than retaining a fade.
                         key: ValueKey((
-                          widget.booruItem.mediaType.value.isAnimation ? isViewed.value : null,
+                          _hasAnimation ? isViewed.value : null,
                           mainProvider.value,
                           _regionSource,
                         )),
@@ -915,6 +952,12 @@ class ImageViewerState extends State<ImageViewer> {
                                         controller: viewController,
                                         viewport: MediaQuery.sizeOf(context),
                                         isViewed: isViewed.value,
+                                        onPreviewReady: () {
+                                          if (_isCurrentLoad(loadGeneration)) isDisplayReady.value = true;
+                                        },
+                                        onCoverageChanged: (complete) {
+                                          if (_isCurrentLoad(loadGeneration)) isDetailReady.value = complete;
+                                        },
                                         onReady: () {
                                           if (!_isCurrentLoad(loadGeneration) || _regionSource == null) return;
                                           isLoaded.value = true;
@@ -960,6 +1003,39 @@ class ImageViewerState extends State<ImageViewer> {
                   },
                 ),
               ),
+            ),
+            ListenableBuilder(
+              listenable: Listenable.merge([isDisplayReady, isDetailReady, isStopped, isViewed]),
+              builder: (context, _) {
+                if (!isTiled || !isViewed.value || !isDisplayReady.value || isDetailReady.value || isStopped.value) {
+                  return const SizedBox.shrink();
+                }
+                // Keep existing pixels and gestures available while detail is
+                // refined. A preview must never look like completed HD loading.
+                return IgnorePointer(
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: SafeArea(
+                      minimum: const EdgeInsets.all(16),
+                      child: Material(
+                        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                              const SizedBox(width: 8),
+                              Flexible(child: Text(context.loc.media.loading.rendering)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),

@@ -140,70 +140,72 @@ class _ImageStatsState extends State<ImageStats> {
                   alignment: widget.align ?? Alignment.topLeft,
                   child: Container(
                     width: widget.width,
-                    height: widget.height,
-                    color: Colors.white.withValues(alpha: 0.8),
-                    child: RepaintBoundary(
-                      child: ListenableBuilder(
-                        listenable: Listenable.merge(
-                          [
-                            _totalLive,
-                            _totalPending,
-                            _totalAll,
-                            _cacheSize,
-                            _cacheMax,
-                            _reserved,
-                            _admission,
-                            _downloads,
-                            _rejected,
-                            _rss,
-                          ],
-                        ),
-                        builder: (context, child) => Column(
-                          mainAxisSize: .min,
-                          crossAxisAlignment: .start,
-                          children: [
-                            Text(
-                              context.loc.imageStats.live(count: _totalLive.value),
-                              style: style,
-                            ),
-                            Text(
-                              context.loc.imageStats.pending(count: _totalPending.value),
-                              style: style,
-                            ),
-                            Text(
-                              context.loc.imageStats.total(count: _totalAll.value),
-                              style: style,
-                            ),
-                            Text(
-                              context.loc.imageStats.size(size: Tools.formatBytes(_cacheSize.value, 0)),
-                              style: style,
-                            ),
-                            Text(
-                              context.loc.imageStats.max(max: Tools.formatBytes(_cacheMax.value, 0)),
-                              style: style,
-                            ),
-                            Text(
-                              'Res: ${Tools.formatBytes(_reserved.value, 0)}',
-                              style: style,
-                            ),
-                            Text(
-                              _admission.value,
-                              style: style,
-                            ),
-                            Text(
-                              _downloads.value,
-                              style: style,
-                            ),
-                            Text(
-                              'Reject: ${_rejected.value}',
-                              style: style,
-                            ),
-                            if (_rss.value != null)
+                    constraints: BoxConstraints(minHeight: widget.height),
+                    color: context.theme.colorScheme.surface.withValues(alpha: 0.9),
+                    child: SingleChildScrollView(
+                      child: RepaintBoundary(
+                        child: ListenableBuilder(
+                          listenable: Listenable.merge(
+                            [
+                              _totalLive,
+                              _totalPending,
+                              _totalAll,
+                              _cacheSize,
+                              _cacheMax,
+                              _reserved,
+                              _admission,
+                              _downloads,
+                              _rejected,
+                              _rss,
+                            ],
+                          ),
+                          builder: (context, child) => Column(
+                            mainAxisSize: .min,
+                            crossAxisAlignment: .start,
+                            children: [
                               Text(
-                                'RSS: ${Tools.formatBytes(_rss.value!, 0)}',
+                                context.loc.imageStats.live(count: _totalLive.value),
                                 style: style,
                               ),
-                          ],
+                              Text(
+                                context.loc.imageStats.pending(count: _totalPending.value),
+                                style: style,
+                              ),
+                              Text(
+                                context.loc.imageStats.total(count: _totalAll.value),
+                                style: style,
+                              ),
+                              Text(
+                                context.loc.imageStats.size(size: Tools.formatBytes(_cacheSize.value, 0)),
+                                style: style,
+                              ),
+                              Text(
+                                context.loc.imageStats.max(max: Tools.formatBytes(_cacheMax.value, 0)),
+                                style: style,
+                              ),
+                              Text(
+                                'Res: ${Tools.formatBytes(_reserved.value, 0)}',
+                                style: style,
+                              ),
+                              Text(
+                                _admission.value,
+                                style: style,
+                              ),
+                              Text(
+                                _downloads.value,
+                                style: style,
+                              ),
+                              Text(
+                                'Reject: ${_rejected.value}',
+                                style: style,
+                              ),
+                              if (_rss.value != null)
+                                Text(
+                                  'RSS: ${Tools.formatBytes(_rss.value!, 0)}',
+                                  style: style,
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

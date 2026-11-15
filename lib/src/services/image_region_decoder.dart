@@ -107,7 +107,7 @@ class ImageRegionDecoder {
             } on PlatformException catch (error) {
               if (error.code == 'IMAGE_MEMORY_LIMIT') {
                 _memory.handleMemoryPressure();
-                throw const ImageMemoryException('Native image region exceeded available memory');
+                throw const ImageMemoryException('Native image region exceeded available memory', isTransient: true);
               }
               rethrow;
             }
@@ -129,8 +129,10 @@ class ImageRegionDecoder {
     final bytes = response['bytes'];
     if (width is! int ||
         height is! int ||
-        width < 1 ||
-        height < 1 ||
+        // Native sampling may round the last partial source pixel down by one,
+        // but a materially smaller tile must not be magnified as HD success.
+        width < (expectedWidth - 1).clamp(1, expectedWidth) ||
+        height < (expectedHeight - 1).clamp(1, expectedHeight) ||
         width > expectedWidth ||
         height > expectedHeight ||
         bytes is! Uint8List) {
@@ -179,6 +181,10 @@ class ImageRegionDecoder {
       codec = await descriptor.instantiateCodec();
       token.throwIfCancellationRequested();
       final frame = await codec.getNextFrame();
+      if (frame.image.width != width || frame.image.height != height) {
+        frame.image.dispose();
+        throw StateError('Decoded image region does not match the requested detail');
+      }
       if (token.isCancelled) {
         frame.image.dispose();
         token.throwIfCancellationRequested();

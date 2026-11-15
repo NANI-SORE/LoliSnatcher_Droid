@@ -43,11 +43,6 @@ class MainActivity: FlutterFragmentActivity() {
 
     private val imageRegions = ImageRegions()
 
-    override fun onDestroy() {
-        imageRegions.close()
-        super.onDestroy()
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -507,6 +502,7 @@ class MainActivity: FlutterFragmentActivity() {
     }
 
     override fun onDestroy() {
+        imageRegions.close()
         localNetworkPermissionResult?.error("ACTIVITY_DESTROYED", "Local network permission request was interrupted", null)
         localNetworkPermissionResult = null
         super.onDestroy()

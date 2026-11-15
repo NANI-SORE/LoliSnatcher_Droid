@@ -38,6 +38,9 @@ extension ImageMemoryCancellation on CancelToken {
   }
 }
 
+/// Bounds tracked decoded images, codec/source ownership and serialized work.
+/// These conservative admission estimates do not bound process RSS: renderer,
+/// platform-channel copies and unrelated plugins also allocate memory.
 class ImageMemoryManager with WidgetsBindingObserver {
   ImageMemoryManager._();
 
@@ -92,6 +95,9 @@ class ImageMemoryManager with WidgetsBindingObserver {
   int _retainedBytes = 0;
   int _activeDownloads = 0;
   int _rejectedCount = 0;
+  int _foregroundDecodeStreak = 0;
+  int _foregroundDownloadStreak = 0;
+  static const _maxForegroundStreak = 8;
 
   int get retainedBytes => _retainedBytes;
   int get activeDecodeCount => _decoding ? 1 : 0;
@@ -129,7 +135,7 @@ class ImageMemoryManager with WidgetsBindingObserver {
     initialize();
     if (bytes < 0 || bytes > maxRetainedBytes) {
       _rejectedCount++;
-      throw const ImageMemoryException('Image exceeds the retained memory budget');
+      throw ImageMemoryException('Image requires $bytes bytes; retained image limit is $maxRetainedBytes bytes.');
     }
     if (_retainedBytes + bytes > maxRetainedBytes) {
       handleMemoryPressure();
@@ -137,7 +143,10 @@ class ImageMemoryManager with WidgetsBindingObserver {
       // them here: a visible caller can otherwise deadlock behind keep-alives.
       if (_retainedBytes + bytes > maxRetainedBytes) {
         _rejectedCount++;
-        throw const ImageMemoryException('Image memory is currently in use', isTransient: true);
+        throw ImageMemoryException(
+          'Image requires $bytes bytes; ${maxRetainedBytes - _retainedBytes} bytes are currently available.',
+          isTransient: true,
+        );
       }
     }
     _retainedBytes += bytes;
@@ -225,9 +234,14 @@ class ImageMemoryManager with WidgetsBindingObserver {
     if (_queue.isEmpty) return;
     _decoding = true;
     // Evaluate visibility now so a queued neighboring viewer can be promoted
-    // after a swipe. Visible image work always precedes background work.
+    // after a swipe. Bound the foreground streak so continuous gestures or
+    // animation cannot indefinitely starve an older background request.
     final foreground = _queue.where((job) => job.isForeground?.call() ?? false).firstOrNull;
-    final job = foreground ?? _queue.first;
+    final background = _queue.where((job) => !(job.isForeground?.call() ?? false)).firstOrNull;
+    final job = _foregroundDecodeStreak >= _maxForegroundStreak && background != null
+        ? background
+        : foreground ?? _queue.first;
+    _foregroundDecodeStreak = identical(job, foreground) ? _foregroundDecodeStreak + 1 : 0;
     _queue.remove(job);
     job.cancellation?.jobs.remove(job);
     unawaited(
@@ -241,7 +255,12 @@ class ImageMemoryManager with WidgetsBindingObserver {
   void _pumpDownloads() {
     while (_activeDownloads < 4 && _downloads.isNotEmpty) {
       _activeDownloads++;
-      final job = _downloads.where((job) => job.isForeground?.call() ?? false).firstOrNull ?? _downloads.first;
+      final foreground = _downloads.where((job) => job.isForeground?.call() ?? false).firstOrNull;
+      final background = _downloads.where((job) => !(job.isForeground?.call() ?? false)).firstOrNull;
+      final job = _foregroundDownloadStreak >= _maxForegroundStreak && background != null
+          ? background
+          : foreground ?? _downloads.first;
+      _foregroundDownloadStreak = identical(job, foreground) ? _foregroundDownloadStreak + 1 : 0;
       _downloads.remove(job);
       job.cancellation?.jobs.remove(job);
       unawaited(
