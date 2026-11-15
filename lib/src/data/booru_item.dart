@@ -274,7 +274,6 @@ class BooruItem extends Equatable {
     );
     item.isFavourite.value = json['isFavourite'].toString() == 'true';
     item.isSnatched.value = json['isSnatched'].toString() == 'true';
-    item.serverId = json['serverId'];
     item.savedFileName = _nullableString(json['savedFileName']);
     return item;
   }

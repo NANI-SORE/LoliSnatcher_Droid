@@ -278,7 +278,7 @@ class RateLimitPolicy {
     try {
       final date = HttpDate.parse(value);
       return date.isAfter(now) ? date : now;
-    } on FormatException {
+    } on HttpException {
       return null;
     }
   }

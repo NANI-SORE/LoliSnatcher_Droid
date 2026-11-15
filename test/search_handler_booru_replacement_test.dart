@@ -7,6 +7,7 @@ import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late SearchHandler searchHandler;
 
   setUpAll(() {

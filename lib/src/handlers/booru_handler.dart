@@ -1140,9 +1140,6 @@ abstract class BooruHandler {
         items[index].isFavourite.value = valuesList[index][1];
       }
     }
-    final current = HashSet<BooruItem>.identity()..addAll(fetched);
-    if (items.any(current.contains)) filterFetched();
-
     return;
   }
 
