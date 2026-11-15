@@ -16,6 +16,7 @@ import 'package:image/image.dart' as img;
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/data/tag_filter_evaluation.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -26,6 +27,7 @@ import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/media_loading.dart';
 import 'package:lolisnatcher/src/widgets/common/preserve_media_animations.dart';
 import 'package:lolisnatcher/src/widgets/image/custom_network_image.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_details_sheet.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
 
 enum ViewerStopReason {
@@ -33,6 +35,7 @@ enum ViewerStopReason {
   error,
   tooBig,
   hidden,
+  blurred,
   videoError,
   reset,
   ;
@@ -41,6 +44,7 @@ enum ViewerStopReason {
   bool get isError => this == error;
   bool get isTooBig => this == tooBig;
   bool get isHidden => this == hidden;
+  bool get isFiltered => this == hidden || this == blurred;
   bool get isVideoError => this == videoError;
   bool get isReset => this == reset;
 }
@@ -61,12 +65,14 @@ class ImageViewer extends StatefulWidget {
     this.booruItem, {
     required this.booru,
     required this.isViewed,
+    this.filterEvaluation = const TagFilterEvaluation.empty(),
     super.key,
   });
 
   final BooruItem booruItem;
   final Booru booru;
   final bool isViewed;
+  final TagFilterEvaluation filterEvaluation;
 
   @override
   State<ImageViewer> createState() => ImageViewerState();
@@ -98,6 +104,7 @@ class ImageViewerState extends State<ImageViewer> {
   StreamSubscription<PhotoViewControllerValue>? viewStateSubscription;
   StreamSubscription<PhotoViewScaleState>? scaleStateSubscription;
   int _loadGeneration = 0;
+  bool _ignoreFilterForCurrentLoad = false;
 
   String imageFolder = 'media';
   int? widthLimit;
@@ -113,6 +120,9 @@ class ImageViewerState extends State<ImageViewer> {
   Size? tiledSize;
 
   bool get isProviderLoaded {
+    if (widget.filterEvaluation.isBlurred && !_ignoreFilterForCurrentLoad) {
+      return false;
+    }
     if (isTilingProcessing.value != false) {
       return false;
     }
@@ -217,12 +227,35 @@ class ImageViewerState extends State<ImageViewer> {
     super.didUpdateWidget(oldWidget);
     // force redraw on item data change
     if (oldWidget.booruItem != widget.booruItem) {
+      _loadGeneration++;
+      _ignoreFilterForCurrentLoad = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
 
         stopLoading(reason: .reset);
         initViewer(false);
       });
+    } else {
+      final oldEvaluation = oldWidget.filterEvaluation;
+      final evaluation = widget.filterEvaluation;
+      final filterChanged =
+          oldEvaluation.isBlurred != evaluation.isBlurred ||
+          oldEvaluation.hideAsBlur != evaluation.hideAsBlur ||
+          oldEvaluation.primaryMatch?.rule.id != evaluation.primaryMatch?.rule.id ||
+          oldEvaluation.primaryMatch?.rule.updatedAt != evaluation.primaryMatch?.rule.updatedAt ||
+          oldEvaluation.loadingFilterDetails != evaluation.loadingFilterDetails;
+      if (filterChanged && (evaluation.isBlurred || oldEvaluation.isBlurred)) {
+        _loadGeneration++;
+        _ignoreFilterForCurrentLoad = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          if (widget.filterEvaluation.isBlurred) {
+            _stopForFilter(widget.filterEvaluation);
+          } else if (oldEvaluation.isBlurred) {
+            initViewer(false);
+          }
+        });
+      }
     }
 
     if (oldWidget.isViewed != widget.isViewed) {
@@ -242,24 +275,18 @@ class ImageViewerState extends State<ImageViewer> {
     bool withCaptchaCheck = false,
   }) async {
     final int loadGeneration = ++_loadGeneration;
+    if (_ignoreFilterForCurrentLoad != ignoreTagsCheck) {
+      setState(() {
+        _ignoreFilterForCurrentLoad = ignoreTagsCheck;
+      });
+    }
     widget.booruItem.isNoScale.addListener(noScaleListener);
 
     widget.booruItem.toggleQuality.addListener(toggleQualityListener);
 
-    if (widget.booruItem.isHidden && !ignoreTagsCheck) {
-      if (widget.booruItem.isHidden) {
-        stopLoading(
-          reason: .hidden,
-          details: settingsHandler
-              .parseTagsList(
-                widget.booruItem.tagsList,
-                isCapped: true,
-              )
-              .hiddenTags
-              .join('\n'),
-        );
-        return;
-      }
+    if (widget.filterEvaluation.isBlurred && !ignoreTagsCheck) {
+      _stopForFilter(widget.filterEvaluation);
+      return;
     }
 
     isStopped.value = false;
@@ -329,6 +356,13 @@ class ImageViewerState extends State<ImageViewer> {
     if (isStopped.value) {
       onManualRestart();
     }
+  }
+
+  void _stopForFilter(TagFilterEvaluation evaluation) {
+    stopLoading(
+      reason: evaluation.hideAsBlur ? ViewerStopReason.hidden : ViewerStopReason.blurred,
+      details: evaluation.loadingFilterDetails,
+    );
   }
 
   void noScaleListener() {
@@ -748,12 +782,11 @@ class ImageViewerState extends State<ImageViewer> {
 
           tiledProviders = slices.map((s) {
             return ResizeImage(
-                  MemoryImage(s),
-                  width: tileWidth,
-                  policy: ResizeImagePolicy.fit,
-                  allowUpscaling: false,
-                )
-                as ImageProvider;
+              MemoryImage(s),
+              width: tileWidth,
+              policy: ResizeImagePolicy.fit,
+              allowUpscaling: false,
+            ) as ImageProvider;
           }).toList();
           final double maxWidth = min(size.width, tileWidth.toDouble());
           tiledSize = Size(maxWidth, maxWidth / size.aspectRatio);
@@ -834,6 +867,7 @@ class ImageViewerState extends State<ImageViewer> {
               child: Thumbnail(
                 item: widget.booruItem,
                 booru: widget.booru,
+                filterEvaluation: widget.filterEvaluation,
                 isStandalone: false,
                 useHero: false,
               ),
@@ -867,12 +901,16 @@ class ImageViewerState extends State<ImageViewer> {
                     isStopped: isStopped.value,
                     stopReason: stopReason.value,
                     stopDetails: stopDetails.value,
+                    filterEvaluation: widget.filterEvaluation,
                     isViewed: isViewed.value,
                     total: total,
                     received: received,
                     startedAt: startedAt,
                     onRestart: onManualRestart,
                     onStop: onManualStop,
+                    onFilterDetailsTap: widget.filterEvaluation.matches.isEmpty
+                        ? null
+                        : () => showTagFilterDetailsSheet(context, widget.filterEvaluation),
                   );
                 },
               ),
@@ -903,9 +941,11 @@ class ImageViewerState extends State<ImageViewer> {
                         milliseconds: (SX.appMode.value.isDesktop || isViewed.value) ? 50 : 300,
                       ),
                       child: AnimatedSwitcher(
-                        duration: Duration(
-                          milliseconds: (SX.appMode.value.isDesktop || isViewed.value) ? 50 : 300,
-                        ),
+                        duration: widget.filterEvaluation.isBlurred && !_ignoreFilterForCurrentLoad
+                            ? Duration.zero
+                            : Duration(
+                                milliseconds: (SX.appMode.value.isDesktop || isViewed.value) ? 50 : 300,
+                              ),
                         child: !isProviderLoaded
                             ? const SizedBox.shrink()
                             : ((isTiled && tiledProviders != null)

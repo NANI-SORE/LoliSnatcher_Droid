@@ -134,6 +134,7 @@ class _LoliSyncPageState extends State<LoliSyncPage> {
       favouritesv2 = false,
       snatched = false,
       settings = false,
+      filters = false,
       booru = false,
       tabs = false,
       tags = false;
@@ -438,6 +439,15 @@ class _LoliSyncPageState extends State<LoliSyncPage> {
           title: context.loc.settings.sync.sendSettings,
         ),
         SettingsToggle(
+          value: filters,
+          onChanged: (newValue) {
+            setState(() {
+              filters = newValue;
+            });
+          },
+          title: context.loc.settings.itemFilters.sendFilters,
+        ),
+        SettingsToggle(
           value: booru,
           onChanged: (newValue) {
             setState(() {
@@ -573,7 +583,8 @@ class _LoliSyncPageState extends State<LoliSyncPage> {
           icon: const Icon(Icons.send_to_mobile),
           action: () async {
             final bool isAddressEntered = ipController.text.isNotEmpty && portController.text.isNotEmpty;
-            final bool isAnySyncSelected = favouritesv2 || favourites || snatched || settings || booru || tabs || tags;
+            final bool isAnySyncSelected =
+                favouritesv2 || favourites || snatched || settings || filters || booru || tabs || tags;
             final bool syncAllowed = isAddressEntered && isAnySyncSelected;
 
             if (syncAllowed) {
@@ -589,6 +600,7 @@ class _LoliSyncPageState extends State<LoliSyncPage> {
                   snatched: snatched,
                   snatchedSkip: int.tryParse(snatchedSkipController.text) ?? 0,
                   settings: settings,
+                  filters: filters,
                   booru: booru,
                   tabs: tabs,
                   tabsMode: tabsMode,

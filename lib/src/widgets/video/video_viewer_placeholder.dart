@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/tag_filter_evaluation.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
 
@@ -14,11 +15,13 @@ class VideoViewerPlaceholder extends StatelessWidget {
   const VideoViewerPlaceholder({
     required this.item,
     required this.booru,
+    this.filterEvaluation,
     super.key,
   });
 
   final BooruItem item;
   final Booru booru;
+  final TagFilterEvaluation? filterEvaluation;
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +32,7 @@ class VideoViewerPlaceholder extends StatelessWidget {
           Thumbnail(
             item: item,
             booru: booru,
+            filterEvaluation: filterEvaluation,
             isStandalone: false,
           ),
           SizedBox(

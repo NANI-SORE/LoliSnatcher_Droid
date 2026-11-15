@@ -1631,7 +1631,7 @@ void registerAllSettings() {
       subcategories: [SettingSubcategory.activeFilters],
       supportsPerBooru: true,
       localization: SettingLocalization(
-        title: (ctx) => ctx.loc.settings.itemFilters.removeMarked,
+        title: (ctx) => ctx.loc.settings.itemFilters.removeMarkFilteredItems,
       ),
       widgetConfig: const SettingWidgetConfig(
         trailingIcon: Icon(Icons.star, color: Colors.yellow),
@@ -1751,6 +1751,7 @@ void registerAllSettings() {
     ),
   );
 
+  // used as a way to open filters page from search
   registry.register(
     stringListSetting(
       key: .hiddenTags,
@@ -1759,9 +1760,9 @@ void registerAllSettings() {
       subcategories: [SettingSubcategory.tagLists],
       legacyJsonKeys: const ['hatedTags'],
       navigateTo: () => const TagsFiltersPage(),
-      icon: Icons.visibility_off,
+      icon: Icons.filter_alt,
       localization: SettingLocalization(
-        title: (ctx) => 'Hidden Tags',
+        title: (ctx) => ctx.loc.settings.itemFilters.title,
       ),
     ),
   );
@@ -1773,10 +1774,11 @@ void registerAllSettings() {
       categories: [SettingCategory.tagsFilters],
       subcategories: [SettingSubcategory.tagLists],
       legacyJsonKeys: const ['lovedTags'],
-      navigateTo: () => const TagsFiltersPage(),
-      icon: Icons.star,
+      visibleWhen: () => false,
+      searchVisibleWhen: () => false,
+      isSearchable: false,
       localization: SettingLocalization(
-        title: (ctx) => 'Marked Tags',
+        title: (ctx) => ctx.loc.settings.itemFilters.marked,
       ),
     ),
   );

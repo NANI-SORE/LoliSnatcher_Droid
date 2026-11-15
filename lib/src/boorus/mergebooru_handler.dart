@@ -11,10 +11,12 @@ import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/meta_tag.dart';
 import 'package:lolisnatcher/src/data/response_error.dart';
 import 'package:lolisnatcher/src/data/tag_suggestion.dart';
+import 'package:lolisnatcher/src/data/tag_filter.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
+import 'package:lolisnatcher/src/utils/booru_source_resolver.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 
 class MergebooruHandler extends BooruHandler {
@@ -30,7 +32,24 @@ class MergebooruHandler extends BooruHandler {
   ({Booru booru, int index})? sourceFor(BooruItem item) => _itemSources[item];
 
   @override
-  Booru sourceBooruFor(BooruItem item) => sourceFor(item)?.booru ?? booru;
+  Booru sourceBooruFor(BooruItem item) {
+    final source = sourceFor(item)?.booru ?? booru;
+    return source.type?.isFavouritesOrDownloads == true ? BooruSourceResolver.resolve(item) ?? source : source;
+  }
+
+  @override
+  Booru filterSettingsBooruFor(BooruItem item) => sourceFor(item)?.booru ?? booru;
+
+  @override
+  FilterContext filterContextFor(BooruItem item) => FilterContext(
+    viewBooru: booru,
+    sourceBooru: sourceFor(item)?.booru.type?.isFavouritesOrDownloads == true
+        ? BooruSourceResolver.resolve(item)
+        : sourceFor(item)?.booru,
+  );
+
+  @override
+  FilterContext? get sharedFilterContext => null;
 
   @override
   bool get hasSizeData => booruHandlers.every((e) => e.hasSizeData);
@@ -106,12 +125,14 @@ class MergebooruHandler extends BooruHandler {
     if (pageNumCustom != null) {
       pageNum = pageNumCustom;
     }
+    tags = tags.trim();
     if (prevTags != tags) {
       fetched.value = [];
       fetchedPageNumbers.clear();
       resetFilterState();
       fetchedMap.clear();
       _itemSources.clear();
+      totalCount.value = 0;
       locked = false;
       for (final handler in booruHandlers) {
         handler.fetched.value = [];

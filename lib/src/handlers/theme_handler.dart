@@ -74,7 +74,9 @@ class ThemeHandler {
       textTheme: textTheme(),
       textSelectionTheme: textSelectionTheme(lightColorScheme),
       elevatedButtonTheme: elevatedButtonTheme(lightColorScheme),
+      filledButtonTheme: filledButtonTheme(lightColorScheme),
       outlinedButtonTheme: outlinedButtonTheme(lightColorScheme),
+      textButtonTheme: textButtonTheme(lightColorScheme),
       splashFactory: InkSparkle.splashFactory,
       applyElevationOverlayColor: true,
       buttonTheme: buttonTheme(lightColorScheme),
@@ -112,7 +114,9 @@ class ThemeHandler {
       textTheme: textTheme(),
       textSelectionTheme: textSelectionTheme(darkColorScheme),
       elevatedButtonTheme: elevatedButtonTheme(darkColorScheme),
+      filledButtonTheme: filledButtonTheme(darkColorScheme),
       outlinedButtonTheme: outlinedButtonTheme(darkColorScheme),
+      textButtonTheme: textButtonTheme(darkColorScheme),
       splashFactory: InkSparkle.splashFactory,
       applyElevationOverlayColor: true,
       buttonTheme: buttonTheme(darkColorScheme),
@@ -195,53 +199,128 @@ class ThemeHandler {
     selectionHandleColor: colorScheme.secondary,
   );
 
-  ElevatedButtonThemeData elevatedButtonTheme(ColorScheme colorScheme) => ElevatedButtonThemeData(
-    style: ElevatedButton.styleFrom(
-      backgroundColor: colorScheme.secondary,
-      foregroundColor: accentIsDark ? Colors.white : Colors.black,
-      iconColor: accentIsDark ? Colors.white : Colors.black,
-      disabledForegroundColor: Colors.black,
-      disabledBackgroundColor: Colors.grey,
-      disabledIconColor: Colors.black,
-      textStyle: TextStyle(
-        fontFamily: textTheme().bodyMedium!.fontFamily,
-        color: accentIsDark ? Colors.white : Colors.black,
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-      ),
-      minimumSize: const Size(48, 44),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      splashFactory: InkSparkle.splashFactory,
-    ),
-  );
+  double _contrastRatio(Color first, Color second) {
+    final firstLuminance = first.computeLuminance();
+    final secondLuminance = second.computeLuminance();
+    final lighter = firstLuminance > secondLuminance ? firstLuminance : secondLuminance;
+    final darker = firstLuminance > secondLuminance ? secondLuminance : firstLuminance;
+    return (lighter + 0.05) / (darker + 0.05);
+  }
 
-  OutlinedButtonThemeData outlinedButtonTheme(ColorScheme colorScheme) => OutlinedButtonThemeData(
-    style:
-        OutlinedButton.styleFrom(
-          side: BorderSide(color: colorScheme.secondary, width: 2.5),
-          foregroundColor: colorScheme.secondary,
-          textStyle: TextStyle(
-            fontFamily: textTheme().bodyMedium!.fontFamily,
-            color: colorScheme.secondary,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-          minimumSize: const Size(48, 44),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ).copyWith(
-          side: WidgetStateProperty.resolveWith<BorderSide>(
-            (states) {
-              if (states.contains(WidgetState.disabled)) {
-                return const BorderSide(color: Colors.grey, width: 2.5);
-              }
+  ({Color background, Color foreground}) _filledActionColors(ColorScheme colorScheme) {
+    if (_contrastRatio(colorScheme.secondary, colorScheme.surface) >= 3) {
+      return (background: colorScheme.secondary, foreground: colorScheme.onSecondary);
+    }
+    if (_contrastRatio(colorScheme.primary, colorScheme.surface) >= 3) {
+      return (background: colorScheme.primary, foreground: colorScheme.onPrimary);
+    }
+    return (background: colorScheme.onSurface, foreground: colorScheme.surface);
+  }
 
-              return BorderSide(color: colorScheme.secondary, width: 2.5);
-            },
-          ),
+  Color _outlinedActionColor(ColorScheme colorScheme) {
+    if (_contrastRatio(colorScheme.secondary, colorScheme.surface) >= 4.5) {
+      return colorScheme.secondary;
+    }
+    if (_contrastRatio(colorScheme.primary, colorScheme.surface) >= 4.5) {
+      return colorScheme.primary;
+    }
+    return colorScheme.onSurface;
+  }
+
+  ElevatedButtonThemeData elevatedButtonTheme(ColorScheme colorScheme) {
+    final actionColors = _filledActionColors(colorScheme);
+    return ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: actionColors.background,
+        foregroundColor: actionColors.foreground,
+        iconColor: actionColors.foreground,
+        disabledForegroundColor: colorScheme.onSurface.withValues(alpha: 0.38),
+        disabledBackgroundColor: colorScheme.onSurface.withValues(alpha: 0.12),
+        disabledIconColor: colorScheme.onSurface.withValues(alpha: 0.38),
+        textStyle: TextStyle(
+          fontFamily: textTheme().bodyMedium!.fontFamily,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
         ),
-  );
+        minimumSize: const Size(48, 44),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        splashFactory: InkSparkle.splashFactory,
+      ),
+    );
+  }
+
+  FilledButtonThemeData filledButtonTheme(ColorScheme colorScheme) {
+    final actionColors = _filledActionColors(colorScheme);
+    return FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: actionColors.background,
+        foregroundColor: actionColors.foreground,
+        iconColor: actionColors.foreground,
+        disabledForegroundColor: colorScheme.onSurface.withValues(alpha: 0.38),
+        disabledBackgroundColor: colorScheme.onSurface.withValues(alpha: 0.12),
+        disabledIconColor: colorScheme.onSurface.withValues(alpha: 0.38),
+        textStyle: TextStyle(
+          fontFamily: textTheme().bodyMedium!.fontFamily,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+        minimumSize: const Size(48, 44),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  OutlinedButtonThemeData outlinedButtonTheme(ColorScheme colorScheme) {
+    final actionColor = _outlinedActionColor(colorScheme);
+    return OutlinedButtonThemeData(
+      style:
+          OutlinedButton.styleFrom(
+            side: BorderSide(color: actionColor, width: 2.5),
+            foregroundColor: actionColor,
+            iconColor: actionColor,
+            disabledForegroundColor: colorScheme.onSurface.withValues(alpha: 0.38),
+            textStyle: TextStyle(
+              fontFamily: textTheme().bodyMedium!.fontFamily,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+            minimumSize: const Size(48, 44),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ).copyWith(
+            side: WidgetStateProperty.resolveWith<BorderSide>(
+              (states) {
+                if (states.contains(WidgetState.disabled)) {
+                  return BorderSide(color: colorScheme.onSurface.withValues(alpha: 0.12), width: 2.5);
+                }
+
+                return BorderSide(color: actionColor, width: 2.5);
+              },
+            ),
+          ),
+    );
+  }
+
+  TextButtonThemeData textButtonTheme(ColorScheme colorScheme) {
+    final actionColor = _outlinedActionColor(colorScheme);
+    return TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: actionColor,
+        iconColor: actionColor,
+        disabledForegroundColor: colorScheme.onSurface.withValues(alpha: 0.38),
+        textStyle: TextStyle(
+          fontFamily: textTheme().bodyMedium!.fontFamily,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+        minimumSize: const Size(48, 44),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
 
   AppBarTheme appBarTheme(ColorScheme colorScheme) => AppBarTheme(
     titleTextStyle: TextStyle(
@@ -272,18 +351,24 @@ class ThemeHandler {
     ),
   );
 
-  ButtonThemeData buttonTheme(ColorScheme colorScheme) => ButtonThemeData(
-    buttonColor: colorScheme.primary,
-    textTheme: ButtonTextTheme.primary,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-  );
+  ButtonThemeData buttonTheme(ColorScheme colorScheme) {
+    final actionColors = _filledActionColors(colorScheme);
+    return ButtonThemeData(
+      buttonColor: actionColors.background,
+      textTheme: ButtonTextTheme.primary,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    );
+  }
 
-  FloatingActionButtonThemeData floatingActionButtonTheme(ColorScheme colorScheme) => FloatingActionButtonThemeData(
-    backgroundColor: colorScheme.secondary,
-    foregroundColor: accentIsDark ? Colors.white : Colors.black,
-    elevation: 0,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-  );
+  FloatingActionButtonThemeData floatingActionButtonTheme(ColorScheme colorScheme) {
+    final actionColors = _filledActionColors(colorScheme);
+    return FloatingActionButtonThemeData(
+      backgroundColor: actionColors.background,
+      foregroundColor: actionColors.foreground,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    );
+  }
 
   IconThemeData iconTheme(ColorScheme colorScheme) => IconThemeData(
     color: colorScheme.onSurface,

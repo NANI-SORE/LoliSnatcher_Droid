@@ -1,10 +1,14 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 import 'dart:math';
+
+import 'package:flutter/foundation.dart';
 
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:get/get.dart' hide Response;
+import 'package:get_it/get_it.dart';
 import 'package:html/parser.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
@@ -16,9 +20,13 @@ import 'package:lolisnatcher/src/data/response_error.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/data/tag_suggestion.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
+import 'package:lolisnatcher/src/data/tag_filter.dart';
+import 'package:lolisnatcher/src/data/tag_filter_evaluation.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
+import 'package:lolisnatcher/src/handlers/tag_filter_handler.dart';
+import 'package:lolisnatcher/src/utils/booru_source_resolver.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
@@ -35,6 +43,8 @@ abstract class BooruHandler {
   int limit = 20;
   String prevTags = '';
   bool locked = false;
+  // Non-interactive consumers can require local flags before search completes.
+  bool waitForTrackedValues = false;
   Booru booru;
 
   String errorString = '';
@@ -55,86 +65,269 @@ abstract class BooruHandler {
   final Set<String> _seenFileURLs = {};
 
   /// Server IDs are only unique within a source. Local collections also mix hosts.
-  final Set<(String?, String?, String, String)> _seenServerIds = {};
+  final Set<String> _seenServerIds = {};
+  List<BooruItem>? _filteredInput;
+  BooruItem? _filterTail;
+  int _filterRuleRevision = -1;
+  String _filterCatalogKey = '';
 
   /// Merged searches override this to retain each item's source settings.
-  Booru sourceBooruFor(BooruItem item) => booru;
+  Booru sourceBooruFor(BooruItem item) =>
+      booru.type?.isFavouritesOrDownloads == true ? BooruSourceResolver.resolve(item) ?? booru : booru;
 
-  bool Function(BooruItem) _itemFilterFor(Booru source) {
-    final filterHated = SX.filterHated.valueForBooru(source.name);
-    final filterMarked = SX.filterMarked.valueForBooru(source.name);
-    final filterAi = SX.filterAi.valueForBooru(source.name);
-    final filterFavourites = SX.filterFavourites.valueForBooru(source.name) && source.type?.isFavourites != true;
-    final filterSnatched = SX.filterSnatched.valueForBooru(source.name) && source.type?.isDownloads != true;
+  /// Local-view exclusions remain view settings, even inside a merged search.
+  Booru filterSettingsBooruFor(BooruItem item) => booru;
 
-    return (item) =>
-        ContentPolicy.isItemAllowed(source, item) &&
-        !(filterHated && item.isHidden) &&
-        !(filterMarked && item.isMarked) &&
+  bool Function(BooruItem, TagFilterEvaluation) _itemFilterFor(Booru source) {
+    final timers = GetIt.instance.isRegistered<TagFilterHandler>() ? TagFilterHandler.instance : null;
+    final filterMarked =
+        timers?.optionEnabled(TimedFilterOption.marked, booruName: source.name) ??
+        SX.filterMarked.valueForBooru(source.name);
+    final filterAi =
+        timers?.optionEnabled(TimedFilterOption.ai, booruName: source.name) ?? SX.filterAi.valueForBooru(source.name);
+    final filterFavourites =
+        (timers?.optionEnabled(TimedFilterOption.favourites, booruName: source.name) ??
+            SX.filterFavourites.valueForBooru(source.name)) &&
+        source.type?.isFavourites != true;
+    final filterSnatched =
+        (timers?.optionEnabled(TimedFilterOption.snatched, booruName: source.name) ??
+            SX.filterSnatched.valueForBooru(source.name)) &&
+        source.type?.isDownloads != true;
+
+    return (item, evaluation) =>
+        !evaluation.isHidden &&
+        !(filterMarked && evaluation.isMarked) &&
         !(filterAi && item.isAI) &&
         !(filterFavourites && item.isFavourite.value == true) &&
         !(filterSnatched && item.isSnatched.value == true);
   }
 
-  /// Filters newly fetched items incrementally (from watermark to end of fetched list).
-  /// Only processes items that haven't been filtered yet.
+  final Map<
+    BooruItem,
+    ({
+      int revision,
+      List<Tag> tags,
+      String? rating,
+      String? score,
+      String? uploaderName,
+      String? sourceKey,
+      String contextKey,
+      TagFilterEvaluation evaluation,
+    })
+  >
+  _filterEvaluationCache = Map.identity();
+  final Map<BooruItem, ({String catalogKey, String fileUrl, String postUrl, String? sourceKey, FilterContext context})>
+  _filterContextCache = Map.identity();
+
+  FilterContext filterContextFor(BooruItem item) {
+    final source = booru.type?.isFavouritesOrDownloads == true ? BooruSourceResolver.resolve(item) : booru;
+    return FilterContext(viewBooru: booru, sourceBooru: source);
+  }
+
+  FilterContext? get sharedFilterContext =>
+      booru.type?.isFavouritesOrDownloads == true ? null : FilterContext(viewBooru: booru, sourceBooru: booru);
+
+  int _filterGeneration = 0;
+
+  /// Also evaluates standalone items and metadata refreshed after fetching.
+  TagFilterEvaluation filterEvaluationFor(BooruItem item) {
+    if (!GetIt.instance.isRegistered<TagFilterHandler>()) return const TagFilterEvaluation.empty();
+    return _evaluateFilter(item, filterContextFor(item), TagFilterHandler.instance);
+  }
+
+  TagFilterEvaluation _evaluateFilter(BooruItem item, FilterContext context, TagFilterHandler handler) {
+    final cached = _filterEvaluationCache[item];
+    if (cached != null &&
+        cached.revision == handler.evaluationRevision &&
+        identical(cached.tags, item.tagsList) &&
+        cached.rating == item.rating &&
+        cached.score == item.score &&
+        cached.uploaderName == item.uploaderName &&
+        cached.sourceKey == item.sourceIdentity?.stableKey &&
+        cached.contextKey == context.cacheKey) {
+      return cached.evaluation;
+    }
+    final evaluation = handler.evaluate(item, context);
+    _filterEvaluationCache[item] = (
+      revision: handler.evaluationRevision,
+      tags: item.tagsList,
+      rating: item.rating,
+      score: item.score,
+      uploaderName: item.uploaderName,
+      sourceKey: item.sourceIdentity?.stableKey,
+      contextKey: context.cacheKey,
+      evaluation: evaluation,
+    );
+    return evaluation;
+  }
+
+  @protected
+  void clearFilterCaches() {
+    _filterGeneration++;
+    _filterWatermark = 0;
+    _filteredInput = null;
+    _filterEvaluationCache.clear();
+    _filterContextCache.clear();
+  }
+
+  String _filterContextCatalogKey() => SettingsHandler.instance.booruList
+      .where((source) => source.type?.isFavouritesOrDownloads != true)
+      .map((source) => BooruIdentity.fromBooru(source).stableKey)
+      .join('\u0000');
+
+  /// Filters the list of fetched items and stores them in filteredFetched
   ///
   /// Should always be called after fetched changed (so don't forget to add it in custom afterParseResponse or search methods)
-  /// (See gelbooru or favourites handlers for example)
-  void filterFetched() {
-    final filters = <Booru, bool Function(BooruItem)>{};
+  /// (See gelbooru of favourites handlers for example)
+  void filterFetched({bool forceRefresh = false}) {
+    final generation = ++_filterGeneration;
+    final revision = GetIt.instance.isRegistered<TagFilterHandler>()
+        ? TagFilterHandler.instance.evaluationRevision
+        : -1;
+    final catalogKey = _filterContextCatalogKey();
+    final canAppend =
+        !forceRefresh &&
+        identical(_filteredInput, fetched.value) &&
+        _filterWatermark > 0 &&
+        _filterWatermark < fetched.length &&
+        identical(_filterTail, fetched[_filterWatermark - 1]) &&
+        _filterRuleRevision == revision &&
+        _filterCatalogKey == catalogKey;
+    // Fetch callers depend on the complete filtered list being ready on return.
+    for (final _ in _filterFetchedSteps(
+      fetched,
+      generation,
+      forceRefresh: forceRefresh,
+      start: canAppend ? _filterWatermark : 0,
+    )) {}
+  }
 
-    final List<BooruItem> newFilteredItems = [];
-
-    for (int i = _filterWatermark; i < fetched.length; i++) {
-      final item = fetched[i];
-
-      final source = sourceBooruFor(item);
-      final includeItem = filters.putIfAbsent(source, () => _itemFilterFor(source));
-      if (!includeItem(item)) {
-        continue;
-      }
-
-      if (_seenFileURLs.contains(item.fileURL)) {
-        continue;
-      }
-      final serverId = item.serverId;
-      final serverKey = serverId?.isNotEmpty == true
-          ? (source.type?.name, source.baseURL, Uri.tryParse(item.postURL)?.authority ?? '', serverId!)
-          : null;
-      if (serverKey != null && _seenServerIds.contains(serverKey)) {
-        continue;
-      }
-
-      if (item.fileURL.isNotEmpty) {
-        _seenFileURLs.add(item.fileURL);
-      }
-      if (serverKey != null) {
-        _seenServerIds.add(serverKey);
-      }
-
-      newFilteredItems.add(item);
-    }
-
-    _filterWatermark = fetched.length;
-
-    if (newFilteredItems.isNotEmpty) {
-      filteredFetched.addAll(newFilteredItems);
+  /// Rule edits yield between batches, publishing only a complete, current list.
+  Future<void> refilterFetched({required bool Function() shouldCancel, bool forceRefresh = true}) async {
+    final generation = ++_filterGeneration;
+    _filterWatermark = 0;
+    final items = fetched.toList(growable: false);
+    final steps = _filterFetchedSteps(items, generation, forceRefresh: forceRefresh).iterator;
+    while (generation == _filterGeneration && !shouldCancel()) {
+      if (!steps.moveNext()) return;
+      await Future<void>.delayed(Duration.zero);
     }
   }
 
-  /// Full refilter: resets watermark and rebuilds filteredFetched from scratch.
-  /// Call when filter settings change (e.g., user toggles filterHated, marks/hides tags, toggles favourite).
+  Iterable<void> _filterFetchedSteps(
+    List<BooruItem> items,
+    int generation, {
+    required bool forceRefresh,
+    int start = 0,
+  }) sync* {
+    final filters = <Booru, bool Function(BooruItem, TagFilterEvaluation)>{};
+
+    final List<BooruItem> filteredItems = start == 0 ? [] : [...filteredFetched];
+    final Set<String> seenFileUrls = start == 0 ? {} : {..._seenFileURLs};
+    final Set<String> seenServerIds = start == 0 ? {} : {..._seenServerIds};
+    final bool hasTagFilterHandler = GetIt.instance.isRegistered<TagFilterHandler>();
+    final filterHandler = hasTagFilterHandler ? TagFilterHandler.instance : null;
+    final sharedContext = hasTagFilterHandler ? sharedFilterContext : null;
+    final contextCatalogKey = hasTagFilterHandler && sharedContext == null ? _filterContextCatalogKey() : '';
+    final activeItems = HashSet<BooruItem>.identity();
+
+    var processed = 0;
+    for (final item in items.skip(start)) {
+      if (processed++ > 0 && processed % 128 == 0) yield null;
+      activeItems.add(item);
+      final source = sourceBooruFor(item);
+      if (!ContentPolicy.isItemAllowed(source, item)) {
+        continue;
+      }
+
+      var context = sharedContext;
+      if (context == null && hasTagFilterHandler) {
+        final cachedContext = _filterContextCache[item];
+        if (cachedContext != null &&
+            cachedContext.catalogKey == contextCatalogKey &&
+            cachedContext.fileUrl == item.fileURL &&
+            cachedContext.postUrl == item.postURL &&
+            cachedContext.sourceKey == item.sourceIdentity?.stableKey) {
+          context = cachedContext.context;
+        } else {
+          context = filterContextFor(item);
+          _filterContextCache[item] = (
+            catalogKey: contextCatalogKey,
+            fileUrl: item.fileURL,
+            postUrl: item.postURL,
+            sourceKey: item.sourceIdentity?.stableKey,
+            context: context,
+          );
+        }
+      }
+      final evaluation = filterHandler != null && context != null
+          ? _evaluateFilter(item, context, filterHandler)
+          : const TagFilterEvaluation.empty();
+
+      final settingsSource = filterSettingsBooruFor(item);
+      final includeItem = filters.putIfAbsent(settingsSource, () => _itemFilterFor(settingsSource));
+      if (!includeItem(item, evaluation)) {
+        continue;
+      }
+
+      final String? serverId = item.serverId;
+      final bool duplicateFileUrl = item.fileURL.isNotEmpty && seenFileUrls.contains(item.fileURL);
+      final sourceKey = item.sourceIdentity ?? BooruIdentity.fromBooru(source);
+      final scopedServerId =
+          serverId == null ||
+              serverId.isEmpty ||
+              sourceKey.type == null ||
+              sourceKey.baseUrl?.isNotEmpty != true ||
+              sourceKey.type?.isFavouritesOrDownloads == true ||
+              sourceKey.type?.isMerge == true
+          ? null
+          : '${sourceKey.type?.name}|${sourceKey.baseUrl}|$serverId';
+      final bool duplicateServerId = scopedServerId != null && seenServerIds.contains(scopedServerId);
+      if (duplicateFileUrl || duplicateServerId) {
+        continue;
+      }
+      if (item.fileURL.isNotEmpty) {
+        seenFileUrls.add(item.fileURL);
+      }
+      if (scopedServerId != null) {
+        seenServerIds.add(scopedServerId);
+      }
+
+      filteredItems.add(item);
+    }
+
+    if (generation != _filterGeneration || !listEquals(items, fetched)) return;
+    if (start == 0) {
+      _filterEvaluationCache.removeWhere((item, _) => !activeItems.contains(item));
+      _filterContextCache.removeWhere((item, _) => !activeItems.contains(item));
+    }
+    _filterWatermark = items.length;
+    _filteredInput = fetched.value;
+    _filterTail = items.lastOrNull;
+    _filterRuleRevision = filterHandler?.evaluationRevision ?? -1;
+    _filterCatalogKey = _filterContextCatalogKey();
+    _seenFileURLs
+      ..clear()
+      ..addAll(seenFileUrls);
+    _seenServerIds
+      ..clear()
+      ..addAll(seenServerIds);
+    if (!listEquals(filteredFetched, filteredItems)) {
+      filteredFetched.value = filteredItems;
+    } else if (forceRefresh) {
+      filteredFetched.value = [...filteredItems];
+    }
+  }
+
+  /// Rebuild after settings or tracked metadata changes without publishing a partial list.
   void refilterAll() {
     _filterWatermark = 0;
-    _seenFileURLs.clear();
-    _seenServerIds.clear();
-    filteredFetched.clear();
-    filterFetched();
+    filterFetched(forceRefresh: true);
   }
 
-  /// Resets all filter state. Call when fetched list is cleared.
+  /// Invalidate both pending rule evaluations and incremental page state.
   void resetFilterState() {
+    clearFilterCaches();
     _filterWatermark = 0;
     _seenFileURLs.clear();
     _seenServerIds.clear();
@@ -371,6 +564,9 @@ abstract class BooruHandler {
     DioNetwork.throwIfCancelled();
     for (final item in newItems) {
       item.fetchedPage = pageNum;
+      if (booru.type?.isFavouritesOrDownloads != true && booru.type?.isMerge != true) {
+        item.sourceIdentity = BooruIdentity.fromBooru(booru);
+      }
     }
     fetchedPageNumbers.add(pageNum);
 
@@ -903,6 +1099,8 @@ abstract class BooruHandler {
         items[index].isFavourite.value = valuesList[index][1];
       }
     }
+    final current = HashSet<BooruItem>.identity()..addAll(fetched);
+    if (items.any(current.contains)) filterFetched();
 
     return;
   }

@@ -15,6 +15,7 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/handlers/tag_filter_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/pages/loli_sync_page.dart';
@@ -56,6 +57,9 @@ class LoliSync {
           break;
         case '/lolisync/settings':
           yield await storeSettings(req, settingsHandler);
+          break;
+        case '/lolisync/filters':
+          yield await storeFilters(req);
           break;
         case '/lolisync/booru':
           yield await storeBooru(req, settingsHandler);
@@ -102,6 +106,27 @@ class LoliSync {
       req.response.statusCode = 404;
       req.response.write('Invalid Query');
       return 'Invalid Query';
+    }
+  }
+
+  Future<String> storeFilters(dynamic req) async {
+    if (req.method != 'POST') {
+      req.response.statusCode = HttpStatus.notFound;
+      req.response.write('Invalid Query');
+      return 'Invalid Query';
+    }
+
+    try {
+      final String content = await utf8.decoder.bind(req).join();
+      await TagFilterHandler.instance.replaceFromString(content);
+      req.response.statusCode = HttpStatus.ok;
+      req.response.write('Filters Sent');
+      return 'Filter rules saved';
+    } catch (e, s) {
+      Logger.Inst().log(e.toString(), 'LoliSync', 'storeFilters', LogTypes.exception, s: s);
+      req.response.statusCode = HttpStatus.badRequest;
+      req.response.write('Invalid filter configuration');
+      return 'Something went wrong $e';
     }
   }
 
@@ -400,6 +425,20 @@ class LoliSync {
     return responseStr;
   }
 
+  Future<String> sendFilters() async {
+    final String filtersJson = await TagFilterHandler.instance.export();
+    Logger.Inst().log('Sending filter rules', 'LoliSync', 'sendFilters', LogTypes.loliSyncInfo);
+    final HttpClientRequest request = await HttpClient().post(ip, port, '/lolisync/filters')
+      ..headers.contentType = ContentType.json
+      ..write(filtersJson);
+    final HttpClientResponse response = await request.close();
+    final body = await utf8.decoder.bind(response).join();
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw HttpException('Filter transfer rejected (${response.statusCode})');
+    }
+    return body;
+  }
+
   Future<String> sendBooru(Booru booru, int booruCount, int current) async {
     Logger.Inst().log('Sending item $current / $booruCount', 'LoliSync', 'sendBooru', LogTypes.loliSyncInfo);
     final registry = SettingsRegistry.instance;
@@ -651,6 +690,12 @@ class LoliSync {
             settingsJSON.remove(state.def.jsonKey);
           }
           final String resp = await sendSettings(settingsJSON);
+          yield resp;
+          break;
+        case 'Filters':
+          yield 'Sync Starting $address';
+          yield 'Preparing filter rules';
+          final String resp = await sendFilters();
           yield resp;
           break;
         case 'Booru':

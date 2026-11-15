@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/data/settings/setting_def.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/settings/setting_state.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -52,6 +53,7 @@ class _SettingsSearchPageState extends State<SettingsSearchPage> {
       appBar: AppBar(
         title: TextField(
           controller: _controller,
+          enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
           autofocus: true,
           decoration: InputDecoration(
             hintText: context.loc.search,

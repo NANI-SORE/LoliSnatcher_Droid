@@ -315,9 +315,14 @@ class MainActivity: FlutterFragmentActivity() {
                     "canAccessSafDirectory" -> {
                         val uri = call.argument<String>("uri")
                         if (uri != null) {
-                            Executors.newSingleThreadExecutor().execute {
-                                val canAccess = canAccessSafDirectory(uri)
-                                runOnUiThread { result.success(canAccess) }
+                            val executor = Executors.newSingleThreadExecutor()
+                            executor.execute {
+                                try {
+                                    val canAccess = canAccessSafDirectory(uri)
+                                    runOnUiThread { result.success(canAccess) }
+                                } finally {
+                                    executor.shutdown()
+                                }
                             }
                         } else {
                             result.error("INVALID_ARGUMENT", "URI is null", null)

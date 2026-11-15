@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:dio/dio.dart';
 import 'package:fading_edge_scrollview/fading_edge_scrollview.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
@@ -33,6 +32,7 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
+import 'package:lolisnatcher/src/widgets/common/loli_date_time_picker.dart';
 import 'package:lolisnatcher/src/widgets/common/confirm_button.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/kaomoji.dart';
@@ -1567,15 +1567,12 @@ class _SingleDatePickerBottomSheetState extends State<SingleDatePickerBottomShee
           DateFormat(widget.dateFormat ?? 'yyyy-MM-dd').format(date.first),
           style: context.theme.textTheme.bodyLarge,
         ),
-        CalendarDatePicker2(
-          config: CalendarDatePicker2Config(
-            calendarType: CalendarDatePicker2Type.single,
-            firstDate: DateTime(2000),
-            lastDate: DateTime.now(),
-            selectedDayHighlightColor: context.theme.colorScheme.secondary,
-          ),
+        LoliDateTimePicker(
           value: date,
-          onValueChanged: (value) => setState(() => date = value),
+          onChanged: (value) => setState(() => date = value),
+          mode: LoliDateTimePickerMode.date,
+          firstDate: DateTime(2000),
+          lastDate: DateTime.now(),
         ),
       ],
       actionButtons: [
@@ -1649,15 +1646,13 @@ class _RangeDatePickerBottomSheetState extends State<RangeDatePickerBottomSheet>
               DateFormat(widget.dateFormat ?? 'yyyy-MM-dd').format(range.last),
           style: context.theme.textTheme.bodyLarge,
         ),
-        CalendarDatePicker2(
-          config: CalendarDatePicker2Config(
-            calendarType: CalendarDatePicker2Type.range,
-            firstDate: DateTime(2000),
-            lastDate: DateTime.now(),
-            selectedDayHighlightColor: context.theme.colorScheme.secondary,
-          ),
+        LoliDateTimePicker(
           value: range,
-          onValueChanged: (value) => setState(() => range = value),
+          onChanged: (value) => setState(() => range = value),
+          mode: LoliDateTimePickerMode.date,
+          selectionMode: LoliDateTimePickerSelectionMode.range,
+          firstDate: DateTime(2000),
+          lastDate: DateTime.now(),
         ),
       ],
       actionButtons: [

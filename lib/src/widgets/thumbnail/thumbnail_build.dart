@@ -3,23 +3,24 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 
-import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/boorus/downloads_handler.dart';
 import 'package:lolisnatcher/src/boorus/favourites_handler.dart';
-import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
 import 'package:lolisnatcher/src/boorus/mergebooru_handler.dart';
-import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/data/tag_filter.dart';
+import 'package:lolisnatcher/src/data/tag_filter_evaluation.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
+import 'package:lolisnatcher/src/utils/booru_source_resolver.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/pulse_widget.dart';
 import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_evaluation_builder.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
 import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
 
@@ -57,28 +58,21 @@ class ThumbnailBuild extends StatelessWidget {
       return cached?.booru;
     }
 
-    final itemFileHost = Uri.tryParse(item.fileURL)?.host;
-    final itemPostHost = Uri.tryParse(item.postURL)?.host;
-    final possibleBooru = settingsHandler.booruList.firstWhereOrNull((e) {
-      final booruHost = Uri.tryParse(e.baseURL ?? '')?.host;
-
-      return (itemPostHost?.isNotEmpty == true &&
-              booruHost?.isNotEmpty == true &&
-              (itemPostHost == booruHost ||
-                  switch (e.type) {
-                    BooruType.IdolSankaku => IdolSankakuHandler.knownUrls.contains(itemPostHost),
-                    BooruType.Sankaku => SankakuHandler.knownPostUrls.contains(itemPostHost),
-                    _ => false,
-                  })) ||
-          (itemFileHost?.isNotEmpty == true && booruHost?.isNotEmpty == true && itemFileHost == booruHost);
-    });
-    final result = possibleBooru?.type?.isFavouritesOrDownloads == true ? null : possibleBooru;
+    final result = BooruSourceResolver.resolve(item);
     _sourceCache[item] = _SourceCacheEntry(settingsHandler.booruListVersion, result);
     return result;
   }
 
   @override
   Widget build(BuildContext context) {
+    return TagFilterEvaluationBuilder(
+      item: item,
+      handler: handler,
+      builder: _buildThumbnail,
+    );
+  }
+
+  Widget _buildThumbnail(BuildContext context, TagFilterEvaluation evaluation) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: Stack(
@@ -93,6 +87,7 @@ class ThumbnailBuild extends StatelessWidget {
                 return Thumbnail(
                   item: item,
                   booru: possibleBooru ?? handler?.booru,
+                  filterEvaluation: evaluation,
                   isStandalone: true,
                   useHero: selectable,
                 );
@@ -325,7 +320,10 @@ class ThumbnailBuild extends StatelessWidget {
                   ),
                   //
                   Flexible(
-                    child: _ThumbnailBottomRightIcons(item),
+                    child: _ThumbnailBottomRightIcons(
+                      item,
+                      evaluation,
+                    ),
                   ),
                 ],
               ),
@@ -339,9 +337,11 @@ class ThumbnailBuild extends StatelessWidget {
 class _ThumbnailBottomRightIcons extends StatelessWidget {
   const _ThumbnailBottomRightIcons(
     this.item,
+    this.evaluation,
   );
 
   final BooruItem item;
+  final TagFilterEvaluation evaluation;
 
   @override
   Widget build(BuildContext context) {
@@ -356,7 +356,9 @@ class _ThumbnailBottomRightIcons extends StatelessWidget {
       final IconData? itemIcon = Tools.getFileIcon(item.possibleMediaType.value ?? item.mediaType.value);
 
       final bool? isFav = item.isFavourite.value;
-      final bool isFavOrMarked = isFav == true || item.isMarked;
+      final markers = evaluation.gridDisplayMarkers;
+      final displayedMarkers = markers.take(3).toList();
+      final markerOverflow = markers.length - displayedMarkers.length;
       // final bool isHidden = tagsData.hiddenTags.isNotEmpty;
       final bool isSnatched = item.isSnatched.value == true;
 
@@ -364,7 +366,9 @@ class _ThumbnailBottomRightIcons extends StatelessWidget {
       final bool isCurrentlyBeingSnatched = snatchHandler.activeItem.value == item;
 
       int bottomRightAmount = 0;
-      if (isFavOrMarked) bottomRightAmount += 1;
+      if (isFav == true) bottomRightAmount += 1;
+      bottomRightAmount += displayedMarkers.length;
+      if (markerOverflow > 0) bottomRightAmount += 1;
       // if (isHidden) bottomRightAmount += 1;
       if (isCurrentlyBeingSnatched) bottomRightAmount += 1;
       if (isSnatched || isInQueueToBeSnatched || isCurrentlyBeingSnatched) bottomRightAmount += 1;
@@ -397,31 +401,17 @@ class _ThumbnailBottomRightIcons extends StatelessWidget {
             spacing: 1.5,
             runSpacing: 2,
             children: [
-              AnimatedCrossFade(
-                duration: const Duration(milliseconds: 200),
-                crossFadeState: isFavOrMarked ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-                firstChild: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: (SX.dbEnabled.value && isFav == null)
-                      ? const SizedBox(
-                          height: 14,
-                          width: 14,
-                          child: Center(
-                            child: Text(
-                              '.',
-                              style: TextStyle(fontSize: 14, height: 1),
-                            ),
-                          ),
-                        )
-                      : Icon(
-                          isFav == true ? Icons.favorite : Icons.star,
-                          color: isFav == true ? Colors.red : Colors.grey,
-                          key: ValueKey<Color>(isFav == true ? Colors.red : Colors.grey),
-                          size: 14,
-                        ),
-                ),
-                secondChild: const SizedBox.shrink(),
-              ),
+              if (SX.dbEnabled.value && isFav == null)
+                const SizedBox(
+                  height: 14,
+                  width: 14,
+                  child: Center(child: Text('.', style: TextStyle(fontSize: 14, height: 1))),
+                )
+              else if (isFav == true)
+                const Icon(Icons.favorite, color: Colors.red, size: 14),
+              for (final marker in displayedMarkers) _FilterMarkerIcon(marker),
+              if (markerOverflow > 0)
+                Text('+$markerOverflow', style: const TextStyle(color: Colors.grey, fontSize: 10, height: 1)),
               //
               // if (isHidden)
               //   const Icon(
@@ -470,5 +460,31 @@ class _ThumbnailBottomRightIcons extends StatelessWidget {
         ),
       );
     });
+  }
+}
+
+class _FilterMarkerIcon extends StatelessWidget {
+  const _FilterMarkerIcon(this.marker);
+
+  final TagFilterMarker? marker;
+
+  @override
+  Widget build(BuildContext context) {
+    if (marker == null) return const Icon(Icons.star, color: Colors.grey, size: 14);
+    return switch (marker!.kind) {
+      TagFilterMarkerKind.icon => marker!.icon!.build(color: marker!.effectiveColor, size: 14),
+      TagFilterMarkerKind.text => Padding(
+        padding: const EdgeInsets.only(bottom: 2),
+        child: Text(
+          marker!.text!,
+          style: TextStyle(
+            color: marker!.effectiveColor,
+            fontSize: 12,
+            height: 1,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    };
   }
 }

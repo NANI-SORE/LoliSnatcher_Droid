@@ -32,6 +32,7 @@ import 'package:lolisnatcher/src/data/settings/settings_enum.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
+import 'package:lolisnatcher/src/handlers/tag_filter_handler.dart';
 import 'package:lolisnatcher/src/handlers/theme_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/pages/desktop_home_page.dart';
@@ -40,6 +41,7 @@ import 'package:lolisnatcher/src/pages/lockscreen_page.dart';
 import 'package:lolisnatcher/src/pages/mobile_home_page.dart';
 import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
 import 'package:lolisnatcher/src/pages/settings/performance_page.dart';
+import 'package:lolisnatcher/src/pages/settings/tags_filters_page.dart';
 import 'package:lolisnatcher/src/pages/settings/language_page.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -49,6 +51,7 @@ import 'package:lolisnatcher/src/widgets/root/dev_overlay.dart';
 import 'package:lolisnatcher/src/widgets/root/theme_builder.dart';
 import 'package:lolisnatcher/src/widgets/root/image_stats.dart';
 import 'package:lolisnatcher/src/widgets/root/scroll_physics.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_migration_sheet.dart';
 import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
 
 void main() async {
@@ -81,6 +84,7 @@ void main() async {
   SecureStorageHandler.register();
   initSettingsEnumRegistry();
   await SettingsHandler.register().initialize();
+  await TagFilterHandler.register().initialize();
   LocalAuthHandler.register();
 
   // load all locales data to enable loading any entry from any language (i.e. for handleFavDlsNameChange check or flags in About page)
@@ -118,9 +122,11 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
   }
 
   Future<void> initHandlers() async {
+    var migratedLegacyFilterCount = 0;
     searchHandler.setRootRestate(updateState);
     settingsHandler.alice.setNavigatorKey(navigationHandler.navigatorKey);
     await settingsHandler.postInit(() async {
+      migratedLegacyFilterCount = await TagFilterHandler.instance.importLegacy();
       settingsHandler.postInitMessage.value = loc.init.loadingTags;
       // should init earlier than tabs so tags color properly on first render of search box
       await tagHandler.initialize();
@@ -128,7 +134,30 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       await searchHandler.restoreTabs();
     });
 
+    if (migratedLegacyFilterCount > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_showLegacyFilterMigrationNotice(migratedLegacyFilterCount));
+      });
+    }
+
     SX.isDebug.state.effectiveNotifier.addListener(devOverlayListener);
+  }
+
+  Future<void> _showLegacyFilterMigrationNotice(int migratedRuleCount) async {
+    final navigatorContext = navigationHandler.navigatorKey.currentContext;
+    if (!mounted || navigatorContext == null) return;
+
+    final openFilters = await showTagFilterMigrationSheet(
+      context: navigatorContext,
+      migratedRuleCount: migratedRuleCount,
+    );
+    final currentContext = navigationHandler.navigatorKey.currentContext;
+    if (openFilters != true || !mounted || currentContext == null || !currentContext.mounted) return;
+
+    await SettingsPageOpen(
+      context: currentContext,
+      page: (_) => const TagsFiltersPage(),
+    ).open();
   }
 
   void registerGlobalOverlay(BuildContext context) {
@@ -174,6 +203,7 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
     TagHandler.unregister();
     LocalAuthHandler.unregister();
     SecureStorageHandler.unregister();
+    unawaited(TagFilterHandler.unregister());
     SettingsHandler.unregister();
     super.dispose();
   }
@@ -684,6 +714,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       case AppLifecycleState.resumed:
         // check if app needs to be locked when user returns to the app
         localAuthHandler.onReturn();
+        TagFilterHandler.instance.handleAppResumed();
         break;
     }
   }

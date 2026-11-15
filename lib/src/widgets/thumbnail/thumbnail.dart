@@ -8,12 +8,11 @@ import 'package:flutter/material.dart';
 
 import 'package:dio/dio.dart';
 
-import 'package:lolisnatcher/src/boorus/booru_type.dart';
-import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
-import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/booru_identity.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/data/tag_filter_evaluation.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -21,14 +20,17 @@ import 'package:lolisnatcher/src/utils/debouncer.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
+import 'package:lolisnatcher/src/utils/booru_source_resolver.dart';
 import 'package:lolisnatcher/src/widgets/common/thumbnail_loading.dart';
 import 'package:lolisnatcher/src/widgets/image/custom_network_image.dart';
 import 'package:lolisnatcher/src/widgets/preview/shimmer_builder.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_evaluation_builder.dart';
 
 class Thumbnail extends StatelessWidget {
   const Thumbnail({
     required this.item,
     this.booru,
+    this.filterEvaluation,
     this.isStandalone = false,
     this.useHero = true,
     super.key,
@@ -36,6 +38,7 @@ class Thumbnail extends StatelessWidget {
 
   final BooruItem item;
   final Booru? booru;
+  final TagFilterEvaluation? filterEvaluation;
 
   /// set to true when used in a list
   final bool isStandalone;
@@ -43,10 +46,24 @@ class Thumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final evaluation = filterEvaluation;
+    if (evaluation != null) {
+      return _buildThumbnail(context, evaluation);
+    }
+    return TagFilterEvaluationBuilder(
+      item: item,
+      booru: booru,
+      builder: _buildThumbnail,
+    );
+  }
+
+  Widget _buildThumbnail(BuildContext context, TagFilterEvaluation evaluation) {
+    if (evaluation.isHidden) return const SizedBox.shrink();
     // Hero flights must own their loading state instead of sharing the source's notifiers.
     final Widget child = _ThumbnailImage(
       item: item,
       booru: booru,
+      filterEvaluation: evaluation,
       isStandalone: isStandalone,
     );
 
@@ -72,11 +89,13 @@ class _ThumbnailImage extends StatefulWidget {
   const _ThumbnailImage({
     required this.item,
     required this.booru,
+    required this.filterEvaluation,
     required this.isStandalone,
   });
 
   final BooruItem item;
   final Booru? booru;
+  final TagFilterEvaluation filterEvaluation;
   final bool isStandalone;
 
   @override
@@ -122,8 +141,18 @@ class _ThumbnailState extends State<_ThumbnailImage> {
   @override
   void didUpdateWidget(_ThumbnailImage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final oldEvaluation = oldWidget.filterEvaluation;
+    final evaluation = widget.filterEvaluation;
+    final filterChanged =
+        oldEvaluation.isBlurred != evaluation.isBlurred ||
+        oldEvaluation.hideAsBlur != evaluation.hideAsBlur ||
+        oldEvaluation.primaryMatch?.rule.id != evaluation.primaryMatch?.rule.id ||
+        oldEvaluation.primaryMatch?.rule.updatedAt != evaluation.primaryMatch?.rule.updatedAt ||
+        oldEvaluation.loadingFilterDetails != evaluation.loadingFilterDetails;
     // force redraw on tab change
-    if (oldWidget.item != widget.item) {
+    if (oldWidget.item != widget.item || filterChanged) {
+      _loadGeneration++;
+      isBlurred = true;
       currentUrl = widget.item.thumbnailURL;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
@@ -203,7 +232,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
 
     // on desktop devicePixelRatio is not working?
     final bool shouldResize = (thumbWidth != null || thumbHeight != null) && !PlatformExt.isDesktop;
-    final bool shouldPixelate = widget.item.isHidden && SX.shitDevice.value;
+    final bool shouldPixelate = widget.filterEvaluation.isBlurred && SX.shitDevice.value;
 
     if (shouldResize || shouldPixelate) {
       return ResizeImage(
@@ -310,7 +339,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
         (!widget.isStandalone && widget.item.fileURL == widget.item.sampleURL);
     thumbURL = isThumbQuality == true ? widget.item.thumbnailURL : widget.item.sampleURL;
     thumbFolder = (isThumbQuality == true || thumbURL == widget.item.thumbnailURL) ? 'thumbnails' : 'samples';
-    useExtra.value = isThumbQuality == false && !widget.item.isHidden && !SX.shitDevice.value;
+    useExtra.value = isThumbQuality == false && !widget.filterEvaluation.isBlurred && !SX.shitDevice.value;
 
     // delay loading a little to improve performance when scrolling fast, ignore delay if it's a standalone widget (i.e. not in a list)
     debounceLoading = Timer(
@@ -613,7 +642,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
                   );
                 },
                 child: ImageFiltered(
-                  enabled: SettingsHandler.instance.blurImages || widget.item.isHidden,
+                  enabled: SettingsHandler.instance.blurImages || widget.filterEvaluation.isBlurred,
                   imageFilter: ImageFilter.blur(
                     sigmaX: blurAmount,
                     sigmaY: blurAmount,
@@ -670,7 +699,8 @@ class _ThumbnailState extends State<_ThumbnailImage> {
                 child: ImageFiltered(
                   enabled:
                       isBlurred &&
-                      (SettingsHandler.instance.blurImages || (widget.item.isHidden && !SX.shitDevice.value)),
+                      (SettingsHandler.instance.blurImages ||
+                          (widget.filterEvaluation.isBlurred && !SX.shitDevice.value)),
                   imageFilter: ImageFilter.blur(
                     sigmaX: blurAmount,
                     sigmaY: blurAmount,
@@ -685,7 +715,15 @@ class _ThumbnailState extends State<_ThumbnailImage> {
                         child = TickerMode(
                           enabled: SX.gifsAsThumbnails.value,
                           child: Image(
-                            image: mainProvider,
+                            image: widget.filterEvaluation.isBlurred && SX.shitDevice.value
+                                ? ResizeImage(
+                                    mainProvider is ResizeImage ? mainProvider.imageProvider : mainProvider,
+                                    width: 10,
+                                    height: 10,
+                                    policy: ResizeImagePolicy.fit,
+                                    allowUpscaling: false,
+                                  )
+                                : mainProvider,
                             fit: widget.isStandalone ? BoxFit.cover : BoxFit.contain,
                             isAntiAlias: true,
                             filterQuality: FilterQuality.medium,
@@ -730,7 +768,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
                 },
               ),
             //
-            if (widget.isStandalone && widget.item.isHidden)
+            if (widget.isStandalone && widget.filterEvaluation.isBlurred)
               Container(
                 alignment: .center,
                 decoration: BoxDecoration(
@@ -740,15 +778,17 @@ class _ThumbnailState extends State<_ThumbnailImage> {
                 width: iconBgSize,
                 height: iconBgSize,
                 child: IconButton(
-                  onPressed: (widget.item.isHidden && !SX.shitDevice.value && widget.isStandalone)
+                  onPressed: (widget.filterEvaluation.isBlurred && !SX.shitDevice.value && widget.isStandalone)
                       ? () => setState(() => isBlurred = !isBlurred)
                       : null,
                   iconSize: iconSize,
                   icon: Icon(
-                    isBlurred ? CupertinoIcons.eye_slash : CupertinoIcons.eye,
+                    isBlurred
+                        ? (widget.filterEvaluation.hideAsBlur ? Icons.hide_image_outlined : CupertinoIcons.eye_slash)
+                        : CupertinoIcons.eye,
                     size: iconSize,
                   ),
-                  color: Colors.white,
+                  color: widget.filterEvaluation.hideAsBlur ? Colors.redAccent : Colors.white,
                 ),
               ),
             if (widget.isStandalone)
@@ -822,21 +862,7 @@ Future<bool?> tryToLoadAndUpdateItem(
   CancelToken cancelToken,
 ) async {
   try {
-    final itemFileHost = Uri.tryParse(item.fileURL)?.host;
-    final itemPostHost = Uri.tryParse(item.postURL)?.host;
-    final Booru? possibleBooru = SettingsHandler.instance.booruList.firstWhereOrNull((e) {
-      final booruHost = Uri.tryParse(e.baseURL ?? '')?.host;
-
-      return (itemPostHost?.isNotEmpty == true &&
-              booruHost?.isNotEmpty == true &&
-              (itemPostHost! == booruHost! ||
-                  switch (e.type) {
-                    BooruType.IdolSankaku => IdolSankakuHandler.knownUrls.contains(itemPostHost),
-                    BooruType.Sankaku => SankakuHandler.knownPostUrls.contains(itemPostHost),
-                    _ => false,
-                  })) ||
-          (itemFileHost?.isNotEmpty == true && booruHost?.isNotEmpty == true && itemFileHost! == booruHost!);
-    });
+    final Booru? possibleBooru = BooruSourceResolver.resolve(item);
 
     if (possibleBooru != null) {
       final handler = BooruHandlerFactory().getBooruHandler([possibleBooru], null).booruHandler;
@@ -847,6 +873,9 @@ Future<bool?> tryToLoadAndUpdateItem(
           withCapcthaCheck: true,
         );
 
+        if (!result.failed && result.item != null) {
+          result.item!.sourceIdentity = BooruIdentity.fromBooru(possibleBooru);
+        }
         if (!result.failed &&
             result.item != null &&
             (result.item?.isSnatched.value == true || result.item?.isFavourite.value == true)) {

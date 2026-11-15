@@ -6,6 +6,7 @@ import 'package:equatable/equatable.dart';
 import 'package:get/get.dart';
 
 import 'package:lolisnatcher/src/data/note_item.dart';
+import 'package:lolisnatcher/src/data/booru_identity.dart';
 import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -38,6 +39,7 @@ class BooruItem extends Equatable {
     this.score,
     this.uploaderId,
     this.uploaderName,
+    this.sourceIdentity,
     this.description,
     this.sources,
     this.md5String,
@@ -86,6 +88,7 @@ class BooruItem extends Equatable {
   String? score;
   String? uploaderId;
   String? uploaderName;
+  BooruIdentity? sourceIdentity;
   String? description;
   String? md5String;
   String? postDate;
@@ -113,8 +116,9 @@ class BooruItem extends Equatable {
 
   /// The API page number this item was fetched from. -1 means unknown/unset.
   int fetchedPage = -1;
-  List<Tag>? _cachedMetadataTags;
-  int _cachedTagsMetadataVersion = -1;
+  List<Tag>? _cachedLegacyFilterTags;
+  int _cachedLegacyFiltersVersion = -1;
+  List<Tag>? _cachedContentMetadataTags;
   bool _cachedIsHidden = false;
   bool _cachedIsMarked = false;
   bool _cachedIsSound = false;
@@ -125,39 +129,45 @@ class BooruItem extends Equatable {
   }
 
   bool get isHidden {
-    _updateTagMetadata();
+    _updateLegacyFilterMetadata();
     return _cachedIsHidden;
   }
 
   bool get isMarked {
-    _updateTagMetadata();
+    _updateLegacyFilterMetadata();
     return _cachedIsMarked;
   }
 
   bool get isSound {
-    _updateTagMetadata();
+    _updateContentMetadata();
     return _cachedIsSound;
   }
 
   bool get isAI {
-    _updateTagMetadata();
+    _updateContentMetadata();
     return _cachedIsAI;
   }
 
-  void _updateTagMetadata() {
+  void _updateLegacyFilterMetadata() {
     final settingsHandler = SettingsHandler.instance;
-    if (identical(_cachedMetadataTags, tagsList) &&
-        _cachedTagsMetadataVersion == settingsHandler.tagsFiltersMetadataVersion) {
+    if (identical(_cachedLegacyFilterTags, tagsList) &&
+        _cachedLegacyFiltersVersion == settingsHandler.tagsFiltersMetadataVersion) {
       return;
     }
 
     final cleanTags = settingsHandler.cleanTagsList(tagsList);
-    _cachedMetadataTags = tagsList;
-    _cachedTagsMetadataVersion = settingsHandler.tagsFiltersMetadataVersion;
+    _cachedLegacyFilterTags = tagsList;
+    _cachedLegacyFiltersVersion = settingsHandler.tagsFiltersMetadataVersion;
     _cachedIsHidden = settingsHandler.containsHidden(cleanTags);
     _cachedIsMarked = settingsHandler.containsMarked(cleanTags);
-    _cachedIsSound = settingsHandler.containsSound(cleanTags);
-    _cachedIsAI = settingsHandler.containsAI(cleanTags);
+  }
+
+  void _updateContentMetadata() {
+    if (identical(_cachedContentMetadataTags, tagsList)) return;
+    final cleanTags = SettingsHandler.instance.cleanTagsList(tagsList);
+    _cachedContentMetadataTags = tagsList;
+    _cachedIsSound = SettingsHandler.instance.containsSound(cleanTags);
+    _cachedIsAI = SettingsHandler.instance.containsAI(cleanTags);
   }
 
   Map<String, dynamic> toJson() {
@@ -173,6 +183,9 @@ class BooruItem extends Equatable {
       'serverId': serverId,
       'rating': rating,
       'score': score,
+      'uploaderId': uploaderId,
+      'uploaderName': uploaderName,
+      if (sourceIdentity != null) 'sourceIdentity': sourceIdentity!.toJson(),
       'sources': sources,
       'md5String': md5String,
       'postDate': postDate,
@@ -206,6 +219,7 @@ class BooruItem extends Equatable {
     score,
     uploaderId,
     uploaderName,
+    sourceIdentity,
     description,
     md5String,
     postDate,
@@ -233,19 +247,27 @@ class BooruItem extends Equatable {
   }
 
   static BooruItem fromMap(Map<String, dynamic> json) {
-    final List<String> tags = [];
-    final List tagz = json['tags'];
-    for (int i = 0; i < tagz.length; i++) {
-      tags.add(tagz[i].toString());
-    }
+    final tags = (json['tags'] as List? ?? const [])
+        .map((tag) => tag is Map ? Tag.fromJson(Map<String, dynamic>.from(tag)) : Tag(tag.toString()))
+        .toList();
     //BooruItem(this.fileURL,this.sampleURL,this.thumbnailURL,this.tagsList,this.postURL,this.fileExt
     final BooruItem item = BooruItem(
       fileURL: json['fileURL'].toString(),
       sampleURL: json['sampleURL'].toString(),
       thumbnailURL: json['thumbnailURL'].toString(),
-      tagsList: tags.map(Tag.new).toList(),
+      tagsList: tags,
       postURL: json['postURL'].toString(),
-      // TODO stringify other options here
+      fileExt: json['fileExt']?.toString(),
+      serverId: json['serverId']?.toString(),
+      rating: json['rating']?.toString(),
+      score: json['score']?.toString(),
+      uploaderId: json['uploaderId']?.toString(),
+      uploaderName: json['uploaderName']?.toString(),
+      sourceIdentity: _readSourceIdentity(json['sourceIdentity']),
+      sources: (json['sources'] as List?)?.map((source) => source.toString()).toList(),
+      md5String: json['md5String']?.toString(),
+      postDate: json['postDate']?.toString(),
+      postDateFormat: json['postDateFormat']?.toString(),
     );
     item.isFavourite.value = json['isFavourite'].toString() == 'true';
     item.isSnatched.value = json['isSnatched'].toString() == 'true';
@@ -261,10 +283,20 @@ class BooruItem extends Equatable {
       fileExt: row['fileURL'].toString().contains('Hydrus-Client-API') ? 'extra' : null,
       tagsList: tags.map(Tag.new).toList(),
       postURL: row['postURL'].toString(),
+      serverId: row['serverId']?.toString(),
     );
     item.isFavourite.value = Tools.intToBool(row['isFavourite']);
     item.isSnatched.value = Tools.intToBool(row['isSnatched']);
     return item;
+  }
+
+  static BooruIdentity? _readSourceIdentity(dynamic value) {
+    try {
+      final decoded = value is String ? jsonDecode(value) : value;
+      return decoded is Map ? BooruIdentity.fromJson(Map<String, dynamic>.from(decoded)) : null;
+    } on FormatException {
+      return null;
+    }
   }
 }
 

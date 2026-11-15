@@ -6,19 +6,23 @@ import 'package:url_launcher/url_launcher_string.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
+import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_evaluation_builder.dart';
 
 class GuessExtensionViewer extends StatefulWidget {
   const GuessExtensionViewer({
     required this.item,
     required this.booru,
     required this.onMediaTypeGuessed,
+    this.filterHandler,
     super.key,
   });
 
   final BooruItem item;
   final Booru booru;
+  final BooruHandler? filterHandler;
   final Function(MediaType) onMediaTypeGuessed;
 
   @override
@@ -142,10 +146,16 @@ class _GuessExtensionViewerState extends State<GuessExtensionViewer> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Thumbnail(
+          TagFilterEvaluationBuilder(
             item: widget.item,
             booru: widget.booru,
-            isStandalone: false,
+            handler: widget.filterHandler,
+            builder: (context, evaluation) => Thumbnail(
+              item: widget.item,
+              booru: widget.booru,
+              filterEvaluation: evaluation,
+              isStandalone: false,
+            ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
