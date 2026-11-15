@@ -15,7 +15,7 @@ import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
-import 'package:lolisnatcher/src/data/booru.dart';
+import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
@@ -24,7 +24,6 @@ import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_filter_handler.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/utils/gallery_position.dart';
-import 'package:lolisnatcher/src/utils/booru_source_resolver.dart';
 import 'package:lolisnatcher/src/widgets/common/close_dialog_button.dart';
 import 'package:lolisnatcher/src/widgets/common/long_press_repeater.dart';
 import 'package:lolisnatcher/src/widgets/gallery/gallery_buttons.dart';
@@ -421,7 +420,8 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
 
                                 final bool isFavsOrDls =
                                     widget.tab.booruHandler.booru.type?.isFavouritesOrDownloads == true;
-                                final Booru? possibleBooru = isFavsOrDls ? BooruSourceResolver.resolve(item) : null;
+                                final possibleBooru = OfflineMediaResolver.instance.resolveSourceBooru(
+                                  item, fallback: widget.tab.booruHandler.sourceBooruFor(item));
 
                                 return TagFilterEvaluationBuilder(
                                   key: ValueKey(item.key),
@@ -444,6 +444,8 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                             return ImageViewer(
                                               item,
                                               booru: possibleBooru ?? widget.tab.booruHandler.booru,
+                                              allowOfflineLocalMedia: true,
+                                              allowOfflineThumbnailGeneration: isFavsOrDls,
                                               filterEvaluation: evaluation,
                                               isViewed: pageVal == index,
                                               key: item.key,
@@ -459,6 +461,8 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                                 item,
                                                 booru: possibleBooru ?? widget.tab.booruHandler.booru,
                                                 filterEvaluation: evaluation,
+                                                allowOfflineLocalMedia: true,
+                                                allowOfflineThumbnailGeneration: isFavsOrDls,
                                                 isViewed: pageVal == index,
                                                 enableFullscreen: true,
                                                 key: item.key,

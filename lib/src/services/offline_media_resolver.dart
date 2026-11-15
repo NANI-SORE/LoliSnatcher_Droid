@@ -1,0 +1,382 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:collection/collection.dart';
+import 'package:crypto/crypto.dart';
+
+import 'package:lolisnatcher/src/boorus/booru_type.dart';
+import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
+import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
+import 'package:lolisnatcher/src/data/booru.dart';
+import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/handlers/service_handler.dart';
+import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/services/offline_cache.dart';
+import 'package:lolisnatcher/src/services/saf_file_cache.dart';
+
+enum OfflineMediaResolutionType {
+  unavailable,
+  file,
+  ;
+
+  bool get isUnavailable => this == unavailable;
+  bool get isFile => this == file;
+}
+
+class OfflineMediaResolution {
+  const OfflineMediaResolution._({
+    required this.type,
+    this.file,
+    this.sourceBooru,
+    this.fileName,
+    this.copiedFromSaf = false,
+    this.storageIdentity,
+  });
+
+  const OfflineMediaResolution.unavailable()
+    : this._(
+        type: .unavailable,
+      );
+
+  const OfflineMediaResolution.file(
+    File file, {
+    required Booru sourceBooru,
+    required String fileName,
+    bool copiedFromSaf = false,
+    String? storageIdentity,
+  }) : this._(
+         type: .file,
+         file: file,
+         sourceBooru: sourceBooru,
+         fileName: fileName,
+         copiedFromSaf: copiedFromSaf,
+         storageIdentity: storageIdentity,
+       );
+
+  final OfflineMediaResolutionType type;
+  final File? file;
+  final Booru? sourceBooru;
+  final String? fileName;
+  final bool copiedFromSaf;
+  final String? storageIdentity;
+
+  bool get isAvailable => type.isFile && file != null;
+}
+
+class OfflineMediaResolver {
+  OfflineMediaResolver._();
+  static final OfflineMediaResolver instance = OfflineMediaResolver._();
+
+  final ImageWriter _imageWriter = ImageWriter();
+  final Map<String, Future<OfflineMediaResolution>> _pendingCopies = {};
+
+  String get storageIdentity {
+    final override = SX.extPathOverride.value;
+    final backend = Platform.isAndroid && override.isNotEmpty ? 'saf' : 'file';
+    return '$backend:${override.isEmpty ? 'default' : override}';
+  }
+
+  Future<OfflineMediaResolution> resolve(
+    BooruItem item,
+    Booru booru, {
+    bool allowSafCopy = true,
+    bool allowUntrackedItem = false,
+  }) async {
+    try {
+      final cacheGeneration = OfflineCache.generation;
+      if (!OfflineCache.isCurrent(cacheGeneration)) return const OfflineMediaResolution.unavailable();
+      final result = await _resolve(
+        item,
+        booru,
+        cacheGeneration: cacheGeneration,
+        allowSafCopy: allowSafCopy,
+        allowUntrackedItem: allowUntrackedItem,
+      );
+      return OfflineCache.isCurrent(cacheGeneration) ? result : const OfflineMediaResolution.unavailable();
+    } catch (_) {
+      // Offline lookup is optional; an inaccessible folder must allow normal loading.
+      return const OfflineMediaResolution.unavailable();
+    }
+  }
+
+  Future<OfflineMediaResolution> _resolve(
+    BooruItem item,
+    Booru booru, {
+    required int cacheGeneration,
+    required bool allowSafCopy,
+    required bool allowUntrackedItem,
+  }) async {
+    if (!allowUntrackedItem && item.isSnatched.value != true) {
+      return const OfflineMediaResolution.unavailable();
+    }
+
+    final sourceBooru = resolveSourceBooru(item, fallback: booru);
+    if (sourceBooru == null || sourceBooru.type?.isFavouritesOrDownloads == true) {
+      return const OfflineMediaResolution.unavailable();
+    }
+
+    final fileNames = filenameCandidates(item, sourceBooru);
+    if (fileNames.isEmpty) {
+      return const OfflineMediaResolution.unavailable();
+    }
+    final selectedStorage = storageIdentity;
+    final selectedPath = SX.extPathOverride.value;
+
+    if (Platform.isAndroid && selectedPath.isNotEmpty) {
+      final result = await _resolveSaf(
+        item,
+        sourceBooru,
+        fileNames,
+        selectedPath,
+        selectedStorage,
+        cacheGeneration,
+        allowCopy: allowSafCopy,
+      );
+      return selectedStorage == storageIdentity ? result : const OfflineMediaResolution.unavailable();
+    }
+
+    final directory = selectedPath.isEmpty ? await ServiceHandler.getPicturesDir() : selectedPath;
+    for (final fileName in fileNames) {
+      final file = File('$directory${Platform.pathSeparator}$fileName');
+      if (await _isUsableFile(file) && selectedStorage == storageIdentity) {
+        return OfflineMediaResolution.file(
+          file,
+          sourceBooru: sourceBooru,
+          fileName: fileName,
+          storageIdentity: selectedStorage,
+        );
+      }
+    }
+
+    return const OfflineMediaResolution.unavailable();
+  }
+
+  Future<OfflineMediaResolution> _resolveSaf(
+    BooruItem item,
+    Booru sourceBooru,
+    List<String> fileNames,
+    String safUri,
+    String selectedStorage,
+    int cacheGeneration, {
+    required bool allowCopy,
+  }) async {
+    for (final fileName in fileNames) {
+      final cachedFile = await _safCacheFile(item, sourceBooru, fileName, selectedStorage);
+      if (await _isUsableFile(cachedFile)) {
+        return OfflineMediaResolution.file(
+          cachedFile,
+          sourceBooru: sourceBooru,
+          fileName: fileName,
+          copiedFromSaf: true,
+          storageIdentity: selectedStorage,
+        );
+      }
+    }
+
+    if (!allowCopy) {
+      return const OfflineMediaResolution.unavailable();
+    }
+
+    String? existingFileName;
+    for (final fileName in fileNames) {
+      final exists = await SAFFileCache.instance.existsFile(safUri, fileName, refresh: true);
+      if (exists) {
+        existingFileName = fileName;
+        break;
+      }
+    }
+    if (existingFileName == null) return const OfflineMediaResolution.unavailable();
+
+    final targetFile = await _safCacheFile(item, sourceBooru, existingFileName, selectedStorage);
+    if (await _isUsableFile(targetFile)) {
+      return OfflineMediaResolution.file(
+        targetFile,
+        sourceBooru: sourceBooru,
+        fileName: existingFileName,
+        copiedFromSaf: true,
+        storageIdentity: selectedStorage,
+      );
+    }
+
+    final key = '${targetFile.path}:$cacheGeneration';
+    final pending = _pendingCopies[key];
+    if (pending != null) return pending;
+    final copy = _copySafFile(sourceBooru, safUri, existingFileName, targetFile, selectedStorage, cacheGeneration);
+    _pendingCopies[key] = copy;
+    try {
+      return await copy;
+    } finally {
+      unawaited(_pendingCopies.remove(key));
+    }
+  }
+
+  Future<OfflineMediaResolution> _copySafFile(
+    Booru sourceBooru,
+    String safUri,
+    String fileName,
+    File target,
+    String selectedStorage,
+    int cacheGeneration,
+  ) async {
+    Directory? staging;
+    try {
+      // Each copy owns its staging directory; only a completed file is published.
+      staging = await target.parent.createTemp('.copy-');
+      if (!await ServiceHandler.copySafFileToDir(safUri, fileName, staging.path)) {
+        return const OfflineMediaResolution.unavailable();
+      }
+      final copiedFile = File('${staging.path}${Platform.pathSeparator}$fileName');
+      if (!await _isUsableFile(copiedFile)) return const OfflineMediaResolution.unavailable();
+      if (!OfflineCache.isCurrent(cacheGeneration) || selectedStorage != storageIdentity) {
+        return const OfflineMediaResolution.unavailable();
+      }
+      await copiedFile.rename(target.path);
+      return OfflineMediaResolution.file(
+        target,
+        sourceBooru: sourceBooru,
+        fileName: fileName,
+        copiedFromSaf: true,
+        storageIdentity: selectedStorage,
+      );
+    } catch (_) {
+      return const OfflineMediaResolution.unavailable();
+    } finally {
+      if (staging != null) {
+        try {
+          await staging.delete(recursive: true);
+        } catch (_) {}
+      }
+    }
+  }
+
+  Booru? resolveSourceBooru(BooruItem item, {Booru? fallback}) {
+    final itemFileUri = Uri.tryParse(item.fileURL);
+    final itemPostUri = Uri.tryParse(item.postURL);
+    final itemPostHost = itemPostUri?.host;
+    bool matchesSource(Uri? itemUri, Booru source) {
+      final sourceUri = Uri.tryParse(source.baseURL ?? '');
+      return itemUri?.host.isNotEmpty == true && itemUri!.host == sourceUri?.host && itemUri.port == sourceUri?.port;
+    }
+
+    // Keep the caller's account/configuration first, but only when its source
+    // matches. A media-host guess must never bypass a known post source.
+    final sources =
+        [
+          ?fallback,
+          ...SettingsHandler.instance.booruList,
+        ].where((booru) {
+          return booru.type?.isFavouritesOrDownloads != true &&
+              booru.type?.isMerge != true &&
+              Uri.tryParse(booru.baseURL ?? '')?.host.isNotEmpty == true;
+        }).toList();
+
+    // Prefer the post's source over a different site sharing its media host.
+    return sources.firstWhereOrNull(
+          (booru) => matchesSource(itemPostUri, booru),
+        ) ??
+        sources.firstWhereOrNull(
+          (booru) =>
+              itemPostHost?.isNotEmpty == true &&
+              itemPostUri!.port == Uri.tryParse(booru.baseURL ?? '')?.port &&
+              switch (booru.type) {
+                BooruType.IdolSankaku => IdolSankakuHandler.knownUrls.contains(itemPostHost),
+                BooruType.Sankaku => SankakuHandler.knownPostUrls.contains(itemPostHost),
+                _ => false,
+              },
+        ) ??
+        sources.firstWhereOrNull(
+          (booru) => matchesSource(itemFileUri, booru),
+        );
+  }
+
+  Future<void> invalidateCopies(BooruItem item, Booru sourceBooru, String selectedStorage) async {
+    for (final fileName in filenameCandidates(item, sourceBooru)) {
+      final file = await _safCacheFile(item, sourceBooru, fileName, selectedStorage);
+      await _imageWriter.deleteDerivedCacheFile(file);
+    }
+  }
+
+  List<String> filenameCandidates(BooruItem item, Booru sourceBooru) {
+    final candidates = <String>[];
+    String? generatedFileName;
+    try {
+      generatedFileName = _imageWriter.getFilename(item, sourceBooru);
+    } catch (_) {}
+    final hash = ImageWriter.mediaHash(item);
+    final needsUniqueName = sourceBooru.type?.isShimmie == true || sourceBooru.type?.isR34Hentai == true;
+
+    void add(String? value) {
+      if (value == null || value.isEmpty || value.startsWith('.') || RegExp(r'[/\\\x00-\x1f:]').hasMatch(value)) {
+        return;
+      }
+      // Never reuse placeholders produced when database items lost metadata.
+      if (value == '${sourceBooru.name}_null.${item.fileExt}' ||
+          value == '${sourceBooru.name}_.${item.fileExt}' ||
+          value == '${item.fileNameExtras}_null.${item.fileExt}') {
+        return;
+      }
+      // These engines can serve different posts with the same original name.
+      // Keep explicitly saved hash names even when API-only metadata was lost.
+      final isSavedHashName =
+          value == item.savedFileName && RegExp(r'(?:^|_)[a-fA-F0-9]{32,64}(?=[_.]|$)').hasMatch(value);
+      if (needsUniqueName &&
+          value != generatedFileName &&
+          !isSavedHashName &&
+          (hash == null || !value.contains(hash))) {
+        return;
+      }
+      if (!candidates.contains(value)) {
+        candidates.add(value);
+      }
+    }
+
+    add(item.savedFileName);
+
+    add(generatedFileName);
+
+    final uri = Uri.tryParse(item.fileURL);
+    // Older downloads kept percent escapes in filenames; retain that spelling.
+    final rawPath = uri?.path ?? '';
+    final rawFileName = rawPath.substring(rawPath.lastIndexOf('/') + 1);
+    for (final urlFileName in [uri?.pathSegments.lastOrNull, rawFileName]) {
+      if (urlFileName != null &&
+          urlFileName.isNotEmpty &&
+          item.fileExt?.isNotEmpty == true &&
+          urlFileName.toLowerCase().endsWith('.${item.fileExt}')) {
+        add('${sourceBooru.name}_$urlFileName');
+      }
+    }
+
+    return candidates;
+  }
+
+  String cacheKey(BooruItem item, Booru sourceBooru, String fileName, {String? storageIdentity}) {
+    final itemIdentity = item.postURL.isNotEmpty ? item.postURL : item.fileURL;
+    final identity = jsonEncode([
+      storageIdentity ?? this.storageIdentity,
+      sourceBooru.type?.name,
+      sourceBooru.baseURL,
+      itemIdentity,
+      fileName,
+    ]);
+    final extension = RegExp(r'\.[a-zA-Z0-9]{1,12}$').firstMatch(fileName)?.group(0) ?? '';
+    return '${sha256.convert(utf8.encode(identity))}$extension';
+  }
+
+  Future<File> _safCacheFile(BooruItem item, Booru sourceBooru, String fileName, String selectedStorage) async {
+    final cacheDirPath = '${await ServiceHandler.getCacheDir()}offline_media/';
+    await Directory(cacheDirPath).create(recursive: true);
+    return File('$cacheDirPath${cacheKey(item, sourceBooru, fileName, storageIdentity: selectedStorage)}');
+  }
+
+  Future<bool> _isUsableFile(File file) async {
+    try {
+      return await file.exists() && await file.length() > 0;
+    } catch (_) {
+      return false;
+    }
+  }
+}

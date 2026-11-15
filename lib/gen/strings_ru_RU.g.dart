@@ -3264,6 +3264,21 @@ class _Translations$settings$cache$ru_RU extends Translations$settings$cache$en 
   @override
   String get cacheMedia => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheMedia', {}) ?? 'Кэшировать медиа';
   @override
+  String get generateOfflineThumbnails =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.generateOfflineThumbnails', {}) ?? 'Генерировать оффлайн превью';
+  @override
+  String get generateOfflineThumbnailsSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.generateOfflineThumbnailsSubtitle', {}) ??
+      'Создавать превью для сохранённых медиа и отсутствующих превью в избранном/скачанных.';
+  @override
+  String get concurrentOfflineThumbnailGenerations =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.concurrentOfflineThumbnailGenerations', {}) ??
+      'Одновременная генерация оффлайн превью';
+  @override
+  String get concurrentOfflineThumbnailGenerationsSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.concurrentOfflineThumbnailGenerationsSubtitle', {}) ??
+      'Большие значения помогут завершить процесс быстрее, но повышают нагрузку на оперативную память и процессор.';
+  @override
   String get videoCacheMode => TranslationOverrides.string(_root.$meta, 'settings.cache.videoCacheMode', {}) ?? 'Режим кэширования видео';
   @override
   String get videoCacheModesTitle =>
@@ -3319,6 +3334,11 @@ class _Translations$settings$cache$ru_RU extends Translations$settings$cache$en 
   String get cacheTypeSamples => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeSamples', {}) ?? 'Семплы';
   @override
   String get cacheTypeMedia => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeMedia', {}) ?? 'Медиа';
+  @override
+  String get cacheTypeOfflineMedia => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeOfflineMedia', {}) ?? 'Оффлайн медиа';
+  @override
+  String get cacheTypeOfflineThumbnails =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeOfflineThumbnails', {}) ?? 'Оффлайн превью';
   @override
   String get cacheTypeWebView => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeWebView', {}) ?? 'Вебвью';
   @override
@@ -6082,6 +6102,17 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.cache.resetStorageDirectory', {}) ?? 'Сбросить папку хранилища',
           'settings.cache.cachePreviews' => TranslationOverrides.string(_root.$meta, 'settings.cache.cachePreviews', {}) ?? 'Кэшировать превью',
           'settings.cache.cacheMedia' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheMedia', {}) ?? 'Кэшировать медиа',
+          'settings.cache.generateOfflineThumbnails' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.generateOfflineThumbnails', {}) ?? 'Генерировать оффлайн превью',
+          'settings.cache.generateOfflineThumbnailsSubtitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.generateOfflineThumbnailsSubtitle', {}) ??
+                'Создавать превью для сохранённых медиа и отсутствующих превью в избранном/скачанных.',
+          'settings.cache.concurrentOfflineThumbnailGenerations' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.concurrentOfflineThumbnailGenerations', {}) ??
+                'Одновременная генерация оффлайн превью',
+          'settings.cache.concurrentOfflineThumbnailGenerationsSubtitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.concurrentOfflineThumbnailGenerationsSubtitle', {}) ??
+                'Большие значения помогут завершить процесс быстрее, но повышают нагрузку на оперативную память и процессор.',
           'settings.cache.videoCacheMode' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.videoCacheMode', {}) ?? 'Режим кэширования видео',
           'settings.cache.videoCacheModesTitle' =>
@@ -6123,6 +6154,10 @@ extension on TranslationsRuRu {
           'settings.cache.cacheTypeThumbnails' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeThumbnails', {}) ?? 'Превью',
           'settings.cache.cacheTypeSamples' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeSamples', {}) ?? 'Семплы',
           'settings.cache.cacheTypeMedia' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeMedia', {}) ?? 'Медиа',
+          'settings.cache.cacheTypeOfflineMedia' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeOfflineMedia', {}) ?? 'Оффлайн медиа',
+          'settings.cache.cacheTypeOfflineThumbnails' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeOfflineThumbnails', {}) ?? 'Оффлайн превью',
           'settings.cache.cacheTypeWebView' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeWebView', {}) ?? 'Вебвью',
           'settings.cache.cacheCleared' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheCleared', {}) ?? 'Кэш очищен',
           'settings.cache.clearedCacheType' => ({
@@ -6862,6 +6897,9 @@ extension on TranslationsRuRu {
           'tagView.previewIsLoading' => TranslationOverrides.string(_root.$meta, 'tagView.previewIsLoading', {}) ?? 'Предпросмотр загружается…',
           'tagView.failedToLoadPreview' =>
             TranslationOverrides.string(_root.$meta, 'tagView.failedToLoadPreview', {}) ?? 'Не удалось загрузить предпросмотр',
+          _ => null,
+        } ??
+        switch (path) {
           'tagView.tapToTryAgain' => TranslationOverrides.string(_root.$meta, 'tagView.tapToTryAgain', {}) ?? 'Нажми, чтобы попробовать снова',
           'tagView.copiedFileURL' =>
             TranslationOverrides.string(_root.$meta, 'tagView.copiedFileURL', {}) ?? 'Ссылка на файл скопирована в буфер обмена',

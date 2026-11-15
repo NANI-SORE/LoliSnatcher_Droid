@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -50,6 +51,8 @@ class _DesktopImageListenerState extends State<DesktopImageListener> {
       return null;
     }
 
+    final sourceBooru = OfflineMediaResolver.instance.resolveSourceBooru(
+      item, fallback: currentHandler.sourceBooruFor(item)) ?? currentBooru;
     return TagFilterEvaluationBuilder(
       item: item,
       handler: currentHandler,
@@ -57,16 +60,20 @@ class _DesktopImageListenerState extends State<DesktopImageListener> {
         if (item.mediaType.value.isImageOrAnimation) {
           return ImageViewer(
             item,
-            booru: currentBooru,
+            booru: sourceBooru,
             filterEvaluation: evaluation,
+            allowOfflineLocalMedia: true,
+            allowOfflineThumbnailGeneration: currentHandler.booru.type?.isFavouritesOrDownloads == true,
             isViewed: ViewerHandler.instance.current.value?.key == item.key,
             key: item.key,
           );
         } else if (item.mediaType.value.isVideo) {
           return VideoViewer(
             item,
-            booru: currentBooru,
+            booru: sourceBooru,
             filterEvaluation: evaluation,
+            allowOfflineLocalMedia: true,
+            allowOfflineThumbnailGeneration: currentHandler.booru.type?.isFavouritesOrDownloads == true,
             isViewed: ViewerHandler.instance.current.value?.key == item.key,
             enableFullscreen: true,
             key: item.key,
@@ -74,7 +81,7 @@ class _DesktopImageListenerState extends State<DesktopImageListener> {
         } else if (item.mediaType.value.isNeedToGuess) {
           return GuessExtensionViewer(
             item: item,
-            booru: currentBooru,
+            booru: sourceBooru,
             filterHandler: currentHandler,
             onMediaTypeGuessed: (MediaType mediaType) {
               item.mediaType.value = mediaType;
@@ -100,7 +107,7 @@ class _DesktopImageListenerState extends State<DesktopImageListener> {
         } else {
           return GuessExtensionViewer(
             item: item,
-            booru: currentBooru,
+            booru: sourceBooru,
             filterHandler: currentHandler,
             onMediaTypeGuessed: (MediaType mediaType) {
               item.mediaType.value = mediaType;

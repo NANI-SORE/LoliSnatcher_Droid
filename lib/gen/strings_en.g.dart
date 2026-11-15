@@ -4072,6 +4072,25 @@ class Translations$settings$cache$en {
   /// en: 'Cache media'
   String get cacheMedia => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheMedia', {}) ?? 'Cache media';
 
+  /// en: 'Generate offline thumbnails'
+  String get generateOfflineThumbnails =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.generateOfflineThumbnails', {}) ?? 'Generate offline thumbnails';
+
+  /// en: 'Create thumbnails for saved media and missing favourites/downloads thumbnails.'
+  String get generateOfflineThumbnailsSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.generateOfflineThumbnailsSubtitle', {}) ??
+      'Create thumbnails for saved media and missing favourites/downloads thumbnails.';
+
+  /// en: 'Concurrent offline thumbnail generations'
+  String get concurrentOfflineThumbnailGenerations =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.concurrentOfflineThumbnailGenerations', {}) ??
+      'Concurrent offline thumbnail generations';
+
+  /// en: 'Higher values can finish faster but may increase RAM and CPU load.'
+  String get concurrentOfflineThumbnailGenerationsSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.concurrentOfflineThumbnailGenerationsSubtitle', {}) ??
+      'Higher values can finish faster but may increase RAM and CPU load.';
+
   /// en: 'Video cache mode'
   String get videoCacheMode => TranslationOverrides.string(_root.$meta, 'settings.cache.videoCacheMode', {}) ?? 'Video cache mode';
 
@@ -4147,6 +4166,13 @@ class Translations$settings$cache$en {
 
   /// en: 'Media'
   String get cacheTypeMedia => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeMedia', {}) ?? 'Media';
+
+  /// en: 'Offline media'
+  String get cacheTypeOfflineMedia => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeOfflineMedia', {}) ?? 'Offline media';
+
+  /// en: 'Offline thumbnails'
+  String get cacheTypeOfflineThumbnails =>
+      TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeOfflineThumbnails', {}) ?? 'Offline thumbnails';
 
   /// en: 'Webview'
   String get cacheTypeWebView => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeWebView', {}) ?? 'Webview';
@@ -7177,6 +7203,17 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.cache.resetStorageDirectory', {}) ?? 'Reset storage directory',
           'settings.cache.cachePreviews' => TranslationOverrides.string(_root.$meta, 'settings.cache.cachePreviews', {}) ?? 'Cache previews',
           'settings.cache.cacheMedia' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheMedia', {}) ?? 'Cache media',
+          'settings.cache.generateOfflineThumbnails' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.generateOfflineThumbnails', {}) ?? 'Generate offline thumbnails',
+          'settings.cache.generateOfflineThumbnailsSubtitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.generateOfflineThumbnailsSubtitle', {}) ??
+                'Create thumbnails for saved media and missing favourites/downloads thumbnails.',
+          'settings.cache.concurrentOfflineThumbnailGenerations' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.concurrentOfflineThumbnailGenerations', {}) ??
+                'Concurrent offline thumbnail generations',
+          'settings.cache.concurrentOfflineThumbnailGenerationsSubtitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.concurrentOfflineThumbnailGenerationsSubtitle', {}) ??
+                'Higher values can finish faster but may increase RAM and CPU load.',
           'settings.cache.videoCacheMode' => TranslationOverrides.string(_root.$meta, 'settings.cache.videoCacheMode', {}) ?? 'Video cache mode',
           'settings.cache.videoCacheModesTitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.cache.videoCacheModesTitle', {}) ?? 'Video cache modes',
@@ -7217,6 +7254,10 @@ extension on Translations {
           'settings.cache.cacheTypeThumbnails' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeThumbnails', {}) ?? 'Thumbnails',
           'settings.cache.cacheTypeSamples' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeSamples', {}) ?? 'Samples',
           'settings.cache.cacheTypeMedia' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeMedia', {}) ?? 'Media',
+          'settings.cache.cacheTypeOfflineMedia' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeOfflineMedia', {}) ?? 'Offline media',
+          'settings.cache.cacheTypeOfflineThumbnails' =>
+            TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeOfflineThumbnails', {}) ?? 'Offline thumbnails',
           'settings.cache.cacheTypeWebView' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheTypeWebView', {}) ?? 'Webview',
           'settings.cache.cacheCleared' => TranslationOverrides.string(_root.$meta, 'settings.cache.cacheCleared', {}) ?? 'Cache cleared',
           'settings.cache.clearedCacheType' => ({
@@ -7939,6 +7980,9 @@ extension on Translations {
           'tagView.selectBooruToLoad' => TranslationOverrides.string(_root.$meta, 'tagView.selectBooruToLoad', {}) ?? 'Select a booru to load',
           'tagView.previewIsLoading' => TranslationOverrides.string(_root.$meta, 'tagView.previewIsLoading', {}) ?? 'Preview is loading…',
           'tagView.failedToLoadPreview' => TranslationOverrides.string(_root.$meta, 'tagView.failedToLoadPreview', {}) ?? 'Failed to load preview',
+          _ => null,
+        } ??
+        switch (path) {
           'tagView.tapToTryAgain' => TranslationOverrides.string(_root.$meta, 'tagView.tapToTryAgain', {}) ?? 'Tap to try again',
           'tagView.copiedFileURL' => TranslationOverrides.string(_root.$meta, 'tagView.copiedFileURL', {}) ?? 'Copied file URL to clipboard',
           'tagView.tagPreviews' => TranslationOverrides.string(_root.$meta, 'tagView.tagPreviews', {}) ?? 'Tag previews',

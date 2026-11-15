@@ -179,14 +179,44 @@ class MainActivity: FlutterFragmentActivity() {
                     "makeVidThumb" -> {
                         val videoURL = call.argument<String>("videoURL")
                         if (videoURL != null) {
-                            val retriever = MediaMetadataRetriever()
-                            retriever.setDataSource(videoURL, HashMap())
-                            val image = retriever.getFrameAtTime(2000000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
-                            val stream = ByteArrayOutputStream()
-                            image?.compress(Bitmap.CompressFormat.PNG, 100, stream)
-                            val byteArray = stream.toByteArray()
-                            image?.recycle()
-                            result.success(byteArray)
+                            val executor = Executors.newSingleThreadExecutor()
+                            executor.execute {
+                                var retriever: MediaMetadataRetriever? = null
+                                var inputStream: FileInputStream? = null
+                                var image: Bitmap? = null
+                                try {
+                                    retriever = MediaMetadataRetriever()
+                                    val localPath = if (videoURL.startsWith("file://")) Uri.parse(videoURL).path else videoURL
+                                    val localFile = localPath?.let { File(it) }
+                                    if (localFile?.exists() == true && localFile.isFile) {
+                                        inputStream = FileInputStream(localFile)
+                                        retriever.setDataSource(inputStream.fd)
+                                    } else {
+                                        retriever.setDataSource(videoURL, HashMap())
+                                    }
+
+                                    image = retriever.getFrameAtTime(2000000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                                    val stream = ByteArrayOutputStream()
+                                    image?.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                                    val byteArray = if (image != null) stream.toByteArray() else null
+                                    runOnUiThread { result.success(byteArray) }
+                                } catch (e: Exception) {
+                                    Log.e("MainActivity", "Error creating video thumbnail: $videoURL", e)
+                                    runOnUiThread { result.success(null) }
+                                } finally {
+                                    image?.recycle()
+                                    try {
+                                        inputStream?.close()
+                                    } catch (_: Exception) {
+                                    }
+                                    try {
+                                        retriever?.release()
+                                    } catch (_: Exception) {
+                                    }
+                                }
+                            }
+                            // Finish the submitted job, then release its worker deterministically.
+                            executor.shutdown()
                         } else {
                             result.error("INVALID_ARGUMENT", "videoURL is null", null)
                         }

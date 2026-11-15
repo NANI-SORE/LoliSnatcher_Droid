@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
@@ -16,6 +17,9 @@ import 'package:lolisnatcher/src/data/tag_filter_evaluation.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/services/local_image_provider.dart';
+import 'package:lolisnatcher/src/services/offline_thumbnail_service.dart';
 import 'package:lolisnatcher/src/utils/debouncer.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
@@ -33,6 +37,8 @@ class Thumbnail extends StatelessWidget {
     this.filterEvaluation,
     this.isStandalone = false,
     this.useHero = true,
+    this.allowOfflineLocalMedia = false,
+    this.allowOfflineThumbnailGeneration = false,
     super.key,
   });
 
@@ -43,6 +49,8 @@ class Thumbnail extends StatelessWidget {
   /// set to true when used in a list
   final bool isStandalone;
   final bool useHero;
+  final bool allowOfflineLocalMedia;
+  final bool allowOfflineThumbnailGeneration;
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +73,8 @@ class Thumbnail extends StatelessWidget {
       booru: booru,
       filterEvaluation: evaluation,
       isStandalone: isStandalone,
+      allowOfflineLocalMedia: allowOfflineLocalMedia,
+      allowOfflineThumbnailGeneration: allowOfflineThumbnailGeneration,
     );
 
     if (isStandalone && useHero) {
@@ -91,12 +101,17 @@ class _ThumbnailImage extends StatefulWidget {
     required this.booru,
     required this.filterEvaluation,
     required this.isStandalone,
+    required this.allowOfflineLocalMedia,
+    required this.allowOfflineThumbnailGeneration,
   });
 
   final BooruItem item;
   final Booru? booru;
   final TagFilterEvaluation filterEvaluation;
   final bool isStandalone;
+
+  final bool allowOfflineLocalMedia;
+  final bool allowOfflineThumbnailGeneration;
 
   @override
   State<_ThumbnailImage> createState() => _ThumbnailState();
@@ -112,7 +127,9 @@ class _ThumbnailState extends State<_ThumbnailImage> {
   final ValueNotifier<bool> isLoadedExtra = ValueNotifier(false);
   final ValueNotifier<bool> useExtra = ValueNotifier(false);
   final ValueNotifier<bool> failedRendering = ValueNotifier(false);
+  final ValueNotifier<bool> isGeneratingOfflineThumbnail = ValueNotifier(false);
   final ValueNotifier<String?> errorCode = ValueNotifier(null);
+  bool didTryOfflineThumbnailFallback = false;
   CancelToken? mainCancelToken, extraCancelToken, loadItemCancelToken;
 
   late String currentUrl;
@@ -128,6 +145,9 @@ class _ThumbnailState extends State<_ThumbnailImage> {
   ImageStreamListener? mainImageListener, extraImageListener;
   ImageStream? mainImageStream, extraImageStream;
   int _loadGeneration = 0;
+  int? _handlingErrorGeneration;
+  bool _mainFromLocal = false;
+  File? _mainLocalFile;
 
   bool isBlurred = true;
 
@@ -162,74 +182,107 @@ class _ThumbnailState extends State<_ThumbnailImage> {
     }
   }
 
-  Future<ImageProvider> getImageProvider(
+  Future<ImageProvider?> getImageProvider(
     bool isMain, {
     required int loadGeneration,
     bool withCaptchaCheck = false,
+    bool networkOnly = false,
   }) async {
+    if (!_isCurrentLoad(loadGeneration)) return null;
     if (isMain) {
       mainCancelToken ??= CancelToken();
+      didTryOfflineThumbnailFallback = networkOnly;
+      _mainFromLocal = false;
+      _mainLocalFile = null;
     } else {
       extraCancelToken ??= CancelToken();
     }
+    final token = isMain ? mainCancelToken : extraCancelToken;
     final String url = isMain ? thumbURL : widget.item.thumbnailURL;
-    final bool isAvif = url.contains('.avif');
+    final bool isAvif = Uri.tryParse(url)?.path.toLowerCase().endsWith('.avif') == true;
+    final cacheFolder = isMain ? thumbFolder : 'thumbnails';
+    final cachedPath = networkOnly
+        ? null
+        : await ImageWriter().getCachePath(
+            Uri.base.resolve(url).toString(),
+            cacheFolder,
+            clearName: cacheFolder != 'favicons',
+            fileNameExtras: widget.item.fileNameExtras,
+          );
+    if (!_isCurrentLoad(loadGeneration)) return null;
+    if (cachedPath != null) {
+      if (isMain) {
+        _mainFromLocal = true;
+        _mainLocalFile = File(cachedPath);
+        isFromCache.value = true;
+        isGeneratingOfflineThumbnail.value = false;
+      }
+      final provider = await localImageProvider(File(cachedPath));
+      return _isCurrentLoad(loadGeneration) ? _resizeProvider(provider) : null;
+    }
+
+    final shouldTryOfflineThumbnail = isMain && widget.allowOfflineLocalMedia && widget.booru != null && !networkOnly;
+    OfflineThumbnailLookup lookup = const OfflineThumbnailLookup();
+    if (shouldTryOfflineThumbnail) {
+      try {
+        lookup = await OfflineThumbnailService.instance.getExistingOrQueue(
+          widget.item,
+          widget.booru!,
+          allowGeneration: widget.allowOfflineThumbnailGeneration,
+        );
+      } catch (_) {
+        // Local storage access is optional; continue with the actual media URL.
+      }
+      if (!_isCurrentLoad(loadGeneration)) return null;
+    }
+    if (isMain) {
+      isGeneratingOfflineThumbnail.value = lookup.isGenerating;
+      _watchOfflineThumbnailGeneration(lookup.generation, loadGeneration);
+    }
+    final offlineThumbnail = lookup.file;
+    if (offlineThumbnail != null) {
+      _mainFromLocal = true;
+      _mainLocalFile = offlineThumbnail;
+      isFromCache.value = true;
+      return _resizeProvider(FileImage(offlineThumbnail));
+    }
+
+    if (isMain) isFromCache.value = false;
+    final headers = await Tools.getFileCustomHeaders(widget.booru, item: widget.item, checkForReferer: true);
+    if (!_isCurrentLoad(loadGeneration)) return null;
     final ImageProvider provider = isAvif
         ? CustomNetworkAvifImage(
             url,
-            cancelToken: isMain ? mainCancelToken : extraCancelToken,
-            headers: await Tools.getFileCustomHeaders(
-              widget.booru,
-              item: widget.item,
-              checkForReferer: true,
-            ),
-            withCache: SX.thumbnailCache.value,
-            cacheFolder: isMain ? thumbFolder : 'thumbnails',
+            cancelToken: token,
+            headers: headers,
+            withCache: SX.thumbnailCache.value && !networkOnly,
+            cacheFolder: cacheFolder,
             fileNameExtras: widget.item.fileNameExtras,
             sendTimeout: widget.isStandalone ? const Duration(seconds: 20) : null,
             receiveTimeout: widget.isStandalone ? const Duration(seconds: 20) : null,
-            onError: isMain
-                ? (error) {
-                    if (_isCurrentLoad(loadGeneration)) {
-                      onError(error);
-                    }
-                  }
-                : null,
-            onCacheDetected: (bool didDetectCache) {
-              if (isMain && _isCurrentLoad(loadGeneration)) {
-                isFromCache.value = didDetectCache;
-              }
+            onCacheDetected: (value) {
+              if (isMain && _isCurrentLoad(loadGeneration)) isFromCache.value = value;
             },
             withCaptchaCheck: withCaptchaCheck,
           )
         : CustomNetworkImage(
             url,
-            cancelToken: isMain ? mainCancelToken : extraCancelToken,
-            headers: await Tools.getFileCustomHeaders(
-              widget.booru,
-              item: widget.item,
-              checkForReferer: true,
-            ),
-            withCache: SX.thumbnailCache.value,
-            cacheFolder: isMain ? thumbFolder : 'thumbnails',
+            cancelToken: token,
+            headers: headers,
+            withCache: SX.thumbnailCache.value && !networkOnly,
+            cacheFolder: cacheFolder,
             fileNameExtras: widget.item.fileNameExtras,
             sendTimeout: widget.isStandalone ? const Duration(seconds: 20) : null,
             receiveTimeout: widget.isStandalone ? const Duration(seconds: 20) : null,
-            onError: isMain
-                ? (error) {
-                    if (_isCurrentLoad(loadGeneration)) {
-                      onError(error);
-                    }
-                  }
-                : null,
-            onCacheDetected: (bool didDetectCache) {
-              if (isMain && _isCurrentLoad(loadGeneration)) {
-                isFromCache.value = didDetectCache;
-              }
+            onCacheDetected: (value) {
+              if (isMain && _isCurrentLoad(loadGeneration)) isFromCache.value = value;
             },
             withCaptchaCheck: withCaptchaCheck,
           );
+    return _resizeProvider(provider);
+  }
 
+  ImageProvider _resizeProvider(ImageProvider provider) {
     // on desktop devicePixelRatio is not working?
     final bool shouldResize = (thumbWidth != null || thumbHeight != null) && !PlatformExt.isDesktop;
     final bool shouldPixelate = widget.filterEvaluation.isBlurred && SX.shitDevice.value;
@@ -246,6 +299,150 @@ class _ThumbnailState extends State<_ThumbnailImage> {
     }
 
     return provider;
+  }
+
+  void _handleProviderError(Object error, int loadGeneration) {
+    if (!_isCurrentLoad(loadGeneration) || _handlingErrorGeneration == loadGeneration) return;
+    if (error is DioException && CancelToken.isCancel(error)) return;
+    _handlingErrorGeneration = loadGeneration;
+    unawaited(() async {
+      try {
+        if (_mainFromLocal) {
+          final failedFile = _mainLocalFile;
+          await mainProvider.value?.evict();
+          if (!_isCurrentLoad(loadGeneration)) return;
+          if (failedFile != null) await ImageWriter().deleteDerivedCacheFile(failedFile);
+          if (!_isCurrentLoad(loadGeneration)) return;
+          if (await tryOfflineThumbnailFallback(loadGeneration)) return;
+          if (!_isCurrentLoad(loadGeneration)) return;
+          disposables();
+          isLoaded.value = false;
+          await startDownloading(loadGeneration: _loadGeneration, networkOnly: true);
+          return;
+        }
+        if (await tryOfflineThumbnailFallback(loadGeneration)) return;
+        if (_isCurrentLoad(loadGeneration)) onError(error);
+      } catch (_) {
+        if (_isCurrentLoad(loadGeneration)) onError(error);
+      } finally {
+        if (_handlingErrorGeneration == loadGeneration) _handlingErrorGeneration = null;
+      }
+    }());
+  }
+
+  Future<bool> tryOfflineThumbnailFallback(int loadGeneration) async {
+    if (!_isCurrentLoad(loadGeneration) ||
+        didTryOfflineThumbnailFallback ||
+        !widget.allowOfflineLocalMedia ||
+        widget.booru == null) {
+      return false;
+    }
+    didTryOfflineThumbnailFallback = true;
+
+    final lookup = await OfflineThumbnailService.instance.getExistingOrQueue(
+      widget.item,
+      widget.booru!,
+      allowGeneration: widget.allowOfflineThumbnailGeneration,
+    );
+    if (!_isCurrentLoad(loadGeneration)) {
+      return false;
+    }
+
+    isGeneratingOfflineThumbnail.value = lookup.isGenerating;
+    _watchOfflineThumbnailGeneration(
+      lookup.generation,
+      loadGeneration,
+      markFailedOnNull: true,
+    );
+
+    final file = lookup.file;
+    if (file == null) {
+      return lookup.isGenerating;
+    }
+
+    return _applyOfflineThumbnailFile(file, loadGeneration);
+  }
+
+  void _watchOfflineThumbnailGeneration(
+    Future<File?>? generation,
+    int loadGeneration, {
+    bool markFailedOnNull = false,
+  }) {
+    if (generation == null) {
+      return;
+    }
+
+    unawaited(
+      () async {
+        File? file;
+        try {
+          file = await generation;
+        } catch (_) {
+          // A failed generation must not discard a thumbnail already loaded from the network.
+        }
+        if (!_isCurrentLoad(loadGeneration)) {
+          return;
+        }
+
+        isGeneratingOfflineThumbnail.value = false;
+        if (isLoaded.value) return;
+        if (file != null) {
+          final applied = await _applyOfflineThumbnailFile(file, loadGeneration);
+          if (!applied && markFailedOnNull && _isCurrentLoad(loadGeneration)) {
+            Timer.run(() => _handleProviderError(StateError('Offline thumbnail is unavailable'), loadGeneration));
+          }
+        } else if (markFailedOnNull) {
+          // Let the lookup's error handler finish before reporting a completed generation failure.
+          Timer.run(() => _handleProviderError(StateError('Offline thumbnail generation failed'), loadGeneration));
+        }
+      }(),
+    );
+  }
+
+  Future<bool> _applyOfflineThumbnailFile(File file, int loadGeneration) async {
+    if (!await _isUsableFile(file) || !_isCurrentLoad(loadGeneration)) {
+      return false;
+    }
+    if (isLoaded.value) return true;
+
+    // This provider wins the race: invalidate all pending network and generation callbacks.
+    disposables();
+    final fallbackGeneration = _loadGeneration;
+    _mainFromLocal = true;
+    _mainLocalFile = file;
+    useExtra.value = false;
+    isLoadedExtra.value = false;
+    extraProvider.value = null;
+    isGeneratingOfflineThumbnail.value = false;
+    mainProvider.value = _resizeProvider(FileImage(file));
+    isFromCache.value = true;
+    isFailed.value = false;
+    failedRendering.value = false;
+    errorCode.value = null;
+    _removeMainImageStreamListener();
+    mainImageStream = mainProvider.value!.resolve(ImageConfiguration.empty);
+    mainImageListener = ImageStreamListener(
+      (imageInfo, syncCall) {
+        if (_isCurrentLoad(fallbackGeneration)) {
+          isLoaded.value = true;
+        }
+      },
+      onError: (e, s) {
+        if (_isCurrentLoad(fallbackGeneration)) {
+          _handleProviderError(e, fallbackGeneration);
+        }
+      },
+    );
+    mainImageStream!.addListener(mainImageListener!);
+    return true;
+  }
+
+  Future<bool> _isUsableFile(File file) async {
+    try {
+      return await file.exists() && await file.length() > 0;
+    } catch (_) {
+      return false;
+    }
   }
 
   void calcThumbWidth(BoxConstraints constraints) {
@@ -355,16 +552,22 @@ class _ThumbnailState extends State<_ThumbnailImage> {
   Future<void> startDownloading({
     required int loadGeneration,
     bool withCaptchaCheck = false,
+    bool networkOnly = false,
   }) async {
-    final ImageProvider newMainProvider = await getImageProvider(
-      true,
-      loadGeneration: loadGeneration,
-      withCaptchaCheck: withCaptchaCheck,
-    );
-
-    if (!_isCurrentLoad(loadGeneration)) {
+    if (!_isCurrentLoad(loadGeneration)) return;
+    final ImageProvider? newMainProvider;
+    try {
+      newMainProvider = await getImageProvider(
+        true,
+        loadGeneration: loadGeneration,
+        withCaptchaCheck: withCaptchaCheck,
+        networkOnly: networkOnly,
+      );
+    } catch (error) {
+      if (_isCurrentLoad(loadGeneration)) _handleProviderError(error, loadGeneration);
       return;
     }
+    if (!_isCurrentLoad(loadGeneration) || newMainProvider == null) return;
 
     mainProvider.value = newMainProvider;
     _removeMainImageStreamListener();
@@ -393,18 +596,25 @@ class _ThumbnailState extends State<_ThumbnailImage> {
           LogTypes.imageLoadingError,
           s: s,
         );
-        onError(e);
+        _handleProviderError(e, loadGeneration);
       },
     );
     mainImageStream!.addListener(mainImageListener!);
 
     if (useExtra.value) {
-      final ImageProvider newExtraProvider = await getImageProvider(
-        false,
-        loadGeneration: loadGeneration,
-      );
+      final ImageProvider? newExtraProvider;
+      try {
+        newExtraProvider = await getImageProvider(
+          false,
+          loadGeneration: loadGeneration,
+          networkOnly: networkOnly,
+        );
+      } catch (_) {
+        // Failure of the optional low-quality preview must not discard the main image.
+        return;
+      }
 
-      if (!_isCurrentLoad(loadGeneration)) {
+      if (!_isCurrentLoad(loadGeneration) || newExtraProvider == null) {
         return;
       }
 
@@ -437,6 +647,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
   }
 
   Future<void> restartLoading({bool withItemLoad = false}) async {
+    if (!mounted) return;
     if (failedRendering.value) {
       failedRendering.value = false;
       unawaited(cleanProviderCache());
@@ -577,6 +788,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
     isLoadedExtra.dispose();
     useExtra.dispose();
     failedRendering.dispose();
+    isGeneratingOfflineThumbnail.dispose();
     errorCode.dispose();
     mainProvider.dispose();
     extraProvider.dispose();
@@ -842,6 +1054,35 @@ class _ThumbnailState extends State<_ThumbnailImage> {
                       errorCode: errorCode.value,
                     );
                   },
+                ),
+              ),
+            if (widget.isStandalone)
+              ValueListenableBuilder(
+                valueListenable: isGeneratingOfflineThumbnail,
+                builder: (context, isGenerating, child) {
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: isGenerating ? child : const SizedBox.shrink(),
+                  );
+                },
+                child: Align(
+                  alignment: Alignment.topLeft,
+                  child: Container(
+                    margin: const EdgeInsets.all(4),
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.72),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                    ),
+                  ),
                 ),
               ),
           ],

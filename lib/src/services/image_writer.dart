@@ -4,8 +4,11 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart';
 
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:path/path.dart' as p;
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
@@ -13,6 +16,9 @@ import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/services/offline_thumbnail_service.dart';
+import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
+import 'package:lolisnatcher/src/services/offline_cache.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
 import 'package:lolisnatcher/src/services/download_policy.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
@@ -36,25 +42,30 @@ class ImageWriter {
     bool ignoreExists,
     void Function(CancelToken)? onCancelTokenCreate,
   ) async {
+    booru = OfflineMediaResolver.instance.resolveSourceBooru(item, fallback: booru) ?? booru;
     final policy = DownloadPolicy.forBooru(booru);
     final String fileName = getFilename(item, booru);
     await setPaths();
+    final savedStorage = OfflineMediaResolver.instance.storageIdentity;
+    final selectedPath = SX.extPathOverride.value;
+    final usesSaf = Platform.isAndroid && selectedPath.isNotEmpty;
+    final savePath = selectedPath.isEmpty ? await ServiceHandler.getPicturesDir() : selectedPath;
 
     // Don't do anything if file already exists
-    final File image = File(path + fileName);
+    final File image = File(p.join(savePath, fileName));
     // print(path! + fileName);
     final bool fileExists = await image.exists();
     // if (fileExists) return null;
     if (!ignoreExists && (fileExists || item.isSnatched.value == true)) {
       item.isSnatched.value = true;
+      if (fileExists) item.savedFileName = fileName;
       if (SX.dbEnabled.value) {
         await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
       }
       return null;
     }
     try {
-      final fileNameSplit = fileName.split('.');
-      final fileNameWoutExt = fileNameSplit.sublist(0, fileNameSplit.length - 1).join('.');
+      final fileNameWoutExt = p.withoutExtension(fileName);
 
       final headers = {
         'Accept': '*/*',
@@ -69,10 +80,10 @@ class ImageWriter {
         onCancelTokenCreate(cancelToken);
       }
 
-      if (Platform.isAndroid && SX.extPathOverride.value.isNotEmpty) {
+      if (usesSaf) {
         await DioNetwork.downloadCustom(
           url,
-          '$path/',
+          '$savePath/',
           fileNameWoutExt,
           item.fileExt!,
           item.mediaType.toJson(),
@@ -87,7 +98,7 @@ class ImageWriter {
       } else {
         await DioNetwork.download(
           url,
-          '$path/$fileName',
+          image.path,
           options: Options(
             responseType: ResponseType.bytes,
             contentType: '*/*',
@@ -98,16 +109,29 @@ class ImageWriter {
         );
       }
 
+      item.savedFileName = fileName;
+      // An explicit re-download can change the bytes without changing the name.
+      // Do not let a previous SAF playback copy or thumbnail mask the new file.
+      if (ignoreExists) {
+        OfflineCache.beginClear();
+        try {
+          await OfflineMediaResolver.instance.invalidateCopies(item, booru, savedStorage);
+          await OfflineThumbnailService.instance.invalidate(item, booru, savedStorage);
+        } catch (_) {
+          // Cache maintenance must not turn a successful save into a failed one.
+        } finally {
+          OfflineCache.endClear();
+        }
+      }
+
       try {
         if (policy.writeJson) {
-          if (Platform.isAndroid &&
-              SX.extPathOverride.value.isNotEmpty &&
-              await ServiceHandler.getAndroidSDKVersion() >= 31) {
+          if (usesSaf && await ServiceHandler.getAndroidSDKVersion() >= 31) {
             final String? safPath = await ServiceHandler.createFileStreamFromSAFDirectory(
               fileNameWoutExt,
               'application/json',
               'json',
-              '$path/',
+              '$savePath/',
             );
             if (safPath != null) {
               await ServiceHandler.writeStreamToFileFromSAFDirectory(
@@ -117,7 +141,7 @@ class ImageWriter {
               await ServiceHandler.closeStreamToFileFromSAFDirectory(safPath);
             }
           } else if (Platform.isAndroid && await ServiceHandler.getAndroidSDKVersion() < 31) {
-            final File jsonFile = File('$path$fileNameWoutExt.json');
+            final File jsonFile = File(p.join(savePath, '$fileNameWoutExt.json'));
             await jsonFile.writeAsString(
               jsonEncode(item.toJson()),
               mode: FileMode.write,
@@ -135,16 +159,19 @@ class ImageWriter {
         );
       }
 
-      print('Image written: $path$fileName');
-      SAFFileCache.instance.onFileCreated(fileName);
+      print('Image written: $savePath$fileName');
+      SAFFileCache.instance.onFileCreated(fileName, safUri: savePath);
       item.isSnatched.value = true;
       if (SX.dbEnabled.value) {
         await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
       }
+      if (savedStorage == OfflineMediaResolver.instance.storageIdentity) {
+        unawaited(OfflineThumbnailService.instance.generateAfterSave(item, booru));
+      }
 
       try {
         if (Platform.isAndroid) {
-          if (SX.extPathOverride.value.isNotEmpty && await ServiceHandler.getAndroidSDKVersion() >= 31) {
+          if (usesSaf && await ServiceHandler.getAndroidSDKVersion() >= 31) {
             // TODO disabled for now, because it causes huge delays if user has a lot of saved files
             // final bool result = await ServiceHandler.existsFileFromSAFDirectory(path, fileName);
             // if (!result) {
@@ -181,20 +208,45 @@ class ImageWriter {
     BooruItem item,
     Booru booru,
   ) {
-    final int queryLastIndex = item.fileURL.lastIndexOf('?');
-    final int lastIndex = queryLastIndex != -1 ? queryLastIndex : item.fileURL.length;
-    String fileName = '';
+    final uri = Uri.tryParse(item.fileURL);
+    final urlFileName = uri?.pathSegments.lastOrNull ?? '';
+    final hash = mediaHash(item);
+    final prefix = Tools.sanitize(booru.name ?? 'booru');
+    final extension = Tools.sanitize(item.fileExt ?? '');
+
     if (booru.type?.isBooruOnRails == true || booru.type?.isPhilomena == true) {
-      fileName = '${item.fileNameExtras}.${item.fileExt!}';
+      if (item.fileNameExtras.isNotEmpty && item.fileNameExtras != 'null') {
+        return '${item.fileNameExtras}.$extension';
+      }
     } else if (booru.type?.isHydrus == true) {
-      fileName = '${item.fileNameExtras}_${item.md5String}.${item.fileExt}';
-    } else if (booru.baseURL!.contains('yande.re') || booru.baseURL!.contains('paheal.net')) {
-      fileName = '${booru.name}_${item.md5String}.${item.fileExt}';
-    } else {
-      fileName = '${booru.name!}_${item.fileURL.substring(item.fileURL.lastIndexOf("/") + 1, lastIndex)}';
+      if (hash != null) return '${item.fileNameExtras}_$hash.$extension';
+    } else if (booru.type?.isShimmie == true ||
+        booru.type?.isR34Hentai == true ||
+        booru.baseURL?.contains('yande.re') == true ||
+        booru.baseURL?.contains('paheal.net') == true) {
+      if (hash != null) return '${prefix}_$hash.$extension';
+    } else if (urlFileName.isNotEmpty &&
+        extension.isNotEmpty &&
+        urlFileName.toLowerCase().endsWith('.$extension') &&
+        Tools.sanitize(urlFileName) == urlFileName) {
+      return '${prefix}_$urlFileName';
     }
-    print('filename is $fileName');
-    return fileName;
+
+    // Database items may lack hashes/extras, and routed media URLs can share
+    // their last path segment. The post URL survives database round trips.
+    final identity = item.postURL.isNotEmpty ? item.postURL : item.fileURL;
+    final digest = sha256.convert(utf8.encode(identity));
+    return '${prefix}_$digest${extension.isEmpty ? '' : '.$extension'}';
+  }
+
+  static String? mediaHash(BooruItem item) {
+    final hashPattern = RegExp(r'^[a-fA-F0-9]{32,64}$');
+    final hash = item.md5String;
+    if (hash != null && hashPattern.hasMatch(hash)) return hash;
+
+    // Shimmie may put the hash in a directory before the original filename.
+    final path = Uri.tryParse(item.fileURL)?.path ?? '';
+    return RegExp(r'(?:^|[/_])([a-fA-F0-9]{32,64})(?=[/_.]|$)').firstMatch(path)?.group(1);
   }
 
   Future<String> getFilePath(
@@ -318,18 +370,40 @@ class ImageWriter {
   }
 
   Future deleteCacheFolder(String typeFolder) async {
+    final clearsOffline = typeFolder.isEmpty || typeFolder == 'offline_media' || typeFolder == 'offline_thumbnails';
+    if (clearsOffline) OfflineCache.beginClear();
     try {
       await setPaths();
       final String cachePath = '$cacheRootPath$typeFolder/';
       final Directory folder = Directory(cachePath);
       if (await folder.exists()) {
         await folder.delete(recursive: true);
+        PaintingBinding.instance.imageCache.clear();
+        PaintingBinding.instance.imageCache.clearLiveImages();
         return true;
       } else {
         return null;
       }
     } catch (e) {
       print('Image Writer Exception :: delete cache folder :: $e');
+      return false;
+    } finally {
+      if (clearsOffline) OfflineCache.endClear();
+    }
+  }
+
+  // Only derived files may be discarded after a decode error. Never delete a
+  // saved original, even if its filename happens to resemble a cache key.
+  Future<bool> deleteDerivedCacheFile(File file) async {
+    try {
+      final root = await ServiceHandler.getCacheDir();
+      final parent = p.canonicalize(file.parent.path);
+      const folders = ['thumbnails', 'samples', 'media', 'offline_media', 'offline_thumbnails'];
+      if (!folders.any((folder) => p.equals(parent, p.canonicalize(p.join(root, folder))))) return false;
+      if (await FileSystemEntity.type(file.path, followLinks: false) != FileSystemEntityType.file) return false;
+      await file.delete();
+      return true;
+    } catch (_) {
       return false;
     }
   }
@@ -410,11 +484,17 @@ class ImageWriter {
     return {'fileNum': fileNum, 'totalSize': totalSize};
   }
 
-  static const List<String> cleanableFolders = ['thumbnails', 'samples', 'media', 'WebView'];
+  static const List<String> cleanableFolders = [
+    'thumbnails',
+    'samples',
+    'media',
+    'WebView',
+  ];
 
   /// 1. Temp file cleanup (always): removes .temp_* and 0-byte files from ALL folders
   /// 2. Stale cleanup (if cacheDuration > 0): removes old files from cleanable folders
-  /// 3. Size overflow cleanup (if cacheSize > 0): removes oldest files until under limit
+  /// 3. Size overflow cleanup (if cacheSize > 0): removes oldest files from cleanable folders until under limit
+  /// Offline media folders are intentionally excluded from stale/size cleanup.
   Future<void> cleanupCache() async {
     try {
       await setPaths();
@@ -453,6 +533,22 @@ class ImageWriter {
         if (!await dir.exists()) continue;
 
         await for (final entity in dir.list(recursive: true, followLinks: false)) {
+          final relativeParts = p.split(p.relative(entity.path, from: dir.path));
+          final offlineFolder = ['offline_media', 'offline_thumbnails'].contains(p.basename(dir.path));
+          final staging = relativeParts.first.startsWith('.copy-') || relativeParts.first.startsWith('.thumbnail-');
+          if (offlineFolder && staging) {
+            // Leave current jobs alone; remove abandoned staging directories
+            // only after a full day. Ordinary cleanup must not touch their files.
+            if (entity is Directory && relativeParts.length == 1) {
+              try {
+                final modified = (await entity.stat()).modified;
+                if (DateTime.now().difference(modified) > const Duration(days: 1)) {
+                  await entity.delete(recursive: true);
+                }
+              } catch (_) {}
+            }
+            continue;
+          }
           if (entity is! File) continue;
           try {
             final name = entity.path.split(Platform.pathSeparator).last;

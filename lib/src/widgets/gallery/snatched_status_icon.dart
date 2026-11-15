@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
-import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/handlers/service_handler.dart';
+import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
 import 'package:lolisnatcher/src/widgets/common/pulse_widget.dart';
 
@@ -24,53 +25,140 @@ class SnatchedStatusIcon extends StatefulWidget {
 }
 
 class _SnatchedStatusIconState extends State<SnatchedStatusIcon> {
+  @override
+  Widget build(BuildContext context) {
+    return SavedMediaStatusIcon(
+      item: widget.item,
+      booru: widget.booru,
+      size: Theme.of(context).buttonTheme.height / 2.1,
+    );
+  }
+}
+
+class SavedMediaStatusIcon extends StatefulWidget {
+  const SavedMediaStatusIcon({
+    required this.item,
+    required this.booru,
+    this.size = 14,
+    this.existsColor = Colors.green,
+    this.missingColor = Colors.white,
+    super.key,
+  });
+
+  final BooruItem item;
+  final Booru booru;
+  final double size;
+  final Color existsColor;
+  final Color missingColor;
+
+  @override
+  State<SavedMediaStatusIcon> createState() => _SavedMediaStatusIconState();
+}
+
+class _SavedMediaStatusIconState extends State<SavedMediaStatusIcon> with WidgetsBindingObserver {
   bool fileExists = false, running = false;
+  int _checkGeneration = 0;
+  int? _lookupKey;
+
+  int get _currentLookupKey => Object.hash(
+    widget.item.key,
+    widget.item.fileURL,
+    widget.item.postURL,
+    widget.item.savedFileName,
+    widget.booru.name,
+    widget.booru.type,
+    widget.booru.baseURL,
+    SX.extPathOverride.value,
+  );
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    SX.extPathOverride.state.globalNotifier.addListener(_refresh);
     fileExistsCheck();
   }
 
-  Future<void> fileExistsCheck() async {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!running && mounted) {
-        running = true;
-        setState(() {});
-      }
-    });
-
-    final String extPath = SX.extPathOverride.value;
-    if (extPath.isNotEmpty) {
-      fileExists = await SAFFileCache.instance.existsFile(
-        extPath,
-        ImageWriter().getFilename(widget.item, widget.booru),
-      );
-    } else {
-      fileExists = await File(await ImageWriter().getFilePath(widget.item, widget.booru)).exists();
-    }
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        running = false;
-        setState(() {});
-      }
-    });
+  void _refresh() {
+    if (!mounted) return;
+    fileExistsCheck();
+    setState(() {});
   }
 
   @override
-  void didUpdateWidget(covariant SnatchedStatusIcon oldWidget) {
-    super.didUpdateWidget(oldWidget);
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refresh();
+  }
 
-    if (oldWidget.item != widget.item) {
-      fileExists = false;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {});
+  Future<void> fileExistsCheck() async {
+    final generation = ++_checkGeneration;
+    _lookupKey = _currentLookupKey;
+    final item = widget.item;
+    final booru = widget.booru;
+    final storagePath = SX.extPathOverride.value;
+    running = true;
+    fileExists = false;
+    bool exists = false;
+    try {
+      final resolver = OfflineMediaResolver.instance;
+      final sourceBooru = resolver.resolveSourceBooru(item, fallback: booru);
+      if (sourceBooru == null) return;
+      final fileNames = resolver.filenameCandidates(item, sourceBooru);
+      if (fileNames.isEmpty) return;
+
+      if (Platform.isAndroid && storagePath.isNotEmpty) {
+        for (final fileName in fileNames) {
+          final found = await SAFFileCache.instance.existsFile(storagePath, fileName, refresh: true);
+          if (!_isCurrentCheck(generation)) return;
+          if (found) {
+            exists = true;
+            break;
+          }
         }
+      } else {
+        final directory = storagePath.isNotEmpty ? storagePath : await ServiceHandler.getPicturesDir();
+        if (!_isCurrentCheck(generation)) return;
+        for (final fileName in fileNames) {
+          try {
+            final file = File.fromUri(Directory(directory).uri.resolveUri(Uri(path: fileName)));
+            final found = await file.exists() && await file.length() > 0;
+            if (!_isCurrentCheck(generation)) return;
+            if (found) {
+              exists = true;
+              break;
+            }
+          } catch (_) {
+            if (!_isCurrentCheck(generation)) return;
+          }
+        }
+      }
+    } catch (_) {
+      // A revoked permission or inaccessible directory means the saved file is unavailable.
+    } finally {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_isCurrentCheck(generation)) return;
+        setState(() {
+          fileExists = exists;
+          running = false;
+        });
       });
-      fileExistsCheck();
     }
+  }
+
+  bool _isCurrentCheck(int generation) => mounted && generation == _checkGeneration && _lookupKey == _currentLookupKey;
+
+  @override
+  void didUpdateWidget(covariant SavedMediaStatusIcon oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_lookupKey != _currentLookupKey) fileExistsCheck();
+  }
+
+  @override
+  void dispose() {
+    _checkGeneration++;
+    SX.extPathOverride.state.globalNotifier.removeListener(_refresh);
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   @override
@@ -79,8 +167,8 @@ class _SnatchedStatusIconState extends State<SnatchedStatusIcon> {
       enabled: running,
       child: Icon(
         Icons.save_alt,
-        size: Theme.of(context).buttonTheme.height / 2.1,
-        color: fileExists ? Colors.green : Colors.white,
+        size: widget.size,
+        color: fileExists ? widget.existsColor : widget.missingColor,
       ),
     );
   }
