@@ -1,15 +1,16 @@
-import 'package:lolisnatcher/src/downloads/download_localizations.dart';
-
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/downloads/contracts.dart';
-import 'package:lolisnatcher/src/downloads/download_configuration.dart';
+import 'package:lolisnatcher/src/downloads/download_localizations.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
+import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
@@ -22,23 +23,75 @@ class SnatcherPage extends StatefulWidget {
   State<SnatcherPage> createState() => _SnatcherPageState();
 }
 
+class _PresetNameDialog extends StatefulWidget {
+  const _PresetNameDialog({required this.initialName});
+  final String initialName;
+  @override
+  State<_PresetNameDialog> createState() => _PresetNameDialogState();
+}
+
+class _PresetNameDialogState extends State<_PresetNameDialog> {
+  late final name = TextEditingController(text: widget.initialName);
+  @override
+  void dispose() {
+    name.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(downloadText('savePreset')),
+    content: TextField(
+      controller: name,
+      autofocus: true,
+      textInputAction: TextInputAction.done,
+      decoration: InputDecoration(labelText: downloadText('presetName')),
+      onSubmitted: (value) {
+        if (value.trim().isNotEmpty) Navigator.pop(context, value.trim());
+      },
+    ),
+    actions: [
+      TextButton(onPressed: () => Navigator.pop(context), child: Text(downloadText('cancel'))),
+      ValueListenableBuilder(
+        valueListenable: name,
+        builder: (context, value, _) => FilledButton(
+          onPressed: value.text.trim().isEmpty ? null : () => Navigator.pop(context, value.text.trim()),
+          child: Text(downloadText('save')),
+        ),
+      ),
+    ],
+  );
+}
+
 class _SnatcherPageState extends State<SnatcherPage> {
   final handler = SnatchHandler.instance;
-  final query = TextEditingController();
-  final amount = TextEditingController();
-  final delay = TextEditingController();
+  final _form = GlobalKey<FormState>();
+  final _options = ExpansibleController();
+  final query = TextEditingController(), amount = TextEditingController(), delay = TextEditingController();
   final start = TextEditingController(text: '1');
-  final presetName = TextEditingController();
   late Booru source;
   final Set<String> additional = {};
   List<Map<String, dynamic>> presets = [];
-  String quality = 'Original', destination = '', error = '';
-  bool overwrite = false, busy = false;
+  String quality = 'Original', destination = '', error = '', presetName = '';
+  bool overwrite = false, busy = false, _missingSource = false;
+  bool _qualityEdited = false, _delayEdited = false, _amountEdited = false;
   String? presetId;
-  bool get supportsStart =>
-      ![source, ..._additionalSources].any((s) => s.type?.isWorld == true || s.type?.isHydrus == true);
+  int _loadGeneration = 0;
+
   List<Booru> get _additionalSources =>
       SettingsHandler.instance.booruList.where((s) => additional.contains(s.name) && s.name != source.name).toList();
+  Iterable<String> get _missingAdditional =>
+      additional.where((name) => !SettingsHandler.instance.booruList.any((s) => s.name == name));
+  bool get supportsStart =>
+      ![source, ..._additionalSources].any((s) => s.type?.isWorld == true || s.type?.isHydrus == true);
+  void _sourceDefaults() {
+    if (!_amountEdited) amount.text = SX.limit.valueForBooru(source.name).toString();
+    if (!_delayEdited) {
+      delay.text = (SX.snatchCooldown.valueForBooru(source.name).clamp(1000, 3600000) / 1000).toString();
+    }
+    if (!_qualityEdited) quality = SX.snatchMode.valueForBooru(source.name).isSample ? 'Sample' : 'Original';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -49,46 +102,48 @@ class _SnatcherPageState extends State<SnatcherPage> {
         available.firstOrNull ??
         Booru.unknown();
     query.text = search.currentTabOrNull?.tags ?? '';
-    amount.text = SX.limit.valueForBooru(source.name).toString();
-    delay.text = SX.snatchCooldown.valueForBooru(source.name).clamp(1000, 3600000).toString();
-    quality = SX.snatchMode.valueForBooru(source.name).isSample ? 'Sample' : 'Original';
+    _sourceDefaults();
     unawaited(_load());
   }
 
   @override
   void dispose() {
-    for (final controller in [query, amount, delay, start, presetName]) {
+    _options.dispose();
+    for (final controller in [query, amount, delay, start]) {
       controller.dispose();
     }
     super.dispose();
   }
 
   Future<void> _load() async {
+    final generation = ++_loadGeneration;
     try {
       final saved = await (await handler.store).presets();
-      final configuration = await DownloadConfiguration.capture();
-      final target = downloadMap(configuration.policy(source.name ?? '')['destination'])['path'] as String? ?? '';
-      if (mounted) {
+      final target = Platform.isIOS || SX.extPathOverride.value.isEmpty
+          ? await ServiceHandler.getPicturesDir()
+          : SX.extPathOverride.value;
+      if (mounted && generation == _loadGeneration) {
         setState(() {
           presets = saved;
           destination = target;
         });
       }
     } catch (_) {
-      if (mounted) setState(() => error = downloadText('settingsError'));
+      if (mounted && generation == _loadGeneration) setState(() => error = downloadText('settingsError'));
     }
   }
 
+  int get _delayMs => ((double.tryParse(delay.text) ?? 1) * 1000).round().clamp(1000, 3600000);
   Map<String, dynamic> _preset() => {
     'query': query.text,
     'amount': amount.text,
-    'delay': delay.text,
+    'delay': _delayMs.toString(),
     'startPage': supportsStart ? start.text : '1',
     'sourceNames': [source.name, ...additional],
     'quality': quality,
     'overwrite': overwrite,
   };
-  void _selectPreset(String? id) {
+  void _selectPreset(String id) {
     final row = presets.where((e) => e['id'] == id).firstOrNull;
     if (row == null) return;
     final data = downloadMap(row['payload']);
@@ -96,62 +151,101 @@ class _SnatcherPageState extends State<SnatcherPage> {
     final match = SettingsHandler.instance.booruList.where((s) => s.name == names.firstOrNull).firstOrNull;
     setState(() {
       presetId = id;
-      presetName.text = row['name'] as String;
+      presetName = row['name'] as String;
       query.text = data['query'] as String? ?? '';
-      amount.text = data['amount'] as String? ?? '100';
-      delay.text = data['delay'] as String? ?? '1000';
-      start.text = data['startPage'] as String? ?? '1';
-      quality = data['quality'] as String? ?? 'Original';
+      amount.text = data['amount']?.toString() ?? '100';
+      delay.text = ((double.tryParse(data['delay']?.toString() ?? '') ?? 1000).clamp(1000, 3600000) / 1000).toString();
+      start.text = data['startPage']?.toString() ?? '1';
+      quality = data['quality'] == 'Sample' ? 'Sample' : 'Original';
       overwrite = data['overwrite'] == true;
+      _qualityEdited = _delayEdited = _amountEdited = true;
       additional
         ..clear()
         ..addAll(names.skip(1));
-      if (match != null) {
-        source = match;
-        error = '';
-      } else {
-        error = downloadText('missingPresetSource');
-      }
+      _missingSource = match == null;
+      if (match != null) source = match;
+      error = _missingSource ? downloadText('missingPresetSource') : '';
     });
     unawaited(_load());
   }
 
-  Future<void> _savePreset() async {
-    final name = presetName.text.trim();
-    if (name.isEmpty) {
-      setState(() => error = downloadText('presetNameRequired'));
-      return;
-    }
+  Future<void> _savePreset({bool asNew = false}) async {
+    if (!_validate()) return;
+    final chosen = await showDialog<String>(
+      context: context,
+      builder: (_) => _PresetNameDialog(initialName: asNew ? '' : presetName),
+    );
+    if (!mounted || chosen == null) return;
+    setState(() => busy = true);
     try {
-      final id = presetId ?? const Uuid().v4();
-      await handler.savePreset(id, name, _preset());
+      final id = asNew ? const Uuid().v4() : presetId ?? const Uuid().v4();
+      await handler.savePreset(id, chosen, _preset());
       if (mounted) {
         setState(() {
           presetId = id;
+          presetName = chosen;
           error = '';
         });
       }
       await _load();
     } catch (_) {
       if (mounted) setState(() => error = downloadText('presetError'));
+    } finally {
+      if (mounted) setState(() => busy = false);
     }
   }
 
-  Future<void> _enqueue() async {
-    final count = int.tryParse(amount.text), first = int.tryParse(start.text), milliseconds = int.tryParse(delay.text);
-    if (count == null ||
-        count < 1 ||
-        supportsStart && (first == null || first < 1) ||
-        milliseconds == null ||
-        milliseconds < 0) {
-      setState(() => error = downloadText('invalidForm'));
+  Future<void> _presetAction(String value) async {
+    if (value == '_save' || value == '_new') {
+      await _savePreset(asNew: value == '_new');
       return;
     }
-    if (source.name?.isNotEmpty != true ||
-        additional.any((name) => !SettingsHandler.instance.booruList.any((s) => s.name == name))) {
+    if (value != '_delete') {
+      _selectPreset(value);
+      return;
+    }
+    if (presetId == null) return;
+    setState(() => busy = true);
+    try {
+      await handler.deletePreset(presetId!);
+      if (mounted) {
+        setState(() {
+          presetId = null;
+          presetName = '';
+        });
+      }
+      await _load();
+    } catch (_) {
+      if (mounted) setState(() => error = downloadText('presetError'));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  bool _validate() {
+    if (_missingSource || !SettingsHandler.instance.booruList.any((s) => s.name == source.name)) {
       setState(() => error = downloadText('sourceRequired'));
-      return;
+      return false;
     }
+    if (_missingAdditional.isNotEmpty) {
+      _options.expand();
+      setState(() => error = downloadText('missingPresetSource'));
+      return false;
+    }
+    final first = int.tryParse(start.text);
+    final seconds = double.tryParse(delay.text);
+    final validOptions =
+        (!supportsStart || first != null && first > 0) &&
+        seconds != null &&
+        seconds.isFinite &&
+        seconds >= 1 &&
+        seconds <= 3600;
+    if (!validOptions) _options.expand();
+    return (_form.currentState?.validate() ?? false) && validOptions;
+  }
+
+  Future<void> _enqueue() async {
+    if (busy || !_validate()) return;
     setState(() {
       busy = true;
       error = '';
@@ -162,16 +256,19 @@ class _SnatcherPageState extends State<SnatcherPage> {
         return;
       }
       await handler.searchSnatch(
-        query.text,
+        query.text.trim(),
         amount.text,
-        milliseconds,
+        _delayMs,
         source,
         sources: [source, ..._additionalSources],
-        startPage: supportsStart ? first! : 1,
+        startPage: supportsStart ? int.parse(start.text) : 1,
         quality: quality,
         overwrite: overwrite,
       );
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(downloadText('batchAdded'))));
+        Navigator.of(context).pop();
+      }
     } catch (_) {
       if (mounted) setState(() => error = downloadText('batchError'));
     } finally {
@@ -179,179 +276,254 @@ class _SnatcherPageState extends State<SnatcherPage> {
     }
   }
 
-  Widget _number(TextEditingController controller, String label, String hint) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    child: TextField(
-      controller: controller,
-      keyboardType: TextInputType.number,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      decoration: InputDecoration(
-        labelText: label,
-        helperText: hint,
-        helperMaxLines: 3,
-        border: const OutlineInputBorder(),
-      ),
-    ),
+  Widget _number(
+    TextEditingController controller,
+    String label, {
+    bool seconds = false,
+    ValueChanged<String>? onChanged,
+  }) => TextFormField(
+    controller: controller,
+    onChanged: onChanged,
+    keyboardType: TextInputType.numberWithOptions(decimal: seconds),
+    inputFormatters: [
+      if (seconds) FilteringTextInputFormatter.allow(RegExp('[0-9.]')) else FilteringTextInputFormatter.digitsOnly,
+    ],
+    autovalidateMode: AutovalidateMode.onUserInteraction,
+    validator: (text) {
+      final value = seconds ? double.tryParse(text ?? '') : int.tryParse(text ?? '');
+      if (value == null || !value.isFinite || value < 1) return downloadText('positiveNumber');
+      if (seconds && value > 3600) return downloadText('delayMaximum');
+      return null;
+    },
+    decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
   );
+  String get _destinationName {
+    if (destination.isEmpty) return downloadText('loading');
+    if (Platform.isIOS) return downloadText('filesAndPhotos');
+    if (destination.startsWith('content://')) {
+      final segment = Uri.tryParse(destination)?.pathSegments.lastOrNull ?? '';
+      return segment.contains(':') ? segment.substring(segment.indexOf(':') + 1) : segment;
+    }
+    return p.basename(p.normalize(destination));
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: SettingsAppBar(title: context.loc.snatcher.title),
-    body: AbsorbPointer(
-      absorbing: busy,
-      child: ListView(
-        children: [
-          if (busy) const LinearProgressIndicator(),
-          SettingsBooruDropdown(
-            value: source,
-            title: context.loc.booru,
-            onChanged: (value) {
-              if (value == null) return;
-              setState(() {
-                source = value;
-                start.text = '1';
-                error = '';
-              });
-              unawaited(_load());
-            },
-          ),
-          ExpansionTile(
-            title: Text(downloadText('additionalSources')),
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Wrap(
-                  spacing: 8,
-                  children: [
-                    for (final candidate in SettingsHandler.instance.booruList.where((s) => s.name != source.name))
-                      FilterChip(
-                        label: Text(candidate.name ?? ''),
-                        selected: additional.contains(candidate.name),
-                        onSelected: (selected) => setState(() {
-                          if (selected) {
-                            additional.add(candidate.name ?? '');
-                          } else {
-                            additional.remove(candidate.name);
-                          }
-                          start.text = '1';
-                        }),
-                      ),
-                  ],
-                ),
+    appBar: SettingsAppBar(
+      title: context.loc.snatcher.title,
+      actions: [
+        PopupMenuButton<String>(
+          enabled: !busy,
+          tooltip: downloadText('presets'),
+          icon: const Icon(Icons.bookmarks_outlined),
+          onSelected: _presetAction,
+          itemBuilder: (_) => [
+            for (final preset in presets)
+              CheckedPopupMenuItem(
+                value: preset['id'] as String,
+                checked: preset['id'] == presetId,
+                child: Text(preset['name'] as String),
               ),
+            if (presets.isNotEmpty) const PopupMenuDivider(),
+            PopupMenuItem(value: '_save', child: Text(downloadText(presetId == null ? 'savePreset' : 'updatePreset'))),
+            if (presetId != null) ...[
+              PopupMenuItem(value: '_new', child: Text(downloadText('saveAsPreset'))),
+              PopupMenuItem(value: '_delete', child: Text(downloadText('deletePreset'))),
             ],
-          ),
-          TagSearchBox(
-            controller: query,
-            title: context.loc.tags,
-            hintText: context.loc.snatcher.enterTags,
-            booru: source,
-            allowMultipleTags: true,
-            clearable: true,
-          ),
-          _number(amount, context.loc.snatcher.amount, downloadText('amountHint')),
-          if (supportsStart) _number(start, downloadText('startingPage'), downloadText('pageHint')),
-          ListTile(
-            title: Text(downloadText('destination')),
-            subtitle: Text(destination.isEmpty ? downloadText('loading') : destination),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: DropdownButtonFormField<String>(
-              key: ValueKey(quality),
-              initialValue: quality,
-              decoration: InputDecoration(labelText: downloadText('quality')),
-              items: [
-                DropdownMenuItem(value: 'Original', child: Text(downloadText('original'))),
-                DropdownMenuItem(value: 'Sample', child: Text(downloadText('sample'))),
-              ],
-              onChanged: (value) => setState(() => quality = value ?? 'Original'),
-            ),
-          ),
-          SwitchListTile(
-            title: Text(downloadText('replace')),
-            subtitle: Text(downloadText('skipHint')),
-            value: overwrite,
-            onChanged: (value) => setState(() => overwrite = value),
-          ),
-          ExpansionTile(
-            title: Text(downloadText('advanced')),
+          ],
+        ),
+      ],
+    ),
+    body: SafeArea(
+      child: Form(
+        key: _form,
+        child: AbsorbPointer(
+          absorbing: busy,
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 16),
             children: [
-              _number(delay, context.loc.snatcher.delayInMs, downloadText('delayHint')),
-            ],
-          ),
-          ExpansionTile(
-            title: Text(downloadText('presets')),
-            initiallyExpanded: presets.isNotEmpty,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: DropdownButton<String>(
-                  isExpanded: true,
-                  value: presets.any((e) => e['id'] == presetId) ? presetId : null,
-                  hint: Text(downloadText('choosePreset')),
-                  onChanged: _selectPreset,
-                  items: presets
-                      .map((e) => DropdownMenuItem(value: e['id'] as String, child: Text(e['name'] as String)))
-                      .toList(),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: TextField(
-                  controller: presetName,
-                  decoration: InputDecoration(
-                    labelText: downloadText('presetName'),
-                    border: const OutlineInputBorder(),
+              if (presetId != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: InputChip(
+                      avatar: const Icon(Icons.bookmark_outline, size: 16),
+                      label: Text(presetName),
+                      onDeleted: () => setState(() {
+                        presetId = null;
+                        presetName = '';
+                      }),
+                    ),
                   ),
                 ),
+              SettingsBooruDropdown(
+                value: _missingSource ? null : source,
+                title: context.loc.booru,
+                drawBottomBorder: false,
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() {
+                    source = value;
+                    additional.remove(value.name);
+                    start.text = '1';
+                    _missingSource = false;
+                    error = '';
+                    _sourceDefaults();
+                  });
+                  unawaited(_load());
+                },
               ),
-              Wrap(
+              TagSearchBox(
+                controller: query,
+                title: context.loc.tags,
+                hintText: context.loc.snatcher.enterTags,
+                booru: source,
+                allowMultipleTags: true,
+                clearable: true,
+                drawBottomBorder: false,
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: _number(amount, downloadText('postCount'), onChanged: (_) => _amountEdited = true),
+              ),
+              ExpansionTile(
+                controller: _options,
+                maintainState: true,
+                title: Text(downloadText('options')),
+                subtitle: Text(
+                  '${downloadText(quality.toLowerCase())} · ${downloadText(overwrite ? 'replace' : 'skipExisting')}',
+                ),
                 children: [
-                  TextButton.icon(
-                    onPressed: _savePreset,
-                    icon: const Icon(Icons.save_outlined),
-                    label: Text(downloadText('savePreset')),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    child: DropdownButtonFormField<String>(
+                      key: ValueKey(quality),
+                      initialValue: quality,
+                      decoration: InputDecoration(
+                        labelText: downloadText('quality'),
+                        border: const OutlineInputBorder(),
+                      ),
+                      items: [
+                        DropdownMenuItem(value: 'Original', child: Text(downloadText('original'))),
+                        DropdownMenuItem(value: 'Sample', child: Text(downloadText('sample'))),
+                      ],
+                      onChanged: (value) => setState(() {
+                        quality = value ?? 'Original';
+                        _qualityEdited = true;
+                      }),
+                    ),
                   ),
-                  TextButton(
-                    onPressed: () => setState(() {
-                      presetId = null;
-                      presetName.clear();
-                    }),
-                    child: Text(downloadText('newPreset')),
+                  SwitchListTile(
+                    title: Text(downloadText('replace')),
+                    value: overwrite,
+                    onChanged: (value) => setState(() => overwrite = value),
                   ),
-                  if (presetId != null)
-                    TextButton(
-                      onPressed: () async {
-                        await handler.deletePreset(presetId!);
-                        if (mounted) {
-                          setState(() {
-                            presetId = null;
-                            presetName.clear();
-                          });
-                        }
-                        await _load();
-                      },
-                      child: Text(downloadText('deletePreset')),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        if (supportsStart) SizedBox(width: 150, child: _number(start, downloadText('startingPage'))),
+                        SizedBox(
+                          width: 150,
+                          child: _number(
+                            delay,
+                            downloadText('delaySeconds'),
+                            seconds: true,
+                            onChanged: (_) => _delayEdited = true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (SettingsHandler.instance.booruList.length > 1 || _missingAdditional.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(downloadText('additionalSources'), style: Theme.of(context).textTheme.labelLarge),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: [
+                              for (final name in _missingAdditional)
+                                InputChip(
+                                  avatar: const Icon(Icons.error_outline, size: 18),
+                                  label: Text(name),
+                                  tooltip: downloadText('missingPresetSource'),
+                                  onDeleted: () => setState(() {
+                                    additional.remove(name);
+                                    error = '';
+                                  }),
+                                ),
+                              for (final candidate in SettingsHandler.instance.booruList.where(
+                                (s) => s.name != source.name,
+                              ))
+                                FilterChip(
+                                  label: Text(candidate.name ?? ''),
+                                  selected: additional.contains(candidate.name),
+                                  onSelected: (selected) => setState(() {
+                                    if (selected) {
+                                      additional.add(candidate.name ?? '');
+                                    } else {
+                                      additional.remove(candidate.name);
+                                    }
+                                    start.text = '1';
+                                  }),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                 ],
               ),
+              ListTile(
+                leading: const Icon(Icons.folder_outlined),
+                title: Text(_destinationName, maxLines: 1, overflow: TextOverflow.ellipsis),
+                subtitle: Text(downloadText('destination')),
+                onTap: () => showDialog<void>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text(downloadText('destination')),
+                    content: SelectableText(destination),
+                    actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(downloadText('close')))],
+                  ),
+                ),
+              ),
             ],
           ),
-          Padding(padding: const EdgeInsets.all(16), child: Text(downloadText('durabilityHint'))),
-          if (error.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(error, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+        ),
+      ),
+    ),
+    bottomNavigationBar: SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (error.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(error, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              ),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: busy ? null : _enqueue,
+                icon: busy
+                    ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.add),
+                label: Text(downloadText(busy ? 'adding' : 'addToQueue')),
+              ),
             ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: FilledButton.icon(
-              onPressed: _enqueue,
-              icon: const Icon(Icons.download),
-              label: Text(context.loc.snatcher.snatchFiles),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     ),
   );

@@ -305,8 +305,15 @@ class DownloadTransfer {
     }
     final target = File(_destination(descriptor));
     await target.parent.create(recursive: true);
-    final temporary = File('${target.path}.${descriptor.id}.part');
-    final previous = File('${target.path}.${descriptor.id}.previous');
+    // Android's shared Pictures directory admits media by its extension.
+    // Appending .part/.previous after .jpg makes the copy or rename fail under
+    // scoped storage, even though the final media filename is writable.
+    String siblingPath(String suffix) => Platform.isAndroid
+        ? '${p.withoutExtension(target.path)}.${descriptor.id}.$suffix${p.extension(target.path)}'
+        : '${target.path}.${descriptor.id}.$suffix';
+    final temporary = File(siblingPath('part'));
+    final legacyPrevious = File('${target.path}.${descriptor.id}.previous');
+    final previous = await legacyPrevious.exists() ? legacyPrevious : File(siblingPath('previous'));
     if (journal['file'] != true) {
       final matches =
           await target.exists() && (await sha256.bind(target.openRead()).first).toString() == journal['sha256'];

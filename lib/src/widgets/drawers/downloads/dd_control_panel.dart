@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 
 import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_controller.dart';
-import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_queue_controls.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_selection_actions.dart';
 
 class DDControlPanel extends StatelessWidget {
@@ -46,7 +45,6 @@ class DDControlPanel extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              DDQueueControls(controller: controller),
                               DDSelectionActions(
                                 controller: controller,
                                 toggleDrawer: toggleDrawer,

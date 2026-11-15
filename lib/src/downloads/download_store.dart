@@ -225,7 +225,9 @@ CREATE TABLE completion_events (
       case 'complete':
         clauses.add("state IN ('completed','skipped','cancelled')");
       case 'active':
-        clauses.add("state NOT IN ('completed','skipped','cancelled')");
+        clauses.add(
+          "state IN ('queued','prepared','transferring','finalizing','paused','waitingNetwork','waitingRate')",
+        );
     }
     final rows = await db.query(
       'tasks',
@@ -499,7 +501,10 @@ CREATE TABLE completion_events (
       "SELECT COUNT(*) AS count FROM batches WHERE discoveryDone = 0 AND state = 'active' AND discoveryState = 'active'",
     );
     final discoveryAttention = await db.rawQuery(
-      "SELECT COUNT(*) AS count FROM batches WHERE discoveryDone = 0 AND discoveryState = 'needsAction'",
+      "SELECT COUNT(*) AS count FROM batches WHERE discoveryDone = 0 AND state = 'active' AND discoveryState = 'needsAction'",
+    );
+    final discoveryPaused = await db.rawQuery(
+      "SELECT COUNT(*) AS count FROM batches WHERE discoveryDone = 0 AND state = 'paused'",
     );
     final countsSelected = (await db.rawQuery(
       "SELECT COALESCE(SUM(selectedCount),0) AS selected, COALESCE(SUM(requestedCount),0) AS requested FROM batches WHERE discoveryDone = 0 AND state = 'active' AND discoveryState = 'active'",
@@ -508,6 +513,7 @@ CREATE TABLE completion_events (
       for (final row in counts) row['state']! as String: row['count'],
       'discovery': discovery.single['count'],
       'discoveryAttention': discoveryAttention.single['count'],
+      'discoveryPaused': discoveryPaused.single['count'],
       'discoverySelected': countsSelected['selected'],
       'discoveryRequested': countsSelected['requested'],
       'activeTasks': (await db.query(

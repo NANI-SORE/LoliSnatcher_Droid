@@ -31,6 +31,7 @@ class Thumbnail extends StatelessWidget {
     this.booru,
     this.isStandalone = false,
     this.useHero = true,
+    this.forceThumbnail = false,
     super.key,
   });
 
@@ -40,6 +41,7 @@ class Thumbnail extends StatelessWidget {
   /// set to true when used in a list
   final bool isStandalone;
   final bool useHero;
+  final bool forceThumbnail;
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +50,7 @@ class Thumbnail extends StatelessWidget {
       item: item,
       booru: booru,
       isStandalone: isStandalone,
+      forceThumbnail: forceThumbnail,
     );
 
     if (isStandalone && useHero) {
@@ -73,11 +76,13 @@ class _ThumbnailImage extends StatefulWidget {
     required this.item,
     required this.booru,
     required this.isStandalone,
+    required this.forceThumbnail,
   });
 
   final BooruItem item;
   final Booru? booru;
   final bool isStandalone;
+  final bool forceThumbnail;
 
   @override
   State<_ThumbnailImage> createState() => _ThumbnailState();
@@ -123,7 +128,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
   void didUpdateWidget(_ThumbnailImage oldWidget) {
     super.didUpdateWidget(oldWidget);
     // force redraw on tab change
-    if (oldWidget.item != widget.item) {
+    if (oldWidget.item != widget.item || oldWidget.forceThumbnail != widget.forceThumbnail) {
       currentUrl = widget.item.thumbnailURL;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
@@ -303,6 +308,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
     startedAt.value = DateTime.now().millisecondsSinceEpoch;
 
     isThumbQuality =
+        widget.forceThumbnail ||
         SX.previewMode.value.isThumbnail ||
         (widget.item.mediaType.value.isVideo ||
             widget.item.mediaType.value.isNeedToGuess ||

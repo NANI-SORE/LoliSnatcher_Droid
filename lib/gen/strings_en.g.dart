@@ -58,6 +58,8 @@ class Translations with BaseTranslations<AppLocale, Translations> {
   /// en: 'LoliSnatcher'
   String get appName => TranslationOverrides.string(_root.$meta, 'appName', {}) ?? 'LoliSnatcher';
 
+  late final Translations$ios$en ios = Translations$ios$en.internal(_root);
+
   /// en: 'Error'
   String get error => TranslationOverrides.string(_root.$meta, 'error', {}) ?? 'Error';
 
@@ -324,6 +326,28 @@ class Translations with BaseTranslations<AppLocale, Translations> {
   late final Translations$imageStats$en imageStats = Translations$imageStats$en.internal(_root);
   late final Translations$preview$en preview = Translations$preview$en.internal(_root);
   late final Translations$tagType$en tagType = Translations$tagType$en.internal(_root);
+  late final Translations$downloadQueue$en downloadQueue = Translations$downloadQueue$en.internal(_root);
+}
+
+// Path: ios
+class Translations$ios$en {
+  Translations$ios$en.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'Unlock LoliSnatcher with Face ID.'
+  String get NSFaceIDUsageDescription =>
+      TranslationOverrides.string(_root.$meta, 'ios.NSFaceIDUsageDescription', {}) ?? 'Unlock LoliSnatcher with Face ID.';
+
+  /// en: 'Save downloaded images and videos to Photos.'
+  String get NSPhotoLibraryAddUsageDescription =>
+      TranslationOverrides.string(_root.$meta, 'ios.NSPhotoLibraryAddUsageDescription', {}) ?? 'Save downloaded images and videos to Photos.';
+
+  /// en: 'Share app data between devices.'
+  String get NSLocalNetworkUsageDescription =>
+      TranslationOverrides.string(_root.$meta, 'ios.NSLocalNetworkUsageDescription', {}) ?? 'Share app data between devices.';
 }
 
 // Path: validationErrors
@@ -2048,6 +2072,403 @@ class Translations$tagType$en {
 
   /// en: 'None/General'
   String get none => TranslationOverrides.string(_root.$meta, 'tagType.none', {}) ?? 'None/General';
+}
+
+// Path: downloadQueue
+class Translations$downloadQueue$en {
+  Translations$downloadQueue$en.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'Queued'
+  String get queued => TranslationOverrides.string(_root.$meta, 'downloadQueue.queued', {}) ?? 'Queued';
+
+  /// en: 'Queued'
+  String get prepared => TranslationOverrides.string(_root.$meta, 'downloadQueue.prepared', {}) ?? 'Queued';
+
+  /// en: 'Finding files'
+  String get discovering => TranslationOverrides.string(_root.$meta, 'downloadQueue.discovering', {}) ?? 'Finding files';
+
+  /// en: 'Downloading'
+  String get transferring => TranslationOverrides.string(_root.$meta, 'downloadQueue.transferring', {}) ?? 'Downloading';
+
+  /// en: 'Saving'
+  String get finalizing => TranslationOverrides.string(_root.$meta, 'downloadQueue.finalizing', {}) ?? 'Saving';
+
+  /// en: 'Saved'
+  String get completed => TranslationOverrides.string(_root.$meta, 'downloadQueue.completed', {}) ?? 'Saved';
+
+  /// en: 'Already saved'
+  String get skipped => TranslationOverrides.string(_root.$meta, 'downloadQueue.skipped', {}) ?? 'Already saved';
+
+  /// en: 'Paused'
+  String get paused => TranslationOverrides.string(_root.$meta, 'downloadQueue.paused', {}) ?? 'Paused';
+
+  /// en: 'Cancelled'
+  String get cancelled => TranslationOverrides.string(_root.$meta, 'downloadQueue.cancelled', {}) ?? 'Cancelled';
+
+  /// en: 'Failed'
+  String get failed => TranslationOverrides.string(_root.$meta, 'downloadQueue.failed', {}) ?? 'Failed';
+
+  /// en: 'Waiting for network'
+  String get waitingNetwork => TranslationOverrides.string(_root.$meta, 'downloadQueue.waitingNetwork', {}) ?? 'Waiting for network';
+
+  /// en: 'Site cooldown'
+  String get waitingRate => TranslationOverrides.string(_root.$meta, 'downloadQueue.waitingRate', {}) ?? 'Site cooldown';
+
+  /// en: 'Needs attention'
+  String get needsAction => TranslationOverrides.string(_root.$meta, 'downloadQueue.needsAction', {}) ?? 'Needs attention';
+
+  /// en: 'Sign-in required'
+  String get authentication => TranslationOverrides.string(_root.$meta, 'downloadQueue.authentication', {}) ?? 'Sign-in required';
+
+  /// en: 'Photos access required'
+  String get photosPermission => TranslationOverrides.string(_root.$meta, 'downloadQueue.photosPermission', {}) ?? 'Photos access required';
+
+  /// en: 'Check Photos before exporting again.'
+  String get photosAmbiguous =>
+      TranslationOverrides.string(_root.$meta, 'downloadQueue.photosAmbiguous', {}) ?? 'Check Photos before exporting again.';
+
+  /// en: 'Storage unavailable'
+  String get storage => TranslationOverrides.string(_root.$meta, 'downloadQueue.storage', {}) ?? 'Storage unavailable';
+
+  /// en: 'Waiting for network'
+  String get network => TranslationOverrides.string(_root.$meta, 'downloadQueue.network', {}) ?? 'Waiting for network';
+
+  /// en: 'Keep the app open'
+  String get foregroundOnly => TranslationOverrides.string(_root.$meta, 'downloadQueue.foregroundOnly', {}) ?? 'Keep the app open';
+
+  /// en: 'Source unavailable'
+  String get sourceMissing => TranslationOverrides.string(_root.$meta, 'downloadQueue.sourceMissing', {}) ?? 'Source unavailable';
+
+  /// en: 'Search stopped responding'
+  String get paginationStalled => TranslationOverrides.string(_root.$meta, 'downloadQueue.paginationStalled', {}) ?? 'Search stopped responding';
+
+  /// en: 'Local network access required'
+  String get localNetworkPermission =>
+      TranslationOverrides.string(_root.$meta, 'downloadQueue.localNetworkPermission', {}) ?? 'Local network access required';
+
+  /// en: 'File verification failed'
+  String get invalidContent => TranslationOverrides.string(_root.$meta, 'downloadQueue.invalidContent', {}) ?? 'File verification failed';
+
+  /// en: 'Site cooldown'
+  String get siteCooldown => TranslationOverrides.string(_root.$meta, 'downloadQueue.siteCooldown', {}) ?? 'Site cooldown';
+
+  /// en: 'Check the saved file before retrying.'
+  String get publicationAmbiguous =>
+      TranslationOverrides.string(_root.$meta, 'downloadQueue.publicationAmbiguous', {}) ?? 'Check the saved file before retrying.';
+
+  /// en: 'Source blocked by content settings'
+  String get sourceRestricted =>
+      TranslationOverrides.string(_root.$meta, 'downloadQueue.sourceRestricted', {}) ?? 'Source blocked by content settings';
+
+  /// en: 'Download failed'
+  String get unknownError => TranslationOverrides.string(_root.$meta, 'downloadQueue.unknownError', {}) ?? 'Download failed';
+
+  /// en: 'Settings changed. Retry to continue.'
+  String get configurationChanged =>
+      TranslationOverrides.string(_root.$meta, 'downloadQueue.configurationChanged', {}) ?? 'Settings changed. Retry to continue.';
+
+  /// en: 'Could not load downloads'
+  String get readError => TranslationOverrides.string(_root.$meta, 'downloadQueue.readError', {}) ?? 'Could not load downloads';
+
+  /// en: 'Action failed. Try again.'
+  String get actionError => TranslationOverrides.string(_root.$meta, 'downloadQueue.actionError', {}) ?? 'Action failed. Try again.';
+
+  /// en: 'Download actions'
+  String get actions => TranslationOverrides.string(_root.$meta, 'downloadQueue.actions', {}) ?? 'Download actions';
+
+  /// en: 'Pause'
+  String get pause => TranslationOverrides.string(_root.$meta, 'downloadQueue.pause', {}) ?? 'Pause';
+
+  /// en: 'Resume'
+  String get resume => TranslationOverrides.string(_root.$meta, 'downloadQueue.resume', {}) ?? 'Resume';
+
+  /// en: 'Retry failed'
+  String get retry => TranslationOverrides.string(_root.$meta, 'downloadQueue.retry', {}) ?? 'Retry failed';
+
+  /// en: 'Download again'
+  String get redownload => TranslationOverrides.string(_root.$meta, 'downloadQueue.redownload', {}) ?? 'Download again';
+
+  /// en: 'Cancel'
+  String get cancel => TranslationOverrides.string(_root.$meta, 'downloadQueue.cancel', {}) ?? 'Cancel';
+
+  /// en: 'Previous page'
+  String get previous => TranslationOverrides.string(_root.$meta, 'downloadQueue.previous', {}) ?? 'Previous page';
+
+  /// en: 'Next page'
+  String get next => TranslationOverrides.string(_root.$meta, 'downloadQueue.next', {}) ?? 'Next page';
+
+  /// en: 'Export to Photos again?'
+  String get photosRetryTitle => TranslationOverrides.string(_root.$meta, 'downloadQueue.photosRetryTitle', {}) ?? 'Export to Photos again?';
+
+  /// en: 'Check Photos first. If the earlier export succeeded, this can create a duplicate.'
+  String get photosRetryWarning =>
+      TranslationOverrides.string(_root.$meta, 'downloadQueue.photosRetryWarning', {}) ??
+      'Check Photos first. If the earlier export succeeded, this can create a duplicate.';
+
+  /// en: 'Export again'
+  String get exportAgain => TranslationOverrides.string(_root.$meta, 'downloadQueue.exportAgain', {}) ?? 'Export again';
+
+  /// en: 'All downloads'
+  String get allBatches => TranslationOverrides.string(_root.$meta, 'downloadQueue.allBatches', {}) ?? 'All downloads';
+
+  /// en: 'Resume required'
+  String get resumeRequired => TranslationOverrides.string(_root.$meta, 'downloadQueue.resumeRequired', {}) ?? 'Resume required';
+
+  /// en: 'The system stopped downloads. Your queue is saved.'
+  String get systemStopped =>
+      TranslationOverrides.string(_root.$meta, 'downloadQueue.systemStopped', {}) ?? 'The system stopped downloads. Your queue is saved.';
+
+  /// en: 'No downloads yet'
+  String get empty => TranslationOverrides.string(_root.$meta, 'downloadQueue.empty', {}) ?? 'No downloads yet';
+
+  /// en: 'Downloads'
+  String get downloads => TranslationOverrides.string(_root.$meta, 'downloadQueue.downloads', {}) ?? 'Downloads';
+
+  /// en: 'All'
+  String get allItems => TranslationOverrides.string(_root.$meta, 'downloadQueue.allItems', {}) ?? 'All';
+
+  /// en: 'Active'
+  String get activeItems => TranslationOverrides.string(_root.$meta, 'downloadQueue.activeItems', {}) ?? 'Active';
+
+  /// en: 'Finished'
+  String get finishedItems => TranslationOverrides.string(_root.$meta, 'downloadQueue.finishedItems', {}) ?? 'Finished';
+
+  /// en: 'Source settings'
+  String get sourceSettings => TranslationOverrides.string(_root.$meta, 'downloadQueue.sourceSettings', {}) ?? 'Source settings';
+
+  /// en: 'Export to Photos again'
+  String get photosRetry => TranslationOverrides.string(_root.$meta, 'downloadQueue.photosRetry', {}) ?? 'Export to Photos again';
+
+  /// en: 'Storage access'
+  String get storageAccess => TranslationOverrides.string(_root.$meta, 'downloadQueue.storageAccess', {}) ?? 'Storage access';
+
+  /// en: 'System settings'
+  String get systemSettings => TranslationOverrides.string(_root.$meta, 'downloadQueue.systemSettings', {}) ?? 'System settings';
+
+  /// en: 'Pause all'
+  String get pauseAll => TranslationOverrides.string(_root.$meta, 'downloadQueue.pauseAll', {}) ?? 'Pause all';
+
+  /// en: 'Clear finished'
+  String get clearHistory => TranslationOverrides.string(_root.$meta, 'downloadQueue.clearHistory', {}) ?? 'Clear finished';
+
+  /// en: 'Could not load settings'
+  String get settingsError => TranslationOverrides.string(_root.$meta, 'downloadQueue.settingsError', {}) ?? 'Could not load settings';
+
+  /// en: 'Select a source for this preset.'
+  String get missingPresetSource =>
+      TranslationOverrides.string(_root.$meta, 'downloadQueue.missingPresetSource', {}) ?? 'Select a source for this preset.';
+
+  /// en: 'Enter a preset name.'
+  String get presetNameRequired => TranslationOverrides.string(_root.$meta, 'downloadQueue.presetNameRequired', {}) ?? 'Enter a preset name.';
+
+  /// en: 'Could not save preset'
+  String get presetError => TranslationOverrides.string(_root.$meta, 'downloadQueue.presetError', {}) ?? 'Could not save preset';
+
+  /// en: 'Enter a positive amount and starting page, and a non-negative delay.'
+  String get invalidForm =>
+      TranslationOverrides.string(_root.$meta, 'downloadQueue.invalidForm', {}) ??
+      'Enter a positive amount and starting page, and a non-negative delay.';
+
+  /// en: 'Select a source'
+  String get sourceRequired => TranslationOverrides.string(_root.$meta, 'downloadQueue.sourceRequired', {}) ?? 'Select a source';
+
+  /// en: 'Storage access is required.'
+  String get storageRequired => TranslationOverrides.string(_root.$meta, 'downloadQueue.storageRequired', {}) ?? 'Storage access is required.';
+
+  /// en: 'Could not add downloads'
+  String get batchError => TranslationOverrides.string(_root.$meta, 'downloadQueue.batchError', {}) ?? 'Could not add downloads';
+
+  /// en: 'More sources'
+  String get additionalSources => TranslationOverrides.string(_root.$meta, 'downloadQueue.additionalSources', {}) ?? 'More sources';
+
+  /// en: 'Eligible distinct posts. Existing files count as skipped; no replacement searching.'
+  String get amountHint =>
+      TranslationOverrides.string(_root.$meta, 'downloadQueue.amountHint', {}) ??
+      'Eligible distinct posts. Existing files count as skipped; no replacement searching.';
+
+  /// en: 'Starting page'
+  String get startingPage => TranslationOverrides.string(_root.$meta, 'downloadQueue.startingPage', {}) ?? 'Starting page';
+
+  /// en: 'Pages start at 1.'
+  String get pageHint => TranslationOverrides.string(_root.$meta, 'downloadQueue.pageHint', {}) ?? 'Pages start at 1.';
+
+  /// en: 'Destination'
+  String get destination => TranslationOverrides.string(_root.$meta, 'downloadQueue.destination', {}) ?? 'Destination';
+
+  /// en: 'Loading…'
+  String get loading => TranslationOverrides.string(_root.$meta, 'downloadQueue.loading', {}) ?? 'Loading…';
+
+  /// en: 'Quality'
+  String get quality => TranslationOverrides.string(_root.$meta, 'downloadQueue.quality', {}) ?? 'Quality';
+
+  /// en: 'Original'
+  String get original => TranslationOverrides.string(_root.$meta, 'downloadQueue.original', {}) ?? 'Original';
+
+  /// en: 'Sample'
+  String get sample => TranslationOverrides.string(_root.$meta, 'downloadQueue.sample', {}) ?? 'Sample';
+
+  /// en: 'Replace existing files'
+  String get replace => TranslationOverrides.string(_root.$meta, 'downloadQueue.replace', {}) ?? 'Replace existing files';
+
+  /// en: 'Off: report existing files as skipped.'
+  String get skipHint => TranslationOverrides.string(_root.$meta, 'downloadQueue.skipHint', {}) ?? 'Off: report existing files as skipped.';
+
+  /// en: 'Advanced'
+  String get advanced => TranslationOverrides.string(_root.$meta, 'downloadQueue.advanced', {}) ?? 'Advanced';
+
+  /// en: 'A minimum of 1 second and stricter source limits always apply.'
+  String get delayHint =>
+      TranslationOverrides.string(_root.$meta, 'downloadQueue.delayHint', {}) ?? 'A minimum of 1 second and stricter source limits always apply.';
+
+  /// en: 'Saved presets'
+  String get presets => TranslationOverrides.string(_root.$meta, 'downloadQueue.presets', {}) ?? 'Saved presets';
+
+  /// en: 'Choose a preset'
+  String get choosePreset => TranslationOverrides.string(_root.$meta, 'downloadQueue.choosePreset', {}) ?? 'Choose a preset';
+
+  /// en: 'Preset name'
+  String get presetName => TranslationOverrides.string(_root.$meta, 'downloadQueue.presetName', {}) ?? 'Preset name';
+
+  /// en: 'Save preset'
+  String get savePreset => TranslationOverrides.string(_root.$meta, 'downloadQueue.savePreset', {}) ?? 'Save preset';
+
+  /// en: 'New preset'
+  String get newPreset => TranslationOverrides.string(_root.$meta, 'downloadQueue.newPreset', {}) ?? 'New preset';
+
+  /// en: 'Delete preset'
+  String get deletePreset => TranslationOverrides.string(_root.$meta, 'downloadQueue.deletePreset', {}) ?? 'Delete preset';
+
+  /// en: 'The queue is saved on this device. Downloads continue when the system allows it. If discovery is suspended, already prepared files can continue; reopen the app to finish finding files.'
+  String get durabilityHint =>
+      TranslationOverrides.string(_root.$meta, 'downloadQueue.durabilityHint', {}) ??
+      'The queue is saved on this device. Downloads continue when the system allows it. If discovery is suspended, already prepared files can continue; reopen the app to finish finding files.';
+
+  /// en: 'Could not save the download queue. Check storage access.'
+  String get enqueueError =>
+      TranslationOverrides.string(_root.$meta, 'downloadQueue.enqueueError', {}) ?? 'Could not save the download queue. Check storage access.';
+
+  /// en: 'Added {count} items to downloads'
+  String get added => TranslationOverrides.string(_root.$meta, 'downloadQueue.added', {}) ?? 'Added {count} items to downloads';
+
+  /// en: 'Page {page}'
+  String get page => TranslationOverrides.string(_root.$meta, 'downloadQueue.page', {}) ?? 'Page {page}';
+
+  /// en: '{selected} / {requested} posts · {files} files'
+  String get selected => TranslationOverrides.string(_root.$meta, 'downloadQueue.selected', {}) ?? '{selected} / {requested} posts · {files} files';
+
+  /// en: '{saved} saved · {skipped} skipped · {failed} need attention'
+  String get counts =>
+      TranslationOverrides.string(_root.$meta, 'downloadQueue.counts', {}) ?? '{saved} saved · {skipped} skipped · {failed} need attention';
+
+  /// en: 'Search finished: {count} posts found.'
+  String get exhausted => TranslationOverrides.string(_root.$meta, 'downloadQueue.exhausted', {}) ?? 'Search finished: {count} posts found.';
+
+  /// en: 'Retry'
+  String get retryItem => TranslationOverrides.string(_root.$meta, 'downloadQueue.retryItem', {}) ?? 'Retry';
+
+  /// en: 'Retrying'
+  String get retrying => TranslationOverrides.string(_root.$meta, 'downloadQueue.retrying', {}) ?? 'Retrying';
+
+  /// en: 'Connection timed out'
+  String get timeout => TranslationOverrides.string(_root.$meta, 'downloadQueue.timeout', {}) ?? 'Connection timed out';
+
+  /// en: 'Check proxy settings'
+  String get proxyError => TranslationOverrides.string(_root.$meta, 'downloadQueue.proxyError', {}) ?? 'Check proxy settings';
+
+  /// en: 'Finished'
+  String get finished => TranslationOverrides.string(_root.$meta, 'downloadQueue.finished', {}) ?? 'Finished';
+
+  /// en: 'Filename'
+  String get file => TranslationOverrides.string(_root.$meta, 'downloadQueue.file', {}) ?? 'Filename';
+
+  /// en: 'Attempts'
+  String get attempts => TranslationOverrides.string(_root.$meta, 'downloadQueue.attempts', {}) ?? 'Attempts';
+
+  /// en: 'Note'
+  String get notice => TranslationOverrides.string(_root.$meta, 'downloadQueue.notice', {}) ?? 'Note';
+
+  /// en: 'The storage provider changed the filename.'
+  String get providerRenamed =>
+      TranslationOverrides.string(_root.$meta, 'downloadQueue.providerRenamed', {}) ?? 'The storage provider changed the filename.';
+
+  /// en: '{time} left'
+  String get timeLeft => TranslationOverrides.string(_root.$meta, 'downloadQueue.timeLeft', {}) ?? '{time} left';
+
+  /// en: '{count} / {total} found'
+  String get foundCount => TranslationOverrides.string(_root.$meta, 'downloadQueue.foundCount', {}) ?? '{count} / {total} found';
+
+  /// en: '{count} / {total}'
+  String get doneCount => TranslationOverrides.string(_root.$meta, 'downloadQueue.doneCount', {}) ?? '{count} / {total}';
+
+  /// en: '{count} need attention'
+  String get failedCount => TranslationOverrides.string(_root.$meta, 'downloadQueue.failedCount', {}) ?? '{count} need attention';
+
+  /// en: 'Cancel batch'
+  String get cancelBatch => TranslationOverrides.string(_root.$meta, 'downloadQueue.cancelBatch', {}) ?? 'Cancel batch';
+
+  /// en: 'Cancel all'
+  String get cancelAll => TranslationOverrides.string(_root.$meta, 'downloadQueue.cancelAll', {}) ?? 'Cancel all';
+
+  /// en: 'Resume all'
+  String get resumeAll => TranslationOverrides.string(_root.$meta, 'downloadQueue.resumeAll', {}) ?? 'Resume all';
+
+  /// en: 'No items'
+  String get noMatchingItems => TranslationOverrides.string(_root.$meta, 'downloadQueue.noMatchingItems', {}) ?? 'No items';
+
+  /// en: 'Download {count} selected'
+  String get downloadSelected => TranslationOverrides.string(_root.$meta, 'downloadQueue.downloadSelected', {}) ?? 'Download {count} selected';
+
+  /// en: 'Selection actions'
+  String get selectionActions => TranslationOverrides.string(_root.$meta, 'downloadQueue.selectionActions', {}) ?? 'Selection actions';
+
+  /// en: 'Number of posts'
+  String get postCount => TranslationOverrides.string(_root.$meta, 'downloadQueue.postCount', {}) ?? 'Number of posts';
+
+  /// en: 'Options'
+  String get options => TranslationOverrides.string(_root.$meta, 'downloadQueue.options', {}) ?? 'Options';
+
+  /// en: 'Skip existing'
+  String get skipExisting => TranslationOverrides.string(_root.$meta, 'downloadQueue.skipExisting', {}) ?? 'Skip existing';
+
+  /// en: 'Delay (seconds)'
+  String get delaySeconds => TranslationOverrides.string(_root.$meta, 'downloadQueue.delaySeconds', {}) ?? 'Delay (seconds)';
+
+  /// en: 'Enter 1 or more'
+  String get positiveNumber => TranslationOverrides.string(_root.$meta, 'downloadQueue.positiveNumber', {}) ?? 'Enter 1 or more';
+
+  /// en: 'Maximum 3600 seconds'
+  String get delayMaximum => TranslationOverrides.string(_root.$meta, 'downloadQueue.delayMaximum', {}) ?? 'Maximum 3600 seconds';
+
+  /// en: 'Files & Photos'
+  String get filesAndPhotos => TranslationOverrides.string(_root.$meta, 'downloadQueue.filesAndPhotos', {}) ?? 'Files & Photos';
+
+  /// en: 'Save'
+  String get save => TranslationOverrides.string(_root.$meta, 'downloadQueue.save', {}) ?? 'Save';
+
+  /// en: 'Close'
+  String get close => TranslationOverrides.string(_root.$meta, 'downloadQueue.close', {}) ?? 'Close';
+
+  /// en: 'Update preset'
+  String get updatePreset => TranslationOverrides.string(_root.$meta, 'downloadQueue.updatePreset', {}) ?? 'Update preset';
+
+  /// en: 'Save as new preset'
+  String get saveAsPreset => TranslationOverrides.string(_root.$meta, 'downloadQueue.saveAsPreset', {}) ?? 'Save as new preset';
+
+  /// en: 'Added to downloads'
+  String get batchAdded => TranslationOverrides.string(_root.$meta, 'downloadQueue.batchAdded', {}) ?? 'Added to downloads';
+
+  /// en: 'Add to downloads'
+  String get addToQueue => TranslationOverrides.string(_root.$meta, 'downloadQueue.addToQueue', {}) ?? 'Add to downloads';
+
+  /// en: 'Adding…'
+  String get adding => TranslationOverrides.string(_root.$meta, 'downloadQueue.adding', {}) ?? 'Adding…';
+
+  /// en: 'Resolve issue'
+  String get fixIssue => TranslationOverrides.string(_root.$meta, 'downloadQueue.fixIssue', {}) ?? 'Resolve issue';
 }
 
 // Path: tabs.filters
@@ -5162,6 +5583,12 @@ extension on Translations {
           'locale' => TranslationOverrides.string(_root.$meta, 'locale', {}) ?? 'en-US',
           'localeName' => TranslationOverrides.string(_root.$meta, 'localeName', {}) ?? 'English',
           'appName' => TranslationOverrides.string(_root.$meta, 'appName', {}) ?? 'LoliSnatcher',
+          'ios.NSFaceIDUsageDescription' =>
+            TranslationOverrides.string(_root.$meta, 'ios.NSFaceIDUsageDescription', {}) ?? 'Unlock LoliSnatcher with Face ID.',
+          'ios.NSPhotoLibraryAddUsageDescription' =>
+            TranslationOverrides.string(_root.$meta, 'ios.NSPhotoLibraryAddUsageDescription', {}) ?? 'Save downloaded images and videos to Photos.',
+          'ios.NSLocalNetworkUsageDescription' =>
+            TranslationOverrides.string(_root.$meta, 'ios.NSLocalNetworkUsageDescription', {}) ?? 'Share app data between devices.',
           'error' => TranslationOverrides.string(_root.$meta, 'error', {}) ?? 'Error',
           'errorExclamation' => TranslationOverrides.string(_root.$meta, 'errorExclamation', {}) ?? 'Error!',
           'success' => TranslationOverrides.string(_root.$meta, 'success', {}) ?? 'Success',
@@ -5992,14 +6419,14 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.expandDetailsByDefault', {}) ?? 'Expand details by default',
           'settings.viewer.hideTranslationNotesByDefault' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.hideTranslationNotesByDefault', {}) ?? 'Hide translation notes by default',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.viewer.enableRotation' => TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotation', {}) ?? 'Enable rotation',
           'settings.viewer.enableRotationSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotationSubtitle', {}) ?? 'Double tap to reset',
           'settings.viewer.toolbarButtonsOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.toolbarButtonsOrder', {}) ?? 'Toolbar buttons order',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.viewer.buttonsOrder' => TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonsOrder', {}) ?? 'Buttons order',
           'settings.viewer.longPressToChangeItemOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.longPressToChangeItemOrder', {}) ?? 'Long press to change item order.',
@@ -6956,13 +7383,13 @@ extension on Translations {
           'tagView.tapToTryAgain' => TranslationOverrides.string(_root.$meta, 'tagView.tapToTryAgain', {}) ?? 'Tap to try again',
           'tagView.copiedFileURL' => TranslationOverrides.string(_root.$meta, 'tagView.copiedFileURL', {}) ?? 'Copied file URL to clipboard',
           'tagView.tagPreviews' => TranslationOverrides.string(_root.$meta, 'tagView.tagPreviews', {}) ?? 'Tag previews',
+          _ => null,
+        } ??
+        switch (path) {
           'tagView.currentState' => TranslationOverrides.string(_root.$meta, 'tagView.currentState', {}) ?? 'Current state',
           'tagView.history' => TranslationOverrides.string(_root.$meta, 'tagView.history', {}) ?? 'History',
           'tagView.failedToLoadPreviewPage' =>
             TranslationOverrides.string(_root.$meta, 'tagView.failedToLoadPreviewPage', {}) ?? 'Failed to load preview page',
-          _ => null,
-        } ??
-        switch (path) {
           'tagView.tryAgain' => TranslationOverrides.string(_root.$meta, 'tagView.tryAgain', {}) ?? 'Try again',
           'tagView.detectedLinks' => TranslationOverrides.string(_root.$meta, 'tagView.detectedLinks', {}) ?? 'Detected links:',
           'tagView.relatedTabs' => TranslationOverrides.string(_root.$meta, 'tagView.relatedTabs', {}) ?? 'Related tabs',
@@ -7289,6 +7716,157 @@ extension on Translations {
           'tagType.species' => TranslationOverrides.string(_root.$meta, 'tagType.species', {}) ?? 'Species',
           'tagType.lore' => TranslationOverrides.string(_root.$meta, 'tagType.lore', {}) ?? 'Lore',
           'tagType.none' => TranslationOverrides.string(_root.$meta, 'tagType.none', {}) ?? 'None/General',
+          'downloadQueue.queued' => TranslationOverrides.string(_root.$meta, 'downloadQueue.queued', {}) ?? 'Queued',
+          'downloadQueue.prepared' => TranslationOverrides.string(_root.$meta, 'downloadQueue.prepared', {}) ?? 'Queued',
+          'downloadQueue.discovering' => TranslationOverrides.string(_root.$meta, 'downloadQueue.discovering', {}) ?? 'Finding files',
+          'downloadQueue.transferring' => TranslationOverrides.string(_root.$meta, 'downloadQueue.transferring', {}) ?? 'Downloading',
+          'downloadQueue.finalizing' => TranslationOverrides.string(_root.$meta, 'downloadQueue.finalizing', {}) ?? 'Saving',
+          'downloadQueue.completed' => TranslationOverrides.string(_root.$meta, 'downloadQueue.completed', {}) ?? 'Saved',
+          'downloadQueue.skipped' => TranslationOverrides.string(_root.$meta, 'downloadQueue.skipped', {}) ?? 'Already saved',
+          'downloadQueue.paused' => TranslationOverrides.string(_root.$meta, 'downloadQueue.paused', {}) ?? 'Paused',
+          'downloadQueue.cancelled' => TranslationOverrides.string(_root.$meta, 'downloadQueue.cancelled', {}) ?? 'Cancelled',
+          'downloadQueue.failed' => TranslationOverrides.string(_root.$meta, 'downloadQueue.failed', {}) ?? 'Failed',
+          'downloadQueue.waitingNetwork' => TranslationOverrides.string(_root.$meta, 'downloadQueue.waitingNetwork', {}) ?? 'Waiting for network',
+          'downloadQueue.waitingRate' => TranslationOverrides.string(_root.$meta, 'downloadQueue.waitingRate', {}) ?? 'Site cooldown',
+          'downloadQueue.needsAction' => TranslationOverrides.string(_root.$meta, 'downloadQueue.needsAction', {}) ?? 'Needs attention',
+          'downloadQueue.authentication' => TranslationOverrides.string(_root.$meta, 'downloadQueue.authentication', {}) ?? 'Sign-in required',
+          'downloadQueue.photosPermission' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.photosPermission', {}) ?? 'Photos access required',
+          'downloadQueue.photosAmbiguous' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.photosAmbiguous', {}) ?? 'Check Photos before exporting again.',
+          'downloadQueue.storage' => TranslationOverrides.string(_root.$meta, 'downloadQueue.storage', {}) ?? 'Storage unavailable',
+          'downloadQueue.network' => TranslationOverrides.string(_root.$meta, 'downloadQueue.network', {}) ?? 'Waiting for network',
+          'downloadQueue.foregroundOnly' => TranslationOverrides.string(_root.$meta, 'downloadQueue.foregroundOnly', {}) ?? 'Keep the app open',
+          'downloadQueue.sourceMissing' => TranslationOverrides.string(_root.$meta, 'downloadQueue.sourceMissing', {}) ?? 'Source unavailable',
+          'downloadQueue.paginationStalled' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.paginationStalled', {}) ?? 'Search stopped responding',
+          'downloadQueue.localNetworkPermission' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.localNetworkPermission', {}) ?? 'Local network access required',
+          'downloadQueue.invalidContent' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.invalidContent', {}) ?? 'File verification failed',
+          'downloadQueue.siteCooldown' => TranslationOverrides.string(_root.$meta, 'downloadQueue.siteCooldown', {}) ?? 'Site cooldown',
+          'downloadQueue.publicationAmbiguous' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.publicationAmbiguous', {}) ?? 'Check the saved file before retrying.',
+          'downloadQueue.sourceRestricted' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.sourceRestricted', {}) ?? 'Source blocked by content settings',
+          'downloadQueue.unknownError' => TranslationOverrides.string(_root.$meta, 'downloadQueue.unknownError', {}) ?? 'Download failed',
+          'downloadQueue.configurationChanged' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.configurationChanged', {}) ?? 'Settings changed. Retry to continue.',
+          'downloadQueue.readError' => TranslationOverrides.string(_root.$meta, 'downloadQueue.readError', {}) ?? 'Could not load downloads',
+          'downloadQueue.actionError' => TranslationOverrides.string(_root.$meta, 'downloadQueue.actionError', {}) ?? 'Action failed. Try again.',
+          'downloadQueue.actions' => TranslationOverrides.string(_root.$meta, 'downloadQueue.actions', {}) ?? 'Download actions',
+          'downloadQueue.pause' => TranslationOverrides.string(_root.$meta, 'downloadQueue.pause', {}) ?? 'Pause',
+          'downloadQueue.resume' => TranslationOverrides.string(_root.$meta, 'downloadQueue.resume', {}) ?? 'Resume',
+          'downloadQueue.retry' => TranslationOverrides.string(_root.$meta, 'downloadQueue.retry', {}) ?? 'Retry failed',
+          'downloadQueue.redownload' => TranslationOverrides.string(_root.$meta, 'downloadQueue.redownload', {}) ?? 'Download again',
+          'downloadQueue.cancel' => TranslationOverrides.string(_root.$meta, 'downloadQueue.cancel', {}) ?? 'Cancel',
+          'downloadQueue.previous' => TranslationOverrides.string(_root.$meta, 'downloadQueue.previous', {}) ?? 'Previous page',
+          'downloadQueue.next' => TranslationOverrides.string(_root.$meta, 'downloadQueue.next', {}) ?? 'Next page',
+          'downloadQueue.photosRetryTitle' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.photosRetryTitle', {}) ?? 'Export to Photos again?',
+          'downloadQueue.photosRetryWarning' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.photosRetryWarning', {}) ??
+                'Check Photos first. If the earlier export succeeded, this can create a duplicate.',
+          'downloadQueue.exportAgain' => TranslationOverrides.string(_root.$meta, 'downloadQueue.exportAgain', {}) ?? 'Export again',
+          'downloadQueue.allBatches' => TranslationOverrides.string(_root.$meta, 'downloadQueue.allBatches', {}) ?? 'All downloads',
+          'downloadQueue.resumeRequired' => TranslationOverrides.string(_root.$meta, 'downloadQueue.resumeRequired', {}) ?? 'Resume required',
+          'downloadQueue.systemStopped' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.systemStopped', {}) ?? 'The system stopped downloads. Your queue is saved.',
+          'downloadQueue.empty' => TranslationOverrides.string(_root.$meta, 'downloadQueue.empty', {}) ?? 'No downloads yet',
+          'downloadQueue.downloads' => TranslationOverrides.string(_root.$meta, 'downloadQueue.downloads', {}) ?? 'Downloads',
+          'downloadQueue.allItems' => TranslationOverrides.string(_root.$meta, 'downloadQueue.allItems', {}) ?? 'All',
+          'downloadQueue.activeItems' => TranslationOverrides.string(_root.$meta, 'downloadQueue.activeItems', {}) ?? 'Active',
+          'downloadQueue.finishedItems' => TranslationOverrides.string(_root.$meta, 'downloadQueue.finishedItems', {}) ?? 'Finished',
+          'downloadQueue.sourceSettings' => TranslationOverrides.string(_root.$meta, 'downloadQueue.sourceSettings', {}) ?? 'Source settings',
+          'downloadQueue.photosRetry' => TranslationOverrides.string(_root.$meta, 'downloadQueue.photosRetry', {}) ?? 'Export to Photos again',
+          'downloadQueue.storageAccess' => TranslationOverrides.string(_root.$meta, 'downloadQueue.storageAccess', {}) ?? 'Storage access',
+          'downloadQueue.systemSettings' => TranslationOverrides.string(_root.$meta, 'downloadQueue.systemSettings', {}) ?? 'System settings',
+          'downloadQueue.pauseAll' => TranslationOverrides.string(_root.$meta, 'downloadQueue.pauseAll', {}) ?? 'Pause all',
+          'downloadQueue.clearHistory' => TranslationOverrides.string(_root.$meta, 'downloadQueue.clearHistory', {}) ?? 'Clear finished',
+          'downloadQueue.settingsError' => TranslationOverrides.string(_root.$meta, 'downloadQueue.settingsError', {}) ?? 'Could not load settings',
+          'downloadQueue.missingPresetSource' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.missingPresetSource', {}) ?? 'Select a source for this preset.',
+          'downloadQueue.presetNameRequired' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.presetNameRequired', {}) ?? 'Enter a preset name.',
+          'downloadQueue.presetError' => TranslationOverrides.string(_root.$meta, 'downloadQueue.presetError', {}) ?? 'Could not save preset',
+          'downloadQueue.invalidForm' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.invalidForm', {}) ??
+                'Enter a positive amount and starting page, and a non-negative delay.',
+          'downloadQueue.sourceRequired' => TranslationOverrides.string(_root.$meta, 'downloadQueue.sourceRequired', {}) ?? 'Select a source',
+          'downloadQueue.storageRequired' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.storageRequired', {}) ?? 'Storage access is required.',
+          'downloadQueue.batchError' => TranslationOverrides.string(_root.$meta, 'downloadQueue.batchError', {}) ?? 'Could not add downloads',
+          'downloadQueue.additionalSources' => TranslationOverrides.string(_root.$meta, 'downloadQueue.additionalSources', {}) ?? 'More sources',
+          'downloadQueue.amountHint' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.amountHint', {}) ??
+                'Eligible distinct posts. Existing files count as skipped; no replacement searching.',
+          'downloadQueue.startingPage' => TranslationOverrides.string(_root.$meta, 'downloadQueue.startingPage', {}) ?? 'Starting page',
+          'downloadQueue.pageHint' => TranslationOverrides.string(_root.$meta, 'downloadQueue.pageHint', {}) ?? 'Pages start at 1.',
+          'downloadQueue.destination' => TranslationOverrides.string(_root.$meta, 'downloadQueue.destination', {}) ?? 'Destination',
+          'downloadQueue.loading' => TranslationOverrides.string(_root.$meta, 'downloadQueue.loading', {}) ?? 'Loading…',
+          'downloadQueue.quality' => TranslationOverrides.string(_root.$meta, 'downloadQueue.quality', {}) ?? 'Quality',
+          'downloadQueue.original' => TranslationOverrides.string(_root.$meta, 'downloadQueue.original', {}) ?? 'Original',
+          'downloadQueue.sample' => TranslationOverrides.string(_root.$meta, 'downloadQueue.sample', {}) ?? 'Sample',
+          'downloadQueue.replace' => TranslationOverrides.string(_root.$meta, 'downloadQueue.replace', {}) ?? 'Replace existing files',
+          'downloadQueue.skipHint' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.skipHint', {}) ?? 'Off: report existing files as skipped.',
+          'downloadQueue.advanced' => TranslationOverrides.string(_root.$meta, 'downloadQueue.advanced', {}) ?? 'Advanced',
+          'downloadQueue.delayHint' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.delayHint', {}) ??
+                'A minimum of 1 second and stricter source limits always apply.',
+          'downloadQueue.presets' => TranslationOverrides.string(_root.$meta, 'downloadQueue.presets', {}) ?? 'Saved presets',
+          'downloadQueue.choosePreset' => TranslationOverrides.string(_root.$meta, 'downloadQueue.choosePreset', {}) ?? 'Choose a preset',
+          'downloadQueue.presetName' => TranslationOverrides.string(_root.$meta, 'downloadQueue.presetName', {}) ?? 'Preset name',
+          'downloadQueue.savePreset' => TranslationOverrides.string(_root.$meta, 'downloadQueue.savePreset', {}) ?? 'Save preset',
+          'downloadQueue.newPreset' => TranslationOverrides.string(_root.$meta, 'downloadQueue.newPreset', {}) ?? 'New preset',
+          'downloadQueue.deletePreset' => TranslationOverrides.string(_root.$meta, 'downloadQueue.deletePreset', {}) ?? 'Delete preset',
+          'downloadQueue.durabilityHint' => TranslationOverrides.string(_root.$meta, 'downloadQueue.durabilityHint', {}) ?? 'The queue is saved on this device. Downloads continue when the system allows it. If discovery is suspended, already prepared files can continue; reopen the app to finish finding files.',
+          'downloadQueue.enqueueError' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.enqueueError', {}) ?? 'Could not save the download queue. Check storage access.',
+          'downloadQueue.added' => TranslationOverrides.string(_root.$meta, 'downloadQueue.added', {}) ?? 'Added {count} items to downloads',
+          'downloadQueue.page' => TranslationOverrides.string(_root.$meta, 'downloadQueue.page', {}) ?? 'Page {page}',
+          'downloadQueue.selected' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.selected', {}) ?? '{selected} / {requested} posts · {files} files',
+          'downloadQueue.counts' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.counts', {}) ?? '{saved} saved · {skipped} skipped · {failed} need attention',
+          'downloadQueue.exhausted' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.exhausted', {}) ?? 'Search finished: {count} posts found.',
+          'downloadQueue.retryItem' => TranslationOverrides.string(_root.$meta, 'downloadQueue.retryItem', {}) ?? 'Retry',
+          'downloadQueue.retrying' => TranslationOverrides.string(_root.$meta, 'downloadQueue.retrying', {}) ?? 'Retrying',
+          'downloadQueue.timeout' => TranslationOverrides.string(_root.$meta, 'downloadQueue.timeout', {}) ?? 'Connection timed out',
+          'downloadQueue.proxyError' => TranslationOverrides.string(_root.$meta, 'downloadQueue.proxyError', {}) ?? 'Check proxy settings',
+          'downloadQueue.finished' => TranslationOverrides.string(_root.$meta, 'downloadQueue.finished', {}) ?? 'Finished',
+          'downloadQueue.file' => TranslationOverrides.string(_root.$meta, 'downloadQueue.file', {}) ?? 'Filename',
+          'downloadQueue.attempts' => TranslationOverrides.string(_root.$meta, 'downloadQueue.attempts', {}) ?? 'Attempts',
+          'downloadQueue.notice' => TranslationOverrides.string(_root.$meta, 'downloadQueue.notice', {}) ?? 'Note',
+          'downloadQueue.providerRenamed' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.providerRenamed', {}) ?? 'The storage provider changed the filename.',
+          'downloadQueue.timeLeft' => TranslationOverrides.string(_root.$meta, 'downloadQueue.timeLeft', {}) ?? '{time} left',
+          'downloadQueue.foundCount' => TranslationOverrides.string(_root.$meta, 'downloadQueue.foundCount', {}) ?? '{count} / {total} found',
+          'downloadQueue.doneCount' => TranslationOverrides.string(_root.$meta, 'downloadQueue.doneCount', {}) ?? '{count} / {total}',
+          'downloadQueue.failedCount' => TranslationOverrides.string(_root.$meta, 'downloadQueue.failedCount', {}) ?? '{count} need attention',
+          'downloadQueue.cancelBatch' => TranslationOverrides.string(_root.$meta, 'downloadQueue.cancelBatch', {}) ?? 'Cancel batch',
+          'downloadQueue.cancelAll' => TranslationOverrides.string(_root.$meta, 'downloadQueue.cancelAll', {}) ?? 'Cancel all',
+          'downloadQueue.resumeAll' => TranslationOverrides.string(_root.$meta, 'downloadQueue.resumeAll', {}) ?? 'Resume all',
+          'downloadQueue.noMatchingItems' => TranslationOverrides.string(_root.$meta, 'downloadQueue.noMatchingItems', {}) ?? 'No items',
+          'downloadQueue.downloadSelected' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.downloadSelected', {}) ?? 'Download {count} selected',
+          'downloadQueue.selectionActions' => TranslationOverrides.string(_root.$meta, 'downloadQueue.selectionActions', {}) ?? 'Selection actions',
+          'downloadQueue.postCount' => TranslationOverrides.string(_root.$meta, 'downloadQueue.postCount', {}) ?? 'Number of posts',
+          'downloadQueue.options' => TranslationOverrides.string(_root.$meta, 'downloadQueue.options', {}) ?? 'Options',
+          'downloadQueue.skipExisting' => TranslationOverrides.string(_root.$meta, 'downloadQueue.skipExisting', {}) ?? 'Skip existing',
+          'downloadQueue.delaySeconds' => TranslationOverrides.string(_root.$meta, 'downloadQueue.delaySeconds', {}) ?? 'Delay (seconds)',
+          'downloadQueue.positiveNumber' => TranslationOverrides.string(_root.$meta, 'downloadQueue.positiveNumber', {}) ?? 'Enter 1 or more',
+          'downloadQueue.delayMaximum' => TranslationOverrides.string(_root.$meta, 'downloadQueue.delayMaximum', {}) ?? 'Maximum 3600 seconds',
+          'downloadQueue.filesAndPhotos' => TranslationOverrides.string(_root.$meta, 'downloadQueue.filesAndPhotos', {}) ?? 'Files & Photos',
+          'downloadQueue.save' => TranslationOverrides.string(_root.$meta, 'downloadQueue.save', {}) ?? 'Save',
+          'downloadQueue.close' => TranslationOverrides.string(_root.$meta, 'downloadQueue.close', {}) ?? 'Close',
+          'downloadQueue.updatePreset' => TranslationOverrides.string(_root.$meta, 'downloadQueue.updatePreset', {}) ?? 'Update preset',
+          'downloadQueue.saveAsPreset' => TranslationOverrides.string(_root.$meta, 'downloadQueue.saveAsPreset', {}) ?? 'Save as new preset',
+          'downloadQueue.batchAdded' => TranslationOverrides.string(_root.$meta, 'downloadQueue.batchAdded', {}) ?? 'Added to downloads',
+          'downloadQueue.addToQueue' => TranslationOverrides.string(_root.$meta, 'downloadQueue.addToQueue', {}) ?? 'Add to downloads',
+          'downloadQueue.adding' => TranslationOverrides.string(_root.$meta, 'downloadQueue.adding', {}) ?? 'Adding…',
+          'downloadQueue.fixIssue' => TranslationOverrides.string(_root.$meta, 'downloadQueue.fixIssue', {}) ?? 'Resolve issue',
           _ => null,
         };
   }
