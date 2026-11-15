@@ -4,8 +4,8 @@ import 'package:get/get.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_card_build.dart';
 
@@ -31,13 +31,11 @@ class GridBuilder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
+    final previewDisplay = (SX.previewDisplay.value.isStaggered && !tab.booruHandler.hasSizeData)
+        ? SX.previewDisplayFallback.value
+        : SX.previewDisplay.value;
 
-    final previewDisplay = (settingsHandler.previewDisplay.isStaggered && !tab.booruHandler.hasSizeData)
-        ? settingsHandler.previewDisplayFallback
-        : settingsHandler.previewDisplay;
-
-    final int columnCount = context.isPortrait ? settingsHandler.portraitColumns : settingsHandler.landscapeColumns;
+    final int columnCount = context.isPortrait ? SX.portraitColumns.value : SX.landscapeColumns.value;
 
     return ValueListenableBuilder(
       valueListenable: tab.booruHandler.filteredFetched,

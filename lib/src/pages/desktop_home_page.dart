@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
 
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
@@ -108,12 +109,15 @@ class DesktopHome extends StatelessWidget {
                         snatchHandler.queue(
                           currentSelected,
                           currentBooru,
-                          settingsHandler.snatchCooldown,
+                          SX.snatchCooldown.value,
                           false,
+                          sourceFor: currentTab.booruHandler.sourceBooruFor,
+                          useSourceCooldown: true,
                         );
-                        if (settingsHandler.favouriteOnSnatch) {
+                        final toFavourite = currentSelected.where(currentTab.shouldFavouriteOnSnatch).toList();
+                        if (toFavourite.isNotEmpty) {
                           await currentTab.updateFavForMultipleItems(
-                            currentSelected,
+                            toFavourite,
                             newValue: true,
                             skipSnatching: true,
                           );

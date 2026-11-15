@@ -898,6 +898,35 @@ class _Translations$settings$ru_RU extends Translations$settings$en {
   @override
   String get title => TranslationOverrides.string(_root.$meta, 'settings.title', {}) ?? 'Настройки';
   @override
+  String get typeToSearch => TranslationOverrides.string(_root.$meta, 'settings.typeToSearch', {}) ?? 'Начни вводить текст для поиска по настройкам';
+  @override
+  String get noSettingsFound => TranslationOverrides.string(_root.$meta, 'settings.noSettingsFound', {}) ?? 'Настройки не найдены';
+  @override
+  String get perBooruSettings => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Особые настройки';
+  @override
+  String resetCategoryQuestion({required String category}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.resetCategoryQuestion', {'category': category}) ??
+      'Сбросить все настройки категории «${category}» до значений по умолчанию?';
+  @override
+  String globalValue({required String value}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.globalValue', {'value': value}) ?? 'Глобально: ${value}';
+  @override
+  String booruOverridesTitle({required String booru}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruOverridesTitle', {'booru': booru}) ?? '${booru} — Индивидуальные настройки';
+  @override
+  String get resetAllOverrides =>
+      TranslationOverrides.string(_root.$meta, 'settings.resetAllOverrides', {}) ?? 'Сбросить все индивидуальные настройки';
+  @override
+  String resetAllOverridesDescription({required String booru}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.resetAllOverridesDescription', {'booru': booru}) ??
+      'Индивидуальные настройки для сайта «${booru}» будут удалены. Вместо них будут использоваться глобальные значения.';
+  @override
+  String activeBooruThemeOverrides({required String booru}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.activeBooruThemeOverrides', {'booru': booru}) ??
+      'Для активного сайта «${booru}» заданы индивидуальные настройки темы. Изменения здесь повлияют на глобальные значения, а не на тему для этого сайта.';
+  @override
+  late final _Translations$settings$subcategories$ru_RU subcategories = _Translations$settings$subcategories$ru_RU._(_root);
+  @override
   late final _Translations$settings$language$ru_RU language = _Translations$settings$language$ru_RU._(_root);
   @override
   late final _Translations$settings$booru$ru_RU booru = _Translations$settings$booru$ru_RU._(_root);
@@ -1780,6 +1809,96 @@ class _Translations$webview$navigation$ru_RU extends Translations$webview$naviga
       TranslationOverrides.string(_root.$meta, 'webview.navigation.noForwardHistoryItem', {}) ?? 'Нет элемента для перехода вперёд';
 }
 
+// Path: settings.subcategories
+class _Translations$settings$subcategories$ru_RU extends Translations$settings$subcategories$en {
+  _Translations$settings$subcategories$ru_RU._(TranslationsRuRu root) : this._root = root, super.internal(root);
+
+  final TranslationsRuRu _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get previewGrid => TranslationOverrides.string(_root.$meta, 'settings.subcategories.previewGrid', {}) ?? 'Сетка превью';
+  @override
+  String get layout => TranslationOverrides.string(_root.$meta, 'settings.subcategories.layout', {}) ?? 'Режим приложения';
+  @override
+  String get rendering => TranslationOverrides.string(_root.$meta, 'settings.subcategories.rendering', {}) ?? 'Отрисовка';
+  @override
+  String get additionalInterface => TranslationOverrides.string(_root.$meta, 'settings.subcategories.additionalInterface', {}) ?? 'Дополнительное';
+  @override
+  String get loadingPreloading =>
+      TranslationOverrides.string(_root.$meta, 'settings.subcategories.loadingPreloading', {}) ?? 'Загрузка и предзагрузка';
+  @override
+  String get toolbar => TranslationOverrides.string(_root.$meta, 'settings.subcategories.toolbar', {}) ?? 'Панель инструментов';
+  @override
+  String get viewerBehavior => TranslationOverrides.string(_root.$meta, 'settings.subcategories.viewerBehavior', {}) ?? 'Поведение просмотрщика';
+  @override
+  String get slideshow => TranslationOverrides.string(_root.$meta, 'settings.subcategories.slideshow', {}) ?? 'Слайд-шоу';
+  @override
+  String get physicalButtons => TranslationOverrides.string(_root.$meta, 'settings.subcategories.physicalButtons', {}) ?? 'Физические кнопки';
+  @override
+  String get playback => TranslationOverrides.string(_root.$meta, 'settings.subcategories.playback', {}) ?? 'Воспроизведение';
+  @override
+  String get backend => TranslationOverrides.string(_root.$meta, 'settings.subcategories.backend', {}) ?? 'Бэкенд';
+  @override
+  String get mpv => TranslationOverrides.string(_root.$meta, 'settings.subcategories.mpv', {}) ?? 'MPV';
+  @override
+  String get theme => TranslationOverrides.string(_root.$meta, 'settings.subcategories.theme', {}) ?? 'Тема';
+  @override
+  String get drawer => TranslationOverrides.string(_root.$meta, 'settings.subcategories.drawer', {}) ?? 'Боковое меню';
+  @override
+  String get cache => TranslationOverrides.string(_root.$meta, 'settings.subcategories.cache', {}) ?? 'Кэш';
+  @override
+  String get downloads => TranslationOverrides.string(_root.$meta, 'settings.subcategories.downloads', {}) ?? 'Загрузки';
+  @override
+  String get storage => TranslationOverrides.string(_root.$meta, 'settings.subcategories.storage', {}) ?? 'Хранилище';
+  @override
+  String get cacheStats => TranslationOverrides.string(_root.$meta, 'settings.subcategories.cacheStats', {}) ?? 'Статистика кэша';
+  @override
+  String get backup => TranslationOverrides.string(_root.$meta, 'settings.subcategories.backup', {}) ?? 'Резервная копия';
+  @override
+  String get database => TranslationOverrides.string(_root.$meta, 'settings.subcategories.database', {}) ?? 'База данных';
+  @override
+  String get security => TranslationOverrides.string(_root.$meta, 'settings.subcategories.security', {}) ?? 'Безопасность';
+  @override
+  String get proxy => TranslationOverrides.string(_root.$meta, 'settings.subcategories.proxy', {}) ?? 'Прокси';
+  @override
+  String get requests => TranslationOverrides.string(_root.$meta, 'settings.subcategories.requests', {}) ?? 'Запросы';
+  @override
+  String get sync => TranslationOverrides.string(_root.$meta, 'settings.subcategories.sync', {}) ?? 'Синхронизация';
+  @override
+  String get activeFilters => TranslationOverrides.string(_root.$meta, 'settings.subcategories.activeFilters', {}) ?? 'Активные фильтры';
+  @override
+  String get tagLists => TranslationOverrides.string(_root.$meta, 'settings.subcategories.tagLists', {}) ?? 'Списки тегов';
+  @override
+  String get appLock => TranslationOverrides.string(_root.$meta, 'settings.subcategories.appLock', {}) ?? 'Блокировка приложения';
+  @override
+  String get privacy => TranslationOverrides.string(_root.$meta, 'settings.subcategories.privacy', {}) ?? 'Приватность';
+  @override
+  String get defaults => TranslationOverrides.string(_root.$meta, 'settings.subcategories.defaults', {}) ?? 'Значения по умолчанию';
+  @override
+  String get devicePerformance =>
+      TranslationOverrides.string(_root.$meta, 'settings.subcategories.devicePerformance', {}) ?? 'Производительность устройства';
+  @override
+  String get previewPerformance =>
+      TranslationOverrides.string(_root.$meta, 'settings.subcategories.previewPerformance', {}) ?? 'Производительность превью';
+  @override
+  String get viewerPerformance =>
+      TranslationOverrides.string(_root.$meta, 'settings.subcategories.viewerPerformance', {}) ?? 'Производительность просмотрщика';
+  @override
+  String get videoPerformance =>
+      TranslationOverrides.string(_root.$meta, 'settings.subcategories.videoPerformance', {}) ?? 'Производительность видео';
+  @override
+  String get language => TranslationOverrides.string(_root.$meta, 'settings.subcategories.language', {}) ?? 'Язык';
+  @override
+  String get logs => TranslationOverrides.string(_root.$meta, 'settings.subcategories.logs', {}) ?? 'Логи';
+  @override
+  String get debugMode => TranslationOverrides.string(_root.$meta, 'settings.subcategories.debugMode', {}) ?? 'Режим отладки';
+  @override
+  String get overlays => TranslationOverrides.string(_root.$meta, 'settings.subcategories.overlays', {}) ?? 'Оверлеи';
+  @override
+  String get logging => TranslationOverrides.string(_root.$meta, 'settings.subcategories.logging', {}) ?? 'Логирование';
+}
+
 // Path: settings.language
 class _Translations$settings$language$ru_RU extends Translations$settings$language$en {
   _Translations$settings$language$ru_RU._(TranslationsRuRu root) : this._root = root, super.internal(root);
@@ -1916,6 +2035,18 @@ class _Translations$settings$booruEditor$ru_RU extends Translations$settings$boo
   String get saveBooru => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveBooru', {}) ?? 'Сохранить конфиг';
   @override
   String get runningTest => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.runningTest', {}) ?? 'Выполнение теста…';
+  @override
+  String get connectionSettingsChanged =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.connectionSettingsChanged', {}) ??
+      'Настройки подключения изменились во время проверки. Попробуй сохранить ещё раз.';
+  @override
+  String get saveFailed => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveFailed', {}) ?? 'Не удалось сохранить конфиг';
+  @override
+  String get overrideChangesSavedAutomatically =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.overrideChangesSavedAutomatically', {}) ?? 'Изменения сохраняются автоматически';
+  @override
+  String get noOverrideSettings =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.noOverrideSettings', {}) ?? 'Особые настройки недоступны';
   @override
   String get booruConfigExistsError =>
       TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigExistsError', {}) ?? 'Такой конфиг уже существует';
@@ -2142,6 +2273,12 @@ class _Translations$settings$theme$ru_RU extends Translations$settings$theme$en 
   String get primaryColor => TranslationOverrides.string(_root.$meta, 'settings.theme.primaryColor', {}) ?? 'Основной цвет';
   @override
   String get secondaryColor => TranslationOverrides.string(_root.$meta, 'settings.theme.secondaryColor', {}) ?? 'Вторичный цвет';
+  @override
+  String get colors => TranslationOverrides.string(_root.$meta, 'settings.theme.colors', {}) ?? 'Цвета';
+  @override
+  String get blackAndWhite => TranslationOverrides.string(_root.$meta, 'settings.theme.blackAndWhite', {}) ?? 'Черный/белый';
+  @override
+  String get wheel => TranslationOverrides.string(_root.$meta, 'settings.theme.wheel', {}) ?? 'Колесо';
   @override
   String get enableDrawerMascot => TranslationOverrides.string(_root.$meta, 'settings.theme.enableDrawerMascot', {}) ?? 'Включить маскот в меню';
   @override
@@ -2435,6 +2572,10 @@ class _Translations$settings$video$ru_RU extends Translations$settings$video$en 
   String get mpvHWDEC => TranslationOverrides.string(_root.$meta, 'settings.video.mpvHWDEC', {}) ?? 'MPV: HWDEC';
   @override
   String get videoCacheMode => TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheMode', {}) ?? 'Режим кэширования видео';
+  @override
+  String get videoCacheModeSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheModeSubtitle', {}) ??
+      'Видео на некоторых сайтах могут работать некорректно (например, бесконечно загружаться) при использовании потокового режима кэширования видео. В таком случае попробуй режим кэша. Иначе плеер автоматически повторит загрузку в режиме кэша, если видео находится в начальной буферизации 10+ секунд и размер видеофайла меньше 25 МБ';
   @override
   late final _Translations$settings$video$cacheModes$ru_RU cacheModes = _Translations$settings$video$cacheModes$ru_RU._(_root);
   @override
@@ -2917,6 +3058,16 @@ class _Translations$settings$performance$ru_RU extends Translations$settings$per
   // Translations
   @override
   String get title => TranslationOverrides.string(_root.$meta, 'settings.performance.title', {}) ?? 'Производительность';
+  @override
+  String get crashDetectedTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.performance.crashDetectedTitle', {}) ?? 'Приложение вылетело в прошлый раз';
+  @override
+  String get crashDetectedMessage =>
+      TranslationOverrides.string(_root.$meta, 'settings.performance.crashDetectedMessage', {}) ??
+      'Открыть настройки производительности? Некоторые значения могут помочь избежать подобных вылетов.';
+  @override
+  String get openPerformanceSettings =>
+      TranslationOverrides.string(_root.$meta, 'settings.performance.openPerformanceSettings', {}) ?? 'Открыть настройки производительности';
   @override
   String get lowPerformanceMode =>
       TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceMode', {}) ?? 'Режим низкой производительности';
@@ -4482,6 +4633,81 @@ extension on TranslationsRuRu {
           'webview.navigation.noForwardHistoryItem' =>
             TranslationOverrides.string(_root.$meta, 'webview.navigation.noForwardHistoryItem', {}) ?? 'Нет элемента для перехода вперёд',
           'settings.title' => TranslationOverrides.string(_root.$meta, 'settings.title', {}) ?? 'Настройки',
+          'settings.typeToSearch' =>
+            TranslationOverrides.string(_root.$meta, 'settings.typeToSearch', {}) ?? 'Начни вводить текст для поиска по настройкам',
+          'settings.noSettingsFound' => TranslationOverrides.string(_root.$meta, 'settings.noSettingsFound', {}) ?? 'Настройки не найдены',
+          'settings.perBooruSettings' => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Особые настройки',
+          'settings.resetCategoryQuestion' =>
+            ({required String category}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.resetCategoryQuestion', {'category': category}) ??
+                'Сбросить все настройки категории «${category}» до значений по умолчанию?',
+          'settings.globalValue' => ({
+            required String value,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.globalValue', {'value': value}) ?? 'Глобально: ${value}',
+          'settings.booruOverridesTitle' => ({
+            required String booru,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.booruOverridesTitle', {'booru': booru}) ?? '${booru} — Индивидуальные настройки',
+          'settings.resetAllOverrides' =>
+            TranslationOverrides.string(_root.$meta, 'settings.resetAllOverrides', {}) ?? 'Сбросить все индивидуальные настройки',
+          'settings.resetAllOverridesDescription' =>
+            ({required String booru}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.resetAllOverridesDescription', {'booru': booru}) ??
+                'Индивидуальные настройки для сайта «${booru}» будут удалены. Вместо них будут использоваться глобальные значения.',
+          'settings.activeBooruThemeOverrides' =>
+            ({required String booru}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.activeBooruThemeOverrides', {'booru': booru}) ??
+                'Для активного сайта «${booru}» заданы индивидуальные настройки темы. Изменения здесь повлияют на глобальные значения, а не на тему для этого сайта.',
+          'settings.subcategories.previewGrid' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.previewGrid', {}) ?? 'Сетка превью',
+          'settings.subcategories.layout' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.layout', {}) ?? 'Режим приложения',
+          'settings.subcategories.rendering' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.rendering', {}) ?? 'Отрисовка',
+          'settings.subcategories.additionalInterface' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.additionalInterface', {}) ?? 'Дополнительное',
+          'settings.subcategories.loadingPreloading' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.loadingPreloading', {}) ?? 'Загрузка и предзагрузка',
+          'settings.subcategories.toolbar' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.toolbar', {}) ?? 'Панель инструментов',
+          'settings.subcategories.viewerBehavior' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.viewerBehavior', {}) ?? 'Поведение просмотрщика',
+          'settings.subcategories.slideshow' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.slideshow', {}) ?? 'Слайд-шоу',
+          'settings.subcategories.physicalButtons' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.physicalButtons', {}) ?? 'Физические кнопки',
+          'settings.subcategories.playback' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.playback', {}) ?? 'Воспроизведение',
+          'settings.subcategories.backend' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.backend', {}) ?? 'Бэкенд',
+          'settings.subcategories.mpv' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.mpv', {}) ?? 'MPV',
+          'settings.subcategories.theme' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.theme', {}) ?? 'Тема',
+          'settings.subcategories.drawer' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.drawer', {}) ?? 'Боковое меню',
+          'settings.subcategories.cache' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.cache', {}) ?? 'Кэш',
+          'settings.subcategories.downloads' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.downloads', {}) ?? 'Загрузки',
+          'settings.subcategories.storage' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.storage', {}) ?? 'Хранилище',
+          'settings.subcategories.cacheStats' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.cacheStats', {}) ?? 'Статистика кэша',
+          'settings.subcategories.backup' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.backup', {}) ?? 'Резервная копия',
+          'settings.subcategories.database' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.database', {}) ?? 'База данных',
+          'settings.subcategories.security' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.security', {}) ?? 'Безопасность',
+          'settings.subcategories.proxy' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.proxy', {}) ?? 'Прокси',
+          'settings.subcategories.requests' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.requests', {}) ?? 'Запросы',
+          'settings.subcategories.sync' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.sync', {}) ?? 'Синхронизация',
+          'settings.subcategories.activeFilters' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.activeFilters', {}) ?? 'Активные фильтры',
+          'settings.subcategories.tagLists' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.tagLists', {}) ?? 'Списки тегов',
+          'settings.subcategories.appLock' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.appLock', {}) ?? 'Блокировка приложения',
+          'settings.subcategories.privacy' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.privacy', {}) ?? 'Приватность',
+          'settings.subcategories.defaults' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.defaults', {}) ?? 'Значения по умолчанию',
+          'settings.subcategories.devicePerformance' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.devicePerformance', {}) ?? 'Производительность устройства',
+          'settings.subcategories.previewPerformance' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.previewPerformance', {}) ?? 'Производительность превью',
+          'settings.subcategories.viewerPerformance' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.viewerPerformance', {}) ?? 'Производительность просмотрщика',
+          'settings.subcategories.videoPerformance' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.videoPerformance', {}) ?? 'Производительность видео',
+          'settings.subcategories.language' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.language', {}) ?? 'Язык',
+          'settings.subcategories.logs' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.logs', {}) ?? 'Логи',
+          'settings.subcategories.debugMode' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.debugMode', {}) ?? 'Режим отладки',
+          'settings.subcategories.overlays' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.overlays', {}) ?? 'Оверлеи',
+          'settings.subcategories.logging' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.logging', {}) ?? 'Логирование',
           'settings.language.title' => TranslationOverrides.string(_root.$meta, 'settings.language.title', {}) ?? 'Язык',
           'settings.language.system' => TranslationOverrides.string(_root.$meta, 'settings.language.system', {}) ?? 'Системный',
           'settings.language.helpUsTranslate' =>
@@ -4554,6 +4780,16 @@ extension on TranslationsRuRu {
           'settings.booruEditor.saveBooru' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveBooru', {}) ?? 'Сохранить конфиг',
           'settings.booruEditor.runningTest' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.runningTest', {}) ?? 'Выполнение теста…',
+          'settings.booruEditor.connectionSettingsChanged' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.connectionSettingsChanged', {}) ??
+                'Настройки подключения изменились во время проверки. Попробуй сохранить ещё раз.',
+          'settings.booruEditor.saveFailed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveFailed', {}) ?? 'Не удалось сохранить конфиг',
+          'settings.booruEditor.overrideChangesSavedAutomatically' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.overrideChangesSavedAutomatically', {}) ??
+                'Изменения сохраняются автоматически',
+          'settings.booruEditor.noOverrideSettings' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.noOverrideSettings', {}) ?? 'Особые настройки недоступны',
           'settings.booruEditor.booruConfigExistsError' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigExistsError', {}) ?? 'Такой конфиг уже существует',
           'settings.booruEditor.booruSameNameExistsError' =>
@@ -4712,6 +4948,9 @@ extension on TranslationsRuRu {
           'settings.theme.theme' => TranslationOverrides.string(_root.$meta, 'settings.theme.theme', {}) ?? 'Тема',
           'settings.theme.primaryColor' => TranslationOverrides.string(_root.$meta, 'settings.theme.primaryColor', {}) ?? 'Основной цвет',
           'settings.theme.secondaryColor' => TranslationOverrides.string(_root.$meta, 'settings.theme.secondaryColor', {}) ?? 'Вторичный цвет',
+          'settings.theme.colors' => TranslationOverrides.string(_root.$meta, 'settings.theme.colors', {}) ?? 'Цвета',
+          'settings.theme.blackAndWhite' => TranslationOverrides.string(_root.$meta, 'settings.theme.blackAndWhite', {}) ?? 'Черный/белый',
+          'settings.theme.wheel' => TranslationOverrides.string(_root.$meta, 'settings.theme.wheel', {}) ?? 'Колесо',
           'settings.theme.enableDrawerMascot' =>
             TranslationOverrides.string(_root.$meta, 'settings.theme.enableDrawerMascot', {}) ?? 'Включить маскот в меню',
           'settings.theme.setCustomMascot' =>
@@ -4781,6 +5020,9 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotationSubtitle', {}) ?? 'Двойное нажатие для сброса',
           'settings.viewer.toolbarButtonsOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.toolbarButtonsOrder', {}) ?? 'Порядок кнопок панели инструментов',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.viewer.buttonsOrder' => TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonsOrder', {}) ?? 'Порядок кнопок',
           'settings.viewer.longPressToChangeItemOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.longPressToChangeItemOrder', {}) ??
@@ -4897,9 +5139,6 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionValues.hydrus', {}) ?? 'Hydrus',
           'settings.video.title' => TranslationOverrides.string(_root.$meta, 'settings.video.title', {}) ?? 'Видео',
           'settings.video.disableVideos' => TranslationOverrides.string(_root.$meta, 'settings.video.disableVideos', {}) ?? 'Отключить видео',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.video.disableVideosHelp' => TranslationOverrides.string(_root.$meta, 'settings.video.disableVideosHelp', {}) ?? 'Полезно на слабых устройствах, которые вылетают при попытке загрузить видео. Даёт возможность просмотреть видео во внешнем плеере или браузере.',
           'settings.video.autoplayVideos' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.autoplayVideos', {}) ?? 'Автовоспроизведение видео',
@@ -4925,6 +5164,7 @@ extension on TranslationsRuRu {
           'settings.video.mpvHWDEC' => TranslationOverrides.string(_root.$meta, 'settings.video.mpvHWDEC', {}) ?? 'MPV: HWDEC',
           'settings.video.videoCacheMode' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheMode', {}) ?? 'Режим кэширования видео',
+          'settings.video.videoCacheModeSubtitle' => TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheModeSubtitle', {}) ?? 'Видео на некоторых сайтах могут работать некорректно (например, бесконечно загружаться) при использовании потокового режима кэширования видео. В таком случае попробуй режим кэша. Иначе плеер автоматически повторит загрузку в режиме кэша, если видео находится в начальной буферизации 10+ секунд и размер видеофайла меньше 25 МБ',
           'settings.video.cacheModes.title' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.cacheModes.title', {}) ?? 'Режимы кэширования видео',
           'settings.video.cacheModes.streamMode' =>
@@ -5282,6 +5522,13 @@ extension on TranslationsRuRu {
                 'Не удалось изменить название приложения. Пожалуйста, попробуй снова.',
           'settings.privacy.restartNow' => TranslationOverrides.string(_root.$meta, 'settings.privacy.restartNow', {}) ?? 'Перезапустить сейчас',
           'settings.performance.title' => TranslationOverrides.string(_root.$meta, 'settings.performance.title', {}) ?? 'Производительность',
+          'settings.performance.crashDetectedTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.performance.crashDetectedTitle', {}) ?? 'Приложение вылетело в прошлый раз',
+          'settings.performance.crashDetectedMessage' =>
+            TranslationOverrides.string(_root.$meta, 'settings.performance.crashDetectedMessage', {}) ??
+                'Открыть настройки производительности? Некоторые значения могут помочь избежать подобных вылетов.',
+          'settings.performance.openPerformanceSettings' =>
+            TranslationOverrides.string(_root.$meta, 'settings.performance.openPerformanceSettings', {}) ?? 'Открыть настройки производительности',
           'settings.performance.lowPerformanceMode' =>
             TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceMode', {}) ?? 'Режим низкой производительности',
           'settings.performance.lowPerformanceModeSubtitle' =>
@@ -5760,6 +6007,9 @@ extension on TranslationsRuRu {
           'tagView.history' => TranslationOverrides.string(_root.$meta, 'tagView.history', {}) ?? 'История',
           'tagView.failedToLoadPreviewPage' =>
             TranslationOverrides.string(_root.$meta, 'tagView.failedToLoadPreviewPage', {}) ?? 'Не удалось загрузить страницу предпросмотра',
+          _ => null,
+        } ??
+        switch (path) {
           'tagView.tryAgain' => TranslationOverrides.string(_root.$meta, 'tagView.tryAgain', {}) ?? 'Попробовать снова',
           'tagView.detectedLinks' => TranslationOverrides.string(_root.$meta, 'tagView.detectedLinks', {}) ?? 'Обнаруженные ссылки:',
           'tagView.relatedTabs' => TranslationOverrides.string(_root.$meta, 'tagView.relatedTabs', {}) ?? 'Связанные вкладки',
@@ -5845,9 +6095,6 @@ extension on TranslationsRuRu {
           'mobileHome.fileAlreadyExists' => TranslationOverrides.string(_root.$meta, 'mobileHome.fileAlreadyExists', {}) ?? 'Файл уже существует',
           'mobileHome.failedToDownload' => TranslationOverrides.string(_root.$meta, 'mobileHome.failedToDownload', {}) ?? 'Не удалось загрузить',
           'mobileHome.cancelledByUser' => TranslationOverrides.string(_root.$meta, 'mobileHome.cancelledByUser', {}) ?? 'Отменено пользователем',
-          _ => null,
-        } ??
-        switch (path) {
           'mobileHome.saveAnyway' => TranslationOverrides.string(_root.$meta, 'mobileHome.saveAnyway', {}) ?? 'Сохранить в любом случае',
           'mobileHome.skip' => TranslationOverrides.string(_root.$meta, 'mobileHome.skip', {}) ?? 'Пропустить',
           'mobileHome.retryAll' => ({

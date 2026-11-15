@@ -14,6 +14,7 @@ import 'package:video_player/video_player.dart';
 
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/settings/video_cache_mode.dart';
 import 'package:lolisnatcher/src/handlers/local_auth_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
@@ -109,13 +110,13 @@ class VideoViewerState extends State<VideoViewer> {
 
     unawaited(getSize(loadGeneration: loadGeneration));
 
-    if (!settingsHandler.mediaCache) {
+    if (!SX.mediaCache.value) {
       // Media caching disabled - don't cache videos
       unawaited(initPlayer(loadGeneration: loadGeneration));
       return;
     }
 
-    final usedVideoCacheMode = forceCache.value ? VideoCacheMode.cache : settingsHandler.videoCacheMode;
+    final usedVideoCacheMode = forceCache.value ? VideoCacheMode.cache : SX.videoCacheMode.value;
 
     switch (usedVideoCacheMode) {
       case .cache:
@@ -170,7 +171,7 @@ class VideoViewerState extends State<VideoViewer> {
           updateState();
         }
       },
-      cacheEnabled: settingsHandler.mediaCache,
+      cacheEnabled: SX.mediaCache.value,
       cacheFolder: 'media',
       fileNameExtras: widget.booruItem.fileNameExtras,
     );
@@ -207,9 +208,8 @@ class VideoViewerState extends State<VideoViewer> {
     total.value = size;
     // TODO find a way to stop loading based on size when caching is enabled
 
-    final int? maxSize = settingsHandler.preloadSizeLimit == 0
-        ? null
-        : (1024 * 1024 * settingsHandler.preloadSizeLimit * 1000).round();
+    final preloadSizeLimit = SX.preloadSizeLimit.value;
+    final int? maxSize = preloadSizeLimit == 0 ? null : Tools.gibibytesToBytes(preloadSizeLimit);
     // print('onSize: $size $maxSize ${size > maxSize}');
     if (size == 0) {
       stopLoading(
@@ -274,9 +274,7 @@ class VideoViewerState extends State<VideoViewer> {
       } else {
         stopLoading(
           reason: ViewerStopReason.error,
-          details: settingsHandler.videoBackendMode.isNormal
-              ? '\n${context.loc.media.loading.tryChangingVideoBackend}'
-              : null,
+          details: SX.videoBackendMode.value.isNormal ? '\n${context.loc.media.loading.tryChangingVideoBackend}' : null,
         );
       }
       // print('Dio request cancelled: $error');
@@ -318,7 +316,7 @@ class VideoViewerState extends State<VideoViewer> {
       isViewed.value = widget.isViewed;
 
       if (isViewed.value) {
-        if (settingsHandler.autoPlayEnabled) {
+        if (SX.autoPlayEnabled.value) {
           videoController.value?.play();
         }
         if (viewerHandler.videoAutoMute) {
@@ -544,7 +542,7 @@ class VideoViewerState extends State<VideoViewer> {
       basePosition: Alignment.center,
       controller: controller ?? viewController,
       scaleStateController: scaleStateController ?? scaleController,
-      enableRotation: settingsHandler.allowRotation,
+      enableRotation: SX.allowRotation.value,
       child: child,
     );
   }
@@ -588,7 +586,7 @@ class VideoViewerState extends State<VideoViewer> {
     chewieController.value?.toggleFullScreen();
     viewerHandler.setFullScreenState(false);
 
-    if (!settingsHandler.wakeLockEnabled) {
+    if (!SX.wakeLockEnabled.value) {
       ServiceHandler.enableSleep();
     }
     ServiceHandler.setSystemUiVisibility(viewerHandler.displayAppbar.value);
@@ -617,7 +615,7 @@ class VideoViewerState extends State<VideoViewer> {
     }
 
     if (isViewed.value) {
-      if (chewieController.value!.isFullScreen || !settingsHandler.useVolumeButtonsForScroll) {
+      if (chewieController.value!.isFullScreen || !SX.useVolumeButtonsForScroll.value) {
         ServiceHandler.setVolumeButtons(true); // in full screen or volumebuttons scroll setting is disabled
       } else {
         ServiceHandler.setVolumeButtons(viewerHandler.displayAppbar.value); // same as app bar value
@@ -697,7 +695,7 @@ class VideoViewerState extends State<VideoViewer> {
       //   iconColor: Color.fromARGB(255, 200, 200, 200)
       // ),
       // ios default video handler seems unstable with speeds above 2.5
-      playbackSpeeds: (Platform.isIOS && settingsHandler.videoBackendMode.isDefault)
+      playbackSpeeds: (Platform.isIOS && SX.videoBackendMode.value.isDefault)
           ? const [
               0.1,
               0.25,
@@ -763,7 +761,7 @@ class VideoViewerState extends State<VideoViewer> {
       // ],
     );
 
-    if (settingsHandler.startVideosMuted || viewerHandler.videoAutoMute) {
+    if (SX.startVideosMuted.value || viewerHandler.videoAutoMute) {
       await videoController.value?.setVolume(0);
     }
 
@@ -793,7 +791,7 @@ class VideoViewerState extends State<VideoViewer> {
     await Future.wait([videoController.value!.initialize()]);
     if (!_isCurrentLoad(loadGeneration)) return;
 
-    if (settingsHandler.autoPlayEnabled) {
+    if (SX.autoPlayEnabled.value) {
       await videoController.value!.play();
     }
 
@@ -1067,8 +1065,7 @@ class VideoViewerState extends State<VideoViewer> {
                 builder: (context, _) {
                   return MediaLoading(
                     item: widget.booruItem,
-                    hasProgress:
-                        settingsHandler.mediaCache && (forceCache.value || !settingsHandler.videoCacheMode.isStream),
+                    hasProgress: SX.mediaCache.value && (forceCache.value || !SX.videoCacheMode.value.isStream),
                     isFromCache: isFromCache.value,
                     isDone: isVideoInited,
                     isTooBig: blockPreloadState.isTooBig,
@@ -1088,7 +1085,7 @@ class VideoViewerState extends State<VideoViewer> {
             //
             Positioned.fill(
               child: AnimatedSwitcher(
-                duration: Duration(milliseconds: settingsHandler.appMode.value.isDesktop ? 50 : 200),
+                duration: Duration(milliseconds: SX.appMode.value.isDesktop ? 50 : 200),
                 child: isVideoInited
                     ? Listener(
                         onPointerSignal: (pointerSignal) {

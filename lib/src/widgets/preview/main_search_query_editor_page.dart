@@ -28,6 +28,7 @@ import 'package:lolisnatcher/src/data/tag_suggestion.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -776,7 +777,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                 return Scrollbar(
                   controller: suggestionsScrollController,
                   interactive: true,
-                  scrollbarOrientation: settingsHandler.handSide.value.isLeft
+                  scrollbarOrientation: SX.handSide.value.isLeft
                       ? ScrollbarOrientation.left
                       : ScrollbarOrientation.right,
                   child: ValueListenableBuilder(
@@ -792,7 +793,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                     ),
                     child: FadingEdgeScrollView.fromScrollView(
                       child: ListView.builder(
-                        reverse: !settingsHandler.useTopSearchbarInput,
+                        reverse: !SX.useTopSearchbarInput.value,
                         controller: suggestionsScrollController,
                         physics: const AlwaysScrollableScrollPhysics(
                           parent: BouncingScrollPhysics(),
@@ -997,7 +998,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
       ),
       // Suggestions text input
       KeyboardActions(
-        enable: settingsHandler.showSearchbarQuickActions && PlatformExt.isMobile,
+        enable: SX.showSearchbarQuickActions.value && PlatformExt.isMobile,
         config: buildConfig(),
         autoScroll: false,
         overscroll: 0,
@@ -1022,8 +1023,8 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                   onlyInput: true,
                   floatingLabelBehavior: FloatingLabelBehavior.never,
                   textInputAction: TextInputAction.search,
-                  enableIMEPersonalizedLearning: !settingsHandler.incognitoKeyboard,
-                  showSubmitButton: (text) => !settingsHandler.showSearchbarQuickActions && text.isNotEmpty,
+                  enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
+                  showSubmitButton: (text) => !SX.showSearchbarQuickActions.value && text.isNotEmpty,
                   contextMenuBuilder: (_, editableTextState) {
                     final List<ContextMenuButtonItem> buttonItems = editableTextState.contextMenuButtonItems;
 
@@ -1060,9 +1061,9 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                 ),
               ),
               //
-              if (settingsHandler.useTopSearchbarInput)
+              if (SX.useTopSearchbarInput.value)
                 const SizedBox(height: 4)
-              else if (settingsHandler.showSearchbarQuickActions && PlatformExt.isMobile)
+              else if (SX.showSearchbarQuickActions.value && PlatformExt.isMobile)
                 KeyboardVisibilityBuilder(
                   builder: (context, isKbVisible) {
                     return AnimatedSize(
@@ -1085,9 +1086,9 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
       ),
     ];
 
-    if (settingsHandler.useTopSearchbarInput) {
+    if (SX.useTopSearchbarInput.value) {
       widgets = widgets.reversed.toList();
-      if (settingsHandler.showSearchbarQuickActions) {
+      if (SX.showSearchbarQuickActions.value) {
         widgets.add(
           KeyboardVisibilityBuilder(
             builder: (context, isKbVisible) {
@@ -1101,8 +1102,8 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: SafeArea(
-        top: settingsHandler.useTopSearchbarInput,
-        bottom: settingsHandler.useTopSearchbarInput,
+        top: SX.useTopSearchbarInput.value,
+        bottom: SX.useTopSearchbarInput.value,
         child: Column(
           children: widgets,
         ),
@@ -1477,7 +1478,7 @@ class _SuggestionsMainContentState extends State<SuggestionsMainContent> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isReverse = SettingsHandler.instance.useTopSearchbarInput;
+    final bool isReverse = SX.useTopSearchbarInput.value;
 
     List<Widget> blocks = [
       if (!widget.hidePopular)
@@ -1816,7 +1817,7 @@ class _HistoryBlockState extends State<HistoryBlock> {
 
   @override
   Widget build(BuildContext context) {
-    if (!settingsHandler.dbEnabled || (history.isEmpty && !loading)) {
+    if (!SX.dbEnabled.value || (history.isEmpty && !loading)) {
       return const SizedBox.shrink();
     }
 
@@ -2641,7 +2642,7 @@ class _PinnedTagsBlockState extends State<PinnedTagsBlock> {
 
   @override
   Widget build(BuildContext context) {
-    if (!settingsHandler.dbEnabled || searchHandler.currentBooruOrNull == null) {
+    if (!SX.dbEnabled.value || searchHandler.currentBooruOrNull == null) {
       return const SizedBox.shrink();
     }
 

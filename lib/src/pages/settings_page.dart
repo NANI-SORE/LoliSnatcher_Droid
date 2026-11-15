@@ -1,12 +1,17 @@
+import 'dart:ffi';
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:get/get.dart';
+import 'package:lolisnatcher/src/widgets/settings/setting_builder.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import 'package:lolisnatcher/src/data/constants.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/pages/about_page.dart';
 import 'package:lolisnatcher/src/pages/loli_sync_page.dart';
@@ -30,6 +35,7 @@ import 'package:lolisnatcher/src/widgets/common/discord_button.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/mascot_image.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
+import 'package:lolisnatcher/src/widgets/settings/settings_search_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -48,6 +54,19 @@ class SettingsPage extends StatelessWidget {
         resizeToAvoidBottomInset: false,
         appBar: SettingsAppBar(
           title: context.loc.settings.title,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.search),
+              tooltip: context.loc.search,
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const SettingsSearchPage(),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
         body: Center(
           child: ListView(
@@ -126,7 +145,7 @@ class SettingsPage extends StatelessWidget {
               SettingsButton(
                 name: context.loc.settings.sync.title,
                 icon: const Icon(Icons.sync),
-                action: settingsHandler.dbEnabled
+                action: SX.dbEnabled.value
                     ? null
                     : () {
                         FlashElements.showSnackbar(
@@ -143,7 +162,7 @@ class SettingsPage extends StatelessWidget {
                           sideColor: Colors.red,
                         );
                       },
-                page: settingsHandler.dbEnabled ? () => const LoliSyncPage() : null,
+                page: SX.dbEnabled.value ? () => const LoliSyncPage() : null,
               ),
               const DiscordButton(),
               SettingsButton(
@@ -183,17 +202,20 @@ class SettingsPage extends StatelessWidget {
                 },
                 trailingIcon: const Icon(Icons.exit_to_app),
               ),
-              Obx(() {
-                if (settingsHandler.isDebug.value) {
-                  return SettingsButton(
-                    name: context.loc.settings.debug.title,
-                    icon: const Icon(Icons.developer_mode),
-                    page: () => const DebugPage(),
-                  );
-                }
+              SettingBuilder<bool>(
+                setting: SX.isDebug.state,
+                builder: (context, isDebug) {
+                  if (isDebug) {
+                    return SettingsButton(
+                      name: context.loc.settings.debug.title,
+                      icon: const Icon(Icons.developer_mode),
+                      page: () => const DebugPage(),
+                    );
+                  }
 
-                return const SizedBox.shrink();
-              }),
+                  return const SizedBox.shrink();
+                },
+              ),
               const VersionButton(),
               const MascotImage(),
             ],
@@ -213,11 +235,59 @@ class VersionButton extends StatefulWidget {
 
 class _VersionButtonState extends State<VersionButton> {
   int debugTaps = 0;
+  String? systemDetailsText;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSystemDetails();
+  }
+
+  Future<void> _loadSystemDetails() async {
+    final deviceInfo = DeviceInfoPlugin();
+    final String? details;
+
+    if (Platform.isAndroid) {
+      final androidInfo = await deviceInfo.androidInfo;
+      details =
+          'App: ${_androidAbiName(Abi.current())} / System: A${androidInfo.version.release}, ${androidInfo.supportedAbis.join(', ')}';
+    } else if (Platform.isIOS) {
+      final iosInfo = await deviceInfo.iosInfo;
+      details = '${iosInfo.systemName} ${iosInfo.systemVersion}';
+    } else if (Platform.isWindows) {
+      final windowsInfo = await deviceInfo.windowsInfo;
+      final displayVersion = windowsInfo.displayVersion.isEmpty ? '' : ' ${windowsInfo.displayVersion}';
+      details = '${windowsInfo.productName}$displayVersion (build ${windowsInfo.buildNumber})';
+    } else if (Platform.isLinux) {
+      final linuxInfo = await deviceInfo.linuxInfo;
+      details = linuxInfo.prettyName;
+    } else if (Platform.isMacOS) {
+      final macInfo = await deviceInfo.macOsInfo;
+      details = 'macOS ${macInfo.majorVersion}.${macInfo.minorVersion}.${macInfo.patchVersion}';
+    } else {
+      details = null;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      systemDetailsText = details;
+    });
+  }
+
+  String _androidAbiName(Abi abi) {
+    if (abi == Abi.androidArm) return 'armeabi-v7a';
+    if (abi == Abi.androidArm64) return 'arm64-v8a';
+    if (abi == Abi.androidIA32) return 'x86';
+    if (abi == Abi.androidX64) return 'x86_64';
+    if (abi == Abi.androidRiscv64) return 'riscv64';
+    return abi.toString();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
-
     final String verText =
         '${context.loc.settings.version}: ${Constants.updateInfo.versionName} (${Constants.updateInfo.buildNumber})';
 
@@ -227,9 +297,10 @@ class _VersionButtonState extends State<VersionButton> {
 
     return SettingsButton(
       name: '$verText $buildTypeText'.trim(),
+      subtitle: systemDetailsText == null ? null : Text(systemDetailsText ?? ''),
       icon: const Icon(null), // to align with other items
       action: () {
-        if (settingsHandler.isDebug.value) {
+        if (SX.isDebug.value) {
           FlashElements.showSnackbar(
             context: context,
             title: Text(
@@ -243,7 +314,7 @@ class _VersionButtonState extends State<VersionButton> {
         } else {
           debugTaps++;
           if (debugTaps > 5) {
-            settingsHandler.isDebug.value = true;
+            SX.isDebug.state.setScopedValue(context, true);
             FlashElements.showSnackbar(
               context: context,
               title: Text(
@@ -260,12 +331,12 @@ class _VersionButtonState extends State<VersionButton> {
         setState(() {});
       },
       onLongPress: () {
-        if (!settingsHandler.isDebug.value) {
+        if (!SX.isDebug.value) {
           return;
         }
         //
         debugTaps = 0;
-        settingsHandler.isDebug.value = false;
+        SX.isDebug.state.setScopedValue(context, false);
         FlashElements.showSnackbar(
           context: context,
           title: Text(

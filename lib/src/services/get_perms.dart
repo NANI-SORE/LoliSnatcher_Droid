@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:permission_handler/permission_handler.dart';
 
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -27,7 +28,7 @@ Future<bool> getStoragePermission() async {
 }
 
 Future<bool> checkStorageAvailability() async {
-  final extPath = SettingsHandler.instance.extPathOverride;
+  final extPath = SX.extPathOverride.value;
   if (extPath.isEmpty) {
     return true;
   }
@@ -47,7 +48,7 @@ Future<bool> setPermissions() async {
 }
 
 Future<bool> showStorageNeedsUpdateDialog() async {
-  final String extPath = SettingsHandler.instance.extPathOverride;
+  final String extPath = SX.extPathOverride.value;
   final res = await showDialog(
     context: NavigationHandler.instance.navContext,
     barrierDismissible: false,
@@ -71,10 +72,10 @@ Future<bool> showStorageNeedsUpdateDialog() async {
               label: Text(context.loc.permissions.setDirectory),
               icon: const Icon(Icons.settings),
               onPressed: () async {
-                SettingsHandler.instance.extPathOverride = '';
+                SX.extPathOverride.state.value = '';
                 if (Platform.isAndroid) {
                   final String newPath = await ServiceHandler.setExtDir();
-                  SettingsHandler.instance.extPathOverride = newPath;
+                  SX.extPathOverride.state.value = newPath;
                   await SettingsHandler.instance.saveSettings(restate: false);
                   Navigator.of(context).pop(true);
                 } else {
@@ -105,7 +106,7 @@ Future<bool> showStorageNeedsUpdateDialog() async {
                 foregroundColor: const WidgetStatePropertyAll(Colors.white),
               ),
               onPressed: () async {
-                SettingsHandler.instance.extPathOverride = '';
+                SX.extPathOverride.state.value = '';
                 await SettingsHandler.instance.saveSettings(restate: false);
                 Navigator.of(context).pop(true);
               },

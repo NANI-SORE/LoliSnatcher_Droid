@@ -6,7 +6,7 @@ import 'package:flash/flash.dart';
 
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -59,6 +59,17 @@ class FlashElements {
         }),
       );
     }
+  }
+
+  static Future<void> dismissKey(String key) async {
+    final controllers = List<dynamic>.from(controllersMap[key] ?? const []);
+    await Future.wait(
+      controllers.map((controller) async {
+        try {
+          await controller.dismiss();
+        } catch (_) {}
+      }),
+    );
   }
 
   /// Shows a snackbar with a title, content and a leading icon, with a strip on the left side. Optionally can be used as a dialog.
@@ -132,8 +143,7 @@ class FlashElements {
     // therefore causing an exception, because this context is not available anymore
     final ThemeData themeData = Theme.of(contextToUse);
 
-    final bool isDesktop =
-        !ignoreDesktopCheck && (SettingsHandler.instance.appMode.value.isDesktop || PlatformExt.isDesktop);
+    final bool isDesktop = !ignoreDesktopCheck && (SX.appMode.value.isDesktop || PlatformExt.isDesktop);
     final bool isTooWide = screenSize.width > 500;
     final bool isDark = themeData.brightness == Brightness.dark;
 

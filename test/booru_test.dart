@@ -23,6 +23,7 @@ import 'package:lolisnatcher/src/boorus/worldxyz_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -44,8 +45,8 @@ Future<void> main() async {
   // prepare/init handlers and stuff
   final SettingsHandler settingsHandler = SettingsHandler.register();
   await settingsHandler.initialize();
-  settingsHandler.tagTypeFetchEnabled = false;
-  settingsHandler.itemLimit = itemLimit;
+  SX.tagTypeFetchEnabled.state.value = false;
+  SX.limit.state.value = itemLimit;
 
   final TagHandler tagHandler = TagHandler.register();
   await tagHandler.initialize();

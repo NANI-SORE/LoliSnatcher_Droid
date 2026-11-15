@@ -213,8 +213,7 @@ class InkBunnyHandler extends BooruHandler {
       final pools = current['pools'] ?? [];
       for (int i = 0; i < pools.length; i++) {
         final poolId = pools[i]['pool_id'].toString();
-        final poolName = (pools[i]['name'] as String)
-            .replaceAll(RegExp(r'[ \\^$.*+?()\[\]{}|:]'), '_');
+        final poolName = (pools[i]['name'] as String).replaceAll(RegExp(r'[ \\^$.*+?()\[\]{}|:]'), '_');
         currentTags.add('pool:$poolId:$poolName');
       }
       // A submission can have multiple files so a booru item must be made for each of them

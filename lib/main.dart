@@ -14,6 +14,9 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart' hide Translations;
 import 'package:lemberfpsmonitor/lemberfpsmonitor.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
+import 'package:lolisnatcher/src/widgets/common/confirm_button.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
@@ -36,12 +39,14 @@ import 'package:lolisnatcher/src/pages/init_home_page.dart';
 import 'package:lolisnatcher/src/pages/lockscreen_page.dart';
 import 'package:lolisnatcher/src/pages/mobile_home_page.dart';
 import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
+import 'package:lolisnatcher/src/pages/settings/performance_page.dart';
 import 'package:lolisnatcher/src/pages/settings/language_page.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/root/dev_overlay.dart';
+import 'package:lolisnatcher/src/widgets/root/theme_builder.dart';
 import 'package:lolisnatcher/src/widgets/root/image_stats.dart';
 import 'package:lolisnatcher/src/widgets/root/scroll_physics.dart';
 import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
@@ -123,7 +128,7 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       await searchHandler.restoreTabs();
     });
 
-    settingsHandler.isDebug.addListener(devOverlayListener);
+    SX.isDebug.state.effectiveNotifier.addListener(devOverlayListener);
   }
 
   void registerGlobalOverlay(BuildContext context) {
@@ -139,14 +144,14 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
 
   void createOverlays() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (settingsHandler.isDebug.value) {
+      if (SX.isDebug.value) {
         overlayScreen?.insert(const DevOverlayContent(), 'devOverlay');
       }
     });
   }
 
   void removeOverlays() {
-    if (!settingsHandler.isDebug.value) {
+    if (!SX.isDebug.value) {
       overlayScreen?.remove('devOverlay');
     }
   }
@@ -160,7 +165,7 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     HardwareKeyboard.instance.removeHandler(handleGlobalKeyEvent);
-    settingsHandler.isDebug.removeListener(devOverlayListener);
+    SX.isDebug.state.effectiveNotifier.removeListener(devOverlayListener);
     NotifyHandler.unregister();
     NavigationHandler.unregister();
     ViewerHandler.unregister();
@@ -175,7 +180,7 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
 
   @override
   void didChangeLocales(List<Locale>? locales) {
-    if (locales != null && settingsHandler.locale.value == null) {
+    if (locales != null && SX.locale.value == null) {
       unawaited(settingsHandler.setLocale(null));
     }
   }
@@ -205,19 +210,30 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(
-      () {
-        final ThemeItem theme = settingsHandler.theme.value.name == 'Custom'
+    return DebouncedListenableBuilder(
+      immediateListenables: [
+        SX.theme.state.effectiveNotifier,
+        SX.themeMode.state.effectiveNotifier,
+        SX.useDynamicColor.state.effectiveNotifier,
+        SX.isAmoled.state.effectiveNotifier,
+        SX.fontFamily.state.effectiveNotifier,
+      ],
+      debouncedListenables: [
+        SX.customPrimaryColor.state.effectiveNotifier,
+        SX.customAccentColor.state.effectiveNotifier,
+      ],
+      builder: (context, _) {
+        final ThemeItem theme = SX.theme.value.name == 'Custom'
             ? ThemeItem(
                 name: 'Custom',
-                primary: settingsHandler.customPrimaryColor.value,
-                accent: settingsHandler.customAccentColor.value,
+                primary: SX.customPrimaryColor.value,
+                accent: SX.customAccentColor.value,
               )
-            : settingsHandler.theme.value;
-        final ThemeMode themeMode = settingsHandler.themeMode.value;
-        final bool useDynamicColor = settingsHandler.useDynamicColor.value;
-        final bool isAmoled = settingsHandler.isAmoled.value;
-        final String fontFamily = settingsHandler.fontFamily.value;
+            : SX.theme.value;
+        final ThemeMode themeMode = SX.themeMode.value;
+        final bool useDynamicColor = SX.useDynamicColor.value;
+        final bool isAmoled = SX.isAmoled.value;
+        final String fontFamily = SX.fontFamily.value;
 
         final ThemeHandler themeHandler = ThemeHandler(
           theme: theme,
@@ -236,10 +252,10 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
               );
 
               return ValueListenableBuilder(
-                valueListenable: settingsHandler.showPerf,
+                valueListenable: SX.showPerf.state.effectiveNotifier,
                 builder: (context, showPerf, _) {
                   return MaterialApp(
-                    title: settingsHandler.appAlias.locName,
+                    title: SX.appAlias.value.locName,
                     debugShowCheckedModeBanner: false,
                     showPerformanceOverlay: showPerf,
                     scrollBehavior: const CustomScrollBehavior(),
@@ -273,7 +289,7 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
                           initialEntries: [
                             OverlayEntry(
                               builder: (_) => AppLifecycleOverlay(
-                                shouldOverlay: settingsHandler.blurOnLeave.value,
+                                shouldOverlay: SX.blurOnLeave.value,
                               ),
                             ),
                           ],
@@ -312,8 +328,6 @@ class DebuggingWidgets extends StatefulWidget {
 }
 
 class _DebuggingWidgetsState extends State<DebuggingWidgets> with WidgetsBindingObserver {
-  final settingsHandler = SettingsHandler.instance;
-
   final ValueNotifier<int> maxFps = ValueNotifier(60);
 
   @override
@@ -401,39 +415,34 @@ class _DebuggingWidgetsState extends State<DebuggingWidgets> with WidgetsBinding
     return ValueListenableBuilder(
       valueListenable: maxFps,
       builder: (context, maxFps, child) {
-        return Obx(
-          () {
-            if (!settingsHandler.showFps.value) {
-              return child!;
-            }
-
-            return FPSMonitor(
-              showFPSChart: settingsHandler.showFps.value,
-              maxFPS: maxFps,
-              onFPSChanged: (_) {},
-              showText: true,
-              sampleTime: .2,
-              totalTime: 10,
-              align: Alignment.bottomLeft,
-              child: child,
-            );
-          },
+        return ValueListenableBuilder(
+          valueListenable: SX.showFps.state.effectiveNotifier,
+          builder: (context, showFps, child) => !showFps
+              ? child!
+              : FPSMonitor(
+                  showFPSChart: SX.showFps.value,
+                  maxFPS: maxFps,
+                  onFPSChanged: (_) {},
+                  showText: true,
+                  sampleTime: .2,
+                  totalTime: 10,
+                  align: Alignment.bottomLeft,
+                  child: child,
+                ),
+          child: child,
         );
       },
-      child: Obx(
-        () {
-          if (!settingsHandler.showImageStats.value) {
-            return widget.child;
-          }
-
-          return ImageStats(
-            isEnabled: settingsHandler.showImageStats.value,
-            width: 120,
-            height: 100,
-            align: Alignment.centerLeft,
-            child: widget.child,
-          );
-        },
+      child: ValueListenableBuilder(
+        valueListenable: SX.showImageStats.state.effectiveNotifier,
+        builder: (context, showImageStats, _) => !showImageStats
+            ? widget.child
+            : ImageStats(
+                isEnabled: SX.showImageStats.value,
+                width: 120,
+                height: 100,
+                align: Alignment.centerLeft,
+                child: widget.child,
+              ),
       ),
     );
   }
@@ -447,6 +456,8 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> with WidgetsBindingObserver {
+  static const MethodChannel _androidCrashChannel = MethodChannel('com.noaisu.loliSnatcher/services');
+
   final SettingsHandler settingsHandler = SettingsHandler.instance;
   final SearchHandler searchHandler = SearchHandler.instance;
   final TagHandler tagHandler = TagHandler.instance;
@@ -492,6 +503,57 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     // consider app launch as return to the app
     WidgetsBinding.instance.addObserver(this);
     localAuthHandler.onReturn();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_offerPerformanceSettingsAfterCrash());
+    });
+  }
+
+  Future<void> _offerPerformanceSettingsAfterCrash() async {
+    if (!Platform.isAndroid) {
+      return;
+    }
+
+    try {
+      final didCrash = await _androidCrashChannel.invokeMethod<bool>('consumePreviousCrash') ?? false;
+      if (!didCrash || !mounted) {
+        return;
+      }
+
+      final openSettings = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(dialogContext.loc.settings.performance.crashDetectedTitle),
+          content: Text(dialogContext.loc.settings.performance.crashDetectedMessage),
+          actions: [
+            CancelButton(
+              returnData: false,
+              withIcon: true,
+              label: dialogContext.loc.later,
+            ),
+            ConfirmButton(
+              withIcon: true,
+              label: dialogContext.loc.settings.performance.openPerformanceSettings,
+            ),
+          ],
+        ),
+      );
+
+      if (openSettings == true && mounted) {
+        await SettingsPageOpen(
+          context: context,
+          page: (_) => const PerformancePage(),
+        ).open();
+      }
+    } on PlatformException catch (error, stack) {
+      Logger.Inst().log(
+        error,
+        'Home',
+        '_offerPerformanceSettingsAfterCrash',
+        LogTypes.exception,
+        s: stack,
+      );
+    }
   }
 
   Future<void> clearCache() async {
@@ -532,7 +594,10 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           // Rename config if its already in the list
           booru.name = '${booru.name!} (duplicate)';
         }
-        await SettingsPageOpen(context: context, page: (_) => BooruEdit(booru)).open();
+        await SettingsPageOpen(
+          context: context,
+          page: (_) => BooruEdit.add(initialBooru: booru),
+        ).open();
       }
     }
   }
@@ -555,6 +620,16 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       case AppLifecycleState.hidden:
       case AppLifecycleState.inactive:
       case AppLifecycleState.paused:
+        if (state != AppLifecycleState.inactive) {
+          // Let focused editors publish their drafts before draining saves.
+          unawaited(
+            Future<void>.microtask(settingsHandler.flushPendingSettingsSaves).catchError(
+              (Object error, StackTrace stackTrace) {
+                Logger.Inst().log(error, 'MainApp', 'flushSettingsOnLeave', LogTypes.settingsError, s: stackTrace);
+              },
+            ),
+          );
+        }
         // record time when user left the app
         localAuthHandler.onLeave();
         break;
@@ -571,7 +646,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       ServiceHandler.setSystemUiVisibility(true);
 
       // force landscape orientation if enabled desktop mode on mobile device
-      if (SettingsHandler.instance.appMode.value.isDesktop) {
+      if (SX.appMode.value.isDesktop) {
         SystemChrome.setPreferredOrientations([
           DeviceOrientation.landscapeRight,
           DeviceOrientation.landscapeLeft,
@@ -588,7 +663,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           duration: const Duration(milliseconds: 300),
           child: Builder(
             key: ValueKey(
-              'init:${settingsHandler.isPostInit.value}-mobile:${settingsHandler.appMode.value.isMobile}',
+              'init:${settingsHandler.isPostInit.value}-mobile:${SX.appMode.value.isMobile}',
             ),
             builder: (context) {
               if (settingsHandler.isPostInit.value == false) {
@@ -597,7 +672,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
 
               initDeepLinks();
 
-              if (settingsHandler.appMode.value.isMobile) {
+              if (SX.appMode.value.isMobile) {
                 return const MobileHome();
               } else {
                 return const DesktopHome();

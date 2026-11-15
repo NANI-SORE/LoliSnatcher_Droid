@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import 'package:intl/intl.dart';
+import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
@@ -11,7 +12,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/comment_item.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/kaomoji.dart';
 import 'package:lolisnatcher/src/widgets/common/long_press_repeater.dart';
@@ -34,8 +35,6 @@ class CommentsDialog extends StatefulWidget {
 }
 
 class _CommentsDialogState extends State<CommentsDialog> {
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
-
   List<CommentItem> comments = [];
   late final AutoScrollController scrollController;
   bool isLoading = true, isCompleted = false, notSupported = false;
@@ -264,7 +263,7 @@ class _CommentsDialogState extends State<CommentsDialog> {
                 child: Scrollbar(
                   controller: scrollController,
                   interactive: true,
-                  scrollbarOrientation: settingsHandler.handSide.value.isLeft
+                  scrollbarOrientation: SX.handSide.value.isLeft
                       ? ScrollbarOrientation.left
                       : ScrollbarOrientation.right,
                   child: RefreshIndicator(
@@ -339,8 +338,8 @@ class _CommentsDialogState extends State<CommentsDialog> {
               if (comments.isNotEmpty)
                 Positioned(
                   bottom: 32 + MediaQuery.paddingOf(context).bottom,
-                  left: settingsHandler.handSide.value.isLeft ? 32 : null,
-                  right: settingsHandler.handSide.value.isLeft ? null : 32,
+                  left: SX.handSide.value.isLeft ? 32 : null,
+                  right: SX.handSide.value.isLeft ? null : 32,
                   child: Material(
                     color: Colors.transparent,
                     child: Container(

@@ -11,8 +11,10 @@ import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
+import 'package:lolisnatcher/src/services/download_policy.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -34,6 +36,7 @@ class ImageWriter {
     bool ignoreExists,
     void Function(CancelToken)? onCancelTokenCreate,
   ) async {
+    final policy = DownloadPolicy.forBooru(booru);
     final String fileName = getFilename(item, booru);
     await setPaths();
 
@@ -44,7 +47,7 @@ class ImageWriter {
     // if (fileExists) return null;
     if (!ignoreExists && (fileExists || item.isSnatched.value == true)) {
       item.isSnatched.value = true;
-      if (settingsHandler.dbEnabled) {
+      if (SX.dbEnabled.value) {
         await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
       }
       return null;
@@ -59,16 +62,14 @@ class ImageWriter {
         ...await Tools.getFileCustomHeaders(booru, item: item, checkForReferer: true),
       };
 
-      final String url = ((settingsHandler.snatchMode.isSample && item.sampleURL.isNotEmpty)
-          ? item.sampleURL
-          : item.fileURL);
+      final String url = policy.urlFor(item);
 
       final cancelToken = CancelToken();
       if (onCancelTokenCreate != null) {
         onCancelTokenCreate(cancelToken);
       }
 
-      if (Platform.isAndroid && settingsHandler.extPathOverride.isNotEmpty) {
+      if (Platform.isAndroid && SX.extPathOverride.value.isNotEmpty) {
         await DioNetwork.downloadCustom(
           url,
           '$path/',
@@ -98,9 +99,9 @@ class ImageWriter {
       }
 
       try {
-        if (settingsHandler.jsonWrite) {
+        if (policy.writeJson) {
           if (Platform.isAndroid &&
-              settingsHandler.extPathOverride.isNotEmpty &&
+              SX.extPathOverride.value.isNotEmpty &&
               await ServiceHandler.getAndroidSDKVersion() >= 31) {
             final String? safPath = await ServiceHandler.createFileStreamFromSAFDirectory(
               fileNameWoutExt,
@@ -137,13 +138,13 @@ class ImageWriter {
       print('Image written: $path$fileName');
       SAFFileCache.instance.onFileCreated(fileName);
       item.isSnatched.value = true;
-      if (settingsHandler.dbEnabled) {
+      if (SX.dbEnabled.value) {
         await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
       }
 
       try {
         if (Platform.isAndroid) {
-          if (settingsHandler.extPathOverride.isNotEmpty && await ServiceHandler.getAndroidSDKVersion() >= 31) {
+          if (SX.extPathOverride.value.isNotEmpty && await ServiceHandler.getAndroidSDKVersion() >= 31) {
             // TODO disabled for now, because it causes huge delays if user has a lot of saved files
             // final bool result = await ServiceHandler.existsFileFromSAFDirectory(path, fileName);
             // if (!result) {
@@ -421,8 +422,8 @@ class ImageWriter {
         _cleanupCacheIsolate,
         _CacheCleanupConfig(
           cacheRootPath: cacheRootPath,
-          cacheDurationMs: settingsHandler.cacheDuration.inMilliseconds,
-          cacheSizeLimitBytes: (settingsHandler.cacheSize * pow(1024, 3)).toInt(),
+          cacheDurationMs: SX.cacheDuration.value.inMilliseconds,
+          cacheSizeLimitBytes: (SX.cacheSize.value * pow(1024, 3)).toInt(),
           cleanableFolders: cleanableFolders,
         ),
       );
@@ -557,26 +558,42 @@ class ImageWriter {
     return '${Tools.sanitize(fileNameExtras)}${Tools.sanitize(fileName)}';
   }
 
-  Future<String> writeMascotImage(String contentUri) async {
+  Future<String> writeMascotImage(String contentUri, {String fileName = 'mascot'}) async {
     await setPaths();
     if (contentUri.isNotEmpty) {
       final Uint8List? fileBytes = await ServiceHandler.getSAFFile(contentUri);
       final String fileExt = await ServiceHandler.getSAFFileExtension(contentUri);
       if (fileBytes != null && fileExt.isNotEmpty) {
         final String path = await ServiceHandler.getConfigDir();
-        await File('${path}mascot.$fileExt').writeAsBytes(fileBytes);
-        return '${path}mascot.$fileExt';
+        final safeFileName = Tools.sanitize(fileName);
+        final outputPath = '$path$safeFileName.$fileExt';
+        await File(outputPath).writeAsBytes(fileBytes, flush: true);
+        return outputPath;
       }
     }
     return '';
   }
 
+  /// A saved booru can retain an asset originally created by a draft.
+  /// Only remove files after their last in-memory setting reference is gone.
+  static Future<void> removeUnusedMascotImage(String path) async {
+    if (path.isEmpty) return;
+    final file = File(path);
+    if (!await file.exists()) return;
+    final setting = SX.drawerMascotPathOverride.state;
+    if (setting.globalValue == path ||
+        setting.boorusWithOverrides.any((name) => setting.getOverrideFor(name) == path)) {
+      return;
+    }
+    await file.delete();
+  }
+
   Future<bool> setPaths() async {
     if (path.isEmpty) {
-      if (settingsHandler.extPathOverride.isEmpty) {
+      if (SX.extPathOverride.value.isEmpty) {
         path = await ServiceHandler.getPicturesDir();
       } else {
-        path = settingsHandler.extPathOverride;
+        path = SX.extPathOverride.value;
       }
     }
 

@@ -19,7 +19,7 @@ import 'package:video_player_android/video_player_android.dart';
 import 'package:video_player_avfoundation/video_player_avfoundation.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 
 // https://github.com/dart-lang/linter/issues/1381
 // ignore_for_file: close_sinks
@@ -91,16 +91,14 @@ class MediaKitVideoPlayer extends VideoPlayerPlatform {
   /// Creates an instance of a video player and returns its textureId.
   @override
   Future<int?> create(DataSource dataSource) async {
-    final settingsHandler = SettingsHandler.instance;
-
     final player = Player();
     final completer = Completer();
     final videoController = VideoController(
       player,
       configuration: VideoControllerConfiguration(
-        enableHardwareAcceleration: settingsHandler.altVideoPlayerHwAccel,
-        vo: settingsHandler.altVideoPlayerVO.toJson(),
-        hwdec: settingsHandler.altVideoPlayerHWDEC.toJson(),
+        enableHardwareAcceleration: SX.altVideoPlayerHwAccel.value,
+        vo: SX.altVideoPlayerVO.value.toJson(),
+        hwdec: SX.altVideoPlayerHWDEC.value.toJson(),
         // androidAttachSurfaceAfterVideoParameters: false,
       ),
     );

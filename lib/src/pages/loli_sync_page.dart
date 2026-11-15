@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:lolisnatcher/src/handlers/loli_sync_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/pages/loli_sync_progress_page.dart';
@@ -152,8 +153,8 @@ class _LoliSyncPageState extends State<LoliSyncPage> {
     }
 
     testSync.killSync();
-    settingsHandler.lastSyncIp = ipController.text;
-    settingsHandler.lastSyncPort = portController.text;
+    SX.lastSyncIp.state.value = ipController.text;
+    SX.lastSyncPort.state.value = portController.text;
     final bool result = await settingsHandler.saveSettings(restate: false);
     if (result) {
       Navigator.of(context).pop();
@@ -164,8 +165,8 @@ class _LoliSyncPageState extends State<LoliSyncPage> {
   void initState() {
     super.initState();
 
-    ipController.text = settingsHandler.lastSyncIp;
-    portController.text = settingsHandler.lastSyncPort;
+    ipController.text = SX.lastSyncIp.value;
+    portController.text = SX.lastSyncPort.value;
     favouritesSkipController.text = '';
 
     getFavCount();

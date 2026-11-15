@@ -8,7 +8,7 @@ import 'package:dio/dio.dart';
 
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/image/custom_network_image.dart';
@@ -28,8 +28,10 @@ class _BooruFaviconCacheKey {
 
   factory _BooruFaviconCacheKey.fromWidget(BooruFavicon widget) {
     final baseUrl = widget.booru?.baseURL?.trim() ?? '';
+    final booruFaviconUrl = widget.booru?.faviconURL?.trim();
+    final customFaviconUrl = widget.customFaviconUrl?.trim();
     return _BooruFaviconCacheKey(
-      url: (widget.booru?.faviconURL ?? widget.customFaviconUrl ?? '').trim(),
+      url: booruFaviconUrl?.isNotEmpty == true ? booruFaviconUrl! : customFaviconUrl ?? '',
       baseUrl: baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl,
       booruName: widget.booru?.name?.trim() ?? '',
       booruType: widget.booru?.type?.name ?? '',
@@ -337,13 +339,14 @@ class _BooruFaviconState extends State<BooruFavicon> {
     isLoaded = false;
     errorCode = null;
 
+    final cacheKey = _BooruFaviconCacheKey.fromWidget(widget);
     updateState();
 
-    if (isIcon) {
+    if (isIcon || cacheKey.url.isEmpty) {
+      isIcon = true;
       isLoaded = true;
       updateState();
     } else {
-      final cacheKey = _BooruFaviconCacheKey.fromWidget(widget);
       activeCacheKey = cacheKey;
       try {
         final provider = await _BooruFaviconProviderCache.obtain(cacheKey, widget.booru);
@@ -470,7 +473,7 @@ class _BooruFaviconState extends State<BooruFavicon> {
             child: (isLoaded || isFailed)
                 ? const SizedBox.shrink()
                 : ShimmerWrap(
-                    enabled: !SettingsHandler.instance.shitDevice,
+                    enabled: !SX.shitDevice.value,
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(size / 5),
                       child: ShimmerCard(

@@ -3,7 +3,7 @@ import 'package:lolisnatcher/src/data/settings/button_position.dart';
 
 import 'package:preload_page_view/preload_page_view.dart';
 
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/gallery/change_page_buttons.dart';
@@ -22,7 +22,6 @@ class GalleryButtons extends StatefulWidget {
 }
 
 class _GalleryButtonsState extends State<GalleryButtons> {
-  final SettingsHandler settingsHandler = SettingsHandler.instance;
   final ViewerHandler viewerHandler = ViewerHandler.instance;
 
   bool isVisible = false, isLoaded = false;
@@ -33,9 +32,9 @@ class _GalleryButtonsState extends State<GalleryButtons> {
     super.initState();
 
     // place higher when toolbar is on the bottom, to avoid conflicts with video controls
-    bottomOffset = kToolbarHeight * (settingsHandler.galleryBarPosition.isTop ? 2 : 3);
+    bottomOffset = kToolbarHeight * (SX.galleryBarPosition.value.isTop ? 2 : 3);
 
-    isVisible = settingsHandler.appMode.value.isMobile && viewerHandler.displayAppbar.value;
+    isVisible = SX.appMode.value.isMobile && viewerHandler.displayAppbar.value;
     viewerHandler.displayAppbar.addListener(appbarListener);
 
     isLoaded = viewerHandler.isLoaded.value;
@@ -49,7 +48,7 @@ class _GalleryButtonsState extends State<GalleryButtons> {
   }
 
   void appbarListener() {
-    if (settingsHandler.appMode.value.isMobile) {
+    if (SX.appMode.value.isMobile) {
       isVisible = viewerHandler.displayAppbar.value;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -90,8 +89,8 @@ class _GalleryButtonsState extends State<GalleryButtons> {
   }
 
   List<Widget> getButtons(bool isVerticalDirection, ButtonPosition side) {
-    final bool isZoomHere = settingsHandler.zoomButtonPosition == side;
-    final bool isPagesHere = settingsHandler.changePageButtonsPosition == side;
+    final bool isZoomHere = SX.zoomButtonPosition.value == side;
+    final bool isPagesHere = SX.changePageButtonsPosition.value == side;
 
     return [
       if (isZoomHere) const ZoomButton(),

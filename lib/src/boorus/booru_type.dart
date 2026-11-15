@@ -1,6 +1,6 @@
 // ignore_for_file: constant_identifier_names
 
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 
 enum BooruType {
@@ -37,8 +37,7 @@ enum BooruType {
   ;
 
   static List<BooruType> get dropDownValues {
-    final settingsHandler = SettingsHandler.instance;
-    final isDebug = settingsHandler.isDebug.value;
+    final isDebug = SX.isDebug.value;
 
     final list = [...values]
       ..remove(BooruType.Downloads)

@@ -10,6 +10,7 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/history_item.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
@@ -46,8 +47,8 @@ class _HistoryListState extends State<HistoryList> {
       isLoading ||
       (history.isEmpty) ||
       (filteredHistory.isEmpty) ||
-      (!settingsHandler.searchHistoryEnabled) ||
-      (!settingsHandler.dbEnabled);
+      (!SX.searchHistoryEnabled.value) ||
+      (!SX.dbEnabled.value);
 
   @override
   void initState() {
@@ -69,7 +70,7 @@ class _HistoryListState extends State<HistoryList> {
     isLoading = true;
     setState(() {});
 
-    history = (settingsHandler.dbEnabled && settingsHandler.searchHistoryEnabled)
+    history = (SX.dbEnabled.value && SX.searchHistoryEnabled.value)
         ? await settingsHandler.dbHandler.getSearchHistory()
         : [];
 
@@ -410,7 +411,7 @@ class _HistoryListState extends State<HistoryList> {
               clearable: true,
               pasteable: true,
               margin: const EdgeInsets.fromLTRB(5, 8, 5, 5),
-              enableIMEPersonalizedLearning: !settingsHandler.incognitoKeyboard,
+              enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
             ),
           ),
           Center(
@@ -465,8 +466,8 @@ class _HistoryListState extends State<HistoryList> {
                   style: const TextStyle(fontSize: 20),
                 ),
               ],
-              if (!settingsHandler.searchHistoryEnabled) Text(context.loc.history.searchHistoryIsDisabled),
-              if (!settingsHandler.dbEnabled) Text(context.loc.history.searchHistoryRequiresDatabase),
+              if (!SX.searchHistoryEnabled.value) Text(context.loc.history.searchHistoryIsDisabled),
+              if (!SX.dbEnabled.value) Text(context.loc.history.searchHistoryRequiresDatabase),
             ],
           )
         else

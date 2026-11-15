@@ -18,6 +18,25 @@ import 'package:lolisnatcher/src/widgets/webview/webview_navigation_menu.dart';
 WebViewEnvironment? webViewEnvironment;
 Map<String, List<Cookie>> globalWindowsCookies = {};
 
+// ////
+
+final ValueNotifier<List<Key>> activeWebviews = ValueNotifier([]);
+bool get hasActiveWebviews => activeWebviews.value.isNotEmpty;
+void registerWebview(Key key) {
+  // initState may run while a sibling route is building.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    activeWebviews.value = [...activeWebviews.value, key];
+  });
+}
+
+Future<void> unregisterWebview(Key key) async {
+  // delayed to avoid performance problems from rendering heavy widgets (i.e. shimmer) while webview is closing
+  await Future.delayed(const Duration(milliseconds: 300));
+  activeWebviews.value = [...activeWebviews.value]..remove(key);
+}
+
+// ////
+
 class InAppWebviewView extends StatefulWidget {
   const InAppWebviewView({
     required this.initialUrl,
@@ -39,7 +58,7 @@ class InAppWebviewView extends StatefulWidget {
 }
 
 class _InAppWebviewViewState extends State<InAppWebviewView> {
-  final GlobalKey webViewKey = GlobalKey();
+  final GlobalKey webviewKey = GlobalKey();
 
   Completer<InAppWebViewController> controller = Completer<InAppWebViewController>();
   late final InAppWebViewSettings settings;
@@ -55,6 +74,8 @@ class _InAppWebviewViewState extends State<InAppWebviewView> {
   void initState() {
     super.initState();
     localNetworkAccess = LocalNetworkPermission.ensureForUrl(widget.initialUrl, retry: true);
+
+    registerWebview(webviewKey);
 
     settings = InAppWebViewSettings(
       userAgent: widget.userAgent ?? Tools.browserUserAgent,
@@ -118,6 +139,7 @@ class _InAppWebviewViewState extends State<InAppWebviewView> {
 
   @override
   void dispose() {
+    unregisterWebview(webviewKey);
     pullToRefreshController?.dispose();
     controller.future.then((controller) => controller.dispose());
     super.dispose();

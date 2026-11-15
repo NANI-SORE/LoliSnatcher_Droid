@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:preload_page_view/preload_page_view.dart';
 
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/widgets/common/long_press_repeater.dart';
 
 class ChangePageButtons extends StatelessWidget {
@@ -48,7 +48,6 @@ class ChangePageButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
     final int direction = isPrev ? -1 : 1;
 
     return LongPressRepeater(
@@ -56,7 +55,7 @@ class ChangePageButtons extends StatelessWidget {
       fasterAfter: 20,
       child: IconButton(
         icon: Icon(
-          settingsHandler.galleryScrollDirection.isHorizontal
+          SX.galleryScrollDirection.value.isHorizontal
               ? (isPrev ? Icons.arrow_back : Icons.arrow_forward)
               : (isPrev ? Icons.arrow_upward : Icons.arrow_downward),
         ),

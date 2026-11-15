@@ -73,21 +73,17 @@ class MarqueeText extends StatelessWidget {
     );
     final double fontSize = usedStyle.fontSize ?? 16;
 
-    // allow text to shrink a bit, so that strings can exceed a few symbols in length before starting to scroll
-    const double stepGranularity = 0.1;
-    double minFontSize = double.parse((fontSize * 0.85).toStringAsFixed(1));
-    // make sure that minFontSize is dividable by stepGranularity
-    minFontSize = (minFontSize / stepGranularity).ceil() * stepGranularity;
+    // Presets avoid auto_size_text_plus' exact floating-point modulo check for
+    // minFontSize/stepGranularity (for example, 18.7 / 0.1).
+    final presetFontSizes = allowDownscale ? _fontSizePresets(fontSize) : [fontSize];
 
     if (textSpan != null) {
       return Container(
         alignment: Alignment.centerLeft,
         child: AutoSizeText.rich(
           textSpan!,
-          minFontSize: allowDownscale ? minFontSize : fontSize,
-          maxFontSize: fontSize,
+          presetFontSizes: presetFontSizes,
           maxLines: 1,
-          stepGranularity: stepGranularity,
           style: usedStyle,
           overflowReplacement: Marquee.rich(
             textSpan: textSpan,
@@ -110,10 +106,8 @@ class MarqueeText extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: AutoSizeText(
         text!,
-        minFontSize: allowDownscale ? minFontSize : fontSize,
-        maxFontSize: fontSize,
+        presetFontSizes: presetFontSizes,
         maxLines: 1,
-        stepGranularity: stepGranularity,
         style: usedStyle,
         overflowReplacement: Marquee(
           text: text,
@@ -131,5 +125,18 @@ class MarqueeText extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  List<double> _fontSizePresets(double maxFontSize) {
+    const step = 0.1;
+    final minFontSize = maxFontSize * 0.85;
+    final presets = <double>[maxFontSize];
+
+    for (var size = maxFontSize - step; size > minFontSize; size -= step) {
+      presets.add(size);
+    }
+    presets.add(minFontSize);
+
+    return presets;
   }
 }

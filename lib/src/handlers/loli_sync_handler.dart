@@ -12,6 +12,8 @@ import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
@@ -119,7 +121,7 @@ class LoliSync {
         final List<BooruItem> items = List.from(
           jsonDecode(content),
         ).map((e) => BooruItem.fromJSON(jsonEncode(e))).toList();
-        if (settingsHandler.dbEnabled) {
+        if (SX.dbEnabled.value) {
           final Map<String, int> result = await settingsHandler.dbHandler.updateMultipleBooruItems(
             items,
             BooruUpdateMode.sync,
@@ -172,7 +174,7 @@ class LoliSync {
         Logger.Inst().log('request to update booru item recieved', 'LoliSync', 'storeBooruItem', LogTypes.loliSyncInfo);
         final String content = await utf8.decoder.bind(req).join(); /*2*/
         final BooruItem item = BooruItem.fromJSON(content);
-        if (settingsHandler.dbEnabled) {
+        if (SX.dbEnabled.value) {
           final String? result = await settingsHandler.dbHandler.updateBooruItem(item, BooruUpdateMode.sync);
           req.response.statusCode = 200;
           req.response.write(result);
@@ -227,7 +229,11 @@ class LoliSync {
           final bool alreadyExists =
               settingsHandler.booruList.indexWhere((el) => el.baseURL == booru.baseURL && el.name == booru.name) != -1;
           if (!alreadyExists) {
-            await settingsHandler.saveBooru(booru);
+            if (!await settingsHandler.importBooru(booru, syncableOnly: true)) {
+              req.response.statusCode = 400;
+              req.response.write('Invalid or conflicting config');
+              return 'Config not imported';
+            }
           }
         }
         req.response.statusCode = 200;
@@ -396,10 +402,17 @@ class LoliSync {
 
   Future<String> sendBooru(Booru booru, int booruCount, int current) async {
     Logger.Inst().log('Sending item $current / $booruCount', 'LoliSync', 'sendBooru', LogTypes.loliSyncInfo);
+    final registry = SettingsRegistry.instance;
+    final json = booru.toJson()..remove('settingOverrides');
+    final overrides = registry.normalizeOverrides(
+      registry.saveOverridesToMap(booru.name ?? ''),
+      syncableOnly: true,
+    );
+    if (overrides != null) json['settingOverrides'] = overrides;
     final HttpClientRequest request =
         await HttpClient().post(ip, port, '/lolisync/booru?amount=$booruCount&current=$current')
           ..headers.contentType = ContentType.json
-          ..write(jsonEncode(booru.toJson()));
+          ..write(jsonEncode(json));
     final HttpClientResponse response = await request.close();
     final String responseStr = await utf8.decoder.bind(response).join();
     return responseStr;
@@ -633,9 +646,9 @@ class LoliSync {
         case 'Settings':
           yield 'Sync Starting $address';
           yield 'Preparing settings data';
-          final Map<String, dynamic> settingsJSON = settingsHandler.toJson();
-          for (final element in settingsHandler.deviceSpecificSettings) {
-            settingsJSON.remove(element);
+          final Map<String, dynamic> settingsJSON = SettingsRegistry.instance.toJson();
+          for (final state in SettingsRegistry.instance.deviceSpecific) {
+            settingsJSON.remove(state.def.jsonKey);
           }
           final String resp = await sendSettings(settingsJSON);
           yield resp;

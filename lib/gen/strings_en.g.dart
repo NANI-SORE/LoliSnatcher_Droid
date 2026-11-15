@@ -1081,6 +1081,42 @@ class Translations$settings$en {
   /// en: 'Settings'
   String get title => TranslationOverrides.string(_root.$meta, 'settings.title', {}) ?? 'Settings';
 
+  /// en: 'Type to search settings'
+  String get typeToSearch => TranslationOverrides.string(_root.$meta, 'settings.typeToSearch', {}) ?? 'Type to search settings';
+
+  /// en: 'No settings found'
+  String get noSettingsFound => TranslationOverrides.string(_root.$meta, 'settings.noSettingsFound', {}) ?? 'No settings found';
+
+  /// en: 'Overrides'
+  String get perBooruSettings => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Overrides';
+
+  /// en: 'Reset all ${category: String} settings to their defaults?'
+  String resetCategoryQuestion({required String category}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.resetCategoryQuestion', {'category': category}) ??
+      'Reset all ${category} settings to their defaults?';
+
+  /// en: 'Global: ${value: String}'
+  String globalValue({required String value}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.globalValue', {'value': value}) ?? 'Global: ${value}';
+
+  /// en: '${booru: String} — Overrides'
+  String booruOverridesTitle({required String booru}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruOverridesTitle', {'booru': booru}) ?? '${booru} — Overrides';
+
+  /// en: 'Reset all overrides'
+  String get resetAllOverrides => TranslationOverrides.string(_root.$meta, 'settings.resetAllOverrides', {}) ?? 'Reset all overrides';
+
+  /// en: 'Сustom settings for "${booru: String}" will be removed. Global values will be used instead.'
+  String resetAllOverridesDescription({required String booru}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.resetAllOverridesDescription', {'booru': booru}) ??
+      'Сustom settings for "${booru}" will be removed. Global values will be used instead.';
+
+  /// en: 'The active booru "${booru: String}" has theme overrides. Changes here affect global values, not the per-booru theme.'
+  String activeBooruThemeOverrides({required String booru}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.activeBooruThemeOverrides', {'booru': booru}) ??
+      'The active booru "${booru}" has theme overrides. Changes here affect global values, not the per-booru theme.';
+
+  late final Translations$settings$subcategories$en subcategories = Translations$settings$subcategories$en.internal(_root);
   late final Translations$settings$language$en language = Translations$settings$language$en.internal(_root);
   late final Translations$settings$booru$en booru = Translations$settings$booru$en.internal(_root);
   late final Translations$settings$booruEditor$en booruEditor = Translations$settings$booruEditor$en.internal(_root);
@@ -2174,6 +2210,130 @@ class Translations$webview$navigation$en {
       TranslationOverrides.string(_root.$meta, 'webview.navigation.noForwardHistoryItem', {}) ?? 'No forward history item';
 }
 
+// Path: settings.subcategories
+class Translations$settings$subcategories$en {
+  Translations$settings$subcategories$en.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'App layout'
+  String get layout => TranslationOverrides.string(_root.$meta, 'settings.subcategories.layout', {}) ?? 'App layout';
+
+  /// en: 'Preview grid'
+  String get previewGrid => TranslationOverrides.string(_root.$meta, 'settings.subcategories.previewGrid', {}) ?? 'Preview grid';
+
+  /// en: 'Rendering'
+  String get rendering => TranslationOverrides.string(_root.$meta, 'settings.subcategories.rendering', {}) ?? 'Rendering';
+
+  /// en: 'Additional'
+  String get additionalInterface => TranslationOverrides.string(_root.$meta, 'settings.subcategories.additionalInterface', {}) ?? 'Additional';
+
+  /// en: 'Loading and preloading'
+  String get loadingPreloading =>
+      TranslationOverrides.string(_root.$meta, 'settings.subcategories.loadingPreloading', {}) ?? 'Loading and preloading';
+
+  /// en: 'Toolbar'
+  String get toolbar => TranslationOverrides.string(_root.$meta, 'settings.subcategories.toolbar', {}) ?? 'Toolbar';
+
+  /// en: 'Viewer behavior'
+  String get viewerBehavior => TranslationOverrides.string(_root.$meta, 'settings.subcategories.viewerBehavior', {}) ?? 'Viewer behavior';
+
+  /// en: 'Slideshow'
+  String get slideshow => TranslationOverrides.string(_root.$meta, 'settings.subcategories.slideshow', {}) ?? 'Slideshow';
+
+  /// en: 'Physical buttons'
+  String get physicalButtons => TranslationOverrides.string(_root.$meta, 'settings.subcategories.physicalButtons', {}) ?? 'Physical buttons';
+
+  /// en: 'Playback'
+  String get playback => TranslationOverrides.string(_root.$meta, 'settings.subcategories.playback', {}) ?? 'Playback';
+
+  /// en: 'Backend'
+  String get backend => TranslationOverrides.string(_root.$meta, 'settings.subcategories.backend', {}) ?? 'Backend';
+
+  /// en: 'MPV'
+  String get mpv => TranslationOverrides.string(_root.$meta, 'settings.subcategories.mpv', {}) ?? 'MPV';
+
+  /// en: 'Theme'
+  String get theme => TranslationOverrides.string(_root.$meta, 'settings.subcategories.theme', {}) ?? 'Theme';
+
+  /// en: 'Drawer'
+  String get drawer => TranslationOverrides.string(_root.$meta, 'settings.subcategories.drawer', {}) ?? 'Drawer';
+
+  /// en: 'Cache'
+  String get cache => TranslationOverrides.string(_root.$meta, 'settings.subcategories.cache', {}) ?? 'Cache';
+
+  /// en: 'Downloads'
+  String get downloads => TranslationOverrides.string(_root.$meta, 'settings.subcategories.downloads', {}) ?? 'Downloads';
+
+  /// en: 'Storage'
+  String get storage => TranslationOverrides.string(_root.$meta, 'settings.subcategories.storage', {}) ?? 'Storage';
+
+  /// en: 'Cache stats'
+  String get cacheStats => TranslationOverrides.string(_root.$meta, 'settings.subcategories.cacheStats', {}) ?? 'Cache stats';
+
+  /// en: 'Backup'
+  String get backup => TranslationOverrides.string(_root.$meta, 'settings.subcategories.backup', {}) ?? 'Backup';
+
+  /// en: 'Database'
+  String get database => TranslationOverrides.string(_root.$meta, 'settings.subcategories.database', {}) ?? 'Database';
+
+  /// en: 'Security'
+  String get security => TranslationOverrides.string(_root.$meta, 'settings.subcategories.security', {}) ?? 'Security';
+
+  /// en: 'Proxy'
+  String get proxy => TranslationOverrides.string(_root.$meta, 'settings.subcategories.proxy', {}) ?? 'Proxy';
+
+  /// en: 'Requests'
+  String get requests => TranslationOverrides.string(_root.$meta, 'settings.subcategories.requests', {}) ?? 'Requests';
+
+  /// en: 'Sync'
+  String get sync => TranslationOverrides.string(_root.$meta, 'settings.subcategories.sync', {}) ?? 'Sync';
+
+  /// en: 'Active filters'
+  String get activeFilters => TranslationOverrides.string(_root.$meta, 'settings.subcategories.activeFilters', {}) ?? 'Active filters';
+
+  /// en: 'Tag lists'
+  String get tagLists => TranslationOverrides.string(_root.$meta, 'settings.subcategories.tagLists', {}) ?? 'Tag lists';
+
+  /// en: 'App lock'
+  String get appLock => TranslationOverrides.string(_root.$meta, 'settings.subcategories.appLock', {}) ?? 'App lock';
+
+  /// en: 'Privacy'
+  String get privacy => TranslationOverrides.string(_root.$meta, 'settings.subcategories.privacy', {}) ?? 'Privacy';
+
+  /// en: 'Defaults'
+  String get defaults => TranslationOverrides.string(_root.$meta, 'settings.subcategories.defaults', {}) ?? 'Defaults';
+
+  /// en: 'Device performance'
+  String get devicePerformance => TranslationOverrides.string(_root.$meta, 'settings.subcategories.devicePerformance', {}) ?? 'Device performance';
+
+  /// en: 'Preview performance'
+  String get previewPerformance => TranslationOverrides.string(_root.$meta, 'settings.subcategories.previewPerformance', {}) ?? 'Preview performance';
+
+  /// en: 'Viewer performance'
+  String get viewerPerformance => TranslationOverrides.string(_root.$meta, 'settings.subcategories.viewerPerformance', {}) ?? 'Viewer performance';
+
+  /// en: 'Video performance'
+  String get videoPerformance => TranslationOverrides.string(_root.$meta, 'settings.subcategories.videoPerformance', {}) ?? 'Video performance';
+
+  /// en: 'Language'
+  String get language => TranslationOverrides.string(_root.$meta, 'settings.subcategories.language', {}) ?? 'Language';
+
+  /// en: 'Logs'
+  String get logs => TranslationOverrides.string(_root.$meta, 'settings.subcategories.logs', {}) ?? 'Logs';
+
+  /// en: 'Debug mode'
+  String get debugMode => TranslationOverrides.string(_root.$meta, 'settings.subcategories.debugMode', {}) ?? 'Debug mode';
+
+  /// en: 'Overlays'
+  String get overlays => TranslationOverrides.string(_root.$meta, 'settings.subcategories.overlays', {}) ?? 'Overlays';
+
+  /// en: 'Logging'
+  String get logging => TranslationOverrides.string(_root.$meta, 'settings.subcategories.logging', {}) ?? 'Logging';
+}
+
 // Path: settings.language
 class Translations$settings$language$en {
   Translations$settings$language$en.internal(this._root);
@@ -2349,6 +2509,22 @@ class Translations$settings$booruEditor$en {
 
   /// en: 'Running test…'
   String get runningTest => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.runningTest', {}) ?? 'Running test…';
+
+  /// en: 'Connection settings changed during the test. Please save again.'
+  String get connectionSettingsChanged =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.connectionSettingsChanged', {}) ??
+      'Connection settings changed during the test. Please save again.';
+
+  /// en: 'Failed to save Booru'
+  String get saveFailed => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveFailed', {}) ?? 'Failed to save Booru';
+
+  /// en: 'Changes are saved automatically'
+  String get overrideChangesSavedAutomatically =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.overrideChangesSavedAutomatically', {}) ?? 'Changes are saved automatically';
+
+  /// en: 'No overrides are available'
+  String get noOverrideSettings =>
+      TranslationOverrides.string(_root.$meta, 'settings.booruEditor.noOverrideSettings', {}) ?? 'No overrides are available';
 
   /// en: 'This Booru config already exists'
   String get booruConfigExistsError =>
@@ -2634,6 +2810,15 @@ class Translations$settings$theme$en {
 
   /// en: 'Secondary color'
   String get secondaryColor => TranslationOverrides.string(_root.$meta, 'settings.theme.secondaryColor', {}) ?? 'Secondary color';
+
+  /// en: 'Colors'
+  String get colors => TranslationOverrides.string(_root.$meta, 'settings.theme.colors', {}) ?? 'Colors';
+
+  /// en: 'Black/white'
+  String get blackAndWhite => TranslationOverrides.string(_root.$meta, 'settings.theme.blackAndWhite', {}) ?? 'Black/white';
+
+  /// en: 'Wheel'
+  String get wheel => TranslationOverrides.string(_root.$meta, 'settings.theme.wheel', {}) ?? 'Wheel';
 
   /// en: 'Enable drawer mascot'
   String get enableDrawerMascot => TranslationOverrides.string(_root.$meta, 'settings.theme.enableDrawerMascot', {}) ?? 'Enable drawer mascot';
@@ -3009,6 +3194,11 @@ class Translations$settings$video$en {
 
   /// en: 'Video cache mode'
   String get videoCacheMode => TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheMode', {}) ?? 'Video cache mode';
+
+  /// en: 'Videos on some Boorus may not work correctly (i.e. endless loading) when using Stream video cache mode. In that case try using Cache mode. Otherwise player will retry with Cache mode automatically if video is in initial buffering state for 10+ seconds and video file size is less than 25 MB'
+  String get videoCacheModeSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheModeSubtitle', {}) ??
+      'Videos on some Boorus may not work correctly (i.e. endless loading) when using Stream video cache mode. In that case try using Cache mode. Otherwise player will retry with Cache mode automatically if video is in initial buffering state for 10+ seconds and video file size is less than 25 MB';
 
   late final Translations$settings$video$cacheModes$en cacheModes = Translations$settings$video$cacheModes$en.internal(_root);
   late final Translations$settings$video$cacheModeValues$en cacheModeValues = Translations$settings$video$cacheModeValues$en.internal(_root);
@@ -3614,6 +3804,19 @@ class Translations$settings$performance$en {
 
   /// en: 'Performance'
   String get title => TranslationOverrides.string(_root.$meta, 'settings.performance.title', {}) ?? 'Performance';
+
+  /// en: 'The app crashed last time'
+  String get crashDetectedTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.performance.crashDetectedTitle', {}) ?? 'The app crashed last time';
+
+  /// en: 'Would you like to open Performance settings? Changing these options may help prevent similar crashes.'
+  String get crashDetectedMessage =>
+      TranslationOverrides.string(_root.$meta, 'settings.performance.crashDetectedMessage', {}) ??
+      'Would you like to open Performance settings? Changing these options may help prevent similar crashes.';
+
+  /// en: 'Open Performance settings'
+  String get openPerformanceSettings =>
+      TranslationOverrides.string(_root.$meta, 'settings.performance.openPerformanceSettings', {}) ?? 'Open Performance settings';
 
   /// en: 'Low performance mode'
   String get lowPerformanceMode => TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceMode', {}) ?? 'Low performance mode';
@@ -5422,6 +5625,76 @@ extension on Translations {
           'webview.navigation.noForwardHistoryItem' =>
             TranslationOverrides.string(_root.$meta, 'webview.navigation.noForwardHistoryItem', {}) ?? 'No forward history item',
           'settings.title' => TranslationOverrides.string(_root.$meta, 'settings.title', {}) ?? 'Settings',
+          'settings.typeToSearch' => TranslationOverrides.string(_root.$meta, 'settings.typeToSearch', {}) ?? 'Type to search settings',
+          'settings.noSettingsFound' => TranslationOverrides.string(_root.$meta, 'settings.noSettingsFound', {}) ?? 'No settings found',
+          'settings.perBooruSettings' => TranslationOverrides.string(_root.$meta, 'settings.perBooruSettings', {}) ?? 'Overrides',
+          'settings.resetCategoryQuestion' =>
+            ({required String category}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.resetCategoryQuestion', {'category': category}) ??
+                'Reset all ${category} settings to their defaults?',
+          'settings.globalValue' => ({
+            required String value,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.globalValue', {'value': value}) ?? 'Global: ${value}',
+          'settings.booruOverridesTitle' => ({
+            required String booru,
+          }) => TranslationOverrides.string(_root.$meta, 'settings.booruOverridesTitle', {'booru': booru}) ?? '${booru} — Overrides',
+          'settings.resetAllOverrides' => TranslationOverrides.string(_root.$meta, 'settings.resetAllOverrides', {}) ?? 'Reset all overrides',
+          'settings.resetAllOverridesDescription' =>
+            ({required String booru}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.resetAllOverridesDescription', {'booru': booru}) ??
+                'Сustom settings for "${booru}" will be removed. Global values will be used instead.',
+          'settings.activeBooruThemeOverrides' =>
+            ({required String booru}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.activeBooruThemeOverrides', {'booru': booru}) ??
+                'The active booru "${booru}" has theme overrides. Changes here affect global values, not the per-booru theme.',
+          'settings.subcategories.layout' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.layout', {}) ?? 'App layout',
+          'settings.subcategories.previewGrid' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.previewGrid', {}) ?? 'Preview grid',
+          'settings.subcategories.rendering' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.rendering', {}) ?? 'Rendering',
+          'settings.subcategories.additionalInterface' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.additionalInterface', {}) ?? 'Additional',
+          'settings.subcategories.loadingPreloading' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.loadingPreloading', {}) ?? 'Loading and preloading',
+          'settings.subcategories.toolbar' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.toolbar', {}) ?? 'Toolbar',
+          'settings.subcategories.viewerBehavior' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.viewerBehavior', {}) ?? 'Viewer behavior',
+          'settings.subcategories.slideshow' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.slideshow', {}) ?? 'Slideshow',
+          'settings.subcategories.physicalButtons' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.physicalButtons', {}) ?? 'Physical buttons',
+          'settings.subcategories.playback' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.playback', {}) ?? 'Playback',
+          'settings.subcategories.backend' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.backend', {}) ?? 'Backend',
+          'settings.subcategories.mpv' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.mpv', {}) ?? 'MPV',
+          'settings.subcategories.theme' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.theme', {}) ?? 'Theme',
+          'settings.subcategories.drawer' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.drawer', {}) ?? 'Drawer',
+          'settings.subcategories.cache' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.cache', {}) ?? 'Cache',
+          'settings.subcategories.downloads' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.downloads', {}) ?? 'Downloads',
+          'settings.subcategories.storage' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.storage', {}) ?? 'Storage',
+          'settings.subcategories.cacheStats' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.cacheStats', {}) ?? 'Cache stats',
+          'settings.subcategories.backup' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.backup', {}) ?? 'Backup',
+          'settings.subcategories.database' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.database', {}) ?? 'Database',
+          'settings.subcategories.security' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.security', {}) ?? 'Security',
+          'settings.subcategories.proxy' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.proxy', {}) ?? 'Proxy',
+          'settings.subcategories.requests' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.requests', {}) ?? 'Requests',
+          'settings.subcategories.sync' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.sync', {}) ?? 'Sync',
+          'settings.subcategories.activeFilters' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.activeFilters', {}) ?? 'Active filters',
+          'settings.subcategories.tagLists' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.tagLists', {}) ?? 'Tag lists',
+          'settings.subcategories.appLock' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.appLock', {}) ?? 'App lock',
+          'settings.subcategories.privacy' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.privacy', {}) ?? 'Privacy',
+          'settings.subcategories.defaults' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.defaults', {}) ?? 'Defaults',
+          'settings.subcategories.devicePerformance' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.devicePerformance', {}) ?? 'Device performance',
+          'settings.subcategories.previewPerformance' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.previewPerformance', {}) ?? 'Preview performance',
+          'settings.subcategories.viewerPerformance' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.viewerPerformance', {}) ?? 'Viewer performance',
+          'settings.subcategories.videoPerformance' =>
+            TranslationOverrides.string(_root.$meta, 'settings.subcategories.videoPerformance', {}) ?? 'Video performance',
+          'settings.subcategories.language' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.language', {}) ?? 'Language',
+          'settings.subcategories.logs' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.logs', {}) ?? 'Logs',
+          'settings.subcategories.debugMode' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.debugMode', {}) ?? 'Debug mode',
+          'settings.subcategories.overlays' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.overlays', {}) ?? 'Overlays',
+          'settings.subcategories.logging' => TranslationOverrides.string(_root.$meta, 'settings.subcategories.logging', {}) ?? 'Logging',
           'settings.language.title' => TranslationOverrides.string(_root.$meta, 'settings.language.title', {}) ?? 'Language',
           'settings.language.system' => TranslationOverrides.string(_root.$meta, 'settings.language.system', {}) ?? 'System',
           'settings.language.helpUsTranslate' =>
@@ -5493,6 +5766,16 @@ extension on Translations {
                 'Config parameters may be incorrect, booru doesn\'t allow API access, request didn\'t return any data or there was a network error.',
           'settings.booruEditor.saveBooru' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveBooru', {}) ?? 'Save Booru',
           'settings.booruEditor.runningTest' => TranslationOverrides.string(_root.$meta, 'settings.booruEditor.runningTest', {}) ?? 'Running test…',
+          'settings.booruEditor.connectionSettingsChanged' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.connectionSettingsChanged', {}) ??
+                'Connection settings changed during the test. Please save again.',
+          'settings.booruEditor.saveFailed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.saveFailed', {}) ?? 'Failed to save Booru',
+          'settings.booruEditor.overrideChangesSavedAutomatically' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.overrideChangesSavedAutomatically', {}) ??
+                'Changes are saved automatically',
+          'settings.booruEditor.noOverrideSettings' =>
+            TranslationOverrides.string(_root.$meta, 'settings.booruEditor.noOverrideSettings', {}) ?? 'No overrides are available',
           'settings.booruEditor.booruConfigExistsError' =>
             TranslationOverrides.string(_root.$meta, 'settings.booruEditor.booruConfigExistsError', {}) ?? 'This Booru config already exists',
           'settings.booruEditor.booruSameNameExistsError' =>
@@ -5647,6 +5930,9 @@ extension on Translations {
           'settings.theme.theme' => TranslationOverrides.string(_root.$meta, 'settings.theme.theme', {}) ?? 'Theme',
           'settings.theme.primaryColor' => TranslationOverrides.string(_root.$meta, 'settings.theme.primaryColor', {}) ?? 'Primary color',
           'settings.theme.secondaryColor' => TranslationOverrides.string(_root.$meta, 'settings.theme.secondaryColor', {}) ?? 'Secondary color',
+          'settings.theme.colors' => TranslationOverrides.string(_root.$meta, 'settings.theme.colors', {}) ?? 'Colors',
+          'settings.theme.blackAndWhite' => TranslationOverrides.string(_root.$meta, 'settings.theme.blackAndWhite', {}) ?? 'Black/white',
+          'settings.theme.wheel' => TranslationOverrides.string(_root.$meta, 'settings.theme.wheel', {}) ?? 'Wheel',
           'settings.theme.enableDrawerMascot' =>
             TranslationOverrides.string(_root.$meta, 'settings.theme.enableDrawerMascot', {}) ?? 'Enable drawer mascot',
           'settings.theme.setCustomMascot' => TranslationOverrides.string(_root.$meta, 'settings.theme.setCustomMascot', {}) ?? 'Set custom mascot',
@@ -5711,6 +5997,9 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotationSubtitle', {}) ?? 'Double tap to reset',
           'settings.viewer.toolbarButtonsOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.toolbarButtonsOrder', {}) ?? 'Toolbar buttons order',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.viewer.buttonsOrder' => TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonsOrder', {}) ?? 'Buttons order',
           'settings.viewer.longPressToChangeItemOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.longPressToChangeItemOrder', {}) ?? 'Long press to change item order.',
@@ -5820,9 +6109,6 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.shareActionValues.hydrus', {}) ?? 'Hydrus',
           'settings.video.title' => TranslationOverrides.string(_root.$meta, 'settings.video.title', {}) ?? 'Video',
           'settings.video.disableVideos' => TranslationOverrides.string(_root.$meta, 'settings.video.disableVideos', {}) ?? 'Disable videos',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.video.disableVideosHelp' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.disableVideosHelp', {}) ??
                 'Useful on low end devices that crash when trying to load videos. Gives options to view video in external player or browser instead.',
@@ -5852,6 +6138,7 @@ extension on Translations {
           'settings.video.mpvVO' => TranslationOverrides.string(_root.$meta, 'settings.video.mpvVO', {}) ?? 'MPV: VO',
           'settings.video.mpvHWDEC' => TranslationOverrides.string(_root.$meta, 'settings.video.mpvHWDEC', {}) ?? 'MPV: HWDEC',
           'settings.video.videoCacheMode' => TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheMode', {}) ?? 'Video cache mode',
+          'settings.video.videoCacheModeSubtitle' => TranslationOverrides.string(_root.$meta, 'settings.video.videoCacheModeSubtitle', {}) ?? 'Videos on some Boorus may not work correctly (i.e. endless loading) when using Stream video cache mode. In that case try using Cache mode. Otherwise player will retry with Cache mode automatically if video is in initial buffering state for 10+ seconds and video file size is less than 25 MB',
           'settings.video.cacheModes.title' => TranslationOverrides.string(_root.$meta, 'settings.video.cacheModes.title', {}) ?? 'Video cache modes',
           'settings.video.cacheModes.streamMode' =>
             TranslationOverrides.string(_root.$meta, 'settings.video.cacheModes.streamMode', {}) ??
@@ -6190,6 +6477,13 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.privacy.appAliasChangeFailed', {}) ?? 'Failed to change app name. Please try again.',
           'settings.privacy.restartNow' => TranslationOverrides.string(_root.$meta, 'settings.privacy.restartNow', {}) ?? 'Restart now',
           'settings.performance.title' => TranslationOverrides.string(_root.$meta, 'settings.performance.title', {}) ?? 'Performance',
+          'settings.performance.crashDetectedTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.performance.crashDetectedTitle', {}) ?? 'The app crashed last time',
+          'settings.performance.crashDetectedMessage' =>
+            TranslationOverrides.string(_root.$meta, 'settings.performance.crashDetectedMessage', {}) ??
+                'Would you like to open Performance settings? Changing these options may help prevent similar crashes.',
+          'settings.performance.openPerformanceSettings' =>
+            TranslationOverrides.string(_root.$meta, 'settings.performance.openPerformanceSettings', {}) ?? 'Open Performance settings',
           'settings.performance.lowPerformanceMode' =>
             TranslationOverrides.string(_root.$meta, 'settings.performance.lowPerformanceMode', {}) ?? 'Low performance mode',
           'settings.performance.lowPerformanceModeSubtitle' =>
@@ -6666,6 +6960,9 @@ extension on Translations {
           'tagView.history' => TranslationOverrides.string(_root.$meta, 'tagView.history', {}) ?? 'History',
           'tagView.failedToLoadPreviewPage' =>
             TranslationOverrides.string(_root.$meta, 'tagView.failedToLoadPreviewPage', {}) ?? 'Failed to load preview page',
+          _ => null,
+        } ??
+        switch (path) {
           'tagView.tryAgain' => TranslationOverrides.string(_root.$meta, 'tagView.tryAgain', {}) ?? 'Try again',
           'tagView.detectedLinks' => TranslationOverrides.string(_root.$meta, 'tagView.detectedLinks', {}) ?? 'Detected links:',
           'tagView.relatedTabs' => TranslationOverrides.string(_root.$meta, 'tagView.relatedTabs', {}) ?? 'Related tabs',
@@ -6750,9 +7047,6 @@ extension on Translations {
           'mobileHome.fileAlreadyExists' => TranslationOverrides.string(_root.$meta, 'mobileHome.fileAlreadyExists', {}) ?? 'File already exists',
           'mobileHome.failedToDownload' => TranslationOverrides.string(_root.$meta, 'mobileHome.failedToDownload', {}) ?? 'Failed to download',
           'mobileHome.cancelledByUser' => TranslationOverrides.string(_root.$meta, 'mobileHome.cancelledByUser', {}) ?? 'Cancelled by user',
-          _ => null,
-        } ??
-        switch (path) {
           'mobileHome.saveAnyway' => TranslationOverrides.string(_root.$meta, 'mobileHome.saveAnyway', {}) ?? 'Save anyway',
           'mobileHome.skip' => TranslationOverrides.string(_root.$meta, 'mobileHome.skip', {}) ?? 'Skip',
           'mobileHome.retryAll' => ({

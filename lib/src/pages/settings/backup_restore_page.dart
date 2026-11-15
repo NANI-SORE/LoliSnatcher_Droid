@@ -10,6 +10,7 @@ import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/services/database_backup_service.dart';
@@ -43,10 +44,10 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
     }
 
     final Booru booru = settingsHandler.booruList.firstWhere(
-      (booru) => booru.name == settingsHandler.prefBooru,
+      (booru) => booru.name == SX.prefBooru.value,
       orElse: () => settingsHandler.booruList.first,
     );
-    final String defaultText = booru.defTags?.isNotEmpty == true ? booru.defTags! : settingsHandler.defTags;
+    final String defaultText = booru.defTags?.isNotEmpty == true ? booru.defTags! : SX.defTags.value;
 
     searchHandler.addTabByString(
       defaultText,
@@ -56,7 +57,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
   }
 
   Future<void> _reopenDatabase() async {
-    if (settingsHandler.dbHandler.db == null && settingsHandler.dbEnabled) {
+    if (settingsHandler.dbHandler.db == null && SX.dbEnabled.value) {
       final file = File('${await ServiceHandler.getConfigDir()}store.db');
       if (!await file.exists() || !await settingsHandler.loadDatabase((_) {})) {
         await settingsHandler.dbHandler.closeDb();
@@ -191,7 +192,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
       }
       if (!installed) {
         searchHandler.canBackup.value =
-            previousCanBackup && (!settingsHandler.dbEnabled || settingsHandler.dbHandler.db != null);
+            previousCanBackup && (!SX.dbEnabled.value || settingsHandler.dbHandler.db != null);
       }
       inProgress = false;
       if (mounted) setState(() {});
@@ -201,7 +202,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
   @override
   void initState() {
     super.initState();
-    backupPath = settingsHandler.backupPath;
+    backupPath = SX.backupPath.value;
     validateBackupPathAccess();
   }
 
@@ -221,7 +222,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
         );
         setState(() {
           backupPath = '';
-          settingsHandler.backupPath = '';
+          SX.backupPath.state.value = '';
         });
         await settingsHandler.saveSettings(restate: false);
       }
@@ -351,7 +352,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                       if (path.isNotEmpty) {
                         setState(() {
                           backupPath = path;
-                          settingsHandler.backupPath = path;
+                          SX.backupPath.state.value = path;
                           settingsHandler.saveSettings(restate: false);
                         });
                       } else {
@@ -381,7 +382,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                       action: () async {
                         setState(() {
                           backupPath = '';
-                          settingsHandler.backupPath = '';
+                          SX.backupPath.state.value = '';
                           settingsHandler.saveSettings(restate: false);
                         });
                       },
@@ -497,7 +498,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                       icon: const Icon(Icons.list_alt),
                       action: backupDatabase,
                     ),
-                    if (settingsHandler.isDebug.value)
+                    if (SX.isDebug.value)
                       SettingsButton(
                         name: context.loc.settings.backupAndRestore.backupTags,
                         icon: const Icon(CupertinoIcons.tag),
@@ -577,7 +578,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                             }
                             await newFile.writeAsBytes(settingsFileBytes);
                             await settingsHandler.loadSettingsJson();
-                            if (settingsHandler.expandedSourceCompatibilityEnabled) {
+                            if (SX.expandedSourceCompatibilityEnabled.value) {
                               await settingsHandler.saveSettings(restate: false);
                             }
                             showSnackbar(
@@ -632,9 +633,9 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                               final List<dynamic> json = jsonDecode(boorusJSONString);
                               final List<Booru> restoredBoorus = json.map((entry) => Booru.fromMap(entry)).toList();
                               if (ContentPolicy.isFromStore &&
-                                  !settingsHandler.expandedSourceCompatibilityEnabled &&
+                                  !SX.expandedSourceCompatibilityEnabled.value &&
                                   restoredBoorus.any(ContentPolicy.isKnownRestrictedSource)) {
-                                settingsHandler.expandedSourceCompatibilityEnabled = true;
+                                SX.expandedSourceCompatibilityEnabled.state.value = true;
                                 await settingsHandler.saveSettings(restate: false);
                               }
 
@@ -700,7 +701,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                       subtitle: Text('store.db (${context.loc.settings.backupAndRestore.restoreDatabaseInfo})'),
                       action: restoreDatabase,
                     ),
-                    if (settingsHandler.isDebug.value)
+                    if (SX.isDebug.value)
                       SettingsButton(
                         name: context.loc.settings.backupAndRestore.restoreTags,
                         icon: const Icon(CupertinoIcons.tag),

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
 import 'package:lolisnatcher/src/widgets/common/pulse_widget.dart';
@@ -40,7 +40,7 @@ class _SnatchedStatusIconState extends State<SnatchedStatusIcon> {
       }
     });
 
-    final String extPath = SettingsHandler.instance.extPathOverride;
+    final String extPath = SX.extPathOverride.value;
     if (extPath.isNotEmpty) {
       fileExists = await SAFFileCache.instance.existsFile(
         extPath,

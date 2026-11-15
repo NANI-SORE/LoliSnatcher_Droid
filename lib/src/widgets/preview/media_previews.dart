@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
-import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -69,7 +69,7 @@ class _MediaPreviewsState extends State<MediaPreviews> {
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
-    settingsHandler.themeMode.value = mode;
+    SX.themeMode.state.value = mode;
     await settingsHandler.saveSettings(restate: false);
   }
 
@@ -145,7 +145,7 @@ class _MediaPreviewsState extends State<MediaPreviews> {
                           subtitle: loc.addBooruActionSubtitle,
                           icon: Icons.add_photo_alternate_outlined,
                           filled: true,
-                          onTap: () => openPage(BooruEdit(Booru('New', null, '', '', ''))),
+                          onTap: () => openPage(BooruEdit.add()),
                         ),
                         _OnboardingActionTile(
                           title: loc.restoreBackupAction,
@@ -257,16 +257,15 @@ class _LanguageSettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settingsHandler = SettingsHandler.instance;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 360),
-        child: Obx(
-          () {
-            final AppLocale? locale = settingsHandler.locale.value;
+        child: ValueListenableBuilder<AppLocale?>(
+          valueListenable: SX.locale.state.globalNotifier,
+          builder: (context, locale, _) {
             final AppLocale usedLocale = locale ?? AppLocaleExt.findDeviceLocale();
             final String localeTitle = locale == null
                 ? context.loc.settings.language.system
@@ -332,46 +331,55 @@ class _ThemeModeToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settingsHandler = SettingsHandler.instance;
     final loc = context.loc.settings.theme;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return Center(
-      child: Obx(
-        () => Material(
-          color: colorScheme.surfaceContainerHighest,
-          clipBehavior: .antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-            side: BorderSide(color: colorScheme.outline),
-          ),
-          child: SizedBox(
-            height: kMinInteractiveDimension,
-            child: Row(
-              mainAxisSize: .min,
-              children: [
-                _ThemeModeSegmentButton(
-                  icon: Icons.brightness_auto_outlined,
-                  text: loc.system,
-                  selected: settingsHandler.themeMode.value.isSystem,
-                  onTap: () => onChanged(.system),
-                ),
-                _ThemeModeDivider(color: colorScheme.outline),
-                _ThemeModeSegmentButton(
-                  icon: Icons.light_mode_outlined,
-                  text: loc.light,
-                  selected: settingsHandler.themeMode.value.isLight,
-                  onTap: () => onChanged(.light),
-                ),
-                _ThemeModeDivider(color: colorScheme.outline),
-                _ThemeModeSegmentButton(
-                  icon: Icons.dark_mode_outlined,
-                  text: loc.dark,
-                  selected: settingsHandler.themeMode.value.isDark,
-                  onTap: () => onChanged(.dark),
-                ),
-              ],
+      child: ValueListenableBuilder<ThemeMode>(
+        valueListenable: SX.themeMode.state.effectiveNotifier,
+        builder: (context, mode, _) => SizedBox(
+          width: 360,
+          child: Material(
+            color: colorScheme.surfaceContainerHighest,
+            clipBehavior: .antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(color: colorScheme.outline),
+            ),
+            child: SizedBox(
+              height: kMinInteractiveDimension,
+              child: Row(
+                mainAxisSize: .min,
+                children: [
+                  Expanded(
+                    child: _ThemeModeSegmentButton(
+                      icon: Icons.brightness_auto_outlined,
+                      text: loc.system,
+                      selected: mode.isSystem,
+                      onTap: () => onChanged(.system),
+                    ),
+                  ),
+                  _ThemeModeDivider(color: colorScheme.outline),
+                  Expanded(
+                    child: _ThemeModeSegmentButton(
+                      icon: Icons.light_mode_outlined,
+                      text: loc.light,
+                      selected: mode.isLight,
+                      onTap: () => onChanged(.light),
+                    ),
+                  ),
+                  _ThemeModeDivider(color: colorScheme.outline),
+                  Expanded(
+                    child: _ThemeModeSegmentButton(
+                      icon: Icons.dark_mode_outlined,
+                      text: loc.dark,
+                      selected: mode.isDark,
+                      onTap: () => onChanged(.dark),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -463,7 +471,13 @@ class _ThemeModeSegmentLabel extends StatelessWidget {
         children: [
           Icon(icon, size: 18),
           const SizedBox(width: 6),
-          Text(text),
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );

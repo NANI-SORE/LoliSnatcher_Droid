@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:lolisnatcher/src/data/tag.dart';
 import 'package:lolisnatcher/src/data/tag_type.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -34,7 +35,7 @@ class _TagsManagerAddDialogState extends State<TagsManagerAddDialog> {
           titleAsLabel: true,
           drawBottomBorder: false,
           pasteable: true,
-          enableIMEPersonalizedLearning: !SettingsHandler.instance.incognitoKeyboard,
+          enableIMEPersonalizedLearning: !SX.incognitoKeyboard.value,
         ),
         SettingsDropdown(
           value: _type,

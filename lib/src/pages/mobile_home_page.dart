@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import 'package:get/get.dart';
 
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -117,14 +118,14 @@ class _MobileHomeState extends State<MobileHome> {
 
             leftChild: RepaintBoundary(
               child: sidebarsEnabled
-                  ? settingsHandler.handSide.value.isLeft
+                  ? SX.handSide.value.isLeft
                         ? const MainDrawer()
                         : DownloadsDrawer(toggleDrawer: () => _toggleDrawer(null))
                   : const SizedBox.shrink(),
             ),
             rightChild: RepaintBoundary(
               child: sidebarsEnabled
-                  ? settingsHandler.handSide.value.isRight
+                  ? SX.handSide.value.isRight
                         ? const MainDrawer()
                         : DownloadsDrawer(toggleDrawer: () => _toggleDrawer(null))
                   : const SizedBox.shrink(),

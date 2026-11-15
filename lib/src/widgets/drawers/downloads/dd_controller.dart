@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
@@ -64,12 +65,15 @@ class DownloadsDrawerController {
       snatchHandler.queue(
         [...currentSelected],
         currentBooru,
-        settingsHandler.snatchCooldown,
+        SX.snatchCooldown.value,
         isLongTap,
+        sourceFor: currentTab.booruHandler.sourceBooruFor,
+        useSourceCooldown: true,
       );
-      if (settingsHandler.favouriteOnSnatch) {
+      final toFavourite = currentSelected.where(currentTab.shouldFavouriteOnSnatch).toList();
+      if (toFavourite.isNotEmpty) {
         await currentTab.updateFavForMultipleItems(
-          currentSelected,
+          toFavourite,
           newValue: true,
           skipSnatching: true,
         );
@@ -109,7 +113,7 @@ class DownloadsDrawerController {
     }
     snatchHandler.onRetryItem(
       record,
-      cooldown: settingsHandler.snatchCooldown,
+      cooldown: SX.snatchCooldown.value,
       ignoreExists: isExists || isLongTap,
     );
 
@@ -120,7 +124,7 @@ class DownloadsDrawerController {
     updating.value = true;
 
     await snatchHandler.onRetryAll(
-      cooldown: settingsHandler.snatchCooldown,
+      cooldown: SX.snatchCooldown.value,
       ignoreExists: isLongTap,
     );
 

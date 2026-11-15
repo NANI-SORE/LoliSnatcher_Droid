@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/widgets/tabs/tab_selector.dart';
 
 class ActiveTitle extends StatelessWidget {
@@ -15,7 +15,7 @@ class ActiveTitle extends StatelessWidget {
       valueListenable: searchHandler.tabs,
       builder: (context, tabs, child) {
         if (tabs.isEmpty) {
-          return Text(SettingsHandler.instance.appAlias.locName);
+          return Text(SX.appAlias.value.locName);
         }
 
         return child!;

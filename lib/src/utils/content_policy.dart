@@ -1,6 +1,7 @@
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 
 class ContentPolicy {
@@ -222,7 +223,7 @@ class ContentPolicy {
   }
 
   static bool get isLocked {
-    return isFromStore && !SettingsHandler.instance.expandedSourceCompatibilityEnabled;
+    return isFromStore && !SX.expandedSourceCompatibilityEnabled.value;
   }
 
   static bool get canOpenWebview => !isLocked;

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import 'package:path_provider/path_provider.dart';
 
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -154,6 +155,16 @@ class ServiceHandler {
       log(e);
     }
     return result;
+  }
+
+  static Future<bool> canAccessSAFDirectory(String safUri) async {
+    if (safUri.isEmpty || !Platform.isAndroid) return false;
+    try {
+      return await platform.invokeMethod<bool>('canAccessSafDirectory', {'uri': safUri}) ?? false;
+    } catch (e) {
+      log(e);
+      return false;
+    }
   }
 
   static Future<Uint8List?> getFileFromSAFDirectory(String safUri, String fileName) async {
@@ -431,8 +442,7 @@ class ServiceHandler {
   }
 
   static void disableSleep({bool force = false}) {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
-    if (Platform.isAndroid && (settingsHandler.wakeLockEnabled || force)) {
+    if (Platform.isAndroid && (SX.wakeLockEnabled.value || force)) {
       platform.invokeMethod('disableSleep');
     }
   }
@@ -546,7 +556,7 @@ class ServiceHandler {
   }
 
   static Future<void> vibrate() async {
-    if (SettingsHandler.instance.disableVibration) {
+    if (SX.disableVibration.value) {
       return;
     }
 
