@@ -6,6 +6,7 @@ import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
+import 'package:lolisnatcher/src/services/image_download_request.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
@@ -55,17 +56,15 @@ class ClipboardUtils {
 
     try {
       final bytes = await NetworkImageLoader.downloadAndCache(
-        url: item.fileURL,
-        cacheFolder: 'media',
-        fileNameExtras: item.fileNameExtras,
-        withCache: shouldCache,
-        headers: await Tools.getFileCustomHeaders(booru, item: item),
+        ImageDownloadRequest(
+          url: item.fileURL,
+          cacheFolder: 'media',
+          fileNameExtras: item.fileNameExtras,
+          withCache: shouldCache,
+          headers: await Tools.getFileCustomHeaders(booru, item: item),
+          withCaptchaCheck: true,
+        ),
         cancelToken: cancelToken,
-        withCaptchaCheck: true,
-        sendTimeout: null,
-        receiveTimeout: null,
-        chunkEvents: null,
-        onCacheDetected: null,
         onReceiveProgress: onReceiveProgress,
       );
 

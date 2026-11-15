@@ -72,6 +72,26 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
 
   final ValueNotifier<int> page = ValueNotifier(0);
 
+  // Keep reveal choices independently of viewers that may be disposed to free
+  // image memory. Only items in the configured preload range retain a choice.
+  final Set<Key> _revealedItems = {};
+
+  void _pruneRevealedItems(int currentIndex) {
+    final items = widget.tab.booruHandler.filteredFetched;
+    final preloadCount = SX.preloadCount.value;
+    final first = max(0, currentIndex - preloadCount);
+    final last = min(items.length - 1, currentIndex + preloadCount);
+    final nearbyKeys = <Key>{
+      for (int index = first; index <= last; index++) items[index].key,
+    };
+    _revealedItems.removeWhere((key) => !nearbyKeys.contains(key));
+  }
+
+  void _rememberRevealedItem(BooruItem item) {
+    _revealedItems.add(item.key);
+    _pruneRevealedItems(page.value);
+  }
+
   final FocusNode kbFocusNode = FocusNode();
   StreamSubscription? volumeListener;
   final GlobalKey<ScaffoldState> viewerScaffoldKey = GlobalKey<ScaffoldState>();
@@ -392,6 +412,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                       child: ValueListenableBuilder(
                         valueListenable: widget.tab.booruHandler.filteredFetched,
                         builder: (context, filteredFetched, child) {
+                          _pruneRevealedItems(page.value);
                           if (filteredFetched.isEmpty) {
                             return Center(
                               child: Text(context.loc.galleryView.noItems, style: const TextStyle(color: Colors.white)),
@@ -422,7 +443,9 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                 final bool isFavsOrDls =
                                     widget.tab.booruHandler.booru.type?.isFavouritesOrDownloads == true;
                                 final possibleBooru = OfflineMediaResolver.instance.resolveSourceBooru(
-                                  item, fallback: widget.tab.booruHandler.sourceBooruFor(item));
+                                  item,
+                                  fallback: widget.tab.booruHandler.sourceBooruFor(item),
+                                );
 
                                 return TagFilterEvaluationBuilder(
                                   key: ValueKey(item.key),
@@ -449,6 +472,8 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                               allowOfflineThumbnailGeneration: isFavsOrDls,
                                               filterEvaluation: evaluation,
                                               isViewed: pageVal == index,
+                                              isRevealed: () => _revealedItems.contains(item.key),
+                                              onReveal: () => _rememberRevealedItem(item),
                                               key: item.key,
                                             );
                                           },
@@ -465,6 +490,8 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                                 allowOfflineLocalMedia: true,
                                                 allowOfflineThumbnailGeneration: isFavsOrDls,
                                                 isViewed: pageVal == index,
+                                                isRevealed: () => _revealedItems.contains(item.key),
+                                                onReveal: () => _rememberRevealedItem(item),
                                                 enableFullscreen: true,
                                                 key: item.key,
                                               );
@@ -590,6 +617,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                 return;
                               }
                               _position.select(index);
+                              _pruneRevealedItems(index);
                               page.value = index;
                               widget.onPageChanged?.call(index);
                               ServiceHandler.disableSleep();

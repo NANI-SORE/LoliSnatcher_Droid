@@ -10,6 +10,7 @@ import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/ios_storage.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
+import 'package:lolisnatcher/src/services/image_memory_manager.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 
@@ -550,19 +551,47 @@ class ServiceHandler {
     return thumbnail;
   }
 
-  static Future<List<Uint8List>?> sliceImage(String path, int sliceHeight, {int quality = 90}) async {
+  static Future<Size?> getImageRegionInfo(String path) async {
     if (!Platform.isAndroid) return null;
     try {
-      final List<dynamic>? result = await platform.invokeMethod('sliceImage', {
-        'path': path,
-        'sliceHeight': sliceHeight,
-        'quality': quality,
-      });
-      return result?.map((e) => e as Uint8List).toList();
-    } catch (e) {
-      log(e);
-      return null;
+      final result = await platform.invokeMapMethod<String, dynamic>('getImageRegionInfo', {'path': path});
+      if (result == null) return null;
+      return Size((result['width'] as num).toDouble(), (result['height'] as num).toDouble());
+    } on PlatformException catch (error) {
+      if (error.code == 'IMAGE_MEMORY_LIMIT') {
+        throw const ImageMemoryException(
+          'Native image metadata allocation exceeded available memory',
+          isTransient: true,
+        );
+      }
+      rethrow;
     }
+  }
+
+  static Future<Map<String, dynamic>> decodeImageRegion(
+    String path, {
+    required int left,
+    required int top,
+    required int right,
+    required int bottom,
+    required int sampleSize,
+    required bool retainDecoder,
+  }) async {
+    final bytes = await platform.invokeMapMethod<String, dynamic>('decodeImageRegion', {
+      'path': path,
+      'left': left,
+      'top': top,
+      'right': right,
+      'bottom': bottom,
+      'sampleSize': sampleSize,
+      'retainDecoder': retainDecoder,
+    });
+    if (bytes == null) throw StateError('No image region returned');
+    return bytes;
+  }
+
+  static Future<void> releaseImageRegionDecoder(String path) async {
+    await platform.invokeMethod<void>('releaseImageRegionDecoder', {'path': path});
   }
 
   static Future<String?> writeImage(

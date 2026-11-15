@@ -66,6 +66,7 @@ class _MediaLoadingState extends State<MediaLoading> {
       ViewerStopReason.user => context.loc.media.loading.stopReasons.stoppedByUser,
       ViewerStopReason.error => context.loc.media.loading.stopReasons.loadingError,
       ViewerStopReason.tooBig => context.loc.media.loading.stopReasons.fileIsTooBig,
+      ViewerStopReason.memoryLimit => context.loc.media.loading.stopReasons.loadingError,
       ViewerStopReason.hidden => context.loc.media.loading.stopReasons.hiddenByFilters,
       ViewerStopReason.blurred => context.loc.media.loading.stopReasons.blurredByFilters,
       ViewerStopReason.videoError => context.loc.media.loading.stopReasons.videoError,
@@ -261,27 +262,28 @@ class _MediaLoadingState extends State<MediaLoading> {
               ? [
                   _buildStopDescription(context),
                   const SizedBox(height: 10),
-                  ElevatedButton.icon(
-                    icon: const Icon(
-                      Icons.play_arrow,
-                      size: 40,
-                      color: Colors.blue,
+                  if (widget.onRestart != null)
+                    ElevatedButton.icon(
+                      icon: const Icon(
+                        Icons.play_arrow,
+                        size: 40,
+                        color: Colors.blue,
+                      ),
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStateProperty.all(Colors.black54),
+                        fixedSize: const WidgetStatePropertyAll(Size(double.infinity, 54)),
+                      ),
+                      label: LoadingText(
+                        text: (widget.isTooBig || widget.stopReason?.isFiltered == true)
+                            ? context.loc.media.loading.loadAnyway
+                            : context.loc.media.loading.restartLoading,
+                        fontSize: 16,
+                        color: Colors.blue,
+                      ),
+                      onPressed: () {
+                        widget.onRestart?.call();
+                      },
                     ),
-                    style: ButtonStyle(
-                      backgroundColor: WidgetStateProperty.all(Colors.black54),
-                      fixedSize: const WidgetStatePropertyAll(Size(double.infinity, 54)),
-                    ),
-                    label: LoadingText(
-                      text: (widget.isTooBig || widget.stopReason?.isFiltered == true)
-                          ? context.loc.media.loading.loadAnyway
-                          : context.loc.media.loading.restartLoading,
-                      fontSize: 16,
-                      color: Colors.blue,
-                    ),
-                    onPressed: () {
-                      widget.onRestart?.call();
-                    },
-                  ),
                 ]
               : [
                   Container(
@@ -399,27 +401,28 @@ class _MediaLoadingState extends State<MediaLoading> {
       children = [
         _buildStopDescription(context),
         const SizedBox(height: 10),
-        ElevatedButton.icon(
-          icon: const Icon(
-            Icons.play_arrow,
-            size: 40,
-            color: Colors.blue,
+        if (widget.onRestart != null)
+          ElevatedButton.icon(
+            icon: const Icon(
+              Icons.play_arrow,
+              size: 40,
+              color: Colors.blue,
+            ),
+            style: ButtonStyle(
+              backgroundColor: WidgetStateProperty.all(Colors.black54),
+              fixedSize: const WidgetStatePropertyAll(Size(double.infinity, 54)),
+            ),
+            label: LoadingText(
+              text: (widget.isTooBig || widget.stopReason?.isFiltered == true)
+                  ? context.loc.media.loading.loadAnyway
+                  : context.loc.media.loading.restartLoading,
+              fontSize: 16,
+              color: Colors.blue,
+            ),
+            onPressed: () {
+              widget.onRestart?.call();
+            },
           ),
-          style: ButtonStyle(
-            backgroundColor: WidgetStateProperty.all(Colors.black54),
-            fixedSize: const WidgetStatePropertyAll(Size(double.infinity, 54)),
-          ),
-          label: LoadingText(
-            text: (widget.isTooBig || widget.stopReason?.isFiltered == true)
-                ? context.loc.media.loading.loadAnyway
-                : context.loc.media.loading.restartLoading,
-            fontSize: 16,
-            color: Colors.blue,
-          ),
-          onPressed: () {
-            widget.onRestart?.call();
-          },
-        ),
         if (isMovedBelow) const SizedBox(height: 60),
       ];
     } else {

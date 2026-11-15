@@ -45,6 +45,7 @@ import 'package:lolisnatcher/src/pages/settings/performance_page.dart';
 import 'package:lolisnatcher/src/pages/settings/tags_filters_page.dart';
 import 'package:lolisnatcher/src/pages/settings/language_page.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/services/image_memory_manager.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -60,6 +61,7 @@ void downloadMain() => unawaited(runDownloadWorker());
 
 void main() async {
   CustomWidgetsBinding.ensureInitialized();
+  ImageMemoryManager.instance.initialize();
 
   if (Platform.isWindows || Platform.isLinux) {
     sqfliteFfiInit();
@@ -478,8 +480,6 @@ class _DebuggingWidgetsState extends State<DebuggingWidgets> with WidgetsBinding
             ? widget.child
             : ImageStats(
                 isEnabled: SX.showImageStats.value,
-                width: 120,
-                height: 100,
                 align: Alignment.centerLeft,
                 child: widget.child,
               ),

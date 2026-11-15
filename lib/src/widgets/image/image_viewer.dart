@@ -1,41 +1,45 @@
+import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_details_sheet.dart';
+import 'package:flutter_avif/flutter_avif.dart' show AvifFileType, isAvifFile;
+import 'package:lolisnatcher/src/data/tag_filter_evaluation.dart';
+import 'package:lolisnatcher/src/services/image_writer.dart';
+import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
+
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:math';
 import 'dart:ui';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:dio/dio.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
-import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:photo_view/photo_view.dart';
-import 'package:image/image.dart' as img;
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
-import 'package:lolisnatcher/src/data/settings/setting_key.dart';
-import 'package:lolisnatcher/src/data/tag_filter_evaluation.dart';
-import 'package:lolisnatcher/src/handlers/navigation_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
-import 'package:lolisnatcher/src/services/image_writer.dart';
-import 'package:lolisnatcher/src/services/local_image_provider.dart';
-import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
+import 'package:lolisnatcher/src/services/image_memory_manager.dart';
+import 'package:lolisnatcher/src/services/image_download_request.dart';
+import 'package:lolisnatcher/src/services/image_metadata.dart';
+import 'package:lolisnatcher/src/widgets/image/region_image_view.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/media_loading.dart';
 import 'package:lolisnatcher/src/widgets/common/preserve_media_animations.dart';
 import 'package:lolisnatcher/src/widgets/image/custom_network_image.dart';
-import 'package:lolisnatcher/src/widgets/tags_filters/tag_filter_details_sheet.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
 
 enum ViewerStopReason {
   user,
   error,
   tooBig,
+  memoryLimit,
   hidden,
   blurred,
   videoError,
@@ -46,7 +50,8 @@ enum ViewerStopReason {
   bool get isError => this == error;
   bool get isTooBig => this == tooBig;
   bool get isHidden => this == hidden;
-  bool get isFiltered => this == hidden || this == blurred;
+  bool get isBlurred => this == blurred;
+  bool get isFiltered => isHidden || isBlurred;
   bool get isVideoError => this == videoError;
   bool get isReset => this == reset;
 }
@@ -70,6 +75,8 @@ class ImageViewer extends StatefulWidget {
     this.filterEvaluation = const TagFilterEvaluation.empty(),
     this.allowOfflineLocalMedia = false,
     this.allowOfflineThumbnailGeneration = false,
+    this.isRevealed,
+    this.onReveal,
     super.key,
   });
 
@@ -79,6 +86,10 @@ class ImageViewer extends StatefulWidget {
   final TagFilterEvaluation filterEvaluation;
   final bool allowOfflineLocalMedia;
   final bool allowOfflineThumbnailGeneration;
+
+  /// Gallery-owned reveal choice, retained even when this viewer is recreated.
+  final bool Function()? isRevealed;
+  final VoidCallback? onReveal;
 
   @override
   State<ImageViewer> createState() => ImageViewerState();
@@ -94,6 +105,8 @@ class ImageViewerState extends State<ImageViewer> {
   final ValueNotifier<int> total = ValueNotifier(0), received = ValueNotifier(0), startedAt = ValueNotifier(0);
   final ValueNotifier<bool> isFirstBuild = ValueNotifier(true);
   final ValueNotifier<bool> isLoaded = ValueNotifier(false);
+  final ValueNotifier<bool> isDisplayReady = ValueNotifier(false);
+  final ValueNotifier<bool> isDetailReady = ValueNotifier(false);
   final ValueNotifier<bool> isViewed = ValueNotifier(false);
   final ValueNotifier<bool> isFromCache = ValueNotifier(false);
   final ValueNotifier<bool> isZoomed = ValueNotifier(false);
@@ -110,35 +123,34 @@ class ImageViewerState extends State<ImageViewer> {
   StreamSubscription<PhotoViewControllerValue>? viewStateSubscription;
   StreamSubscription<PhotoViewScaleState>? scaleStateSubscription;
   int _loadGeneration = 0;
-  bool _ignoreFilterForCurrentLoad = false;
-  int? _handlingErrorGeneration;
 
   String imageFolder = 'media';
-  int? widthLimit;
   CancelToken? cancelToken;
   CancelToken? loadItemCancelToken;
-  File? localImageFile;
-  bool _usingSavedFile = false;
-  bool _localIsDerived = false;
-  bool didTryLocalSavedFallback = false;
 
-  static const int kMaxTextureHeight = 4096;
-  static const int kMaxTileMemoryBudget = 512 * 1024 * 1024; // max GPU texture memory for all tiles
-  static const int kMaxPixelsHeight = 100000;
+  File? localImageFile;
+  bool _localIsDerived = false;
+  bool _usingSavedFile = false;
+  bool didTryLocalSavedFallback = false;
+  int? _handlingErrorGeneration;
+  DownloadedImageFile? _download;
+  RegionImageSource? _regionSource;
+  int _loadRetries = 0;
+  bool _ignoreTagsForLoad = false;
+  bool _captchaForLoad = false;
+  bool _sourceIsAnimated = false;
+  bool get _hasAnimation => _sourceIsAnimated || widget.booruItem.mediaType.value.isAnimation;
   bool isTiled = false;
-  List<ImageProvider>? tiledProviders;
-  ValueNotifier<bool?> isTilingProcessing = ValueNotifier(null);
+  final ValueNotifier<bool?> isTilingProcessing = ValueNotifier(null);
   Size? tiledSize;
 
   bool get isProviderLoaded {
-    if (widget.filterEvaluation.isBlurred && !_ignoreFilterForCurrentLoad) {
-      return false;
-    }
+    if (widget.filterEvaluation.isBlurred && !_ignoreTagsForLoad) return false;
     if (isTilingProcessing.value != false) {
       return false;
     }
 
-    if (isTiled && tiledProviders?.isNotEmpty == true) {
+    if (isTiled && _regionSource != null) {
       return true;
     } else {
       return mainProvider.value != null;
@@ -147,8 +159,9 @@ class ImageViewerState extends State<ImageViewer> {
 
   void onSize(int? size) {
     // TODO find a way to stop loading based on size when caching is enabled
-    final preloadSizeLimit = SX.preloadSizeLimit.value;
-    final int? maxSize = preloadSizeLimit == 0 ? null : Tools.gibibytesToBytes(preloadSizeLimit);
+    final int? maxSize = SX.preloadSizeLimit.valueForBooru(widget.booru.name) == 0
+        ? null
+        : (1024 * 1024 * SX.preloadSizeLimit.valueForBooru(widget.booru.name) * 1000).round();
     if (size != null && size > 0) {
       widget.booruItem.fileSize = size;
     }
@@ -171,14 +184,15 @@ class ImageViewerState extends State<ImageViewer> {
       return;
     }
 
-    if (widget.booruItem.fileHeight != null &&
-        widget.booruItem.fileHeight! > SX.preloadHeight.value &&
+    if (SX.preloadHeight.valueForBooru(widget.booru.name) != 0 &&
+        widget.booruItem.fileHeight != null &&
+        widget.booruItem.fileHeight! > SX.preloadHeight.valueForBooru(widget.booru.name) &&
         !blockPreloadState.isIgnore) {
       stopLoading(
         reason: .tooBig,
         details:
             '${context.loc.media.loading.fileSize(size: '${widget.booruItem.fileWidth?.toFormattedString()}x${widget.booruItem.fileHeight?.toFormattedString()}')}\n'
-            '${context.loc.media.loading.sizeLimit(limit: '...x${SX.preloadHeight.value.toFormattedString()}')}',
+            '${context.loc.media.loading.sizeLimit(limit: '...x${SX.preloadHeight.valueForBooru(widget.booru.name).toFormattedString()}')}',
       );
       return;
     }
@@ -188,13 +202,32 @@ class ImageViewerState extends State<ImageViewer> {
     received.value = receivedNew;
     if (totalNew != null) {
       total.value = totalNew;
-      onSize(totalNew);
     }
+    onSize(totalNew ?? receivedNew);
   }
 
   void onError(Object error) {
-    if (error is DioException && CancelToken.isCancel(error)) {
-      //
+    showLoading.value = true;
+    final cancelled = error is DioException && CancelToken.isCancel(error);
+    if ((cancelled || (error is ImageMemoryException && error.isTransient)) && _loadRetries < 2) {
+      if (widget.isViewed && error is ImageMemoryException) {
+        ImageMemoryManager.instance.handleMemoryPressure();
+      }
+      _loadRetries++;
+      disposables();
+      isLoaded.value = false;
+      final generation = _loadGeneration;
+      unawaited(_retryLoad(generation));
+      return;
+    }
+    if (error is ImageMemoryException) {
+      // Keep the selected source and resolution. A lower-quality substitute
+      // must never be reported as a successful viewer load.
+      stopLoading(reason: error.isTransient ? .error : .memoryLimit, details: error.reason);
+      return;
+    }
+    if (cancelled) {
+      stopLoading(reason: .error, details: error.toString());
     } else {
       if (error is DioException) {
         stopLoading(
@@ -213,19 +246,40 @@ class ImageViewerState extends State<ImageViewer> {
     }
   }
 
+  Future<void> _retryLoad(int generation) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isCurrentLoad(generation)) return;
+      viewerHandler.setLoaded(widget.key, false);
+    });
+    // Let background viewers and thumbnail codecs release their ownership.
+    await WidgetsBinding.instance.endOfFrame;
+    await WidgetsBinding.instance.endOfFrame;
+    if (!_isCurrentLoad(generation)) return;
+    PaintingBinding.instance.imageCache.clear();
+    await initViewer(_ignoreTagsForLoad, withCaptchaCheck: _captchaForLoad);
+  }
+
+  void _updateViewerFocus() {
+    ImageMemoryManager.instance.setImageViewerActive(
+      this,
+      widget.isViewed && !isStopped.value,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
 
     isViewed.value = widget.isViewed;
+    widget.booruItem.isNoScale.addListener(noScaleListener);
+    widget.booruItem.toggleQuality.addListener(toggleQualityListener);
+    _updateViewerFocus();
 
     viewerHandler.addViewed(widget.key);
 
     // debug output
     viewStateSubscription = viewController.outputStateStream.listen(onViewStateChanged);
     scaleStateSubscription = scaleController.outputScaleStateStream.listen(onScaleStateChanged);
-
-    calcWidthLimit(MediaQuery.sizeOf(NavigationHandler.instance.navContext).width);
 
     if (isFirstBuild.value) {
       isFirstBuild.value = false;
@@ -238,12 +292,18 @@ class ImageViewerState extends State<ImageViewer> {
     super.didUpdateWidget(oldWidget);
     // force redraw on item data change
     if (oldWidget.booruItem != widget.booruItem) {
-      _loadGeneration++;
-      _ignoreFilterForCurrentLoad = false;
       oldWidget.booruItem.isNoScale.removeListener(noScaleListener);
       oldWidget.booruItem.toggleQuality.removeListener(toggleQualityListener);
+      disposables();
+      widget.booruItem.isNoScale.addListener(noScaleListener);
+      widget.booruItem.toggleQuality.addListener(toggleQualityListener);
+      _loadRetries = 0;
+      _ignoreTagsForLoad = false;
+      _sourceIsAnimated = false;
+      blockPreloadState = .initial;
+      final generation = _loadGeneration;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
+        if (!_isCurrentLoad(generation)) return;
 
         stopLoading(reason: .reset);
         initViewer(false);
@@ -259,7 +319,7 @@ class ImageViewerState extends State<ImageViewer> {
           oldEvaluation.loadingFilterDetails != evaluation.loadingFilterDetails;
       if (filterChanged && (evaluation.isBlurred || oldEvaluation.isBlurred)) {
         _loadGeneration++;
-        _ignoreFilterForCurrentLoad = false;
+        _ignoreTagsForLoad = false;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           if (widget.filterEvaluation.isBlurred) {
@@ -273,6 +333,16 @@ class ImageViewerState extends State<ImageViewer> {
 
     if (oldWidget.isViewed != widget.isViewed) {
       isViewed.value = widget.isViewed;
+      if (_hasAnimation) {
+        if (widget.isViewed && oldWidget.booruItem == widget.booruItem) {
+          _loadRetries = 0;
+          unawaited(initViewer(false));
+        } else if (!widget.isViewed) {
+          disposables();
+          isLoaded.value = false;
+        }
+      }
+      _updateViewerFocus();
       if (!isViewed.value) {
         // reset zoom if not viewed
         resetZoom();
@@ -280,8 +350,9 @@ class ImageViewerState extends State<ImageViewer> {
     }
   }
 
-  bool get useFullImage =>
-      SX.galleryMode.value.isFullRes ? !widget.booruItem.toggleQuality.value : widget.booruItem.toggleQuality.value;
+  bool get useFullImage => SX.galleryMode.valueForBooru(widget.booru.name).isFullRes
+      ? !widget.booruItem.toggleQuality.value
+      : widget.booruItem.toggleQuality.value;
 
   Future<void> initViewer(
     bool ignoreTagsCheck, {
@@ -289,35 +360,37 @@ class ImageViewerState extends State<ImageViewer> {
     OfflineMediaResolution? savedFallback,
     bool networkOnly = false,
   }) async {
+    // An offscreen GIF needs only its thumbnail. Its native animation codec
+    // must not reserve the memory needed by the currently viewed GIF.
+    if (_hasAnimation && !widget.isViewed) return;
+    _ignoreTagsForLoad = ignoreTagsCheck || _ignoreTagsForLoad || (widget.isRevealed?.call() ?? false);
+    _captchaForLoad = withCaptchaCheck;
     final int loadGeneration = ++_loadGeneration;
-    if (_ignoreFilterForCurrentLoad != ignoreTagsCheck) {
-      setState(() {
-        _ignoreFilterForCurrentLoad = ignoreTagsCheck;
-      });
-    }
-    widget.booruItem.isNoScale.addListener(noScaleListener);
-
-    widget.booruItem.toggleQuality.addListener(toggleQualityListener);
-
-    if (widget.filterEvaluation.isBlurred && !ignoreTagsCheck) {
+    if (widget.filterEvaluation.isBlurred && !_ignoreTagsForLoad) {
       _stopForFilter(widget.filterEvaluation);
       return;
     }
 
     isStopped.value = false;
+    isLoaded.value = false;
+    _updateViewerFocus();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isCurrentLoad(loadGeneration)) return;
 
       viewerHandler.setStopped(widget.key, false);
+      if (!isLoaded.value) viewerHandler.setLoaded(widget.key, false);
     });
 
     startedAt.value = DateTime.now().millisecondsSinceEpoch;
 
-    final mQuery = MediaQuery.of(NavigationHandler.instance.navContext);
-    widthLimit = SX.disableImageScaling.value ? null : (mQuery.size.width * mQuery.devicePixelRatio * 2).round();
-
-    final ImageProvider? newProvider;
+    ImageProvider? newProvider;
     try {
+      if (widget.isViewed) {
+        await WidgetsBinding.instance.endOfFrame;
+        await WidgetsBinding.instance.endOfFrame;
+        if (!_isCurrentLoad(loadGeneration)) return;
+        PaintingBinding.instance.imageCache.clear();
+      }
       newProvider = await getImageProvider(
         loadGeneration: loadGeneration,
         withCaptchaCheck: withCaptchaCheck,
@@ -328,24 +401,26 @@ class ImageViewerState extends State<ImageViewer> {
       if (_isCurrentLoad(loadGeneration)) _handleProviderError(error, loadGeneration);
       return;
     }
-    if (!_isCurrentLoad(loadGeneration) || newProvider == null) return;
 
+    if (!_isCurrentLoad(loadGeneration)) {
+      return;
+    }
+
+    isTilingProcessing.value = false;
+    if (isTiled) return;
+    if (newProvider == null) return;
     mainProvider.value = newProvider;
     _removeImageStreamListener();
     imageStream = mainProvider.value!.resolve(ImageConfiguration.empty);
     imageListener = ImageStreamListener(
-      (imageInfo, syncCall) async {
-        if (!_isCurrentLoad(loadGeneration)) return;
-
-        if (imageInfo.image.height >= SX.preloadHeight.value) {
-          await checkAndPrepareTiles(loadGeneration: loadGeneration);
-        } else {
-          isTilingProcessing.value = false;
-        }
-
+      (imageInfo, syncCall) {
+        // Release this bookkeeping listener's clone, preserving cache/render handles.
+        imageInfo.dispose();
         if (!_isCurrentLoad(loadGeneration)) return;
 
         final prevIsLoaded = isLoaded.value;
+        isDisplayReady.value = true;
+        isDetailReady.value = true;
         isLoaded.value = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!_isCurrentLoad(loadGeneration)) return;
@@ -386,23 +461,15 @@ class ImageViewerState extends State<ImageViewer> {
   }
 
   void noScaleListener() {
+    _loadRetries = 0;
     stopLoading(reason: .reset);
     initViewer(false);
   }
 
   void toggleQualityListener() {
+    _loadRetries = 0;
     stopLoading(reason: .reset);
     initViewer(false);
-  }
-
-  void calcWidthLimit(double maxWidth) {
-    if (!mounted) {
-      return;
-    }
-
-    widthLimit = SX.disableImageScaling.value
-        ? null
-        : (maxWidth * MediaQuery.devicePixelRatioOf(NavigationHandler.instance.navContext) * 2).round();
   }
 
   Future<ImageProvider?> getImageProvider({
@@ -411,18 +478,21 @@ class ImageViewerState extends State<ImageViewer> {
     OfflineMediaResolution? savedFallback,
     bool networkOnly = false,
   }) async {
-    if (!_isCurrentLoad(loadGeneration)) return null;
-    imageFolder = useFullImage ? 'media' : 'samples';
+    final url = useFullImage ? widget.booruItem.fileURL : widget.booruItem.sampleURL;
+    imageFolder = url == widget.booruItem.thumbnailURL
+        ? 'thumbnails'
+        : (url == widget.booruItem.sampleURL && !useFullImage)
+        ? 'samples'
+        : 'media';
     cancelToken?.cancel();
     final token = CancelToken();
     cancelToken = token;
-    final String url = useFullImage ? widget.booruItem.fileURL : widget.booruItem.sampleURL;
-    final bool isAvif = Uri.tryParse(url)?.path.toLowerCase().endsWith('.avif') == true;
+    final headers = await Tools.getFileCustomHeaders(widget.booru, item: widget.booruItem, checkForReferer: true);
+    if (!_isCurrentLoad(loadGeneration)) return null;
     localImageFile = savedFallback?.file;
     _localIsDerived = savedFallback?.copiedFromSaf == true;
     _usingSavedFile = savedFallback != null;
     didTryLocalSavedFallback = savedFallback != null || networkOnly;
-
     if (savedFallback == null && !networkOnly) {
       final cachedPath = await ImageWriter().getCachePath(
         Uri.base.resolve(url).toString(),
@@ -446,64 +516,178 @@ class ImageViewerState extends State<ImageViewer> {
         _localIsDerived = resolution.copiedFromSaf;
       }
     }
-
-    ImageProvider provider;
-    final localFile = localImageFile;
-    if (localFile != null) {
+    final DownloadedImageFile download;
+    if (localImageFile case final file?) {
+      download = DownloadedImageFile(file);
       isFromCache.value = true;
-      provider = await localImageProvider(localFile);
-      if (!_isCurrentLoad(loadGeneration)) return null;
     } else {
-      isFromCache.value = false;
-      final headers = await Tools.getFileCustomHeaders(widget.booru, item: widget.booruItem, checkForReferer: true);
+      final downloadTrace = kReleaseMode ? null : (developer.TimelineTask()..start('Image viewer download'));
+      download = await NetworkImageLoader.downloadFile(
+        ImageDownloadRequest(
+          url: url,
+          cacheFolder: imageFolder,
+          fileNameExtras: widget.booruItem.fileNameExtras,
+          withCache: SX.mediaCache.valueForBooru(widget.booru.name) && !networkOnly,
+          headers: headers,
+          withCaptchaCheck: withCaptchaCheck,
+        ),
+        cancelToken: token,
+        isForeground: () => mounted && isViewed.value,
+        onCacheDetected: (detected) {
+          if (_isCurrentLoad(loadGeneration)) isFromCache.value = detected;
+        },
+        onReceiveProgress: (count, total) {
+          if (_isCurrentLoad(loadGeneration)) onBytesAdded(count, total);
+        },
+      ).whenComplete(() => downloadTrace?.finish());
+      localImageFile = download.file;
+      _localIsDerived = !download.ownsFile;
+    }
+    if (!_isCurrentLoad(loadGeneration)) {
+      await download.dispose();
+      return null;
+    }
+    _download = download;
+    // Disposal can race with asynchronous metadata reads or the region copy.
+    final preparationSource = download.retain();
+    final preparationTrace = kReleaseMode ? null : (developer.TimelineTask()..start('Image viewer preparation'));
+    try {
+      final reader = await download.file.open();
+      final bool isAvif;
+      try {
+        isAvif = isAvifFile(await reader.read(16)) != AvifFileType.unknown;
+      } finally {
+        await reader.close();
+      }
+      final sourceIsAnimated = isAvif
+          ? (await ImageMetadata.inspectAvif(download.file, token)).isAnimated
+          : (await ImageMetadata.inspectAnimation(download.file, token)).animated;
       if (!_isCurrentLoad(loadGeneration)) return null;
-      provider = isAvif
+      _sourceIsAnimated = sourceIsAnimated;
+      if (_hasAnimation && !widget.isViewed) {
+        // Payload metadata, rather than booru tags, decides whether a neighbor
+        // would retain an animation codec or accidentally become static tiles.
+        disposables();
+        isLoaded.value = false;
+        return null;
+      }
+      Size? sourceSize;
+      final canTryRegions = Platform.isAndroid && !_hasAnimation && !isAvif;
+      if (canTryRegions) {
+        sourceSize = await ImageMemoryManager.instance.runDecode(
+          ImageMemoryManager.maxEncodedBytes + 16 * 1024 * 1024,
+          () => ServiceHandler.getImageRegionInfo(download.file.path),
+          cancelToken: token,
+          isForeground: () => mounted && isViewed.value,
+        );
+      }
+      if (!_isCurrentLoad(loadGeneration)) return null;
+      final regionSize = sourceSize;
+      sourceSize ??= await NetworkImageLoader.inspectImageSize(
+        download.file,
+        cancelToken: token,
+        isAvif: isAvif,
+        isForeground: () => mounted && isViewed.value,
+      );
+      preparationTrace?.instant('metadataReady');
+      if (!_isCurrentLoad(loadGeneration)) return null;
+      final heightLimit = SX.preloadHeight.valueForBooru(widget.booru.name);
+      if (heightLimit != 0 && sourceSize.height > heightLimit && !blockPreloadState.isIgnore) {
+        stopLoading(
+          reason: .tooBig,
+          details:
+              '${context.loc.media.loading.fileSize(size: '${sourceSize.width.toInt()}x${sourceSize.height.toInt()}')}\n'
+              '${context.loc.media.loading.sizeLimit(limit: '...x${heightLimit.toFormattedString()}')}',
+        );
+        return null;
+      }
+      if (regionSize != null &&
+          (regionSize.longestSide >= 4096 || regionSize.width * regionSize.height > 4 * 1000 * 1000)) {
+        // Owned temporary downloads already have the required lifetime. Cache
+        // files still need a private copy to survive cache maintenance.
+        Directory? directory;
+        DownloadedImageFile? retained;
+        try {
+          if (download.ownsFile) {
+            retained = preparationSource.retain();
+          } else {
+            directory = await Directory.systemTemp.createTemp('image-regions-');
+            final copyTrace = kReleaseMode ? null : (developer.TimelineTask()..start('Image region source copy'));
+            final file = await download.file
+                .copy('${directory.path}${Platform.pathSeparator}image')
+                .whenComplete(() => copyTrace?.finish());
+            retained = DownloadedImageFile(file, ownsFile: true, temporaryDirectory: directory);
+          }
+          if (!_isCurrentLoad(loadGeneration)) {
+            await retained.dispose();
+            return null;
+          }
+          _regionSource = RegionImageSource(retained, regionSize);
+        } catch (_) {
+          if (retained != null) {
+            await retained.dispose();
+          } else if (directory != null) {
+            try {
+              await File('${directory.path}${Platform.pathSeparator}image').delete();
+            } on FileSystemException catch (_) {}
+            try {
+              await directory.delete();
+            } on FileSystemException catch (_) {}
+          }
+          rethrow;
+        }
+        _download = null;
+        await download.dispose();
+        if (!_isCurrentLoad(loadGeneration)) return null;
+        tiledSize = regionSize;
+        isTiled = true;
+        return null;
+      }
+
+      // A viewer opens a fresh playback session, even when a thumbnail has
+      // already played a finite animation to its final frame.
+      final playbackKey = Object();
+      final ImageProvider provider = isAvif
           ? CustomNetworkAvifImage(
               url,
+              playbackKey: playbackKey,
+              preserveSourceResolution: true,
+              isForeground: () => mounted && isViewed.value,
+              localFilePath: download.file.path,
+              preparedSource: download,
               cancelToken: token,
               headers: headers,
-              withCache: SX.mediaCache.value && !networkOnly,
+              withCache: SX.mediaCache.valueForBooru(widget.booru.name),
               cacheFolder: imageFolder,
               fileNameExtras: widget.booruItem.fileNameExtras,
-              onCacheDetected: (value) {
-                if (_isCurrentLoad(loadGeneration)) isFromCache.value = value;
-              },
-              withCaptchaCheck: withCaptchaCheck,
             )
           : CustomNetworkImage(
               url,
+              playbackKey: playbackKey,
+              preserveSourceResolution: true,
+              isForeground: () => mounted && isViewed.value,
+              localFilePath: download.file.path,
+              preparedSource: download,
               cancelToken: token,
               headers: headers,
-              withCache: SX.mediaCache.value && !networkOnly,
+              withCache: SX.mediaCache.valueForBooru(widget.booru.name),
               cacheFolder: imageFolder,
               fileNameExtras: widget.booruItem.fileNameExtras,
-              onCacheDetected: (value) {
-                if (_isCurrentLoad(loadGeneration)) isFromCache.value = value;
-              },
-              withCaptchaCheck: withCaptchaCheck,
             );
+      return provider;
+    } finally {
+      preparationTrace?.finish();
+      await preparationSource.dispose();
     }
-
-    // scale image only if it's not an animation, scaling is allowed, not on desktop and item is not marked as noScale
-    if (!widget.booruItem.mediaType.value.isAnimation &&
-        !SX.disableImageScaling.value &&
-        !PlatformExt.isDesktop &&
-        !widget.booruItem.isNoScale.value &&
-        (widthLimit ?? 0) > 0) {
-      // resizeimage if resolution is too high (in attempt to fix crashes if multiple very HQ images are loaded), only check by width, otherwise looooooong/thin images could look bad
-      provider = ResizeImage(
-        provider,
-        width: widthLimit,
-        policy: ResizeImagePolicy.fit,
-        allowUpscaling: false,
-      );
-    }
-    return provider;
   }
 
   void _handleProviderError(Object error, int loadGeneration) {
     if (!_isCurrentLoad(loadGeneration) || _handlingErrorGeneration == loadGeneration) return;
     if (error is DioException && CancelToken.isCancel(error)) return;
+    if (error is ImageMemoryException) {
+      onError(error);
+      return;
+    }
     _handlingErrorGeneration = loadGeneration;
     unawaited(() async {
       try {
@@ -520,7 +704,7 @@ class ImageViewerState extends State<ImageViewer> {
           // A missing, unreadable, or corrupt local file must not prevent a network retry.
           disposables();
           isLoaded.value = false;
-          await initViewer(_ignoreFilterForCurrentLoad, networkOnly: true);
+          await initViewer(_ignoreTagsForLoad, networkOnly: true);
           return;
         }
         if (await tryLocalSavedFallback(loadGeneration)) return;
@@ -544,7 +728,7 @@ class ImageViewerState extends State<ImageViewer> {
     if (!_isCurrentLoad(loadGeneration) || !resolution.isAvailable) return false;
     disposables();
     isLoaded.value = false;
-    await initViewer(_ignoreFilterForCurrentLoad, savedFallback: resolution);
+    await initViewer(_ignoreTagsForLoad, savedFallback: resolution);
     return true;
   }
 
@@ -563,6 +747,7 @@ class ImageViewerState extends State<ImageViewer> {
     isLoaded.value = false;
     isFromCache.value = false;
     isStopped.value = true;
+    _updateViewerFocus();
     stopReason.value = reason;
     stopDetails.value = '${title != null ? '$title\n' : ''}${details ?? ''}';
 
@@ -570,8 +755,9 @@ class ImageViewerState extends State<ImageViewer> {
       blockPreloadState = .tooBig;
     }
 
+    final generation = _loadGeneration;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!_isCurrentLoad(generation)) return;
 
       viewerHandler.setStopped(widget.key, true);
       viewerHandler.setLoaded(widget.key, false);
@@ -580,6 +766,9 @@ class ImageViewerState extends State<ImageViewer> {
 
   @override
   void dispose() {
+    ImageMemoryManager.instance.setImageViewerActive(this, false);
+    widget.booruItem.isNoScale.removeListener(noScaleListener);
+    widget.booruItem.toggleQuality.removeListener(toggleQualityListener);
     disposables();
 
     viewStateSubscription?.cancel();
@@ -594,6 +783,8 @@ class ImageViewerState extends State<ImageViewer> {
 
   void disposables() {
     _loadGeneration++;
+    isDisplayReady.value = false;
+    isDetailReady.value = false;
     _removeImageStreamListener();
 
     if (!(cancelToken?.isCancelled ?? true)) {
@@ -606,27 +797,21 @@ class ImageViewerState extends State<ImageViewer> {
     }
     loadItemCancelToken = null;
 
-    tiledProviders = null;
+    _regionSource?.dispose();
+    _regionSource = null;
+    final download = _download;
+    _download = null;
+    if (download != null) unawaited(download.dispose());
     isTiled = false;
     isTilingProcessing.value = null;
     tiledSize = null;
 
-    if (imageFolder == 'media' || (!widget.booruItem.mediaType.value.isAnimation || !SX.gifsAsThumbnails.value)) {
-      mainProvider.value?.evict();
-      // mainProvider.value?.evict().then((bool success) {
-      //   if(success) {
-      //     print('main image evicted');
-      //   } else {
-      //     print('main image eviction failed');
-      //   }
-      // });
-    }
+    // Viewer providers have their own playback identity; no thumbnail relies
+    // on keeping a completed viewer animation in the cache.
+    unawaited(mainProvider.value?.evict());
 
     mainProvider.value = null;
     localImageFile = null;
-
-    widget.booruItem.isNoScale.removeListener(noScaleListener);
-    widget.booruItem.toggleQuality.removeListener(toggleQualityListener);
   }
 
   bool _isCurrentLoad(int loadGeneration) {
@@ -648,6 +833,8 @@ class ImageViewerState extends State<ImageViewer> {
     startedAt.dispose();
     isFirstBuild.dispose();
     isLoaded.dispose();
+    isDisplayReady.dispose();
+    isDetailReady.dispose();
     isViewed.dispose();
     isFromCache.dispose();
     isZoomed.dispose();
@@ -703,6 +890,10 @@ class ImageViewerState extends State<ImageViewer> {
   }
 
   Future<void> onManualRestart() async {
+    if (stopReason.value == ViewerStopReason.memoryLimit) return;
+    _ignoreTagsForLoad = true;
+    widget.onReveal?.call();
+    _loadRetries = 0;
     final int loadGeneration = ++_loadGeneration;
     if (blockPreloadState.isTooBig) {
       blockPreloadState = .ignore;
@@ -722,202 +913,51 @@ class ImageViewerState extends State<ImageViewer> {
       _ => false,
     };
     bool shouldDoCaptchaCheck = false;
-    if (shouldUpdate) {
-      loadItemCancelToken = CancelToken();
-      final CancelToken itemLoadCancelToken = loadItemCancelToken!;
-      final updateRes = await tryToLoadAndUpdateItem(
-        widget.booruItem,
-        itemLoadCancelToken,
-      );
-
-      if (!_isCurrentLoad(loadGeneration) ||
-          itemLoadCancelToken.isCancelled ||
-          !identical(loadItemCancelToken, itemLoadCancelToken)) {
-        return;
-      }
-
-      shouldDoCaptchaCheck = updateRes != true;
-
-      if (updateRes != true && widget.booru.baseURL?.isNotEmpty == true) {
-        await DioNetwork.get(
-          widget.booru.baseURL ?? '',
-          headers: await Tools.getFileCustomHeaders(
-            widget.booru,
-            item: widget.booruItem,
-            checkForReferer: true,
-          ),
-          customInterceptor: (dio) => DioNetwork.captchaInterceptor(
-            dio,
-            customUserAgent: Tools.appUserAgent,
-          ),
+    try {
+      if (shouldUpdate) {
+        loadItemCancelToken = CancelToken();
+        final CancelToken itemLoadCancelToken = loadItemCancelToken!;
+        final updateRes = await tryToLoadAndUpdateItem(
+          widget.booruItem,
+          itemLoadCancelToken,
         );
-        if (!_isCurrentLoad(loadGeneration)) return;
-      }
-    }
 
-    await initViewer(
-      true,
-      withCaptchaCheck: shouldDoCaptchaCheck,
-    );
+        if (!_isCurrentLoad(loadGeneration) ||
+            itemLoadCancelToken.isCancelled ||
+            !identical(loadItemCancelToken, itemLoadCancelToken)) {
+          return;
+        }
+
+        shouldDoCaptchaCheck = updateRes != true;
+
+        if (updateRes != true && widget.booru.baseURL?.isNotEmpty == true) {
+          await DioNetwork.get(
+            widget.booru.baseURL ?? '',
+            headers: await Tools.getFileCustomHeaders(
+              widget.booru,
+              item: widget.booruItem,
+              checkForReferer: true,
+            ),
+            customInterceptor: (dio) => DioNetwork.captchaInterceptor(
+              dio,
+              customUserAgent: Tools.appUserAgent,
+            ),
+          );
+          if (!_isCurrentLoad(loadGeneration)) return;
+        }
+      }
+
+      await initViewer(
+        true,
+        withCaptchaCheck: shouldDoCaptchaCheck,
+      );
+    } catch (error) {
+      if (_isCurrentLoad(loadGeneration)) _handleProviderError(error, loadGeneration);
+    }
   }
 
   Future<void> onManualStop() async {
     stopLoading(reason: .user);
-  }
-
-  Future<void> checkAndPrepareTiles({
-    required int loadGeneration,
-  }) async {
-    if (isTiled || isTilingProcessing.value == true) return;
-
-    try {
-      final String url = useFullImage ? widget.booruItem.fileURL : widget.booruItem.sampleURL;
-
-      final String cachePath =
-          localImageFile?.path ??
-          await ImageWriter().getCachePathString(
-            Uri.base.resolve(url).toString(),
-            imageFolder,
-            clearName: imageFolder != 'favicons',
-            fileNameExtras: widget.booruItem.fileNameExtras,
-          );
-
-      final File file = File(cachePath);
-      if (!await file.exists()) {
-        if (_isCurrentLoad(loadGeneration)) isTilingProcessing.value = false;
-        return;
-      }
-      if (!_isCurrentLoad(loadGeneration)) return;
-
-      final buffer = await ImmutableBuffer.fromFilePath(cachePath);
-      final descriptor = await ImageDescriptor.encoded(buffer);
-      if (!_isCurrentLoad(loadGeneration)) {
-        descriptor.dispose();
-        buffer.dispose();
-        return;
-      }
-
-      final size = Size(descriptor.width.toDouble(), descriptor.height.toDouble());
-
-      final heightLimit = SX.preloadHeight.value;
-      // block loading if image is too long
-      if (heightLimit != 0 && descriptor.height >= heightLimit && !blockPreloadState.isIgnore) {
-        stopLoading(
-          reason: .tooBig,
-          details:
-              '${context.loc.media.loading.fileSize(size: '${size.width.toInt().toFormattedString()}x${size.height.toInt().toFormattedString()}')}\n'
-              '${context.loc.media.loading.sizeLimit(limit: '...x${heightLimit.toFormattedString()}')}',
-        );
-
-        isTilingProcessing.value = false;
-
-        descriptor.dispose();
-        buffer.dispose();
-        return;
-      }
-
-      // skip tiling if image height is absurd, will use default decoding instead (will be very low quality, but it's better than OOM crash)
-      if (descriptor.height > kMaxPixelsHeight) {
-        isTilingProcessing.value = false;
-
-        descriptor.dispose();
-        buffer.dispose();
-        return;
-      }
-
-      if (descriptor.height >= kMaxTextureHeight) {
-        await mainProvider.value?.evict();
-        if (!_isCurrentLoad(loadGeneration)) {
-          descriptor.dispose();
-          buffer.dispose();
-          return;
-        }
-
-        isTilingProcessing.value = true;
-
-        // Try native region decoding on Android (uses BitmapRegionDecoder)
-        List<Uint8List>? nativeSlices;
-        if (!PlatformExt.isDesktop) {
-          nativeSlices = await ServiceHandler.sliceImage(cachePath, kMaxTextureHeight);
-        }
-
-        // Fallback: Dart isolate with JPEG encoding (desktop or if native fails)
-        final List<Uint8List> slices =
-            nativeSlices ??
-            await compute(
-              sliceImageOnIsolate,
-              {
-                'path': cachePath,
-                'sliceHeight': kMaxTextureHeight,
-              },
-            );
-
-        if (_isCurrentLoad(loadGeneration)) {
-          // Adaptive tile width: cap total GPU texture memory at kMaxTileMemoryBudget
-          // Each tile decoded as: tileWidth × kMaxTextureHeight × 4 bytes (RGBA)
-          final int adaptiveWidth = kMaxTileMemoryBudget ~/ (kMaxTextureHeight * 4 * slices.length);
-          final int tileWidth = adaptiveWidth.clamp(256, widthLimit ?? 4096);
-
-          tiledProviders = slices.map((s) {
-            return ResizeImage(
-              MemoryImage(s),
-              width: tileWidth,
-              policy: ResizeImagePolicy.fit,
-              allowUpscaling: false,
-            ) as ImageProvider;
-          }).toList();
-          final double maxWidth = min(size.width, tileWidth.toDouble());
-          tiledSize = Size(maxWidth, maxWidth / size.aspectRatio);
-          isTiled = true;
-          isTilingProcessing.value = false;
-        }
-      } else {
-        if (!_isCurrentLoad(loadGeneration)) {
-          descriptor.dispose();
-          buffer.dispose();
-          return;
-        }
-        isTiled = false;
-        isTilingProcessing.value = false;
-      }
-      descriptor.dispose();
-      buffer.dispose();
-    } catch (e, s) {
-      Logger.Inst().log(
-        e,
-        'ImageViewer',
-        'checkAndPrepareTiles',
-        LogTypes.exception,
-        s: s,
-      );
-      if (_isCurrentLoad(loadGeneration)) isTilingProcessing.value = false;
-    }
-  }
-
-  static Future<List<Uint8List>> sliceImageOnIsolate(Map<String, dynamic> params) async {
-    final String path = params['path'];
-    final int sliceHeight = params['sliceHeight'];
-
-    final File file = File(path);
-    final bytes = await file.readAsBytes();
-
-    final img.Image? original = img.decodeImage(bytes);
-    if (original == null) throw Exception('Failed to decode image for slicing');
-
-    final List<Uint8List> chunks = [];
-    int y = 0;
-
-    while (y < original.height) {
-      final int remaining = original.height - y;
-      final int currentHeight = remaining < sliceHeight ? remaining : sliceHeight;
-
-      final img.Image slice = img.copyCrop(original, x: 0, y: y, width: original.width, height: currentHeight);
-
-      chunks.add(Uint8List.fromList(img.encodeJpg(slice, quality: 90)));
-      y += currentHeight;
-    }
-
-    return chunks;
   }
 
   @override
@@ -931,11 +971,11 @@ class ImageViewerState extends State<ImageViewer> {
           fit: StackFit.expand,
           children: [
             ListenableBuilder(
-              listenable: Listenable.merge([isTilingProcessing, isLoaded, isViewed]),
+              listenable: Listenable.merge([isTilingProcessing, isDisplayReady, isViewed]),
               builder: (context, child) {
                 return AnimatedOpacity(
                   duration: const Duration(milliseconds: 300),
-                  opacity: (isLoaded.value && isProviderLoaded) ? 0 : 1,
+                  opacity: (isDisplayReady.value && isProviderLoaded) ? 0 : 1,
                   child: Hero(
                     tag: 'imageHero${isViewed.value ? '' : '-ignore-'}${widget.booruItem.hashCode}',
                     child: child!,
@@ -946,10 +986,10 @@ class ImageViewerState extends State<ImageViewer> {
                 item: widget.booruItem,
                 booru: widget.booru,
                 filterEvaluation: widget.filterEvaluation,
-                isStandalone: false,
-                useHero: false,
                 allowOfflineLocalMedia: widget.allowOfflineLocalMedia,
                 allowOfflineThumbnailGeneration: widget.allowOfflineThumbnailGeneration,
+                isStandalone: false,
+                useHero: false,
               ),
             ),
             //
@@ -981,16 +1021,16 @@ class ImageViewerState extends State<ImageViewer> {
                     isStopped: isStopped.value,
                     stopReason: stopReason.value,
                     stopDetails: stopDetails.value,
-                    filterEvaluation: widget.filterEvaluation,
                     isViewed: isViewed.value,
                     total: total,
                     received: received,
                     startedAt: startedAt,
-                    onRestart: onManualRestart,
-                    onStop: onManualStop,
+                    onRestart: stopReason.value == ViewerStopReason.memoryLimit ? null : onManualRestart,
+                    filterEvaluation: widget.filterEvaluation,
                     onFilterDetailsTap: widget.filterEvaluation.matches.isEmpty
                         ? null
                         : () => showTagFilterDetailsSheet(context, widget.filterEvaluation),
+                    onStop: onManualStop,
                   );
                 },
               ),
@@ -1006,30 +1046,44 @@ class ImageViewerState extends State<ImageViewer> {
                 }
               },
               child: ImageFiltered(
-                enabled: settingsHandler.blurImages,
+                enabled: widget.filterEvaluation.isBlurred && !_ignoreTagsForLoad,
                 imageFilter: ImageFilter.blur(
                   sigmaX: 40,
                   sigmaY: 40,
                   tileMode: TileMode.decal,
                 ),
                 child: ListenableBuilder(
-                  listenable: Listenable.merge([isLoaded, isTilingProcessing, mainProvider]),
+                  listenable: Listenable.merge([
+                    isDisplayReady,
+                    isTilingProcessing,
+                    mainProvider,
+                    isViewed,
+                  ]),
                   builder: (context, _) {
                     final loadGeneration = _loadGeneration;
                     return AnimatedOpacity(
-                      opacity: (SX.shitDevice.value || isLoaded.value) ? 1 : 0,
+                      opacity: (SX.shitDevice.valueForBooru(widget.booru.name) || isDisplayReady.value) ? 1 : 0,
                       duration: Duration(
-                        milliseconds: (SX.appMode.value.isDesktop || isViewed.value) ? 50 : 300,
+                        milliseconds: (SX.appMode.valueForBooru(widget.booru.name).isDesktop || isViewed.value)
+                            ? 50
+                            : 300,
                       ),
                       child: AnimatedSwitcher(
-                        duration: widget.filterEvaluation.isBlurred && !_ignoreFilterForCurrentLoad
-                            ? Duration.zero
-                            : Duration(
-                                milliseconds: (SX.appMode.value.isDesktop || isViewed.value) ? 50 : 300,
-                              ),
+                        // Release replaced image/tile owners before a retry
+                        // needs their memory, rather than retaining a fade.
+                        key: ValueKey((
+                          _hasAnimation ? isViewed.value : null,
+                          mainProvider.value,
+                          _regionSource,
+                        )),
+                        duration: Duration(
+                          milliseconds: (SX.appMode.valueForBooru(widget.booru.name).isDesktop || isViewed.value)
+                              ? 50
+                              : 300,
+                        ),
                         child: !isProviderLoaded
                             ? const SizedBox.shrink()
-                            : ((isTiled && tiledProviders != null)
+                            : ((isTiled && _regionSource != null)
                                   ? PhotoView.customChild(
                                       childSize: tiledSize,
                                       backgroundDecoration: const BoxDecoration(color: Colors.transparent),
@@ -1037,21 +1091,32 @@ class ImageViewerState extends State<ImageViewer> {
                                       minScale: PhotoViewComputedScale.contained,
                                       maxScale: PhotoViewComputedScale.covered * 8,
                                       initialScale: PhotoViewComputedScale.contained,
-                                      enableRotation: SX.allowRotation.value,
+                                      enableRotation: SX.allowRotation.valueForBooru(widget.booru.name),
                                       basePosition: Alignment.center,
                                       controller: viewController,
                                       scaleStateController: scaleController,
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: tiledProviders!
-                                            .map(
-                                              (provider) => Image(
-                                                image: provider,
-                                                gaplessPlayback: true,
-                                                fit: BoxFit.fitWidth,
-                                              ),
-                                            )
-                                            .toList(),
+                                      child: RegionImageView(
+                                        key: ObjectKey(_regionSource),
+                                        source: _regionSource!,
+                                        controller: viewController,
+                                        viewport: MediaQuery.sizeOf(context),
+                                        isViewed: isViewed.value,
+                                        onPreviewReady: () {
+                                          if (_isCurrentLoad(loadGeneration)) isDisplayReady.value = true;
+                                        },
+                                        onCoverageChanged: (complete) {
+                                          if (_isCurrentLoad(loadGeneration)) isDetailReady.value = complete;
+                                        },
+                                        onReady: () {
+                                          if (!_isCurrentLoad(loadGeneration) || _regionSource == null) return;
+                                          isLoaded.value = true;
+                                          viewerHandler.setLoaded(widget.key, true);
+                                        },
+                                        onError: (error) {
+                                          if (_isCurrentLoad(loadGeneration)) {
+                                            _handleProviderError(error, loadGeneration);
+                                          }
+                                        },
                                       ),
                                     )
                                   : PhotoView(
@@ -1077,7 +1142,7 @@ class ImageViewerState extends State<ImageViewer> {
                                       minScale: PhotoViewComputedScale.contained,
                                       maxScale: PhotoViewComputedScale.covered * 8,
                                       initialScale: PhotoViewComputedScale.contained,
-                                      enableRotation: SX.allowRotation.value,
+                                      enableRotation: SX.allowRotation.valueForBooru(widget.booru.name),
                                       basePosition: Alignment.center,
                                       controller: viewController,
                                       scaleStateController: scaleController,
@@ -1087,6 +1152,39 @@ class ImageViewerState extends State<ImageViewer> {
                   },
                 ),
               ),
+            ),
+            ListenableBuilder(
+              listenable: Listenable.merge([isDisplayReady, isDetailReady, isStopped, isViewed]),
+              builder: (context, _) {
+                if (!isTiled || !isViewed.value || !isDisplayReady.value || isDetailReady.value || isStopped.value) {
+                  return const SizedBox.shrink();
+                }
+                // Keep existing pixels and gestures available while detail is
+                // refined. A preview must never look like completed HD loading.
+                return IgnorePointer(
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: SafeArea(
+                      minimum: const EdgeInsets.all(16),
+                      child: Material(
+                        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                              const SizedBox(width: 8),
+                              Flexible(child: Text(context.loc.media.loading.rendering)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),

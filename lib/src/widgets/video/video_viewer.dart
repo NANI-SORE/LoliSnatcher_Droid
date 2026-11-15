@@ -47,6 +47,8 @@ class VideoViewer extends StatefulWidget {
     this.enableFullscreen = true,
     this.allowOfflineLocalMedia = false,
     this.allowOfflineThumbnailGeneration = false,
+    this.isRevealed,
+    this.onReveal,
     super.key,
   });
 
@@ -57,6 +59,10 @@ class VideoViewer extends StatefulWidget {
   final TagFilterEvaluation filterEvaluation;
   final bool allowOfflineLocalMedia;
   final bool allowOfflineThumbnailGeneration;
+
+  /// Gallery-owned reveal choice, retained even when this viewer is recreated.
+  final bool Function()? isRevealed;
+  final VoidCallback? onReveal;
 
   @override
   State<VideoViewer> createState() => VideoViewerState();
@@ -491,13 +497,10 @@ class VideoViewerState extends State<VideoViewer> {
 
   Future<void> initVideo(bool ignoreTagsCheck, {bool networkOnly = false}) async {
     final int loadGeneration = ++_loadGeneration;
-    if (_ignoreFilterForCurrentLoad != ignoreTagsCheck) {
-      setState(() {
-        _ignoreFilterForCurrentLoad = ignoreTagsCheck;
-      });
-    }
+    _ignoreFilterForCurrentLoad =
+        ignoreTagsCheck || _ignoreFilterForCurrentLoad || (widget.isRevealed?.call() ?? false);
     _networkOnlyCurrentLoad = networkOnly;
-    if (widget.filterEvaluation.isBlurred && !ignoreTagsCheck) {
+    if (widget.filterEvaluation.isBlurred && !_ignoreFilterForCurrentLoad) {
       _stopForFilter(widget.filterEvaluation);
     } else {
       try {
@@ -1150,6 +1153,8 @@ class VideoViewerState extends State<VideoViewer> {
 
   Future<void> onManualRestart() async {
     final loadGeneration = ++_loadGeneration;
+    _ignoreFilterForCurrentLoad = true;
+    widget.onReveal?.call();
     if (blockPreloadState.isTooBig) {
       blockPreloadState = .ignore;
     }
