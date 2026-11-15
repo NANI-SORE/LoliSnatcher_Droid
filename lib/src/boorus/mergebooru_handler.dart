@@ -13,6 +13,7 @@ import 'package:lolisnatcher/src/data/response_error.dart';
 import 'package:lolisnatcher/src/data/tag_suggestion.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
+import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 
@@ -105,29 +106,58 @@ class MergebooruHandler extends BooruHandler {
     if (pageNumCustom != null) {
       pageNum = pageNumCustom;
     }
+    if (prevTags != tags) {
+      fetched.value = [];
+      fetchedPageNumbers.clear();
+      resetFilterState();
+      fetchedMap.clear();
+      _itemSources.clear();
+      locked = false;
+      for (final handler in booruHandlers) {
+        handler.fetched.value = [];
+        handler.fetchedPageNumbers.clear();
+        handler.resetFilterState();
+        handler.locked = false;
+      }
+    }
+    errorString = '';
     final Map<int, ({Booru booru, List<BooruItem> items})> tmpFetchedMap = {};
     int fetchedMax = 0;
     for (int i = 0; i < booruHandlers.length; i++) {
       final String currentTags = cleanBooruIndexesFromTags(tags, i);
       Logger.Inst().log('TAGS FOR #$i are: $currentTags', 'MergeBooruHandler', 'Search', LogTypes.booruHandlerInfo);
-      booruHandlers[i].pageNum = pageNum + 1 + booruHandlerPageNums[i];
-      final List<BooruItem> tmpFetched = (await booruHandlers[i].search(currentTags, null)) ?? [];
+      final handler = booruHandlers[i];
+      final beforeLength = handler.fetched.length;
+      final beforeTags = handler.prevTags;
+      handler.pageNum = pageNum + 1 + booruHandlerPageNums[i];
+      handler.errorString = '';
+      final List<BooruItem> tmpFetched =
+          (await handler.search(currentTags, null, withCaptchaCheck: withCaptchaCheck)) ?? [];
+      DioNetwork.throwIfCancelled();
+      if (handler.errorString.isNotEmpty) {
+        errorString = [
+          errorString,
+          '${handler.booru.name}: ${handler.errorString}',
+        ].where((e) => e.isNotEmpty).join('\n');
+      }
+      final pageStart = beforeTags != handler.prevTags || tmpFetched.length < beforeLength ? 0 : beforeLength;
+      final currentPageItems = tmpFetched.skip(pageStart).toList();
       tmpFetchedMap.addEntries([
         MapEntry(
           i,
           (
             booru: booruHandlers[i].booru,
-            items: tmpFetched,
+            items: currentPageItems,
           ),
         ),
       ]);
-      fetchedMax += tmpFetched.length;
+      if (currentPageItems.length > fetchedMax) fetchedMax = currentPageItems.length;
     }
     int innerFetchedOffset = 0;
     final List<BooruItem> newItems = [];
     do {
       for (int i = 0; i < tmpFetchedMap.entries.length; i++) {
-        final innerFetchedIndex = (booruHandlers[i].limit * pageNum) + innerFetchedOffset;
+        final innerFetchedIndex = innerFetchedOffset;
         final items = tmpFetchedMap[i]!.items;
 
         final booru = tmpFetchedMap[i]!.booru;
@@ -206,10 +236,11 @@ class MergebooruHandler extends BooruHandler {
         }
       }
       innerFetchedOffset++;
-    } while ((fetched.length < fetchedMax) && innerFetchedOffset < fetchedMax);
+    } while (innerFetchedOffset < fetchedMax);
 
     await afterParseResponse(newItems);
 
+    prevTags = tags;
     locked = shouldLock();
     return fetched;
   }
@@ -237,6 +268,9 @@ class MergebooruHandler extends BooruHandler {
   }
 
   bool hashInFetched(List<BooruItem> fetched, String? hash, String fileURL) {
+    if (hash == null || hash.isEmpty) {
+      return fileURL.isNotEmpty && fetched.any((item) => item.fileURL == fileURL);
+    }
     for (int i = 0; i < fetched.length; i++) {
       if (fetched[i].md5String == hash) {
         Logger.Inst().log(

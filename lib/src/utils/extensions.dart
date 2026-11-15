@@ -172,6 +172,16 @@ extension ColorExts on Color {
   }
 }
 
+extension TextStyleExts on TextStyle {
+  TextStyle withColor(Color color) => copyWith(color: color);
+  TextStyle get bold => copyWith(fontWeight: FontWeight.bold);
+  TextStyle get italic => copyWith(fontStyle: FontStyle.italic);
+  TextStyle get underline => copyWith(decoration: TextDecoration.underline);
+  TextStyle get strikeThrough => copyWith(decoration: TextDecoration.lineThrough);
+  TextStyle get overline => copyWith(decoration: TextDecoration.overline);
+  TextStyle get boldItalic => copyWith(fontStyle: FontStyle.italic, fontWeight: FontWeight.bold);
+}
+
 extension DurationExts on Duration {
   String format({
     bool abbreviate = false,

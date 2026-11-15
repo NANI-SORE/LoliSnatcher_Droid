@@ -12,6 +12,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fpdart/fpdart.dart' show FpdartOnIterable;
 import 'package:get/get.dart' hide ContextExt, FirstWhereOrNullExt;
 import 'package:intl/intl.dart';
+import 'package:lolisnatcher/src/widgets/preview/page_indicator.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:uuid/uuid.dart';
@@ -1424,7 +1425,7 @@ Future<void> showTagDialog({
                             onTap: () {
                               settingsHandler.addTagToList('marked', tag);
                               searchHandler.filterCurrentFetched();
-                              handler.filterFetched();
+                              handler.refilterAll();
                               onUpdate();
                               Navigator.of(context).pop(true);
                             },
@@ -1436,7 +1437,7 @@ Future<void> showTagDialog({
                             onTap: () {
                               settingsHandler.addTagToList('hidden', tag);
                               searchHandler.filterCurrentFetched();
-                              handler.filterFetched();
+                              handler.refilterAll();
                               onUpdate();
                               Navigator.of(context).pop();
                             },
@@ -2349,16 +2350,28 @@ class _TagContentPreviewState extends State<TagContentPreview> {
                             child: ValueListenableBuilder(
                               valueListenable: viewedIndex,
                               builder: (context, viewedIndex, _) {
-                                return ThumbnailCardBuild(
-                                  index: index,
-                                  item: items[index],
-                                  handler: previewTab.booruHandler,
-                                  scrollController: scrollController,
-                                  isHighlighted: viewedIndex == index,
-                                  selectable: false,
-                                  onTap: onPreviewTap,
-                                  onDoubleTap: onPreviewDoubleTap,
-                                  onSecondaryTap: onPreviewSecondaryTap,
+                                final item = items[index];
+                                final isFirstOfPage = index == 0 || item.fetchedPage != items[index - 1].fetchedPage;
+                                return Stack(
+                                  children: [
+                                    ThumbnailCardBuild(
+                                      index: index,
+                                      item: item,
+                                      handler: previewTab.booruHandler,
+                                      scrollController: scrollController,
+                                      isHighlighted: viewedIndex == index,
+                                      selectable: false,
+                                      onTap: onPreviewTap,
+                                      onDoubleTap: onPreviewDoubleTap,
+                                      onSecondaryTap: onPreviewSecondaryTap,
+                                    ),
+                                    if (isFirstOfPage && item.fetchedPage > -1)
+                                      Positioned(
+                                        top: 2,
+                                        left: 2,
+                                        child: IgnorePointer(child: GridPageIndicator(item.fetchedPage, tab: previewTab)),
+                                      ),
+                                  ],
                                 );
                               },
                             ),

@@ -675,6 +675,7 @@ class _BooruEditState extends State<BooruEdit> with SingleTickerProviderStateMix
           await Future<void>.delayed(Duration.zero);
         }
       }
+      unawaited(searchHandler.backupTabs());
     } finally {
       // A backup during synchronization could contain partially renamed tabs.
       searchHandler.canBackup.value = couldBackup;

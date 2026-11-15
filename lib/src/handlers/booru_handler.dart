@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
-
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:get/get.dart' hide Response;
@@ -47,6 +45,18 @@ abstract class BooruHandler {
   RxList<BooruItem> fetched = RxList<BooruItem>([]);
   RxList<BooruItem> filteredFetched = RxList<BooruItem>([]);
 
+  /// Tracks which API page numbers have been loaded.
+  final Set<int> fetchedPageNumbers = {};
+
+  /// Watermark: index in `fetched` up to which we've already filtered.
+  int _filterWatermark = 0;
+
+  /// Seen file URLs for O(1) duplicate detection across incremental filter runs.
+  final Set<String> _seenFileURLs = {};
+
+  /// Server IDs are only unique within a source. Local collections also mix hosts.
+  final Set<(String?, String?, String, String)> _seenServerIds = {};
+
   /// Merged searches override this to retain each item's source settings.
   Booru sourceBooruFor(BooruItem item) => booru;
 
@@ -66,45 +76,69 @@ abstract class BooruHandler {
         !(filterSnatched && item.isSnatched.value == true);
   }
 
-  /// Filters the list of fetched items and stores them in filteredFetched
+  /// Filters newly fetched items incrementally (from watermark to end of fetched list).
+  /// Only processes items that haven't been filtered yet.
   ///
   /// Should always be called after fetched changed (so don't forget to add it in custom afterParseResponse or search methods)
-  /// (See gelbooru of favourites handlers for example)
+  /// (See gelbooru or favourites handlers for example)
   void filterFetched() {
-    final List<BooruItem> itemsBeforeFilter = [...filteredFetched];
-
     final filters = <Booru, bool Function(BooruItem)>{};
 
-    final List<BooruItem> filteredItems = [];
-    final Set<String> seenFileUrls = {};
-    final Set<String> seenServerIds = {};
+    final List<BooruItem> newFilteredItems = [];
 
-    for (final item in fetched) {
+    for (int i = _filterWatermark; i < fetched.length; i++) {
+      final item = fetched[i];
+
       final source = sourceBooruFor(item);
       final includeItem = filters.putIfAbsent(source, () => _itemFilterFor(source));
       if (!includeItem(item)) {
         continue;
       }
 
-      final String? serverId = item.serverId;
-      final bool duplicateFileUrl = item.fileURL.isNotEmpty && seenFileUrls.contains(item.fileURL);
-      final bool duplicateServerId = serverId != null && seenServerIds.contains(serverId);
-      if (duplicateFileUrl || duplicateServerId) {
+      if (_seenFileURLs.contains(item.fileURL)) {
         continue;
       }
+      final serverId = item.serverId;
+      final serverKey = serverId?.isNotEmpty == true
+          ? (source.type?.name, source.baseURL, Uri.tryParse(item.postURL)?.authority ?? '', serverId!)
+          : null;
+      if (serverKey != null && _seenServerIds.contains(serverKey)) {
+        continue;
+      }
+
       if (item.fileURL.isNotEmpty) {
-        seenFileUrls.add(item.fileURL);
+        _seenFileURLs.add(item.fileURL);
       }
-      if (serverId != null) {
-        seenServerIds.add(serverId);
+      if (serverKey != null) {
+        _seenServerIds.add(serverKey);
       }
 
-      filteredItems.add(item);
+      newFilteredItems.add(item);
     }
 
-    if (!listEquals(itemsBeforeFilter, filteredItems)) {
-      filteredFetched.value = filteredItems;
+    _filterWatermark = fetched.length;
+
+    if (newFilteredItems.isNotEmpty) {
+      filteredFetched.addAll(newFilteredItems);
     }
+  }
+
+  /// Full refilter: resets watermark and rebuilds filteredFetched from scratch.
+  /// Call when filter settings change (e.g., user toggles filterHated, marks/hides tags, toggles favourite).
+  void refilterAll() {
+    _filterWatermark = 0;
+    _seenFileURLs.clear();
+    _seenServerIds.clear();
+    filteredFetched.clear();
+    filterFetched();
+  }
+
+  /// Resets all filter state. Call when fetched list is cleared.
+  void resetFilterState() {
+    _filterWatermark = 0;
+    _seenFileURLs.clear();
+    _seenServerIds.clear();
+    filteredFetched.clear();
   }
 
   String get className => runtimeType.toString();
@@ -149,6 +183,8 @@ abstract class BooruHandler {
     // if tags are different than previous tags, reset fetched
     if (prevTags != tags) {
       fetched.value = [];
+      fetchedPageNumbers.clear();
+      resetFilterState();
       totalCount.value = 0;
     }
 
@@ -333,10 +369,23 @@ abstract class BooruHandler {
 
   Future<void> afterParseResponse(List<BooruItem> newItems) async {
     DioNetwork.throwIfCancelled();
+    for (final item in newItems) {
+      item.fetchedPage = pageNum;
+    }
+    fetchedPageNumbers.add(pageNum);
+
     final int lengthBefore = fetched.length;
     fetched.addAll(newItems);
-    filterFetched();
-    unawaited(setMultipleTrackedValues(lengthBefore, fetched.length));
+    final fetchedAtStart = fetched.value;
+    await setMultipleTrackedValues(lengthBefore, fetched.length);
+    DioNetwork.throwIfCancelled();
+    if (!identical(fetched.value, fetchedAtStart)) return;
+    // A settings change may have filtered this batch while its DB flags loaded.
+    if (_filterWatermark > lengthBefore) {
+      refilterAll();
+    } else {
+      filterFetched();
+    }
     unawaited(populateTagHandler(newItems));
 
     // TODO
@@ -839,32 +888,20 @@ abstract class BooruHandler {
   }
 
   Future<void> setMultipleTrackedValues(int beforeLength, int afterLength) async {
-    // beforeLength can be -1, clamp to 0
-    final int beforePos = max(0, beforeLength);
-    // diff can be negative, clamp to 0
-    int diff = max(0, afterLength - beforeLength);
-    diff = diff > 0 ? diff + 1 : diff;
-    // we need +1 to make sure we don't miss the last item, because sublist doesn't include the item with the end index
-    // so this way we exceed the possible length of fetched to get it
-
-    if (diff == 0) {
-      // do nothing if nothing was added
-      return;
-    }
-
-    // generate list of new fetched indexes
-    final List<int> fetchedIndexes = List.generate(diff, (index) => beforePos + index);
-
+    final fetchedAtStart = fetched.value;
+    final beforePos = beforeLength.clamp(0, fetchedAtStart.length);
+    final afterPos = afterLength.clamp(beforePos, fetchedAtStart.length);
+    final items = fetchedAtStart.sublist(beforePos, afterPos);
+    if (items.isEmpty) return;
     final SettingsHandler settingsHandler = SettingsHandler.instance;
-    if (settingsHandler.dbHandler.db != null && diff > 0) {
-      final List<List<bool>> valuesList = await settingsHandler.dbHandler.getMultipleTrackedValues(
-        fetched.sublist(fetchedIndexes.first, fetchedIndexes.last),
-      ); //.map((e) => e.fileURL).toList()
-
-      valuesList.asMap().forEach((index, values) {
-        fetched[fetchedIndexes[index]].isSnatched.value = values[0];
-        fetched[fetchedIndexes[index]].isFavourite.value = values[1];
-      });
+    if (settingsHandler.dbHandler.db != null) {
+      final valuesList = await settingsHandler.dbHandler.getMultipleTrackedValues(items);
+      DioNetwork.throwIfCancelled();
+      if (!identical(fetched.value, fetchedAtStart)) return;
+      for (int index = 0; index < min(items.length, valuesList.length); index++) {
+        items[index].isSnatched.value = valuesList[index][0];
+        items[index].isFavourite.value = valuesList[index][1];
+      }
     }
 
     return;

@@ -1527,6 +1527,7 @@ class SettingsBottomSheet extends StatelessWidget {
                           spacing: 10,
                           runSpacing: 10,
                           alignment: WrapAlignment.center,
+                          runAlignment: WrapAlignment.center,
                           children: actionButtons ?? [],
                         ),
                       ),

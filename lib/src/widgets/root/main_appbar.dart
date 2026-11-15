@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
@@ -46,9 +47,12 @@ class _MainAppBarState extends State<MainAppBar> {
   }
 
   void _onMenuLongTap() {
-    ServiceHandler.vibrate();
+    unawaited(ServiceHandler.vibrate());
     // scroll to start on long press of menu buttons
-    searchHandler.gridScrollController.jumpTo(0);
+    final controller = searchHandler.gridScrollController;
+    if (!controller.hasClients) return;
+    controller.jumpTo(0);
+    searchHandler.refreshCurrentScrollPage(showIndicator: true);
   }
 
   Widget menuButton(InnerDrawerDirection direction) {

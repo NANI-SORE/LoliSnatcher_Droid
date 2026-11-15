@@ -18,6 +18,7 @@ import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/long_press_repeater.dart';
 import 'package:lolisnatcher/src/widgets/preview/grid_builder.dart';
+import 'package:lolisnatcher/src/widgets/preview/page_indicator.dart';
 import 'package:lolisnatcher/src/widgets/preview/shimmer_builder.dart';
 import 'package:lolisnatcher/src/widgets/preview/staggered_builder.dart';
 import 'package:lolisnatcher/src/widgets/preview/waterfall_bottom_bar.dart';
@@ -47,6 +48,7 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   int? _rootViewerIndex;
 
   bool isStaggered = false;
+  int _tabScrollRestoreGeneration = 0;
 
   bool get isMobile => SX.appMode.value.isMobile;
 
@@ -121,35 +123,34 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   }
 
   void tabIndexListener() {
-    // print('tabChanged: ${searchHandler.currentTabOrNull?.scrollPosition} ${searchHandler.gridScrollController.hasClients}');
+    final tab = searchHandler.currentTabOrNull;
+    final controller = searchHandler.gridScrollController;
+    final generation = ++_tabScrollRestoreGeneration;
+    final savedOffset = tab?.scrollPosition ?? 0;
 
-    // postpone scroll updates until the current render is done, since this is called after the global restate after exiting settings
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final currentTab = searchHandler.currentTabOrNull;
-      if (currentTab == null) {
+    void restoreScroll(int attemptsLeft) {
+      if (!mounted ||
+          generation != _tabScrollRestoreGeneration ||
+          !identical(searchHandler.currentTabOrNull, tab) ||
+          !identical(searchHandler.gridScrollController, controller)) {
         return;
       }
-
-      // restore scroll position on tab change
-      if (searchHandler.gridScrollController.hasClients) {
-        searchHandler.gridScrollController.jumpTo(currentTab.scrollPosition);
-      } else {
-        // if (currentTab.scrollPosition != 0) {
-        // TODO reset the controller when appMode changes
-        searchHandler.gridScrollController = WaterfallScrollController(
-          initialScrollOffset: currentTab.scrollPosition,
-          viewportBoundaryGetter: () => Rect.fromLTRB(
-            0,
-            isMobile ? (MediaQuery.paddingOf(context).top + kToolbarHeight + 4) : 0,
-            0,
-            MediaQuery.paddingOf(context).bottom,
-          ),
-        );
+      if (!controller.hasClients) {
+        if (attemptsLeft > 0) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => restoreScroll(attemptsLeft - 1));
+          WidgetsBinding.instance.ensureVisualUpdate();
+        }
+        return;
       }
-
+      controller.jumpTo(savedOffset.clamp(controller.position.minScrollExtent, controller.position.maxScrollExtent));
+      searchHandler.refreshCurrentScrollPage();
       _showFloatingBars();
-    });
+    }
+
+    // Keep the shared controller and restore only the tab that scheduled this callback.
+    if (tab != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => restoreScroll(2));
+    }
 
     // check if grid type changed when changing tab
     final bool newIsStaggered =
@@ -690,6 +691,16 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
             }
             return true;
           },
+        ),
+        Positioned(
+          top: isMobile ? (MediaQuery.paddingOf(context).top + kToolbarHeight + 12) : 12,
+          right: 12,
+          child: GridPageNumberOverlay(
+            key: ValueKey(
+              // recreate when controller is recreated
+              'gridController${searchHandler.gridScrollController.hashCode}',
+            ),
+          ),
         ),
         //
         RepaintBoundary(

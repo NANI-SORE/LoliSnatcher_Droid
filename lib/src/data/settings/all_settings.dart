@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fvp/fvp.dart' as fvp;
+import 'package:get_it/get_it.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
@@ -31,12 +32,14 @@ import 'package:lolisnatcher/src/data/settings/settings_enum.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
 import 'package:lolisnatcher/src/data/settings/share_action.dart';
 import 'package:lolisnatcher/src/data/settings/special_settings.dart';
+import 'package:lolisnatcher/src/data/settings/tab_page_restore_mode.dart';
 import 'package:lolisnatcher/src/data/settings/typed_settings.dart';
 import 'package:lolisnatcher/src/data/settings/vertical_position.dart';
 import 'package:lolisnatcher/src/data/settings/video_backend_mode.dart';
 import 'package:lolisnatcher/src/data/settings/video_cache_mode.dart';
 import 'package:lolisnatcher/src/data/theme_item.dart';
 import 'package:lolisnatcher/src/handlers/local_auth_handler.dart';
+import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/pages/settings/tags_filters_page.dart';
@@ -296,6 +299,32 @@ void registerAllSettings() {
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.previewDisplayFallback,
         subtitle: (ctx) => ctx.loc.settings.interface.previewDisplayFallbackHelp,
+      ),
+    ),
+  );
+
+  registry.register(
+    settingsEnumSetting(
+      key: .tabPageRestoreMode,
+      getDefaultValue: () => TabPageRestoreMode.defaultValue,
+      values: TabPageRestoreMode.values,
+      fromString: TabPageRestoreMode.fromString,
+      categories: [SettingCategory.interface],
+      isDeviceSpecific: true,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.interface.tabPageRestoreMode,
+      ),
+    ),
+  );
+
+  registry.register(
+    boolSetting(
+      key: .defaultSavePageEnabled,
+      getDefaultValue: () => false,
+      categories: [SettingCategory.interface],
+      isDeviceSpecific: true,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.interface.saveTabViewedPageByDefault,
       ),
     ),
   );
@@ -1804,6 +1833,11 @@ void registerAllSettings() {
         title: (ctx) => ctx.loc.settings.booru.itemsPerPage,
         subtitle: (ctx) => ctx.loc.settings.booru.itemsPerPageTip,
       ),
+      onScopedChanged: (oldV, newV, booruName) {
+        if (oldV != newV && GetIt.instance.isRegistered<SearchHandler>()) {
+          SearchHandler.instance.invalidateSavedPages(booruName: booruName);
+        }
+      },
     ),
   );
 

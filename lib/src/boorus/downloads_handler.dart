@@ -33,6 +33,8 @@ class DownloadsHandler extends BooruHandler {
     // if tags are different than previous tags, reset fetched
     if (prevTags != tags) {
       fetched.value = [];
+      fetchedPageNumbers.clear();
+      resetFilterState();
       totalCount.value = 0;
     }
 

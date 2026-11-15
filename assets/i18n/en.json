@@ -131,6 +131,8 @@
             "one": "Restored ${count} tab from previous session",
             "other": "Restored ${count} tabs from previous session"
         },
+        "restoringPage": "Restoring page",
+        "pageRestoreMode": "Page restore mode",
         "someRestoredTabsHadIssues": "Some restored tabs had unknown boorus or broken characters.",
         "theyWereSetToDefaultOrIgnored": "They were set to default or ignored.",
         "listOfBrokenTabs": "List of broken tabs:",
@@ -534,6 +536,16 @@
             "handSideValues": {
                 "left": "Left",
                 "right": "Right"
+            },
+            "tabPageRestoreMode": "Tab page restore mode",
+            "applyToAllTabs": "Apply to all tabs?",
+            "saveTabViewedPageByDefault": "Save viewed page by default",
+            "tabPageRestoreModeValues": {
+                "ask": "Ask each time",
+                "fetchAndScroll": "Fetch up to page and scroll to it",
+                "fetchNoScroll": "Fetch up to page, no scroll",
+                "fetchOnlyPage": "Start from saved page",
+                "ignore": "Ignore saved page"
             }
         },
         "theme": {
@@ -1078,11 +1090,47 @@
         "delayBetweenLoadings": "Delay between loadings (ms)",
         "delayInMs": "Delay in ms",
         "currentPage(param=number)": "Current page #${number: int}",
+        "currentPageShort(param=number)": "Current: ${number: int}",
         "possibleMaxPage(param=number)": "Possible max page #~${number: int}",
+        "possibleMaxPageShort(param=number)": "Max: ~${number: int}",
         "searchCurrentlyRunning": "Search currently running!",
+        "scrollToFetchedPage": "Scroll to fetched page",
+        "saveViewedPage": "Save viewed page",
         "jumpToPage": "Jump to page",
         "searchUntilPage": "Search until page",
+        "scrollToPage": "Scroll to page",
+        "restoreLastViewedPage": "Restore last viewed page?",
+        "browsedToPageLastTime(param=page)": "Browsed to page #${page: int} last time",
+        "tooManyPagesToRestoreWarning": "Restoring too many pages at once or too fast may temporarily ban you from accessing the site",
+        "rememberMyChoice": "Remember my choice",
         "stopSearching": "Stop searching"
+    },
+    "pageNavigation": {
+        "title": "Go to page",
+        "viewing(param=page)": "Current: ${page: int}",
+        "lastLoaded(param=page)": "Last loaded: ${page: int}",
+        "loadedRange(param=pages)": "Loaded: ${pages: String}",
+        "approximateTotal(param=pages)": "~${pages: int} total",
+        "alreadyLoaded": "Already loaded",
+        "goToLoaded": "Go to loaded page",
+        "openPage": "Open page",
+        "startSearchHere": "Start search here",
+        "freshResults": "Starts a fresh result list",
+        "loadThrough": "Load through page",
+        "keepResults": "Keeps loaded results",
+        "showWhenReady": "Show target when ready",
+        "requestDelay": "Request delay (ms)",
+        "invalidPage": "Enter a page of 1 or more",
+        "invalidDelay": "Use 100-10,000 ms",
+        "rememberTab": "Remember this tab’s page",
+        "freshSearchToRemember": "Run a fresh search to resume saving",
+        "loadingPage(param=page)": "Loading page ${page: int}",
+        "loadingThrough(param=page,target)": "Loading ${page: int} → ${target: int}",
+        "stopLoading": "Stop loading",
+        "tabChanged": "Active tab changed. Reopen this dialog.",
+        "retryFirst": "Retry the failed request first",
+        "noVisiblePosts": "No visible posts on this page",
+        "showingNearbyPage(param=requested,actual)": "Page ${requested: int} unavailable. Showing ${actual: int}."
     },
     "tagsFiltersDialogs": {
         "emptyInput": "Empty input!",

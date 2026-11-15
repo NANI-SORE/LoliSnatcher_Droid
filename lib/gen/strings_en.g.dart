@@ -304,6 +304,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
   late final Translations$settings$en settings = Translations$settings$en.internal(_root);
   late final Translations$comments$en comments = Translations$comments$en.internal(_root);
   late final Translations$pageChanger$en pageChanger = Translations$pageChanger$en.internal(_root);
+  late final Translations$pageNavigation$en pageNavigation = Translations$pageNavigation$en.internal(_root);
   late final Translations$tagsFiltersDialogs$en tagsFiltersDialogs = Translations$tagsFiltersDialogs$en.internal(_root);
   late final Translations$tagsManager$en tagsManager = Translations$tagsManager$en.internal(_root);
   late final Translations$lockscreen$en lockscreen = Translations$lockscreen$en.internal(_root);
@@ -525,6 +526,12 @@ class Translations$searchHandler$en {
         one: 'Restored ${count} tab from previous session',
         other: 'Restored ${count} tabs from previous session',
       );
+
+  /// en: 'Restoring page'
+  String get restoringPage => TranslationOverrides.string(_root.$meta, 'searchHandler.restoringPage', {}) ?? 'Restoring page';
+
+  /// en: 'Page restore mode'
+  String get pageRestoreMode => TranslationOverrides.string(_root.$meta, 'searchHandler.pageRestoreMode', {}) ?? 'Page restore mode';
 
   /// en: 'Some restored tabs had unknown boorus or broken characters.'
   String get someRestoredTabsHadIssues =>
@@ -1191,13 +1198,27 @@ class Translations$pageChanger$en {
   String currentPage({required int number}) =>
       TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? 'Current page #${number}';
 
+  /// en: 'Current: ${number: int}'
+  String currentPageShort({required int number}) =>
+      TranslationOverrides.string(_root.$meta, 'pageChanger.currentPageShort', {'number': number}) ?? 'Current: ${number}';
+
   /// en: 'Possible max page #~${number: int}'
   String possibleMaxPage({required int number}) =>
       TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? 'Possible max page #~${number}';
 
+  /// en: 'Max: ~${number: int}'
+  String possibleMaxPageShort({required int number}) =>
+      TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPageShort', {'number': number}) ?? 'Max: ~${number}';
+
   /// en: 'Search currently running!'
   String get searchCurrentlyRunning =>
       TranslationOverrides.string(_root.$meta, 'pageChanger.searchCurrentlyRunning', {}) ?? 'Search currently running!';
+
+  /// en: 'Scroll to fetched page'
+  String get scrollToFetchedPage => TranslationOverrides.string(_root.$meta, 'pageChanger.scrollToFetchedPage', {}) ?? 'Scroll to fetched page';
+
+  /// en: 'Save viewed page'
+  String get saveViewedPage => TranslationOverrides.string(_root.$meta, 'pageChanger.saveViewedPage', {}) ?? 'Save viewed page';
 
   /// en: 'Jump to page'
   String get jumpToPage => TranslationOverrides.string(_root.$meta, 'pageChanger.jumpToPage', {}) ?? 'Jump to page';
@@ -1205,8 +1226,119 @@ class Translations$pageChanger$en {
   /// en: 'Search until page'
   String get searchUntilPage => TranslationOverrides.string(_root.$meta, 'pageChanger.searchUntilPage', {}) ?? 'Search until page';
 
+  /// en: 'Scroll to page'
+  String get scrollToPage => TranslationOverrides.string(_root.$meta, 'pageChanger.scrollToPage', {}) ?? 'Scroll to page';
+
+  /// en: 'Restore last viewed page?'
+  String get restoreLastViewedPage =>
+      TranslationOverrides.string(_root.$meta, 'pageChanger.restoreLastViewedPage', {}) ?? 'Restore last viewed page?';
+
+  /// en: 'Browsed to page #${page: int} last time'
+  String browsedToPageLastTime({required int page}) =>
+      TranslationOverrides.string(_root.$meta, 'pageChanger.browsedToPageLastTime', {'page': page}) ?? 'Browsed to page #${page} last time';
+
+  /// en: 'Restoring too many pages at once or too fast may temporarily ban you from accessing the site'
+  String get tooManyPagesToRestoreWarning =>
+      TranslationOverrides.string(_root.$meta, 'pageChanger.tooManyPagesToRestoreWarning', {}) ??
+      'Restoring too many pages at once or too fast may temporarily ban you from accessing the site';
+
+  /// en: 'Remember my choice'
+  String get rememberMyChoice => TranslationOverrides.string(_root.$meta, 'pageChanger.rememberMyChoice', {}) ?? 'Remember my choice';
+
   /// en: 'Stop searching'
   String get stopSearching => TranslationOverrides.string(_root.$meta, 'pageChanger.stopSearching', {}) ?? 'Stop searching';
+}
+
+// Path: pageNavigation
+class Translations$pageNavigation$en {
+  Translations$pageNavigation$en.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'Go to page'
+  String get title => TranslationOverrides.string(_root.$meta, 'pageNavigation.title', {}) ?? 'Go to page';
+
+  /// en: 'Current: ${page: int}'
+  String viewing({required int page}) => TranslationOverrides.string(_root.$meta, 'pageNavigation.viewing', {'page': page}) ?? 'Current: ${page}';
+
+  /// en: 'Last loaded: ${page: int}'
+  String lastLoaded({required int page}) =>
+      TranslationOverrides.string(_root.$meta, 'pageNavigation.lastLoaded', {'page': page}) ?? 'Last loaded: ${page}';
+
+  /// en: 'Loaded: ${pages: String}'
+  String loadedRange({required String pages}) =>
+      TranslationOverrides.string(_root.$meta, 'pageNavigation.loadedRange', {'pages': pages}) ?? 'Loaded: ${pages}';
+
+  /// en: '~${pages: int} total'
+  String approximateTotal({required int pages}) =>
+      TranslationOverrides.string(_root.$meta, 'pageNavigation.approximateTotal', {'pages': pages}) ?? '~${pages} total';
+
+  /// en: 'Already loaded'
+  String get alreadyLoaded => TranslationOverrides.string(_root.$meta, 'pageNavigation.alreadyLoaded', {}) ?? 'Already loaded';
+
+  /// en: 'Go to loaded page'
+  String get goToLoaded => TranslationOverrides.string(_root.$meta, 'pageNavigation.goToLoaded', {}) ?? 'Go to loaded page';
+
+  /// en: 'Open page'
+  String get openPage => TranslationOverrides.string(_root.$meta, 'pageNavigation.openPage', {}) ?? 'Open page';
+
+  /// en: 'Start search here'
+  String get startSearchHere => TranslationOverrides.string(_root.$meta, 'pageNavigation.startSearchHere', {}) ?? 'Start search here';
+
+  /// en: 'Starts a fresh result list'
+  String get freshResults => TranslationOverrides.string(_root.$meta, 'pageNavigation.freshResults', {}) ?? 'Starts a fresh result list';
+
+  /// en: 'Load through page'
+  String get loadThrough => TranslationOverrides.string(_root.$meta, 'pageNavigation.loadThrough', {}) ?? 'Load through page';
+
+  /// en: 'Keeps loaded results'
+  String get keepResults => TranslationOverrides.string(_root.$meta, 'pageNavigation.keepResults', {}) ?? 'Keeps loaded results';
+
+  /// en: 'Show target when ready'
+  String get showWhenReady => TranslationOverrides.string(_root.$meta, 'pageNavigation.showWhenReady', {}) ?? 'Show target when ready';
+
+  /// en: 'Request delay (ms)'
+  String get requestDelay => TranslationOverrides.string(_root.$meta, 'pageNavigation.requestDelay', {}) ?? 'Request delay (ms)';
+
+  /// en: 'Enter a page of 1 or more'
+  String get invalidPage => TranslationOverrides.string(_root.$meta, 'pageNavigation.invalidPage', {}) ?? 'Enter a page of 1 or more';
+
+  /// en: 'Use 100-10,000 ms'
+  String get invalidDelay => TranslationOverrides.string(_root.$meta, 'pageNavigation.invalidDelay', {}) ?? 'Use 100-10,000 ms';
+
+  /// en: 'Remember this tab’s page'
+  String get rememberTab => TranslationOverrides.string(_root.$meta, 'pageNavigation.rememberTab', {}) ?? 'Remember this tab’s page';
+
+  /// en: 'Run a fresh search to resume saving'
+  String get freshSearchToRemember =>
+      TranslationOverrides.string(_root.$meta, 'pageNavigation.freshSearchToRemember', {}) ?? 'Run a fresh search to resume saving';
+
+  /// en: 'Loading page ${page: int}'
+  String loadingPage({required int page}) =>
+      TranslationOverrides.string(_root.$meta, 'pageNavigation.loadingPage', {'page': page}) ?? 'Loading page ${page}';
+
+  /// en: 'Loading ${page: int} → ${target: int}'
+  String loadingThrough({required int page, required int target}) =>
+      TranslationOverrides.string(_root.$meta, 'pageNavigation.loadingThrough', {'page': page, 'target': target}) ?? 'Loading ${page} → ${target}';
+
+  /// en: 'Stop loading'
+  String get stopLoading => TranslationOverrides.string(_root.$meta, 'pageNavigation.stopLoading', {}) ?? 'Stop loading';
+
+  /// en: 'Active tab changed. Reopen this dialog.'
+  String get tabChanged => TranslationOverrides.string(_root.$meta, 'pageNavigation.tabChanged', {}) ?? 'Active tab changed. Reopen this dialog.';
+
+  /// en: 'Retry the failed request first'
+  String get retryFirst => TranslationOverrides.string(_root.$meta, 'pageNavigation.retryFirst', {}) ?? 'Retry the failed request first';
+
+  /// en: 'No visible posts on this page'
+  String get noVisiblePosts => TranslationOverrides.string(_root.$meta, 'pageNavigation.noVisiblePosts', {}) ?? 'No visible posts on this page';
+
+  /// en: 'Page ${requested: int} unavailable. Showing ${actual: int}.'
+  String showingNearbyPage({required int requested, required int actual}) =>
+      TranslationOverrides.string(_root.$meta, 'pageNavigation.showingNearbyPage', {'requested': requested, 'actual': actual}) ??
+      'Page ${requested} unavailable. Showing ${actual}.';
 }
 
 // Path: tagsFiltersDialogs
@@ -2777,6 +2909,19 @@ class Translations$settings$interface$en {
       Translations$settings$interface$previewDisplayModeValues$en.internal(_root);
   late final Translations$settings$interface$appModeValues$en appModeValues = Translations$settings$interface$appModeValues$en.internal(_root);
   late final Translations$settings$interface$handSideValues$en handSideValues = Translations$settings$interface$handSideValues$en.internal(_root);
+
+  /// en: 'Tab page restore mode'
+  String get tabPageRestoreMode => TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreMode', {}) ?? 'Tab page restore mode';
+
+  /// en: 'Apply to all tabs?'
+  String get applyToAllTabs => TranslationOverrides.string(_root.$meta, 'settings.interface.applyToAllTabs', {}) ?? 'Apply to all tabs?';
+
+  /// en: 'Save viewed page by default'
+  String get saveTabViewedPageByDefault =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.saveTabViewedPageByDefault', {}) ?? 'Save viewed page by default';
+
+  late final Translations$settings$interface$tabPageRestoreModeValues$en tabPageRestoreModeValues =
+      Translations$settings$interface$tabPageRestoreModeValues$en.internal(_root);
 }
 
 // Path: settings.theme
@@ -4956,6 +5101,34 @@ class Translations$settings$interface$handSideValues$en {
   String get right => TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.right', {}) ?? 'Right';
 }
 
+// Path: settings.interface.tabPageRestoreModeValues
+class Translations$settings$interface$tabPageRestoreModeValues$en {
+  Translations$settings$interface$tabPageRestoreModeValues$en.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'Ask each time'
+  String get ask => TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.ask', {}) ?? 'Ask each time';
+
+  /// en: 'Fetch up to page and scroll to it'
+  String get fetchAndScroll =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.fetchAndScroll', {}) ??
+      'Fetch up to page and scroll to it';
+
+  /// en: 'Fetch up to page, no scroll'
+  String get fetchNoScroll =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.fetchNoScroll', {}) ?? 'Fetch up to page, no scroll';
+
+  /// en: 'Start from saved page'
+  String get fetchOnlyPage =>
+      TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.fetchOnlyPage', {}) ?? 'Start from saved page';
+
+  /// en: 'Ignore saved page'
+  String get ignore => TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.ignore', {}) ?? 'Ignore saved page';
+}
+
 // Path: settings.viewer.imageQualityValues
 class Translations$settings$viewer$imageQualityValues$en {
   Translations$settings$viewer$imageQualityValues$en.internal(this._root);
@@ -5326,6 +5499,8 @@ extension on Translations {
                   one: 'Restored ${count} tab from previous session',
                   other: 'Restored ${count} tabs from previous session',
                 ),
+          'searchHandler.restoringPage' => TranslationOverrides.string(_root.$meta, 'searchHandler.restoringPage', {}) ?? 'Restoring page',
+          'searchHandler.pageRestoreMode' => TranslationOverrides.string(_root.$meta, 'searchHandler.pageRestoreMode', {}) ?? 'Page restore mode',
           'searchHandler.someRestoredTabsHadIssues' =>
             TranslationOverrides.string(_root.$meta, 'searchHandler.someRestoredTabsHadIssues', {}) ??
                 'Some restored tabs had unknown boorus or broken characters.',
@@ -5921,6 +6096,24 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.left', {}) ?? 'Left',
           'settings.interface.handSideValues.right' =>
             TranslationOverrides.string(_root.$meta, 'settings.interface.handSideValues.right', {}) ?? 'Right',
+          'settings.interface.tabPageRestoreMode' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreMode', {}) ?? 'Tab page restore mode',
+          'settings.interface.applyToAllTabs' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.applyToAllTabs', {}) ?? 'Apply to all tabs?',
+          'settings.interface.saveTabViewedPageByDefault' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.saveTabViewedPageByDefault', {}) ?? 'Save viewed page by default',
+          'settings.interface.tabPageRestoreModeValues.ask' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.ask', {}) ?? 'Ask each time',
+          'settings.interface.tabPageRestoreModeValues.fetchAndScroll' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.fetchAndScroll', {}) ??
+                'Fetch up to page and scroll to it',
+          'settings.interface.tabPageRestoreModeValues.fetchNoScroll' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.fetchNoScroll', {}) ??
+                'Fetch up to page, no scroll',
+          'settings.interface.tabPageRestoreModeValues.fetchOnlyPage' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.fetchOnlyPage', {}) ?? 'Start from saved page',
+          'settings.interface.tabPageRestoreModeValues.ignore' =>
+            TranslationOverrides.string(_root.$meta, 'settings.interface.tabPageRestoreModeValues.ignore', {}) ?? 'Ignore saved page',
           'settings.theme.title' => TranslationOverrides.string(_root.$meta, 'settings.theme.title', {}) ?? 'Themes',
           'settings.theme.themeMode' => TranslationOverrides.string(_root.$meta, 'settings.theme.themeMode', {}) ?? 'Theme mode',
           'settings.theme.blackBg' => TranslationOverrides.string(_root.$meta, 'settings.theme.blackBg', {}) ?? 'Black background',
@@ -5978,6 +6171,9 @@ extension on Translations {
           'settings.viewer.preloadHeightLimitSubtitle' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.preloadHeightLimitSubtitle', {}) ?? 'in pixels, 0 for no limit',
           'settings.viewer.imageQuality' => TranslationOverrides.string(_root.$meta, 'settings.viewer.imageQuality', {}) ?? 'Image quality',
+          _ => null,
+        } ??
+        switch (path) {
           'settings.viewer.viewerScrollDirection' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.viewerScrollDirection', {}) ?? 'Viewer scroll direction',
           'settings.viewer.viewerToolbarPosition' =>
@@ -5997,9 +6193,6 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.viewer.enableRotationSubtitle', {}) ?? 'Double tap to reset',
           'settings.viewer.toolbarButtonsOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.toolbarButtonsOrder', {}) ?? 'Toolbar buttons order',
-          _ => null,
-        } ??
-        switch (path) {
           'settings.viewer.buttonsOrder' => TranslationOverrides.string(_root.$meta, 'settings.viewer.buttonsOrder', {}) ?? 'Buttons order',
           'settings.viewer.longPressToChangeItemOrder' =>
             TranslationOverrides.string(_root.$meta, 'settings.viewer.longPressToChangeItemOrder', {}) ?? 'Long press to change item order.',
@@ -6839,14 +7032,79 @@ extension on Translations {
           'pageChanger.currentPage' => ({
             required int number,
           }) => TranslationOverrides.string(_root.$meta, 'pageChanger.currentPage', {'number': number}) ?? 'Current page #${number}',
+          'pageChanger.currentPageShort' => ({
+            required int number,
+          }) => TranslationOverrides.string(_root.$meta, 'pageChanger.currentPageShort', {'number': number}) ?? 'Current: ${number}',
           'pageChanger.possibleMaxPage' => ({
             required int number,
           }) => TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPage', {'number': number}) ?? 'Possible max page #~${number}',
+          'pageChanger.possibleMaxPageShort' => ({
+            required int number,
+          }) => TranslationOverrides.string(_root.$meta, 'pageChanger.possibleMaxPageShort', {'number': number}) ?? 'Max: ~${number}',
           'pageChanger.searchCurrentlyRunning' =>
             TranslationOverrides.string(_root.$meta, 'pageChanger.searchCurrentlyRunning', {}) ?? 'Search currently running!',
+          'pageChanger.scrollToFetchedPage' =>
+            TranslationOverrides.string(_root.$meta, 'pageChanger.scrollToFetchedPage', {}) ?? 'Scroll to fetched page',
+          'pageChanger.saveViewedPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.saveViewedPage', {}) ?? 'Save viewed page',
           'pageChanger.jumpToPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.jumpToPage', {}) ?? 'Jump to page',
           'pageChanger.searchUntilPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.searchUntilPage', {}) ?? 'Search until page',
+          'pageChanger.scrollToPage' => TranslationOverrides.string(_root.$meta, 'pageChanger.scrollToPage', {}) ?? 'Scroll to page',
+          'pageChanger.restoreLastViewedPage' =>
+            TranslationOverrides.string(_root.$meta, 'pageChanger.restoreLastViewedPage', {}) ?? 'Restore last viewed page?',
+          'pageChanger.browsedToPageLastTime' => ({
+            required int page,
+          }) => TranslationOverrides.string(_root.$meta, 'pageChanger.browsedToPageLastTime', {'page': page}) ?? 'Browsed to page #${page} last time',
+          'pageChanger.tooManyPagesToRestoreWarning' =>
+            TranslationOverrides.string(_root.$meta, 'pageChanger.tooManyPagesToRestoreWarning', {}) ??
+                'Restoring too many pages at once or too fast may temporarily ban you from accessing the site',
+          'pageChanger.rememberMyChoice' => TranslationOverrides.string(_root.$meta, 'pageChanger.rememberMyChoice', {}) ?? 'Remember my choice',
           'pageChanger.stopSearching' => TranslationOverrides.string(_root.$meta, 'pageChanger.stopSearching', {}) ?? 'Stop searching',
+          'pageNavigation.title' => TranslationOverrides.string(_root.$meta, 'pageNavigation.title', {}) ?? 'Go to page',
+          'pageNavigation.viewing' => ({
+            required int page,
+          }) => TranslationOverrides.string(_root.$meta, 'pageNavigation.viewing', {'page': page}) ?? 'Current: ${page}',
+          'pageNavigation.lastLoaded' => ({
+            required int page,
+          }) => TranslationOverrides.string(_root.$meta, 'pageNavigation.lastLoaded', {'page': page}) ?? 'Last loaded: ${page}',
+          'pageNavigation.loadedRange' => ({
+            required String pages,
+          }) => TranslationOverrides.string(_root.$meta, 'pageNavigation.loadedRange', {'pages': pages}) ?? 'Loaded: ${pages}',
+          'pageNavigation.approximateTotal' => ({
+            required int pages,
+          }) => TranslationOverrides.string(_root.$meta, 'pageNavigation.approximateTotal', {'pages': pages}) ?? '~${pages} total',
+          'pageNavigation.alreadyLoaded' => TranslationOverrides.string(_root.$meta, 'pageNavigation.alreadyLoaded', {}) ?? 'Already loaded',
+          'pageNavigation.goToLoaded' => TranslationOverrides.string(_root.$meta, 'pageNavigation.goToLoaded', {}) ?? 'Go to loaded page',
+          'pageNavigation.openPage' => TranslationOverrides.string(_root.$meta, 'pageNavigation.openPage', {}) ?? 'Open page',
+          'pageNavigation.startSearchHere' => TranslationOverrides.string(_root.$meta, 'pageNavigation.startSearchHere', {}) ?? 'Start search here',
+          'pageNavigation.freshResults' =>
+            TranslationOverrides.string(_root.$meta, 'pageNavigation.freshResults', {}) ?? 'Starts a fresh result list',
+          'pageNavigation.loadThrough' => TranslationOverrides.string(_root.$meta, 'pageNavigation.loadThrough', {}) ?? 'Load through page',
+          'pageNavigation.keepResults' => TranslationOverrides.string(_root.$meta, 'pageNavigation.keepResults', {}) ?? 'Keeps loaded results',
+          'pageNavigation.showWhenReady' => TranslationOverrides.string(_root.$meta, 'pageNavigation.showWhenReady', {}) ?? 'Show target when ready',
+          'pageNavigation.requestDelay' => TranslationOverrides.string(_root.$meta, 'pageNavigation.requestDelay', {}) ?? 'Request delay (ms)',
+          'pageNavigation.invalidPage' => TranslationOverrides.string(_root.$meta, 'pageNavigation.invalidPage', {}) ?? 'Enter a page of 1 or more',
+          'pageNavigation.invalidDelay' => TranslationOverrides.string(_root.$meta, 'pageNavigation.invalidDelay', {}) ?? 'Use 100-10,000 ms',
+          'pageNavigation.rememberTab' => TranslationOverrides.string(_root.$meta, 'pageNavigation.rememberTab', {}) ?? 'Remember this tab’s page',
+          'pageNavigation.freshSearchToRemember' =>
+            TranslationOverrides.string(_root.$meta, 'pageNavigation.freshSearchToRemember', {}) ?? 'Run a fresh search to resume saving',
+          'pageNavigation.loadingPage' => ({
+            required int page,
+          }) => TranslationOverrides.string(_root.$meta, 'pageNavigation.loadingPage', {'page': page}) ?? 'Loading page ${page}',
+          'pageNavigation.loadingThrough' =>
+            ({required int page, required int target}) =>
+                TranslationOverrides.string(_root.$meta, 'pageNavigation.loadingThrough', {'page': page, 'target': target}) ??
+                'Loading ${page} → ${target}',
+          'pageNavigation.stopLoading' => TranslationOverrides.string(_root.$meta, 'pageNavigation.stopLoading', {}) ?? 'Stop loading',
+          'pageNavigation.tabChanged' =>
+            TranslationOverrides.string(_root.$meta, 'pageNavigation.tabChanged', {}) ?? 'Active tab changed. Reopen this dialog.',
+          'pageNavigation.retryFirst' =>
+            TranslationOverrides.string(_root.$meta, 'pageNavigation.retryFirst', {}) ?? 'Retry the failed request first',
+          'pageNavigation.noVisiblePosts' =>
+            TranslationOverrides.string(_root.$meta, 'pageNavigation.noVisiblePosts', {}) ?? 'No visible posts on this page',
+          'pageNavigation.showingNearbyPage' =>
+            ({required int requested, required int actual}) =>
+                TranslationOverrides.string(_root.$meta, 'pageNavigation.showingNearbyPage', {'requested': requested, 'actual': actual}) ??
+                'Page ${requested} unavailable. Showing ${actual}.',
           'tagsFiltersDialogs.emptyInput' => TranslationOverrides.string(_root.$meta, 'tagsFiltersDialogs.emptyInput', {}) ?? 'Empty input!',
           'tagsFiltersDialogs.addNewFilter' => ({
             required String type,
@@ -6908,6 +7166,9 @@ extension on Translations {
           'loliSync.testSuccessMessage' =>
             TranslationOverrides.string(_root.$meta, 'loliSync.testSuccessMessage', {}) ?? 'There should be a \'Test\' message on the other device',
           'imageSearch.title' => TranslationOverrides.string(_root.$meta, 'imageSearch.title', {}) ?? 'Image search',
+          _ => null,
+        } ??
+        switch (path) {
           'tagView.tags' => TranslationOverrides.string(_root.$meta, 'tagView.tags', {}) ?? 'Tags',
           'tagView.comments' => TranslationOverrides.string(_root.$meta, 'tagView.comments', {}) ?? 'Comments',
           'tagView.showNotes' => ({
@@ -6960,9 +7221,6 @@ extension on Translations {
           'tagView.history' => TranslationOverrides.string(_root.$meta, 'tagView.history', {}) ?? 'History',
           'tagView.failedToLoadPreviewPage' =>
             TranslationOverrides.string(_root.$meta, 'tagView.failedToLoadPreviewPage', {}) ?? 'Failed to load preview page',
-          _ => null,
-        } ??
-        switch (path) {
           'tagView.tryAgain' => TranslationOverrides.string(_root.$meta, 'tagView.tryAgain', {}) ?? 'Try again',
           'tagView.detectedLinks' => TranslationOverrides.string(_root.$meta, 'tagView.detectedLinks', {}) ?? 'Detected links:',
           'tagView.relatedTabs' => TranslationOverrides.string(_root.$meta, 'tagView.relatedTabs', {}) ?? 'Related tabs',

@@ -10,6 +10,7 @@ import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
+import 'package:lolisnatcher/src/widgets/preview/page_indicator.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_card_build.dart';
 
 class StaggeredBuilder extends StatelessWidget {
@@ -35,6 +36,7 @@ class StaggeredBuilder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final int columnCount = context.isPortrait ? SX.portraitColumns.value : SX.landscapeColumns.value;
+    SearchHandler.instance.currentColumnCount = columnCount;
 
     return ValueListenableBuilder(
       valueListenable: tab.booruHandler.filteredFetched,
@@ -51,6 +53,8 @@ class StaggeredBuilder extends StatelessWidget {
           (context, index) => LayoutBuilder(
             builder: (context, constraints) {
               final BooruItem item = currentFetched[index];
+
+              final bool isFirstOfPage = index == 0 || item.fetchedPage != currentFetched[index - 1].fetchedPage;
 
               final double itemMaxWidth = constraints.maxWidth;
               final double itemMaxHeight = itemMaxWidth * (16 / 9);
@@ -72,28 +76,44 @@ class StaggeredBuilder extends StatelessWidget {
                 key: ValueKey(item.key),
                 height: possibleHeight,
                 width: possibleWidth,
-                child: Obx(
-                  () {
-                    final bool hasSelected = tab.selected.isNotEmpty && tab.hasSelectedItems;
-                    final selectedIndex = tab.selectedIndexOf(item);
-                    final bool isSelected = selectedIndex != null;
+                child: Obx(() {
+                  final bool hasSelected = tab.selected.isNotEmpty && tab.hasSelectedItems;
+                  final selectedIndex = tab.selectedIndexOf(item);
+                  final bool isSelected = selectedIndex != null;
 
-                    return ThumbnailCardBuild(
-                      index: index,
-                      item: item,
-                      handler: tab.booruHandler,
-                      scrollController: scrollController,
-                      isHighlighted: ViewerHandler.instance.current.value?.key == item.key,
-                      selectable: true,
-                      selectedIndex: isSelected ? selectedIndex : null,
-                      onSelected: hasSelected ? onSelected : null,
-                      onTap: onTap,
-                      onDoubleTap: onDoubleTap,
-                      onLongPress: onLongPress,
-                      onSecondaryTap: onSecondaryTap,
-                    );
-                  },
-                ),
+                  return Stack(
+                    children: [
+                      SizedBox(
+                        height: possibleHeight,
+                        width: possibleWidth,
+                        child: Obx(
+                          () => ThumbnailCardBuild(
+                            index: index,
+                            item: item,
+                            handler: tab.booruHandler,
+                            scrollController: scrollController,
+                            isHighlighted: ViewerHandler.instance.current.value?.key == item.key,
+                            selectable: true,
+                            selectedIndex: isSelected ? selectedIndex : null,
+                            onSelected: hasSelected ? onSelected : null,
+                            onTap: onTap,
+                            onDoubleTap: onDoubleTap,
+                            onLongPress: onLongPress,
+                            onSecondaryTap: onSecondaryTap,
+                          ),
+                        ),
+                      ),
+                      if (isFirstOfPage && item.fetchedPage > -1)
+                        Positioned(
+                          top: 2,
+                          left: 2,
+                          child: IgnorePointer(
+                            child: GridPageIndicator(item.fetchedPage, tab: tab),
+                          ),
+                        ),
+                    ],
+                  );
+                }),
               );
             },
           ),

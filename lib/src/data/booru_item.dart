@@ -111,6 +111,8 @@ class BooruItem extends Equatable {
   set previewAspectRatio(double? value) => _previewAspectRatio = _sanitizeAspectRatio(value);
   int? fileSize;
 
+  /// The API page number this item was fetched from. -1 means unknown/unset.
+  int fetchedPage = -1;
   List<Tag>? _cachedMetadataTags;
   int _cachedTagsMetadataVersion = -1;
   bool _cachedIsHidden = false;

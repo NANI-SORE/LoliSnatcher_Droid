@@ -7,6 +7,7 @@ import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
+import 'package:lolisnatcher/src/widgets/preview/page_indicator.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_card_build.dart';
 
 class GridBuilder extends StatelessWidget {
@@ -36,6 +37,7 @@ class GridBuilder extends StatelessWidget {
         : SX.previewDisplay.value;
 
     final int columnCount = context.isPortrait ? SX.portraitColumns.value : SX.landscapeColumns.value;
+    SearchHandler.instance.currentColumnCount = columnCount;
 
     return ValueListenableBuilder(
       valueListenable: tab.booruHandler.filteredFetched,
@@ -55,24 +57,40 @@ class GridBuilder extends StatelessWidget {
           return GridTile(
             key: ValueKey(item.key),
             child: Obx(() {
+              final BooruItem item = currentFetched[index];
+
+              final bool isFirstOfPage = index == 0 || item.fetchedPage != currentFetched[index - 1].fetchedPage;
+
               final bool hasSelected = tab.selected.isNotEmpty && tab.hasSelectedItems;
               final selectedIndex = tab.selectedIndexOf(item);
               final bool isSelected = selectedIndex != null;
               final bool isHighlighted = ViewerHandler.instance.current.value?.key == item.key;
 
-              return ThumbnailCardBuild(
-                index: index,
-                item: item,
-                handler: tab.booruHandler,
-                scrollController: scrollController,
-                isHighlighted: isHighlighted,
-                selectable: true,
-                selectedIndex: isSelected ? selectedIndex : null,
-                onSelected: hasSelected ? onSelected : null,
-                onTap: onTap,
-                onDoubleTap: onDoubleTap,
-                onLongPress: onLongPress,
-                onSecondaryTap: onSecondaryTap,
+              return Stack(
+                children: [
+                  ThumbnailCardBuild(
+                    index: index,
+                    item: item,
+                    handler: tab.booruHandler,
+                    scrollController: scrollController,
+                    isHighlighted: isHighlighted,
+                    selectable: true,
+                    selectedIndex: isSelected ? selectedIndex : null,
+                    onSelected: hasSelected ? onSelected : null,
+                    onTap: onTap,
+                    onDoubleTap: onDoubleTap,
+                    onLongPress: onLongPress,
+                    onSecondaryTap: onSecondaryTap,
+                  ),
+                  if (isFirstOfPage && item.fetchedPage > -1)
+                    Positioned(
+                      top: 2,
+                      left: 2,
+                      child: IgnorePointer(
+                        child: GridPageIndicator(item.fetchedPage, tab: tab),
+                      ),
+                    ),
+                ],
               );
             }),
           );

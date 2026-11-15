@@ -571,9 +571,9 @@ class SettingsHandler {
     if (!GetIt.instance.isRegistered<SearchHandler>()) return;
     final search = SearchHandler.instance;
     for (final tab in search.tabs.toList(growable: false)) {
-      if (tab.booruHandler.booru.name == booruName ||
+      if (tab.selectedBooru.value.name == booruName ||
           (tab.secondaryBoorus.value ?? <Booru>[]).any((booru) => booru.name == booruName)) {
-        tab.booruHandler.filterFetched();
+        tab.booruHandler.refilterAll();
       }
     }
     search.rootRestate?.call();

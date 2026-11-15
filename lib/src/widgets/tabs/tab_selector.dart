@@ -312,7 +312,11 @@ class TabSelector extends StatelessWidget {
                                   bottomLeft: Radius.circular(radius),
                                 )
                               : null,
-                          onTap: () => dropdown.showDialog(context),
+                          onTap: () {
+                            if (searchHandler.isRunningAutoSearch.value) return;
+
+                            dropdown.showDialog(context);
+                          },
                           onLongPress: BooruType.saveable.contains(searchHandler.currentBooru.type)
                               ? () {
                                   SettingsPageOpen(
@@ -368,6 +372,8 @@ class TabSelector extends StatelessWidget {
                                   )
                                 : null,
                             onTap: () {
+                              if (searchHandler.isRunningAutoSearch.value) return;
+
                               SettingsPageOpen(
                                 context: context,
                                 page: (_) => const TabManagerPage(),
@@ -389,19 +395,36 @@ class TabSelector extends StatelessWidget {
                                           color: color,
                                           withFavicon: false,
                                         ),
-                                        MarqueeText(
-                                          text: [
-                                            if (currentTab.booruHandler is MergebooruHandler)
-                                              (currentTab.booruHandler as MergebooruHandler).booruList[0].name ?? ''
-                                            else
-                                              currentTab.booruHandler.booru.name ?? '',
-                                            //
-                                            for (final booru in (currentTab.secondaryBoorus.value ?? <Booru>[]))
-                                              booru.name ?? '',
-                                          ].join(', '),
-                                          style: inputDecoration.labelStyle?.copyWith(
-                                            fontSize: 14,
-                                            color: color?.withValues(alpha: 0.75),
+                                        Expanded(
+                                          child: Row(
+                                            mainAxisSize: .min,
+                                            crossAxisAlignment: .center,
+                                            children: [
+                                              if (currentTab.savePageEnabled.value)
+                                                const Padding(
+                                                  padding: EdgeInsets.only(right: 2),
+                                                  child: Icon(
+                                                    Icons.bookmark,
+                                                    size: 16,
+                                                  ),
+                                                ),
+                                              MarqueeText(
+                                                text: [
+                                                  if (currentTab.booruHandler is MergebooruHandler)
+                                                    (currentTab.booruHandler as MergebooruHandler).booruList[0].name ??
+                                                        ''
+                                                  else
+                                                    currentTab.booruHandler.booru.name ?? '',
+                                                  //
+                                                  for (final booru in (currentTab.secondaryBoorus.value ?? <Booru>[]))
+                                                    booru.name ?? '',
+                                                ].join(', '),
+                                                style: inputDecoration.labelStyle?.copyWith(
+                                                  fontSize: 14,
+                                                  color: color?.withValues(alpha: 0.75),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ],
@@ -1138,6 +1161,24 @@ class _TabManagerPageState extends State<TabManagerPage> {
           leading: const Icon(Icons.close, color: Colors.red),
           title: Text(context.loc.tabs.remove),
         ),
+        const SizedBox(height: 10),
+        StatefulBuilder(
+          builder: (context, setLocalState) => SwitchListTile(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(5),
+              side: BorderSide(color: Theme.of(context).colorScheme.secondary),
+            ),
+            secondary: Icon(tab.savePageEnabled.value ? Icons.bookmark : Icons.bookmark_outline),
+            title: Text(context.loc.pageChanger.saveViewedPage),
+            value: tab.savePageEnabled.value,
+            onChanged: (v) async {
+              setLocalState(() {
+                tab.savePageEnabled.value = v;
+              });
+              await searchHandler.backupTabs();
+            },
+          ),
+        ),
         const SizedBox(height: 20),
         ListTile(
           shape: RoundedRectangleBorder(
@@ -1503,9 +1544,9 @@ class _TabManagerPageState extends State<TabManagerPage> {
                       );
                     }
 
-                    final int newIndex = filteredTabs.indexOf(currentTab);
                     searchHandler.tabs.value = [...filteredTabs];
-                    searchHandler.changeTabIndex(newIndex);
+                    final int newIndex = filteredTabs.indexOf(currentTab);
+                    await searchHandler.changeTabIndex(newIndex);
 
                     getTabs();
                   },
@@ -1657,7 +1698,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
               final toTopBtn = ElevatedButton(
                 onPressed: scrollToTop,
                 child: const Icon(
-                  Icons.arrow_circle_up_rounded,
+                  Icons.swipe_up,
                   size: iconSize,
                 ),
               );
@@ -1742,7 +1783,7 @@ class _TabManagerPageState extends State<TabManagerPage> {
               final toBottomBtn = ElevatedButton(
                 onPressed: scrollToBottom,
                 child: const Icon(
-                  Icons.arrow_circle_down_rounded,
+                  Icons.swipe_down,
                   size: iconSize,
                 ),
               );
@@ -2244,23 +2285,41 @@ class TabManagerItem extends StatelessWidget {
                             filterText: filterText,
                           ),
                         ),
-                        if (onOptionsTap != null) ...[
-                          const SizedBox(width: 4),
-                          optionsWidgetBuilder?.call(context, onOptionsTap) ??
-                              IconButton(
-                                onPressed: onOptionsTap,
-                                icon: const Icon(CupertinoIcons.slider_horizontal_3),
+                        Obx(
+                          () {
+                            if (tab.savePageEnabled.value) {
+                              return const Padding(
+                                padding: EdgeInsets.only(left: 3),
+                                child: Icon(
+                                  Icons.bookmark,
+                                  size: 16,
+                                ),
+                              );
+                            }
+
+                            return const SizedBox.shrink();
+                          },
+                        ),
+                        if (onOptionsTap != null)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 3),
+                            child:
+                                optionsWidgetBuilder?.call(context, onOptionsTap) ??
+                                IconButton(
+                                  onPressed: onOptionsTap,
+                                  icon: const Icon(CupertinoIcons.slider_horizontal_3),
+                                ),
+                          ),
+                        if (onCloseTap != null)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 3),
+                            child: IconButton(
+                              onPressed: onCloseTap,
+                              icon: const Icon(
+                                Icons.close,
                               ),
-                        ],
-                        if (onCloseTap != null) ...[
-                          if (onOptionsTap == null) const SizedBox(width: 4) else const SizedBox(width: 8),
-                          IconButton(
-                            onPressed: onCloseTap,
-                            icon: const Icon(
-                              Icons.close,
                             ),
                           ),
-                        ],
                       ],
                     ),
                   ),
