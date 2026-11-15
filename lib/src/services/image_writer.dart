@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 
 import 'package:crypto/crypto.dart';
-import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
 
 import 'package:lolisnatcher/src/data/booru.dart';
@@ -15,13 +14,7 @@ import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
-import 'package:lolisnatcher/src/services/offline_thumbnail_service.dart';
-import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
 import 'package:lolisnatcher/src/services/offline_cache.dart';
-import 'package:lolisnatcher/src/services/saf_file_cache.dart';
-import 'package:lolisnatcher/src/services/download_policy.dart';
-import 'package:lolisnatcher/src/utils/dio_network.dart';
-import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 
 class ImageWriter {

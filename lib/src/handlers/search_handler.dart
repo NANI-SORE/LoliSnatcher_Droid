@@ -16,6 +16,7 @@ import 'package:uuid/uuid.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/settings/settings_registry.dart';
+import 'package:lolisnatcher/src/data/tab_group.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler_factory.dart';
 import 'package:lolisnatcher/src/handlers/database_handler.dart';
@@ -74,9 +75,67 @@ class SearchHandler {
 
   // search tabs list
   RxList<SearchTab> tabs = RxList<SearchTab>([]);
+  // tab groups
+  RxList<TabGroup> tabGroups = RxList<TabGroup>([]);
+  // collapsed state of the "ungrouped" section in the tab manager (only
+  // relevant/visible when at least one group exists)
+  final RxBool ungroupedCollapsed = false.obs;
   // current tab index
   RxInt index = 0.obs;
   RxnString tabId = RxnString(null);
+  SearchTab? _publishingTab;
+
+  /// Publishes a structural change while retaining the actual active tab.
+  /// Background changes leave its editor and in-flight search state intact.
+  void _publishTabs(
+    List<SearchTab> next, {
+    List<TabGroup>? groups,
+    SearchTab? selected,
+    bool? collapsed,
+    bool activate = true,
+  }) {
+    if (next.isEmpty) {
+      if (tabs.isNotEmpty) return;
+      if (groups != null) tabGroups.value = groups;
+      if (collapsed != null) ungroupedCollapsed.value = collapsed;
+      _scheduleTabsBackup();
+      return;
+    }
+    final previous = currentTabOrNull;
+    final nextGroups = groups ?? tabGroups.toList();
+    final normalized = _normalizeTabsByGroup(next, nextGroups);
+    final target = selected != null && normalized.contains(selected)
+        ? selected
+        : previous != null && normalized.contains(previous)
+        ? previous
+        : normalized.first;
+    final targetIndex = normalized.indexOf(target);
+
+    // Reactive listeners using currentTab/currentIndex must resolve the same
+    // tab even between the separate group/list/index notifications.
+    if (groups != null) tabGroups.value = nextGroups;
+    if (collapsed != null) ungroupedCollapsed.value = collapsed;
+    _publishingTab = target;
+    try {
+      tabs.value = normalized;
+      index.value = targetIndex;
+      tabId.value = target.id;
+      if (!identical(previous, target)) {
+        Tools.forceClearMemoryCache(withLive: true);
+        changeTabIndex(targetIndex, switchOnly: !activate);
+      }
+    } finally {
+      _publishingTab = null;
+    }
+    _scheduleTabsBackup();
+  }
+
+  TabGroup? groupById(String? id) {
+    if (id == null) return null;
+    return tabGroups.firstWhereOrNull((g) => g.id == id);
+  }
+
+  TabGroup? groupOf(SearchTab tab) => groupById(tab.groupId.value);
 
   // add new tab by the given search string
   void addTabByString(
@@ -89,11 +148,26 @@ class SearchHandler {
   }) {
     final Booru booru = customBooru ?? currentBooru;
 
+    // §0.1.1: prev/next inherit current tab's group; end is always ungrouped.
+    String? inheritedGroupId;
+    if (tabs.isNotEmpty) {
+      switch (addMode) {
+        case TabAddMode.prev:
+        case TabAddMode.next:
+          inheritedGroupId = currentTab.groupId.value;
+          break;
+        case TabAddMode.end:
+          inheritedGroupId = null;
+          break;
+      }
+    }
+
     // Add new tab depending on the add mode
     final SearchTab newTab = SearchTab(
       booru,
       secondaryBoorus,
       searchText,
+      groupId: inheritedGroupId,
     );
     newTab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
     if (customPage != null) {
@@ -102,21 +176,37 @@ class SearchHandler {
       newTab.scrollPage = targetPage;
     }
 
-    int newIndex = 0;
+    final next = tabs.toList();
     switch (addMode) {
       case TabAddMode.prev:
-        newIndex = currentIndex;
-        tabs.insert(newIndex, newTab);
+        next.insert(currentIndex, newTab);
         break;
       case TabAddMode.next:
-        newIndex = currentIndex + 1;
-        tabs.insert(newIndex, newTab);
+        next.insert(tabs.isEmpty ? 0 : currentIndex + 1, newTab);
         break;
       case TabAddMode.end:
-        tabs.add(newTab);
-        newIndex = total - 1;
+        // §0.1: ungrouped tab must land in the ungrouped block, before any
+        // grouped tabs. With no groups, the list end is the ungrouped block end.
+        if (tabGroups.isEmpty) {
+          next.add(newTab);
+        } else {
+          int insertAt = tabs.length;
+          for (int i = 0; i < tabs.length; i++) {
+            if (tabs[i].groupId.value != null) {
+              insertAt = i;
+              break;
+            }
+          }
+          next.insert(insertAt, newTab);
+        }
         break;
     }
+
+    _publishTabs(
+      next,
+      selected: switchToNew ? newTab : null,
+      activate: switchToNew,
+    );
 
     // record search query to db
     final SettingsHandler settingsHandler = SettingsHandler.instance;
@@ -127,65 +217,20 @@ class SearchHandler {
         booru.name,
       );
     }
-
-    // set to last tab if requested
-    if (switchToNew) {
-      changeTabIndex(newIndex);
-    }
   }
 
   // remove tab (or current if not provided) index and set new index and search text values
   void removeTabAt({int tabIndex = -1}) {
-    if (tabIndex == -1) {
-      tabIndex = currentIndex;
+    final position = tabIndex == -1 ? currentIndex : tabIndex;
+    if (position < 0 || position >= tabs.length) return;
+    if (tabs.length == 1) {
+      removeTabs([tabs.single]);
+      return;
     }
-
-    if (total > 1) {
-      if (tabIndex == currentIndex) {
-        // if current tab is the one being removed
-        if (currentIndex == total - 1) {
-          // if current tab is the last one, switch to previous one
-          changeTabIndex(currentIndex - 1);
-          tabs.removeAt(currentIndex + 1);
-        } else {
-          // if current tab is not the last one, switch to next one
-          changeTabIndex(currentIndex + 1, switchOnly: true);
-          tabs.removeAt(currentIndex - 1);
-          changeTabIndex(currentIndex - 1);
-        }
-      } else {
-        // if current tab is not the one being removed
-        if (tabIndex < currentIndex) {
-          // if tab to be removed is before current tab
-          changeTabIndex(currentIndex - 1, switchOnly: true);
-        }
-        tabs.removeAt(tabIndex);
-        changeTabIndex(currentIndex);
-      }
-    } else {
-      // if there is only one tab, reset to default tags
-      final context = NavigationHandler.instance.navContext;
-      FlashElements.showSnackbar(
-        title: Text(context.loc.searchHandler.removedLastTab, style: const TextStyle(fontSize: 20)),
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(context.loc.searchHandler.resettingSearchToDefaultTags),
-          ],
-        ),
-        leadingIcon: Icons.warning_amber,
-        leadingIconColor: Colors.yellow,
-        sideColor: Colors.yellow,
-      );
-
-      final String defaultText = currentBooru.defTags?.isNotEmpty == true ? currentBooru.defTags! : SX.defTags.value;
-      searchTextController.text = defaultText;
-
-      final SearchTab newTab = SearchTab(currentBooru, null, defaultText);
-      newTab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
-      tabs[0] = newTab;
-      changeTabIndex(0);
-    }
+    final active = currentTab;
+    final next = tabs.toList()..removeAt(position);
+    final selected = identical(active, tabs[position]) ? next[position.clamp(0, next.length - 1)] : active;
+    _publishTabs(next, selected: selected);
   }
 
   void removeTabs(List<SearchTab> tabsToRemove) {
@@ -199,12 +244,7 @@ class SearchHandler {
     if (remaining.isEmpty) {
       final String defaultText = fallbackBooru.defTags?.isNotEmpty == true ? fallbackBooru.defTags! : SX.defTags.value;
       final SearchTab newTab = SearchTab(fallbackBooru, null, defaultText);
-      // Publish a nonempty list, with a valid index even for synchronous listeners.
-      index.value = 0;
-      tabs.value = [newTab];
-      tabId.value = newTab.id;
-      Tools.forceClearMemoryCache(withLive: true);
-      changeTabIndex(0);
+      _publishTabs([newTab], selected: newTab);
 
       final context = NavigationHandler.instance.navContext;
       FlashElements.showSnackbar(
@@ -222,12 +262,7 @@ class SearchHandler {
     } else {
       final preservedIndex = remaining.indexWhere((tab) => tab.id == curTab.id);
       final newIndex = preservedIndex == -1 ? remaining.length - 1 : preservedIndex;
-      final selectionChanged = newIndex != currentIndex || remaining[newIndex].id != curTab.id;
-      index.value = newIndex;
-      tabs.value = remaining;
-      tabId.value = remaining[newIndex].id;
-      if (selectionChanged) Tools.forceClearMemoryCache(withLive: true);
-      changeTabIndex(newIndex);
+      _publishTabs(remaining, selected: remaining[newIndex]);
     }
   }
 
@@ -256,6 +291,7 @@ class SearchHandler {
         newSelected,
         newSecondary.isEmpty ? null : newSecondary,
         oldTab.tags,
+        groupId: oldTab.groupId.value,
       )..savePageEnabled.value = oldTab.savePageEnabled.value;
       replacedCount++;
       currentTabWasReplaced |= i == currentIndex;
@@ -280,25 +316,190 @@ class SearchHandler {
       return;
     }
 
-    // move tab
     final SearchTab tab = tabs[fromIndex];
-    tabs.removeAt(fromIndex);
-    tabs.insert(toIndex, tab);
+    final SearchTab targetTab = tabs[toIndex];
 
-    // check how index changed and jump to correct tab
-    if (fromIndex == currentIndex) {
-      // if the current tab is moved, change the current tab index
-      changeTabIndex(toIndex);
-    } else if (toIndex == currentIndex) {
-      // if moved into the place of the current tab, bump index of current tab
-      changeTabIndex(toIndex + 1);
-    } else if (fromIndex < currentIndex && toIndex > currentIndex) {
-      // if tab was before current tab and is moved after current tab, current tab is -1
-      changeTabIndex(currentIndex - 1);
-    } else if (fromIndex > currentIndex && toIndex < currentIndex) {
-      // if tab was after current tab and is moved before current tab, current tab is +1
-      changeTabIndex(currentIndex + 1);
+    // Absolute moves use the final list index. Relative row/header drops use
+    // assignTabToGroup instead, because removing the source shifts the target.
+    if (tab.groupId.value != targetTab.groupId.value) {
+      tab.groupId.value = targetTab.groupId.value;
     }
+
+    final next = tabs.toList();
+    next.removeAt(fromIndex);
+    next.insert(toIndex, tab);
+    _publishTabs(next);
+  }
+
+  /// Applies an order of the complete live tab set without changing selection.
+  /// Stale/partial orders are rejected instead of dropping or duplicating tabs.
+  bool applyTabOrder(List<SearchTab> ordered) {
+    final current = tabs.toSet();
+    if (ordered.length != tabs.length || ordered.toSet().length != current.length || !ordered.every(current.contains)) {
+      return false;
+    }
+    _publishTabs(ordered.toList());
+    return true;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tab groups: CRUD + invariant maintenance (§2)
+  // ---------------------------------------------------------------------------
+
+  TabGroup createGroup({
+    required String name,
+    Color? color,
+  }) {
+    final group = TabGroup(
+      name: name,
+      color: color ?? nextDefaultGroupColor(tabGroups.length),
+    );
+    tabGroups.add(group);
+    _scheduleTabsBackup();
+    return group;
+  }
+
+  void renameGroup(String id, String newName) {
+    final g = groupById(id);
+    if (g == null) return;
+    final trimmed = newName.trim();
+    if (trimmed.isEmpty) return;
+    g.name.value = trimmed;
+    _scheduleTabsBackup();
+  }
+
+  void recolorGroup(String id, Color color) {
+    final g = groupById(id);
+    if (g == null) return;
+    g.color.value = color;
+    _scheduleTabsBackup();
+  }
+
+  void toggleGroupCollapsed(String id, {bool? forcedValue}) {
+    final g = groupById(id);
+    if (g == null) return;
+    g.collapsed.value = forcedValue ?? !g.collapsed.value;
+    _scheduleTabsBackup();
+  }
+
+  void toggleUngroupedCollapsed({bool? forcedValue}) {
+    ungroupedCollapsed.value = forcedValue ?? !ungroupedCollapsed.value;
+    _scheduleTabsBackup();
+  }
+
+  /// Remove a group. With [deleteTabs] = false, contained tabs become ungrouped
+  /// and are moved to the end of the ungrouped section (§0.1.2). With
+  /// [deleteTabs] = true, contained tabs are removed via [removeTabs] (which
+  /// handles the "removed last tab" reset).
+  void deleteGroup(String id, {bool deleteTabs = false}) {
+    final group = groupById(id);
+    if (group == null) return;
+
+    final List<SearchTab> tabsInGroup = tabs.where((t) => t.groupId.value == id).toList();
+
+    if (deleteTabs && tabsInGroup.isNotEmpty) {
+      removeTabs(tabsInGroup);
+      tabGroups.removeWhere((g) => g.id == id);
+    } else {
+      for (final t in tabsInGroup) {
+        t.groupId.value = null;
+      }
+      tabGroups.removeWhere((g) => g.id == id);
+
+      _publishTabs(tabs.toList());
+
+      if (tabsInGroup.isNotEmpty) {
+        try {
+          final context = NavigationHandler.instance.navContext;
+          FlashElements.showSnackbar(
+            title: Text(
+              context.loc.tabs.groups.tabsMovedToUngrouped(count: tabsInGroup.length),
+              style: const TextStyle(fontSize: 18),
+            ),
+            sideColor: Colors.blue,
+            leadingIcon: Icons.folder_off,
+            duration: const Duration(seconds: 3),
+          );
+        } catch (_) {
+          // navContext may not be available during tests; ignore.
+        }
+      }
+    }
+
+    _scheduleTabsBackup();
+  }
+
+  /// Assign a single tab to [newGroupId] (or `null` for ungrouped).
+  ///
+  /// By default the tab lands at the end of the destination group's
+  /// contiguous range (§0.1). When [targetTab] belongs to that destination,
+  /// the tab is placed at its position instead. Both changes are persisted as
+  /// one operation so drag/drop previews match the restored order.
+  void assignTabToGroup(
+    SearchTab tab,
+    String? newGroupId, {
+    SearchTab? targetTab,
+  }) {
+    if (!tabs.contains(tab)) return;
+    if (tab.groupId.value == newGroupId) return;
+    if (newGroupId != null && groupById(newGroupId) == null) return;
+
+    tab.groupId.value = newGroupId;
+
+    // Move the tab to the end of the source list before normalizing so that
+    // _normalizeTabsByGroup appends it last to the destination bucket.
+    final List<SearchTab> input = List<SearchTab>.from(tabs.value);
+    input.remove(tab);
+    input.add(tab);
+
+    final normalizedTabs = _normalizeTabsByGroup(input, tabGroups.value);
+    if (targetTab != null && targetTab != tab && targetTab.groupId.value == newGroupId) {
+      final fromIndex = normalizedTabs.indexOf(tab);
+      final toIndex = normalizedTabs.indexOf(targetTab);
+      if (fromIndex >= 0 && toIndex >= 0 && fromIndex != toIndex) {
+        normalizedTabs.removeAt(fromIndex);
+        normalizedTabs.insert(toIndex, tab);
+      }
+    }
+
+    _publishTabs(normalizedTabs);
+  }
+
+  /// Batched version of [assignTabToGroup] (§2.3). Mutates `tabs.value` in one
+  /// shot to avoid N-fold cache clears + index recomputes.
+  void assignTabsToGroup(List<SearchTab> tabsToMove, String? newGroupId) {
+    if (tabsToMove.isEmpty) return;
+    if (newGroupId != null && groupById(newGroupId) == null) return;
+
+    final Set<SearchTab> requestedTabs = tabsToMove.toSet();
+    final List<SearchTab> orderedTabsToMove = [
+      for (final tab in tabs)
+        if (requestedTabs.contains(tab)) tab,
+    ];
+    if (orderedTabsToMove.isEmpty) return;
+
+    for (final t in orderedTabsToMove) {
+      t.groupId.value = newGroupId;
+    }
+
+    final List<SearchTab> input = List<SearchTab>.from(tabs.value);
+    input.removeWhere(requestedTabs.contains);
+    input.addAll(orderedTabsToMove);
+
+    _publishTabs(input);
+  }
+
+  /// Move a group from [fromIndex] to [toIndex] in [tabGroups] order. The
+  /// contiguous block of tabs in that group moves with it (§2.4).
+  void moveGroup(int fromIndex, int toIndex) {
+    if (fromIndex == toIndex) return;
+    if (fromIndex < 0 || fromIndex >= tabGroups.length) return;
+    if (toIndex < 0 || toIndex >= tabGroups.length) return;
+
+    final groups = tabGroups.toList();
+    final group = groups.removeAt(fromIndex);
+    groups.insert(toIndex, group);
+    _publishTabs(tabs.toList(), groups: groups);
   }
 
   SearchTab? getTabByIndex(int index) {
@@ -520,6 +721,7 @@ class SearchHandler {
       currentBooru,
       currentSecondaryBoorus.value,
       currentTab.tags,
+      groupId: currentTab.groupId.value,
     );
     final targetPage = max(newTab.firstPage, newPageNum);
     newTab.booruHandler.pageNum = targetPage - 1;
@@ -588,17 +790,26 @@ class SearchHandler {
     return result;
   }
 
-  int get currentIndex => index.value;
-  String? get currentTabId => tabId.value;
+  int get currentIndex {
+    final publishing = _publishingTab;
+    if (publishing != null) {
+      final position = tabs.indexOf(publishing);
+      if (position >= 0) return position;
+    }
+    return index.value;
+  }
+
+  String? get currentTabId => _publishingTab?.id ?? tabId.value;
   int get total => tabs.length;
-  bool get hasCurrentTab => tabs.isNotEmpty && currentIndex >= 0 && currentIndex < tabs.length;
-  SearchTab? get currentTabOrNull => hasCurrentTab ? tabs[currentIndex] : null;
+  bool get hasCurrentTab =>
+      _publishingTab != null || (tabs.isNotEmpty && currentIndex >= 0 && currentIndex < tabs.length);
+  SearchTab? get currentTabOrNull => _publishingTab ?? (hasCurrentTab ? tabs[currentIndex] : null);
   BooruHandler? get currentBooruHandlerOrNull => currentTabOrNull?.booruHandler;
   Booru? get currentBooruOrNull => currentTabOrNull?.selectedBooru.value;
   Rxn<List<Booru>?>? get currentSecondaryBoorusOrNull => currentTabOrNull?.secondaryBoorus;
   RxList<BooruItem>? get currentSelectedOrNull => currentTabOrNull?.selected;
   RxList<BooruItem>? get currentFetchedOrNull => currentBooruHandlerOrNull?.filteredFetched;
-  SearchTab get currentTab => tabs[currentIndex];
+  SearchTab get currentTab => _publishingTab ?? tabs[currentIndex];
   BooruHandler get currentBooruHandler => currentTab.booruHandler;
   Booru get currentBooru => currentTab.selectedBooru.value;
   Rxn<List<Booru>?> get currentSecondaryBoorus => currentTab.secondaryBoorus;
@@ -662,6 +873,7 @@ class SearchHandler {
         targetBooru,
         currentSecondaryBoorus.value,
         text,
+        groupId: currentTab.groupId.value,
       );
       newTab.savePageEnabled.value = tabs[currentIndex].savePageEnabled.value;
       tabs[currentIndex] = newTab;
@@ -722,8 +934,13 @@ class SearchHandler {
     final bool canAddSecondary = secondaryBoorus != null && settingsHandler.booruList.length > 1;
     final List<Booru>? secondary = canAddSecondary ? secondaryBoorus : null;
 
-    final SearchTab newTab = SearchTab(currentBooru, secondary, currentTab.tags);
-    newTab.savePageEnabled.value = tabs[currentIndex].savePageEnabled.value;
+    final SearchTab newTab = SearchTab(
+      currentBooru,
+      secondary,
+      currentTab.tags,
+      groupId: currentTab.groupId.value,
+    );
+    newTab.savePageEnabled.value = currentTab.savePageEnabled.value;
     tabs[currentIndex] = newTab;
 
     // run search
@@ -829,6 +1046,7 @@ class SearchHandler {
   void setRootRestate(VoidCallback? rootSetStateCallback) => rootRestate = rootSetStateCallback;
 
   void dispose() {
+    _tabsBackupDebounceTimer?.cancel();
     _scrollStream?.close();
     _rootVolumeListener?.cancel();
     _volumeStreamController?.close();
@@ -843,6 +1061,8 @@ class SearchHandler {
   // bool to notify the main build that tab restoratiuon is complete
   RxBool isRestored = false.obs;
   RxBool canBackup = false.obs;
+  Timer? _tabsBackupDebounceTimer;
+  Future<void> _tabsBackupWriteChain = Future<void>.value();
 
   // keeps track of the last time tabs were backupped
   DateTime lastBackupTime = DateTime.now();
@@ -866,7 +1086,7 @@ class SearchHandler {
             (booru) => booru.name == booruAndTags[0],
             orElse: Booru.unknown,
           );
-          findBooru = handleFavDlsNameChange(findBooru);
+          findBooru = handleFavDlsNameChange(findBooru, backupName: booruAndTags[0]);
           if (findBooru.name != null) {
             final SearchTab newTab = SearchTab(findBooru, null, booruAndTags[1]);
             restoredGlobals.add(newTab);
@@ -945,89 +1165,10 @@ class SearchHandler {
   }
 
   @Deprecated('Switched to new json format. Remove this after a few versions')
-  void mergeTabsLegacy(String tabStr) {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
-    final List<List<String>> splitInput = decodeBackupString(tabStr);
-    final List<SearchTab> restoredGlobals = [];
-    for (final List<String> booruAndTags in splitInput) {
-      // check for parsing errors
-      final bool isEntryValid = booruAndTags.length > 1 && booruAndTags[0].isNotEmpty;
-      if (isEntryValid) {
-        // find booru by name and create searchtab with given tags
-        Booru findBooru = settingsHandler.booruList.firstWhere(
-          (booru) => booru.name == booruAndTags[0],
-          orElse: Booru.unknown,
-        );
-        findBooru = handleFavDlsNameChange(findBooru);
-        if (findBooru.name != null) {
-          final SearchTab newTab = SearchTab(findBooru, null, booruAndTags[1]);
-          // add only if there are not already the same tab in the list and booru is available on this device
-          if (tabs.indexWhere(
-                (tab) => tab.selectedBooru.value.name == newTab.selectedBooru.value.name && tab.tags == newTab.tags,
-              ) ==
-              -1) {
-            restoredGlobals.add(newTab);
-          }
-        }
-      }
-    }
-    tabs.addAll(restoredGlobals);
-
-    final context = NavigationHandler.instance.navContext;
-    FlashElements.showSnackbar(
-      title: Text(context.loc.searchHandler.tabsMerged),
-      content: Text(
-        context.loc.searchHandler.addedTabsCount(count: restoredGlobals.length),
-      ),
-      sideColor: Colors.green,
-      leadingIcon: Icons.settings_backup_restore,
-    );
-  }
+  void mergeTabsLegacy(String tabStr) => mergeTabs(tabStr);
 
   @Deprecated('Switched to new json format. Remove this after a few versions')
-  void replaceTabsLegacy(String tabStr) {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
-    final List<List<String>> splitInput = decodeBackupString(tabStr);
-    final List<SearchTab> restoredGlobals = [];
-    int newIndex = 0;
-
-    // reset current tab index to avoid exceptions when tab list length is different
-    changeTabIndex(0, switchOnly: true);
-
-    for (final List<String> booruAndTags in splitInput) {
-      // check for parsing errors
-      final bool isEntryValid = booruAndTags.length > 1 && booruAndTags[0].isNotEmpty;
-      if (isEntryValid) {
-        // find booru by name and create searchtab with given tags
-        Booru findBooru = settingsHandler.booruList.firstWhere(
-          (booru) => booru.name == booruAndTags[0],
-          orElse: Booru.unknown,
-        );
-        findBooru = handleFavDlsNameChange(findBooru);
-        if (findBooru.name != null) {
-          final SearchTab newTab = SearchTab(findBooru, null, booruAndTags[1]);
-          restoredGlobals.add(newTab);
-
-          if (booruAndTags[2] == 'selected') {
-            final int index = splitInput.indexWhere((si) => si == booruAndTags);
-            newIndex = index;
-          }
-        }
-      }
-    }
-    tabs.value = restoredGlobals;
-    changeTabIndex(newIndex);
-
-    final context = NavigationHandler.instance.navContext;
-    FlashElements.showSnackbar(
-      title: Text(context.loc.searchHandler.tabsReplaced),
-      content: Text(
-        context.loc.searchHandler.receivedTabsCount(count: restoredGlobals.length),
-      ),
-      sideColor: Colors.green,
-      leadingIcon: Icons.settings_backup_restore,
-    );
-  }
+  void replaceTabsLegacy(String tabStr) => replaceTabs(tabStr);
 
   //
 
@@ -1125,73 +1266,373 @@ class SearchHandler {
     return;
   }
 
-  void mergeTabsNew(String tabStr) {
-    final List<TabBackup> tabBackups = TabBackup.fromJsonList(tabStr);
-    final List<SearchTab> restoredTabs = [];
-    for (final tabBackup in tabBackups) {
-      final newTab = parseTabFromBackup(tabBackup);
-
-      // add only if there are not already the same tab in the list and booru is available on this device
-      if (newTab.selectedBooru.value.name != null &&
-          ![...tabs, ...restoredTabs].any(
-            (tab) =>
-                tab.selectedBooru.value.name == newTab.selectedBooru.value.name &&
-                listEquals(
-                  tab.secondaryBoorus.value?.map((t) => t.name).toList(),
-                  newTab.secondaryBoorus.value?.map((t) => t.name).toList(),
-                ) &&
-                tab.tags == newTab.tags,
-          )) {
-        restoredTabs.add(newTab);
-      }
-    }
-
-    tabs.addAll(restoredTabs);
-
-    final context = NavigationHandler.instance.navContext;
-    FlashElements.showSnackbar(
-      title: Text(context.loc.searchHandler.tabsMerged),
-      content: Text(
-        context.loc.searchHandler.addedTabsCount(count: restoredTabs.length),
-      ),
-      sideColor: Colors.green,
-      leadingIcon: Icons.settings_backup_restore,
-    );
+  String _tabMergeIdentity(SearchTab tab) {
+    return jsonEncode([
+      tab.selectedBooru.value.name,
+      [for (final booru in tab.secondaryBoorus.value ?? const <Booru>[]) booru.name],
+      tab.tags,
+    ]);
   }
 
-  void replaceTabsNew(String tabStr) {
-    final List<TabBackup> tabBackups = TabBackup.fromJsonList(tabStr);
-    final List<SearchTab> restoredTabs = [];
-    int newSelectedIndex = 0;
-    bool foundSelected = false;
+  _TabImportSnapshot _decodeTabsImport(String input) {
+    final trimmed = input.trimLeft();
+    if (trimmed.startsWith('{')) {
+      final parsed = _parseEnvelope(input);
+      if (parsed.envelope == null) throw FormatException(parsed.failureReason ?? 'Invalid tab backup');
+      final envelope = parsed.envelope!;
+      final groupsJson = (envelope['groups'] as List<dynamic>?) ?? const [];
+      final tabsJson = (envelope['tabs'] as List<dynamic>?) ?? const [];
+      final groups = TabGroup.fromJsonList(groupsJson);
+      final backups = TabBackup.fromJsonList(jsonEncode(tabsJson));
+      return _TabImportSnapshot(
+        tabs: backups,
+        groups: groups,
+        collapsed: (envelope['uc'] as bool?) ?? false,
+        hadIssues: groups.length != groupsJson.length || backups.length != tabsJson.length,
+      );
+    }
+    if (trimmed.startsWith('[')) {
+      final decoded = jsonDecode(input) as List<dynamic>;
+      final backups = TabBackup.fromJsonList(input);
+      return _TabImportSnapshot(tabs: backups, hadIssues: backups.length != decoded.length);
+    }
+    final entries = decodeBackupString(input);
+    final backups = <TabBackup>[];
+    for (final entry in entries) {
+      if (entry.length < 2 || entry.first.isEmpty) continue;
+      backups.add(TabBackup(tags: entry[1], booru: entry.first, selected: entry.length > 2 && entry[2] == 'selected'));
+    }
+    if (backups.isEmpty) throw const FormatException('Invalid legacy tab backup');
+    return _TabImportSnapshot(tabs: backups, hadIssues: backups.length != entries.length);
+  }
 
-    // reset current tab index to avoid exceptions when tab list length is different
-    changeTabIndex(0, switchOnly: true);
+  SearchTab? _defaultImportedTab() {
+    final settings = SettingsHandler.instance;
+    final available = settings.booruList.where((booru) => booru.type != null).toList();
+    if (available.isEmpty) return null;
+    final booru = available.firstWhere((booru) => booru.name == SX.prefBooru.value, orElse: () => available.first);
+    final tags = booru.defTags?.isNotEmpty == true ? booru.defTags! : SX.defTags.value;
+    return SearchTab(booru, null, tags);
+  }
 
-    for (final tabBackup in tabBackups) {
-      final newTab = parseTabFromBackup(tabBackup);
-      if (newTab.selectedBooru.value.name != null) {
-        restoredTabs.add(newTab);
+  bool _sameImportedGroup(TabGroup existing, TabGroup incoming) =>
+      existing.name.value == incoming.name.value && existing.color.value == incoming.color.value;
 
-        if (!foundSelected && tabBackup.selected) {
-          newSelectedIndex = restoredTabs.length - 1;
-          foundSelected = true;
+  void _importTabs(String input, {required bool replace}) {
+    final _TabImportSnapshot snapshot;
+    try {
+      snapshot = _decodeTabsImport(input);
+    } on FormatException {
+      _showTabsImportResult(replace: replace, count: 0, failed: true);
+      return;
+    }
+    final restored = <SearchTab>[];
+    final identities = replace ? <String>{} : tabs.map(_tabMergeIdentity).toSet();
+    SearchTab? selected;
+    bool hadIssues = snapshot.hadIssues;
+    for (final backup in snapshot.tabs) {
+      final tab = parseTabFromBackup(backup);
+      if (tab.selectedBooru.value.name == null || tab.selectedBooru.value.type == null) {
+        hadIssues = true;
+        continue;
+      }
+      if (!replace && !identities.add(_tabMergeIdentity(tab))) continue;
+      restored.add(tab);
+      if (selected == null && backup.selected) selected = tab;
+    }
+    final count = restored.length;
+    if (replace) {
+      final groups = snapshot.groups.toList();
+      bool collapsed = snapshot.collapsed;
+      if (restored.isEmpty) {
+        final fallback = _defaultImportedTab();
+        if (fallback == null) {
+          // Nothing usable to install; preserve the current session/onboarding.
+          _showTabsImportResult(replace: true, count: 0, hadIssues: true);
+          return;
         }
+        restored.add(fallback);
+        selected = fallback;
+        groups.clear();
+        collapsed = false;
+      }
+      _publishTabs(restored, groups: groups, selected: selected ?? restored.first, collapsed: collapsed);
+    } else {
+      final groups = tabGroups.toList();
+      final byId = {for (final group in groups) group.id: group};
+      final importedIds = snapshot.groups.map((group) => group.id).toSet();
+      final populatedIds = snapshot.tabs.map((tab) => tab.groupId).whereType<String>().toSet();
+      final retainedIds = restored.map((tab) => tab.groupId.value).whereType<String>().toSet();
+      final remapped = <String, String>{};
+      for (final group in snapshot.groups) {
+        // Don't create empty groups as a side effect of tab deduplication.
+        if (populatedIds.contains(group.id) && !retainedIds.contains(group.id)) continue;
+        final existing = byId[group.id];
+        if (existing != null && _sameImportedGroup(existing, group)) {
+          remapped[group.id] = existing.id;
+          continue;
+        }
+        String id = group.id;
+        if (existing != null) {
+          // A stable remap permits later imports to add tabs to the same
+          // imported group without overwriting a different local group.
+          id = uuid.v5(Namespace.url.value, jsonEncode(['LoliSnatcher tab group', group.toJson()..remove('cl')]));
+          while (importedIds.contains(id) || (byId[id] != null && !_sameImportedGroup(byId[id]!, group))) {
+            id = uuid.v4();
+          }
+        }
+        remapped[group.id] = id;
+        if (byId.containsKey(id)) continue;
+        final imported = TabGroup(
+          id: id,
+          name: group.name.value,
+          color: group.color.value,
+          collapsed: group.collapsed.value,
+        );
+        byId[id] = imported;
+        groups.add(imported);
+      }
+      for (final tab in restored) {
+        final sourceId = tab.groupId.value;
+        tab.groupId.value = sourceId != null && importedIds.contains(sourceId) ? remapped[sourceId] : null;
+      }
+      if (restored.isNotEmpty || groups.length != tabGroups.length) {
+        _publishTabs([...tabs, ...restored], groups: groups);
       }
     }
-    tabs.value = restoredTabs;
-    changeTabIndex(newSelectedIndex);
+    _showTabsImportResult(replace: replace, count: count, hadIssues: hadIssues);
+  }
 
-    final context = NavigationHandler.instance.navContext;
+  void _showTabsImportResult({required bool replace, required int count, bool failed = false, bool hadIssues = false}) {
+    final context = NavigationHandler.instance.navigatorKey.currentContext;
+    if (context == null || !context.mounted) return;
     FlashElements.showSnackbar(
-      title: Text(context.loc.searchHandler.tabsReplaced),
-      content: Text(
-        context.loc.searchHandler.receivedTabsCount(count: restoredTabs.length),
+      context: context,
+      title: Text(replace ? context.loc.searchHandler.tabsReplaced : context.loc.searchHandler.tabsMerged),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            failed
+                ? context.loc.tabs.groups.backupImportFailed
+                : replace
+                ? context.loc.searchHandler.receivedTabsCount(count: count)
+                : context.loc.searchHandler.addedTabsCount(count: count),
+          ),
+          if (!failed && hadIssues) Text(context.loc.searchHandler.someRestoredTabsHadIssues),
+        ],
       ),
-      sideColor: Colors.green,
-      leadingIcon: Icons.settings_backup_restore,
+      sideColor: failed || hadIssues ? Colors.orange : Colors.green,
+      leadingIcon: failed || hadIssues ? Icons.warning_amber : Icons.settings_backup_restore,
     );
   }
+
+  void mergeTabsNew(String tabStr) => mergeTabs(tabStr);
+
+  void replaceTabsNew(String tabStr) => replaceTabs(tabStr);
+
+  // ---------------------------------------------------------------------------
+  // V2 envelope (groups)
+  // ---------------------------------------------------------------------------
+
+  ({Map<String, dynamic>? envelope, String? failureReason}) _parseEnvelope(
+    String input,
+  ) {
+    Map<String, dynamic> decoded;
+    try {
+      final dyn = jsonDecode(input);
+      if (dyn is! Map<String, dynamic>) {
+        return (envelope: null, failureReason: 'not-object');
+      }
+      decoded = dyn;
+    } catch (_) {
+      return (envelope: null, failureReason: 'parse-error');
+    }
+    final v = decoded['v'];
+    if (v != 2) {
+      return (envelope: null, failureReason: 'unsupported-version');
+    }
+    if ((decoded['groups'] != null && decoded['groups'] is! List) ||
+        (decoded['tabs'] != null && decoded['tabs'] is! List) ||
+        (decoded['uc'] != null && decoded['uc'] is! bool)) {
+      return (envelope: null, failureReason: 'malformed-shape');
+    }
+    return (envelope: decoded, failureReason: null);
+  }
+
+  // Re-orders a list of tabs to satisfy the contiguous-block invariant
+  // (§0.1): [ungrouped] + [group_0 tabs] + [group_1 tabs] + …
+  List<SearchTab> _normalizeTabsByGroup(
+    List<SearchTab> input,
+    List<TabGroup> groups,
+  ) {
+    final ungrouped = <SearchTab>[];
+    final byGroup = <String, List<SearchTab>>{
+      for (final g in groups) g.id: <SearchTab>[],
+    };
+    for (final t in input) {
+      final gid = t.groupId.value;
+      if (gid != null && byGroup.containsKey(gid)) {
+        byGroup[gid]!.add(t);
+      } else {
+        // dangling group ids are dropped to ungrouped
+        if (gid != null) t.groupId.value = null;
+        ungrouped.add(t);
+      }
+    }
+    return [
+      ...ungrouped,
+      for (final g in groups) ...byGroup[g.id]!,
+    ];
+  }
+
+  Future<void> restoreTabsV2(String result) async {
+    final SettingsHandler settingsHandler = SettingsHandler.instance;
+
+    final parsed = _parseEnvelope(result);
+    if (parsed.envelope == null) {
+      isRestored.value = true;
+      // Don't clobber current tabs on unrecognized envelope. If current tabs
+      // are also empty, fall back to a single default tab.
+      final context = NavigationHandler.instance.navContext;
+      FlashElements.showSnackbar(
+        title: Text(context.loc.searchHandler.tabsRestored, style: const TextStyle(fontSize: 20)),
+        content: Text(
+          parsed.failureReason == 'unsupported-version'
+              ? context.loc.tabs.groups.newerVersionBackup
+              : context.loc.tabs.groups.malformedBackup,
+        ),
+        sideColor: Colors.orange,
+        leadingIcon: Icons.warning_amber,
+        duration: const Duration(seconds: 8),
+      );
+
+      if (tabs.isEmpty && settingsHandler.booruList.isNotEmpty) {
+        final Booru defaultBooru = settingsHandler.booruList[0];
+        final String defaultText = defaultBooru.defTags?.isNotEmpty == true
+            ? defaultBooru.defTags!
+            : SX.defTags.value;
+        if (defaultBooru.type != null) {
+          tabs.add(SearchTab(defaultBooru, null, defaultText));
+          await changeTabIndex(0);
+        }
+        searchTextController.text = defaultText;
+      }
+      return;
+    }
+
+    final envelope = parsed.envelope!;
+    ungroupedCollapsed.value = (envelope['uc'] as bool?) ?? false;
+    final List<dynamic> groupsJson = (envelope['groups'] as List<dynamic>?) ?? const [];
+    final List<dynamic> tabsJson = (envelope['tabs'] as List<dynamic>?) ?? const [];
+
+    // groups are parsed on the main isolate (cheap)
+    final List<TabGroup> restoredGroups = TabGroup.fromJsonList(groupsJson);
+
+    // tabs are parsed on a background isolate (potentially many)
+    final String tabsString = jsonEncode(tabsJson);
+    final List<TabBackup> tabBackups = await compute(TabBackup.fromJsonList, tabsString);
+
+    bool foundBrokenItems = false;
+    final List<TabBackup> brokenItems = [];
+    final List<SearchTab> restoredTabs = [];
+    SearchTab? selectedTab;
+
+    for (final tabBackup in tabBackups) {
+      try {
+        final newTab = parseTabFromBackup(tabBackup);
+        if (newTab.selectedBooru.value.name != null) {
+          restoredTabs.add(newTab);
+        } else {
+          foundBrokenItems = true;
+          brokenItems.add(tabBackup);
+          if (settingsHandler.booruList.isNotEmpty) {
+            restoredTabs.add(
+              SearchTab(
+                settingsHandler.booruList[0],
+                null,
+                tabBackup.tags,
+                groupId: tabBackup.groupId,
+              ),
+            );
+          }
+        }
+        if (selectedTab == null && tabBackup.selected) {
+          selectedTab = restoredTabs.isNotEmpty ? restoredTabs.last : null;
+        }
+      } catch (e, s) {
+        Logger.Inst().log(
+          e,
+          'SearchHandler',
+          'restoreTabsV2',
+          LogTypes.exception,
+          s: s,
+        );
+      }
+    }
+
+    isRestored.value = true;
+
+    if (restoredTabs.isNotEmpty) {
+      // §3.6: groups MUST be assigned before tabs so any reactive listener
+      // resolving tab.group sees a valid group id, not a dangling one.
+      tabGroups.value = restoredGroups;
+
+      final List<SearchTab> normalized = _normalizeTabsByGroup(restoredTabs, restoredGroups);
+      tabs.value = normalized;
+
+      final int newSelectedIndex = selectedTab != null ? normalized.indexOf(selectedTab) : 0;
+      await changeTabIndex(newSelectedIndex < 0 ? 0 : newSelectedIndex);
+
+      final context = NavigationHandler.instance.navContext;
+      FlashElements.showSnackbar(
+        title: Text(context.loc.searchHandler.tabsRestored, style: const TextStyle(fontSize: 20)),
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.loc.searchHandler.restoredTabsCount(count: restoredTabs.length),
+            ),
+            if (foundBrokenItems) ...[
+              Text(context.loc.searchHandler.someRestoredTabsHadIssues),
+              Text(context.loc.searchHandler.theyWereSetToDefaultOrIgnored),
+              Text(context.loc.searchHandler.listOfBrokenTabs),
+              Text(
+                brokenItems
+                    .map(
+                      (t) => '${tabBackups.indexOf(t)}${t.booru}: ${t.tags.isEmpty ? context.loc.tabs.empty : t.tags}',
+                    )
+                    .join(', '),
+              ),
+            ],
+          ],
+        ),
+        sideColor: foundBrokenItems ? Colors.yellow : Colors.green,
+        leadingIcon: foundBrokenItems ? Icons.warning_amber : Icons.settings_backup_restore,
+        duration: Duration(seconds: brokenItems.isEmpty ? 4 : 10),
+      );
+    } else {
+      // No valid tabs in envelope — set a default tab. Don't keep the imported
+      // groups around since they have no tabs.
+      Booru defaultBooru = Booru.unknown();
+      if (settingsHandler.booruList.isNotEmpty) {
+        defaultBooru = settingsHandler.booruList[0];
+      }
+      final String defaultText = defaultBooru.defTags?.isNotEmpty == true
+          ? defaultBooru.defTags!
+          : SX.defTags.value;
+      if (defaultBooru.type != null) {
+        tabs.add(SearchTab(defaultBooru, null, defaultText));
+        await changeTabIndex(0);
+      }
+      searchTextController.text = defaultText;
+    }
+  }
+
+  void mergeTabsV2(String tabStr) => mergeTabs(tabStr);
+
+  void replaceTabsV2(String tabStr) => replaceTabs(tabStr);
 
   String? generateBackupJson() {
     final SettingsHandler settingsHandler = SettingsHandler.instance;
@@ -1203,7 +1644,7 @@ class SearchHandler {
         tabs[0].booruHandler.booru.name == SX.prefBooru.value &&
         tabs[0].tags == SX.defTags.value &&
         (_getTabCurrentPage(tabs[0]) ?? tabs[0].firstPage) <= tabs[0].firstPage &&
-        tabs[0].savePageEnabled.value == SX.defaultSavePageEnabled.value;
+        tabs[0].savePageEnabled.value == SX.defaultSavePageEnabled.value && tabGroups.isEmpty;
     if (!onlyDefaultTab && settingsHandler.booruList.isNotEmpty) {
       final List<String> dump = tabs.map((tab) {
         final String tags = tab.tags;
@@ -1223,11 +1664,24 @@ class SearchHandler {
             selected: selected,
             pageNum: savedPageNum,
             savePageEnabled: tab.savePageEnabled.value,
+            groupId: tab.groupId.value,
           ).toJson(),
         );
       }).toList();
 
-      return '[${dump.join(',')}]';
+      final String tabsBody = '[${dump.join(',')}]';
+
+      // Wrap in envelope only when groups exist; otherwise keep emitting the
+      // bare array so older app versions (and external tooling) can still read
+      // backups produced by this version.
+      if (tabGroups.isNotEmpty) {
+        final List<String> groupsDump = tabGroups.map((g) => jsonEncode(g.toJson())).toList();
+        final String groupsBody = '[${groupsDump.join(',')}]';
+        final String ungroupedCollapsedBody = ungroupedCollapsed.value ? ',"uc":true' : '';
+        return '{"v":2,"groups":$groupsBody,"tabs":$tabsBody$ungroupedCollapsedBody}';
+      }
+
+      return tabsBody;
     } else {
       return null;
     }
@@ -1250,22 +1704,22 @@ class SearchHandler {
       (b) => b.name == backup.booru,
       orElse: Booru.unknown,
     );
-    selectedBooru = handleFavDlsNameChange(selectedBooru);
-    List<Booru> secondaryBoorus = backup.secondaryBoorus
+    selectedBooru = handleFavDlsNameChange(selectedBooru, backupName: backup.booru);
+    final List<Booru> secondaryBoorus = backup.secondaryBoorus
         .map(
-          (b) => booruList.firstWhere(
-            (booru) => booru.name == b,
-            orElse: Booru.unknown,
+          (name) => handleFavDlsNameChange(
+            booruList.firstWhere((booru) => booru.name == name, orElse: Booru.unknown),
+            backupName: name,
           ),
         )
         .where((b) => b.name != null)
         .toList();
-    secondaryBoorus = secondaryBoorus.map(handleFavDlsNameChange).where((b) => b.name != null).toList();
 
     final tab = SearchTab(
       selectedBooru,
       secondaryBoorus.isEmpty ? null : secondaryBoorus,
       backup.tags,
+      groupId: backup.groupId,
     );
     tab.savePageEnabled.value = backup.savePageEnabled;
     if (backup.savePageEnabled && backup.pageNum != null && backup.pageNum! >= tab.firstPage) {
@@ -1278,24 +1732,25 @@ class SearchHandler {
     return tab;
   }
 
-  Booru handleFavDlsNameChange(Booru booru) {
-    if (booru.name != null) {
+  Booru handleFavDlsNameChange(Booru booru, {String? backupName}) {
+    if (booru.name != null || backupName == null) {
       return booru;
     }
 
-    final booruList = SettingsHandler.instance.booruList;
-    Booru tempBooru = Booru.unknown();
-    // a workaround to fix favs/dls tabs not parsing/restoring correctly due to localized names
+    final sources = SettingsHandler.instance.booruList.where((booru) => booru.type?.isFavouritesOrDownloads == true);
+    if (sources.isEmpty) return booru;
+    // Only a known old localized name can resolve to the corresponding local
+    // source. An unrelated removed server must never silently become favourites.
     for (final l in AppLocale.values) {
-      tempBooru = booruList.firstWhere(
-        (b) => b.name == l.translations['favourites'] || b.name == l.translations['downloads'],
-        orElse: Booru.unknown,
+      final favourite = backupName == l.translations['favourites'];
+      final downloads = backupName == l.translations['downloads'];
+      if (!favourite && !downloads) continue;
+      final match = sources.firstWhereOrNull(
+        (booru) => (favourite && booru.type?.isFavourites == true) || (downloads && booru.type?.isDownloads == true),
       );
-      if (tempBooru.name != null) {
-        break;
-      }
+      if (match != null) return match;
     }
-    return tempBooru;
+    return booru;
   }
 
   Future<void> restoreTabs() async {
@@ -1303,11 +1758,18 @@ class SearchHandler {
     final settingsHandler = SettingsHandler.instance;
     try {
       final String? result = await settingsHandler.dbHandler.getTabRestore();
-      if (result == null || result.startsWith('[')) {
-        await restoreTabsNew(result);
+      if (result == null) {
+        await restoreTabsNew(null);
       } else {
-        // ignore: deprecated_member_use_from_same_package
-        await restoreTabsLegacy(result);
+        final String trimmed = result.trimLeft();
+        if (trimmed.startsWith('{')) {
+          await restoreTabsV2(result);
+        } else if (trimmed.startsWith('[')) {
+          await restoreTabsNew(result);
+        } else {
+          // ignore: deprecated_member_use_from_same_package
+          await restoreTabsLegacy(result);
+        }
       }
     } catch (e, s) {
       Logger.Inst().log(
@@ -1365,39 +1827,48 @@ class SearchHandler {
     }
   }
 
-  void mergeTabs(String tabStr) {
-    if (tabStr.startsWith('[')) {
-      mergeTabsNew(tabStr);
-    } else {
-      // ignore: deprecated_member_use_from_same_package
-      mergeTabsLegacy(tabStr);
-    }
-  }
+  void mergeTabs(String tabStr) => _importTabs(tabStr, replace: false);
 
-  void replaceTabs(String tabStr) {
-    if (tabStr.startsWith('[')) {
-      replaceTabsNew(tabStr);
-    } else {
-      // ignore: deprecated_member_use_from_same_package
-      replaceTabsLegacy(tabStr);
-    }
-  }
+  void replaceTabs(String tabStr) => _importTabs(tabStr, replace: true);
 
-  Future<void> backupTabs() async {
+  void _scheduleTabsBackup() {
     if (!canBackup.value) {
       return;
     }
+    _tabsBackupDebounceTimer?.cancel();
+    _tabsBackupDebounceTimer = Timer(const Duration(milliseconds: 250), () {
+      _tabsBackupDebounceTimer = null;
+      unawaited(backupTabs());
+    });
+  }
 
-    final String? backupString = generateBackupJson();
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
-    // print('backupString: $backupString');
-    if (backupString != null) {
-      await settingsHandler.dbHandler.addTabRestore(backupString);
-    } else {
-      await settingsHandler.dbHandler.clearTabRestore();
+  Future<void> backupTabs() {
+    if (!canBackup.value) {
+      return Future<void>.value();
     }
 
-    lastBackupTime = DateTime.now();
+    _tabsBackupDebounceTimer?.cancel();
+    _tabsBackupDebounceTimer = null;
+    final String? backupString = generateBackupJson();
+    final write = _tabsBackupWriteChain.then((_) async {
+      final SettingsHandler settingsHandler = SettingsHandler.instance;
+      if (backupString != null) {
+        await settingsHandler.dbHandler.addTabRestore(backupString);
+      } else {
+        await settingsHandler.dbHandler.clearTabRestore();
+      }
+      lastBackupTime = DateTime.now();
+    });
+    _tabsBackupWriteChain = write.catchError((Object error, StackTrace stackTrace) {
+      Logger.Inst().log(
+        error,
+        'SearchHandler',
+        'backupTabs',
+        LogTypes.exception,
+        s: stackTrace,
+      );
+    });
+    return write;
   }
 
   // --- Page restore logic ---
@@ -1575,14 +2046,30 @@ class SearchHandler {
   }
 }
 
+class _TabImportSnapshot {
+  const _TabImportSnapshot({
+    required this.tabs,
+    this.groups = const [],
+    this.collapsed = false,
+    this.hadIssues = false,
+  });
+
+  final List<TabBackup> tabs;
+  final List<TabGroup> groups;
+  final bool collapsed;
+  final bool hadIssues;
+}
+
 class SearchTab {
   SearchTab(
     Booru selectedBooru,
     List<Booru>? secondaryBoorus,
-    this.tags,
-  ) {
+    this.tags, {
+    String? groupId,
+  }) {
     this.selectedBooru = selectedBooru.obs;
     this.secondaryBoorus = Rxn<List<Booru>?>(secondaryBoorus);
+    this.groupId = RxnString(groupId);
 
     final List<Booru> tempBooruList = [];
     tempBooruList.add(selectedBooru);
@@ -1625,6 +2112,10 @@ class SearchTab {
 
   int displayPage(int apiPage) => apiPage - firstPage + 1;
   int apiPage(int displayPage) => displayPage + firstPage - 1;
+  // group membership; null = ungrouped
+  late final RxnString groupId;
+
+  TabGroup? get group => SearchHandler.instance.groupOf(this);
 
   double scrollPosition = 0;
   int? scrollPage;
@@ -1760,6 +2251,7 @@ class TabBackup {
     this.selected = false,
     this.pageNum,
     this.savePageEnabled = false,
+    this.groupId,
   });
   final String tags;
   final String booru;
@@ -1767,6 +2259,8 @@ class TabBackup {
   final bool selected;
   final int? pageNum;
   final bool savePageEnabled;
+  final String? groupId;
+  static const _unchangedGroup = Object();
 
   Map<String, dynamic> toJson() {
     return {
@@ -1776,6 +2270,7 @@ class TabBackup {
       if (selected) 's': selected, // only true matters, don't include on false
       if (pageNum != null) 'p': pageNum,
       if (savePageEnabled) 'sp': savePageEnabled,
+      if (groupId != null) 'g': groupId,
     };
   }
 
@@ -1788,6 +2283,7 @@ class TabBackup {
         selected: (json['s'] as bool?) ?? false,
         pageNum: json['p'] as int?,
         savePageEnabled: (json['sp'] as bool?) ?? false,
+        groupId: json['g'] as String?,
       );
     } catch (_) {
       try {
@@ -1803,7 +2299,7 @@ class TabBackup {
           LogTypes.exception,
           s: s,
         );
-        throw Exception('Invalid tab backup: $json');
+        return null;
       }
     }
   }
@@ -1815,7 +2311,22 @@ class TabBackup {
       return [];
     }
 
-    return jsonList.map((e) => fromJson(e as Map<String, dynamic>)).where((e) => e != null).cast<TabBackup>().toList();
+    final backups = <TabBackup>[];
+    for (final entry in jsonList) {
+      if (entry is! Map<String, dynamic>) {
+        continue;
+      }
+      try {
+        final backup = fromJson(entry);
+        if (backup != null) {
+          backups.add(backup);
+        }
+      } catch (_) {
+        // Invalid entries should not prevent otherwise valid tabs from being
+        // restored or merged.
+      }
+    }
+    return backups;
   }
 
   TabBackup copyWith({
@@ -1825,6 +2336,7 @@ class TabBackup {
     bool? selected,
     int? pageNum,
     bool? savePageEnabled,
+    Object? groupId = _unchangedGroup,
   }) {
     return TabBackup(
       tags: tags ?? this.tags,
@@ -1833,6 +2345,7 @@ class TabBackup {
       selected: selected ?? this.selected,
       pageNum: pageNum ?? this.pageNum,
       savePageEnabled: savePageEnabled ?? this.savePageEnabled,
+      groupId: identical(groupId, _unchangedGroup) ? this.groupId : groupId as String?,
     );
   }
 }

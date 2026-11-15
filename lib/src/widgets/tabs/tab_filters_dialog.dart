@@ -8,6 +8,7 @@ import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/widgets/common/clear_button.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/tabs/tab_booru_selector.dart';
+import 'package:lolisnatcher/src/widgets/tabs/tab_selector.dart';
 
 class TabManagerFiltersDialog extends StatefulWidget {
   const TabManagerFiltersDialog({
@@ -25,6 +26,8 @@ class TabManagerFiltersDialog extends StatefulWidget {
     required this.isMultiBooruModeChanged,
     required this.emptyFilter,
     required this.emptyFilterChanged,
+    required this.groupFilter,
+    required this.groupFilterChanged,
     super.key,
   });
 
@@ -42,6 +45,8 @@ class TabManagerFiltersDialog extends StatefulWidget {
   final ValueChanged<bool?> isMultiBooruModeChanged;
   final bool emptyFilter;
   final ValueChanged<bool> emptyFilterChanged;
+  final TabGroupFilter groupFilter;
+  final ValueChanged<TabGroupFilter> groupFilterChanged;
 
   @override
   State<TabManagerFiltersDialog> createState() => _TabManagerFiltersDialogState();
@@ -53,6 +58,7 @@ class _TabManagerFiltersDialogState extends State<TabManagerFiltersDialog> {
   TagType? tagTypeFilter;
   bool duplicateFilter = false, duplicateBooruFilter = true, emptyFilter = false;
   bool? isMultiBooruMode;
+  TabGroupFilter groupFilter = const TabGroupFilterAll();
 
   @override
   void initState() {
@@ -65,6 +71,7 @@ class _TabManagerFiltersDialogState extends State<TabManagerFiltersDialog> {
     duplicateBooruFilter = widget.duplicateBooruFilter;
     isMultiBooruMode = widget.isMultiBooruMode;
     emptyFilter = widget.emptyFilter;
+    groupFilter = widget.groupFilter;
   }
 
   @override
@@ -217,6 +224,19 @@ class _TabManagerFiltersDialogState extends State<TabManagerFiltersDialog> {
           },
           drawBottomBorder: false,
         ),
+        SettingsDropdown<TabGroupFilter>(
+          title: context.loc.tabs.groups.filterByGroup,
+          titleAsLabel: true,
+          value: groupFilter,
+          drawBottomBorder: false,
+          onChanged: (TabGroupFilter? newValue) {
+            groupFilter = newValue ?? const TabGroupFilterAll();
+            setState(() {});
+          },
+          items: _groupFilterOptions(),
+          itemBuilder: (item) => Text(_groupFilterLabel(item)),
+          itemTitleBuilder: _groupFilterLabel,
+        ),
       ],
       actionButtons: [
         const ClearButton(withIcon: true),
@@ -232,11 +252,30 @@ class _TabManagerFiltersDialogState extends State<TabManagerFiltersDialog> {
             widget.duplicateBooruFilterChanged(duplicateBooruFilter);
             widget.isMultiBooruModeChanged(isMultiBooruMode);
             widget.emptyFilterChanged(emptyFilter);
+            widget.groupFilterChanged(groupFilter);
             Navigator.of(context).pop('apply');
           },
         ),
       ],
     );
+  }
+
+  List<TabGroupFilter> _groupFilterOptions() {
+    return [
+      const TabGroupFilterAll(),
+      const TabGroupFilterUngrouped(),
+      for (final g in SearchHandler.instance.tabGroups)
+        TabGroupFilterSpecific(g.id),
+    ];
+  }
+
+  String _groupFilterLabel(TabGroupFilter? f) {
+    return switch (f) {
+      TabGroupFilterAll() || null => loc.tabs.filters.all,
+      TabGroupFilterUngrouped() => loc.tabs.groups.ungrouped,
+      TabGroupFilterSpecific(:final groupId) =>
+        SearchHandler.instance.groupById(groupId)?.name.value ?? loc.tabs.groups.unknownGroup,
+    };
   }
 }
 

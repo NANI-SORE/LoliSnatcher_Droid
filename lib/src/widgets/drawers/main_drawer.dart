@@ -1,3 +1,4 @@
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -7,9 +8,9 @@ import 'package:get/get.dart' hide FirstWhereOrNullExt;
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
+import 'package:lolisnatcher/src/data/main_drawer_item.dart';
 import 'package:lolisnatcher/src/handlers/local_auth_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
-import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/pages/settings_page.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
@@ -27,203 +28,208 @@ import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
 class MainDrawer extends StatelessWidget {
   const MainDrawer({super.key});
 
+  Future<Booru?> _showSelectWebviewBooruDialog(BuildContext context, List<Booru> boorus) {
+    return showDialog<Booru?>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(context.loc.mobileHome.selectBooruForWebview),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: 16,
+            children: [
+              SizedBox(
+                width: MediaQuery.sizeOf(context).width,
+                height: 52,
+                child: SettingsBooruDropdown(
+                  value: null,
+                  items: boorus,
+                  onChanged: (Booru? newBooru) {
+                    if (newBooru == null) return;
+                    WidgetsBinding.instance.addPostFrameCallback((_) async {
+                      Navigator.of(context).pop(newBooru);
+                    });
+                  },
+                  title: context.loc.booru,
+                  contentPadding: EdgeInsets.zero,
+                  titleAsLabel: true,
+                  drawBottomBorder: false,
+                ),
+              ),
+              const CancelButton(withIcon: true),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildItem(BuildContext context, MainDrawerItem item) {
+    final settingsHandler = SettingsHandler.instance;
+    final searchHandler = SearchHandler.instance;
+    switch (item) {
+      case MainDrawerItem.search:
+        return RepaintBoundary(
+          child: Obx(() {
+            if (settingsHandler.booruList.isNotEmpty && searchHandler.tabs.isNotEmpty) {
+              return Container(
+                height: MainSearchBar.height,
+                margin: const EdgeInsets.fromLTRB(2, 24, 2, 12),
+                child: const MainSearchBarWithActions('drawer'),
+              );
+            }
+            return const SizedBox.shrink();
+          }),
+        );
+
+      case MainDrawerItem.tabSelector:
+        return const TabSelector();
+
+      case MainDrawerItem.tabButtons:
+        return const Padding(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: TabButtons(true, WrapAlignment.spaceEvenly),
+        );
+
+      case MainDrawerItem.multibooruToggle:
+        return const MergeBooruToggleAndSelector();
+
+      case MainDrawerItem.lockApp:
+        return ListenableBuilder(
+          listenable: Listenable.merge([
+            LocalAuthHandler.instance.deviceSupportsBiometrics,
+            SX.useLockscreen.state.effectiveNotifier,
+          ]),
+          builder: (_, child) {
+            final supports = LocalAuthHandler.instance.deviceSupportsBiometrics.value;
+            final useLock = SX.useLockscreen.value;
+            if (supports && useLock) return child!;
+            return const SizedBox.shrink();
+          },
+          child: SettingsButton(
+            name: context.loc.mobileHome.lockApp,
+            icon: const Icon(Icons.lock),
+            action: () => LocalAuthHandler.instance.lock(manually: true),
+          ),
+        );
+
+      case MainDrawerItem.settings:
+        return SettingsButton(
+          name: context.loc.settings.title,
+          icon: const Icon(Icons.settings),
+          page: () => const SettingsPage(),
+        );
+
+      case MainDrawerItem.webview:
+        return Obx(() {
+          if (settingsHandler.booruList.isNotEmpty &&
+              searchHandler.tabs.isNotEmpty &&
+              PlatformExt.hasWebviewSupport &&
+              ContentPolicy.canOpenWebview) {
+            final currentBooru = searchHandler.currentBooruOrNull;
+            if (currentBooru == null) return const SizedBox.shrink();
+
+            final boorus = <Booru>[
+              currentBooru,
+              ...searchHandler.currentSecondaryBoorusOrNull?.value ?? <Booru>[],
+            ].where((b) => b.baseURL?.isNotEmpty == true && BooruType.saveable.contains(b.type)).toList();
+            if (boorus.isEmpty) return const SizedBox.shrink();
+            return SettingsButton(
+              name: context.loc.settings.webview.openWebview,
+              icon: const Icon(Icons.public),
+              action: () async {
+                final selected = boorus.length == 1
+                    ? boorus.first
+                    : await _showSelectWebviewBooruDialog(context, boorus);
+                if (selected == null) return;
+                final url = selected.baseURL;
+                final ua = Tools.browserUserAgent;
+                if (url == null || url.isEmpty) return;
+                unawaited(
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => InAppWebviewView(initialUrl: url, userAgent: ua),
+                    ),
+                  ),
+                );
+              },
+            );
+          }
+          return const SizedBox.shrink();
+        });
+
+      case MainDrawerItem.updateAvailable:
+        return Obx(() {
+          if (settingsHandler.updateInfo.value != null &&
+              Constants.updateInfo.buildNumber < (settingsHandler.updateInfo.value!.buildNumber)) {
+            return SettingsButton(
+              name: context.loc.settings.checkForUpdates.updateAvailable,
+              icon: Stack(
+                alignment: Alignment.center,
+                children: [
+                  const Icon(Icons.update),
+                  Positioned(
+                    top: 1,
+                    left: 1,
+                    child: Center(
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              action: () async {
+                settingsHandler.showUpdate(true);
+              },
+            );
+          }
+          return const SizedBox.shrink();
+        });
+
+      case MainDrawerItem.closeApp:
+        if (!PlatformExt.isDesktop) return const SizedBox.shrink();
+        return SettingsButton(
+          name: context.loc.closeTheApp,
+          icon: const Icon(Icons.exit_to_app),
+          action: () async {
+            await Navigator.of(context).maybePop();
+            await Future.delayed(const Duration(milliseconds: 400));
+            await Navigator.of(context).maybePop();
+          },
+        );
+
+      case MainDrawerItem.mascot:
+        return ListenableBuilder(listenable: SX.enableDrawerMascot.state.effectiveNotifier, builder: (context, _) {
+          if (SX.enableDrawerMascot.value) return const MascotImage();
+          return const SizedBox.shrink();
+        });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final SettingsHandler settingsHandler = SettingsHandler.instance;
-    final SearchHandler searchHandler = SearchHandler.instance;
-
-    Future<Booru?> showSelectWebviewBooruDialog(List<Booru> boorus) async {
-      return showDialog<Booru?>(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text(context.loc.mobileHome.selectBooruForWebview),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: 16,
-              children: [
-                SizedBox(
-                  width: MediaQuery.sizeOf(context).width,
-                  height: 52,
-                  child: SettingsBooruDropdown(
-                    value: null,
-                    items: boorus,
-                    onChanged: (Booru? newBooru) {
-                      if (newBooru == null) return;
-
-                      WidgetsBinding.instance.addPostFrameCallback((_) async {
-                        Navigator.of(context).pop(newBooru);
-                      });
-                    },
-                    title: context.loc.booru,
-                    contentPadding: EdgeInsets.zero,
-                    titleAsLabel: true,
-                    drawBottomBorder: false,
-                  ),
-                ),
-                //
-                const CancelButton(withIcon: true),
-              ],
-            ),
-          );
-        },
-      );
-    }
-
     return Material(
       color: Theme.of(context).colorScheme.surface,
       child: SafeArea(
-        child: Column(
-          children: [
-            RepaintBoundary(
-              child: Obx(() {
-                if (settingsHandler.booruList.isNotEmpty && searchHandler.tabs.isNotEmpty) {
-                  return Container(
-                    height: MainSearchBar.height,
-                    margin: const EdgeInsets.fromLTRB(2, 24, 2, 12),
-                    child: const MainSearchBarWithActions('drawer'),
-                  );
-                } else {
-                  return const SizedBox.shrink();
-                }
-              }),
-            ),
-            const TabSelector(),
-            Expanded(
-              child: ListView(
-                controller: ScrollController(),
-                clipBehavior: Clip.antiAlias,
-                children: [
-                  const SizedBox(height: 12),
-                  const TabButtons(true, WrapAlignment.spaceEvenly),
-                  const SizedBox(height: 12),
-                  const MergeBooruToggleAndSelector(),
-                  ListenableBuilder(
-                    listenable: Listenable.merge([
-                      LocalAuthHandler.instance.deviceSupportsBiometrics,
-                      SX.useLockscreen.state.effectiveNotifier,
-                    ]),
-                    builder: (_, child) {
-                      final deviceSupportsBiometrics = LocalAuthHandler.instance.deviceSupportsBiometrics.value;
-                      final useLockscreen = SX.useLockscreen.value;
-
-                      if (deviceSupportsBiometrics && useLockscreen) {
-                        return child!;
-                      }
-
-                      return const SizedBox.shrink();
-                    },
-                    child: SettingsButton(
-                      name: context.loc.mobileHome.lockApp,
-                      icon: const Icon(Icons.lock),
-                      action: () => LocalAuthHandler.instance.lock(manually: true),
-                    ),
-                  ),
-                  SettingsButton(
-                    name: context.loc.settings.title,
-                    icon: const Icon(Icons.settings),
-                    page: () => const SettingsPage(),
-                  ),
-                  Obx(() {
-                    if (settingsHandler.booruList.isNotEmpty &&
-                        searchHandler.tabs.isNotEmpty &&
-                        PlatformExt.hasWebviewSupport &&
-                        ContentPolicy.canOpenWebview) {
-                      final currentBooru = searchHandler.currentBooruOrNull;
-                      if (currentBooru == null) return const SizedBox.shrink();
-
-                      final List<Booru> boorus = [
-                        currentBooru,
-                        ...searchHandler.currentSecondaryBoorusOrNull?.value ?? <Booru>[],
-                      ].where((b) => b.baseURL?.isNotEmpty == true && BooruType.saveable.contains(b.type)).toList();
-
-                      if (boorus.isEmpty) return const SizedBox.shrink();
-
-                      return SettingsButton(
-                        name: context.loc.settings.webview.openWebview,
-                        icon: const Icon(Icons.public),
-                        action: () async {
-                          final Booru? selectedBooru = boorus.length == 1
-                              ? boorus.first
-                              : await showSelectWebviewBooruDialog(boorus);
-                          if (selectedBooru == null) return;
-
-                          final String? url = selectedBooru.baseURL;
-                          final String userAgent = Tools.browserUserAgent;
-                          if (url == null || url.isEmpty) {
-                            return;
-                          }
-
-                          unawaited(
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => InAppWebviewView(
-                                  initialUrl: url,
-                                  userAgent: userAgent,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    }
-
-                    return const SizedBox.shrink();
-                  }),
-                  //
-                  Obx(() {
-                    if (settingsHandler.updateInfo.value != null &&
-                        Constants.updateInfo.buildNumber < (settingsHandler.updateInfo.value!.buildNumber)) {
-                      return SettingsButton(
-                        name: context.loc.settings.checkForUpdates.updateAvailable,
-                        icon: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            const Icon(Icons.update),
-                            Positioned(
-                              top: 1,
-                              left: 1,
-                              child: Center(
-                                child: Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                    color: Colors.red,
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        action: () async {
-                          settingsHandler.showUpdate(true);
-                        },
-                      );
-                    }
-
-                    return const SizedBox.shrink();
-                  }),
-                  //
-                  if (PlatformExt.isDesktop)
-                    SettingsButton(
-                      name: context.loc.closeTheApp,
-                      icon: const Icon(Icons.exit_to_app),
-                      action: () async {
-                        // twice to trigger drawer close
-                        await Navigator.of(context).maybePop();
-                        await Future.delayed(const Duration(milliseconds: 400));
-                        await Navigator.of(context).maybePop();
-                      },
-                    ),
-                  //
-                  if (SX.enableDrawerMascot.value) const MascotImage(),
-                ],
-              ),
-            ),
-          ],
-        ),
+        child: ListenableBuilder(
+          listenable: Listenable.merge([SX.drawerBottomAlign.state.effectiveNotifier, SX.mainDrawerItems.state.effectiveNotifier]),
+          builder: (context, _) {
+          final bottomAlign = SX.drawerBottomAlign.value;
+          final items = SX.mainDrawerItems.value;
+          return ListView.builder(
+            controller: ScrollController(),
+            reverse: bottomAlign,
+            itemCount: items.length,
+            itemBuilder: (context, index) => _buildItem(context, items[index]),
+          );
+        }),
       ),
     );
   }

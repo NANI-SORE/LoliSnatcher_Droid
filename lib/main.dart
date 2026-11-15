@@ -717,6 +717,11 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
               },
             ),
           );
+          unawaited(
+            searchHandler.backupTabs().catchError((Object error, StackTrace stackTrace) {
+              Logger.Inst().log(error, 'MainApp', 'backupTabsOnLeave', LogTypes.exception, s: stackTrace);
+            }),
+          );
         }
         // record time when user left the app
         localAuthHandler.onLeave();

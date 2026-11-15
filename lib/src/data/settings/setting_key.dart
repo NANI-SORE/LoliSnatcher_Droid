@@ -1,3 +1,4 @@
+import 'package:lolisnatcher/src/data/main_drawer_item.dart';
 import 'package:flutter/material.dart' show Color, ThemeMode;
 
 import 'package:lolisnatcher/gen/strings.g.dart';
@@ -28,6 +29,9 @@ import 'package:lolisnatcher/src/data/theme_item.dart';
 /// which determines display order on auto-rendered settings pages.
 enum SettingKey {
   // Interface
+  tabManagerBottomBar,
+  drawerBottomAlign,
+  mainDrawerItems,
   portraitColumns,
   landscapeColumns,
   previewMode,
@@ -221,6 +225,9 @@ class TypedKey<T> {
 
 // Using SX shorthand instead of SK because X is closer to S on the keyboard
 abstract class SX {
+  static const tabManagerBottomBar = TypedKey<bool>(SettingKey.tabManagerBottomBar);
+  static const drawerBottomAlign = TypedKey<bool>(SettingKey.drawerBottomAlign);
+  static const mainDrawerItems = TypedKey<List<MainDrawerItem>>(SettingKey.mainDrawerItems);
   // Interface
   static const portraitColumns = TypedKey<int>(SettingKey.portraitColumns);
   static const landscapeColumns = TypedKey<int>(SettingKey.landscapeColumns);

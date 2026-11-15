@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'package:lolisnatcher/src/data/tab_group.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
+import 'package:lolisnatcher/src/widgets/tabs/tab_group_header.dart';
 import 'package:lolisnatcher/src/widgets/tabs/tab_selector.dart';
 
 class TabMoveDialog extends StatefulWidget {
@@ -52,11 +54,68 @@ class _TabMoveDialogState extends State<TabMoveDialog> {
       controllerNumber = int.tryParse(indexController.text);
     }
 
+    final SearchTab? tab = searchHandler.getTabByIndex(widget.index);
+    final TabGroup? currentGroup = tab == null ? null : searchHandler.groupOf(tab);
+
     return SettingsDialog(
       contentItems: [
         SizedBox(width: double.maxFinite, child: widget.row),
         //
         const SizedBox(height: 10),
+        if (tab != null && searchHandler.tabGroups.isNotEmpty) ...[
+          // §4.8: Move to group
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text('${context.loc.tabs.groups.moveToGroup}:'),
+              for (final g in searchHandler.tabGroups)
+                ActionChip(
+                  avatar: Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: g.color.value,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  label: Text(g.name.value),
+                  backgroundColor: currentGroup?.id == g.id ? g.color.value.withValues(alpha: 0.18) : null,
+                  onPressed: () {
+                    searchHandler.assignTabToGroup(tab, g.id);
+                    Navigator.of(context).pop(true);
+                    Navigator.of(context).pop(true);
+                  },
+                ),
+              if (currentGroup != null)
+                ActionChip(
+                  avatar: const Icon(Icons.folder_off, size: 16),
+                  label: Text(context.loc.tabs.groups.ungroup),
+                  onPressed: () {
+                    searchHandler.assignTabToGroup(tab, null);
+                    Navigator.of(context).pop(true);
+                    Navigator.of(context).pop(true);
+                  },
+                ),
+              ActionChip(
+                avatar: const Icon(Icons.create_new_folder_outlined, size: 16),
+                label: Text(context.loc.tabs.groups.newGroup),
+                onPressed: () async {
+                  final newId = await showCreateTabGroupDialog(context);
+                  if (newId != null) {
+                    searchHandler.assignTabToGroup(tab, newId);
+                    if (mounted) {
+                      Navigator.of(context).pop(true);
+                      Navigator.of(context).pop(true);
+                    }
+                  }
+                },
+              ),
+            ],
+          ),
+          const Divider(height: 24),
+        ],
         ElevatedButton.icon(
           onPressed: () async {
             searchHandler.moveTab(widget.index, 0);
@@ -178,6 +237,16 @@ class TabMovePreview extends StatelessWidget {
     const tabHeightPlaceholder = SizedBox(height: 80);
 
     final List<Widget> children = <Widget>[];
+    if (searchHandler.tabGroups.isNotEmpty) {
+      final destination = searchHandler.getTabByIndex(enteredIndex);
+      final name = searchHandler.groupById(destination?.groupId.value)?.name.value ?? context.loc.tabs.groups.ungrouped;
+      children.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text('${context.loc.tabs.groups.moveToGroup}: $name', maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
+      );
+    }
     // first tab - show only when input is not on first
     if (enteredIndex != 0) {
       children.add(

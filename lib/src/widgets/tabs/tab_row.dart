@@ -198,6 +198,26 @@ class TabRow extends StatelessWidget {
 
         return Row(
           children: [
+            // Group color stripe (§4.10): a thin colored bar on the leading
+            // edge of the row when the tab belongs to a group. Wrapped in Obx
+            // so live recolor / regroup updates without a parent rebuild.
+            Obx(() {
+              final groupId = tab.groupId.value;
+              if (groupId == null) return const SizedBox(width: 0);
+              final group = tab.group;
+              if (group == null) return const SizedBox(width: 0);
+              return Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Container(
+                  width: 4,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: group.color.value,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              );
+            }),
             if (withFavicon) ...[
               ValueListenableBuilder(
                 valueListenable: tab.selectedBooru,
