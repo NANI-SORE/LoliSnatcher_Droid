@@ -582,6 +582,7 @@ class SettingsDropdown<T> extends StatelessWidget {
     this.subtitle,
     this.drawTopBorder = false,
     this.drawBottomBorder = true,
+    this.leadingIcon,
     this.trailingIcon,
     this.contentPadding,
     this.itemBuilder,
@@ -608,6 +609,7 @@ class SettingsDropdown<T> extends StatelessWidget {
   final Widget? subtitle;
   final bool drawTopBorder;
   final bool drawBottomBorder;
+  final Widget? leadingIcon;
   final Widget? trailingIcon;
   final EdgeInsets? contentPadding;
   final Widget Function(T?)? itemBuilder;
@@ -709,7 +711,18 @@ class SettingsDropdown<T> extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: _settingsTitleRow(
                   context: context,
-                  title: Text(title),
+                  title: Row(
+                    children: [
+                      if (leadingIcon != null)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: leadingIcon,
+                        ),
+                      Expanded(
+                        child: Text(title),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             _AutoOpenLoliDropdown(
@@ -906,6 +919,7 @@ class SettingsOptionsList<T> extends StatelessWidget {
     this.subtitle,
     this.drawTopBorder = false,
     this.drawBottomBorder = true,
+    this.leadingIcon,
     this.trailingIcon,
     this.itemBuilder,
     this.itemLeadingBuilder,
@@ -923,6 +937,7 @@ class SettingsOptionsList<T> extends StatelessWidget {
   final Widget? subtitle;
   final bool drawTopBorder;
   final bool drawBottomBorder;
+  final Widget? leadingIcon;
   final Widget? trailingIcon;
   final Widget Function(T?)? itemBuilder;
   final Widget? Function(T?)? itemLeadingBuilder;
@@ -968,7 +983,18 @@ class SettingsOptionsList<T> extends StatelessWidget {
           ListTile(
             title: _settingsTitleRow(
               context: context,
-              title: Text(title),
+              title: Row(
+                children: [
+                  if (leadingIcon != null)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: leadingIcon,
+                    ),
+                  Expanded(
+                    child: Text(title),
+                  ),
+                ],
+              ),
             ),
             subtitle: _settingsSubtitle(context, subtitle),
             trailing: _settingsTrailingActions(
@@ -1447,10 +1473,14 @@ class SettingsBottomSheet extends StatelessWidget {
     this.actionButtons,
     this.titlePadding,
     this.contentPadding = const EdgeInsets.fromLTRB(16, 0, 16, 16),
-    this.buttonPadding,
+    this.actionPadding = const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    this.actionSpacing = 10,
     this.borderRadius,
     this.backgroundColor,
     this.showCloseButton = true,
+    this.onClose,
+    this.onClosePressed,
+    this.pinActionButtonsToBottom = false,
     this.scrollController,
     super.key,
   });
@@ -1461,10 +1491,14 @@ class SettingsBottomSheet extends StatelessWidget {
   final List<Widget>? actionButtons;
   final EdgeInsets? titlePadding;
   final EdgeInsets contentPadding;
-  final EdgeInsets? buttonPadding;
+  final EdgeInsets actionPadding;
+  final double actionSpacing;
   final BorderRadius? borderRadius;
   final Color? backgroundColor;
   final bool showCloseButton;
+  final VoidCallback? onClose;
+  final VoidCallback? onClosePressed;
+  final bool pinActionButtonsToBottom;
   final ScrollController? scrollController;
 
   @override
@@ -1481,15 +1515,17 @@ class SettingsBottomSheet extends StatelessWidget {
             children: [
               SafeArea(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisSize: pinActionButtonsToBottom ? MainAxisSize.max : MainAxisSize.min,
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         if (title != null)
-                          Padding(
-                            padding: titlePadding ?? const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                            child: title,
+                          Expanded(
+                            child: Padding(
+                              padding: titlePadding ?? const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                              child: title,
+                            ),
                           )
                         else
                           const SizedBox(height: 12),
@@ -1498,9 +1534,12 @@ class SettingsBottomSheet extends StatelessWidget {
                             padding: const EdgeInsets.fromLTRB(0, 12, 16, 0),
                             child: IconButton(
                               icon: const Icon(Icons.close_rounded),
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
+                              onPressed:
+                                  onClosePressed ??
+                                  () {
+                                    onClose?.call();
+                                    Navigator.of(context).pop();
+                                  },
                             ),
                           ),
                       ],
@@ -1508,23 +1547,40 @@ class SettingsBottomSheet extends StatelessWidget {
                     //
                     ?content,
                     //
-                    if (contentItems != null)
-                      Flexible(
-                        child: Padding(
-                          padding: contentPadding,
-                          child: SingleChildScrollView(
-                            controller: scrollController,
-                            child: ListBody(
-                              children: contentItems ?? [],
+                    if (contentItems != null) ...[
+                      if (pinActionButtonsToBottom)
+                        Expanded(
+                          child: Padding(
+                            padding: contentPadding,
+                            child: SingleChildScrollView(
+                              controller: scrollController,
+                              child: ListBody(
+                                children: contentItems ?? [],
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        Flexible(
+                          child: Padding(
+                            padding: contentPadding,
+                            child: SingleChildScrollView(
+                              controller: scrollController,
+                              child: ListBody(
+                                children: contentItems ?? [],
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                    ],
+                    //
+                    if (pinActionButtonsToBottom && content == null && contentItems == null) const Spacer(),
+                    //
                     if (actionButtons != null)
                       Padding(
-                        padding: buttonPadding ?? const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        padding: actionPadding,
                         child: Wrap(
-                          spacing: 10,
+                          spacing: actionSpacing,
                           runSpacing: 10,
                           alignment: WrapAlignment.center,
                           runAlignment: WrapAlignment.center,

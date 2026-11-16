@@ -35,6 +35,20 @@ import 'package:lolisnatcher/src/utils/request_scope.dart';
 
 // TODO better naming for some functions (i.e. Search => getSearch or smth like that)
 
+enum BooruItemFilterReason { hiddenTags, markedTags, ai, favourite, snatched }
+
+/// Append a page without copying previous pages or notifying for every entry.
+class _FilterHiddenItems extends RxMap<BooruItem, List<BooruItemFilterReason>> {
+  _FilterHiddenItems() : super(Map<BooruItem, List<BooruItemFilterReason>>.identity());
+
+  @override
+  void addAll(Map<BooruItem, List<BooruItemFilterReason>> other) {
+    if (other.isEmpty) return;
+    value.addAll(other);
+    refresh();
+  }
+}
+
 abstract class BooruHandler {
   BooruHandler(this.booru, this.limit);
   // pagenum = -1 as "didn't load anything yet" state
@@ -56,6 +70,19 @@ abstract class BooruHandler {
   RxList<BooruItem> fetched = RxList<BooruItem>([]);
   RxList<BooruItem> filteredFetched = RxList<BooruItem>([]);
 
+  /// Restorable filter exclusions, before duplicate removal and manual hiding.
+  /// Content-policy rejections are discarded and never tracked here.
+  final RxMap<BooruItem, List<BooruItemFilterReason>> filterHiddenItems = _FilterHiddenItems();
+  bool Function(BooruItem item)? extraFilter;
+
+  /// Per-item filter exceptions that last only until the loaded search resets.
+  final Set<BooruItem> _restoredFilterItems = Set<BooruItem>.identity();
+
+  void restoreFilteredItems(Iterable<BooruItem> items) {
+    _restoredFilterItems.addAll(items.where((item) => ContentPolicy.isItemAllowed(sourceBooruFor(item), item)));
+    refilterAll();
+  }
+
   /// Tracks which API page numbers have been loaded.
   final Set<int> fetchedPageNumbers = {};
 
@@ -76,6 +103,28 @@ abstract class BooruHandler {
   Booru sourceBooruFor(BooruItem item) =>
       booru.type?.isFavouritesOrDownloads == true ? BooruSourceResolver.resolve(item) ?? booru : booru;
 
+  /// Copies a completed search into an independent handler for the same source.
+  /// Handlers with cursors or cached result IDs also copy those in overrides.
+  void copySearchStateFrom(BooruHandler source) {
+    if (runtimeType != source.runtimeType || !booru.matchesIdentity(source.booru)) {
+      throw ArgumentError('Loaded search state must belong to the same source');
+    }
+    pageNum = source.pageNum;
+    limit = source.limit;
+    prevTags = source.prevTags;
+    locked = source.locked;
+    errorString = source.errorString;
+    totalCount.value = source.totalCount.value;
+    fetchedPageNumbers
+      ..clear()
+      ..addAll(source.fetchedPageNumbers);
+    fetched.assignAll(source.fetched);
+    _restoredFilterItems
+      ..clear()
+      ..addAll(source._restoredFilterItems);
+    refilterAll();
+  }
+
   /// Local-view exclusions remain view settings, even inside a merged search.
   Booru filterSettingsBooruFor(BooruItem item) => booru;
 
@@ -89,11 +138,13 @@ abstract class BooruHandler {
     final filterFavourites =
         (timers?.optionEnabled(TimedFilterOption.favourites, booruName: source.name) ??
             SX.filterFavourites.valueForBooru(source.name)) &&
-        source.type?.isFavourites != true && traversal?.type?.isFavourites != true;
+        source.type?.isFavourites != true &&
+        traversal?.type?.isFavourites != true;
     final filterSnatched =
         (timers?.optionEnabled(TimedFilterOption.snatched, booruName: source.name) ??
             SX.filterSnatched.valueForBooru(source.name)) &&
-        source.type?.isDownloads != true && traversal?.type?.isDownloads != true;
+        source.type?.isDownloads != true &&
+        traversal?.type?.isDownloads != true;
 
     return (item, evaluation) =>
         !evaluation.isHidden &&
@@ -109,7 +160,8 @@ abstract class BooruHandler {
     final evaluation = GetIt.instance.isRegistered<TagFilterHandler>()
         ? _evaluateFilter(item, context, TagFilterHandler.instance)
         : const TagFilterEvaluation.empty();
-    return ContentPolicy.isItemAllowed(origin, item) && !evaluation.isBlurred &&
+    return ContentPolicy.isItemAllowed(origin, item) &&
+        !evaluation.isBlurred &&
         _itemFilterFor(traversal ?? origin, traversal: traversal)(item, evaluation);
   }
 
@@ -233,6 +285,8 @@ abstract class BooruHandler {
   }) sync* {
     final filters = <Booru, bool Function(BooruItem, TagFilterEvaluation)>{};
 
+    final hidden = Map<BooruItem, List<BooruItemFilterReason>>.identity();
+    if (start != 0) hidden.addAll(filterHiddenItems);
     final List<BooruItem> filteredItems = start == 0 ? [] : [...filteredFetched];
     final Set<String> seenFileUrls = start == 0 ? {} : {..._seenFileURLs};
     final Set<String> seenServerIds = start == 0 ? {} : {..._seenServerIds};
@@ -277,9 +331,17 @@ abstract class BooruHandler {
 
       final settingsSource = filterSettingsBooruFor(item);
       final includeItem = filters.putIfAbsent(settingsSource, () => _itemFilterFor(settingsSource));
-      if (!includeItem(item, evaluation)) {
+      if (!_restoredFilterItems.contains(item) && !includeItem(item, evaluation)) {
+        hidden[item] = [
+          if (evaluation.isHidden) BooruItemFilterReason.hiddenTags,
+          if (evaluation.isMarked) BooruItemFilterReason.markedTags,
+          if (item.isAI) BooruItemFilterReason.ai,
+          if (item.isFavourite.value == true) BooruItemFilterReason.favourite,
+          if (item.isSnatched.value == true) BooruItemFilterReason.snatched,
+        ];
         continue;
       }
+      if (extraFilter?.call(item) == false) continue;
 
       final String? serverId = item.serverId;
       final bool duplicateFileUrl = item.fileURL.isNotEmpty && seenFileUrls.contains(item.fileURL);
@@ -312,6 +374,8 @@ abstract class BooruHandler {
       _filterEvaluationCache.removeWhere((item, _) => !activeItems.contains(item));
       _filterContextCache.removeWhere((item, _) => !activeItems.contains(item));
     }
+    filterHiddenItems.assignAll(hidden);
+    _restoredFilterItems.removeWhere((item) => !fetched.any((candidate) => identical(item, candidate)));
     _filterWatermark = items.length;
     _filteredInput = fetched.value;
     _filterTail = items.lastOrNull;
@@ -339,9 +403,11 @@ abstract class BooruHandler {
   /// Invalidate both pending rule evaluations and incremental page state.
   void resetFilterState() {
     clearFilterCaches();
+    _restoredFilterItems.clear();
     _filterWatermark = 0;
     _seenFileURLs.clear();
     _seenServerIds.clear();
+    filterHiddenItems.clear();
     filteredFetched.clear();
   }
 
@@ -799,7 +865,18 @@ abstract class BooruHandler {
   ////////////////////////////////////////////////////////////////////////
 
   bool get hasCommentsSupport => false;
+  @nonVirtual
   Future<List<CommentItem>> getComments(
+    String postID,
+    int pageNum, {
+    CancelToken? cancelToken,
+  }) => DioNetwork.runWithHeadlessRecovery(
+    () => getCommentsInternal(postID, pageNum, cancelToken: cancelToken),
+    cancelToken: cancelToken,
+  );
+
+  @protected
+  Future<List<CommentItem>> getCommentsInternal(
     String postID,
     int pageNum, {
     CancelToken? cancelToken,
@@ -830,6 +907,8 @@ abstract class BooruHandler {
       response = await fetchComments(uri, cancelToken: cancelToken);
       if (response.statusCode == 200) {
         final rawComments = await parseCommentsList(response);
+        Object? parsingError;
+        StackTrace? parsingStack;
         for (int i = 0; i < rawComments.length; i++) {
           final rawComment = rawComments[i];
           try {
@@ -838,6 +917,8 @@ abstract class BooruHandler {
               comments.add(parsedComment);
             }
           } catch (e, s) {
+            parsingError = e;
+            parsingStack = s;
             Logger.Inst().log(
               '$e $rawComment',
               className,
@@ -847,10 +928,11 @@ abstract class BooruHandler {
             );
           }
         }
+        if (comments.isEmpty && parsingError != null) Error.throwWithStackTrace(parsingError, parsingStack!);
       } else {
         Logger.Inst().log('error fetching url: $url', className, 'getComments', LogTypes.booruHandlerFetchFailed);
         Logger.Inst().log('status: ${response.statusCode}', className, 'getComments', LogTypes.booruHandlerFetchFailed);
-        Logger.Inst().log('response: ${response.data}', className, 'getComments', LogTypes.booruHandlerFetchFailed);
+        throw StateError('Invalid comments status code ${response.statusCode}');
       }
     } catch (e, s) {
       Logger.Inst().log(
@@ -860,6 +942,7 @@ abstract class BooruHandler {
         LogTypes.booruHandlerFetchFailed,
         s: s,
       );
+      rethrow;
     }
     return comments;
   }
@@ -907,7 +990,19 @@ abstract class BooruHandler {
 
   bool get shouldUpdateIteminTagView => false;
 
+  @nonVirtual
   Future<({BooruItem? item, bool failed, String? error})> loadItem({
+    required BooruItem item,
+    CancelToken? cancelToken,
+    bool withCapcthaCheck = false,
+  }) => DioNetwork.runWithHeadlessRecovery(
+    () => loadItemInternal(item: item, cancelToken: cancelToken, withCapcthaCheck: withCapcthaCheck),
+    cancelToken: cancelToken,
+    failed: (result) => result.failed,
+  );
+
+  @protected
+  Future<({BooruItem? item, bool failed, String? error})> loadItemInternal({
     required BooruItem item,
     CancelToken? cancelToken,
     bool withCapcthaCheck = false,

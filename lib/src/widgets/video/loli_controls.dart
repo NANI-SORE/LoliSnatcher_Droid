@@ -22,11 +22,13 @@ import 'package:lolisnatcher/src/utils/extensions.dart';
 class LoliControls extends StatefulWidget {
   const LoliControls({
     this.useLongTapFastForward = true,
+    this.isStandalone = false,
     this.onControlsVisibilityChanged,
     super.key,
   });
 
   final bool useLongTapFastForward;
+  final bool isStandalone;
   final ValueChanged<bool>? onControlsVisibilityChanged;
 
   @override
@@ -36,7 +38,8 @@ class LoliControls extends StatefulWidget {
 }
 
 class _LoliControlsState extends State<LoliControls> {
-  final ViewerHandler viewerHandler = ViewerHandler.instance;
+  ViewerHandler? get viewerHandler => widget.isStandalone ? null : ViewerHandler.instance;
+  final ValueNotifier<bool> _standaloneToolbar = ValueNotifier(false);
 
   VideoPlayerValue _latestValue = const VideoPlayerValue(duration: Duration.zero);
   bool _hideStuff = false;
@@ -100,10 +103,10 @@ class _LoliControlsState extends State<LoliControls> {
         _cancelAndRestartTimer();
       },
       child: GestureDetector(
-        onLongPress: widget.useLongTapFastForward ? onHitAreaLongPress : null,
-        onLongPressMoveUpdate: widget.useLongTapFastForward ? onHitAreaLongPressMove : null,
-        onLongPressCancel: widget.useLongTapFastForward ? onHitAreaLongPressUp : null,
-        onLongPressEnd: widget.useLongTapFastForward ? (_) => onHitAreaLongPressUp() : null,
+        onLongPress: !widget.isStandalone && widget.useLongTapFastForward ? onHitAreaLongPress : null,
+        onLongPressMoveUpdate: !widget.isStandalone && widget.useLongTapFastForward ? onHitAreaLongPressMove : null,
+        onLongPressCancel: !widget.isStandalone && widget.useLongTapFastForward ? onHitAreaLongPressUp : null,
+        onLongPressEnd: !widget.isStandalone && widget.useLongTapFastForward ? (_) => onHitAreaLongPressUp() : null,
         onDoubleTapDown: _doubleTapInfoWrite,
         onDoubleTap: _doubleTapAction,
         behavior: HitTestBehavior.opaque,
@@ -157,6 +160,7 @@ class _LoliControlsState extends State<LoliControls> {
   @override
   void dispose() {
     _dispose();
+    _standaloneToolbar.dispose();
     super.dispose();
   }
 
@@ -280,9 +284,10 @@ class _LoliControlsState extends State<LoliControls> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      if (chewieController.allowPlaybackSpeedChanging) _buildSpeedButton(controller),
+                      if (!widget.isStandalone && chewieController.allowPlaybackSpeedChanging)
+                        _buildSpeedButton(controller),
                       if (chewieController.allowMuting) _buildMuteButton(controller),
-                      if (chewieController.allowFullScreen) _buildExpandButton(),
+                      if (!widget.isStandalone && chewieController.allowFullScreen) _buildExpandButton(),
                     ],
                   ),
                 ),
@@ -423,14 +428,14 @@ class _LoliControlsState extends State<LoliControls> {
           if (_displayTapped) {
             setState(() {
               if (widget.useLongTapFastForward) {
-                viewerHandler.toggleToolbar(false, forcedNewValue: false);
+                viewerHandler?.toggleToolbar(false, forcedNewValue: false);
               }
               _hideStuff = true;
             });
           } else {
             _cancelAndRestartTimer();
             if (widget.useLongTapFastForward) {
-              viewerHandler.toggleToolbar(false, forcedNewValue: false);
+              viewerHandler?.toggleToolbar(false, forcedNewValue: false);
             }
           }
         } else {
@@ -438,14 +443,14 @@ class _LoliControlsState extends State<LoliControls> {
 
           setState(() {
             if (widget.useLongTapFastForward) {
-              viewerHandler.toggleToolbar(false, forcedNewValue: false);
+              viewerHandler?.toggleToolbar(false, forcedNewValue: false);
             }
             _hideStuff = true;
           });
         }
       },
       child: ValueListenableBuilder(
-        valueListenable: viewerHandler.displayAppbar,
+        valueListenable: viewerHandler?.displayAppbar ?? _standaloneToolbar,
         builder: (context, displayAppbar, child) {
           final bool isFullScreen = chewieController.isFullScreen || !displayAppbar;
           final bool isTopAppbar = SX.galleryBarPosition.value.isTop;
@@ -502,7 +507,7 @@ class _LoliControlsState extends State<LoliControls> {
   }
 
   Widget _buildDebugInfo() {
-    if (SX.showVideoStats.value) {
+    if (!widget.isStandalone && SX.showVideoStats.value) {
       return Positioned(
         left: 8,
         top: MediaQuery.paddingOf(context).top + 32,
@@ -629,7 +634,7 @@ class _LoliControlsState extends State<LoliControls> {
   }
 
   GestureDetector _buildMuteButton(VideoPlayerController controller) {
-    final bool isGlobalMute = viewerHandler.videoAutoMute;
+    final bool isGlobalMute = viewerHandler?.videoAutoMute ?? false;
 
     return GestureDetector(
       onTap: () {
@@ -640,17 +645,20 @@ class _LoliControlsState extends State<LoliControls> {
           controller.setVolume(0);
         }
       },
-      onLongPress: () {
-        ServiceHandler.vibrate();
+      onLongPress: widget.isStandalone
+          ? null
+          : () {
+              final viewerHandler = this.viewerHandler!;
+              ServiceHandler.vibrate();
 
-        viewerHandler.videoAutoMute = !viewerHandler.videoAutoMute;
-        viewerHandler.toggleMuteAllVideos(mute: viewerHandler.videoAutoMute);
-        if (viewerHandler.videoAutoMute && _latestValue.volume != 0) {
-          controller.setVolume(0);
-        } else if (!viewerHandler.videoAutoMute && _latestValue.volume == 0) {
-          controller.setVolume(1);
-        }
-      },
+              viewerHandler.videoAutoMute = !viewerHandler.videoAutoMute;
+              viewerHandler.toggleMuteAllVideos(mute: viewerHandler.videoAutoMute);
+              if (viewerHandler.videoAutoMute && _latestValue.volume != 0) {
+                controller.setVolume(0);
+              } else if (!viewerHandler.videoAutoMute && _latestValue.volume == 0) {
+                controller.setVolume(1);
+              }
+            },
       child: AnimatedOpacity(
         opacity: _hideStuff ? 0 : 1,
         duration: const Duration(milliseconds: 300),
@@ -743,7 +751,7 @@ class _LoliControlsState extends State<LoliControls> {
     _startHideTimer();
 
     if (widget.useLongTapFastForward) {
-      viewerHandler.toggleToolbar(false, forcedNewValue: true);
+      viewerHandler?.toggleToolbar(false, forcedNewValue: true);
     }
 
     setState(() {
@@ -791,7 +799,7 @@ class _LoliControlsState extends State<LoliControls> {
       _hideStuff = true;
       chewieController.toggleFullScreen();
 
-      viewerHandler.setFullScreenState(chewieController.isFullScreen);
+      viewerHandler?.setFullScreenState(chewieController.isFullScreen);
       if (chewieController.isFullScreen) {
         // always disable sleep in fullscreen
         ServiceHandler.disableSleep(force: true);
@@ -801,7 +809,7 @@ class _LoliControlsState extends State<LoliControls> {
           ServiceHandler.enableSleep();
         }
         // resotre system ui visibility state
-        ServiceHandler.setSystemUiVisibility(viewerHandler.displayAppbar.value);
+        ServiceHandler.setSystemUiVisibility(viewerHandler?.displayAppbar.value ?? true);
       }
 
       _showAfterExpandCollapseTimer = Timer(
@@ -820,7 +828,7 @@ class _LoliControlsState extends State<LoliControls> {
         _hideTimer?.cancel();
         controller.pause();
         if (widget.useLongTapFastForward) {
-          viewerHandler.toggleToolbar(false, forcedNewValue: true);
+          viewerHandler?.toggleToolbar(false, forcedNewValue: true);
         }
       } else {
         _cancelAndRestartTimer();

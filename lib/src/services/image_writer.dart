@@ -15,6 +15,7 @@ import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/offline_cache.dart';
+import 'package:lolisnatcher/src/services/share_staging.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 
 class ImageWriter {
@@ -251,7 +252,7 @@ class ImageWriter {
     'WebView',
   ];
 
-  /// 1. Temp file cleanup (always): removes .temp_* and 0-byte files from ALL folders
+  /// 1. Temp file cleanup: removes .temp_* and 0-byte files except share staging
   /// 2. Stale cleanup (if cacheDuration > 0): removes old files from cleanable folders
   /// 3. Size overflow cleanup (if cacheSize > 0): removes oldest files from cleanable folders until under limit
   /// Offline media folders are intentionally excluded from stale/size cleanup.
@@ -280,7 +281,7 @@ class ImageWriter {
       final rootDir = Directory('$rootPath/');
       if (await rootDir.exists()) {
         await for (final entity in rootDir.list(followLinks: false)) {
-          if (entity is Directory) {
+          if (entity is Directory && p.basename(entity.path) != ShareStaging.folderName) {
             allFolderPaths.add(entity.path);
           }
         }

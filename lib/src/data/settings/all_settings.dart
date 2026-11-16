@@ -1,5 +1,6 @@
 import 'package:lolisnatcher/src/data/main_drawer_item.dart';
 import 'package:lolisnatcher/src/pages/settings/drawer_layout_page.dart';
+
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
@@ -160,32 +161,51 @@ void registerAllSettings() {
   // INTERFACE
   // ============================================
 
-  registry.register(boolSetting(
-    key: .tabManagerBottomBar, getDefaultValue: () => true,
-    categories: [SettingCategory.interface], subcategories: [SettingSubcategory.drawer],
-    localization: SettingLocalization(title: (ctx) => ctx.loc.settings.interface.tabManagerBottomBar,
-      subtitle: (ctx) => ctx.loc.settings.interface.tabManagerBottomBarSubtitle),
-  ));
-  registry.register(boolSetting(
-    key: .drawerBottomAlign, getDefaultValue: () => false,
-    categories: [SettingCategory.interface], subcategories: [SettingSubcategory.drawer],
-    localization: SettingLocalization(title: (ctx) => ctx.loc.settings.interface.drawerBottomAlign,
-      subtitle: (ctx) => ctx.loc.settings.interface.drawerBottomAlignSubtitle),
-  ));
-  registry.register(SettingDef<List<MainDrawerItem>>(
-    key: .mainDrawerItems, getDefaultValue: () => [...MainDrawerItem.defaultOrder],
-    categories: [SettingCategory.interface], subcategories: [SettingSubcategory.drawer],
-    localization: SettingLocalization(title: (ctx) => ctx.loc.settings.interface.drawerLayoutTitle),
-    valueToJson: MainDrawerItem.toCsv,
-    valueFromJson: (json) => json is String ? MainDrawerItem.parseCsv(json)
-        : json is List ? MainDrawerItem.parseCsv(json.whereType<String>().join(',')) : [...MainDrawerItem.defaultOrder],
-    equals: listEquals,
-    widgetBuilder: (context, state) => ListTile(
-      title: Text(context.loc.settings.interface.drawerLayoutTitle),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const DrawerLayoutPage())),
+  registry.register(
+    boolSetting(
+      key: .tabManagerBottomBar,
+      getDefaultValue: () => true,
+      categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.drawer],
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.interface.tabManagerBottomBar,
+        subtitle: (ctx) => ctx.loc.settings.interface.tabManagerBottomBarSubtitle,
+      ),
     ),
-  ));
+  );
+  registry.register(
+    boolSetting(
+      key: .drawerBottomAlign,
+      getDefaultValue: () => false,
+      categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.drawer],
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.interface.drawerBottomAlign,
+        subtitle: (ctx) => ctx.loc.settings.interface.drawerBottomAlignSubtitle,
+      ),
+    ),
+  );
+  registry.register(
+    SettingDef<List<MainDrawerItem>>(
+      key: .mainDrawerItems,
+      getDefaultValue: () => [...MainDrawerItem.defaultOrder],
+      categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.drawer],
+      localization: SettingLocalization(title: (ctx) => ctx.loc.settings.interface.drawerLayoutTitle),
+      valueToJson: MainDrawerItem.toCsv,
+      valueFromJson: (json) => json is String
+          ? MainDrawerItem.parseCsv(json)
+          : json is List
+          ? MainDrawerItem.parseCsv(json.whereType<String>().join(','))
+          : [...MainDrawerItem.defaultOrder],
+      equals: listEquals,
+      widgetBuilder: (context, state) => ListTile(
+        title: Text(context.loc.settings.interface.drawerLayoutTitle),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const DrawerLayoutPage())),
+      ),
+    ),
+  );
 
   registry.register(
     settingsEnumSetting<AppMode>(
@@ -329,6 +349,9 @@ void registerAllSettings() {
         title: (ctx) => ctx.loc.settings.interface.previewDisplayFallback,
         subtitle: (ctx) => ctx.loc.settings.interface.previewDisplayFallbackHelp,
       ),
+      widgetConfig: const SettingWidgetConfig(
+        leadingIcon: Icon(Icons.dashboard_outlined),
+      ),
     ),
   );
 
@@ -354,6 +377,26 @@ void registerAllSettings() {
       isDeviceSpecific: true,
       localization: SettingLocalization(
         title: (ctx) => ctx.loc.settings.interface.saveTabViewedPageByDefault,
+      ),
+    ),
+  );
+
+  registry.register(
+    boolSetting(
+      key: .staggeredPageBoundaries,
+      getDefaultValue: () => false,
+      categories: [SettingCategory.interface],
+      subcategories: [SettingSubcategory.previewGrid],
+      supportsPerBooru: true,
+      dependsOn: [.previewDisplay],
+      enabledWhen: ([BuildContext? context]) =>
+          _val<PreviewDisplayMode>(.previewDisplay, context) == PreviewDisplayMode.staggered,
+      localization: SettingLocalization(
+        title: (ctx) => ctx.loc.settings.interface.staggeredPageBoundaries,
+        subtitle: (ctx) => ctx.loc.settings.interface.staggeredPageBoundariesHelp,
+      ),
+      widgetConfig: const SettingWidgetConfig(
+        leadingIcon: Icon(Icons.dashboard_outlined),
       ),
     ),
   );

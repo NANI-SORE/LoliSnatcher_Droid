@@ -25,6 +25,7 @@ import 'package:lolisnatcher/src/services/dio_downloader.dart';
 import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:lolisnatcher/src/services/local_network_permission.dart';
 import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -49,6 +50,9 @@ class VideoViewer extends StatefulWidget {
     this.allowOfflineThumbnailGeneration = false,
     this.isRevealed,
     this.onReveal,
+    this.isStandalone = false,
+    this.allowHidden = false,
+    this.onReloadItem,
     super.key,
   });
 
@@ -64,13 +68,22 @@ class VideoViewer extends StatefulWidget {
   final bool Function()? isRevealed;
   final VoidCallback? onReveal;
 
+  /// Uses local playback controls without shared gallery state or extra options.
+  final bool isStandalone;
+
+  /// Bypasses user tag filters only; content policy still applies.
+  final bool allowHidden;
+
+  /// Lets standalone hosts refresh metadata without updating saved/gallery items.
+  final VoidCallback? onReloadItem;
+
   @override
   State<VideoViewer> createState() => VideoViewerState();
 }
 
 class VideoViewerState extends State<VideoViewer> {
   final SettingsHandler settingsHandler = SettingsHandler.instance;
-  final ViewerHandler viewerHandler = ViewerHandler.instance;
+  ViewerHandler? get viewerHandler => widget.isStandalone ? null : ViewerHandler.instance;
   final LocalAuthHandler localAuthHandler = LocalAuthHandler.instance;
 
   final PhotoViewScaleStateController scaleController = PhotoViewScaleStateController();
@@ -131,13 +144,20 @@ class VideoViewerState extends State<VideoViewer> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isCurrentLoad(loadGeneration)) return;
 
-      viewerHandler.setStopped(widget.key, false);
+      viewerHandler?.setStopped(widget.key, false);
     });
     startedAt.value = DateTime.now().millisecondsSinceEpoch;
     didTryLocalSavedFallback = networkOnly;
     _usingSavedFile = false;
     _localIsDerived = false;
     isFromCache.value = false;
+
+    final uri = Uri.parse(widget.booruItem.fileURL);
+    if (uri.scheme == 'file') {
+      video = File.fromUri(uri);
+      await initPlayer(loadGeneration: loadGeneration);
+      return;
+    }
 
     final cachedVideoPath = networkOnly
         ? null
@@ -423,7 +443,7 @@ class VideoViewerState extends State<VideoViewer> {
 
     isViewed.value = widget.isViewed;
 
-    viewerHandler.addViewed(widget.key);
+    viewerHandler?.addViewed(widget.key);
 
     viewStateSubscription = viewController.outputStateStream.listen(onViewStateChanged);
     scaleStateSubscription = scaleController.outputScaleStateStream.listen(onScaleStateChanged);
@@ -472,19 +492,19 @@ class VideoViewerState extends State<VideoViewer> {
     }
 
     if (oldWidget.isViewed != widget.isViewed) {
-      videoController.value?.seekTo(Duration.zero);
+      if (!widget.isStandalone) videoController.value?.seekTo(Duration.zero);
       isViewed.value = widget.isViewed;
 
       if (isViewed.value) {
-        if (isVideoInited && SX.autoPlayEnabled.value) {
+        if (isVideoInited && SX.autoPlayEnabled.value && !widget.isStandalone) {
           videoController.value?.play();
         }
-        if (viewerHandler.videoAutoMute) {
+        if (viewerHandler?.videoAutoMute ?? false) {
           videoController.value?.setVolume(0);
         }
       } else {
         videoController.value?.pause();
-        resetZoom();
+        if (!widget.isStandalone) resetZoom();
       }
     }
   }
@@ -497,8 +517,12 @@ class VideoViewerState extends State<VideoViewer> {
 
   Future<void> initVideo(bool ignoreTagsCheck, {bool networkOnly = false}) async {
     final int loadGeneration = ++_loadGeneration;
+    if (!ContentPolicy.isItemAllowed(widget.booru, widget.booruItem)) {
+      stopLoading(reason: .reset);
+      return;
+    }
     _ignoreFilterForCurrentLoad =
-        ignoreTagsCheck || _ignoreFilterForCurrentLoad || (widget.isRevealed?.call() ?? false);
+        ignoreTagsCheck || widget.allowHidden || _ignoreFilterForCurrentLoad || (widget.isRevealed?.call() ?? false);
     _networkOnlyCurrentLoad = networkOnly;
     if (widget.filterEvaluation.isBlurred && !_ignoreFilterForCurrentLoad) {
       _stopForFilter(widget.filterEvaluation);
@@ -540,8 +564,8 @@ class VideoViewerState extends State<VideoViewer> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      viewerHandler.setStopped(widget.key, true);
-      viewerHandler.setLoaded(widget.key, false);
+      viewerHandler?.setStopped(widget.key, true);
+      viewerHandler?.setLoaded(widget.key, false);
     });
 
     resetZoom();
@@ -568,7 +592,7 @@ class VideoViewerState extends State<VideoViewer> {
     bufferingTimer?.cancel();
     pauseCheckTimer?.cancel();
 
-    viewerHandler.removeViewed(widget.key);
+    viewerHandler?.removeViewed(widget.key);
     disposeNotifiers();
 
     super.dispose();
@@ -642,7 +666,7 @@ class VideoViewerState extends State<VideoViewer> {
         scaleState == PhotoViewScaleState.zoomedIn ||
         scaleState == PhotoViewScaleState.covering ||
         scaleState == PhotoViewScaleState.originalSize;
-    viewerHandler.setZoomed(widget.key, isZoomed.value);
+    viewerHandler?.setZoomed(widget.key, isZoomed.value);
     if (prevIsZoomed != isZoomed.value) {
       updateState();
     }
@@ -650,7 +674,7 @@ class VideoViewerState extends State<VideoViewer> {
 
   void onViewStateChanged(PhotoViewControllerValue viewState) {
     // print(viewState);
-    viewerHandler.setViewValue(widget.key, viewState);
+    viewerHandler?.setViewValue(widget.key, viewState);
   }
 
   void resetZoom() {
@@ -658,7 +682,7 @@ class VideoViewerState extends State<VideoViewer> {
     scaleController.scaleState = PhotoViewScaleState.initial;
     fullscreenScaleController.scaleState = PhotoViewScaleState.initial;
     isZoomed.value = false;
-    viewerHandler.setZoomed(widget.key, false);
+    viewerHandler?.setZoomed(widget.key, false);
   }
 
   void scrollZoomImage(double value) {
@@ -755,12 +779,12 @@ class VideoViewerState extends State<VideoViewer> {
     _fullscreenDismissThresholdReached = false;
     fullscreenDismissProgress.value = 0;
     chewieController.value?.toggleFullScreen();
-    viewerHandler.setFullScreenState(false);
+    viewerHandler?.setFullScreenState(false);
 
     if (!SX.wakeLockEnabled.value) {
       ServiceHandler.enableSleep();
     }
-    ServiceHandler.setSystemUiVisibility(viewerHandler.displayAppbar.value);
+    ServiceHandler.setSystemUiVisibility(viewerHandler?.displayAppbar.value ?? true);
   }
 
   void onFullscreenControlsVisibilityChanged(bool isVisible) {
@@ -781,17 +805,17 @@ class VideoViewerState extends State<VideoViewer> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
 
-        viewerHandler.setLoaded(widget.key, true);
+        viewerHandler?.setLoaded(widget.key, true);
       });
     }
 
-    if (isViewed.value) {
+    if (isViewed.value && !widget.isStandalone) {
       if (chewieController.value!.isFullScreen || !SX.useVolumeButtonsForScroll.value) {
         ServiceHandler.setVolumeButtons(true); // in full screen or volumebuttons scroll setting is disabled
       } else {
-        ServiceHandler.setVolumeButtons(viewerHandler.displayAppbar.value); // same as app bar value
+        ServiceHandler.setVolumeButtons(viewerHandler?.displayAppbar.value ?? true); // same as app bar value
       }
-    } else {
+    } else if (!isViewed.value) {
       if (videoController.value?.value.isPlaying == true) {
         videoController.value?.pause();
       }
@@ -863,9 +887,10 @@ class VideoViewerState extends State<VideoViewer> {
       autoPlay: false,
       allowedScreenSleep: false,
       looping: true,
-      allowFullScreen: widget.enableFullscreen,
+      allowFullScreen: widget.enableFullscreen && !widget.isStandalone,
+      allowPlaybackSpeedChanging: !widget.isStandalone,
       showControls: false,
-      showControlsOnInitialize: viewerHandler.displayAppbar.value,
+      showControlsOnInitialize: viewerHandler?.displayAppbar.value ?? true,
       progressIndicatorDelay: const Duration(milliseconds: 100),
       customControls: null,
       // customControls: SafeArea(child: LoliControls()),
@@ -941,9 +966,10 @@ class VideoViewerState extends State<VideoViewer> {
       // ],
     );
 
-    if (SX.startVideosMuted.value || viewerHandler.videoAutoMute) {
+    if (SX.startVideosMuted.value || (viewerHandler?.videoAutoMute ?? false)) {
       await videoController.value?.setVolume(0);
     }
+    if (!_isCurrentLoad(loadGeneration)) return;
 
     if (!_isCurrentLoad(loadGeneration)) return;
     if (!forceCache.value && video == null && !_networkOnlyCurrentLoad) {
@@ -972,7 +998,7 @@ class VideoViewerState extends State<VideoViewer> {
     await Future.wait([videoController.value!.initialize()]);
     if (!_isCurrentLoad(loadGeneration)) return;
 
-    if (SX.autoPlayEnabled.value) {
+    if (SX.autoPlayEnabled.value && !widget.isStandalone && isViewed.value) {
       await videoController.value!.play();
     }
     if (!_isCurrentLoad(loadGeneration)) return;
@@ -1054,6 +1080,7 @@ class VideoViewerState extends State<VideoViewer> {
                 valueListenable: isZoomed,
                 builder: (context, isZoomedVal, _) {
                   return LoliControls(
+                    isStandalone: widget.isStandalone,
                     useLongTapFastForward: !isZoomedVal,
                     onControlsVisibilityChanged: onFullscreenControlsVisibilityChanged,
                   );
@@ -1152,6 +1179,10 @@ class VideoViewerState extends State<VideoViewer> {
   }
 
   Future<void> onManualRestart() async {
+    if ((stopReason.value?.isError == true || stopReason.value?.isVideoError == true) && widget.onReloadItem != null) {
+      widget.onReloadItem!();
+      return;
+    }
     final loadGeneration = ++_loadGeneration;
     _ignoreFilterForCurrentLoad = true;
     widget.onReveal?.call();
@@ -1162,7 +1193,7 @@ class VideoViewerState extends State<VideoViewer> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isCurrentLoad(loadGeneration)) return;
 
-      viewerHandler.setStopped(widget.key, false);
+      viewerHandler?.setStopped(widget.key, false);
     });
     startedAt.value = DateTime.now().millisecondsSinceEpoch;
     updateState();
@@ -1214,6 +1245,7 @@ class VideoViewerState extends State<VideoViewer> {
 
   @override
   Widget build(BuildContext context) {
+    if (!ContentPolicy.isItemAllowed(widget.booru, widget.booruItem)) return const SizedBox.shrink();
     return PreserveMediaAnimations(
       child: Material(
         color: Colors.transparent,
@@ -1343,14 +1375,14 @@ class VideoViewerState extends State<VideoViewer> {
                                       isViewed,
                                       localAuthHandler.isAuthenticated,
                                       showControls,
-                                      viewerHandler.isFullscreen,
+                                      if (!widget.isStandalone) viewerHandler!.isFullscreen,
                                     ]),
                                     builder: (context, child) {
                                       final bool shouldShow =
                                           isViewed.value &&
                                           localAuthHandler.isAuthenticated.value != false &&
                                           showControls.value &&
-                                          !viewerHandler.isFullscreen.value;
+                                          !(viewerHandler?.isFullscreen.value ?? false);
 
                                       return AnimatedSwitcher(
                                         duration: const Duration(milliseconds: 200),
@@ -1361,6 +1393,7 @@ class VideoViewerState extends State<VideoViewer> {
                                       valueListenable: isZoomed,
                                       builder: (context, isZoomedVal, _) {
                                         return LoliControls(
+                                          isStandalone: widget.isStandalone,
                                           useLongTapFastForward: !isZoomedVal,
                                         );
                                       },

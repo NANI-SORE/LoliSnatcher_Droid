@@ -41,6 +41,7 @@ class Thumbnail extends StatelessWidget {
     this.allowOfflineLocalMedia = false,
     this.allowOfflineThumbnailGeneration = false,
     this.forceThumbnail = false,
+    this.forceUnblur = false,
     super.key,
   });
 
@@ -54,6 +55,7 @@ class Thumbnail extends StatelessWidget {
   final bool allowOfflineLocalMedia;
   final bool allowOfflineThumbnailGeneration;
   final bool forceThumbnail;
+  final bool forceUnblur;
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +81,7 @@ class Thumbnail extends StatelessWidget {
       allowOfflineLocalMedia: allowOfflineLocalMedia,
       allowOfflineThumbnailGeneration: allowOfflineThumbnailGeneration,
       forceThumbnail: forceThumbnail,
+      forceUnblur: forceUnblur,
     );
 
     if (isStandalone && useHero) {
@@ -108,6 +111,7 @@ class _ThumbnailImage extends StatefulWidget {
     required this.allowOfflineLocalMedia,
     required this.allowOfflineThumbnailGeneration,
     required this.forceThumbnail,
+    this.forceUnblur = false,
   });
 
   final BooruItem item;
@@ -118,6 +122,7 @@ class _ThumbnailImage extends StatefulWidget {
 
   final bool allowOfflineLocalMedia;
   final bool allowOfflineThumbnailGeneration;
+  final bool forceUnblur;
 
   @override
   State<_ThumbnailImage> createState() => _ThumbnailState();
@@ -164,7 +169,8 @@ class _ThumbnailState extends State<_ThumbnailImage> {
 
   // Hidden thumbnails also use a tiny pixelated image on low-end devices.
   // Neither blur nor pixelation needs an active animation codec.
-  bool get _isObscured => isBlurred && (widget.filterEvaluation.isBlurred || widget.item.isHidden);
+  bool get _isObscured =>
+      !widget.forceUnblur && isBlurred && (widget.filterEvaluation.isBlurred || widget.item.isHidden);
 
   bool get _shouldShowFirstFrame =>
       _isObscured ||
@@ -230,6 +236,11 @@ class _ThumbnailState extends State<_ThumbnailImage> {
 
         await restartLoading();
       });
+    } else if (oldWidget.forceUnblur != widget.forceUnblur && widget.item.isHidden && SX.shitDevice.value) {
+      // Low-performance mode blurs by decoding at 10px, so reload at normal size.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) restartLoading();
+      });
     }
   }
 
@@ -268,7 +279,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
         isFromCache.value = true;
         isGeneratingOfflineThumbnail.value = false;
       }
-      final provider = await localImageProvider(File(cachedPath));
+      final provider = await localImageProvider(File(cachedPath), firstFrameOnly: _firstFrameOnly, cancelToken: token);
       return _isCurrentLoad(loadGeneration) ? _resizeProvider(provider) : null;
     }
 
@@ -295,7 +306,9 @@ class _ThumbnailState extends State<_ThumbnailImage> {
       _mainFromLocal = true;
       _mainLocalFile = offlineThumbnail;
       isFromCache.value = true;
-      return _resizeProvider(FileImage(offlineThumbnail));
+      return _resizeProvider(
+        await localImageProvider(offlineThumbnail, firstFrameOnly: _firstFrameOnly, cancelToken: token),
+      );
     }
 
     if (isMain) isFromCache.value = false;
@@ -338,7 +351,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
   ImageProvider _resizeProvider(ImageProvider provider) {
     // on desktop devicePixelRatio is not working?
     final bool shouldResize = (thumbWidth != null || thumbHeight != null) && !PlatformExt.isDesktop;
-    final bool shouldPixelate = widget.filterEvaluation.isBlurred && SX.shitDevice.value;
+    final bool shouldPixelate = !widget.forceUnblur && widget.filterEvaluation.isBlurred && SX.shitDevice.value;
 
     if (shouldResize || shouldPixelate) {
       return SafeResizeImage(
@@ -467,7 +480,10 @@ class _ThumbnailState extends State<_ThumbnailImage> {
     isLoadedExtra.value = false;
     extraProvider.value = null;
     isGeneratingOfflineThumbnail.value = false;
-    mainProvider.value = _resizeProvider(FileImage(file));
+    mainCancelToken = CancelToken();
+    final provider = await localImageProvider(file, firstFrameOnly: _firstFrameOnly, cancelToken: mainCancelToken);
+    if (!_isCurrentLoad(fallbackGeneration)) return false;
+    mainProvider.value = _resizeProvider(provider);
     isFromCache.value = true;
     isFailed.value = false;
     failedRendering.value = false;
@@ -844,7 +860,8 @@ class _ThumbnailState extends State<_ThumbnailImage> {
     }
     loadItemCancelToken = null;
 
-    // evict from memory cache only when in grid
+    // Evict grid images without notifying builders during widget disposal.
+    // Provider values are reset separately when restarting a live thumbnail.
     if (widget.isStandalone) {
       mainProvider.value?.evict();
       extraProvider.value?.evict();
@@ -902,6 +919,10 @@ class _ThumbnailState extends State<_ThumbnailImage> {
 
     final Widget imageStack = LayoutBuilder(
       builder: (context, constraints) {
+        // A Hero flight can retain this builder after switching tabs disposes
+        // the thumbnail that owns its notifiers.
+        if (!mounted) return const SizedBox.shrink();
+
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
 
@@ -958,7 +979,8 @@ class _ThumbnailState extends State<_ThumbnailImage> {
                   );
                 },
                 child: ImageFiltered(
-                  enabled: SettingsHandler.instance.blurImages || widget.filterEvaluation.isBlurred,
+                  enabled:
+                      !widget.forceUnblur && (SettingsHandler.instance.blurImages || widget.filterEvaluation.isBlurred),
                   imageFilter: ImageFilter.blur(
                     sigmaX: blurAmount,
                     sigmaY: blurAmount,
@@ -1016,6 +1038,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
               child: GestureDetector(
                 child: ImageFiltered(
                   enabled:
+                      !widget.forceUnblur &&
                       isBlurred &&
                       (SettingsHandler.instance.blurImages ||
                           (widget.filterEvaluation.isBlurred && !SX.shitDevice.value)),
@@ -1089,7 +1112,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
                 },
               ),
             //
-            if (widget.isStandalone && widget.filterEvaluation.isBlurred)
+            if (widget.isStandalone && widget.filterEvaluation.isBlurred && !widget.forceUnblur)
               Container(
                 alignment: .center,
                 decoration: BoxDecoration(

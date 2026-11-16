@@ -1,15 +1,13 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/services/webview_cookies.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
-import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
 
 /// Self-contained widget for managing cookies per booru.
 ///
@@ -25,6 +23,64 @@ class CookieManagerWidget extends StatefulWidget {
 class _CookieManagerWidgetState extends State<CookieManagerWidget> {
   Booru? selectedBooru;
   List<Cookie> selectedBooruCookies = [];
+  bool busy = false;
+
+  void showError(Object error, StackTrace stack) {
+    Logger.Inst().log(error.toString(), 'CookieManagerWidget', 'cookies', LogTypes.exception, s: stack);
+    if (mounted) FlashElements.showSnackbar(context: context, title: Text(context.loc.error));
+  }
+
+  Future<void> selectBooru(Booru? booru) async {
+    if (busy) return;
+    setState(() {
+      selectedBooru = booru;
+      selectedBooruCookies = [];
+      busy = true;
+    });
+    try {
+      final cookies = booru == null ? <Cookie>[] : await WebviewCookies.forSite(Uri.parse(booru.baseURL!));
+      if (mounted) setState(() => selectedBooruCookies = cookies);
+    } catch (e, s) {
+      showError(e, s);
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> deleteCookies({Cookie? cookie}) async {
+    if (busy) return;
+    final booru = selectedBooru;
+    setState(() => busy = true);
+    try {
+      final uri = booru == null ? null : Uri.parse(booru.baseURL!);
+      final bool deleted;
+      if (uri == null) {
+        deleted = await WebviewCookies.clearAll();
+      } else if (cookie != null) {
+        deleted = await WebviewCookies.delete(uri, cookie);
+      } else {
+        deleted = await WebviewCookies.clearSite(uri);
+      }
+      final remaining = uri == null ? <Cookie>[] : await WebviewCookies.forSite(uri);
+      if (!mounted) return;
+      setState(() => selectedBooruCookies = remaining);
+      if (!deleted) throw StateError('Cookies remain after deletion');
+      FlashElements.showSnackbar(
+        context: context,
+        title: Text(
+          cookie != null
+              ? context.loc.settings.network.cookieDeleted(cookieName: cookie.name)
+              : booru != null
+              ? context.loc.settings.network.cookiesForBooruDeleted(booruName: booru.name ?? '')
+              : context.loc.settings.network.allCookiesDeleted,
+        ),
+      );
+    } catch (e, s) {
+      showError(e, s);
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,23 +95,11 @@ class _CookieManagerWidgetState extends State<CookieManagerWidget> {
         SettingsBooruDropdown(
           value: selectedBooru,
           nullable: true,
-          onChanged: (newValue) async {
-            selectedBooru = newValue;
-            if (newValue != null) {
-              selectedBooruCookies = await CookieManager.instance(
-                webViewEnvironment: webViewEnvironment,
-              ).getCookies(url: WebUri(selectedBooru!.baseURL!));
-              if (Platform.isWindows) {
-                selectedBooruCookies.addAll(globalWindowsCookies[selectedBooru!.baseURL!] ?? []);
-              }
-            } else {
-              selectedBooruCookies = [];
-            }
-            setState(() {});
-          },
+          onChanged: busy ? null : selectBooru,
           title: context.loc.booru,
           subtitle: Text(context.loc.settings.network.selectBooruToClearCookies),
         ),
+        if (busy) const LinearProgressIndicator(),
         if (selectedBooruCookies.isNotEmpty) ...[
           SettingsButton(
             name: context.loc.settings.network.cookiesFor(booruName: selectedBooru?.name ?? ''),
@@ -65,35 +109,8 @@ class _CookieManagerWidgetState extends State<CookieManagerWidget> {
             SettingsButton(
               name:
                   '${cookie.name} = ${cookie.value}${cookie.expiresDate != null ? '\nExpires: ${DateTime.fromMillisecondsSinceEpoch(cookie.expiresDate!)}' : ''}',
-              action: () async {
-                final bool res = await CookieManager.instance(webViewEnvironment: webViewEnvironment).deleteCookie(
-                  url: WebUri(selectedBooru!.baseURL!),
-                  name: cookie.name,
-                );
-                globalWindowsCookies[selectedBooru!.baseURL!]?.remove(cookie);
-
-                if (!res) {
-                  Logger.Inst().log(
-                    'Failed to delete cookie',
-                    'CookieManagerWidget',
-                    'deleteCookie',
-                    LogTypes.exception,
-                    s: StackTrace.current,
-                  );
-                  FlashElements.showSnackbar(
-                    context: context,
-                    title: Text(context.loc.error),
-                  );
-                  return;
-                }
-
-                selectedBooruCookies.removeAt(selectedBooruCookies.indexOf(cookie));
-                setState(() {});
-                FlashElements.showSnackbar(
-                  context: context,
-                  title: Text(context.loc.settings.network.cookieDeleted(cookieName: cookie.name)),
-                );
-              },
+              enabled: !busy,
+              action: () => deleteCookies(cookie: cookie),
             ),
           ],
         ],
@@ -105,47 +122,8 @@ class _CookieManagerWidgetState extends State<CookieManagerWidget> {
             Icons.delete_forever,
             color: Colors.red,
           ),
-          action: () async {
-            if (selectedBooru != null) {
-              final bool res = await CookieManager.instance(
-                webViewEnvironment: webViewEnvironment,
-              ).deleteCookies(url: WebUri(selectedBooru!.baseURL!));
-              globalWindowsCookies[selectedBooru!.baseURL!]?.clear();
-
-              if (!res) {
-                Logger.Inst().log(
-                  'Failed to delete cookies',
-                  'CookieManagerWidget',
-                  'deleteCookies',
-                  LogTypes.exception,
-                  s: StackTrace.current,
-                );
-                FlashElements.showSnackbar(
-                  context: context,
-                  title: Text(context.loc.error),
-                );
-                return;
-              }
-
-              FlashElements.showSnackbar(
-                context: context,
-                title: Text(
-                  context.loc.settings.network.cookiesForBooruDeleted(booruName: selectedBooru?.name ?? ''),
-                ),
-              );
-            } else {
-              await CookieManager.instance(webViewEnvironment: webViewEnvironment).deleteAllCookies();
-              globalWindowsCookies.clear();
-              FlashElements.showSnackbar(
-                context: context,
-                title: Text(context.loc.settings.network.allCookiesDeleted),
-              );
-            }
-
-            selectedBooru = null;
-            selectedBooruCookies.clear();
-            setState(() {});
-          },
+          enabled: !busy,
+          action: deleteCookies,
         ),
       ],
     );

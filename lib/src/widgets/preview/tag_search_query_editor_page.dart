@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import 'package:fading_edge_scrollview/fading_edge_scrollview.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:intl/intl.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
@@ -17,6 +16,7 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
+import 'package:lolisnatcher/src/widgets/common/fading_edge_reorderable_listview.dart';
 import 'package:lolisnatcher/src/widgets/common/kaomoji.dart';
 import 'package:lolisnatcher/src/widgets/common/marquee_text.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
@@ -393,7 +393,7 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
                     strokeWidth: 4,
                     color: context.theme.colorScheme.secondary,
                     onRefresh: queryController.runSearch,
-                    child: FadingEdgeScrollView.fromScrollView(
+                    child: FadingEdgeScrollView.from(
                       child: ListView.builder(
                         reverse: !SX.useTopSearchbarInput.value,
                         controller: suggestionsScrollController,
@@ -576,7 +576,7 @@ class _TagSearchQueryEditorPageState extends State<TagSearchQueryEditorPage> {
           ),
           child: Listener(
             onPointerSignal: (event) => desktopPointerScroll(tagsScrollController, event),
-            child: FadingEdgeScrollView.fromScrollView(
+            child: FadingEdgeScrollView.from(
               child: ListView(
                 controller: tagsScrollController,
                 scrollDirection: Axis.horizontal,
@@ -942,12 +942,37 @@ class _TagSearchBoxState extends State<TagSearchBox> {
                               overflow: TextOverflow.ellipsis,
                             )
                     : (widget.hintText != null
-                          ? Text(
-                              widget.hintText!,
-                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: Theme.of(context).hintColor,
-                              ),
-                            )
+                          ? widget.allowMultipleTags
+                                ? Opacity(
+                                    opacity: 0.72,
+                                    child: Wrap(
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      alignment: WrapAlignment.start,
+                                      children: widget.hintText!
+                                          .split(' ')
+                                          .where((t) => t.isNotEmpty)
+                                          .map(
+                                            (t) => SizedBox(
+                                              height: 32,
+                                              child: MainSearchTagChip(
+                                                tag: t,
+                                                booru: widget.booru,
+                                                canDelete: false,
+                                              ),
+                                            ),
+                                          )
+                                          .toList(),
+                                    ),
+                                  )
+                                : Text(
+                                    widget.hintText!,
+                                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color:
+                                          tagHandler.getTag(widget.hintText!).getColour() ??
+                                          Theme.of(context).hintColor,
+                                    ),
+                                  )
                           : null),
               ),
             ),

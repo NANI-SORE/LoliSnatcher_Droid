@@ -1,3 +1,6 @@
+import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_share_item.dart';
+import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_retryable_item.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -433,7 +436,9 @@ class _DDContentState extends State<DDContent> {
                 .map((row) => DownloadTask.fromRow(downloadMap(row)))
                 .where((task) => !_items.any((item) => item.id == task.id))
                 .toList();
-            if (_batches.isEmpty && active.isEmpty) {
+            final share = handler.currentShare.value;
+            final retries = [...handler.failedItems, ...handler.cancelledItems];
+            if (_batches.isEmpty && active.isEmpty && share == null && retries.isEmpty) {
               return Center(
                 child: _loading
                     ? const CircularProgressIndicator()
@@ -450,6 +455,24 @@ class _DDContentState extends State<DDContent> {
             return ListView(
               padding: const EdgeInsets.only(bottom: 8),
               children: [
+                if (share != null)
+                  for (var index = handler.shareProgress.value; index < share.booruItems.length; index++)
+                    DDShareItem(
+                      item: share.booruItems[index],
+                      handler: widget.controller.getHandler(share.booru),
+                      index: index - handler.shareProgress.value,
+                      isFirst: index == handler.shareProgress.value,
+                      shareProgress: handler.shareProgress.value,
+                      totalItems: share.booruItems.length,
+                    ),
+                for (final record in retries)
+                  DDRetryableItem(
+                    record: record,
+                    type: handler.failedItems.contains(record) ? RetryableItemType.failed : RetryableItemType.cancelled,
+                    handler: widget.controller.getHandler(record.booru),
+                    onRetry: (_) => handler.onRetryShare(record),
+                    onSkip: () => handler.onRemoveRetryItem(record),
+                  ),
                 if (active.isNotEmpty) ...[
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),

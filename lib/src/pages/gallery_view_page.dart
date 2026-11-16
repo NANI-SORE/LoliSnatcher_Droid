@@ -1,3 +1,5 @@
+import 'package:lolisnatcher/src/services/image_memory_manager.dart';
+
 import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
@@ -74,7 +76,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
 
   // Keep reveal choices independently of viewers that may be disposed to free
   // image memory. Only items in the configured preload range retain a choice.
-  final Set<Key> _revealedItems = {};
+  final Map<Key, Object> _revealedItems = {};
 
   void _pruneRevealedItems(int currentIndex) {
     final items = widget.tab.booruHandler.filteredFetched;
@@ -84,11 +86,22 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
     final nearbyKeys = <Key>{
       for (int index = first; index <= last; index++) items[index].key,
     };
-    _revealedItems.removeWhere((key) => !nearbyKeys.contains(key));
+    _revealedItems.removeWhere((key, _) => !nearbyKeys.contains(key));
+  }
+
+  Object _revealSignature(BooruItem item) {
+    final evaluation = widget.tab.booruHandler.filterEvaluationFor(item);
+    return (
+      evaluation.effectiveEffect,
+      evaluation.hideAsBlur,
+      evaluation.primaryMatch?.rule.id,
+      evaluation.primaryMatch?.rule.updatedAt,
+      evaluation.loadingFilterDetails,
+    );
   }
 
   void _rememberRevealedItem(BooruItem item) {
-    _revealedItems.add(item.key);
+    _revealedItems[item.key] = _revealSignature(item);
     _pruneRevealedItems(page.value);
   }
 
@@ -472,7 +485,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                               allowOfflineThumbnailGeneration: isFavsOrDls,
                                               filterEvaluation: evaluation,
                                               isViewed: pageVal == index,
-                                              isRevealed: () => _revealedItems.contains(item.key),
+                                              isRevealed: () => _revealedItems[item.key] == _revealSignature(item),
                                               onReveal: () => _rememberRevealedItem(item),
                                               key: item.key,
                                             );
@@ -490,7 +503,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                                 allowOfflineLocalMedia: true,
                                                 allowOfflineThumbnailGeneration: isFavsOrDls,
                                                 isViewed: pageVal == index,
-                                                isRevealed: () => _revealedItems.contains(item.key),
+                                                isRevealed: () => _revealedItems[item.key] == _revealSignature(item),
                                                 onReveal: () => _rememberRevealedItem(item),
                                                 enableFullscreen: true,
                                                 key: item.key,
@@ -545,7 +558,13 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                       }
 
                                       final child = ListenableBuilder(
-                                        listenable: Listenable.merge([viewerHandler.activeViewers, page]),
+                                        listenable: Listenable.merge([
+                                          viewerHandler.activeViewers,
+                                          page,
+                                          ImageMemoryManager.instance.underPressure,
+                                          viewerHandler.isLoaded,
+                                          viewerHandler.isStopped,
+                                        ]),
                                         builder: (context, child) {
                                           final activeViewers = viewerHandler.activeViewers.value;
                                           final pageVal = page.value;
@@ -562,13 +581,17 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                                           // don't render more than 3 videos at once, chance to crash is too high otherwise
                                           // disabled video preload for sankaku because their videos cause crashes if loading/rendering(?) more than one at a time
                                           final bool isNear =
+                                              !ImageMemoryManager.instance.underPressure.value &&
+                                              (viewerHandler.isLoaded.value || viewerHandler.isStopped.value) &&
                                               viewerDepth < ViewerHandler.maxActiveViewers &&
                                               (distanceFromCurrent <=
                                                   (isVideo ? (isSankaku ? 0 : min(preloadCount, 1)) : preloadCount));
 
+                                          final shouldRender = !isViewerTooDeep && (isViewedVal || isNear);
                                           return AnimatedSwitcher(
+                                            key: ValueKey(shouldRender),
                                             duration: const Duration(milliseconds: 100),
-                                            child: (isViewerTooDeep || (!isViewedVal && !isNear))
+                                            child: !shouldRender
                                                 ? Center(child: Container(color: Colors.black))
                                                 : child,
                                           );

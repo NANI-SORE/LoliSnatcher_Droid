@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import 'package:fading_edge_scrollview/fading_edge_scrollview.dart';
+import 'package:lolisnatcher/src/widgets/common/fading_edge_reorderable_listview.dart';
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/settings/setting_def.dart';
@@ -1490,7 +1490,7 @@ class _TagsFiltersPageState extends State<TagsFiltersPage> {
               label: Text(loc.batchActions),
             )
           : FloatingActionButton(tooltip: loc.addRule, onPressed: _openEditor, child: const Icon(Icons.add)),
-      body: FadingEdgeScrollView.fromScrollView(
+      body: FadingEdgeScrollView.from(
         child: CustomScrollView(
           controller: rulesScrollController,
           slivers: [

@@ -498,7 +498,7 @@ class DanbooruHandler extends BooruHandler {
   bool get shouldUpdateIteminTagView => true;
 
   @override
-  Future<({BooruItem? item, bool failed, String? error})> loadItem({
+  Future<({BooruItem? item, bool failed, String? error})> loadItemInternal({
     required BooruItem item,
     CancelToken? cancelToken,
     bool withCapcthaCheck = false,

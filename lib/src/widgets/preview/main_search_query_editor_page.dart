@@ -5,15 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:dio/dio.dart';
-import 'package:fading_edge_scrollview/fading_edge_scrollview.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:keyboard_actions/keyboard_actions.dart';
-import 'package:lolisnatcher/src/utils/clipboard.dart';
-import 'package:lolisnatcher/src/utils/content_policy.dart';
-import 'package:lolisnatcher/src/widgets/desktop/desktop_scroll.dart';
-import 'package:lolisnatcher/src/widgets/preview/tag_search_query_editor_page.dart';
+import 'package:lolisnatcher/src/widgets/common/fading_edge_reorderable_listview.dart';
 import 'package:rich_text_controller/rich_text_controller.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -23,13 +19,15 @@ import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/history_item.dart';
 import 'package:lolisnatcher/src/data/meta_tag.dart';
 import 'package:lolisnatcher/src/data/pinned_tag.dart';
+import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/data/tag_suggestion.dart';
 import 'package:lolisnatcher/src/handlers/booru_handler.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
-import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
+import 'package:lolisnatcher/src/utils/clipboard.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/widgets/common/cancel_button.dart';
 import 'package:lolisnatcher/src/widgets/common/loli_date_time_picker.dart';
@@ -38,10 +36,12 @@ import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/kaomoji.dart';
 import 'package:lolisnatcher/src/widgets/common/marquee_text.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
+import 'package:lolisnatcher/src/widgets/desktop/desktop_scroll.dart';
 import 'package:lolisnatcher/src/widgets/gallery/tag_view.dart';
 import 'package:lolisnatcher/src/widgets/history/history.dart';
 import 'package:lolisnatcher/src/widgets/image/booru_favicon.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_bar.dart';
+import 'package:lolisnatcher/src/widgets/preview/tag_search_query_editor_page.dart';
 
 class MainSearchQueryEditorPage extends StatefulWidget {
   const MainSearchQueryEditorPage({
@@ -791,7 +791,7 @@ class _MainSearchQueryEditorPageState extends State<MainSearchQueryEditorPage> {
                       notificationPredicate: (_) => suggestionText.text.isNotEmpty,
                       child: child!,
                     ),
-                    child: FadingEdgeScrollView.fromScrollView(
+                    child: FadingEdgeScrollView.from(
                       child: ListView.builder(
                         reverse: !SX.useTopSearchbarInput.value,
                         controller: suggestionsScrollController,
@@ -1254,7 +1254,7 @@ class AddMetatagBottomSheet extends StatelessWidget {
       ),
       titlePadding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       contentPadding: EdgeInsets.zero,
-      buttonPadding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+      actionPadding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       scrollController: scrollController,
       contentItems: [
         const SizedBox(height: 16),
@@ -1862,7 +1862,7 @@ class _HistoryBlockState extends State<HistoryBlock> {
           height: 50,
           child: Listener(
             onPointerSignal: (event) => desktopPointerScroll(scrollController, event),
-            child: FadingEdgeScrollView.fromScrollView(
+            child: FadingEdgeScrollView.from(
               child: ListView.builder(
                 controller: scrollController,
                 scrollDirection: Axis.horizontal,
@@ -2050,7 +2050,7 @@ class _MetatagsBlockState extends State<MetatagsBlock> {
           height: 50,
           child: Listener(
             onPointerSignal: (event) => desktopPointerScroll(scrollController, event),
-            child: FadingEdgeScrollView.fromScrollView(
+            child: FadingEdgeScrollView.from(
               child: ListView.builder(
                 controller: scrollController,
                 scrollDirection: Axis.horizontal,
@@ -2289,7 +2289,7 @@ class _PopularTagsBlockState extends State<PopularTagsBlock> {
             height: 50,
             child: Listener(
               onPointerSignal: (event) => desktopPointerScroll(scrollController, event),
-              child: FadingEdgeScrollView.fromScrollView(
+              child: FadingEdgeScrollView.from(
                 child: ListView.builder(
                   controller: scrollController,
                   scrollDirection: Axis.horizontal,
@@ -2759,7 +2759,7 @@ class _PinnedTagsBlockState extends State<PinnedTagsBlock> {
           height: 50,
           child: Listener(
             onPointerSignal: (event) => desktopPointerScroll(scrollController, event),
-            child: FadingEdgeScrollView.fromScrollView(
+            child: FadingEdgeScrollView.from(
               child: ListView.builder(
                 controller: scrollController,
                 scrollDirection: Axis.horizontal,

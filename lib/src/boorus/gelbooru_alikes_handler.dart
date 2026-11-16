@@ -223,13 +223,22 @@ class GelbooruAlikesHandler extends BooruHandler {
   bool get hasCommentsSupport => true;
 
   @override
-  Future<List<CommentItem>> getComments(
+  Future<List<CommentItem>> getCommentsInternal(
     String postID,
     int pageNum, {
     CancelToken? cancelToken,
   }) async {
     List<CommentItem> comments = [];
-    comments = await super.getComments(postID, pageNum, cancelToken: cancelToken);
+    Object? apiError;
+    StackTrace? apiStack;
+    try {
+      comments = await super.getCommentsInternal(postID, pageNum, cancelToken: cancelToken);
+    } catch (e, s) {
+      // This source can still read comments from HTML when its API fails.
+      if (!isR34xxx || cancelToken?.isCancelled == true) rethrow;
+      apiError = e;
+      apiStack = s;
+    }
 
     if (isR34xxx && comments.isEmpty) {
       // single comment not loading through api workaround
@@ -255,6 +264,8 @@ class GelbooruAlikesHandler extends BooruHandler {
           final container = document.querySelector('#comment-list');
           if (container != null) {
             final elements = container.children.where((e) => e.localName == 'div');
+            Object? parsingError;
+            StackTrace? parsingStack;
             for (final c in elements) {
               try {
                 final header = c.querySelector('.col1');
@@ -282,6 +293,8 @@ class GelbooruAlikesHandler extends BooruHandler {
                   );
                 }
               } catch (e, s) {
+                parsingError = e;
+                parsingStack = s;
                 Logger.Inst().log(
                   'Failed to parse comment through alternative method',
                   className,
@@ -291,7 +304,12 @@ class GelbooruAlikesHandler extends BooruHandler {
                 );
               }
             }
+            if (comments.isEmpty && parsingError != null) Error.throwWithStackTrace(parsingError, parsingStack!);
+          } else if (apiError != null) {
+            Error.throwWithStackTrace(apiError, apiStack!);
           }
+        } else {
+          throw StateError('Invalid comments status code ${res.statusCode}');
         }
       } catch (e, s) {
         Logger.Inst().log(
@@ -301,6 +319,7 @@ class GelbooruAlikesHandler extends BooruHandler {
           LogTypes.booruHandlerFetchFailed,
           s: s,
         );
+        rethrow;
       }
     }
 
@@ -392,7 +411,7 @@ class GelbooruAlikesHandler extends BooruHandler {
   }
 
   @override
-  Future<({BooruItem? item, bool failed, String? error})> loadItem({
+  Future<({BooruItem? item, bool failed, String? error})> loadItemInternal({
     required BooruItem item,
     CancelToken? cancelToken,
     bool withCapcthaCheck = false,

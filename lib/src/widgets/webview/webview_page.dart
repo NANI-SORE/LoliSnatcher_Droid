@@ -9,6 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/services/local_network_permission.dart';
+import 'package:lolisnatcher/src/services/webview_cookies.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
@@ -116,20 +117,7 @@ class _InAppWebviewViewState extends State<InAppWebviewView> {
     // dirty workaround to keep cookies in memory outside of webview pages, to allow getting them in image/auth logic
     // probably should redo cookie logic to store them independently from webview implementation
     if (Platform.isWindows && uri != null) {
-      final cookies = await CookieManager.instance(webViewEnvironment: webViewEnvironment).getCookies(
-        url: uri,
-        webViewController: controller,
-      );
-
-      if (globalWindowsCookies[uri.host] == null) {
-        globalWindowsCookies[uri.host] = [];
-      } else {
-        globalWindowsCookies[uri.host]!.clear();
-      }
-
-      globalWindowsCookies[uri.host]!.addAll(cookies);
-
-      setState(() {});
+      await WebviewCookies.read(uri, controller: controller);
     }
   }
 

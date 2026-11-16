@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:lolisnatcher/src/downloads/download_localizations.dart';
 
 import 'dart:async';
@@ -44,6 +45,193 @@ class SnatchHandler with WidgetsBindingObserver {
   }
 
   static void unregister() => GetIt.instance.unregister<SnatchHandler>();
+  final Rx<ShareItem?> currentShare = Rx<ShareItem?>(null);
+  final RxInt shareProgress = 0.obs;
+  final Rxn<BooruItem> shareActiveItem = Rxn<BooruItem>();
+  final RxInt shareReceived = 0.obs;
+  final RxInt shareTotal = 0.obs;
+
+  CancelToken? shareCancelToken;
+  Timer? _shareProgressStuckTimer;
+  bool _retryCurrentShareRequested = false;
+  int _shareOperationId = 0;
+  bool _shareCancelled = false;
+  int _automaticShareRetries = 0;
+
+  double get currentShareProgress {
+    if (shareTotal.value <= 0) return 0;
+    return (shareReceived.value / shareTotal.value).clamp(0.0, 1.0);
+  }
+
+  void onAddRetryableItems({
+    required Booru booru,
+    List<BooruItem> exists = const [],
+    List<BooruItem> failed = const [],
+    List<BooruItem> cancelled = const [],
+    Future<bool> Function()? retryShare,
+    int shareItemCount = 1,
+  }) {
+    RetryableItem record(BooruItem item) => RetryableItem(
+      item: item,
+      booru: booru,
+      retryShare: retryShare,
+      shareItemCount: shareItemCount,
+    );
+    existsItems.addAll(exists.map(record));
+    failedItems.addAll(failed.map(record));
+    cancelledItems.addAll(cancelled.map(record));
+  }
+
+  Future<bool> onRetryShare(RetryableItem record) async {
+    final retry = record.retryShare;
+    if (retry == null ||
+        currentShare.value != null ||
+        record.retrying ||
+        (!failedItems.contains(record) && !cancelledItems.contains(record))) {
+      return false;
+    }
+    record.retrying = true;
+    onRemoveRetryItem(record);
+    try {
+      // The share service records a new retry entry if this attempt fails.
+      return await retry();
+    } catch (_) {
+      failedItems.add(record);
+      return false;
+    } finally {
+      record.retrying = false;
+    }
+  }
+
+  int? onShareStart(
+    List<BooruItem> booruItems,
+    Booru booru,
+  ) {
+    if (currentShare.value != null) return null;
+    _stopShareProgressStuckTimer();
+    _shareOperationId++;
+    _shareCancelled = false;
+    _automaticShareRetries = 0;
+    shareCancelToken = null;
+    _retryCurrentShareRequested = false;
+    currentShare.value = ShareItem(booruItems, booru, _shareOperationId);
+    shareProgress.value = 0;
+    shareActiveItem.value = booruItems.isEmpty ? null : booruItems.first;
+    shareReceived.value = 0;
+    shareTotal.value = 0;
+    return _shareOperationId;
+  }
+
+  void onShareProgress({
+    required int operationId,
+    required BooruItem item,
+    required int itemIndex,
+    required int received,
+    required int total,
+  }) {
+    if (!isShareActive(operationId)) return;
+
+    final itemChanged = !identical(shareActiveItem.value, item) || shareProgress.value != itemIndex;
+    final bytesIncreased = received > shareReceived.value;
+    if (itemChanged) _automaticShareRetries = 0;
+    shareProgress.value = itemIndex;
+    shareActiveItem.value = item;
+    shareReceived.value = received;
+    shareTotal.value = total > 0 ? total : 0;
+    if (bytesIncreased && shareCancelToken != null && !shareCancelToken!.isCancelled) {
+      _restartShareProgressStuckTimer();
+    }
+  }
+
+  bool isShareActive(int operationId) =>
+      operationId == _shareOperationId && currentShare.value != null && !_shareCancelled;
+
+  void onShareCancel([int? operationId]) {
+    if (operationId != null && operationId != _shareOperationId) return;
+    _shareCancelled = true;
+    _stopShareProgressStuckTimer();
+    _retryCurrentShareRequested = false;
+    shareCancelToken?.cancel();
+  }
+
+  void onShareCancelTokenCreate(CancelToken token, int operationId) {
+    if (!isShareActive(operationId)) {
+      token.cancel();
+      return;
+    }
+
+    shareCancelToken = token;
+    _restartShareProgressStuckTimer();
+  }
+
+  void onShareFileDone(int operationId) {
+    if (operationId != _shareOperationId) return;
+    _stopShareProgressStuckTimer();
+    shareCancelToken = null;
+  }
+
+  void onShareDone(int operationId) {
+    if (operationId != _shareOperationId) return;
+
+    _stopShareProgressStuckTimer();
+    _retryCurrentShareRequested = false;
+    shareCancelToken = null;
+    currentShare.value?._done.complete();
+    currentShare.value = null;
+    shareProgress.value = 0;
+    shareActiveItem.value = null;
+    shareReceived.value = 0;
+    shareTotal.value = 0;
+  }
+
+  void onShareRetryCurrent() {
+    _automaticShareRetries = 0;
+    _retryShareCurrent();
+  }
+
+  void _retryShareCurrent() {
+    final token = shareCancelToken;
+    if (_shareCancelled || token == null || token.isCancelled) {
+      return;
+    }
+
+    _stopShareProgressStuckTimer();
+    _retryCurrentShareRequested = true;
+    shareReceived.value = 0;
+    shareTotal.value = 0;
+    token.cancel();
+  }
+
+  bool consumeShareRetryCurrent(int operationId) {
+    if (!isShareActive(operationId)) return false;
+    final retryCurrent = _retryCurrentShareRequested;
+    _retryCurrentShareRequested = false;
+    return retryCurrent;
+  }
+
+  void _restartShareProgressStuckTimer() {
+    _shareProgressStuckTimer?.cancel();
+    _shareProgressStuckTimer = Timer(
+      const Duration(seconds: 10),
+      () {
+        _shareProgressStuckTimer = null;
+        if (_automaticShareRetries < 3) {
+          _automaticShareRetries++;
+          _retryShareCurrent();
+        } else {
+          // End a genuinely stalled transfer instead of restarting forever.
+          // This is a failure, not a user cancellation or a manual retry.
+          shareCancelToken?.cancel('Share download stalled');
+        }
+      },
+    );
+  }
+
+  void _stopShareProgressStuckTimer() {
+    _shareProgressStuckTimer?.cancel();
+    _shareProgressStuckTimer = null;
+  }
+
   final active = false.obs;
   final status = ''.obs;
   final queueProgress = 0.obs;
@@ -58,9 +246,9 @@ class SnatchHandler with WidgetsBindingObserver {
   final focusedBatch = RxnString();
   // Compatibility views stay bounded; persistent history is queried in pages.
   final queuedList = <SnatchItem>[].obs;
-  final existsItems = <({BooruItem item, Booru booru})>[].obs;
-  final failedItems = <({BooruItem item, Booru booru})>[].obs;
-  final cancelledItems = <({BooruItem item, Booru booru})>[].obs;
+  final existsItems = <RetryableItem>[].obs;
+  final failedItems = <RetryableItem>[].obs;
+  final cancelledItems = <RetryableItem>[].obs;
   DownloadStore? _store;
   DownloadNotices? _notices;
   DownloadRuntime? _runtime;
@@ -554,13 +742,31 @@ class SnatchHandler with WidgetsBindingObserver {
   void onCancel() => unawaited(command('cancel', taskId: _activeTaskId));
   void onRetryCurrent() => unawaited(command('retry', taskId: _activeTaskId));
   void trySnatch() => unawaited(command('resume'));
-  void onClearRetryableItems() => unawaited(command('clear'));
-  void onRemoveRetryItem(({BooruItem item, Booru booru}) record) {}
-  Future<void> onRetryAll({required int cooldown, bool ignoreExists = false}) =>
-      command(ignoreExists ? 'redownload' : 'retry');
-  void onRetryItem(({BooruItem item, Booru booru}) record, {required int cooldown, bool ignoreExists = false}) =>
+  void onClearRetryableItems() {
+    existsItems.clear();
+    failedItems.clear();
+    cancelledItems.clear();
+    unawaited(command('clear'));
+  }
+
+  void onRemoveRetryItem(RetryableItem record) {
+    existsItems.remove(record);
+    failedItems.remove(record);
+    cancelledItems.remove(record);
+  }
+
+  Future<void> onRetryAll({required int cooldown, bool ignoreExists = false}) async {
+    await command(ignoreExists ? 'redownload' : 'retry');
+    for (final record in [...failedItems, ...cancelledItems]) {
+      if (record.retryShare != null) await onRetryShare(record);
+    }
+  }
+
+  void onRetryItem(RetryableItem record, {required int cooldown, bool ignoreExists = false}) =>
       unawaited(queue([record.item], record.booru, cooldown, ignoreExists));
   void dispose() {
+    onShareCancel();
+    _stopShareProgressStuckTimer();
     SettingsHandler.instance.onDownloadConfigurationChanged = null;
     _configurationTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
@@ -575,4 +781,33 @@ class SnatchItem {
   final int cooldown;
   final Booru booru;
   final bool ignoreExists;
+}
+
+class RetryableItem {
+  RetryableItem({
+    required this.item,
+    required this.booru,
+    this.retryShare,
+    this.shareItemCount = 1,
+  });
+
+  final BooruItem item;
+  final Booru booru;
+  final Future<bool> Function()? retryShare;
+  final int shareItemCount;
+  bool retrying = false;
+}
+
+class ShareItem {
+  ShareItem(
+    this.booruItems,
+    this.booru,
+    this.operationId,
+  );
+
+  final List<BooruItem> booruItems;
+  final Booru booru;
+  final int operationId;
+  final Completer<void> _done = Completer<void>();
+  Future<void> get done => _done.future;
 }

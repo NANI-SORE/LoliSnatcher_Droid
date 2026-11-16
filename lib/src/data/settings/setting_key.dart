@@ -37,6 +37,7 @@ enum SettingKey {
   previewMode,
   previewDisplay,
   previewDisplayFallback,
+  staggeredPageBoundaries,
   tabPageRestoreMode,
   defaultSavePageEnabled,
   appMode,
@@ -234,6 +235,7 @@ abstract class SX {
   static const previewMode = TypedKey<PreviewQuality>(SettingKey.previewMode);
   static const previewDisplay = TypedKey<PreviewDisplayMode>(SettingKey.previewDisplay);
   static const previewDisplayFallback = TypedKey<PreviewDisplayMode>(SettingKey.previewDisplayFallback);
+  static const staggeredPageBoundaries = TypedKey<bool>(SettingKey.staggeredPageBoundaries);
   static const tabPageRestoreMode = TypedKey<TabPageRestoreMode>(SettingKey.tabPageRestoreMode);
   static const defaultSavePageEnabled = TypedKey<bool>(SettingKey.defaultSavePageEnabled);
   static const appMode = TypedKey<AppMode>(SettingKey.appMode);

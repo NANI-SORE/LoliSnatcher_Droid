@@ -6,7 +6,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import 'package:dio/dio.dart';
 import 'package:external_video_player_launcher/external_video_player_launcher.dart';
 import 'package:get/get.dart' hide ContextExt, FirstWhereOrNullExt;
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -27,23 +26,21 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
+import 'package:lolisnatcher/src/services/gallery_share_service.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
-import 'package:lolisnatcher/src/services/image_writer.dart';
-import 'package:lolisnatcher/src/utils/clipboard.dart';
-import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/timed_progress_controller.dart';
-import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/animated_progress_indicator.dart';
 import 'package:lolisnatcher/src/widgets/common/flash_elements.dart';
 import 'package:lolisnatcher/src/widgets/common/loli_dropdown.dart';
 import 'package:lolisnatcher/src/widgets/common/restartable_progress_indicator.dart';
 import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
 import 'package:lolisnatcher/src/widgets/gallery/image_search_dialog.dart';
+import 'package:lolisnatcher/src/widgets/gallery/share_action_dialog.dart';
 import 'package:lolisnatcher/src/widgets/gallery/snatched_status_icon.dart';
 import 'package:lolisnatcher/src/widgets/gallery/toolbar_action.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_build.dart';
 
-// TODO decouple share and autoscroll stuff into separate widgets
+// TODO decouple autoscroll stuff into separate widgets
 
 class HideableAppBar extends StatefulWidget implements PreferredSizeWidget {
   const HideableAppBar({
@@ -79,12 +76,8 @@ class _HideableAppBarState extends State<HideableAppBar> {
 
   final ValueNotifier<int> page = ValueNotifier(0);
 
-  ImageWriter imageWriter = ImageWriter();
+  final GalleryShareService galleryShareService = GalleryShareService();
 
-  BooruItem? sharedItem;
-  double shareProgress = 0;
-  int shareProgressLastTick = 0;
-  CancelToken? shareCancelToken;
   bool isOnTop = true;
 
   ////////// Auto Scroll Stuff ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -520,16 +513,33 @@ class _HideableAppBarState extends State<HideableAppBar> {
         }
         break;
       case .share:
-        if (sharedItem != null && shareProgress != 0) {
+        return Obx(() {
+          final currentShare = snatchHandler.currentShare.value;
+          if (currentShare == null) {
+            return const SizedBox.shrink();
+          }
+
+          final itemCount = currentShare.booruItems.length;
+          if (snatchHandler.shareTotal.value <= 0) {
+            return CircularProgressIndicator(
+              color: Theme.of(context).progressIndicatorTheme.color?.withValues(alpha: 0.66),
+            );
+          }
+          final progress = itemCount == 0
+              ? 0.0
+              : (snatchHandler.shareProgress.value + snatchHandler.currentShareProgress) / itemCount;
+          if (progress == 0) {
+            return const SizedBox.shrink();
+          }
+
           return AnimatedProgressIndicator(
-            value: shareProgress,
+            value: progress,
             animationDuration: const Duration(milliseconds: 50),
             indicatorStyle: IndicatorStyle.circular,
             valueColor: Theme.of(context).progressIndicatorTheme.color?.withValues(alpha: 0.66),
             minHeight: 4,
           );
-        }
-        break;
+        });
 
       //
 
@@ -670,6 +680,8 @@ class _HideableAppBarState extends State<HideableAppBar> {
         return () async => showImageSearchDialog(
           context,
           item.fileURL,
+          item: item,
+          booru: widget.tab.booruHandler.sourceBooruFor(item),
         );
     }
   }
@@ -681,7 +693,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
         return () async {
           await ServiceHandler.vibrate();
           // Ignore share setting on long press
-          showShareDialog(showTip: false);
+          showShareDialog();
         };
       case .snatch:
         return () async {
@@ -771,78 +783,12 @@ class _HideableAppBarState extends State<HideableAppBar> {
   Future<void> onShareClick() async {
     final shareSetting = SX.shareAction.value;
     final item = widget.tab.booruHandler.filteredFetched[page.value];
-
-    switch (shareSetting) {
-      case .postUrl:
-        if (item.postURL.isEmpty) {
-          FlashElements.showSnackbar(
-            context: context,
-            title: Text(context.loc.gallery.noPostUrl, style: const TextStyle(fontSize: 20)),
-            leadingIcon: Icons.warning_amber,
-            leadingIconColor: Colors.red,
-            sideColor: Colors.red,
-          );
-          return;
-        }
-
-        shareTextAction(item.postURL);
-        break;
-      case .postUrlWithTags:
-        if (item.postURL.isEmpty) {
-          FlashElements.showSnackbar(
-            context: context,
-            title: Text(context.loc.gallery.noPostUrl, style: const TextStyle(fontSize: 20)),
-            leadingIcon: Icons.warning_amber,
-            leadingIconColor: Colors.red,
-            sideColor: Colors.red,
-          );
-          return;
-        }
-
-        final tags = await showSelectTagsDialog(context, item.tagsList);
-        if (tags.isNotEmpty) {
-          shareTextAction('${item.postURL} \n ${tags.join(' ')}');
-        } else {
-          shareTextAction(item.postURL);
-        }
-        break;
-      case .fileUrl:
-        shareTextAction(item.fileURL);
-        break;
-      case .fileUrlWithTags:
-        final tags = await showSelectTagsDialog(context, item.tagsList);
-        if (tags.isNotEmpty) {
-          shareTextAction('${item.fileURL} \n ${tags.join(' ')}');
-        } else {
-          shareTextAction(item.fileURL);
-        }
-        break;
-      case .file:
-        await shareFileAction();
-        break;
-      case .fileWithTags:
-        final tags = await showSelectTagsDialog(context, item.tagsList);
-        if (tags.isNotEmpty) {
-          await shareFileAction(text: tags.join(' '));
-        } else {
-          await shareFileAction();
-        }
-        break;
-      case .hydrus:
-        await shareHydrusAction(item);
-        break;
-      case .ask:
-        showShareDialog();
-        break;
-    }
+    await shareActionController(item, context).run(shareSetting, context);
   }
 
   void shareTextAction(String text) {
-    if (PlatformExt.isDesktop) {
-      ClipboardUtils.copyTextToClipboard(text, subtitle: text);
-    } else if (Platform.isAndroid || Platform.isIOS) {
-      ServiceHandler.loadShareTextIntent(text);
-    }
+    if (!mounted) return;
+    unawaited(galleryShareService.shareText(text, context: context));
   }
 
   Future<void> shareHydrusAction(BooruItem item) async {
@@ -902,11 +848,18 @@ class _HideableAppBarState extends State<HideableAppBar> {
     }
   }
 
-  Future<void> shareFileAction({String? text}) async {
-    final BooruItem item = widget.tab.booruHandler.filteredFetched[page.value];
+  Future<void> shareFileAction({
+    String? text,
+    BooruItem? itemToShare,
+    Booru? booru,
+  }) async {
+    final BooruItem item = itemToShare ?? widget.tab.booruHandler.filteredFetched[page.value];
+    final sourceBooru = booru ?? widget.tab.booruHandler.sourceBooruFor(item);
 
-    final bool alreadyLoading = sharedItem != null;
-    final bool alreadyLoadingSame = alreadyLoading && sharedItem == item;
+    final currentShare = snatchHandler.currentShare.value;
+    final sharedItem = snatchHandler.shareActiveItem.value;
+    final bool alreadyLoading = currentShare != null && sharedItem != null;
+    final bool alreadyLoadingSame = alreadyLoading && currentShare.booruItems.length == 1 && sharedItem == item;
 
     if (alreadyLoading) {
       final double thumbWidth = MediaQuery.sizeOf(context).shortestSide * (alreadyLoadingSame ? 0.3 : 0.2);
@@ -937,7 +890,7 @@ class _HideableAppBarState extends State<HideableAppBar> {
                           width: thumbWidth,
                           height: thumbHeight,
                           child: ThumbnailBuild(
-                            item: sharedItem!,
+                            item: sharedItem,
                             handler: widget.tab.booruHandler,
                             selectable: false,
                           ),
@@ -991,11 +944,8 @@ class _HideableAppBarState extends State<HideableAppBar> {
       );
 
       if (dialogRes == 'new' || dialogRes == 'abort') {
-        shareCancelToken?.cancel();
-        shareProgress = 0;
-        sharedItem = null;
-        setState(() {});
-        await imageWriter.deleteFileFromCache(item.fileURL, 'media', fileNameExtras: item.fileNameExtras);
+        galleryShareService.cancel(operationId: currentShare.operationId);
+        if (dialogRes == 'new') await currentShare.done;
       }
 
       if (dialogRes == 'abort' || dialogRes == null) {
@@ -1003,311 +953,104 @@ class _HideableAppBarState extends State<HideableAppBar> {
       }
     }
 
-    //
+    if (!mounted) return;
 
-    if (PlatformExt.isDesktop) {
-      shareCancelToken?.cancel();
-      shareCancelToken = CancelToken();
-      shareProgress = 0;
-      sharedItem = item;
+    FlashElements.showSnackbar(
+      context: context,
+      title: Text(context.loc.gallery.loadingFile, style: const TextStyle(fontSize: 20)),
+      content: Text(context.loc.gallery.loadingFileMessage, style: const TextStyle(fontSize: 16)),
+      overrideLeadingIconWidget: const SizedBox(
+        width: 50,
+        height: 50,
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      sideColor: Colors.yellow,
+    );
 
-      await ClipboardUtils.copyImageToClipboard(
-        item,
-        cancelToken: shareCancelToken,
-        onReceiveProgress: (int received, int? total) {
-          if (total != null && total > 0) {
-            shareProgress = received / total;
-            if ((DateTime.now().millisecondsSinceEpoch - shareProgressLastTick) > 100) {
-              setState(() {});
-              shareProgressLastTick = DateTime.now().millisecondsSinceEpoch;
-            }
-          }
-        },
+    bool cancelled = false;
+    final success = await galleryShareService.shareFiles(
+      items: [item],
+      booru: sourceBooru,
+      text: text,
+      onCancelled: () => cancelled = true,
+    );
+
+    if (!success && !cancelled && mounted) {
+      FlashElements.showSnackbar(
+        context: context,
+        title: Text(context.loc.viewer.appBar.error, style: const TextStyle(fontSize: 20)),
+        content: Text(
+          context.loc.viewer.appBar.savingFileError,
+          style: const TextStyle(fontSize: 16),
+        ),
+        leadingIcon: Icons.warning_amber,
+        leadingIconColor: Colors.red,
+        sideColor: Colors.red,
       );
-
-      shareProgress = 0;
-      shareCancelToken = null;
-      sharedItem = null;
-      setState(() {});
-    } else {
-      String? path = await imageWriter.getCachePath(item.fileURL, 'media', fileNameExtras: item.fileNameExtras);
-
-      // TODO delete from cache after share window closes
-
-      if (path != null) {
-        if (Platform.isAndroid || Platform.isIOS) {
-          // File is already in cache - share from there
-          await ServiceHandler.loadShareFileIntent(
-            path,
-            '${item.mediaType.value.isVideo ? 'video' : 'image'}/${item.fileExt!}',
-            text: text,
-          );
-        }
-      } else {
-        // File not in cache - load from network, share, delete from cache afterwards
-        FlashElements.showSnackbar(
-          context: context,
-          title: Text(context.loc.gallery.loadingFile, style: const TextStyle(fontSize: 20)),
-          content: Text(context.loc.gallery.loadingFileMessage, style: const TextStyle(fontSize: 16)),
-          overrideLeadingIconWidget: const SizedBox(
-            width: 50,
-            height: 50,
-            child: Padding(
-              padding: EdgeInsets.all(12),
-              child: CircularProgressIndicator(),
-            ),
-          ),
-          sideColor: Colors.yellow,
-        );
-
-        shareCancelToken?.cancel();
-        shareCancelToken = CancelToken();
-        shareProgress = 0;
-        sharedItem = item;
-
-        final String cacheFilePath = await imageWriter.getCachePathString(
-          item.fileURL,
-          'media',
-          clearName: true,
-          fileNameExtras: item.fileNameExtras,
-        );
-        await DioNetwork.download(
-          item.fileURL,
-          cacheFilePath,
-          cancelToken: shareCancelToken,
-          headers: await Tools.getFileCustomHeaders(
-            widget.tab.booruHandler.booru,
-            item: item,
-            checkForReferer: true,
-          ),
-          onReceiveProgress: (int received, int total) {
-            if (total > 0) {
-              shareProgress = received / total;
-              if ((DateTime.now().millisecondsSinceEpoch - shareProgressLastTick) > 100) {
-                setState(() {});
-                shareProgressLastTick = DateTime.now().millisecondsSinceEpoch;
-              }
-            }
-          },
-        );
-
-        final File cacheFile = File(
-          await imageWriter.getCachePath(item.fileURL, 'media', fileNameExtras: item.fileNameExtras) ?? '',
-        );
-        if (await cacheFile.exists()) {
-          path = cacheFile.path;
-          if (Platform.isAndroid || Platform.isIOS) {
-            await ServiceHandler.loadShareFileIntent(
-              path,
-              '${item.mediaType.value.isVideo ? 'video' : 'image'}/${item.fileExt!}',
-              text: text,
-            );
-          }
-        } else {
-          FlashElements.showSnackbar(
-            context: context,
-            title: Text(context.loc.viewer.appBar.error, style: const TextStyle(fontSize: 20)),
-            content: Text(
-              context.loc.viewer.appBar.savingFileError,
-              style: const TextStyle(fontSize: 16),
-            ),
-            leadingIcon: Icons.warning_amber,
-            leadingIconColor: Colors.red,
-            sideColor: Colors.red,
-          );
-        }
-
-        shareProgress = 0;
-        shareCancelToken = null;
-        sharedItem = null;
-        setState(() {});
-
-        // TODO: find a way to detect when share menu was closed, orherwise this is triggered immediately and file is deleted before sending to another app
-        // imageWriter.deleteFileFromCache(path, 'media');
-      }
     }
   }
 
-  void showShareDialog({bool showTip = true}) {
+  void showShareDialog() {
     final item = widget.tab.booruHandler.filteredFetched[page.value];
+    shareActionController(item, context).showDialog(context);
+  }
 
-    // TODO change layout so the buttons set their width automatically, without padding stuff
-    showDialog(
-      context: context,
-      builder: (context) {
-        return SettingsDialog(
-          title: Text(context.loc.viewer.appBar.whatToShare),
-          contentItems: [
-            const SizedBox(height: 15),
-            Column(
-              children: [
-                if (item.postURL.isNotEmpty) ...[
-                  ListTile(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(
-                        color: Theme.of(context).colorScheme.secondary,
-                        width: SX.shareAction.value.isPostUrl ? 3 : 1,
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      shareTextAction(item.postURL);
-                    },
-                    leading: const Icon(CupertinoIcons.link),
-                    title: Text(context.loc.viewer.appBar.postURL),
-                  ),
-
-                  const SizedBox(height: 15),
-                  ListTile(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(
-                        color: Theme.of(context).colorScheme.secondary,
-                        width: SX.shareAction.value.isPostUrlWithTags ? 3 : 1,
-                      ),
-                    ),
-                    onTap: () async {
-                      Navigator.of(context).pop();
-                      final tags = await showSelectTagsDialog(context, item.tagsList);
-                      if (tags.isNotEmpty) {
-                        shareTextAction('${item.postURL} \n ${tags.join(' ')}');
-                      } else {
-                        shareTextAction(item.postURL);
-                      }
-                    },
-                    leading: const Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Icon(CupertinoIcons.link),
-                        Positioned(
-                          bottom: -10,
-                          right: -10,
-                          child: Icon(CupertinoIcons.tag, size: 14),
-                        ),
-                      ],
-                    ),
-                    title: Text(context.loc.viewer.appBar.postURLWithTags),
-                  ),
-                  const SizedBox(height: 15),
-                ],
-                ListTile(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    side: BorderSide(
-                      color: Theme.of(context).colorScheme.secondary,
-                      width: SX.shareAction.value.isFileUrl ? 3 : 1,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    shareTextAction(item.fileURL);
-                  },
-                  leading: const Icon(CupertinoIcons.link),
-                  title: Text(context.loc.viewer.appBar.fileURL),
-                ),
-                const SizedBox(height: 15),
-                ListTile(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    side: BorderSide(
-                      color: Theme.of(context).colorScheme.secondary,
-                      width: SX.shareAction.value.isFileUrlWithTags ? 3 : 1,
-                    ),
-                  ),
-                  onTap: () async {
-                    Navigator.of(context).pop();
-                    final tags = await showSelectTagsDialog(context, item.tagsList);
-                    if (tags.isNotEmpty) {
-                      shareTextAction('${item.fileURL} \n ${tags.join(' ')}');
-                    } else {
-                      shareTextAction(item.fileURL);
-                    }
-                  },
-                  leading: const Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Icon(CupertinoIcons.link),
-                      Positioned(
-                        bottom: -10,
-                        right: -10,
-                        child: Icon(CupertinoIcons.tag, size: 14),
-                      ),
-                    ],
-                  ),
-                  title: Text(context.loc.viewer.appBar.fileURLWithTags),
-                ),
-                const SizedBox(height: 15),
-                ListTile(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    side: BorderSide(
-                      color: Theme.of(context).colorScheme.secondary,
-                      width: SX.shareAction.value.isFile ? 3 : 1,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    shareFileAction();
-                  },
-                  leading: const Icon(Icons.file_present),
-                  title: Text(context.loc.viewer.appBar.file),
-                ),
-                const SizedBox(height: 15),
-                ListTile(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    side: BorderSide(
-                      color: Theme.of(context).colorScheme.secondary,
-                      width: SX.shareAction.value.isFileWithTags ? 3 : 1,
-                    ),
-                  ),
-                  onTap: () async {
-                    Navigator.of(context).pop();
-                    final tags = await showSelectTagsDialog(context, item.tagsList);
-                    if (tags.isNotEmpty) {
-                      await shareFileAction(text: tags.join(' '));
-                    } else {
-                      await shareFileAction();
-                    }
-                  },
-                  leading: const Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Icon(Icons.file_present),
-                      Positioned(
-                        bottom: -10,
-                        right: -10,
-                        child: Icon(CupertinoIcons.tag, size: 14),
-                      ),
-                    ],
-                  ),
-                  title: Text(context.loc.viewer.appBar.fileWithTags),
-                ),
-                const SizedBox(height: 15),
-                if (settingsHandler.hasHydrus && widget.tab.booruHandler.booru.type?.isHydrus != true)
-                  ListTile(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(
-                        color: Theme.of(context).colorScheme.secondary,
-                        width: SX.shareAction.value.isHydrus ? 3 : 1,
-                      ),
-                    ),
-                    onTap: () async {
-                      await shareHydrusAction(item);
-                      Navigator.of(context).pop();
-                    },
-                    leading: const Icon(Icons.file_present),
-                    title: Text(context.loc.viewer.appBar.hydrus),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 15),
-            Text(showTip ? '[Tip]: You can set default action in settings' : ''),
-          ],
+  ShareActionController shareActionController(BooruItem item, BuildContext actionContext) {
+    final sourceBooru = widget.tab.booruHandler.sourceBooruFor(item);
+    Future<void> ensurePostUrlAndShare(FutureOr<void> Function() action) async {
+      if (item.postURL.isEmpty) {
+        FlashElements.showSnackbar(
+          context: actionContext,
+          title: Text(actionContext.loc.gallery.noPostUrl, style: const TextStyle(fontSize: 20)),
+          leadingIcon: Icons.warning_amber,
+          leadingIconColor: Colors.red,
+          sideColor: Colors.red,
         );
+        return;
+      }
+
+      await action();
+    }
+
+    return ShareActionController(
+      currentAction: SX.shareAction.value,
+      showPostUrlOptions: item.postURL.isNotEmpty,
+      showHydrusOption: settingsHandler.hasHydrus && widget.tab.booruHandler.booru.type?.isHydrus != true,
+      onRememberAction: (action) async {
+        SX.shareAction.state.value = action;
+        await settingsHandler.saveSettings(restate: false);
       },
+      postUrl: () => ensurePostUrlAndShare(() => shareTextAction(item.postURL)),
+      postUrlWithTags: () => ensurePostUrlAndShare(() async {
+        final tags = await showSelectTagsDialog(actionContext, item.tagsList);
+        if (tags.isNotEmpty) {
+          shareTextAction('${item.postURL} \n ${tags.join(' ')}');
+        } else {
+          shareTextAction(item.postURL);
+        }
+      }),
+      fileUrl: () => shareTextAction(item.fileURL),
+      fileUrlWithTags: () async {
+        final tags = await showSelectTagsDialog(actionContext, item.tagsList);
+        if (tags.isNotEmpty) {
+          shareTextAction('${item.fileURL} \n ${tags.join(' ')}');
+        } else {
+          shareTextAction(item.fileURL);
+        }
+      },
+      file: () => shareFileAction(itemToShare: item, booru: sourceBooru),
+      fileWithTags: () async {
+        final tags = await showSelectTagsDialog(actionContext, item.tagsList);
+        if (tags.isNotEmpty) {
+          await shareFileAction(text: tags.join(' '), itemToShare: item, booru: sourceBooru);
+        } else {
+          await shareFileAction(itemToShare: item, booru: sourceBooru);
+        }
+      },
+      hydrus: () => shareHydrusAction(item),
     );
   }
 
@@ -1360,67 +1103,53 @@ class _HideableAppBarState extends State<HideableAppBar> {
   Widget build(BuildContext context) {
     final double extraPadding = isOnTop ? 0 : MediaQuery.paddingOf(context).bottom;
 
-    return PopScope(
-      onPopInvokedWithResult: (_, _) {
-        // clear currently loading item from cache to avoid creating broken files
-        // TODO move sharing download routine to somewhere in global context?
-        shareCancelToken?.cancel();
-        if (sharedItem != null) {
-          imageWriter.deleteFileFromCache(
-            sharedItem!.fileURL,
-            'media',
-            fileNameExtras: sharedItem!.fileNameExtras,
-          );
-        }
-      },
-      child: Material(
+    return Material(
+      color: Colors.transparent,
+      elevation: 1,
+      clipBehavior: Clip.antiAlias,
+      shadowColor: Colors.black54,
+      surfaceTintColor: Colors.transparent,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.linear,
         color: Colors.transparent,
-        elevation: 1,
-        clipBehavior: Clip.antiAlias,
-        shadowColor: Colors.black54,
-        surfaceTintColor: Colors.transparent,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.linear,
-          color: Colors.transparent,
-          height: viewerHandler.displayAppbar.value ? (isOnTop ? null : (widget.defaultHeight + extraPadding)) : 0,
-          padding: isOnTop ? null : EdgeInsets.only(bottom: extraPadding),
-          child: ListenableBuilder(
-            listenable: Listenable.merge([
-              page,
-              widget.tab.booruHandler.filteredFetched,
-              SX.buttonOrder.state.effectiveNotifier,
-              SX.disabledButtons.state.effectiveNotifier,
-            ]),
-            builder: (context, _) {
-              final pageVal = page.value;
-              final fetched = widget.tab.booruHandler.filteredFetched.value;
-              final String formattedViewedIndex = (pageVal + 1).toString();
-              final String formattedTotal = fetched.length.toString();
+        height: viewerHandler.displayAppbar.value ? (isOnTop ? null : (widget.defaultHeight + extraPadding)) : 0,
+        padding: isOnTop ? null : EdgeInsets.only(bottom: extraPadding),
+        child: ListenableBuilder(
+          listenable: Listenable.merge([
+            page,
+            widget.tab.booruHandler.filteredFetched,
+            SX.buttonOrder.state.effectiveNotifier,
+            SX.disabledButtons.state.effectiveNotifier,
+          ]),
+          builder: (context, _) {
+            final pageVal = page.value;
+            final fetched = widget.tab.booruHandler.filteredFetched.value;
+            final String formattedViewedIndex = (pageVal + 1).toString();
+            final String formattedTotal = fetched.length.toString();
 
-              return AppBar(
-                // toolbarHeight: widget.defaultHeight,
-                elevation: 0,
-                backgroundColor: Colors.transparent,
-                foregroundColor: Colors.white,
-                shadowColor: Colors.transparent,
-                surfaceTintColor: Colors.transparent,
-                leading: IconButton(
-                  // to ignore icon change
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.of(context).pop(),
+            return AppBar(
+              // toolbarHeight: widget.defaultHeight,
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              shadowColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              leading: IconButton(
+                // to ignore icon change
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              title: FittedBox(
+                fit: BoxFit.fitWidth,
+                child: Text(
+                  '$formattedViewedIndex/$formattedTotal',
+                  style: const TextStyle(color: Colors.white),
                 ),
-                title: FittedBox(
-                  fit: BoxFit.fitWidth,
-                  child: Text(
-                    '$formattedViewedIndex/$formattedTotal',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-                actions: getActions(),
-              );
-            },
-          ),
+              ),
+              actions: getActions(),
+            );
+          },
         ),
       ),
     );

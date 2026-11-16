@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:lolisnatcher/src/utils/logger.dart';
+import 'package:lolisnatcher/src/services/webview_cookies.dart';
 
 import 'package:lolisnatcher/src/widgets/webview/webview_page.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -122,20 +123,18 @@ class _WebviewNavigationMenuState extends State<WebviewNavigationMenu> {
   }
 
   Future<void> _onClearCookies(InAppWebViewController controller) async {
-    // TODO doesn't work? maybe something related to android 12?
-    final Uri url = await controller.getUrl() ?? WebUri('https://flutter.dev');
-    print('Clearing cookies for $url');
-    final bool res = await cookieManager.deleteCookies(
-      url: WebUri.uri(url),
-      webViewController: controller,
-    );
-    if (!res) {
+    final Uri? url = await controller.getUrl();
+    if (url == null) return;
+    bool res = false;
+    try {
+      res = await WebviewCookies.clearSite(url, controller: controller);
+    } catch (e, s) {
       Logger.Inst().log(
-        'Failed to delete cookies',
+        e.toString(),
         'WebviewNavigationMenu',
         'onClearCookies',
         LogTypes.exception,
-        s: StackTrace.current,
+        s: s,
       );
     }
 

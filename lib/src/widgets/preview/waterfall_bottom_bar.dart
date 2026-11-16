@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 
+import 'package:get/get.dart' hide ContextExt;
+
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
+import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/utils/extensions.dart';
+import 'package:lolisnatcher/src/widgets/common/settings_widgets.dart';
+import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_controller.dart';
 import 'package:lolisnatcher/src/widgets/preview/main_search_bar.dart';
 import 'package:lolisnatcher/src/widgets/preview/waterfall_error_buttons.dart';
 
-// Visibility follows the primary waterfall scroll direction and explicit
-// MainAppBar show/hide requests.
+// Search/error controls follow the primary waterfall scroll direction and
+// explicit MainAppBar show/hide requests. Selection controls stay visible.
 
 class WaterfallBottomBar extends StatefulWidget {
   const WaterfallBottomBar({super.key});
@@ -66,46 +72,59 @@ class WaterfallBottomBarState extends State<WaterfallBottomBar> with TickerProvi
 
     return Align(
       alignment: Alignment.bottomCenter,
-      child: WaterfallBottomSlide(
-        animation: animation,
-        child: Padding(
-          padding: EdgeInsets.only(bottom: showSearchBar ? 0 : bottomPadding),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Loading/error controls and the optional search bar move as one unit so
-              // every bottom control is completely outside the viewport when hidden.
-              AnimatedBuilder(
-                animation: animation,
-                builder: (context, child) {
-                  final double buttonPadding = showSearchBar
-                      ? ((MediaQuery.sizeOf(context).width * 0.07) + kMinInteractiveDimension) * reverseAnimValue
-                      : 0;
-
-                  return AnimatedPadding(
-                    duration: const Duration(milliseconds: 100),
-                    padding: EdgeInsets.only(
-                      left: (SX.scrollGridButtonsPosition.value.isLeft ? buttonPadding : 0) + 10,
-                      right: (SX.scrollGridButtonsPosition.value.isRight ? buttonPadding : 0) + 10,
-                    ),
-                    child: child,
-                  );
-                },
-                child: WaterfallErrorButtons(animation: animation),
-              ),
-              if (showSearchBar)
-                Padding(
-                  padding: EdgeInsets.only(bottom: 12 + bottomPadding),
-                  child: Container(
-                    height: MainSearchBar.height,
-                    width: double.infinity,
-                    margin: const EdgeInsets.symmetric(horizontal: 12),
-                    child: const MainSearchBarWithActions('bottom'),
-                  ),
-                ),
-            ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedBuilder(
+            animation: animation,
+            builder: (context, child) => Padding(
+              padding: EdgeInsets.only(bottom: bottomPadding * animValue),
+              child: child,
+            ),
+            child: const SelectionButtons(),
           ),
-        ),
+          WaterfallBottomSlide(
+            animation: animation,
+            child: Padding(
+              padding: EdgeInsets.only(bottom: bottomPadding),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Loading/error controls and the optional search bar move as one unit so
+                  // selection controls can settle at the bottom when these are hidden.
+                  AnimatedBuilder(
+                    animation: animation,
+                    builder: (context, child) {
+                      final double buttonPadding = showSearchBar
+                          ? ((MediaQuery.sizeOf(context).width * 0.07) + kMinInteractiveDimension) * reverseAnimValue
+                          : 0;
+
+                      return AnimatedPadding(
+                        duration: const Duration(milliseconds: 100),
+                        padding: EdgeInsets.only(
+                          left: (SX.scrollGridButtonsPosition.value.isLeft ? buttonPadding : 0) + 10,
+                          right: (SX.scrollGridButtonsPosition.value.isRight ? buttonPadding : 0) + 10,
+                        ),
+                        child: child,
+                      );
+                    },
+                    child: WaterfallErrorButtons(animation: animation),
+                  ),
+                  if (showSearchBar)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Container(
+                        height: MainSearchBar.height,
+                        width: double.infinity,
+                        margin: const EdgeInsets.symmetric(horizontal: 12),
+                        child: const MainSearchBarWithActions('bottom'),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -123,15 +142,390 @@ class WaterfallBottomSlide extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Shrink the layout without clipping the controls as they pass through the
+    // bottom safe area and off the screen.
     return AnimatedBuilder(
       animation: animation,
-      builder: (context, child) {
-        return FractionalTranslation(
-          translation: Offset(0, animation.value),
-          child: child,
+      builder: (context, child) => Align(
+        alignment: Alignment.topCenter,
+        heightFactor: 1 - animation.value,
+        child: child,
+      ),
+      child: child,
+    );
+  }
+}
+
+class SelectionButtons extends StatefulWidget {
+  const SelectionButtons({this.tab, super.key});
+
+  final SearchTab? tab;
+
+  @override
+  State<SelectionButtons> createState() => SelectionButtonsState();
+}
+
+class SelectionButtonsState extends State<SelectionButtons> {
+  late final DownloadsDrawerController downloadsController = DownloadsDrawerController(selectionTab: widget.tab);
+
+  @override
+  void dispose() {
+    downloadsController.dispose();
+    super.dispose();
+  }
+
+  void selectAll() {
+    downloadsController.currentTab.selected.assignAll(downloadsController.currentFetched);
+  }
+
+  void deselectAll() {
+    downloadsController.currentTab.selected.clear();
+  }
+
+  void showOverflowDialog(
+    BuildContext context, {
+    required int selectedCount,
+    required int downloadsSelectedCount,
+    required int favSelectedCount,
+    required int unfavSelectedCount,
+    required bool hasDownloadsSelected,
+    required bool hasFavsSelected,
+    required bool isAllSelectedFavs,
+    required bool canReverseOrder,
+    required bool canCompareSelected,
+    required bool canRefreshSelected,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isDismissible: true,
+      enableDrag: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final width = MediaQuery.sizeOf(sheetContext).width;
+        final maxSheetWidth = width < 720 ? width : (width * 0.62).clamp(480.0, 680.0);
+
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.of(sheetContext).pop(),
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: GestureDetector(
+              onTap: () {},
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxSheetWidth),
+                child: SettingsBottomSheet(
+                  title: Text(
+                    '${context.loc.galleryButtons.select} (${selectedCount.toFormattedString()})',
+                    style: context.textTheme.titleLarge,
+                  ),
+                  contentPadding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
+                  contentItems: [
+                    if (selectedCount == 1)
+                      SettingsButton(
+                        name: context.loc.imageSearch.title,
+                        icon: const Icon(Icons.image_search_rounded),
+                        action: () {
+                          Navigator.of(sheetContext).pop();
+                          downloadsController.imageSearchSelected(context);
+                        },
+                      ),
+                    SettingsButton(
+                      name: context.loc.selectAll,
+                      icon: const Icon(Icons.select_all),
+                      action: () {
+                        Navigator.of(sheetContext).pop();
+                        selectAll();
+                      },
+                    ),
+                    SettingsButton(
+                      name: context.loc.tagView.preview,
+                      icon: const Icon(Icons.grid_view),
+                      action: () {
+                        Navigator.of(sheetContext).pop();
+                        downloadsController.showSelectedPreview(context);
+                      },
+                    ),
+                    SettingsButton(
+                      name: context.loc.settings.downloads.invertSelection,
+                      icon: const Icon(Icons.flip_to_back),
+                      action: () {
+                        Navigator.of(sheetContext).pop();
+                        downloadsController.invertSelection();
+                      },
+                      drawTopBorder: true,
+                    ),
+                    if (canReverseOrder)
+                      SettingsButton(
+                        name: context.loc.settings.downloads.reverseSelectedOrder,
+                        icon: const Icon(Icons.swap_vert),
+                        action: () {
+                          Navigator.of(sheetContext).pop();
+                          downloadsController.reverseSelectedOrder();
+                        },
+                      ),
+                    if (canCompareSelected)
+                      SettingsButton(
+                        name: context.loc.settings.downloads.compareSelected,
+                        icon: const Icon(Icons.compare),
+                        action: () {
+                          Navigator.of(sheetContext).pop();
+                          downloadsController.compareSelected(context);
+                        },
+                        drawTopBorder: true,
+                      ),
+                    SettingsButton(
+                      name: context.loc.settings.downloads.hideSelected,
+                      icon: const Icon(Icons.visibility_off_outlined),
+                      action: () {
+                        Navigator.of(sheetContext).pop();
+                        downloadsController.hideSelected();
+                      },
+                    ),
+                    if (canRefreshSelected)
+                      SettingsButton(
+                        name: context.loc.settings.downloads.refreshSelectedMetadata,
+                        icon: const Icon(Icons.refresh),
+                        action: () {
+                          Navigator.of(sheetContext).pop();
+                          downloadsController.refreshSelectedMetadata(context);
+                        },
+                      ),
+                    if (hasDownloadsSelected)
+                      SettingsButton(
+                        name:
+                            '${context.loc.settings.downloads.removeSnatchedStatusFromSelected} (${downloadsSelectedCount.toFormattedString()})',
+                        icon: const Icon(Icons.file_download_off_outlined),
+                        action: () {
+                          Navigator.of(sheetContext).pop();
+                          downloadsController.removeSnatchedStatusFromSelected();
+                        },
+                      ),
+                    if (!isAllSelectedFavs)
+                      SettingsButton(
+                        name:
+                            '${context.loc.settings.downloads.favouriteSelected} (${unfavSelectedCount.toFormattedString()})',
+                        icon: const Icon(Icons.favorite, color: Colors.red),
+                        action: () {
+                          Navigator.of(sheetContext).pop();
+                          downloadsController.favouriteSelected();
+                        },
+                      ),
+                    if (hasFavsSelected)
+                      SettingsButton(
+                        name:
+                            '${context.loc.settings.downloads.unfavouriteSelected} (${favSelectedCount.toFormattedString()})',
+                        icon: const Icon(Icons.favorite_border),
+                        action: () {
+                          Navigator.of(sheetContext).pop();
+                          downloadsController.unfavouriteSelected();
+                        },
+                        drawBottomBorder: false,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         );
       },
-      child: child,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final searchHandler = SearchHandler.instance;
+
+    return Obx(() {
+      final selected = downloadsController.currentSelected;
+      final int selectedCount = selected.length;
+      final bool hasFetched = downloadsController.currentFetched.isNotEmpty;
+      final bool hasSelected = selectedCount > 0;
+
+      final bool controlsBlocked = widget.tab == null && searchHandler.selectionControlsBlocked.value;
+      final int favSelectedCount = selected.where((item) => item.isFavourite.value == true).length;
+      final int unfavSelectedCount = selected.where((item) => item.isFavourite.value == false).length;
+      final bool hasFavsSelected = favSelectedCount > 0;
+      final bool isAllSelectedFavs = selectedCount == favSelectedCount;
+      final int downloadsSelectedCount = selected.where((item) => item.isSnatched.value == true).length;
+      final bool hasDownloadsSelected = downloadsSelectedCount > 0;
+      final bool canReverseOrder = selectedCount > 1;
+      final bool canCompareSelected = selectedCount == 2;
+      final bool canRefreshSelected =
+          downloadsController.currentTab.selectedBooru.value.type?.isFavouritesOrDownloads == true;
+
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 600),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: _selectionControlsTransition,
+        layoutBuilder: (currentChild, previousChildren) {
+          return Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
+              ...previousChildren,
+              ?currentChild,
+            ],
+          );
+        },
+        child: hasSelected
+            ? Padding(
+                key: const ValueKey('selection-controls-visible'),
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Material(
+                  color: Colors.transparent,
+                  child: Stack(
+                    clipBehavior: .none,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.82),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: const EdgeInsets.all(4),
+                        child: Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 4,
+                          runSpacing: 4,
+                          children: [
+                            Tooltip(
+                              message: '${context.loc.tagView.preview} (${selectedCount.toFormattedString()})',
+                              child: FilledButton.tonalIcon(
+                                onPressed: controlsBlocked
+                                    ? null
+                                    : () => downloadsController.showSelectedPreview(context),
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size(48, 48),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                ),
+                                icon: const Icon(Icons.photo_library_outlined, size: 20),
+                                label: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ConstrainedBox(
+                                      constraints: BoxConstraints(minWidth: MediaQuery.textScalerOf(context).scale(20)),
+                                      child: Text(
+                                        selectedCount.toFormattedString(),
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.expand_less, size: 20),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Tooltip(
+                              message:
+                                  '${context.loc.settings.downloads.snatchSelected} (${selectedCount.toFormattedString()})',
+                              child: GestureDetector(
+                                onLongPress: controlsBlocked
+                                    ? null
+                                    : () => downloadsController.onStartSnatching(context, true),
+                                child: IconButton(
+                                  icon: const Icon(Icons.download_sharp),
+                                  onPressed: controlsBlocked
+                                      ? null
+                                      : () => downloadsController.onStartSnatching(context, false),
+                                ),
+                              ),
+                            ),
+                            Tooltip(
+                              message: '${context.loc.galleryButtons.share} (${selectedCount.toFormattedString()})',
+                              child: GestureDetector(
+                                onLongPress: controlsBlocked
+                                    ? null
+                                    : () => downloadsController.onShareSelectedLongPress(context),
+                                child: IconButton(
+                                  icon: const Icon(Icons.share),
+                                  onPressed: controlsBlocked
+                                      ? null
+                                      : () => downloadsController.onShareSelected(context),
+                                ),
+                              ),
+                            ),
+                            SizedBox.square(
+                              dimension: kMinInteractiveDimension,
+                              child: IconButton(
+                                tooltip: canCompareSelected
+                                    ? context.loc.settings.downloads.compareSelected
+                                    : selectedCount == 1
+                                    ? context.loc.imageSearch.title
+                                    : context.loc.selectAll,
+                                icon: Icon(
+                                  canCompareSelected
+                                      ? Icons.compare
+                                      : selectedCount == 1
+                                      ? Icons.image_search_rounded
+                                      : Icons.select_all,
+                                ),
+                                onPressed: controlsBlocked
+                                    ? null
+                                    : canCompareSelected
+                                    ? () => downloadsController.compareSelected(context)
+                                    : selectedCount == 1
+                                    ? () => downloadsController.imageSearchSelected(context)
+                                    : hasFetched
+                                    ? selectAll
+                                    : null,
+                                onLongPress: selectedCount > 2 && hasFetched && !controlsBlocked
+                                    ? () => downloadsController.selectFetchedByQuery(context)
+                                    : null,
+                              ),
+                            ),
+                            Tooltip(
+                              message: context.loc.settings.downloads.clearSelected,
+                              child: IconButton(
+                                icon: const Icon(Icons.deselect),
+                                onPressed: !controlsBlocked ? deselectAll : null,
+                              ),
+                            ),
+                            Tooltip(
+                              message: context.loc.searchBar.more,
+                              child: IconButton(
+                                icon: const Icon(Icons.more_vert),
+                                onPressed: controlsBlocked
+                                    ? null
+                                    : () => showOverflowDialog(
+                                        context,
+                                        selectedCount: selectedCount,
+                                        downloadsSelectedCount: downloadsSelectedCount,
+                                        favSelectedCount: favSelectedCount,
+                                        unfavSelectedCount: unfavSelectedCount,
+                                        hasDownloadsSelected: hasDownloadsSelected,
+                                        hasFavsSelected: hasFavsSelected,
+                                        isAllSelectedFavs: isAllSelectedFavs,
+                                        canReverseOrder: canReverseOrder,
+                                        canCompareSelected: canCompareSelected,
+                                        canRefreshSelected: canRefreshSelected,
+                                      ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : const SizedBox.shrink(key: ValueKey('selection-controls-hidden')),
+      );
+    });
+  }
+
+  Widget _selectionControlsTransition(Widget child, Animation<double> animation) {
+    return FadeTransition(
+      opacity: animation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 1),
+          end: Offset.zero,
+        ).animate(animation),
+        child: child,
+      ),
     );
   }
 }

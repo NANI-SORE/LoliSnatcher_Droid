@@ -21,6 +21,13 @@ class HydrusHandler extends BooruHandler {
   dynamic _fileIDs;
 
   @override
+  void copySearchStateFrom(BooruHandler source) {
+    super.copySearchStateFrom(source);
+    final ids = (source as HydrusHandler)._fileIDs;
+    _fileIDs = ids == null ? null : List.of(ids as List);
+  }
+
+  @override
   Map<String, String> getHeaders() {
     return {
       ...super.getHeaders(),

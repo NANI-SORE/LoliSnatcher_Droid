@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -138,13 +139,15 @@ class SearchHandler {
   TabGroup? groupOf(SearchTab tab) => groupById(tab.groupId.value);
 
   // add new tab by the given search string
-  void addTabByString(
+  SearchTab addTabByString(
     String searchText, {
     bool switchToNew = false,
     Booru? customBooru,
     List<Booru>? secondaryBoorus,
     TabAddMode addMode = TabAddMode.end,
     int? customPage,
+    SearchTab? previewTab,
+    BooruItem? scrollToItem,
   }) {
     final Booru booru = customBooru ?? currentBooru;
 
@@ -170,6 +173,26 @@ class SearchHandler {
       groupId: inheritedGroupId,
     );
     newTab.savePageEnabled.value = SX.defaultSavePageEnabled.value;
+    if (customPage == null &&
+        previewTab != null &&
+        previewTab.tags == searchText &&
+        previewTab.selectedBooru.value.matchesIdentity(booru) &&
+        previewTab.secondaryBoorus.value?.isNotEmpty != true &&
+        secondaryBoorus?.isNotEmpty != true &&
+        previewTab.booruHandler.errorString.isEmpty &&
+        previewTab.booruHandler.filteredFetched.isNotEmpty) {
+      newTab.hiddenItems.addAll(previewTab.hiddenItems);
+      newTab.booruHandler.copySearchStateFrom(previewTab.booruHandler);
+      newTab.selected.assignAll(previewTab.selected);
+      newTab._pageSizes
+        ..clear()
+        ..addAll(previewTab._pageSizes);
+      newTab.hasValidPageCoordinates = previewTab.hasValidPageCoordinates;
+      if (scrollToItem != null && newTab.booruHandler.filteredFetched.contains(scrollToItem)) {
+        newTab.pendingScrollItem = scrollToItem;
+        newTab.scrollPage = scrollToItem.fetchedPage;
+      }
+    }
     if (customPage != null) {
       final targetPage = newTab.apiPage(max(customPage, 1));
       newTab.booruHandler.pageNum = targetPage - 1;
@@ -217,6 +240,7 @@ class SearchHandler {
         booru.name,
       );
     }
+    return newTab;
   }
 
   // remove tab (or current if not provided) index and set new index and search text values
@@ -815,6 +839,7 @@ class SearchHandler {
   Rxn<List<Booru>?> get currentSecondaryBoorus => currentTab.secondaryBoorus;
   RxList<BooruItem> get currentSelected => currentTab.selected;
   RxList<BooruItem> get currentFetched => currentBooruHandler.filteredFetched;
+  RxBool selectionControlsBlocked = false.obs;
   void filterCurrentFetched() {
     if (tabs.isNotEmpty) {
       currentBooruHandler.refilterAll();
@@ -1510,9 +1535,7 @@ class SearchHandler {
 
       if (tabs.isEmpty && settingsHandler.booruList.isNotEmpty) {
         final Booru defaultBooru = settingsHandler.booruList[0];
-        final String defaultText = defaultBooru.defTags?.isNotEmpty == true
-            ? defaultBooru.defTags!
-            : SX.defTags.value;
+        final String defaultText = defaultBooru.defTags?.isNotEmpty == true ? defaultBooru.defTags! : SX.defTags.value;
         if (defaultBooru.type != null) {
           tabs.add(SearchTab(defaultBooru, null, defaultText));
           await changeTabIndex(0);
@@ -1619,9 +1642,7 @@ class SearchHandler {
       if (settingsHandler.booruList.isNotEmpty) {
         defaultBooru = settingsHandler.booruList[0];
       }
-      final String defaultText = defaultBooru.defTags?.isNotEmpty == true
-          ? defaultBooru.defTags!
-          : SX.defTags.value;
+      final String defaultText = defaultBooru.defTags?.isNotEmpty == true ? defaultBooru.defTags! : SX.defTags.value;
       if (defaultBooru.type != null) {
         tabs.add(SearchTab(defaultBooru, null, defaultText));
         await changeTabIndex(0);
@@ -1644,7 +1665,8 @@ class SearchHandler {
         tabs[0].booruHandler.booru.name == SX.prefBooru.value &&
         tabs[0].tags == SX.defTags.value &&
         (_getTabCurrentPage(tabs[0]) ?? tabs[0].firstPage) <= tabs[0].firstPage &&
-        tabs[0].savePageEnabled.value == SX.defaultSavePageEnabled.value && tabGroups.isEmpty;
+        tabs[0].savePageEnabled.value == SX.defaultSavePageEnabled.value &&
+        tabGroups.isEmpty;
     if (!onlyDefaultTab && settingsHandler.booruList.isNotEmpty) {
       final List<String> dump = tabs.map((tab) {
         final String tags = tab.tags;
@@ -2080,6 +2102,7 @@ class SearchTab {
     final temp = BooruHandlerFactory().getBooruHandler(tempBooruList, null);
     booruHandler = temp.booruHandler;
     booruHandler.pageNum = temp.startingPage;
+    booruHandler.extraFilter = (item) => !hiddenItems.contains(item);
     firstPage = temp.startingPage + 1;
     selected.addListener(_updateSelectedIndices);
   }
@@ -2118,13 +2141,47 @@ class SearchTab {
   TabGroup? get group => SearchHandler.instance.groupOf(this);
 
   double scrollPosition = 0;
+  BooruItem? pendingScrollItem;
   int? scrollPage;
   RxList<BooruItem> selected = RxList<BooruItem>.from([]);
+  // Preserve hide order without hashing BooruItem's mutable metadata.
+  final hiddenItems = RxSet<BooruItem>(LinkedHashSet<BooruItem>.identity());
   final OrderedSelectionIndex<BooruItem> _selectedIndices = OrderedSelectionIndex();
+  final Set<BooruItem> _lastSelectedItems = Set<BooruItem>.identity();
 
   int? selectedIndexOf(BooruItem item) => _selectedIndices.indexOf(item);
 
   bool get hasSelectedItems => _selectedIndices.isNotEmpty;
+  bool get hasHiddenItems => allHiddenItems.isNotEmpty;
+
+  /// Includes manually hidden and filter-excluded items, but not duplicates or policy rejections.
+  Iterable<BooruItem> get allHiddenItems sync* {
+    final manual = hiddenItems.value;
+    final filtered = booruHandler.filterHiddenItems.value;
+    for (final item in manual) {
+      if (ContentPolicy.isItemAllowed(booruHandler.sourceBooruFor(item), item)) yield item;
+    }
+    for (final item in filtered.keys) {
+      if (!manual.contains(item) && ContentPolicy.isItemAllowed(booruHandler.sourceBooruFor(item), item)) yield item;
+    }
+  }
+
+  void hideItems(Iterable<BooruItem> items) {
+    hiddenItems.addAll(items);
+    selected.removeWhere(hiddenItems.contains);
+    booruHandler.refilterAll();
+  }
+
+  void unhideItems() {
+    final items = allHiddenItems.toList();
+    hiddenItems.clear();
+    booruHandler.restoreFilteredItems(items);
+  }
+
+  void unhideItem(BooruItem item) {
+    hiddenItems.remove(item);
+    booruHandler.restoreFilteredItems([item]);
+  }
 
   bool shouldSnatchOnFavourite(BooruItem item) =>
       SX.snatchOnFavourite.valueForBooru(booruHandler.sourceBooruFor(item).name);
@@ -2133,7 +2190,19 @@ class SearchTab {
       SX.favouriteOnSnatch.valueForBooru(booruHandler.sourceBooruFor(item).name);
 
   void _updateSelectedIndices() {
+    final nextSelectedItems = Set<BooruItem>.identity()..addAll(selected);
+    final selectionChanged =
+        nextSelectedItems.length != _lastSelectedItems.length ||
+        nextSelectedItems.any((item) => !_lastSelectedItems.contains(item));
+
     _selectedIndices.update(selected);
+
+    if (selectionChanged) {
+      _lastSelectedItems
+        ..clear()
+        ..addAll(nextSelectedItems);
+      unawaited(ServiceHandler.vibrate());
+    }
   }
 
   /// Whether to save page position during tab backup.

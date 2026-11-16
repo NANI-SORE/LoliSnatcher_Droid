@@ -4,6 +4,7 @@ import 'package:lolisnatcher/gen/strings.g.dart';
 import 'package:lolisnatcher/src/downloads/download_localizations.dart';
 import 'package:lolisnatcher/src/pages/snatcher_page.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_controller.dart';
+import 'package:lolisnatcher/src/widgets/drawers/downloads/hidden_items_page.dart';
 
 class DDSelectionActions extends StatelessWidget {
   const DDSelectionActions({required this.controller, required this.toggleDrawer, super.key});
@@ -12,7 +13,15 @@ class DDSelectionActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Obx(() {
     final selected = controller.searchHandler.currentSelectedOrNull ?? [];
-    if (selected.isEmpty) return const SizedBox.shrink();
+    final tab = controller.searchHandler.currentTabOrNull;
+    if (selected.isEmpty) {
+      if (tab == null || tab.allHiddenItems.isEmpty) return const SizedBox.shrink();
+      return ListTile(
+        leading: const Icon(Icons.visibility_off_outlined),
+        title: Text('${context.loc.settings.downloads.hiddenItems} (${tab.allHiddenItems.length})'),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => HiddenItemsPage(tab: tab))),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 4, 0),
       child: Row(
@@ -28,6 +37,10 @@ class DDSelectionActions extends StatelessWidget {
             tooltip: downloadText('selectionActions'),
             onSelected: (action) async {
               switch (action) {
+                case 'hidden':
+                  if (tab != null)
+                    await Navigator.of(context)
+                        .push(MaterialPageRoute<void>(builder: (_) => HiddenItemsPage(tab: tab)));
                 case 'again':
                   await controller.onStartSnatching(context, true);
                 case 'favourite':
@@ -41,6 +54,8 @@ class DDSelectionActions extends StatelessWidget {
               }
             },
             itemBuilder: (_) => [
+              if (tab != null && tab.allHiddenItems.isNotEmpty)
+                PopupMenuItem(value: 'hidden', child: Text(context.loc.settings.downloads.hiddenItems)),
               PopupMenuItem(value: 'again', child: Text(downloadText('redownload'))),
               if (selected.any((e) => e.isFavourite.value != true))
                 PopupMenuItem(value: 'favourite', child: Text(context.loc.settings.downloads.favouriteSelected)),

@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
+import 'package:lolisnatcher/src/widgets/preview/page_indicator.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/viewer_handler.dart';
-import 'package:lolisnatcher/src/widgets/preview/page_indicator.dart';
+import 'package:lolisnatcher/src/widgets/preview/thumbnail_drag_select.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_card_build.dart';
 
 class GridBuilder extends StatelessWidget {
@@ -19,6 +20,7 @@ class GridBuilder extends StatelessWidget {
     this.onLongPress,
     this.onSecondaryTap,
     this.onSelected,
+    this.dragSelectController,
     super.key,
   });
 
@@ -29,6 +31,7 @@ class GridBuilder extends StatelessWidget {
   final void Function(int)? onLongPress;
   final void Function(int)? onSecondaryTap;
   final void Function(int)? onSelected;
+  final ThumbnailDragSelectController? dragSelectController;
 
   @override
   Widget build(BuildContext context) {
@@ -65,8 +68,9 @@ class GridBuilder extends StatelessWidget {
               final selectedIndex = tab.selectedIndexOf(item);
               final bool isSelected = selectedIndex != null;
               final bool isHighlighted = ViewerHandler.instance.current.value?.key == item.key;
+              final controller = dragSelectController;
 
-              return Stack(
+              final thumbnail = Stack(
                 children: [
                   ThumbnailCardBuild(
                     index: index,
@@ -79,7 +83,7 @@ class GridBuilder extends StatelessWidget {
                     onSelected: hasSelected ? onSelected : null,
                     onTap: onTap,
                     onDoubleTap: onDoubleTap,
-                    onLongPress: onLongPress,
+                    onLongPress: controller == null ? onLongPress : null,
                     onSecondaryTap: onSecondaryTap,
                   ),
                   if (isFirstOfPage && item.fetchedPage > -1)
@@ -91,6 +95,17 @@ class GridBuilder extends StatelessWidget {
                       ),
                     ),
                 ],
+              );
+
+              if (controller == null) {
+                return thumbnail;
+              }
+
+              return ThumbnailDragSelectRegistrant(
+                controller: controller,
+                index: index,
+                item: item,
+                child: thumbnail,
               );
             }),
           );

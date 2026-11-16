@@ -28,6 +28,7 @@ import 'package:lolisnatcher/src/services/image_memory_manager.dart';
 import 'package:lolisnatcher/src/services/image_download_request.dart';
 import 'package:lolisnatcher/src/services/image_metadata.dart';
 import 'package:lolisnatcher/src/widgets/image/region_image_view.dart';
+import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/utils/dio_network.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/media_loading.dart';
@@ -77,6 +78,10 @@ class ImageViewer extends StatefulWidget {
     this.allowOfflineThumbnailGeneration = false,
     this.isRevealed,
     this.onReveal,
+    this.isStandalone = false,
+    this.allowHidden = false,
+    this.fullQuality = false,
+    this.onReloadItem,
     super.key,
   });
 
@@ -91,13 +96,23 @@ class ImageViewer extends StatefulWidget {
   final bool Function()? isRevealed;
   final VoidCallback? onReveal;
 
+  /// Standalone viewers do not read or update shared gallery state.
+  final bool isStandalone;
+
+  /// Bypasses user tag filters only; content policy still applies.
+  final bool allowHidden;
+  final bool fullQuality;
+
+  /// Lets standalone hosts refresh metadata without updating saved/gallery items.
+  final VoidCallback? onReloadItem;
+
   @override
   State<ImageViewer> createState() => ImageViewerState();
 }
 
 class ImageViewerState extends State<ImageViewer> {
   final settingsHandler = SettingsHandler.instance;
-  final viewerHandler = ViewerHandler.instance;
+  ViewerHandler? get viewerHandler => widget.isStandalone ? null : ViewerHandler.instance;
 
   PhotoViewScaleStateController scaleController = PhotoViewScaleStateController();
   PhotoViewController viewController = PhotoViewController();
@@ -249,7 +264,7 @@ class ImageViewerState extends State<ImageViewer> {
   Future<void> _retryLoad(int generation) async {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isCurrentLoad(generation)) return;
-      viewerHandler.setLoaded(widget.key, false);
+      viewerHandler?.setLoaded(widget.key, false);
     });
     // Let background viewers and thumbnail codecs release their ownership.
     await WidgetsBinding.instance.endOfFrame;
@@ -275,7 +290,7 @@ class ImageViewerState extends State<ImageViewer> {
     widget.booruItem.toggleQuality.addListener(toggleQualityListener);
     _updateViewerFocus();
 
-    viewerHandler.addViewed(widget.key);
+    viewerHandler?.addViewed(widget.key);
 
     // debug output
     viewStateSubscription = viewController.outputStateStream.listen(onViewStateChanged);
@@ -343,16 +358,18 @@ class ImageViewerState extends State<ImageViewer> {
         }
       }
       _updateViewerFocus();
-      if (!isViewed.value) {
+      if (!isViewed.value && !widget.isStandalone) {
         // reset zoom if not viewed
         resetZoom();
       }
     }
   }
 
-  bool get useFullImage => SX.galleryMode.valueForBooru(widget.booru.name).isFullRes
-      ? !widget.booruItem.toggleQuality.value
-      : widget.booruItem.toggleQuality.value;
+  bool get useFullImage =>
+      widget.fullQuality ||
+      (SX.galleryMode.valueForBooru(widget.booru.name).isFullRes
+          ? !widget.booruItem.toggleQuality.value
+          : widget.booruItem.toggleQuality.value);
 
   Future<void> initViewer(
     bool ignoreTagsCheck, {
@@ -363,9 +380,14 @@ class ImageViewerState extends State<ImageViewer> {
     // An offscreen GIF needs only its thumbnail. Its native animation codec
     // must not reserve the memory needed by the currently viewed GIF.
     if (_hasAnimation && !widget.isViewed) return;
-    _ignoreTagsForLoad = ignoreTagsCheck || _ignoreTagsForLoad || (widget.isRevealed?.call() ?? false);
+    _ignoreTagsForLoad =
+        ignoreTagsCheck || widget.allowHidden || _ignoreTagsForLoad || (widget.isRevealed?.call() ?? false);
     _captchaForLoad = withCaptchaCheck;
     final int loadGeneration = ++_loadGeneration;
+    if (!ContentPolicy.isItemAllowed(widget.booru, widget.booruItem)) {
+      stopLoading(reason: .reset);
+      return;
+    }
     if (widget.filterEvaluation.isBlurred && !_ignoreTagsForLoad) {
       _stopForFilter(widget.filterEvaluation);
       return;
@@ -377,8 +399,8 @@ class ImageViewerState extends State<ImageViewer> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isCurrentLoad(loadGeneration)) return;
 
-      viewerHandler.setStopped(widget.key, false);
-      if (!isLoaded.value) viewerHandler.setLoaded(widget.key, false);
+      viewerHandler?.setStopped(widget.key, false);
+      if (!isLoaded.value) viewerHandler?.setLoaded(widget.key, false);
     });
 
     startedAt.value = DateTime.now().millisecondsSinceEpoch;
@@ -393,7 +415,7 @@ class ImageViewerState extends State<ImageViewer> {
       }
       newProvider = await getImageProvider(
         loadGeneration: loadGeneration,
-        withCaptchaCheck: withCaptchaCheck,
+        withCaptchaCheck: withCaptchaCheck || widget.isStandalone,
         savedFallback: savedFallback,
         networkOnly: networkOnly,
       );
@@ -430,7 +452,7 @@ class ImageViewerState extends State<ImageViewer> {
           if (prevIsLoaded == false) {
             resetZoom();
           }
-          viewerHandler.setLoaded(widget.key, true);
+          viewerHandler?.setLoaded(widget.key, true);
         });
       },
       onChunk: (event) {
@@ -739,6 +761,9 @@ class ImageViewerState extends State<ImageViewer> {
   }) {
     disposables();
 
+    isTilingProcessing.value = null;
+    mainProvider.value = null;
+
     total.value = 0;
     received.value = 0;
 
@@ -759,8 +784,8 @@ class ImageViewerState extends State<ImageViewer> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isCurrentLoad(generation)) return;
 
-      viewerHandler.setStopped(widget.key, true);
-      viewerHandler.setLoaded(widget.key, false);
+      viewerHandler?.setStopped(widget.key, true);
+      viewerHandler?.setLoaded(widget.key, false);
     });
   }
 
@@ -777,7 +802,7 @@ class ImageViewerState extends State<ImageViewer> {
     viewController.dispose();
     disposeNotifiers();
 
-    viewerHandler.removeViewed(widget.key);
+    viewerHandler?.removeViewed(widget.key);
     super.dispose();
   }
 
@@ -803,7 +828,6 @@ class ImageViewerState extends State<ImageViewer> {
     _download = null;
     if (download != null) unawaited(download.dispose());
     isTiled = false;
-    isTilingProcessing.value = null;
     tiledSize = null;
 
     // Viewer providers have their own playback identity; no thumbnail relies
@@ -856,17 +880,17 @@ class ImageViewerState extends State<ImageViewer> {
         scaleState == PhotoViewScaleState.covering ||
         scaleState == PhotoViewScaleState.originalSize;
 
-    viewerHandler.setZoomed(widget.key, isZoomed.value);
+    viewerHandler?.setZoomed(widget.key, isZoomed.value);
   }
 
   void onViewStateChanged(PhotoViewControllerValue viewState) {
     // print(viewState);
-    viewerHandler.setViewValue(widget.key, viewState);
+    viewerHandler?.setViewValue(widget.key, viewState);
   }
 
   void resetZoom() {
     scaleController.scaleState = PhotoViewScaleState.initial;
-    viewerHandler.setZoomed(widget.key, false);
+    viewerHandler?.setZoomed(widget.key, false);
   }
 
   void scrollZoomImage(double value) {
@@ -890,6 +914,10 @@ class ImageViewerState extends State<ImageViewer> {
   }
 
   Future<void> onManualRestart() async {
+    if (stopReason.value?.isError == true && widget.onReloadItem != null) {
+      widget.onReloadItem!();
+      return;
+    }
     if (stopReason.value == ViewerStopReason.memoryLimit) return;
     _ignoreTagsForLoad = true;
     widget.onReveal?.call();
@@ -903,7 +931,7 @@ class ImageViewerState extends State<ImageViewer> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isCurrentLoad(loadGeneration)) return;
 
-      viewerHandler.setStopped(widget.key, false);
+      viewerHandler?.setStopped(widget.key, false);
     });
 
     startedAt.value = DateTime.now().millisecondsSinceEpoch;
@@ -962,6 +990,7 @@ class ImageViewerState extends State<ImageViewer> {
 
   @override
   Widget build(BuildContext context) {
+    if (!ContentPolicy.isItemAllowed(widget.booru, widget.booruItem)) return const SizedBox.shrink();
     return PreserveMediaAnimations(
       child: Material(
         // without this every text element will have broken styles on first frames
@@ -1110,7 +1139,7 @@ class ImageViewerState extends State<ImageViewer> {
                                         onReady: () {
                                           if (!_isCurrentLoad(loadGeneration) || _regionSource == null) return;
                                           isLoaded.value = true;
-                                          viewerHandler.setLoaded(widget.key, true);
+                                          viewerHandler?.setLoaded(widget.key, true);
                                         },
                                         onError: (error) {
                                           if (_isCurrentLoad(loadGeneration)) {

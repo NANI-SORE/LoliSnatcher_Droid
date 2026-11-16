@@ -40,6 +40,7 @@ class ThumbnailBuild extends StatelessWidget {
     this.handler,
     this.selectedIndex,
     this.selectable = true,
+    this.useHero,
     this.onSelected,
     this.simple = false,
     super.key,
@@ -49,6 +50,7 @@ class ThumbnailBuild extends StatelessWidget {
   final BooruHandler? handler;
   final int? selectedIndex;
   final bool selectable;
+  final bool? useHero;
   final void Function()? onSelected;
   final bool simple;
 
@@ -90,7 +92,7 @@ class ThumbnailBuild extends StatelessWidget {
                   booru: statusBooru,
                   filterEvaluation: evaluation,
                   isStandalone: true,
-                  useHero: selectable,
+                  useHero: useHero ?? selectable,
                   allowOfflineLocalMedia: true,
                   allowOfflineThumbnailGeneration: isFavsOrDls,
                 );
