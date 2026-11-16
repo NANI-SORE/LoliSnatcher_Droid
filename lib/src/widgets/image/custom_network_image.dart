@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import 'package:dio/dio.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter_avif/flutter_avif.dart';
 
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
@@ -324,7 +325,7 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
       other is CustomNetworkImage &&
       other.url == url &&
       other.scale == scale &&
-      other.headers == headers &&
+      const MapEquality<String, String>().equals(other.headers, headers) &&
       other.withCache == withCache &&
       other.cacheFolder == cacheFolder &&
       other.fileNameExtras == fileNameExtras &&
@@ -340,7 +341,7 @@ class CustomNetworkImage extends ImageProvider<custom_network_image.CustomNetwor
     runtimeType,
     url,
     scale,
-    headers,
+    const MapEquality<String, String>().hash(headers),
     withCache,
     cacheFolder,
     fileNameExtras,
@@ -398,6 +399,7 @@ class _DecodeSession {
   late File file;
   DownloadedImageFile? source;
   bool isGif = false;
+  bool? isAnimated;
   int encodedBytes = 0;
   int transientBytes = 0;
   ({int width, int height})? expectedOutput;
@@ -448,6 +450,13 @@ class _DecodeSession {
     final releasedSource = source;
     if (releasedSource != null && releasedSource._released) unawaited(releasedSource.dispose());
   }
+}
+
+/// Whether the decoded payload animates, independently of URL or post tags.
+/// Null means the source has not been inspected by our bounded decoder yet.
+bool? imageStreamIsAnimated(ImageStream? stream) {
+  final completer = stream?.completer;
+  return completer is _MemoryImageCompleter ? completer.session.isAnimated : null;
 }
 
 /// Tracks widget subscriptions, excluding ImageCache's internal pending listener.
@@ -542,22 +551,26 @@ class _MemoryImageCompleter extends MultiFrameImageStreamCompleter {
   int _consumers = 0;
   bool _abandonCheckScheduled = false;
 
+  bool get _needsConsumers => !session.hasEmittedFrame || (session.isAnimated == true && !session.firstFrameOnly);
+
   void changeConsumers(int delta) {
     _consumers += delta;
     assert(_consumers >= 0, 'Image consumer count cannot be negative');
-    if (_consumers != 0 || session.hasEmittedFrame || session.disposed || _abandonCheckScheduled) return;
+    if (_consumers != 0 || !_needsConsumers || session.disposed || _abandonCheckScheduled) return;
     _abandonCheckScheduled = true;
     // Let widgets replace subscriptions or attach to a newly resolved stream
     // in this frame before deciding the pending image has no remaining users.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _abandonCheckScheduled = false;
-      if (_consumers != 0 || session.hasEmittedFrame || session.disposed || session.abandoned) return;
+      if (_consumers != 0 || !_needsConsumers || session.disposed || session.abandoned) return;
       session.abandoned = true;
       // A manual restart may have replaced the cache entry before this frame
       // callback runs. Cancel our work without evicting the newer completer.
       if (identical(_cacheOwners[cacheKey]?.target, this)) {
         _forgetCacheOwner();
-        PaintingBinding.instance.imageCache.evict(cacheKey);
+        // A first animation frame can reach the cache before this callback.
+        // It must not keep a native codec alive after the last widget leaves.
+        PaintingBinding.instance.imageCache.evict(cacheKey, includeLive: !session.hasEmittedFrame);
       }
       session.cancelToken.cancel('Image no longer has consumers');
     });
@@ -701,6 +714,7 @@ Future<ui.Codec> _decodeBounded(ui.ImmutableBuffer buffer, {ui.TargetImageSizeCa
     // output only after its actual frame count determines the allocation path.
     codec = await descriptor.instantiateCodec(targetWidth: target.width, targetHeight: target.height);
     session.checkCancelled();
+    session.isAnimated = codec.frameCount > 1;
     if (codec.frameCount > 1) {
       ImageMetadata.checkDimensions(width, height, pixelLimit: ImageMemoryManager.maxAnimatedSourcePixels);
       if (width > ImageMemoryManager.maxTextureDimension || height > ImageMemoryManager.maxTextureDimension) {
@@ -895,6 +909,7 @@ Future<ui.Codec> _decodeAvif(_DecodeSession session, ui.TargetImageSizeCallback?
       await avif!.ready();
     });
     session.checkCancelled();
+    session.isAnimated = avif!.frameCount > 1;
     return _ManagedCodec(
       _AvifCodecAdapter(avif!, dimensions, callback, preserveSourceResolution: session.preserveSourceResolution),
       session,

@@ -118,6 +118,8 @@ class _ThumbnailState extends State<_ThumbnailImage> {
   late bool _firstFrameOnly;
   bool _playbackUpdateScheduled = false;
   bool _retryAfterPressure = false;
+  bool? _mainIsAnimated, _extraIsAnimated;
+  int _playbackRevision = 0;
   int? _rendererErrorGeneration;
 
   // Hidden thumbnails also use a tiny pixelated image on low-end devices.
@@ -148,11 +150,18 @@ class _ThumbnailState extends State<_ThumbnailImage> {
       if (!mounted) return;
       final firstFrameOnly = _shouldShowFirstFrame;
       final retry = _retryAfterPressure && !ImageMemoryManager.instance.underPressure.value;
-      if (_firstFrameOnly == firstFrameOnly && !retry) return;
-      _retryAfterPressure = false;
+      final restoreQuality = _useSafeThumbnail && (!firstFrameOnly || retry);
+      if (_firstFrameOnly == firstFrameOnly && !retry && !restoreQuality) return;
+      if (retry) _retryAfterPressure = false;
       _firstFrameOnly = firstFrameOnly;
-      if (!firstFrameOnly) _useSafeThumbnail = false;
+      if (restoreQuality) _useSafeThumbnail = false;
       if (isFirstBuild.value) return;
+      // Viewer focus and pressure only affect animation playback. Restarting
+      // static payloads here blanks the whole grid and floods the decode queue.
+      if (!retry && !restoreQuality && _mainIsAnimated == false && (!useExtra.value || _extraIsAnimated == false)) {
+        return;
+      }
+      _playbackRevision++;
       // Remove all owners of the animated stream before requesting its poster.
       // The payload can animate even when the post is tagged as a still or video.
       // TickerMode alone pauses painting but retains the native codec.
@@ -160,7 +169,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
       unawaited(extraProvider.value?.evict());
       mainProvider.value = null;
       extraProvider.value = null;
-      unawaited(restartLoading());
+      unawaited(restartLoading(preservePressureRetry: true));
     });
     WidgetsBinding.instance.ensureVisualUpdate();
   }
@@ -326,7 +335,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
       failedRendering.value = false; // A valid oversized file must stay on disk.
       if (!_useSafeThumbnail && widget.item.thumbnailURL.isNotEmpty && thumbURL != widget.item.thumbnailURL) {
         _useSafeThumbnail = true;
-        unawaited(restartLoading());
+        unawaited(restartLoading(preservePressureRetry: true));
       } else {
         isFailed.value = true;
         errorCode.value = null;
@@ -430,6 +439,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
         imageInfo.dispose();
         if (!_isCurrentLoad(loadGeneration)) return;
 
+        _mainIsAnimated = imageStreamIsAnimated(mainImageStream);
         isLoaded.value = true;
         final stream = mainImageStream;
         scheduleMicrotask(() {
@@ -478,6 +488,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
           imageInfo.dispose();
           if (!_isCurrentLoad(loadGeneration)) return;
 
+          _extraIsAnimated = imageStreamIsAnimated(extraImageStream);
           isLoadedExtra.value = true;
           final stream = extraImageStream;
           scheduleMicrotask(() {
@@ -503,14 +514,14 @@ class _ThumbnailState extends State<_ThumbnailImage> {
     }
   }
 
-  Future<void> restartLoading({bool withItemLoad = false}) async {
-    _retryAfterPressure = false;
+  Future<void> restartLoading({bool withItemLoad = false, bool preservePressureRetry = false}) async {
+    if (!preservePressureRetry) _retryAfterPressure = false;
     if (failedRendering.value) {
       failedRendering.value = false;
       unawaited(cleanProviderCache());
     }
 
-    disposables();
+    disposables(evict: true);
 
     // Reset providers only during reloads; disposal must not notify descendants.
     if (widget.isStandalone) {
@@ -580,7 +591,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
     super.dispose();
   }
 
-  void disposables() {
+  void disposables({bool evict = false}) {
     _loadGeneration++;
     _removeMainImageStreamListener();
     _removeExtraImageStreamListener();
@@ -600,11 +611,14 @@ class _ThumbnailState extends State<_ThumbnailImage> {
     }
     loadItemCancelToken = null;
 
-    // evict from memory cache only when in grid
-    if (widget.isStandalone) {
-      mainProvider.value?.evict();
-      extraProvider.value?.evict();
+    // Keep static images in Flutter's bounded LRU for scroll/route reuse.
+    // Shared completers release animation codecs when their last consumer leaves.
+    if (evict) {
+      unawaited(mainProvider.value?.evict());
+      unawaited(extraProvider.value?.evict());
     }
+    _mainIsAnimated = null;
+    _extraIsAnimated = null;
 
     debounceLoading?.cancel();
     debounceLoading = null;
@@ -746,7 +760,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
 
                       return AnimatedSwitcher(
                         // Drop old animation owners immediately on policy changes.
-                        key: ValueKey(_firstFrameOnly),
+                        key: ValueKey(_playbackRevision),
                         duration: Duration(milliseconds: widget.isStandalone ? 100 : 0),
                         child: child,
                       );
@@ -815,7 +829,7 @@ class _ThumbnailState extends State<_ThumbnailImage> {
                       }
 
                       return AnimatedSwitcher(
-                        key: ValueKey(_firstFrameOnly),
+                        key: ValueKey(_playbackRevision),
                         duration: Duration(milliseconds: widget.isStandalone ? 200 : 0),
                         child: child,
                       );
