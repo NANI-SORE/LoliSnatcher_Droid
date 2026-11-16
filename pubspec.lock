@@ -25,6 +25,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "14.6.0"
+  android_file_picker:
+    dependency: transitive
+    description:
+      name: android_file_picker
+      sha256: "0d84bb91fb78af33756107f00cf71ee084474169d481b882b335c3006077a913"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   android_intent_plus:
     dependency: "direct overridden"
     description:
@@ -74,7 +82,7 @@ packages:
     source: hosted
     version: "1.0.5"
   archive:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: archive
       sha256: "0d58d1fa1fddf6588251ccf2819f3fb3b6d0452c1b2813ac7413a05592bfbefe"
@@ -105,6 +113,54 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
+  bonsoir:
+    dependency: "direct main"
+    description:
+      name: bonsoir
+      sha256: "20fed01e4616e625f4bafd9007ff899d231d8d79bebc8564853fa1e3570294a6"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.1.5"
+  bonsoir_android:
+    dependency: transitive
+    description:
+      name: bonsoir_android
+      sha256: "0dda1164e826553b8ee90a3fd1aabd462d17f19348f542b95f9d5b5455e4157f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.1.3"
+  bonsoir_darwin:
+    dependency: transitive
+    description:
+      name: bonsoir_darwin
+      sha256: "6f695a0b4465514b75fc1a457746ab6dfc10d7180f0d04810fd9512e6520df69"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.1.1"
+  bonsoir_linux:
+    dependency: transitive
+    description:
+      name: bonsoir_linux
+      sha256: "9afae7bb9509c5bd20a0ea2ca02a0f2b1ef09cca1ceb2ea288ed58a0f03d1e11"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.1.0"
+  bonsoir_platform_interface:
+    dependency: transitive
+    description:
+      name: bonsoir_platform_interface
+      sha256: "6c55c786b01ad279f675ae72cea3a885aa746e416d2e8c1f0c46e9d2c06420b0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.0.0"
+  bonsoir_windows:
+    dependency: transitive
+    description:
+      name: bonsoir_windows
+      sha256: aaabbb652fe68d3eb26a9b2cddefaae26cd9ca6ebe737d476ab9ed535c7c2516
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.3.0"
   boolean_selector:
     dependency: transitive
     description:
@@ -250,6 +306,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
+  cronet_http:
+    dependency: transitive
+    description:
+      name: cronet_http
+      sha256: "9da9860b409d71e4b8259e3dee631176d499dee23e7cd45a3024ebd5181997d8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.9.0"
   cross_file:
     dependency: transitive
     description:
@@ -266,6 +330,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.7"
+  cryptography:
+    dependency: "direct main"
+    description:
+      name: cryptography
+      sha256: "3eda3029d34ec9095a27a198ac9785630fe525c0eb6a49f3d575272f8e792ef0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.9.0"
   csslib:
     dependency: transitive
     description:
@@ -274,6 +346,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.2"
+  cupertino_http:
+    dependency: transitive
+    description:
+      name: cupertino_http
+      sha256: "82cbec60c90bf785a047a9525688b6dacac444e177e1d5a5876963d3c50369e8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.0"
   cupertino_icons:
     dependency: transitive
     description:
@@ -294,10 +374,10 @@ packages:
     dependency: transitive
     description:
       name: dbus
-      sha256: f7db8504e715b835f5ebe5fe74604ccd961d504c73389a5d8e81bafc2e2f3612
+      sha256: a48d5da28e89bd02196e80d81ed8d7954923d00a0f4a68cc20b575038f023383
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.0"
+    version: "0.7.15"
   device_info_plus:
     dependency: "direct main"
     description:
@@ -427,6 +507,46 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.1"
+  file_picker:
+    dependency: "direct main"
+    description:
+      name: file_picker
+      sha256: "0631f51bbc2e1184bdc9e79384db158dc7830e15b3001feeca700e86563f4d24"
+      url: "https://pub.dev"
+    source: hosted
+    version: "12.2.0"
+  file_picker_darwin:
+    dependency: transitive
+    description:
+      name: file_picker_darwin
+      sha256: "5c32c9400f5c8976c9dd7aa34693c7d2f0c853c28704a1c1409029cb760f5251"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
+  file_picker_linux:
+    dependency: transitive
+    description:
+      name: file_picker_linux
+      sha256: bd52ff1e0048f29df95f913c55ad2991c72791d93e6c42241912c4bdee946cb9
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
+  file_picker_platform_interface:
+    dependency: transitive
+    description:
+      name: file_picker_platform_interface
+      sha256: d35d8cb68446fae921335bb61501d66cb2469d74c8f3103b8c6ccdbe3fe5afd8
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.3.0"
+  file_picker_web:
+    dependency: transitive
+    description:
+      name: file_picker_web
+      sha256: "935560a9d29fa6f006f2855addebb88e88d438e13627d4cc24187033c106f227"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.0"
   fixnum:
     dependency: transitive
     description:
@@ -904,6 +1024,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
+  http_profile:
+    dependency: transitive
+    description:
+      name: http_profile
+      sha256: "7e679e355b09aaee2ab5010915c932cce3f2d1c11c3b2dc177891687014ffa78"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0"
   http_proxy:
     dependency: "direct main"
     description:
@@ -1210,6 +1338,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
+  native_dio_adapter:
+    dependency: "direct main"
+    description:
+      name: native_dio_adapter
+      sha256: "7ca3d04c76095a02c3b0d2e6f3c90e7781373671f7aacad34b81f31074a7369b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.8.0"
   native_toolchain_c:
     dependency: transitive
     description:
@@ -1893,10 +2029,10 @@ packages:
     dependency: transitive
     description:
       name: wakelock_plus
-      sha256: "39a1d99085cf3190d41305bca05f0c0d77522f355f7f99bb648ee231192d9d68"
+      sha256: "22b3e7e937721de70e63c85e7139f4ac781dc22863b9262431a53ac030eb074b"
       url: "https://pub.dev"
     source: hosted
-    version: "1.8.2"
+    version: "1.8.0"
   wakelock_plus_platform_interface:
     dependency: transitive
     description:
@@ -1961,6 +2097,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.3"
+  windows_file_picker:
+    dependency: transitive
+    description:
+      name: windows_file_picker
+      sha256: d999c1c085374724668af0b674a9758d96255c50933faa2ac1cc51eff8308caf
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.0"
   xdg_directories:
     dependency: transitive
     description:
@@ -1987,4 +2131,4 @@ packages:
     version: "3.1.4"
 sdks:
   dart: ">=3.13.7 <4.0.0"
-  flutter: "3.47.9"
+  flutter: ">=3.47.9"

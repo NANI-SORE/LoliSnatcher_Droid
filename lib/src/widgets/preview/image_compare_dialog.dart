@@ -14,6 +14,10 @@ import 'package:lolisnatcher/src/data/tag_type.dart';
 import 'package:lolisnatcher/src/handlers/tag_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
+import 'package:lolisnatcher/src/services/image_memory_manager.dart';
+import 'package:lolisnatcher/src/handlers/tag_filter_handler.dart';
+import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
+import 'package:lolisnatcher/src/services/local_image_provider.dart';
 import 'package:lolisnatcher/src/widgets/image/custom_network_image.dart';
 import 'package:lolisnatcher/src/widgets/preview/compare_image_source.dart';
 
@@ -67,17 +71,29 @@ Future<void> showImageCompareDialog(
   BooruItem second, {
   required Booru firstBooru,
   required Booru secondBooru,
+  Booru? viewBooru,
 }) {
   return Navigator.of(context).push(
     MaterialPageRoute(
-      builder: (_) => _ImageComparePage(
+      builder: (_) => _ComparisonView(
+        booru: viewBooru,
+        child: _ImageComparePage(
         first: first,
         second: second,
         firstBooru: firstBooru,
         secondBooru: secondBooru,
+        ),
       ),
     ),
   );
+}
+
+class _ComparisonView extends InheritedWidget {
+  const _ComparisonView({required this.booru, required super.child});
+  final Booru? booru;
+  static Booru? of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<_ComparisonView>()?.booru;
+  @override
+  bool updateShouldNotify(_ComparisonView oldWidget) => oldWidget.booru != booru;
 }
 
 class _ImageComparePage extends StatefulWidget {
@@ -135,8 +151,8 @@ class _ImageComparePageState extends State<_ImageComparePage> {
     super.didChangeDependencies();
     if (_firstSource != null || !imageModesAvailable) return;
     final widthLimit = (MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context) * 2).round();
-    _firstSource = CompareImageSource(widget.first, widget.firstBooru, widthLimit: widthLimit)..load();
-    _secondSource = CompareImageSource(widget.second, widget.secondBooru, widthLimit: widthLimit)..load();
+    _firstSource = CompareImageSource(widget.first, widget.firstBooru, widthLimit: widthLimit, viewBooru: _ComparisonView.of(context))..load();
+    _secondSource = CompareImageSource(widget.second, widget.secondBooru, widthLimit: widthLimit, viewBooru: _ComparisonView.of(context))..load();
     _firstSource!.addListener(_sourceChanged);
     _secondSource!.addListener(_sourceChanged);
   }
@@ -1194,7 +1210,18 @@ class _CompareOrderThumbnailState extends State<_CompareOrderThumbnail> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.item.isHidden) {
+    final filters = TagFilterHandler.maybeInstance;
+    return filters == null
+        ? _buildThumbnail(context)
+        : ListenableBuilder(
+            listenable: filters.revision,
+            builder: (context, _) => _buildThumbnail(context),
+          );
+  }
+
+  Widget _buildThumbnail(BuildContext context) {
+    final evaluation = CompareImageSource.evaluationFor(widget.item, widget.booru, viewBooru: _ComparisonView.of(context));
+    if (evaluation.isHidden || evaluation.isBlurred) {
       return const SizedBox(width: 30, height: 38, child: Icon(Icons.visibility_off, size: 18));
     }
     return ClipRRect(
@@ -2151,16 +2178,20 @@ class _RenderedCompareView extends StatefulWidget {
 }
 
 class _RenderedCompareImages {
-  const _RenderedCompareImages(this.first, this.second, this.heatmap, this.matchPercent);
-  final ui.Image first;
-  final ui.Image second;
+  const _RenderedCompareImages(this.firstOwner, this.secondOwner, this.heatmap, this.matchPercent, this.heatmapLease);
+  final _ResolvedCompareImage firstOwner;
+  final _ResolvedCompareImage secondOwner;
+  ui.Image get first => firstOwner.image;
+  ui.Image get second => secondOwner.image;
+  final ImageMemoryLease? heatmapLease;
   final ui.Image? heatmap;
   final double matchPercent;
 
   void dispose() {
     heatmap?.dispose();
-    second.dispose();
-    first.dispose();
+    heatmapLease?.release();
+    secondOwner.dispose();
+    firstOwner.dispose();
   }
 }
 
@@ -2205,9 +2236,10 @@ class _RenderedCompareViewState extends State<_RenderedCompareView> {
       if (!mounted || generation != _generation) throw StateError('Comparison cancelled');
     }
 
-    ui.Image? first;
-    ui.Image? second;
+    _ResolvedCompareImage? first;
+    _ResolvedCompareImage? second;
     ui.Image? heatmap;
+    ImageMemoryLease? heatmapLease;
     bool transferred = false;
     try {
       final firstProvider = await firstFuture;
@@ -2217,22 +2249,31 @@ class _RenderedCompareViewState extends State<_RenderedCompareView> {
       checkCurrent();
       second = await _resolveImage(secondProvider, cancelled.future);
       checkCurrent();
-      final double matchPercent;
-      if (mode == _RenderedCompareMode.heatmap) {
-        final result = await _buildHeatmapImage(first, second, checkCurrent);
-        heatmap = result.image;
-        matchPercent = result.matchPercent;
-      } else {
-        matchPercent = await _calculateMatchPercent(first, second, checkCurrent);
-      }
+      final firstImage = first.image;
+      final secondImage = second.image;
+      final outputBytes =
+          (math.max(firstImage.width, secondImage.width) * math.max(firstImage.height, secondImage.height) * 4).toInt();
+      final workingBytes =
+          (firstImage.width * firstImage.height + secondImage.width * secondImage.height) * 4 + outputBytes * 3;
+      final matchPercent = await ImageMemoryManager.instance.runDecode(workingBytes, () async {
+        checkCurrent();
+        if (mode == _RenderedCompareMode.heatmap) {
+          heatmapLease = ImageMemoryManager.instance.reserveImage(outputBytes);
+          final result = await _buildHeatmapImage(firstImage, secondImage, checkCurrent);
+          heatmap = result.image;
+          return result.matchPercent;
+        }
+        return _calculateMatchPercent(firstImage, secondImage, checkCurrent);
+      });
       checkCurrent();
-      final images = _RenderedCompareImages(first, second, heatmap, matchPercent);
+      final images = _RenderedCompareImages(first, second, heatmap, matchPercent, heatmapLease);
       _loadedImages = images;
       transferred = true;
       return images;
     } finally {
       if (!transferred) {
         heatmap?.dispose();
+        heatmapLease?.release();
         second?.dispose();
         first?.dispose();
       }
@@ -2695,8 +2736,18 @@ _comparisonPixelData({
   return (255, (255 * (1 - t)).round(), 0);
 }
 
-Future<ui.Image> _resolveImage(ImageProvider provider, Future<void> cancelled) {
-  final completer = Completer<ui.Image>();
+class _ResolvedCompareImage {
+  _ResolvedCompareImage(this.image, this.keepAlive);
+  final ui.Image image;
+  final ImageStreamCompleterHandle keepAlive;
+  void dispose() {
+    image.dispose();
+    keepAlive.dispose();
+  }
+}
+
+Future<_ResolvedCompareImage> _resolveImage(ImageProvider provider, Future<void> cancelled) {
+  final completer = Completer<_ResolvedCompareImage>();
   // Bound both dimensions before decoding or extracting RGBA buffers. The
   // analysis is sampled; the ordinary viewers retain their selected quality.
   final bounded = SafeResizeImage(
@@ -2709,40 +2760,25 @@ Future<ui.Image> _resolveImage(ImageProvider provider, Future<void> cancelled) {
   final stream = bounded.resolve(ImageConfiguration.empty);
   late final ImageStreamListener listener;
   listener = ImageStreamListener(
-    (info, _) async {
+    (info, _) {
+      // The clone owns pixels while the completer owns their decode reservation.
+      final keepAlive = stream.completer!.keepAlive();
       stream.removeListener(listener);
-      var image = info.image.clone();
+      final image = info.image.clone();
       info.dispose();
       try {
-        // Custom AVIF codecs can ignore ResizeImage's decoder callback. Bound
-        // their raster too, before any caller extracts full RGBA buffers.
         if (image.width > 2048 || image.height > 2048) {
-          final ratio = 2048 / math.max(image.width, image.height);
-          final width = math.max(1, (image.width * ratio).round());
-          final height = math.max(1, (image.height * ratio).round());
-          final recorder = ui.PictureRecorder();
-          Canvas(recorder).drawImageRect(
-            image,
-            Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
-            Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
-            Paint()..filterQuality = FilterQuality.medium,
-          );
-          final picture = recorder.endRecording();
-          try {
-            final resized = await picture.toImage(width, height);
-            image.dispose();
-            image = resized;
-          } finally {
-            picture.dispose();
-          }
+          throw const ImageMemoryException('Comparison decoder exceeded its output bounds');
         }
         if (completer.isCompleted) {
           image.dispose();
+          keepAlive.dispose();
         } else {
-          completer.complete(image);
+          completer.complete(_ResolvedCompareImage(image, keepAlive));
         }
       } catch (error, stackTrace) {
         image.dispose();
+        keepAlive.dispose();
         if (!completer.isCompleted) completer.completeError(error, stackTrace);
       }
     },
@@ -2874,6 +2910,16 @@ class _CompareImageState extends State<_CompareImage> {
 }
 
 Future<ImageProvider> _buildCompareThumbnailProvider(BooruItem item, Booru booru) async {
+  final local = await OfflineMediaResolver.instance.resolve(item, booru);
+  if (local.isAvailable) {
+    return SafeResizeImage(
+      await localImageProvider(local.file!, firstFrameOnly: true),
+      width: 120,
+      height: 152,
+      policy: ResizeImagePolicy.fit,
+      allowUpscaling: false,
+    );
+  }
   final url = item.thumbnailURL.isNotEmpty ? item.thumbnailURL : item.sampleURL;
   if (url.trim().isEmpty) {
     throw StateError('No thumbnail URL found for selected item');
@@ -2888,7 +2934,7 @@ Future<ImageProvider> _buildCompareThumbnailProvider(BooruItem item, Booru booru
   return CustomNetworkImage(
     url,
     headers: headers,
-    withCache: SX.thumbnailCache.value,
+    withCache: SX.thumbnailCache.valueForBooru(booru.name),
     cacheFolder: 'thumbnails',
     fileNameExtras: item.fileNameExtras,
     withCaptchaCheck: true,

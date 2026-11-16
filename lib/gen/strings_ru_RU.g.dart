@@ -384,6 +384,9 @@ class _Translations$init$ru_RU extends Translations$init$en {
 
   // Translations
   @override
+  String get backingUpDataAfterUpdate =>
+      TranslationOverrides.string(_root.$meta, 'init.backingUpDataAfterUpdate', {}) ?? 'Создание резервной копии после обновления…';
+  @override
   String get initError => TranslationOverrides.string(_root.$meta, 'init.initError', {}) ?? 'Ошибка инициализации!';
   @override
   String get settingUpProxy =>
@@ -1117,6 +1120,9 @@ class _Translations$settings$ru_RU extends Translations$settings$en {
   @override
   late final _Translations$settings$backupAndRestore$ru_RU backupAndRestore =
       _Translations$settings$backupAndRestore$ru_RU._(_root);
+  @override
+  late final _Translations$settings$backupAndTransfer$ru_RU backupAndTransfer =
+      _Translations$settings$backupAndTransfer$ru_RU._(_root);
   @override
   late final _Translations$settings$network$ru_RU network = _Translations$settings$network$ru_RU._(_root);
   @override
@@ -4183,7 +4189,7 @@ class _Translations$settings$backupAndRestore$ru_RU extends Translations$setting
   @override
   String get androidOnlyFeatureMsg =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.androidOnlyFeatureMsg', {}) ??
-      'Эта функция доступна только на Android, на десктопных билдах можно просто копировать файлы из папки данных приложения';
+      'Только Android. На других платформах — «${_root.settings.backupAndTransfer.title}».';
   @override
   String get selectBackupDir =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.selectBackupDir', {}) ??
@@ -4195,7 +4201,7 @@ class _Translations$settings$backupAndRestore$ru_RU extends Translations$setting
   @override
   String backupPathMsg({required Object backupPath}) =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupPathMsg', {'backupPath': backupPath}) ??
-      'Папка бэкапов: ${backupPath}';
+      'Папка резервных копий: ${backupPath}';
   @override
   String get noBackupDirSelected =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.noBackupDirSelected', {}) ??
@@ -4264,7 +4270,7 @@ class _Translations$settings$backupAndRestore$ru_RU extends Translations$setting
   @override
   String get restoreDatabaseInfo =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreDatabaseInfo', {}) ??
-      'Может занять время в зависимости от объема базы данных, приложение перезапустится после успешного восстановления';
+      'Большие копии требуют времени. По завершению приложение перезапустится.';
   @override
   String get databaseBackedUp =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.databaseBackedUp', {}) ??
@@ -4272,7 +4278,7 @@ class _Translations$settings$backupAndRestore$ru_RU extends Translations$setting
   @override
   String get databaseRestored =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.databaseRestored', {}) ??
-      'База данных восстановлена из бэкапа! Приложение будет перезапущено через несколько секунд!';
+      'База восстановлена. Скоро приложение перезапустится.';
   @override
   String get backupDatabaseError =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupDatabaseError', {}) ??
@@ -4284,7 +4290,7 @@ class _Translations$settings$backupAndRestore$ru_RU extends Translations$setting
   @override
   String get databaseFileNotFound =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.databaseFileNotFound', {}) ??
-      'Файл базы данных не найден или не может быть прочитан!';
+      'Файл базы данных не найден или недоступен для чтения';
   @override
   String get backupTags =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupTags', {}) ?? 'Бэкап тегов';
@@ -4294,7 +4300,7 @@ class _Translations$settings$backupAndRestore$ru_RU extends Translations$setting
   @override
   String get restoreTagsInfo =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreTagsInfo', {}) ??
-      'Может занять время, если у тебя много тегов. Если ты сделал восстановление базы данных, то эта операция не нужна, потому что теги уже включены в базу данных';
+      'Большие списки требуют времени. Копия базы уже содержит теги.';
   @override
   String get tagsBackedUp =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.tagsBackedUp', {}) ??
@@ -4314,15 +4320,15 @@ class _Translations$settings$backupAndRestore$ru_RU extends Translations$setting
   @override
   String get tagsFileNotFound =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.tagsFileNotFound', {}) ??
-      'Файл тегов не найден или не может быть прочитан!';
+      'Файл тегов не найден или недоступен для чтения';
   @override
   String get operationTakesTooLongMsg =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.operationTakesTooLongMsg', {}) ??
-      'Нажми Скрыть, если операция занимает слишком много времени, операция будет продолжена в фоновом режиме';
+      '«${_root.hide}» скроет прогресс. Операция продолжится.';
   @override
   String get backupFileNotFound =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupFileNotFound', {}) ??
-      'Файл бэкапа не найден или не может быть прочитан!';
+      'Файл резервной копии не найден или недоступен для чтения';
   @override
   String get backupDirNoAccess =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupDirNoAccess', {}) ??
@@ -5240,15 +5246,15 @@ class _Translations$settings$sync$ru_RU extends Translations$settings$sync$en {
   @override
   String get syncFavsFromHelpText1 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText1', {}) ??
-      'Позволяет установить, с какого места должна начаться синхронизация, полезно, если ты уже синхронизировал всё избранное ранее и хочешь синхронизировать только новейшие элементы';
+      'Начнёт с ближайшей предыдущей группы записей.';
   @override
   String get syncFavsFromHelpText2 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText2', {}) ??
-      'Если ты хочешь синхронизировать с начала, оставь это поле пустым';
+      'Оставь пустым, чтобы начать сначала.';
   @override
   String get syncFavsFromHelpText3 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText3', {}) ??
-      'Пример: У тебя есть X элементов в избранном, введи в это поле 100, синхронизация начнётся с элемента #100 и будет продолжаться, пока не достигнет X';
+      'Часть предыдущих записей может передаться повторно.';
   @override
   String get syncFavsFromHelpText4 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText4', {}) ??
@@ -5267,15 +5273,15 @@ class _Translations$settings$sync$ru_RU extends Translations$settings$sync$en {
   @override
   String get syncSnatchedFromHelpText1 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText1', {}) ??
-      'Позволяет установить, с какого места должна начаться синхронизация, полезно, если ты уже синхронизировал всю историю загрузок ранее и хочешь синхронизировать только новейшие элементы';
+      'Начнёт с ближайшей предыдущей группы записей.';
   @override
   String get syncSnatchedFromHelpText2 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText2', {}) ??
-      'Если ты хочешь синхронизировать с начала, оставь это поле пустым';
+      'Оставь пустым, чтобы начать сначала.';
   @override
   String get syncSnatchedFromHelpText3 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText3', {}) ??
-      'Пример: У тебя есть X скачанных элементов, введи в это поле 100, синхронизация начнётся с элемента #100 и будет продолжаться, пока не достигнет X';
+      'Часть предыдущих записей может передаться повторно.';
   @override
   String get syncSnatchedFromHelpText4 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText4', {}) ??
@@ -5300,11 +5306,11 @@ class _Translations$settings$sync$ru_RU extends Translations$settings$sync$en {
   @override
   String get tabsSyncModeMerge =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.tabsSyncModeMerge', {}) ??
-      'Объединить: Объединить вкладки с этого устройства на другом устройстве, вкладки с неизвестными сайтами и уже существующие вкладки будут проигнорированы';
+      'Объединить: добавить недостающие вкладки, пропустив неизвестные сайты.';
   @override
   String get tabsSyncModeReplace =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.tabsSyncModeReplace', {}) ??
-      'Заменить: Полностью заменить вкладки на другом устройстве вкладками с этого устройства';
+      'Заменить: заменить вкладки на другом устройстве.';
   @override
   String get merge => TranslationOverrides.string(_root.$meta, 'settings.sync.merge', {}) ?? 'Объединить';
   @override
@@ -5320,11 +5326,11 @@ class _Translations$settings$sync$ru_RU extends Translations$settings$sync$en {
   @override
   String get tagsSyncModePreferTypeIfNone =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncModePreferTypeIfNone', {}) ??
-      'Сохранять тип: Если тег существует с типом тега на другом устройстве, а на этом устройстве нет, он будет пропущен';
+      'Сохранить тип: не заменять известный тип неизвестным.';
   @override
   String get tagsSyncModeOverwrite =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncModeOverwrite', {}) ??
-      'Перезаписать: Все теги будут добавлены, если тег и тип тега существуют на другом устройстве, они будут перезаписаны';
+      'Перезаписать: использовать импортированные типы тегов.';
   @override
   String get preferTypeIfNone =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.preferTypeIfNone', {}) ?? 'Сохранять тип';
@@ -5358,7 +5364,7 @@ class _Translations$settings$sync$ru_RU extends Translations$settings$sync$en {
   @override
   String get receiverInstructions =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.receiverInstructions', {}) ??
-      'Запусти сервер для получения данных. Избегай публичных сетей в целях безопасности';
+      'Начни приём. Избегай публичного Wi-Fi.';
   @override
   String get availableNetworkInterfaces =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.availableNetworkInterfaces', {}) ??
@@ -6310,6 +6316,672 @@ class _Translations$media$loading$stopReasons$ru_RU extends Translations$media$l
 extension on TranslationsRuRu {
   dynamic _flatMapFunction(String path) {
     return switch (path) {
+          'init.backingUpDataAfterUpdate' =>
+            TranslationOverrides.string(_root.$meta, 'init.backingUpDataAfterUpdate', {}) ??
+                'Создание резервной копии после обновления…',
+          'settings.backupAndTransfer.verificationPhrase' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.verificationPhrase', {}) ??
+                'Эмодзи для проверки',
+          'settings.backupAndTransfer.compareVerificationPhrase' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.compareVerificationPhrase', {}) ??
+                'Сравни все шесть эмодзи на обоих устройствах. Разреши передачу при совпадении, иначе отмени.',
+          'settings.backupAndTransfer.allowVerifiedTransfer' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.allowVerifiedTransfer', {}) ??
+                'Разрешить передачу',
+          'settings.backupAndTransfer.recoveryFailedTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.recoveryFailedTitle', {}) ??
+                'Восстановление не завершено',
+          'settings.backupAndTransfer.recoveryFailedMessage' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.recoveryFailedMessage', {}) ??
+                'Повтори восстановление перед использованием приложения.',
+          'settings.backupAndTransfer.retryRecovery' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.retryRecovery', {}) ??
+                'Повторить восстановление',
+          'settings.backupAndTransfer.importSucceededAckLost' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importSucceededAckLost', {}) ??
+                'Данные восстановлены, но отправитель не был уведомлён. Не отправляй данные повторно.',
+          'settings.backupAndTransfer.transferAckUnknown' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferAckUnknown', {}) ??
+                'Проверь получателя перед повторной попыткой.',
+          'settings.backupAndTransfer.title' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.title', {}) ??
+                'Резервные копии и передача',
+          'settings.backupAndTransfer.exportBackupHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportBackupHint', {}) ??
+                'Сохранить настройки и записи библиотеки без медиафайлов',
+          'settings.backupAndTransfer.importBackupHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importBackupHint', {}) ??
+                'Выбери файл и данные для восстановления',
+          'settings.backupAndTransfer.advancedBackupHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.advancedBackupHint', {}) ??
+                'Отдельные категории через файл или буфер обмена',
+          'settings.backupAndTransfer.sendHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.sendHint', {}) ??
+                'Передать данные по локальной сети',
+          'settings.backupAndTransfer.receiveHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receiveHint', {}) ??
+                'Выбрать устройство и данные для получения',
+          'settings.backupAndTransfer.sendInstructions' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.sendInstructions', {}) ??
+                'На другом устройстве открой «${_root.settings.backupAndTransfer.receiveDataTitle}», выбери это устройство и типы данных. Затем подтверди здесь.',
+          'settings.backupAndTransfer.receiveInstructions' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receiveInstructions', {}) ??
+                'На другом устройстве открой «${_root.settings.backupAndTransfer.sendDataTitle}». Подключись к той же локальной сети.',
+          'settings.backupAndTransfer.noDevicesHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.noDevicesHint', {}) ??
+                'Не закрывай «${_root.settings.backupAndTransfer.sendDataTitle}» на другом устройстве или добавь его адрес вручную.',
+          'settings.backupAndTransfer.autoBackupScheduleHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackupScheduleHint', {}) ??
+                'При открытии или возврате в приложение, когда подошёл срок',
+          'settings.backupAndTransfer.defaultBackupLocation' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.defaultBackupLocation', {}) ??
+                'Папка по умолчанию',
+          'settings.backupAndTransfer.resetAutoBackupHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.resetAutoBackupHint', {}) ??
+                'Сбросить параметры и статус? Файлы копий останутся.',
+          'settings.backupAndTransfer.operationInProgress' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.operationInProgress', {}) ??
+                'Обработка…',
+          'settings.backupAndTransfer.exportUnavailable' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportUnavailable', {}) ??
+                'Нет данных для экспорта',
+          'settings.backupAndTransfer.overwriteTagTypes' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.overwriteTagTypes', {}) ??
+                'Перезаписать существующие типы тегов',
+          'settings.backupAndTransfer.tabsImportMode' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.tabsImportMode', {}) ??
+                'Режим импорта вкладок',
+          'settings.backupAndTransfer.favouritesStartIndex' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.favouritesStartIndex', {}) ??
+                'Пропустить избранное',
+          'settings.backupAndTransfer.snatchedStartIndex' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.snatchedStartIndex', {}) ??
+                'Пропустить записи загрузок',
+          'settings.backupAndTransfer.restoreTabsMergeHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreTabsMergeHint', {}) ??
+                'Добавить недостающие вкладки, сохранив текущие.',
+          'settings.backupAndTransfer.restoreTabsReplaceHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreTabsReplaceHint', {}) ??
+                'Заменить вкладки. Если восстановить нечего — сохранить текущие.',
+          'settings.backupAndTransfer.restoreTagsPreserveHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreTagsPreserveHint', {}) ??
+                'Сохранить известный тип, если импортированный неизвестен.',
+          'settings.backupAndTransfer.restoreTagsOverwriteHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreTagsOverwriteHint', {}) ??
+                'Использовать импортированный тип, даже неизвестный.',
+          'settings.backupAndTransfer.waitingForApproval' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.waitingForApproval', {}) ??
+                'Ожидание разрешения…',
+          'settings.backupAndTransfer.preparingTransfer' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.preparingTransfer', {}) ??
+                'Подготовка данных…',
+          'settings.backupAndTransfer.verifyingTransfer' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.verifyingTransfer', {}) ??
+                'Проверка данных…',
+          'settings.backupAndTransfer.waitingForImport' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.waitingForImport', {}) ??
+                'Ожидание восстановления…',
+          'settings.backupAndTransfer.transferNotCompleted' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferNotCompleted', {}) ??
+                'Передача не завершена',
+          'settings.backupAndTransfer.clearTransferError' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.clearTransferError', {}) ??
+                'Скрыть ошибку',
+          'settings.backupAndTransfer.stopSharing' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.stopSharing', {}) ??
+                'Остановить отправку',
+          'settings.backupAndTransfer.manualAddressHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.manualAddressHint', {}) ??
+                'Скопируй адрес с экрана «${_root.settings.backupAndTransfer.sendDataTitle}» другого устройства',
+          'settings.backupAndTransfer.invalidDeviceAddress' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidDeviceAddress', {}) ??
+                'Введи IPv4:порт, например 192.168.1.10:12345',
+          'settings.backupAndTransfer.startIndexHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.startIndexHint', {}) ??
+                'Пропустить столько записей; 0 — передать все',
+          'settings.backupAndTransfer.invalidStartIndex' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidStartIndex', {}) ??
+                'Введи число от 0 до 2147483647',
+          'settings.backupAndTransfer.transferData' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferData', {}) ??
+                'Передача данных',
+          'settings.backupAndTransfer.backupData' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupData', {}) ?? 'Резервные копии',
+          'settings.backupAndTransfer.send' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.send', {}) ?? 'Включить отправку',
+          'settings.backupAndTransfer.receive' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receive', {}) ?? 'Получить',
+          'settings.backupAndTransfer.export' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.export', {}) ?? 'Экспорт',
+          'settings.backupAndTransfer.import' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.import', {}) ?? 'Восстановить',
+          'settings.backupAndTransfer.done' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.done', {}) ?? 'Готово',
+          'settings.backupAndTransfer.advancedExportImport' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.advancedExportImport', {}) ??
+                'Расширенный экспорт/импорт',
+          'settings.backupAndTransfer.autoBackup' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackup', {}) ??
+                'Автоматическое резервное копирование',
+          'settings.backupAndTransfer.enableAutoBackup' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.enableAutoBackup', {}) ??
+                'Включить автоматическое резервное копирование',
+          'settings.backupAndTransfer.backupAfterUpdates' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdates', {}) ??
+                'Создавать копию после обновлений',
+          'settings.backupAndTransfer.backupAfterUpdatesSubtitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdatesSubtitle', {}) ??
+                'Хранить пять копий после обновлений в этой папке, отдельно.',
+          'settings.backupAndTransfer.backupLocation' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupLocation', {}) ??
+                'Папка резервных копий',
+          'settings.backupAndTransfer.backupLocationNotSelected' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupLocationNotSelected', {}) ??
+                'Папка по умолчанию',
+          'settings.backupAndTransfer.change' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.change', {}) ?? 'Изменить',
+          'settings.backupAndTransfer.backupInterval' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupInterval', {}) ??
+                'Частота резервного копирования',
+          'settings.backupAndTransfer.daily' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.daily', {}) ?? 'Ежедневно',
+          'settings.backupAndTransfer.weekly' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.weekly', {}) ?? 'Еженедельно',
+          'settings.backupAndTransfer.monthly' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.monthly', {}) ?? 'Ежемесячно',
+          'settings.backupAndTransfer.maximumBackups' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.maximumBackups', {}) ??
+                'Максимум автоматических копий',
+          'settings.backupAndTransfer.maximumBackupsHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.maximumBackupsHint', {}) ??
+                'Общий лимит для расписания и «${_root.settings.backupAndTransfer.backupNow}». Для обновлений — отдельно пять.',
+          'settings.backupAndTransfer.backupCountUnlimited' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupCountUnlimited', {}) ??
+                'Неограничено',
+          'settings.backupAndTransfer.backupCount' =>
+            ({required num count}) =>
+                TranslationOverrides.plural(_root.$meta, 'settings.backupAndTransfer.backupCount', {'count': count}) ??
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
+                  count,
+                  one: '${count} резервная копия',
+                  few: '${count} резервные копии',
+                  many: '${count} резервных копий',
+                  other: '${count} резервной копии',
+                ),
+          'settings.backupAndTransfer.lastBackupNever' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lastBackupNever', {}) ??
+                'Резервных копий ещё нет',
+          'settings.backupAndTransfer.lastBackup' =>
+            ({required String date}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lastBackup', {'date': date}) ??
+                'Последняя резервная копия: ${date}',
+          'settings.backupAndTransfer.backupNow' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupNow', {}) ??
+                'Сделать резервную копию',
+          'settings.backupAndTransfer.backupExported' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupExported', {}) ??
+                'Резервная копия экспортирована',
+          'settings.backupAndTransfer.importedEntries' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importedEntries', {
+                  'count': count,
+                }) ??
+                'Категорий восстановлено: ${count}',
+          'settings.backupAndTransfer.autoBackupCreated' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackupCreated', {}) ??
+                'Автоматическая резервная копия создана',
+          'settings.backupAndTransfer.autoBackupLocationDialogTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackupLocationDialogTitle', {}) ??
+                'Папка резервных копий',
+          'settings.backupAndTransfer.exportToFile' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportToFile', {}) ?? 'Экспорт в файл',
+          'settings.backupAndTransfer.importFromFile' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importFromFile', {}) ??
+                'Импорт из файла',
+          'settings.backupAndTransfer.exportToClipboard' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportToClipboard', {}) ??
+                'Экспорт в буфер обмена',
+          'settings.backupAndTransfer.importFromClipboard' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importFromClipboard', {}) ??
+                'Импорт из буфера обмена',
+          'settings.backupAndTransfer.entryExported' =>
+            ({
+              required String entry,
+            }) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryExported', {
+                  'entry': entry,
+                }) ??
+                'Экспортировано: ${entry}',
+          'settings.backupAndTransfer.entryImported' =>
+            ({
+              required String entry,
+            }) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryImported', {
+                  'entry': entry,
+                }) ??
+                'Восстановлено: ${entry}',
+          'settings.backupAndTransfer.entryCopied' =>
+            ({
+              required String entry,
+            }) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryCopied', {'entry': entry}) ??
+                'Скопировано: ${entry}',
+          'settings.backupAndTransfer.unavailable' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unavailable', {}) ?? 'Недоступно',
+          'settings.backupAndTransfer.sendDataTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.sendDataTitle', {}) ??
+                'Отправка данных',
+          'settings.backupAndTransfer.visibleOnNetwork' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.visibleOnNetwork', {}) ??
+                'Видно в сети',
+          'settings.backupAndTransfer.visibleOnNetworkSubtitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.visibleOnNetworkSubtitle', {}) ??
+                'Выключи, чтобы подключение было доступно только вручную по адресу',
+          'settings.backupAndTransfer.includeDeviceSpecificSettings' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.includeDeviceSpecificSettings', {}) ??
+                'Включить настройки устройства',
+          'settings.backupAndTransfer.includeDeviceSpecificSettingsSubtitle' =>
+            TranslationOverrides.string(
+                  _root.$meta,
+                  'settings.backupAndTransfer.includeDeviceSpecificSettingsSubtitle',
+                  {},
+                ) ??
+                'Язык, тема, интерфейс и похожие параметры',
+          'settings.backupAndTransfer.includeDeviceSpecificSettingsHelpTitle' =>
+            TranslationOverrides.string(
+                  _root.$meta,
+                  'settings.backupAndTransfer.includeDeviceSpecificSettingsHelpTitle',
+                  {},
+                ) ??
+                'Какие настройки?',
+          'settings.backupAndTransfer.includeDeviceSpecificSettingsHelp' =>
+            TranslationOverrides.string(
+                  _root.$meta,
+                  'settings.backupAndTransfer.includeDeviceSpecificSettingsHelp',
+                  {},
+                ) ??
+                'Для настроек и параметров сайтов. Пути, прокси и блокировка приложения остаются локальными.',
+          'settings.backupAndTransfer.address' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.address', {}) ?? 'Адрес',
+          'settings.backupAndTransfer.name' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.name', {}) ?? 'Имя',
+          'settings.backupAndTransfer.status' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.status', {}) ?? 'Статус',
+          'settings.backupAndTransfer.starting' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.starting', {}) ?? 'Запуск…',
+          'settings.backupAndTransfer.broadcasting' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.broadcasting', {}) ??
+                'Видно устройствам поблизости',
+          'settings.backupAndTransfer.hidden' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.hidden', {}) ??
+                'Подключение только по адресу',
+          'settings.backupAndTransfer.transferred' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferred', {}) ?? 'Передано',
+          'settings.backupAndTransfer.received' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.received', {}) ?? 'Получено',
+          'settings.backupAndTransfer.total' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.total', {}) ?? 'Всего',
+          'settings.backupAndTransfer.elapsed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.elapsed', {}) ?? 'Прошло',
+          'settings.backupAndTransfer.speed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.speed', {}) ?? 'Скорость',
+          'settings.backupAndTransfer.current' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.current', {}) ?? 'Текущее',
+          'settings.backupAndTransfer.logs' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.logs', {}) ?? 'Логи',
+          'settings.backupAndTransfer.deviceInfo' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.deviceInfo', {}) ??
+                'Информация об устройстве',
+          'settings.backupAndTransfer.history' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.history', {}) ?? 'История',
+          'settings.backupAndTransfer.noHistory' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.noHistory', {}) ??
+                'История передач пуста',
+          'settings.backupAndTransfer.selectedData' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.selectedData', {}) ??
+                'Выбери данные для получения',
+          'settings.backupAndTransfer.receiveDataTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receiveDataTitle', {}) ??
+                'Получение данных',
+          'settings.backupAndTransfer.addDevice' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.addDevice', {}) ??
+                'Добавить устройство',
+          'settings.backupAndTransfer.manualDevice' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.manualDevice', {}) ??
+                'Устройство, добавленное вручную',
+          'settings.backupAndTransfer.nearbyDevices' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.nearbyDevices', {}) ??
+                'Устройства рядом',
+          'settings.backupAndTransfer.noDevicesFound' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.noDevicesFound', {}) ??
+                'Устройства не найдены',
+          'settings.backupAndTransfer.manual' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.manual', {}) ?? 'Вручную',
+          'settings.backupAndTransfer.unknown' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unknown', {}) ?? 'Неизвестно',
+          'settings.backupAndTransfer.transfer' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transfer', {}) ?? 'Передача',
+          'settings.backupAndTransfer.entrySettingsTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySettingsTitle', {}) ??
+                'Настройки',
+          'settings.backupAndTransfer.entrySettingsDescription' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySettingsDescription', {}) ??
+                'Настройки приложения',
+          'settings.backupAndTransfer.entryBooruProfilesTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryBooruProfilesTitle', {}) ??
+                'Конфиги сайтов',
+          'settings.backupAndTransfer.entryBooruProfilesDescription' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryBooruProfilesDescription', {}) ??
+                'Адреса сайтов, данные входа и параметры',
+          'settings.backupAndTransfer.entryDatabaseTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryDatabaseTitle', {}) ??
+                'Вся база — заменить библиотеку',
+          'settings.backupAndTransfer.entryDatabaseDescription' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryDatabaseDescription', {}) ??
+                'Записи библиотеки, вкладки, данные тегов, закреплённые теги и история поиска',
+          'settings.backupAndTransfer.entryFavouritesTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryFavouritesTitle', {}) ??
+                'Избранное',
+          'settings.backupAndTransfer.entryFavouritesDescription' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryFavouritesDescription', {}) ??
+                'Избранные элементы из базы данных',
+          'settings.backupAndTransfer.entrySnatchedTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySnatchedTitle', {}) ??
+                'История скачанного',
+          'settings.backupAndTransfer.entrySnatchedDescription' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySnatchedDescription', {}) ??
+                'Записи о скачанном без самих медиафайлов',
+          'settings.backupAndTransfer.entryTabsTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryTabsTitle', {}) ?? 'Вкладки',
+          'settings.backupAndTransfer.entryTabsDescription' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryTabsDescription', {}) ??
+                'Открытые вкладки, выбранная вкладка и сохранённые позиции страниц',
+          'settings.backupAndTransfer.entryTagsTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryTagsTitle', {}) ?? 'Теги',
+          'settings.backupAndTransfer.entryTagsDescription' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryTagsDescription', {}) ??
+                'Локальные данные тегов',
+          'settings.backupAndTransfer.entryPinnedTagsTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryPinnedTagsTitle', {}) ??
+                'Закреплённые теги',
+          'settings.backupAndTransfer.entryPinnedTagsDescription' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryPinnedTagsDescription', {}) ??
+                'Закреплённые теги, их метки, порядок и привязка к сайтам',
+          'settings.backupAndTransfer.entrySearchHistoriesTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySearchHistoriesTitle', {}) ??
+                'История поиска',
+          'settings.backupAndTransfer.entrySearchHistoriesDescription' =>
+            TranslationOverrides.string(
+                  _root.$meta,
+                  'settings.backupAndTransfer.entrySearchHistoriesDescription',
+                  {},
+                ) ??
+                'Сохраненная история поиска и избранные поиски',
+          'settings.backupAndTransfer.databaseFileNotFound' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.databaseFileNotFound', {}) ??
+                'Файл базы данных не найден',
+          'settings.backupAndTransfer.autoBackupLocationEmpty' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackupLocationEmpty', {}) ??
+                'Папка автобэкапов не выбрана',
+          'settings.backupAndTransfer.exportBackupDialogTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportBackupDialogTitle', {}) ??
+                'Экспорт резервной копии',
+          'settings.backupAndTransfer.importBackupDialogTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importBackupDialogTitle', {}) ??
+                'Восстановить резервную копию',
+          'settings.backupAndTransfer.backupManifestNotFound' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupManifestNotFound', {}) ??
+                'Список содержимого резервной копии не найден',
+          'settings.backupAndTransfer.unsupportedBackupFormat' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unsupportedBackupFormat', {}) ??
+                'Неподдерживаемый формат резервной копии',
+          'settings.backupAndTransfer.approveTransferTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.approveTransferTitle', {}) ??
+                'Разрешить передачу данных?',
+          'settings.backupAndTransfer.approveTransferRequest' =>
+            ({required String device, required String address}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.approveTransferRequest', {
+                  'device': device,
+                  'address': address,
+                }) ??
+                '${device} (${address}) запрашивает следующие данные:',
+          'settings.backupAndTransfer.allowTransfer' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.allowTransfer', {}) ?? 'Разрешить',
+          'settings.backupAndTransfer.transferDeclined' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferDeclined', {}) ??
+                'Запрос на передачу данных отклонён',
+          'settings.backupAndTransfer.unsupportedTransferProtocol' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unsupportedTransferProtocol', {}) ??
+                'Это устройство использует неподдерживаемый протокол передачи',
+          'settings.backupAndTransfer.invalidTransferData' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidTransferData', {}) ??
+                'Другое устройство отправило некорректные данные',
+          'settings.backupAndTransfer.transferBusy' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferBusy', {}) ??
+                'Другая передача уже выполняется',
+          'settings.backupAndTransfer.transferChecksumMismatch' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferChecksumMismatch', {}) ??
+                'Полученный архив не прошёл проверку целостности',
+          'settings.backupAndTransfer.importingPackage' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importingPackage', {}) ??
+                'Восстановление данных…',
+          'settings.backupAndTransfer.importExtracting' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importExtracting', {}) ??
+                'Распаковка копии…',
+          'settings.backupAndTransfer.importValidating' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importValidating', {}) ??
+                'Проверка записей…',
+          'settings.backupAndTransfer.importRechecking' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRechecking', {}) ??
+                'Повторная проверка записей…',
+          'settings.backupAndTransfer.importPreparingDatabase' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importPreparingDatabase', {}) ??
+                'Подготовка базы…',
+          'settings.backupAndTransfer.importCleaningUp' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importCleaningUp', {}) ??
+                'Завершение изменений…',
+          'settings.backupAndTransfer.importRefreshing' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRefreshing', {}) ??
+                'Обновление данных…',
+          'settings.backupAndTransfer.importRecordsProcessed' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRecordsProcessed', {
+                  'count': count,
+                }) ??
+                'Обработано записей: ${count}',
+          'settings.backupAndTransfer.importRecordsTotal' =>
+            ({required int count, required int total}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRecordsTotal', {
+                  'count': count,
+                  'total': total,
+                }) ??
+                'Обработано записей: ${count} / ${total}',
+          'settings.backupAndTransfer.importLastProgress' =>
+            ({required String elapsed}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importLastProgress', {
+                  'elapsed': elapsed,
+                }) ??
+                'Последнее обновление: ${elapsed} назад',
+          'settings.backupAndTransfer.transferStartFailed' =>
+            ({required String error}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferStartFailed', {
+                  'error': error,
+                }) ??
+                'Не удалось начать передачу: ${error}',
+          'settings.backupAndTransfer.importBackupTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importBackupTitle', {}) ??
+                'Восстановить резервную копию',
+          'settings.backupAndTransfer.databaseReplacementWarning' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.databaseReplacementWarning', {}) ??
+                'Заменит библиотеку, вкладки, теги, закрепления и историю поиска. Параметры объединения не действуют.',
+          'settings.backupAndTransfer.selectedImportOnly' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.selectedImportOnly', {}) ??
+                'Восстановить только выбранные категории',
+          'settings.backupAndTransfer.retryUpdateBackup' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.retryUpdateBackup', {}) ??
+                'Повторить копию после обновления',
+          'settings.backupAndTransfer.lastBackupFailed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lastBackupFailed', {}) ??
+                'Ошибка резервного копирования',
+          'settings.backupAndTransfer.lastUpdateBackupFailed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lastUpdateBackupFailed', {}) ??
+                'Ошибка копии после обновления',
+          'settings.backupAndTransfer.unsupportedBackupFile' =>
+            ({required String fileName}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unsupportedBackupFile', {
+                  'fileName': fileName,
+                }) ??
+                'Неподдерживаемый файл резервной копии: ${fileName}',
+          'settings.backupAndTransfer.serverListening' =>
+            ({required String address}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.serverListening', {
+                  'address': address,
+                }) ??
+                'Ожидание подключений по адресу ${address}',
+          'settings.backupAndTransfer.serverStopped' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.serverStopped', {}) ??
+                'Отправка выключена',
+          'settings.backupAndTransfer.clientConnected' =>
+            ({required String address}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.clientConnected', {
+                  'address': address,
+                }) ??
+                'Подключилось принимающее устройство: ${address}',
+          'settings.backupAndTransfer.expectedSelectionFrame' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.expectedSelectionFrame', {}) ??
+                'Некорректный запрос выбора данных',
+          'settings.backupAndTransfer.missingSelectedEntries' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.missingSelectedEntries', {}) ??
+                'Не выбраны категории данных',
+          'settings.backupAndTransfer.exportingEntries' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportingEntries', {
+                  'count': count,
+                }) ??
+                'Подготовка категорий: ${count}',
+          'settings.backupAndTransfer.transferComplete' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferComplete', {}) ??
+                'Передача завершена',
+          'settings.backupAndTransfer.transferFailed' =>
+            ({required String error}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferFailed', {
+                  'error': error,
+                }) ??
+                'Ошибка передачи: ${error}',
+          'settings.backupAndTransfer.invalidSenderHello' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidSenderHello', {}) ??
+                'Некорректный ответ устройства-отправителя',
+          'settings.backupAndTransfer.connectedTo' =>
+            ({
+              required String device,
+            }) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.connectedTo', {
+                  'device': device,
+                }) ??
+                'Подключено к ${device}',
+          'settings.backupAndTransfer.receivingEntry' =>
+            ({required String entry, required String size}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receivingEntry', {
+                  'entry': entry,
+                  'size': size,
+                }) ??
+                'Получение ${entry} (${size})',
+          'settings.backupAndTransfer.importedReceivedPackage' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importedReceivedPackage', {}) ??
+                'Полученные данные импортированы',
+          'settings.backupAndTransfer.senderError' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.senderError', {}) ??
+                'Ошибка отправителя',
+          'settings.backupAndTransfer.ignoredFrame' =>
+            ({
+              required String frame,
+            }) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.ignoredFrame', {'frame': frame}) ??
+                'Пропущен кадр: ${frame}',
+          'settings.backupAndTransfer.transferCancelled' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferCancelled', {}) ??
+                'Передача остановлена',
+          'settings.backupAndTransfer.operationFailed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.operationFailed', {}) ??
+                'Не удалось завершить. См. подробности.',
+          'settings.backupAndTransfer.storageFailure' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.storageFailure', {}) ??
+                'Проверь доступ к папке и свободное место.',
+          'settings.backupAndTransfer.connectionFailure' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.connectionFailure', {}) ??
+                'Связь потеряна. Проверь оба устройства.',
+          'settings.backupAndTransfer.invalidBackupShort' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidBackupShort', {}) ??
+                'Копия повреждена или не поддерживается.',
+          'settings.backupAndTransfer.updateBothDevices' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.updateBothDevices', {}) ??
+                'Обнови оба устройства и повтори попытку.',
+          'settings.backupAndTransfer.details' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.details', {}) ?? 'Подробности',
+          'settings.backupAndTransfer.recovering' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.recovering', {}) ?? 'Восстановление…',
+          'settings.backupAndTransfer.importSnapshotting' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importSnapshotting', {}) ??
+                'Сохранение исходных данных…',
+          'settings.backupAndTransfer.importRollingBack' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRollingBack', {}) ??
+                'Возврат исходных данных…',
+          'settings.backupAndTransfer.finishRestoreFirst' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.finishRestoreFirst', {}) ??
+                'Не закрывай экран до завершения восстановления.',
+          'settings.backupAndTransfer.otherDeviceMayFinish' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.otherDeviceMayFinish', {}) ??
+                'Восстановление на получателе может продолжиться.',
+          'settings.backupAndTransfer.stopWaiting' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.stopWaiting', {}) ?? 'Не ждать',
+          'settings.backupAndTransfer.restoreUnconfirmed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreUnconfirmed', {}) ??
+                'Восстановление не подтверждено',
+          'settings.backupAndTransfer.dataRestored' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.dataRestored', {}) ??
+                'Данные восстановлены',
+          'settings.backupAndTransfer.connecting' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.connecting', {}) ?? 'Подключение…',
+          'settings.backupAndTransfer.choosingData' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.choosingData', {}) ?? 'Выбор данных…',
+          'settings.backupAndTransfer.replaceLibrary' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.replaceLibrary', {}) ??
+                'Заменить библиотеку',
+          'settings.backupAndTransfer.unavailableOnSender' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unavailableOnSender', {}) ??
+                'Недоступно у отправителя',
+          'settings.backupAndTransfer.enableDatabaseFirst' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.enableDatabaseFirst', {}) ??
+                'Для этой категории включи хранение в базе данных',
+          'settings.backupAndTransfer.lookingForDevices' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lookingForDevices', {}) ??
+                'Поиск устройств…',
+          'settings.backupAndTransfer.discoveryFailed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.discoveryFailed', {}) ??
+                'Не удалось найти устройства.',
+          'settings.backupAndTransfer.retryDiscovery' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.retryDiscovery', {}) ?? 'Искать снова',
+          'settings.backupAndTransfer.advancedOptions' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.advancedOptions', {}) ??
+                'Дополнительно',
+          'settings.backupAndTransfer.recentHistory' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.recentHistory', {}) ??
+                'Последние передачи (до 20)',
+          'settings.backupAndTransfer.sharingStartFailed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.sharingStartFailed', {}) ??
+                'Не удалось начать передачу.',
+          'settings.backupAndTransfer.clipboardEmpty' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.clipboardEmpty', {}) ??
+                'Буфер обмена пуст.',
+          'settings.backupAndTransfer.restoreFailedRecovered' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreFailedRecovered', {}) ??
+                'Ошибка восстановления. Исходные данные возвращены.',
+          'settings.backupAndTransfer.vpnNotice' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.vpnNotice', {}) ??
+                'VPN может блокировать передачу. Отключи его на обоих устройствах.',
+          'settings.backupAndTransfer.noLocalAddress' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.noLocalAddress', {}) ??
+                'Локальный IPv4-адрес не найден.',
           'locale' => TranslationOverrides.string(_root.$meta, 'locale', {}) ?? 'ru-RU',
           'localeName' => TranslationOverrides.string(_root.$meta, 'localeName', {}) ?? 'Русский',
           'appName' => TranslationOverrides.string(_root.$meta, 'appName', {}) ?? 'LoliSnatcher',
@@ -8300,7 +8972,7 @@ extension on TranslationsRuRu {
                 'Выбери папку для бэкапов',
           'settings.backupAndRestore.failedToGetBackupPath' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.failedToGetBackupPath', {}) ??
-                'Не удалось получить путь к папке бэкапов',
+                'Не удалось открыть папку резервных копий',
           'settings.backupAndRestore.backupPathMsg' =>
             ({required Object backupPath}) =>
                 TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupPathMsg', {
@@ -8365,7 +9037,7 @@ extension on TranslationsRuRu {
                 'База данных сохранена в store.db',
           'settings.backupAndRestore.databaseRestored' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.databaseRestored', {}) ??
-                'База данных восстановлена из бэкапа! Приложение будет перезапущено через несколько секунд!',
+                'База восстановлена. Скоро приложение перезапустится.',
           'settings.backupAndRestore.backupDatabaseError' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupDatabaseError', {}) ??
                 'Не удалось сохранить базу данных',
@@ -8374,9 +9046,9 @@ extension on TranslationsRuRu {
                 'Не удалось восстановить базу данных',
           'settings.backupAndRestore.databaseFileNotFound' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.databaseFileNotFound', {}) ??
-                'Файл базы данных не найден или не может быть прочитан!',
+                'Файл базы данных не найден или недоступен для чтения',
           'settings.backupAndRestore.backupTags' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupTags', {}) ?? 'Бэкап тегов',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupTags', {}) ?? 'Сохранить теги',
           'settings.backupAndRestore.restoreTags' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreTags', {}) ??
                 'Восстановление тегов',
@@ -8396,12 +9068,12 @@ extension on TranslationsRuRu {
                 'Не удалось восстановить теги',
           'settings.backupAndRestore.tagsFileNotFound' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.tagsFileNotFound', {}) ??
-                'Файл тегов не найден или не может быть прочитан!',
+                'Файл тегов не найден или недоступен для чтения',
           'settings.backupAndRestore.operationTakesTooLongMsg' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.operationTakesTooLongMsg', {}) ?? 'Нажми Скрыть, если операция занимает слишком много времени, операция будет продолжена в фоновом режиме',
           'settings.backupAndRestore.backupFileNotFound' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupFileNotFound', {}) ??
-                'Файл бэкапа не найден или не может быть прочитан!',
+                'Файл резервной копии не найден или недоступен для чтения',
           'settings.backupAndRestore.backupDirNoAccess' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupDirNoAccess', {}) ??
                 'Нет доступа к папке бэкапов!',
@@ -9237,7 +9909,7 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.sync.tabsSyncModeMerge', {}) ?? 'Объединить: Объединить вкладки с этого устройства на другом устройстве, вкладки с неизвестными сайтами и уже существующие вкладки будут проигнорированы',
           'settings.sync.tabsSyncModeReplace' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.tabsSyncModeReplace', {}) ??
-                'Заменить: Полностью заменить вкладки на другом устройстве вкладками с этого устройства',
+                'Заменить: заменить вкладки на другом устройстве.',
           'settings.sync.merge' => TranslationOverrides.string(_root.$meta, 'settings.sync.merge', {}) ?? 'Объединить',
           'settings.sync.replace' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.replace', {}) ?? 'Заменить',
@@ -9263,7 +9935,7 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'settings.sync.testConnection', {}) ?? 'Проверить соединение',
           'settings.sync.testConnectionHelpText1' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.testConnectionHelpText1', {}) ??
-                'Отправляет тестовый запрос на другое устройство.',
+                'Отправить проверочный запрос на другое устройство.',
           'settings.sync.testConnectionHelpText2' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.testConnectionHelpText2', {}) ??
                 'Показывает успех/провал уведомлением.',
@@ -9280,7 +9952,7 @@ extension on TranslationsRuRu {
                 'Статистика этого устройства:',
           'settings.sync.receiverInstructions' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.receiverInstructions', {}) ??
-                'Запусти сервер для получения данных. Избегай публичных сетей в целях безопасности',
+                'Начни приём. Избегай публичного Wi-Fi.',
           'settings.sync.availableNetworkInterfaces' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.availableNetworkInterfaces', {}) ??
                 'Доступные сетевые интерфейсы',
@@ -10573,4 +11245,786 @@ extension on TranslationsRuRu {
           _ => null,
         };
   }
+}
+
+class _Translations$settings$backupAndTransfer$ru_RU extends Translations$settings$backupAndTransfer$en {
+  _Translations$settings$backupAndTransfer$ru_RU._(TranslationsRuRu root) : this._root = root, super.internal(root);
+
+  final TranslationsRuRu _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get verificationPhrase =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.verificationPhrase', {}) ??
+      'Эмодзи для проверки';
+  @override
+  String get compareVerificationPhrase =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.compareVerificationPhrase', {}) ??
+      'Сравни все шесть эмодзи на обоих устройствах. Разреши передачу при совпадении, иначе отмени.';
+  @override
+  String get allowVerifiedTransfer =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.allowVerifiedTransfer', {}) ??
+      'Разрешить передачу';
+  @override
+  String get recoveryFailedTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.recoveryFailedTitle', {}) ??
+      'Восстановление не завершено';
+  @override
+  String get recoveryFailedMessage =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.recoveryFailedMessage', {}) ??
+      'Повтори восстановление перед использованием приложения.';
+  @override
+  String get retryRecovery =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.retryRecovery', {}) ??
+      'Повторить восстановление';
+  @override
+  String get importSucceededAckLost =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importSucceededAckLost', {}) ??
+      'Данные восстановлены, но отправитель не был уведомлён. Не отправляй данные повторно.';
+  @override
+  String get transferAckUnknown =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferAckUnknown', {}) ??
+      'Проверь получателя перед повторной попыткой.';
+  @override
+  String get title =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.title', {}) ?? 'Резервные копии и передача';
+  @override
+  String get exportBackupHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportBackupHint', {}) ??
+      'Сохранить настройки и записи библиотеки без медиафайлов';
+  @override
+  String get importBackupHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importBackupHint', {}) ??
+      'Выбери файл и данные для восстановления';
+  @override
+  String get advancedBackupHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.advancedBackupHint', {}) ??
+      'Отдельные категории через файл или буфер обмена';
+  @override
+  String get sendHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.sendHint', {}) ??
+      'Передать данные по локальной сети';
+  @override
+  String get receiveHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receiveHint', {}) ??
+      'Выбрать устройство и данные для получения';
+  @override
+  String get sendInstructions =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.sendInstructions', {}) ??
+      'На другом устройстве открой «${_root.settings.backupAndTransfer.receiveDataTitle}», выбери это устройство и типы данных. Затем подтверди здесь.';
+  @override
+  String get receiveInstructions =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receiveInstructions', {}) ??
+      'На другом устройстве открой «${_root.settings.backupAndTransfer.sendDataTitle}». Подключись к той же локальной сети.';
+  @override
+  String get noDevicesHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.noDevicesHint', {}) ??
+      'Не закрывай «${_root.settings.backupAndTransfer.sendDataTitle}» на другом устройстве или добавь его адрес вручную.';
+  @override
+  String get autoBackupScheduleHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackupScheduleHint', {}) ??
+      'При открытии или возврате в приложение, когда подошёл срок';
+  @override
+  String get defaultBackupLocation =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.defaultBackupLocation', {}) ??
+      'Папка по умолчанию';
+  @override
+  String get resetAutoBackupHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.resetAutoBackupHint', {}) ??
+      'Сбросить параметры и статус? Файлы копий останутся.';
+  @override
+  String get operationInProgress =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.operationInProgress', {}) ?? 'Обработка…';
+  @override
+  String get exportUnavailable =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportUnavailable', {}) ??
+      'Нет данных для экспорта';
+  @override
+  String get overwriteTagTypes =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.overwriteTagTypes', {}) ??
+      'Перезаписать существующие типы тегов';
+  @override
+  String get tabsImportMode =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.tabsImportMode', {}) ??
+      'Режим импорта вкладок';
+  @override
+  String get favouritesStartIndex =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.favouritesStartIndex', {}) ??
+      'Пропустить избранное';
+  @override
+  String get snatchedStartIndex =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.snatchedStartIndex', {}) ??
+      'Пропустить записи загрузок';
+  @override
+  String get restoreTabsMergeHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreTabsMergeHint', {}) ??
+      'Добавить недостающие вкладки, сохранив текущие.';
+  @override
+  String get restoreTabsReplaceHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreTabsReplaceHint', {}) ??
+      'Заменить вкладки. Если восстановить нечего — сохранить текущие.';
+  @override
+  String get restoreTagsPreserveHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreTagsPreserveHint', {}) ??
+      'Сохранить известный тип, если импортированный неизвестен.';
+  @override
+  String get restoreTagsOverwriteHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreTagsOverwriteHint', {}) ??
+      'Использовать импортированный тип, даже неизвестный.';
+  @override
+  String get waitingForApproval =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.waitingForApproval', {}) ??
+      'Ожидание разрешения…';
+  @override
+  String get preparingTransfer =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.preparingTransfer', {}) ??
+      'Подготовка данных…';
+  @override
+  String get verifyingTransfer =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.verifyingTransfer', {}) ??
+      'Проверка данных…';
+  @override
+  String get waitingForImport =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.waitingForImport', {}) ??
+      'Ожидание восстановления…';
+  @override
+  String get transferNotCompleted =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferNotCompleted', {}) ??
+      'Передача не завершена';
+  @override
+  String get clearTransferError =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.clearTransferError', {}) ?? 'Скрыть ошибку';
+  @override
+  String get stopSharing =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.stopSharing', {}) ?? 'Остановить отправку';
+  @override
+  String get manualAddressHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.manualAddressHint', {}) ??
+      'Скопируй адрес с экрана «${_root.settings.backupAndTransfer.sendDataTitle}» другого устройства';
+  @override
+  String get invalidDeviceAddress =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidDeviceAddress', {}) ??
+      'Введи IPv4:порт, например 192.168.1.10:12345';
+  @override
+  String get startIndexHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.startIndexHint', {}) ??
+      'Пропустить столько записей; 0 — передать все';
+  @override
+  String get invalidStartIndex =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidStartIndex', {}) ??
+      'Введи число от 0 до 2147483647';
+  @override
+  String get transferData =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferData', {}) ?? 'Передача данных';
+  @override
+  String get backupData =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupData', {}) ?? 'Резервные копии';
+  @override
+  String get send =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.send', {}) ?? 'Включить отправку';
+  @override
+  String get receive =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receive', {}) ?? 'Получить';
+  @override
+  String get export => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.export', {}) ?? 'Экспорт';
+  @override
+  String get import =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.import', {}) ?? 'Восстановить';
+  @override
+  String get done => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.done', {}) ?? 'Готово';
+  @override
+  String get advancedExportImport =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.advancedExportImport', {}) ??
+      'Расширенный экспорт/импорт';
+  @override
+  String get autoBackup =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackup', {}) ??
+      'Автоматическое резервное копирование';
+  @override
+  String get enableAutoBackup =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.enableAutoBackup', {}) ??
+      'Включить автоматическое резервное копирование';
+  @override
+  String get backupAfterUpdates =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdates', {}) ??
+      'Создавать копию после обновлений';
+  @override
+  String get backupAfterUpdatesSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdatesSubtitle', {}) ??
+      'Хранить пять копий после обновлений в этой папке, отдельно.';
+  @override
+  String get backupLocation =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupLocation', {}) ??
+      'Папка резервных копий';
+  @override
+  String get backupLocationNotSelected =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupLocationNotSelected', {}) ??
+      'Папка по умолчанию';
+  @override
+  String get change => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.change', {}) ?? 'Изменить';
+  @override
+  String get backupInterval =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupInterval', {}) ??
+      'Частота резервного копирования';
+  @override
+  String get daily => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.daily', {}) ?? 'Ежедневно';
+  @override
+  String get weekly =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.weekly', {}) ?? 'Еженедельно';
+  @override
+  String get monthly =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.monthly', {}) ?? 'Ежемесячно';
+  @override
+  String get maximumBackups =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.maximumBackups', {}) ??
+      'Максимум автоматических копий';
+  @override
+  String get maximumBackupsHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.maximumBackupsHint', {}) ??
+      'Общий лимит для расписания и «${_root.settings.backupAndTransfer.backupNow}». Для обновлений — отдельно пять.';
+  @override
+  String get backupCountUnlimited =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupCountUnlimited', {}) ?? 'Неограничено';
+  @override
+  String backupCount({required num count}) =>
+      TranslationOverrides.plural(_root.$meta, 'settings.backupAndTransfer.backupCount', {'count': count}) ??
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('ru_RU'))(
+        count,
+        one: '${count} резервная копия',
+        few: '${count} резервные копии',
+        many: '${count} резервных копий',
+        other: '${count} резервной копии',
+      );
+  @override
+  String get lastBackupNever =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lastBackupNever', {}) ??
+      'Резервных копий ещё нет';
+  @override
+  String lastBackup({required String date}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lastBackup', {'date': date}) ??
+      'Последняя резервная копия: ${date}';
+  @override
+  String get backupNow =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupNow', {}) ?? 'Сделать резервную копию';
+  @override
+  String get backupExported =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupExported', {}) ??
+      'Резервная копия экспортирована';
+  @override
+  String importedEntries({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importedEntries', {'count': count}) ??
+      'Категорий восстановлено: ${count}';
+  @override
+  String get autoBackupCreated =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackupCreated', {}) ??
+      'Автоматическая резервная копия создана';
+  @override
+  String get autoBackupLocationDialogTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackupLocationDialogTitle', {}) ??
+      'Папка резервных копий';
+  @override
+  String get exportToFile =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportToFile', {}) ?? 'Экспорт в файл';
+  @override
+  String get importFromFile =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importFromFile', {}) ?? 'Импорт из файла';
+  @override
+  String get exportToClipboard =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportToClipboard', {}) ??
+      'Экспорт в буфер обмена';
+  @override
+  String get importFromClipboard =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importFromClipboard', {}) ??
+      'Импорт из буфера обмена';
+  @override
+  String entryExported({required String entry}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryExported', {'entry': entry}) ??
+      'Экспортировано: ${entry}';
+  @override
+  String entryImported({required String entry}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryImported', {'entry': entry}) ??
+      'Восстановлено: ${entry}';
+  @override
+  String entryCopied({required String entry}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryCopied', {'entry': entry}) ??
+      'Скопировано: ${entry}';
+  @override
+  String get unavailable =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unavailable', {}) ?? 'Недоступно';
+  @override
+  String get sendDataTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.sendDataTitle', {}) ?? 'Отправка данных';
+  @override
+  String get visibleOnNetwork =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.visibleOnNetwork', {}) ?? 'Видно в сети';
+  @override
+  String get visibleOnNetworkSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.visibleOnNetworkSubtitle', {}) ??
+      'Выключи, чтобы подключение было доступно только вручную по адресу';
+  @override
+  String get includeDeviceSpecificSettings =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.includeDeviceSpecificSettings', {}) ??
+      'Включить настройки устройства';
+  @override
+  String get includeDeviceSpecificSettingsSubtitle =>
+      TranslationOverrides.string(
+        _root.$meta,
+        'settings.backupAndTransfer.includeDeviceSpecificSettingsSubtitle',
+        {},
+      ) ??
+      'Язык, тема, интерфейс и похожие параметры';
+  @override
+  String get includeDeviceSpecificSettingsHelpTitle =>
+      TranslationOverrides.string(
+        _root.$meta,
+        'settings.backupAndTransfer.includeDeviceSpecificSettingsHelpTitle',
+        {},
+      ) ??
+      'Какие настройки?';
+  @override
+  String get includeDeviceSpecificSettingsHelp =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.includeDeviceSpecificSettingsHelp', {}) ??
+      'Для настроек и параметров сайтов. Пути, прокси и блокировка приложения остаются локальными.';
+  @override
+  String get address => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.address', {}) ?? 'Адрес';
+  @override
+  String get name => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.name', {}) ?? 'Имя';
+  @override
+  String get status => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.status', {}) ?? 'Статус';
+  @override
+  String get starting =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.starting', {}) ?? 'Запуск…';
+  @override
+  String get broadcasting =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.broadcasting', {}) ??
+      'Видно устройствам поблизости';
+  @override
+  String get hidden =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.hidden', {}) ??
+      'Подключение только по адресу';
+  @override
+  String get transferred =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferred', {}) ?? 'Передано';
+  @override
+  String get received =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.received', {}) ?? 'Получено';
+  @override
+  String get total => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.total', {}) ?? 'Всего';
+  @override
+  String get elapsed => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.elapsed', {}) ?? 'Прошло';
+  @override
+  String get speed => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.speed', {}) ?? 'Скорость';
+  @override
+  String get current => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.current', {}) ?? 'Текущее';
+  @override
+  String get logs => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.logs', {}) ?? 'Логи';
+  @override
+  String get deviceInfo =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.deviceInfo', {}) ??
+      'Информация об устройстве';
+  @override
+  String get history => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.history', {}) ?? 'История';
+  @override
+  String get noHistory =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.noHistory', {}) ?? 'История передач пуста';
+  @override
+  String get selectedData =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.selectedData', {}) ??
+      'Выбери данные для получения';
+  @override
+  String get receiveDataTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receiveDataTitle', {}) ?? 'Получение данных';
+  @override
+  String get addDevice =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.addDevice', {}) ?? 'Добавить устройство';
+  @override
+  String get manualDevice =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.manualDevice', {}) ??
+      'Устройство, добавленное вручную';
+  @override
+  String get nearbyDevices =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.nearbyDevices', {}) ?? 'Устройства рядом';
+  @override
+  String get noDevicesFound =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.noDevicesFound', {}) ??
+      'Устройства не найдены';
+  @override
+  String get manual => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.manual', {}) ?? 'Вручную';
+  @override
+  String get unknown =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unknown', {}) ?? 'Неизвестно';
+  @override
+  String get transfer =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transfer', {}) ?? 'Передача';
+  @override
+  String get entrySettingsTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySettingsTitle', {}) ?? 'Настройки';
+  @override
+  String get entrySettingsDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySettingsDescription', {}) ??
+      'Настройки приложения';
+  @override
+  String get entryBooruProfilesTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryBooruProfilesTitle', {}) ??
+      'Конфиги сайтов';
+  @override
+  String get entryBooruProfilesDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryBooruProfilesDescription', {}) ??
+      'Адреса сайтов, данные входа и параметры';
+  @override
+  String get entryDatabaseTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryDatabaseTitle', {}) ??
+      'Вся база — заменить библиотеку';
+  @override
+  String get entryDatabaseDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryDatabaseDescription', {}) ??
+      'Записи библиотеки, вкладки, данные тегов, закреплённые теги и история поиска';
+  @override
+  String get entryFavouritesTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryFavouritesTitle', {}) ?? 'Избранное';
+  @override
+  String get entryFavouritesDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryFavouritesDescription', {}) ??
+      'Избранные элементы из базы данных';
+  @override
+  String get entrySnatchedTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySnatchedTitle', {}) ??
+      'История скачанного';
+  @override
+  String get entrySnatchedDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySnatchedDescription', {}) ??
+      'Записи о скачанном без самих медиафайлов';
+  @override
+  String get entryTabsTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryTabsTitle', {}) ?? 'Вкладки';
+  @override
+  String get entryTabsDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryTabsDescription', {}) ??
+      'Открытые вкладки, выбранная вкладка и сохранённые позиции страниц';
+  @override
+  String get entryTagsTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryTagsTitle', {}) ?? 'Теги';
+  @override
+  String get entryTagsDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryTagsDescription', {}) ??
+      'Локальные данные тегов';
+  @override
+  String get entryPinnedTagsTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryPinnedTagsTitle', {}) ??
+      'Закреплённые теги';
+  @override
+  String get entryPinnedTagsDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryPinnedTagsDescription', {}) ??
+      'Закреплённые теги, их метки, порядок и привязка к сайтам';
+  @override
+  String get entrySearchHistoriesTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySearchHistoriesTitle', {}) ??
+      'История поиска';
+  @override
+  String get entrySearchHistoriesDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySearchHistoriesDescription', {}) ??
+      'Сохраненная история поиска и избранные поиски';
+  @override
+  String get databaseFileNotFound =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.databaseFileNotFound', {}) ??
+      'Файл базы данных не найден';
+  @override
+  String get autoBackupLocationEmpty =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackupLocationEmpty', {}) ??
+      'Папка автобэкапов не выбрана';
+  @override
+  String get exportBackupDialogTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportBackupDialogTitle', {}) ??
+      'Экспорт резервной копии';
+  @override
+  String get importBackupDialogTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importBackupDialogTitle', {}) ??
+      'Восстановить резервную копию';
+  @override
+  String get backupManifestNotFound =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupManifestNotFound', {}) ??
+      'Список содержимого резервной копии не найден';
+  @override
+  String get unsupportedBackupFormat =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unsupportedBackupFormat', {}) ??
+      'Неподдерживаемый формат резервной копии';
+  @override
+  String get approveTransferTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.approveTransferTitle', {}) ??
+      'Разрешить передачу данных?';
+  @override
+  String approveTransferRequest({required String device, required String address}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.approveTransferRequest', {
+        'device': device,
+        'address': address,
+      }) ??
+      '${device} (${address}) запрашивает следующие данные:';
+  @override
+  String get allowTransfer =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.allowTransfer', {}) ?? 'Разрешить';
+  @override
+  String get transferDeclined =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferDeclined', {}) ??
+      'Запрос на передачу данных отклонён';
+  @override
+  String get unsupportedTransferProtocol =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unsupportedTransferProtocol', {}) ??
+      'Это устройство использует неподдерживаемый протокол передачи';
+  @override
+  String get invalidTransferData =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidTransferData', {}) ??
+      'Другое устройство отправило некорректные данные';
+  @override
+  String get transferBusy =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferBusy', {}) ??
+      'Другая передача уже выполняется';
+  @override
+  String get transferChecksumMismatch =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferChecksumMismatch', {}) ??
+      'Полученный архив не прошёл проверку целостности';
+  @override
+  String get importingPackage =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importingPackage', {}) ??
+      'Восстановление данных…';
+  @override
+  String get importExtracting =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importExtracting', {}) ??
+      'Распаковка копии…';
+  @override
+  String get importValidating =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importValidating', {}) ??
+      'Проверка записей…';
+  @override
+  String get importRechecking =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRechecking', {}) ??
+      'Повторная проверка записей…';
+  @override
+  String get importPreparingDatabase =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importPreparingDatabase', {}) ??
+      'Подготовка базы…';
+  @override
+  String get importCleaningUp =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importCleaningUp', {}) ??
+      'Завершение изменений…';
+  @override
+  String get importRefreshing =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRefreshing', {}) ??
+      'Обновление данных…';
+  @override
+  String importRecordsProcessed({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRecordsProcessed', {'count': count}) ??
+      'Обработано записей: ${count}';
+  @override
+  String importRecordsTotal({required int count, required int total}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRecordsTotal', {
+        'count': count,
+        'total': total,
+      }) ??
+      'Обработано записей: ${count} / ${total}';
+  @override
+  String importLastProgress({required String elapsed}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importLastProgress', {'elapsed': elapsed}) ??
+      'Последнее обновление: ${elapsed} назад';
+  @override
+  String transferStartFailed({required String error}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferStartFailed', {'error': error}) ??
+      'Не удалось начать передачу: ${error}';
+  @override
+  String get importBackupTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importBackupTitle', {}) ??
+      'Восстановить резервную копию';
+  @override
+  String get databaseReplacementWarning =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.databaseReplacementWarning', {}) ??
+      'Заменит библиотеку, вкладки, теги, закрепления и историю поиска. Параметры объединения не действуют.';
+  @override
+  String get selectedImportOnly =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.selectedImportOnly', {}) ??
+      'Восстановить только выбранные категории';
+  @override
+  String get retryUpdateBackup =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.retryUpdateBackup', {}) ??
+      'Повторить копию после обновления';
+  @override
+  String get lastBackupFailed =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lastBackupFailed', {}) ??
+      'Ошибка резервного копирования';
+  @override
+  String get lastUpdateBackupFailed =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lastUpdateBackupFailed', {}) ??
+      'Ошибка копии после обновления';
+  @override
+  String unsupportedBackupFile({required String fileName}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unsupportedBackupFile', {
+        'fileName': fileName,
+      }) ??
+      'Неподдерживаемый файл резервной копии: ${fileName}';
+  @override
+  String serverListening({required String address}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.serverListening', {'address': address}) ??
+      'Ожидание подключений по адресу ${address}';
+  @override
+  String get serverStopped =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.serverStopped', {}) ?? 'Отправка выключена';
+  @override
+  String clientConnected({required String address}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.clientConnected', {'address': address}) ??
+      'Подключилось принимающее устройство: ${address}';
+  @override
+  String get expectedSelectionFrame =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.expectedSelectionFrame', {}) ??
+      'Некорректный запрос выбора данных';
+  @override
+  String get missingSelectedEntries =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.missingSelectedEntries', {}) ??
+      'Не выбраны категории данных';
+  @override
+  String exportingEntries({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportingEntries', {'count': count}) ??
+      'Подготовка категорий: ${count}';
+  @override
+  String get transferComplete =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferComplete', {}) ??
+      'Передача завершена';
+  @override
+  String transferFailed({required String error}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferFailed', {'error': error}) ??
+      'Ошибка передачи: ${error}';
+  @override
+  String get invalidSenderHello =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidSenderHello', {}) ??
+      'Некорректный ответ устройства-отправителя';
+  @override
+  String connectedTo({required String device}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.connectedTo', {'device': device}) ??
+      'Подключено к ${device}';
+  @override
+  String receivingEntry({required String entry, required String size}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receivingEntry', {
+        'entry': entry,
+        'size': size,
+      }) ??
+      'Получение ${entry} (${size})';
+  @override
+  String get importedReceivedPackage =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importedReceivedPackage', {}) ??
+      'Полученные данные импортированы';
+  @override
+  String get senderError =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.senderError', {}) ?? 'Ошибка отправителя';
+  @override
+  String ignoredFrame({required String frame}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.ignoredFrame', {'frame': frame}) ??
+      'Пропущен кадр: ${frame}';
+  @override
+  String get transferCancelled =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferCancelled', {}) ??
+      'Передача остановлена';
+  @override
+  String get operationFailed =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.operationFailed', {}) ??
+      'Не удалось завершить. См. подробности.';
+  @override
+  String get storageFailure =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.storageFailure', {}) ??
+      'Проверь доступ к папке и свободное место.';
+  @override
+  String get connectionFailure =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.connectionFailure', {}) ??
+      'Связь потеряна. Проверь оба устройства.';
+  @override
+  String get invalidBackupShort =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidBackupShort', {}) ??
+      'Копия повреждена или не поддерживается.';
+  @override
+  String get updateBothDevices =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.updateBothDevices', {}) ??
+      'Обнови оба устройства и повтори попытку.';
+  @override
+  String get details =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.details', {}) ?? 'Подробности';
+  @override
+  String get recovering =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.recovering', {}) ?? 'Восстановление…';
+  @override
+  String get importSnapshotting =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importSnapshotting', {}) ??
+      'Сохранение исходных данных…';
+  @override
+  String get importRollingBack =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRollingBack', {}) ??
+      'Возврат исходных данных…';
+  @override
+  String get finishRestoreFirst =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.finishRestoreFirst', {}) ??
+      'Не закрывай экран до завершения восстановления.';
+  @override
+  String get otherDeviceMayFinish =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.otherDeviceMayFinish', {}) ??
+      'Восстановление на получателе может продолжиться.';
+  @override
+  String get stopWaiting =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.stopWaiting', {}) ?? 'Не ждать';
+  @override
+  String get restoreUnconfirmed =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreUnconfirmed', {}) ??
+      'Восстановление не подтверждено';
+  @override
+  String get dataRestored =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.dataRestored', {}) ?? 'Данные восстановлены';
+  @override
+  String get connecting =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.connecting', {}) ?? 'Подключение…';
+  @override
+  String get choosingData =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.choosingData', {}) ?? 'Выбор данных…';
+  @override
+  String get replaceLibrary =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.replaceLibrary', {}) ??
+      'Заменить библиотеку';
+  @override
+  String get unavailableOnSender =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unavailableOnSender', {}) ??
+      'Недоступно у отправителя';
+  @override
+  String get enableDatabaseFirst =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.enableDatabaseFirst', {}) ??
+      'Для этой категории включи хранение в базе данных';
+  @override
+  String get lookingForDevices =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lookingForDevices', {}) ??
+      'Поиск устройств…';
+  @override
+  String get discoveryFailed =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.discoveryFailed', {}) ??
+      'Не удалось найти устройства.';
+  @override
+  String get retryDiscovery =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.retryDiscovery', {}) ?? 'Искать снова';
+  @override
+  String get advancedOptions =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.advancedOptions', {}) ?? 'Дополнительно';
+  @override
+  String get recentHistory =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.recentHistory', {}) ??
+      'Последние передачи (до 20)';
+  @override
+  String get sharingStartFailed =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.sharingStartFailed', {}) ??
+      'Не удалось начать передачу.';
+  @override
+  String get clipboardEmpty =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.clipboardEmpty', {}) ?? 'Буфер обмена пуст.';
+  @override
+  String get restoreFailedRecovered =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreFailedRecovered', {}) ??
+      'Ошибка восстановления. Исходные данные возвращены.';
+  @override
+  String get vpnNotice =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.vpnNotice', {}) ??
+      'VPN может блокировать передачу. Отключи его на обоих устройствах.';
+  @override
+  String get noLocalAddress =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.noLocalAddress', {}) ??
+      'Локальный IPv4-адрес не найден.';
 }

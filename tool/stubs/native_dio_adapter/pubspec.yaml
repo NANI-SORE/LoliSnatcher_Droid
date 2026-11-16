@@ -1,0 +1,10 @@
+name: native_dio_adapter
+description: Local no-Cronet stub used by no-cronet builds.
+publish_to: none
+version: 0.0.0
+
+environment:
+  sdk: ">=3.12.2 <4.0.0"
+
+dependencies:
+  dio: ^5.9.2

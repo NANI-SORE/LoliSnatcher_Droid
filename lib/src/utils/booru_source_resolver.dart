@@ -9,7 +9,7 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 class BooruSourceResolver {
   BooruSourceResolver._();
 
-  static Booru? resolve(BooruItem item, {Iterable<Booru>? sources}) {
+  static Booru? resolve(BooruItem item, {Iterable<Booru>? sources, Booru? preferred}) {
     final candidates = (sources ?? SettingsHandler.instance.booruList)
         .where(
           (booru) => booru.type != null && booru.type?.isFavouritesOrDownloads != true && booru.type != BooruType.Merge,
@@ -18,11 +18,11 @@ class BooruSourceResolver {
     final identity = item.sourceIdentity;
     if (identity != null) {
       // A removed source must not silently turn into a different installation.
-      return _unique(candidates.where(identity.matches));
+      return _unique(candidates.where(identity.matches), preferred: preferred);
     }
     final post = Uri.tryParse(item.postURL);
     final postMatches = _urlMatches(post, candidates);
-    if (postMatches.isNotEmpty) return _unique(postMatches);
+    if (postMatches.isNotEmpty) return _unique(postMatches, preferred: preferred);
 
     final aliases = candidates.where((booru) {
       final base = Uri.tryParse(booru.baseURL ?? '');
@@ -36,8 +36,8 @@ class BooruSourceResolver {
         _ => false,
       };
     }).toList();
-    if (aliases.isNotEmpty) return _unique(aliases);
-    return _unique(_urlMatches(Uri.tryParse(item.fileURL), candidates));
+    if (aliases.isNotEmpty) return _unique(aliases, preferred: preferred);
+    return _unique(_urlMatches(Uri.tryParse(item.fileURL), candidates), preferred: preferred);
   }
 
   static List<Booru> _urlMatches(Uri? url, List<Booru> sources) {
@@ -58,8 +58,18 @@ class BooruSourceResolver {
     return matches;
   }
 
-  static Booru? _unique(Iterable<Booru> matches) {
+  static Booru? _unique(Iterable<Booru> matches, {Booru? preferred}) {
     final candidates = matches.toList();
+    if (preferred != null) {
+      final chosen = candidates
+          .where(
+            (source) =>
+                identical(source, preferred) ||
+                (source.name == preferred.name && BooruIdentity.fromBooru(source).matches(preferred)),
+          )
+          .toList();
+      if (chosen.length == 1) return chosen.single;
+    }
     if (candidates.length == 1) return candidates.single;
     return null;
   }

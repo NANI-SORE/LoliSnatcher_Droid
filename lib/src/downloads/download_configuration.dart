@@ -1,3 +1,8 @@
+import 'package:lolisnatcher/src/downloads/download_network.dart';
+import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
+import 'package:lolisnatcher/src/handlers/tag_filter_handler.dart';
+import 'package:lolisnatcher/src/handlers/tag_filter_repository.dart';
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -46,6 +51,11 @@ class DownloadPaths {
 class DownloadConfiguration {
   DownloadConfiguration(this.data);
   final Map<String, dynamic> data;
+  Future<TagFilterHandler>? _filters;
+  Future<TagFilterHandler> get filterEvaluator => _filters ??= () async {
+    if (data['filters'] is! Map) throw const DownloadBlocked('configurationChanged');
+    return TagFilterHandler.fromConfiguration(await JsonFilterRepository('').decodeStrict(jsonEncode(data['filters'])));
+  }();
   static const storage = FlutterSecureStorage(
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
   );
@@ -99,6 +109,7 @@ class DownloadConfiguration {
         'notifications': SX.downloadNotifications.valueForBooru(name),
         'destination': DestinationRef(
           path: path,
+          storageIdentity: OfflineMediaResolver.instance.storageIdentity,
           photos: Platform.isIOS,
           photosReceipts: Platform.isIOS ? p.join(await ServiceHandler.getConfigDir(), 'photos_exports') : null,
         ).toJson(),
@@ -125,6 +136,7 @@ class DownloadConfiguration {
     return DownloadConfiguration({
       'version': const Uuid().v4(),
       'settings': registry.toJson(),
+      'filters': TagFilterHandler.instance.configuration.toJson(),
       'sources': sourceJson,
       'policies': policies,
       'cookies': cookies,
@@ -284,6 +296,7 @@ class DownloadConfiguration {
       cookies: cookies,
       saveCookies: saveCookies,
       settings: settings,
+      filters: await filterEvaluator,
       headless: true,
     ).run(() async {
       initSettingsEnumRegistry();

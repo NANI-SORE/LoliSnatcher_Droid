@@ -152,14 +152,18 @@ class DownloadPublisher(private val context: Context) {
         }
         val result = Uri.parse(journal.getString("result"))
         check(matches(result, expected)) { "publicationAmbiguous" }
+        var actualName = name
+        resolver.query(result, arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null)?.use {
+            if (it.moveToFirst()) actualName = it.getString(0)
+        }
         if (args["writeJson"] == true && !journal.optBoolean("sidecarDone")) {
-            val sidecarName = name.substringBeforeLast('.', name) + ".json"
+            val sidecarName = actualName.substringBeforeLast('.', actualName) + ".json"
             val sidecar = if (journal.has("sidecar")) Uri.parse(journal.getString("sidecar"))
                 else find(parent, sidecarName) ?: DocumentsContract.createDocument(resolver, parent, "application/json", sidecarName) ?: error("storage")
             journal.put("sidecar", sidecar.toString())
             save()
             resolver.openOutputStream(sidecar, "wt")?.use {
-                it.write(JSONObject(args["item"] as Map<*, *>).toString().toByteArray(Charsets.UTF_8))
+                it.write(JSONObject(args["item"] as Map<*, *>).put("savedFileName", actualName).toString().toByteArray(Charsets.UTF_8))
                 it.flush()
             } ?: error("storage")
             journal.put("sidecarDone", true)
@@ -168,10 +172,6 @@ class DownloadPublisher(private val context: Context) {
         val old = journal.optString("old")
         if (args["overwrite"] == true && old.isNotEmpty() && old != result.toString()) {
             try { DocumentsContract.deleteDocument(resolver, Uri.parse(old)) } catch (_: Exception) {}
-        }
-        var actualName = name
-        resolver.query(result, arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null)?.use {
-            if (it.moveToFirst()) actualName = it.getString(0)
         }
         return mapOf("destination" to result.toString(), "filename" to actualName,
             "warning" to if (actualName != name) "providerRenamed" else "")

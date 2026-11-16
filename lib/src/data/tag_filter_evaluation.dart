@@ -21,6 +21,17 @@ class TagFilterEvaluation {
   final List<TagFilterRuleMatch> matches;
   final bool hideAsBlur;
 
+  TagFilterEvaluation forDisplay({bool reveal = false}) => TagFilterEvaluation(
+    effectiveEffect: reveal
+        ? null
+        : isHidden
+        ? TagFilterEffect.blur
+        : effectiveEffect,
+    primaryMatch: primaryMatch,
+    matches: matches,
+    hideAsBlur: !reveal && (isHidden || hideAsBlur),
+  );
+
   bool get isHidden => effectiveEffect == TagFilterEffect.hide;
   bool get isBlurred => effectiveEffect == TagFilterEffect.blur;
   bool get isMarked => matches.any((match) => match.rule.effect == TagFilterEffect.mark);

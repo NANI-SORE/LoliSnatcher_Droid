@@ -650,7 +650,9 @@ final class DownloadBackend: NSObject, URLSessionDownloadDelegate {
       }
       if payload["writeJson"] as? Bool == true {
         let sidecar = target.deletingPathExtension().appendingPathExtension("json")
-        try JSONSerialization.data(withJSONObject: payload["item"] ?? [:]).write(to: sidecar, options: .atomic)
+        var metadata = payload["item"] as? [String: Any] ?? [:]
+        metadata["savedFileName"] = target.lastPathComponent
+        try JSONSerialization.data(withJSONObject: metadata).write(to: sidecar, options: .atomic)
       }
       if destination["photos"] as? Bool == true {
         var descriptor = payload; descriptor["digest"] = digest.sha

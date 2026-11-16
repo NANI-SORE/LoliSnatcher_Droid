@@ -1,3 +1,5 @@
+import 'package:lolisnatcher/src/services/image_memory_manager.dart';
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -177,7 +179,15 @@ try {
           );
         }
       } else {
-        await FlutterClipboard.copyImage(await File(path).readAsBytes());
+        final file = File(path);
+        if (await file.length() > ImageMemoryManager.maxEncodedBytes) {
+          throw const ImageMemoryException('Clipboard image exceeds the encoded byte limit');
+        }
+        final bytes = await file.readAsBytes();
+        if (bytes.length > ImageMemoryManager.maxEncodedBytes) {
+          throw const ImageMemoryException('Clipboard image exceeds the encoded byte limit');
+        }
+        await FlutterClipboard.copyImage(bytes);
       }
 
       if (notify) {

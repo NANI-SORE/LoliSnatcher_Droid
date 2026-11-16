@@ -56,11 +56,49 @@ class ServiceHandler {
   }
 
   static Future<void> restartApp({String? alias}) async {
+    if (Platform.isWindows || Platform.isLinux) {
+      await _restartDesktopApp();
+      return;
+    }
+
+    if (Platform.isIOS) {
+      await _closeIosAppForManualRestart();
+      return;
+    }
+
     try {
       final result = await platform.invokeMethod('restartApp', {'alias': alias});
       log('restartApp diagnostics: ${_encodeLogPayload(result)}');
     } catch (e, s) {
       log('restartApp failed: $e', s: s);
+    }
+  }
+
+  static Future<void> _restartDesktopApp() async {
+    try {
+      final executable = Platform.resolvedExecutable;
+      final args = Platform.executableArguments;
+      final workingDirectory = File(executable).parent.path;
+      await Process.start(
+        executable,
+        args,
+        workingDirectory: workingDirectory,
+        mode: ProcessStartMode.detached,
+      );
+      exit(0);
+    } catch (e, s) {
+      log('desktop restartApp failed: $e', s: s);
+    }
+  }
+
+  static Future<void> _closeIosAppForManualRestart() async {
+    try {
+      log('restartApp requested on iOS, but iOS does not allow apps to relaunch themselves.');
+      await SystemNavigator.pop(animated: true);
+      await Future.delayed(const Duration(milliseconds: 500));
+      exit(0);
+    } catch (e, s) {
+      log('iOS restartApp fallback failed: $e', s: s);
     }
   }
 
@@ -391,6 +429,30 @@ class ServiceHandler {
     return result;
   }
 
+  static Future<String?> chooseIosBackupDirectory() async {
+    return platform.invokeMethod<String>('chooseBackupDirectory');
+  }
+
+  static Future<void> copyIosBackupToDirectory(String directory, File source, String fileName) async {
+    await platform.invokeMethod<void>('copyBackupToDirectory', {
+      'directory': directory,
+      'sourcePath': source.path,
+      'fileName': fileName,
+    });
+  }
+
+  static Future<List<String>> listIosBackupDirectory(String directory) async {
+    final names = await platform.invokeListMethod<String>('listBackupDirectory', {'directory': directory});
+    return names ?? [];
+  }
+
+  static Future<void> deleteIosBackupFromDirectory(String directory, String fileName) async {
+    await platform.invokeMethod<void>('deleteBackupFromDirectory', {
+      'directory': directory,
+      'fileName': fileName,
+    });
+  }
+
   static Future<String> getPicturesDir() async {
     if (Platform.isIOS) {
       final directory = (await IOSStorage.initialize()).downloads;
@@ -406,6 +468,17 @@ class ServiceHandler {
       } else if (Platform.isWindows) {
         result = '${await getExtDir()}/LoliSnatcher/Pictures/';
       }
+    } catch (e) {
+      log(e);
+    }
+    return result;
+  }
+
+  static Future<String> getDownloadsDir() async {
+    String result = '';
+    try {
+      final dir = await getDownloadsDirectory();
+      result = dir?.path ?? '${await getExtDir()}${Platform.pathSeparator}Downloads';
     } catch (e) {
       log(e);
     }
@@ -520,17 +593,60 @@ class ServiceHandler {
   }
 
   static Future<String> getIP() async {
-    String ip = '';
-    // TODO WIP
-    if (Platform.isAndroid) {
-      ip = await platform.invokeMethod('getIP');
-    } else {
-      final interfaces = await NetworkInterface.list(type: InternetAddressType.IPv4);
-      if (interfaces.isNotEmpty) {
-        ip = interfaces[0].addresses[0].address;
+    if (Platform.isAndroid) return await platform.invokeMethod<String>('getIP') ?? '';
+
+    final interfaces = await NetworkInterface.list(type: InternetAddressType.IPv4);
+    InternetAddress? preferred;
+    var preferredRank = 3;
+    for (final network in interfaces) {
+      final name = network.name.toLowerCase();
+      // Interface names are a heuristic; never present a known tunnel as the LAN address.
+      if ([
+            'utun',
+            'tun',
+            'tap',
+            'wg',
+            'veth',
+            'vmnet',
+            'vbox',
+            'docker',
+            'tailscale',
+            'zerotier',
+          ].any(name.startsWith) ||
+          ['vpn', 'virtual', 'wireguard', 'wintun', 'hyper-v', 'loopback'].any(name.contains)) {
+        continue;
+      }
+      final physical = [
+        'en',
+        'eth',
+        'wl',
+        'wi-fi',
+        'wi fi',
+        'wifi',
+        'bridge',
+        'ap',
+        'usb',
+        'rndis',
+      ].any(name.startsWith);
+      for (final address in network.addresses) {
+        if (address.isLoopback || address.isLinkLocal) continue;
+        final bytes = address.rawAddress;
+        final private =
+            bytes[0] == 10 ||
+            (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) ||
+            (bytes[0] == 192 && bytes[1] == 168);
+        final rank = physical
+            ? 0
+            : private
+            ? 1
+            : 2;
+        if (rank < preferredRank) {
+          preferred = address;
+          preferredRank = rank;
+        }
       }
     }
-    return ip;
+    return preferred?.address ?? '';
   }
 
   static Future<List<NetworkInterface>> getIPList() async {

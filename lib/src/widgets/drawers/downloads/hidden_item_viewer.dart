@@ -109,6 +109,10 @@ class _HiddenItemViewerState extends State<HiddenItemViewer> with WidgetsBinding
         previewWidth: original.previewWidth,
         previewHeight: original.previewHeight,
       );
+      item.savedFileName = original.savedFileName;
+      item.sourceIdentity = original.sourceIdentity;
+      item.isFavourite.value = original.isFavourite.value;
+      item.isSnatched.value = original.isSnatched.value;
       item.mediaType.value = original.mediaType.value;
       if (!ContentPolicy.isItemAllowed(widget.booru, item)) {
         _dismissUnavailable();
@@ -124,6 +128,10 @@ class _HiddenItemViewerState extends State<HiddenItemViewer> with WidgetsBinding
           if (!_isCurrent(request)) return;
           if (result.failed || result.item == null) throw StateError('Could not load item metadata');
           item = result.item!;
+          item.savedFileName ??= original.savedFileName;
+          item.sourceIdentity ??= original.sourceIdentity;
+          item.isFavourite.value = original.isFavourite.value;
+          item.isSnatched.value = original.isSnatched.value;
           if (!ContentPolicy.isItemAllowed(widget.booru, item)) {
             _dismissUnavailable();
             return;
@@ -231,6 +239,8 @@ class _HiddenItemViewerState extends State<HiddenItemViewer> with WidgetsBinding
                               booru: widget.booru,
                               isViewed: _isActive,
                               isStandalone: true,
+                              allowOfflineLocalMedia: true,
+                              allowOfflineThumbnailGeneration: true,
                               allowHidden: true,
                               enableFullscreen: false,
                               onReloadItem: () => _load(refreshMetadata: true),
@@ -241,6 +251,8 @@ class _HiddenItemViewerState extends State<HiddenItemViewer> with WidgetsBinding
                               booru: widget.booru,
                               isViewed: _isActive,
                               isStandalone: true,
+                              allowOfflineLocalMedia: true,
+                              allowOfflineThumbnailGeneration: true,
                               allowHidden: true,
                               fullQuality: true,
                               onReloadItem: () => _load(refreshMetadata: true),

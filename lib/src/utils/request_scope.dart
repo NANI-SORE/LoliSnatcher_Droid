@@ -1,3 +1,5 @@
+import 'package:lolisnatcher/src/handlers/tag_filter_handler.dart';
+
 import 'dart:async';
 
 import 'package:dio/dio.dart';
@@ -10,12 +12,14 @@ class RequestScope {
     required this.cookies,
     required this.saveCookies,
     this.settings,
+    this.filters,
     this.headless = false,
   });
   final Dio Function() client;
   final Future<String> Function(String) cookies;
   final Future<bool> Function(String, List<String>) saveCookies;
   final Object? settings;
+  final TagFilterHandler? filters;
   final bool headless;
   static final Object _key = Object();
   static RequestScope? get current => Zone.current[_key] as RequestScope?;

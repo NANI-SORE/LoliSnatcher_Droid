@@ -333,7 +333,7 @@ class DownloadTransfer {
     if (descriptor.writeJson && journal['sidecar'] != true) {
       final sidecar = File(p.setExtension(target.path, '.json'));
       final tmp = File('${sidecar.path}.${descriptor.id}.tmp');
-      await tmp.writeAsString(jsonEncode(descriptor.item), flush: true);
+      await tmp.writeAsString(jsonEncode({...descriptor.item, 'savedFileName': p.basename(target.path)}), flush: true);
       await tmp.rename(sidecar.path);
       journal['sidecar'] = true;
       await _saveJournal(journalFile, journal);

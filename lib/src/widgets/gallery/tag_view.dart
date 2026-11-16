@@ -1,3 +1,4 @@
+import 'package:lolisnatcher/src/widgets/drawers/downloads/hidden_items_page.dart';
 import 'package:lolisnatcher/src/widgets/preview/waterfall_bottom_bar.dart';
 import 'package:lolisnatcher/src/widgets/common/fading_edge_reorderable_listview.dart';
 import 'package:flutter/gestures.dart' show kTouchSlop;
@@ -2100,7 +2101,7 @@ class _TagContentPreviewState extends State<TagContentPreview> {
   void _toggleSelected(int index) {
     final previewTab = tab;
     if (widget.readOnly || previewTab == null) return;
-    final items = previewTab.booruHandler.filteredFetched;
+    final items = previewTab.booruHandler.filteredFetched.toList(growable: false);
     if (index < 0 || index >= items.length) return;
     final item = items[index];
     if (previewTab.selected.contains(item)) {
@@ -2209,7 +2210,7 @@ class _TagContentPreviewState extends State<TagContentPreview> {
         bestIndex = entry.key;
       }
     }
-    final items = previewTab.booruHandler.filteredFetched;
+    final items = previewTab.booruHandler.filteredFetched.toList(growable: false);
     return bestIndex != null && bestIndex < items.length ? items[bestIndex] : null;
   }
 
@@ -2406,6 +2407,18 @@ class _TagContentPreviewState extends State<TagContentPreview> {
               ],
             ),
           ),
+          if (previewTab != null && !widget.readOnly)
+            Obx(
+              () => previewTab.allHiddenItems.isEmpty
+                  ? const SizedBox.shrink()
+                  : IconButton(
+                      tooltip: '${context.loc.settings.downloads.hiddenItems} (${previewTab.allHiddenItems.length})',
+                      icon: const Icon(Icons.visibility_off_outlined),
+                      onPressed: () =>
+                          Navigator.of(context)
+                              .push(MaterialPageRoute<void>(builder: (_) => HiddenItemsPage(tab: previewTab))),
+                    ),
+            ),
           if (widget.parentTab != null)
             IconButton(
               tooltip: context.loc.tagView.tagPreviews,
@@ -2555,7 +2568,7 @@ class _TagContentPreviewState extends State<TagContentPreview> {
   }
 
   Widget buildPreviewContent(SearchTab previewTab) {
-    final items = previewTab.booruHandler.filteredFetched;
+    final items = previewTab.booruHandler.filteredFetched.toList(growable: false);
     if (items.isEmpty) {
       if (loading) {
         return buildPreviewMessage(
@@ -2607,6 +2620,7 @@ class _TagContentPreviewState extends State<TagContentPreview> {
               child: Listener(
                 onPointerSignal: (event) => desktopPointerScroll(scrollController, event),
                 child: GestureDetector(
+                  key: _viewportKey,
                   behavior: HitTestBehavior.translucent,
                   onLongPressStart: widget.readOnly ? null : _startDragSelection,
                   onLongPressMoveUpdate: widget.readOnly ? null : _moveDragSelection,
@@ -2724,7 +2738,11 @@ class _TagContentPreviewState extends State<TagContentPreview> {
               children: [
                 buildPreviewHeader(previewTab),
                 buildPreviewControls(previewTab),
-                if (previewTab != null) buildPreviewContent(previewTab),
+                if (previewTab != null)
+                  Obx(() {
+                    previewTab.selected.length;
+                    return buildPreviewContent(previewTab);
+                  }),
                 if (previewTab != null && !widget.readOnly)
                   ValueListenableBuilder(
                     valueListenable: _dragSelecting,

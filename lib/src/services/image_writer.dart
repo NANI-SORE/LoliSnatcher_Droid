@@ -28,36 +28,60 @@ class ImageWriter {
   String getFilename(
     BooruItem item,
     Booru booru,
-  ) {
-    final uri = Uri.tryParse(item.fileURL);
+  ) => filenameFor(item, booru);
+
+  static String filenameFor(BooruItem item, Booru booru, {String? url}) {
+    final uri = Uri.tryParse(url ?? item.fileURL);
     final urlFileName = uri?.pathSegments.lastOrNull ?? '';
     final hash = mediaHash(item);
     final prefix = Tools.sanitize(booru.name ?? 'booru');
-    final extension = Tools.sanitize(item.fileExt ?? '');
+    final extension = Tools.sanitize(
+      url == null
+          ? item.fileExt ?? ''
+          : p.extension(uri?.path ?? '').replaceFirst('.', '').isNotEmpty
+          ? p.extension(uri!.path).replaceFirst('.', '')
+          : item.fileExt ?? '',
+    );
 
     if (booru.type?.isBooruOnRails == true || booru.type?.isPhilomena == true) {
       if (item.fileNameExtras.isNotEmpty && item.fileNameExtras != 'null') {
-        return '${item.fileNameExtras}.$extension';
+        return _boundedFilename('${Tools.sanitize(item.fileNameExtras)}.$extension');
       }
     } else if (booru.type?.isHydrus == true) {
-      if (hash != null) return '${item.fileNameExtras}_$hash.$extension';
+      if (hash != null) return _boundedFilename('${Tools.sanitize(item.fileNameExtras)}_$hash.$extension');
     } else if (booru.type?.isShimmie == true ||
         booru.type?.isR34Hentai == true ||
         booru.baseURL?.contains('yande.re') == true ||
         booru.baseURL?.contains('paheal.net') == true) {
-      if (hash != null) return '${prefix}_$hash.$extension';
+      if (hash != null) return _boundedFilename('${prefix}_$hash.$extension');
     } else if (urlFileName.isNotEmpty &&
         extension.isNotEmpty &&
         urlFileName.toLowerCase().endsWith('.$extension') &&
         Tools.sanitize(urlFileName) == urlFileName) {
-      return '${prefix}_$urlFileName';
+      return _boundedFilename('${prefix}_$urlFileName');
     }
 
     // Database items may lack hashes/extras, and routed media URLs can share
     // their last path segment. The post URL survives database round trips.
     final identity = item.postURL.isNotEmpty ? item.postURL : item.fileURL;
     final digest = sha256.convert(utf8.encode(identity));
-    return '${prefix}_$digest${extension.isEmpty ? '' : '.$extension'}';
+    return _boundedFilename('${prefix}_$digest${extension.isEmpty ? '' : '.$extension'}');
+  }
+
+  static String _boundedFilename(String name) {
+    if (utf8.encode(name).length <= 200) return name;
+    final extension = p.extension(name);
+    final suffix =
+        '_${sha256.convert(utf8.encode(name)).toString().substring(0, 16)}${extension.length <= 16 ? extension : ''}';
+    var remaining = 200 - utf8.encode(suffix).length;
+    final prefix = StringBuffer();
+    for (final rune in p.withoutExtension(name).runes) {
+      final value = String.fromCharCode(rune);
+      remaining -= utf8.encode(value).length;
+      if (remaining < 0) break;
+      prefix.write(value);
+    }
+    return '$prefix$suffix';
   }
 
   static String? mediaHash(BooruItem item) {

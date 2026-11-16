@@ -268,6 +268,7 @@ class DownloadRuntime {
         cookies: configuration.cookies,
         saveCookies: configuration.saveCookies,
         settings: settings,
+        filters: await configuration.filterEvaluator,
         headless: headless,
       );
       await scope.run(
@@ -315,6 +316,7 @@ class DownloadRuntime {
       cookies: configuration.cookies,
       saveCookies: configuration.saveCookies,
       settings: settings,
+      filters: await configuration.filterEvaluator,
       headless: headless,
     );
     return scope.run(() async {

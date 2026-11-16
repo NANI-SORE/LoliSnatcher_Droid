@@ -8,7 +8,7 @@ import 'package:lolisnatcher/src/data/constants.dart';
 import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/pages/settings_page.dart';
-import 'package:lolisnatcher/src/pages/settings/backup_restore_page.dart';
+import 'package:lolisnatcher/src/pages/settings/backup_transfer_page.dart';
 import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
 import 'package:lolisnatcher/src/pages/settings/language_page.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
@@ -151,7 +151,7 @@ class _MediaPreviewsState extends State<MediaPreviews> {
                           title: loc.restoreBackupAction,
                           subtitle: loc.restoreBackupActionSubtitle,
                           icon: Icons.restore_page_outlined,
-                          onTap: () => openPage(const BackupRestorePage()),
+                          onTap: () => openPage(const BackupTransferPage()),
                         ),
                         _OnboardingActionTile(
                           title: loc.openSettingsAction,

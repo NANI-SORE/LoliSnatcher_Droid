@@ -33,17 +33,24 @@ Map<String, dynamic> downloadMap(Object? value) => value is String
 String downloadIdentity(Iterable<Object?> parts) => sha256.convert(utf8.encode(jsonEncode(parts.toList()))).toString();
 
 class DestinationRef {
-  const DestinationRef({required this.path, this.photos = false, this.photosReceipts});
+  const DestinationRef({required this.path, this.photos = false, this.photosReceipts, this.storageIdentity});
   factory DestinationRef.fromJson(Map<String, dynamic> json) => DestinationRef(
     path: json['path'] as String,
     photos: json['photos'] == true,
     photosReceipts: json['photosReceipts'] as String?,
+    storageIdentity: json['storageIdentity'] as String?,
   );
   final String path;
   final bool photos;
   final String? photosReceipts;
+  final String? storageIdentity;
   bool get isSaf => path.startsWith('content://');
-  Map<String, dynamic> toJson() => {'path': path, 'photos': photos, 'photosReceipts': photosReceipts};
+  Map<String, dynamic> toJson() => {
+    'path': path,
+    'photos': photos,
+    'photosReceipts': photosReceipts,
+    'storageIdentity': storageIdentity,
+  };
 }
 
 class DiscoveryCheckpoint {

@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:path/path.dart' as p;
+import 'package:lolisnatcher/src/services/image_writer.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
@@ -14,28 +14,7 @@ String sourceIdentity(Booru source) => downloadIdentity([
   source.userID, // Account partitions remain below the shared host budget.
 ]);
 
-String downloadFilename(BooruItem item, Booru booru, {String? url}) {
-  final mediaUrl = url ?? item.fileURL;
-  final urlExt = p.extension(Uri.parse(mediaUrl).path).replaceFirst('.', '');
-  final ext = urlExt.isNotEmpty ? urlExt : item.fileExt ?? 'bin';
-  String name;
-  if (booru.type?.isBooruOnRails == true || booru.type?.isPhilomena == true) {
-    name = '${item.fileNameExtras}.$ext';
-  } else if (booru.type?.isHydrus == true) {
-    name = '${item.fileNameExtras}_${item.md5String}.$ext';
-  } else if ((booru.baseURL ?? '').contains('yande.re') || (booru.baseURL ?? '').contains('paheal.net')) {
-    name = '${booru.name}_${item.md5String}.$ext';
-  } else {
-    name = '${booru.name}_${Uri.parse(mediaUrl).pathSegments.lastOrNull ?? ''}';
-  }
-  name = Tools.sanitize(p.basename(name));
-  if (name.isEmpty || name.length > 200 || !name.contains('.')) {
-    final safeExt = Tools.sanitize(ext);
-    name =
-        '${Tools.sanitize(booru.name ?? 'source')}_${downloadIdentity([item.postURL, mediaUrl]).substring(0, 24)}.${safeExt.substring(0, safeExt.length.clamp(0, 12))}';
-  }
-  return name;
-}
+String downloadFilename(BooruItem item, Booru booru, {String? url}) => ImageWriter.filenameFor(item, booru, url: url);
 
 Future<PreparedTransfer> prepareTransfer({
   required Booru source,

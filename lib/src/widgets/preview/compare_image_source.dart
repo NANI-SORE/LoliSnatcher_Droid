@@ -1,3 +1,5 @@
+import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -7,7 +9,13 @@ import 'package:dio/dio.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
-import 'package:lolisnatcher/src/handlers/settings_handler.dart';
+import 'package:lolisnatcher/src/handlers/tag_filter_handler.dart';
+import 'package:lolisnatcher/src/data/tag_filter.dart';
+import 'package:lolisnatcher/src/data/tag_filter_evaluation.dart';
+import 'package:lolisnatcher/src/utils/booru_source_resolver.dart';
+import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
+import 'package:lolisnatcher/src/services/local_image_provider.dart';
+import 'package:lolisnatcher/src/services/image_memory_manager.dart';
 import 'package:lolisnatcher/src/utils/tools.dart';
 import 'package:lolisnatcher/src/widgets/common/media_loading.dart';
 import 'package:lolisnatcher/src/widgets/image/custom_network_image.dart';
@@ -15,12 +23,40 @@ import 'package:lolisnatcher/src/widgets/image/image_viewer.dart';
 
 /// Owns image loading for standalone views without registering with ViewerHandler.
 class CompareImageSource extends ChangeNotifier {
-  CompareImageSource(this.item, this.booru, {required this.widthLimit})
-    : fullQuality = SX.galleryMode.value.isFullRes ? !item.toggleQuality.value : item.toggleQuality.value,
-      originalResolution = item.isNoScale.value;
+  CompareImageSource(this.item, this.booru, {required this.widthLimit, this.viewBooru})
+    : fullQuality = SX.galleryMode.valueForBooru(booru.name).isFullRes ? !item.toggleQuality.value : item.toggleQuality.value,
+      originalResolution = item.isNoScale.value {
+    _filters?.revision.addListener(_filtersChanged);
+  }
+
+  final TagFilterHandler? _filters = TagFilterHandler.maybeInstance;
+  Object? _filterSignature;
+
+  static TagFilterEvaluation evaluationFor(BooruItem item, Booru booru, {Booru? viewBooru}) =>
+      TagFilterHandler.maybeInstance?.evaluate(
+        item,
+        FilterContext(
+          viewBooru: viewBooru ?? booru,
+          sourceBooru: booru.type?.isFavouritesOrDownloads == true ? BooruSourceResolver.resolve(item) : booru,
+        ),
+      ) ??
+      const TagFilterEvaluation.empty();
+
+  Object _signature(TagFilterEvaluation evaluation) => (
+    evaluation.effectiveEffect,
+    evaluation.hideAsBlur,
+    evaluation.matches.map((match) => '${match.rule.id}@${match.rule.updatedAt.toIso8601String()}').join('|'),
+  );
+
+  void _filtersChanged() {
+    if (_disposed || _filterSignature == _signature(evaluationFor(item, booru, viewBooru: viewBooru))) return;
+    allowHidden = false;
+    unawaited(load());
+  }
 
   final BooruItem item;
   final Booru booru;
+  final Booru? viewBooru;
   final int widthLimit;
   final total = ValueNotifier(0);
   final received = ValueNotifier(0);
@@ -88,7 +124,7 @@ class CompareImageSource extends ChangeNotifier {
       stop(ViewerStopReason.error);
       return false;
     }
-    final limit = SX.preloadSizeLimit.value == 0 ? null : Tools.gibibytesToBytes(SX.preloadSizeLimit.value);
+    final limit = SX.preloadSizeLimit.valueForBooru(booru.name) == 0 ? null : Tools.gibibytesToBytes(SX.preloadSizeLimit.valueForBooru(booru.name));
     if (!_ignoreLimits && limit != null && bytes != null && bytes > limit) {
       stop(ViewerStopReason.tooBig, '${Tools.formatBytes(bytes, 2)} / ${Tools.formatBytes(limit, 2)}');
       return false;
@@ -96,7 +132,7 @@ class CompareImageSource extends ChangeNotifier {
     return true;
   }
 
-  Future<void> load() async {
+  Future<void> load({bool networkOnly = false}) async {
     if (_disposed) return;
     final previousProvider = provider;
     _cancel();
@@ -110,18 +146,17 @@ class CompareImageSource extends ChangeNotifier {
     total.value = 0;
     received.value = 0;
     startedAt.value = DateTime.now().millisecondsSinceEpoch;
-    if (item.isHidden && !allowHidden) {
-      stop(
-        ViewerStopReason.hidden,
-        SettingsHandler.instance.parseTagsList(item.tagsList, isCapped: true).hiddenTags.join('\n'),
-      );
+    final evaluation = evaluationFor(item, booru, viewBooru: viewBooru);
+    _filterSignature = _signature(evaluation);
+    if ((evaluation.isHidden || evaluation.isBlurred) && !allowHidden) {
+      stop(ViewerStopReason.hidden, evaluation.loadingFilterDetails);
       return;
     }
     final useSample = !fullQuality && item.sampleURL.isNotEmpty;
     final url = useSample ? item.sampleURL : (item.fileURL.isNotEmpty ? item.fileURL : item.sampleURL);
     final height = useSample ? item.sampleHeight : item.fileHeight;
-    if (!_ignoreLimits && SX.preloadHeight.value > 0 && height != null && height > SX.preloadHeight.value) {
-      stop(ViewerStopReason.tooBig, '${height.round()}px / ${SX.preloadHeight.value}px');
+    if (!_ignoreLimits && SX.preloadHeight.valueForBooru(booru.name) > 0 && height != null && height > SX.preloadHeight.valueForBooru(booru.name)) {
+      stop(ViewerStopReason.tooBig, '${height.round()}px / ${SX.preloadHeight.valueForBooru(booru.name)}px');
       return;
     }
     if (!useSample && (item.fileSize ?? 0) > 0 && !_checkSize(item.fileSize)) return;
@@ -130,7 +165,11 @@ class CompareImageSource extends ChangeNotifier {
     try {
       if (previousProvider != null) await previousProvider.evict();
       if (!_current(generation)) return;
-      if (url.isEmpty) throw StateError('No image URL found for selected item');
+      final local = networkOnly
+          ? const OfflineMediaResolution.unavailable()
+          : await OfflineMediaResolver.instance.resolve(item, booru);
+      if (!_current(generation)) return;
+      if (!local.isAvailable && url.isEmpty) throw StateError('No image URL found for selected item');
       final headers = await Tools.getFileCustomHeaders(booru, item: item, checkForReferer: true);
       if (!_current(generation)) return;
       void onCache(bool value) {
@@ -140,12 +179,14 @@ class CompareImageSource extends ChangeNotifier {
         }
       }
 
-      ImageProvider imageProvider = url.toLowerCase().contains('.avif')
+      ImageProvider imageProvider = local.isAvailable
+          ? await localImageProvider(local.file!, cancelToken: cancelToken)
+          : url.toLowerCase().contains('.avif')
           ? CustomNetworkAvifImage(
               url,
               headers: headers,
               cancelToken: cancelToken,
-              withCache: SX.mediaCache.value,
+              withCache: SX.mediaCache.valueForBooru(booru.name),
               cacheFolder: useSample ? 'samples' : 'media',
               fileNameExtras: item.fileNameExtras,
               withCaptchaCheck: true,
@@ -155,13 +196,15 @@ class CompareImageSource extends ChangeNotifier {
               url,
               headers: headers,
               cancelToken: cancelToken,
-              withCache: SX.mediaCache.value,
+              withCache: SX.mediaCache.valueForBooru(booru.name),
               cacheFolder: useSample ? 'samples' : 'media',
               fileNameExtras: item.fileNameExtras,
               withCaptchaCheck: true,
               onCacheDetected: onCache,
             );
-      if (!item.mediaType.value.isAnimation && !SX.disableImageScaling.value && !originalResolution) {
+      if (!_current(generation)) return;
+      if (local.isAvailable) onCache(true);
+      if (!item.mediaType.value.isAnimation && !SX.disableImageScaling.valueForBooru(booru.name) && !originalResolution) {
         imageProvider = SafeResizeImage(
           imageProvider,
           width: widthLimit,
@@ -193,7 +236,12 @@ class CompareImageSource extends ChangeNotifier {
           total.value = event.expectedTotalBytes ?? 0;
         },
         onError: (Object error, StackTrace? stack) {
-          if (_current(generation)) stop(ViewerStopReason.error, error.toString());
+          if (!_current(generation)) return;
+          if (local.isAvailable && error is! ImageMemoryException) {
+            unawaited(load(networkOnly: true));
+          } else {
+            stop(ViewerStopReason.error, error.toString());
+          }
         },
       );
       _stream!.addListener(_listener!);
@@ -205,6 +253,7 @@ class CompareImageSource extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _filters?.revision.removeListener(_filtersChanged);
     _cancel();
     total.dispose();
     received.dispose();

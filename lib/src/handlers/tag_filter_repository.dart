@@ -114,6 +114,8 @@ class JsonFilterRepository implements FilterRepository {
   @override
   Future<TagFilterConfiguration> decode(String content) => _decode(content, skipUnreadableRules: true);
 
+  Future<TagFilterConfiguration> decodeStrict(String content) => _decode(content, skipUnreadableRules: false);
+
   Future<TagFilterConfiguration> _decode(String content, {required bool skipUnreadableRules}) async {
     final decoded = content.length >= _isolateCodecThreshold
         ? await Isolate.run<dynamic>(() => jsonDecode(content))

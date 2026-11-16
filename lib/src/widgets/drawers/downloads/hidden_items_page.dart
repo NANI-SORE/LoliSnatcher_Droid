@@ -49,7 +49,9 @@ class _HiddenItemsPageState extends State<HiddenItemsPage> {
     final matches = hasTagFilter
         ? SettingsHandler.instance.parseTagsList(item.tagsList, isCapped: false)
         : const TagsListData();
+    final evaluation = widget.tab.booruHandler.rawFilterEvaluationFor(item);
     return [
+      for (final match in evaluation.matches) (label: match.rule.displayName, tags: match.matchedTags.toList()),
       if (manuallyHidden) (label: context.loc.settings.downloads.hiddenManually, tags: const <String>[]),
       ...reasons.map((reason) {
         final tags = switch (reason) {
@@ -218,6 +220,9 @@ class _HiddenItemsPageState extends State<HiddenItemsPage> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Thumbnail(
+                              allowHiddenPreview: true,
+                              allowOfflineLocalMedia: true,
+                              allowOfflineThumbnailGeneration: true,
                               // Reset individual reveal state when toggling the whole list.
                               key: ValueKey(unblurThumbnails),
                               item: item,

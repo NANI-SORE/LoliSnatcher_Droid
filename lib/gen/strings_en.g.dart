@@ -448,6 +448,10 @@ class Translations$init$en {
   /// en: 'Initialization error!'
   String get initError => TranslationOverrides.string(_root.$meta, 'init.initError', {}) ?? 'Initialization error!';
 
+  /// en: 'Backing up data after update…'
+  String get backingUpDataAfterUpdate =>
+      TranslationOverrides.string(_root.$meta, 'init.backingUpDataAfterUpdate', {}) ?? 'Backing up data after update…';
+
   /// en: 'Setting up proxy…'
   String get settingUpProxy =>
       TranslationOverrides.string(_root.$meta, 'init.settingUpProxy', {}) ?? 'Setting up proxy…';
@@ -1238,6 +1242,8 @@ class Translations$settings$en {
 
   final Translations _root; // ignore: unused_field
 
+  late final Translations$settings$backupAndTransfer$en backupAndTransfer =
+      Translations$settings$backupAndTransfer$en.internal(_root);
   // Translations
 
   /// en: 'Settings'
@@ -5056,44 +5062,44 @@ class Translations$settings$backupAndRestore$en {
   String get title =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.title', {}) ?? 'Backup and restore';
 
-  /// en: 'Duplicate file detected!'
+  /// en: 'File already exists'
   String get duplicateFileDetectedTitle =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.duplicateFileDetectedTitle', {}) ??
       'Duplicate file detected!';
 
-  /// en: 'The file ${fileName: String} already exists. Do you want to overwrite it? If you choose no, the backup will be cancelled.'
+  /// en: 'Overwrite ${fileName: String}? Choose “No” to cancel.'
   String duplicateFileDetectedMsg({required String fileName}) =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.duplicateFileDetectedMsg', {
         'fileName': fileName,
       }) ??
       'The file ${fileName} already exists. Do you want to overwrite it? If you choose no, the backup will be cancelled.';
 
-  /// en: 'This feature is only available on Android, on Desktop builds you can just copy/paste files from/to app's data folder, respective to your system'
+  /// en: 'Android only. Use “Backup & Transfer” on other platforms.'
   String get androidOnlyFeatureMsg =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.androidOnlyFeatureMsg', {}) ??
-      'This feature is only available on Android, on Desktop builds you can just copy/paste files from/to app\'s data folder, respective to your system';
+      'Android only. Use “${_root.settings.backupAndTransfer.title}” on other platforms.';
 
   /// en: 'Select backup directory'
   String get selectBackupDir =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.selectBackupDir', {}) ??
       'Select backup directory';
 
-  /// en: 'Failed to get backup path'
+  /// en: 'Could not access the backup folder'
   String get failedToGetBackupPath =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.failedToGetBackupPath', {}) ??
       'Failed to get backup path';
 
-  /// en: 'Backup path is: ${backupPath: String}'
+  /// en: 'Backup folder: ${backupPath: String}'
   String backupPathMsg({required String backupPath}) =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupPathMsg', {'backupPath': backupPath}) ??
-      'Backup path is: ${backupPath}';
+      'Backup folder: ${backupPath}';
 
-  /// en: 'No backup directory selected'
+  /// en: 'No backup folder selected'
   String get noBackupDirSelected =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.noBackupDirSelected', {}) ??
       'No backup directory selected';
 
-  /// en: 'Files must be in directory root'
+  /// en: 'Place the backup files directly in the selected folder'
   String get restoreInfoMsg =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreInfoMsg', {}) ??
       'Files must be in directory root';
@@ -5116,7 +5122,7 @@ class Translations$settings$backupAndRestore$en {
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.settingsRestored', {}) ??
       'Settings restored from backup';
 
-  /// en: 'Failed to backup settings'
+  /// en: 'Could not back up settings'
   String get backupSettingsError =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupSettingsError', {}) ??
       'Failed to backup settings';
@@ -5139,7 +5145,7 @@ class Translations$settings$backupAndRestore$en {
   String get restoreBoorus =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreBoorus', {}) ?? 'Restore boorus';
 
-  /// en: 'Boorus backed up to boorus.json'
+  /// en: 'Booru configs saved to boorus.json'
   String get boorusBackedUp =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.boorusBackedUp', {}) ??
       'Boorus backed up to boorus.json';
@@ -5149,12 +5155,12 @@ class Translations$settings$backupAndRestore$en {
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.boorusRestored', {}) ??
       'Boorus restored from backup';
 
-  /// en: 'Failed to backup boorus'
+  /// en: 'Could not back up booru configs'
   String get backupBoorusError =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupBoorusError', {}) ??
       'Failed to backup boorus';
 
-  /// en: 'Failed to restore boorus'
+  /// en: 'Could not restore booru configs'
   String get restoreBoorusError =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreBoorusError', {}) ??
       'Failed to restore boorus';
@@ -5167,22 +5173,22 @@ class Translations$settings$backupAndRestore$en {
   String get restoreDatabase =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreDatabase', {}) ?? 'Restore database';
 
-  /// en: 'May take a while depending on the size of the database, will restart the app on success'
+  /// en: 'Large restores take time. The app restarts when done.'
   String get restoreDatabaseInfo =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreDatabaseInfo', {}) ??
-      'May take a while depending on the size of the database, will restart the app on success';
+      'Large restores take time. The app restarts when done.';
 
   /// en: 'Database backed up to store.db'
   String get databaseBackedUp =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.databaseBackedUp', {}) ??
       'Database backed up to store.db';
 
-  /// en: 'Database restored from backup! App will restart in a few seconds!'
+  /// en: 'Database restored. Restarting shortly.'
   String get databaseRestored =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.databaseRestored', {}) ??
-      'Database restored from backup! App will restart in a few seconds!';
+      'Database restored. Restarting shortly.';
 
-  /// en: 'Failed to backup database'
+  /// en: 'Could not back up database'
   String get backupDatabaseError =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupDatabaseError', {}) ??
       'Failed to backup database';
@@ -5192,7 +5198,7 @@ class Translations$settings$backupAndRestore$en {
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreDatabaseError', {}) ??
       'Failed to restore database';
 
-  /// en: 'Database file not found or cannot be read!'
+  /// en: 'Database file not found or unreadable'
   String get databaseFileNotFound =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.databaseFileNotFound', {}) ??
       'Database file not found or cannot be read!';
@@ -5205,10 +5211,10 @@ class Translations$settings$backupAndRestore$en {
   String get restoreTags =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreTags', {}) ?? 'Restore tags';
 
-  /// en: 'May take a while if you have a lot of tags. If you did a database restore, you don't need to do this because it's already included in the database'
+  /// en: 'Large tag lists take time. Database backups already include tags.'
   String get restoreTagsInfo =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreTagsInfo', {}) ??
-      'May take a while if you have a lot of tags. If you did a database restore, you don\'t need to do this because it\'s already included in the database';
+      'Large tag lists take time. Database backups already include tags.';
 
   /// en: 'Tags backed up to tags.json'
   String get tagsBackedUp =>
@@ -5230,22 +5236,22 @@ class Translations$settings$backupAndRestore$en {
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreTagsError', {}) ??
       'Failed to restore tags';
 
-  /// en: 'Tags file not found or cannot be read!'
+  /// en: 'Tag file not found or unreadable'
   String get tagsFileNotFound =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.tagsFileNotFound', {}) ??
       'Tags file not found or cannot be read!';
 
-  /// en: 'Press Hide below if it takes too long, operation will continue in background'
+  /// en: 'Tap “Hide” to hide progress. The operation continues.'
   String get operationTakesTooLongMsg =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.operationTakesTooLongMsg', {}) ??
-      'Press Hide below if it takes too long, operation will continue in background';
+      'Tap “${_root.hide}” to hide progress. The operation continues.';
 
-  /// en: 'Backup file not found or cannot be read!'
+  /// en: 'Backup file not found or unreadable'
   String get backupFileNotFound =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupFileNotFound', {}) ??
       'Backup file not found or cannot be read!';
 
-  /// en: 'No access to backup directory!'
+  /// en: 'Cannot access the backup folder'
   String get backupDirNoAccess =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupDirNoAccess', {}) ??
       'No access to backup directory!';
@@ -5253,6 +5259,972 @@ class Translations$settings$backupAndRestore$en {
   /// en: 'Backup cancelled'
   String get backupCancelled =>
       TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupCancelled', {}) ?? 'Backup cancelled';
+}
+
+// Path: settings.backupAndTransfer
+class Translations$settings$backupAndTransfer$en {
+  Translations$settings$backupAndTransfer$en.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'Verification emojis'
+  String get verificationPhrase =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.verificationPhrase', {}) ??
+      'Verification emojis';
+
+  /// en: 'Compare all six emojis on both devices. Allow only if they match; otherwise cancel.'
+  String get compareVerificationPhrase =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.compareVerificationPhrase', {}) ??
+      'Compare all six emojis on both devices. Allow only if they match; otherwise cancel.';
+
+  /// en: 'Allow transfer'
+  String get allowVerifiedTransfer =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.allowVerifiedTransfer', {}) ??
+      'Allow transfer';
+
+  /// en: 'Recovery incomplete'
+  String get recoveryFailedTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.recoveryFailedTitle', {}) ??
+      'Recovery incomplete';
+
+  /// en: 'Retry recovery before using the app.'
+  String get recoveryFailedMessage =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.recoveryFailedMessage', {}) ??
+      'Retry recovery before using the app.';
+
+  /// en: 'Retry recovery'
+  String get retryRecovery =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.retryRecovery', {}) ?? 'Retry recovery';
+
+  /// en: 'Data restored, but sender was not notified. Do not restore again.'
+  String get importSucceededAckLost =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importSucceededAckLost', {}) ??
+      'Data restored, but sender was not notified. Do not restore again.';
+
+  /// en: 'Check the receiver before trying again.'
+  String get transferAckUnknown =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferAckUnknown', {}) ??
+      'Check the receiver before trying again.';
+
+  /// en: 'Backup & Transfer'
+  String get title =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.title', {}) ?? 'Backup & Transfer';
+
+  /// en: 'Save settings and library records. Media files are not included.'
+  String get exportBackupHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportBackupHint', {}) ??
+      'Save settings and library records. Media files are not included.';
+
+  /// en: 'Choose a file and what to restore'
+  String get importBackupHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importBackupHint', {}) ??
+      'Choose a file and what to restore';
+
+  /// en: 'Export or restore individual categories by file or clipboard'
+  String get advancedBackupHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.advancedBackupHint', {}) ??
+      'Export or restore individual categories by file or clipboard';
+
+  /// en: 'Share data over your local network'
+  String get sendHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.sendHint', {}) ??
+      'Share data over your local network';
+
+  /// en: 'Choose a device and data to receive'
+  String get receiveHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receiveHint', {}) ??
+      'Choose a device and data to receive';
+
+  /// en: 'Open “Receive data” on the other device. Choose this device and data types, then approve here.'
+  String get sendInstructions =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.sendInstructions', {}) ??
+      'Open “${_root.settings.backupAndTransfer.receiveDataTitle}” on the other device. Choose this device and data types, then approve here.';
+
+  /// en: 'Open “Send data” on the other device. Use the same local network.'
+  String get receiveInstructions =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receiveInstructions', {}) ??
+      'Open “${_root.settings.backupAndTransfer.sendDataTitle}” on the other device. Use the same local network.';
+
+  /// en: 'Keep “Send data” open on the other device, or add its address manually.'
+  String get noDevicesHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.noDevicesHint', {}) ??
+      'Keep “${_root.settings.backupAndTransfer.sendDataTitle}” open on the other device, or add its address manually.';
+
+  /// en: 'Runs when you open or return to the app after the chosen interval'
+  String get autoBackupScheduleHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackupScheduleHint', {}) ??
+      'Runs when you open or return to the app after the chosen interval';
+
+  /// en: 'Default folder'
+  String get defaultBackupLocation =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.defaultBackupLocation', {}) ??
+      'Default folder';
+
+  /// en: 'Reset backup preferences and status? Backup files stay.'
+  String get resetAutoBackupHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.resetAutoBackupHint', {}) ??
+      'Reset backup preferences and status? Backup files stay.';
+
+  /// en: 'Working…'
+  String get operationInProgress =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.operationInProgress', {}) ?? 'Working…';
+
+  /// en: 'No data available to export'
+  String get exportUnavailable =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportUnavailable', {}) ??
+      'No data available to export';
+
+  /// en: 'Overwrite existing tag types'
+  String get overwriteTagTypes =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.overwriteTagTypes', {}) ??
+      'Overwrite existing tag types';
+
+  /// en: 'Tabs import mode'
+  String get tabsImportMode =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.tabsImportMode', {}) ?? 'Tabs import mode';
+
+  /// en: 'Skip favourites'
+  String get favouritesStartIndex =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.favouritesStartIndex', {}) ??
+      'Skip favourites';
+
+  /// en: 'Skip download-history items'
+  String get snatchedStartIndex =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.snatchedStartIndex', {}) ??
+      'Skip download-history items';
+
+  /// en: 'Add missing tabs. Keep current tabs.'
+  String get restoreTabsMergeHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreTabsMergeHint', {}) ??
+      'Add missing tabs. Keep current tabs.';
+
+  /// en: 'Replace open tabs; keep them if none can be restored.'
+  String get restoreTabsReplaceHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreTabsReplaceHint', {}) ??
+      'Replace open tabs; keep them if none can be restored.';
+
+  /// en: 'Keep known types when imported types are unknown.'
+  String get restoreTagsPreserveHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreTagsPreserveHint', {}) ??
+      'Keep known types when imported types are unknown.';
+
+  /// en: 'Use imported types, including unknown types.'
+  String get restoreTagsOverwriteHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreTagsOverwriteHint', {}) ??
+      'Use imported types, including unknown types.';
+
+  /// en: 'Connecting and waiting for approval…'
+  String get waitingForApproval =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.waitingForApproval', {}) ??
+      'Connecting and waiting for approval…';
+
+  /// en: 'Preparing data…'
+  String get preparingTransfer =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.preparingTransfer', {}) ?? 'Preparing data…';
+
+  /// en: 'Checking data…'
+  String get verifyingTransfer =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.verifyingTransfer', {}) ?? 'Checking data…';
+
+  /// en: 'Waiting for restore…'
+  String get waitingForImport =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.waitingForImport', {}) ??
+      'Waiting for restore…';
+
+  /// en: 'Transfer not completed'
+  String get transferNotCompleted =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferNotCompleted', {}) ??
+      'Transfer not completed';
+
+  /// en: 'Clear error'
+  String get clearTransferError =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.clearTransferError', {}) ?? 'Clear error';
+
+  /// en: 'Stop sharing'
+  String get stopSharing =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.stopSharing', {}) ?? 'Stop sharing';
+
+  /// en: 'Copy the address from the other device’s “Send data” screen'
+  String get manualAddressHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.manualAddressHint', {}) ??
+      'Copy the address from the other device’s “${_root.settings.backupAndTransfer.sendDataTitle}” screen';
+
+  /// en: 'Use IPv4:port, e.g. 192.168.1.10:12345'
+  String get invalidDeviceAddress =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidDeviceAddress', {}) ??
+      'Use IPv4:port, e.g. 192.168.1.10:12345';
+
+  /// en: 'Skip this many items; 0 includes all'
+  String get startIndexHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.startIndexHint', {}) ??
+      'Skip this many items; 0 includes all';
+
+  /// en: 'Enter a number from 0 to 2147483647'
+  String get invalidStartIndex =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidStartIndex', {}) ??
+      'Enter a number from 0 to 2147483647';
+
+  /// en: 'Transfer data'
+  String get transferData =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferData', {}) ?? 'Transfer data';
+
+  /// en: 'Backup data'
+  String get backupData =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupData', {}) ?? 'Backup data';
+
+  /// en: 'Start sharing'
+  String get send => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.send', {}) ?? 'Start sharing';
+
+  /// en: 'Receive'
+  String get receive => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receive', {}) ?? 'Receive';
+
+  /// en: 'Export'
+  String get export => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.export', {}) ?? 'Export';
+
+  /// en: 'Restore'
+  String get import => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.import', {}) ?? 'Restore';
+
+  /// en: 'Done'
+  String get done => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.done', {}) ?? 'Done';
+
+  /// en: 'Advanced export/import'
+  String get advancedExportImport =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.advancedExportImport', {}) ??
+      'Advanced export/import';
+
+  /// en: 'Automatic backup'
+  String get autoBackup =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackup', {}) ?? 'Automatic backup';
+
+  /// en: 'Enable automatic backup'
+  String get enableAutoBackup =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.enableAutoBackup', {}) ??
+      'Enable automatic backup';
+
+  /// en: 'Back up after updates'
+  String get backupAfterUpdates =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdates', {}) ??
+      'Back up after updates';
+
+  /// en: 'Keep five update backups in this folder, separately.'
+  String get backupAfterUpdatesSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdatesSubtitle', {}) ??
+      'Keep five update backups in this folder, separately.';
+
+  /// en: 'Backup location'
+  String get backupLocation =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupLocation', {}) ?? 'Backup location';
+
+  /// en: 'Default folder'
+  String get backupLocationNotSelected =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupLocationNotSelected', {}) ??
+      'Default folder';
+
+  /// en: 'Change'
+  String get change => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.change', {}) ?? 'Change';
+
+  /// en: 'Backup interval'
+  String get backupInterval =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupInterval', {}) ?? 'Backup interval';
+
+  /// en: 'Daily'
+  String get daily => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.daily', {}) ?? 'Daily';
+
+  /// en: 'Weekly'
+  String get weekly => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.weekly', {}) ?? 'Weekly';
+
+  /// en: 'Monthly'
+  String get monthly => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.monthly', {}) ?? 'Monthly';
+
+  /// en: 'Maximum automatic backups'
+  String get maximumBackups =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.maximumBackups', {}) ??
+      'Maximum automatic backups';
+
+  /// en: 'Shared by scheduled backups and “Back up now”. Update backups keep five separately.'
+  String get maximumBackupsHint =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.maximumBackupsHint', {}) ??
+      'Shared by scheduled backups and “${_root.settings.backupAndTransfer.backupNow}”. Update backups keep five separately.';
+
+  /// en: 'Unlimited'
+  String get backupCountUnlimited =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupCountUnlimited', {}) ?? 'Unlimited';
+
+  /// en: '(one) {${count} backup} (few) {${count} backups} (many) {${count} backups} (other) {${count} backups}'
+  String backupCount({required num count}) =>
+      TranslationOverrides.plural(_root.$meta, 'settings.backupAndTransfer.backupCount', {'count': count}) ??
+      (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
+        count,
+        one: '${count} backup',
+        few: '${count} backups',
+        many: '${count} backups',
+        other: '${count} backups',
+      );
+
+  /// en: 'Last backup: never'
+  String get lastBackupNever =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lastBackupNever', {}) ??
+      'Last backup: never';
+
+  /// en: 'Last backup: ${date: String}'
+  String lastBackup({required String date}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lastBackup', {'date': date}) ??
+      'Last backup: ${date}';
+
+  /// en: 'Back up now'
+  String get backupNow =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupNow', {}) ?? 'Back up now';
+
+  /// en: 'Backup exported'
+  String get backupExported =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupExported', {}) ?? 'Backup exported';
+
+  /// en: 'Categories restored: ${count: int}'
+  String importedEntries({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importedEntries', {'count': count}) ??
+      'Categories restored: ${count}';
+
+  /// en: 'Automatic backup created'
+  String get autoBackupCreated =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackupCreated', {}) ??
+      'Automatic backup created';
+
+  /// en: 'Automatic backup location'
+  String get autoBackupLocationDialogTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackupLocationDialogTitle', {}) ??
+      'Automatic backup location';
+
+  /// en: 'Export to file'
+  String get exportToFile =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportToFile', {}) ?? 'Export to file';
+
+  /// en: 'Import from file'
+  String get importFromFile =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importFromFile', {}) ?? 'Import from file';
+
+  /// en: 'Export to clipboard'
+  String get exportToClipboard =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportToClipboard', {}) ??
+      'Export to clipboard';
+
+  /// en: 'Import from clipboard'
+  String get importFromClipboard =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importFromClipboard', {}) ??
+      'Import from clipboard';
+
+  /// en: 'Exported: ${entry: String}'
+  String entryExported({required String entry}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryExported', {'entry': entry}) ??
+      'Exported: ${entry}';
+
+  /// en: 'Restored: ${entry: String}'
+  String entryImported({required String entry}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryImported', {'entry': entry}) ??
+      'Restored: ${entry}';
+
+  /// en: 'Copied: ${entry: String}'
+  String entryCopied({required String entry}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryCopied', {'entry': entry}) ??
+      'Copied: ${entry}';
+
+  /// en: 'Unavailable'
+  String get unavailable =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unavailable', {}) ?? 'Unavailable';
+
+  /// en: 'Send data'
+  String get sendDataTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.sendDataTitle', {}) ?? 'Send data';
+
+  /// en: 'Visible on network'
+  String get visibleOnNetwork =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.visibleOnNetwork', {}) ??
+      'Visible on network';
+
+  /// en: 'Disable to allow manual address connections only'
+  String get visibleOnNetworkSubtitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.visibleOnNetworkSubtitle', {}) ??
+      'Disable to allow manual address connections only';
+
+  /// en: 'Include device preferences'
+  String get includeDeviceSpecificSettings =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.includeDeviceSpecificSettings', {}) ??
+      'Include device preferences';
+
+  /// en: 'Language, theme, layout and similar preferences'
+  String get includeDeviceSpecificSettingsSubtitle =>
+      TranslationOverrides.string(
+        _root.$meta,
+        'settings.backupAndTransfer.includeDeviceSpecificSettingsSubtitle',
+        {},
+      ) ??
+      'Language, theme, layout and similar preferences';
+
+  /// en: 'Which preferences?'
+  String get includeDeviceSpecificSettingsHelpTitle =>
+      TranslationOverrides.string(
+        _root.$meta,
+        'settings.backupAndTransfer.includeDeviceSpecificSettingsHelpTitle',
+        {},
+      ) ??
+      'Which preferences?';
+
+  /// en: 'Applies to settings and profile overrides. Paths, proxy and app-lock settings stay local.'
+  String get includeDeviceSpecificSettingsHelp =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.includeDeviceSpecificSettingsHelp', {}) ??
+      'Applies to settings and profile overrides. Paths, proxy and app-lock settings stay local.';
+
+  /// en: 'Address'
+  String get address => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.address', {}) ?? 'Address';
+
+  /// en: 'Name'
+  String get name => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.name', {}) ?? 'Name';
+
+  /// en: 'Status'
+  String get status => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.status', {}) ?? 'Status';
+
+  /// en: 'Starting…'
+  String get starting =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.starting', {}) ?? 'Starting…';
+
+  /// en: 'Visible to nearby devices'
+  String get broadcasting =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.broadcasting', {}) ??
+      'Visible to nearby devices';
+
+  /// en: 'Manual connections only'
+  String get hidden =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.hidden', {}) ?? 'Manual connections only';
+
+  /// en: 'Transferred'
+  String get transferred =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferred', {}) ?? 'Transferred';
+
+  /// en: 'Received'
+  String get received =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.received', {}) ?? 'Received';
+
+  /// en: 'Total'
+  String get total => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.total', {}) ?? 'Total';
+
+  /// en: 'Elapsed'
+  String get elapsed => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.elapsed', {}) ?? 'Elapsed';
+
+  /// en: 'Speed'
+  String get speed => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.speed', {}) ?? 'Speed';
+
+  /// en: 'Current'
+  String get current => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.current', {}) ?? 'Current';
+
+  /// en: 'Logs'
+  String get logs => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.logs', {}) ?? 'Logs';
+
+  /// en: 'Device info'
+  String get deviceInfo =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.deviceInfo', {}) ?? 'Device info';
+
+  /// en: 'History'
+  String get history => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.history', {}) ?? 'History';
+
+  /// en: 'No transfer history'
+  String get noHistory =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.noHistory', {}) ?? 'No transfer history';
+
+  /// en: 'Choose data to receive'
+  String get selectedData =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.selectedData', {}) ??
+      'Choose data to receive';
+
+  /// en: 'Receive data'
+  String get receiveDataTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receiveDataTitle', {}) ?? 'Receive data';
+
+  /// en: 'Add device'
+  String get addDevice =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.addDevice', {}) ?? 'Add device';
+
+  /// en: 'Manually added device'
+  String get manualDevice =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.manualDevice', {}) ??
+      'Manually added device';
+
+  /// en: 'Nearby devices'
+  String get nearbyDevices =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.nearbyDevices', {}) ?? 'Nearby devices';
+
+  /// en: 'No devices found'
+  String get noDevicesFound =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.noDevicesFound', {}) ?? 'No devices found';
+
+  /// en: 'Manual'
+  String get manual => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.manual', {}) ?? 'Manual';
+
+  /// en: 'Unknown'
+  String get unknown => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unknown', {}) ?? 'Unknown';
+
+  /// en: 'Transfer'
+  String get transfer =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transfer', {}) ?? 'Transfer';
+
+  /// en: 'Settings'
+  String get entrySettingsTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySettingsTitle', {}) ?? 'Settings';
+
+  /// en: 'App settings'
+  String get entrySettingsDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySettingsDescription', {}) ??
+      'App settings';
+
+  /// en: 'Booru configs'
+  String get entryBooruProfilesTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryBooruProfilesTitle', {}) ??
+      'Booru configs';
+
+  /// en: 'Booru addresses, credentials and setting overrides'
+  String get entryBooruProfilesDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryBooruProfilesDescription', {}) ??
+      'Booru addresses, credentials and setting overrides';
+
+  /// en: 'Full database — replace library'
+  String get entryDatabaseTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryDatabaseTitle', {}) ??
+      'Full database — replace library';
+
+  /// en: 'Library records, tabs, tag metadata, pinned tags and search history'
+  String get entryDatabaseDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryDatabaseDescription', {}) ??
+      'Library records, tabs, tag metadata, pinned tags and search history';
+
+  /// en: 'Favourites'
+  String get entryFavouritesTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryFavouritesTitle', {}) ?? 'Favourites';
+
+  /// en: 'Favourite database items'
+  String get entryFavouritesDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryFavouritesDescription', {}) ??
+      'Favourite database items';
+
+  /// en: 'Download history'
+  String get entrySnatchedTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySnatchedTitle', {}) ??
+      'Download history';
+
+  /// en: 'Downloaded-item records, without the media files'
+  String get entrySnatchedDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySnatchedDescription', {}) ??
+      'Downloaded-item records, without the media files';
+
+  /// en: 'Tabs'
+  String get entryTabsTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryTabsTitle', {}) ?? 'Tabs';
+
+  /// en: 'Open tabs, selected tab and saved page positions'
+  String get entryTabsDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryTabsDescription', {}) ??
+      'Open tabs, selected tab and saved page positions';
+
+  /// en: 'Tags'
+  String get entryTagsTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryTagsTitle', {}) ?? 'Tags';
+
+  /// en: 'Local tag metadata'
+  String get entryTagsDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryTagsDescription', {}) ??
+      'Local tag metadata';
+
+  /// en: 'Pinned tags'
+  String get entryPinnedTagsTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryPinnedTagsTitle', {}) ?? 'Pinned tags';
+
+  /// en: 'Pinned tags, labels, order and booru scope'
+  String get entryPinnedTagsDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryPinnedTagsDescription', {}) ??
+      'Pinned tags, labels, order and booru scope';
+
+  /// en: 'Search history'
+  String get entrySearchHistoriesTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySearchHistoriesTitle', {}) ??
+      'Search history';
+
+  /// en: 'Saved search history and favourite searches'
+  String get entrySearchHistoriesDescription =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySearchHistoriesDescription', {}) ??
+      'Saved search history and favourite searches';
+
+  /// en: 'Database file not found'
+  String get databaseFileNotFound =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.databaseFileNotFound', {}) ??
+      'Database file not found';
+
+  /// en: 'Automatic backup location is empty'
+  String get autoBackupLocationEmpty =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackupLocationEmpty', {}) ??
+      'Automatic backup location is empty';
+
+  /// en: 'Export backup'
+  String get exportBackupDialogTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportBackupDialogTitle', {}) ??
+      'Export backup';
+
+  /// en: 'Restore backup'
+  String get importBackupDialogTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importBackupDialogTitle', {}) ??
+      'Restore backup';
+
+  /// en: 'Backup manifest not found'
+  String get backupManifestNotFound =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupManifestNotFound', {}) ??
+      'Backup manifest not found';
+
+  /// en: 'Unsupported backup format'
+  String get unsupportedBackupFormat =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unsupportedBackupFormat', {}) ??
+      'Unsupported backup format';
+
+  /// en: 'Allow data transfer?'
+  String get approveTransferTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.approveTransferTitle', {}) ??
+      'Allow data transfer?';
+
+  /// en: '${device: String} (${address: String}) wants to receive:'
+  String approveTransferRequest({required String device, required String address}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.approveTransferRequest', {
+        'device': device,
+        'address': address,
+      }) ??
+      '${device} (${address}) wants to receive:';
+
+  /// en: 'Allow'
+  String get allowTransfer =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.allowTransfer', {}) ?? 'Allow';
+
+  /// en: 'The transfer request was declined'
+  String get transferDeclined =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferDeclined', {}) ??
+      'The transfer request was declined';
+
+  /// en: 'This device uses an unsupported transfer protocol'
+  String get unsupportedTransferProtocol =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unsupportedTransferProtocol', {}) ??
+      'This device uses an unsupported transfer protocol';
+
+  /// en: 'Invalid data from the other device.'
+  String get invalidTransferData =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidTransferData', {}) ??
+      'Invalid data from the other device.';
+
+  /// en: 'Another transfer is already in progress'
+  String get transferBusy =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferBusy', {}) ??
+      'Another transfer is already in progress';
+
+  /// en: 'The received package failed its integrity check'
+  String get transferChecksumMismatch =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferChecksumMismatch', {}) ??
+      'The received package failed its integrity check';
+
+  /// en: 'Restoring data…'
+  String get importingPackage =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importingPackage', {}) ?? 'Restoring data…';
+
+  /// en: 'Unpacking backup…'
+  String get importExtracting =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importExtracting', {}) ??
+      'Unpacking backup…';
+
+  /// en: 'Checking records…'
+  String get importValidating =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importValidating', {}) ??
+      'Checking records…';
+
+  /// en: 'Rechecking records…'
+  String get importRechecking =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRechecking', {}) ??
+      'Rechecking records…';
+
+  /// en: 'Preparing database…'
+  String get importPreparingDatabase =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importPreparingDatabase', {}) ??
+      'Preparing database…';
+
+  /// en: 'Finishing changes…'
+  String get importCleaningUp =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importCleaningUp', {}) ??
+      'Finishing changes…';
+
+  /// en: 'Refreshing data…'
+  String get importRefreshing =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRefreshing', {}) ?? 'Refreshing data…';
+
+  /// en: 'Records processed: ${count: int}'
+  String importRecordsProcessed({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRecordsProcessed', {'count': count}) ??
+      'Records processed: ${count}';
+
+  /// en: 'Records processed: ${count: int} / ${total: int}'
+  String importRecordsTotal({required int count, required int total}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRecordsTotal', {
+        'count': count,
+        'total': total,
+      }) ??
+      'Records processed: ${count} / ${total}';
+
+  /// en: 'Last update: ${elapsed: String} ago'
+  String importLastProgress({required String elapsed}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importLastProgress', {'elapsed': elapsed}) ??
+      'Last update: ${elapsed} ago';
+
+  /// en: 'Could not start the transfer: ${error: String}'
+  String transferStartFailed({required String error}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferStartFailed', {'error': error}) ??
+      'Could not start the transfer: ${error}';
+
+  /// en: 'Restore backup'
+  String get importBackupTitle =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importBackupTitle', {}) ?? 'Restore backup';
+
+  /// en: 'Replaces library records, tabs, tags, pins and search history. Merge options do not apply.'
+  String get databaseReplacementWarning =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.databaseReplacementWarning', {}) ??
+      'Replaces library records, tabs, tags, pins and search history. Merge options do not apply.';
+
+  /// en: 'Restore selected categories only'
+  String get selectedImportOnly =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.selectedImportOnly', {}) ??
+      'Restore selected categories only';
+
+  /// en: 'Retry update backup'
+  String get retryUpdateBackup =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.retryUpdateBackup', {}) ??
+      'Retry update backup';
+
+  /// en: 'Backup failed'
+  String get lastBackupFailed =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lastBackupFailed', {}) ?? 'Backup failed';
+
+  /// en: 'Update backup failed'
+  String get lastUpdateBackupFailed =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lastUpdateBackupFailed', {}) ??
+      'Update backup failed';
+
+  /// en: 'Unsupported backup file: ${fileName: String}'
+  String unsupportedBackupFile({required String fileName}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unsupportedBackupFile', {
+        'fileName': fileName,
+      }) ??
+      'Unsupported backup file: ${fileName}';
+
+  /// en: 'Ready for connections at ${address: String}'
+  String serverListening({required String address}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.serverListening', {'address': address}) ??
+      'Ready for connections at ${address}';
+
+  /// en: 'Sharing stopped'
+  String get serverStopped =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.serverStopped', {}) ?? 'Sharing stopped';
+
+  /// en: 'Receiving device connected: ${address: String}'
+  String clientConnected({required String address}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.clientConnected', {'address': address}) ??
+      'Receiving device connected: ${address}';
+
+  /// en: 'Invalid data selection request'
+  String get expectedSelectionFrame =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.expectedSelectionFrame', {}) ??
+      'Invalid data selection request';
+
+  /// en: 'No data categories selected'
+  String get missingSelectedEntries =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.missingSelectedEntries', {}) ??
+      'No data categories selected';
+
+  /// en: 'Preparing categories: ${count: int}'
+  String exportingEntries({required int count}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportingEntries', {'count': count}) ??
+      'Preparing categories: ${count}';
+
+  /// en: 'Transfer complete'
+  String get transferComplete =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferComplete', {}) ??
+      'Transfer complete';
+
+  /// en: 'Transfer failed: ${error: String}'
+  String transferFailed({required String error}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferFailed', {'error': error}) ??
+      'Transfer failed: ${error}';
+
+  /// en: 'Invalid response from the sending device'
+  String get invalidSenderHello =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidSenderHello', {}) ??
+      'Invalid response from the sending device';
+
+  /// en: 'Connected to ${device: String}'
+  String connectedTo({required String device}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.connectedTo', {'device': device}) ??
+      'Connected to ${device}';
+
+  /// en: 'Receiving ${entry: String} (${size: String})'
+  String receivingEntry({required String entry, required String size}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receivingEntry', {
+        'entry': entry,
+        'size': size,
+      }) ??
+      'Receiving ${entry} (${size})';
+
+  /// en: 'Received data imported'
+  String get importedReceivedPackage =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importedReceivedPackage', {}) ??
+      'Received data imported';
+
+  /// en: 'Sender error'
+  String get senderError =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.senderError', {}) ?? 'Sender error';
+
+  /// en: 'Ignored frame: ${frame: String}'
+  String ignoredFrame({required String frame}) =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.ignoredFrame', {'frame': frame}) ??
+      'Ignored frame: ${frame}';
+
+  /// en: 'Transfer stopped'
+  String get transferCancelled =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferCancelled', {}) ??
+      'Transfer stopped';
+
+  /// en: 'Could not finish. See details.'
+  String get operationFailed =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.operationFailed', {}) ??
+      'Could not finish. See details.';
+
+  /// en: 'Check folder access and free space.'
+  String get storageFailure =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.storageFailure', {}) ??
+      'Check folder access and free space.';
+
+  /// en: 'Connection failed. Check both devices.'
+  String get connectionFailure =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.connectionFailure', {}) ??
+      'Connection failed. Check both devices.';
+
+  /// en: 'Invalid or unsupported backup.'
+  String get invalidBackupShort =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidBackupShort', {}) ??
+      'Invalid or unsupported backup.';
+
+  /// en: 'Update both devices and try again.'
+  String get updateBothDevices =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.updateBothDevices', {}) ??
+      'Update both devices and try again.';
+
+  /// en: 'Details'
+  String get details => TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.details', {}) ?? 'Details';
+
+  /// en: 'Recovering…'
+  String get recovering =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.recovering', {}) ?? 'Recovering…';
+
+  /// en: 'Saving recovery copy…'
+  String get importSnapshotting =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importSnapshotting', {}) ??
+      'Saving recovery copy…';
+
+  /// en: 'Restoring previous data…'
+  String get importRollingBack =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRollingBack', {}) ??
+      'Restoring previous data…';
+
+  /// en: 'Keep this screen open until restore finishes.'
+  String get finishRestoreFirst =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.finishRestoreFirst', {}) ??
+      'Keep this screen open until restore finishes.';
+
+  /// en: 'The receiver may still finish restoring.'
+  String get otherDeviceMayFinish =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.otherDeviceMayFinish', {}) ??
+      'The receiver may still finish restoring.';
+
+  /// en: 'Stop waiting'
+  String get stopWaiting =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.stopWaiting', {}) ?? 'Stop waiting';
+
+  /// en: 'Restore unconfirmed'
+  String get restoreUnconfirmed =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreUnconfirmed', {}) ??
+      'Restore unconfirmed';
+
+  /// en: 'Data restored'
+  String get dataRestored =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.dataRestored', {}) ?? 'Data restored';
+
+  /// en: 'Connecting…'
+  String get connecting =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.connecting', {}) ?? 'Connecting…';
+
+  /// en: 'Choosing data…'
+  String get choosingData =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.choosingData', {}) ?? 'Choosing data…';
+
+  /// en: 'Replace library'
+  String get replaceLibrary =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.replaceLibrary', {}) ?? 'Replace library';
+
+  /// en: 'Not available on the sender'
+  String get unavailableOnSender =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unavailableOnSender', {}) ??
+      'Not available on the sender';
+
+  /// en: 'Enable database storage to restore this category'
+  String get enableDatabaseFirst =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.enableDatabaseFirst', {}) ??
+      'Enable database storage to restore this category';
+
+  /// en: 'Looking for devices…'
+  String get lookingForDevices =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lookingForDevices', {}) ??
+      'Looking for devices…';
+
+  /// en: 'Could not find nearby devices.'
+  String get discoveryFailed =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.discoveryFailed', {}) ??
+      'Could not find nearby devices.';
+
+  /// en: 'Search again'
+  String get retryDiscovery =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.retryDiscovery', {}) ?? 'Search again';
+
+  /// en: 'Advanced options'
+  String get advancedOptions =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.advancedOptions', {}) ?? 'Advanced options';
+
+  /// en: 'Recent transfers (up to 20)'
+  String get recentHistory =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.recentHistory', {}) ??
+      'Recent transfers (up to 20)';
+
+  /// en: 'Could not start sharing.'
+  String get sharingStartFailed =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.sharingStartFailed', {}) ??
+      'Could not start sharing.';
+
+  /// en: 'Clipboard is empty.'
+  String get clipboardEmpty =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.clipboardEmpty', {}) ??
+      'Clipboard is empty.';
+
+  /// en: 'Restore failed. Previous data restored.'
+  String get restoreFailedRecovered =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreFailedRecovered', {}) ??
+      'Restore failed. Previous data restored.';
+
+  /// en: 'VPNs may block transfers. Turn them off on both devices.'
+  String get vpnNotice =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.vpnNotice', {}) ??
+      'VPNs may block transfers. Turn them off on both devices.';
+
+  /// en: 'No local IPv4 address found.'
+  String get noLocalAddress =>
+      TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.noLocalAddress', {}) ??
+      'No local IPv4 address found.';
 }
 
 // Path: settings.network
@@ -6309,7 +7281,7 @@ class Translations$settings$sync$en {
   /// en: 'Error!'
   String get errorTitle => TranslationOverrides.string(_root.$meta, 'settings.sync.errorTitle', {}) ?? 'Error!';
 
-  /// en: 'Please enter IP address and port.'
+  /// en: 'Enter an IP address and port.'
   String get pleaseEnterIPAndPort =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.pleaseEnterIPAndPort', {}) ??
       'Please enter IP address and port.';
@@ -6323,7 +7295,7 @@ class Translations$settings$sync$en {
   String get sendDataToDevice =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.sendDataToDevice', {}) ?? 'SEND data TO another device';
 
-  /// en: 'RECEIVE data FROM another device'
+  /// en: 'Receive data from another device'
   String get receiveDataFromDevice =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.receiveDataFromDevice', {}) ??
       'RECEIVE data FROM another device';
@@ -6365,22 +7337,22 @@ class Translations$settings$sync$en {
   String get syncFavsFrom =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFrom', {}) ?? 'Sync favourites from #…';
 
-  /// en: 'Allows to set from where the sync should start from, useful if you already synced all your favourites before and want to sync only the newest items'
+  /// en: 'Resumes from an earlier batch boundary.'
   String get syncFavsFromHelpText1 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText1', {}) ??
-      'Allows to set from where the sync should start from, useful if you already synced all your favourites before and want to sync only the newest items';
+      'Resumes from an earlier batch boundary.';
 
-  /// en: 'If you want to sync from the beginning leave this field blank'
+  /// en: 'Leave blank to start at the beginning.'
   String get syncFavsFromHelpText2 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText2', {}) ??
-      'If you want to sync from the beginning leave this field blank';
+      'Leave blank to start at the beginning.';
 
-  /// en: 'Example: You have X amount of favourites, set this field to 100, sync will start from item #100 and go until it reaches X'
+  /// en: 'Some earlier items may be sent again.'
   String get syncFavsFromHelpText3 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText3', {}) ??
-      'Example: You have X amount of favourites, set this field to 100, sync will start from item #100 and go until it reaches X';
+      'Some earlier items may be sent again.';
 
-  /// en: 'Order of favourites: From oldest (0) to newest (X)'
+  /// en: 'Oldest first. Indexes start at 0.'
   String get syncFavsFromHelpText4 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText4', {}) ??
       'Order of favourites: From oldest (0) to newest (X)';
@@ -6397,22 +7369,22 @@ class Translations$settings$sync$en {
   String get syncSnatchedFrom =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFrom', {}) ?? 'Sync snatched from #…';
 
-  /// en: 'Allows to set from where the sync should start from, useful if you already synced all your snatched history before and want to sync only the newest items'
+  /// en: 'Resumes from an earlier batch boundary.'
   String get syncSnatchedFromHelpText1 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText1', {}) ??
-      'Allows to set from where the sync should start from, useful if you already synced all your snatched history before and want to sync only the newest items';
+      'Resumes from an earlier batch boundary.';
 
-  /// en: 'If you want to sync from the beginning leave this field blank'
+  /// en: 'Leave blank to start at the beginning.'
   String get syncSnatchedFromHelpText2 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText2', {}) ??
-      'If you want to sync from the beginning leave this field blank';
+      'Leave blank to start at the beginning.';
 
-  /// en: 'Example: You have X amount of snatched, set this field to 100, sync will start from item #100 and go until it reaches X'
+  /// en: 'Some earlier items may be sent again.'
   String get syncSnatchedFromHelpText3 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText3', {}) ??
-      'Example: You have X amount of snatched, set this field to 100, sync will start from item #100 and go until it reaches X';
+      'Some earlier items may be sent again.';
 
-  /// en: 'Order of snatched: From oldest (0) to newest (X)'
+  /// en: 'Oldest first. Indexes start at 0.'
   String get syncSnatchedFromHelpText4 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText4', {}) ??
       'Order of snatched: From oldest (0) to newest (X)';
@@ -6440,15 +7412,15 @@ class Translations$settings$sync$en {
   String get tabsSyncMode =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.tabsSyncMode', {}) ?? 'Tabs sync mode';
 
-  /// en: 'Merge: Merge the tabs from this device on the other device, tabs with unknown boorus and already existing tabs will be ignored'
+  /// en: 'Merge: add missing tabs; skip unknown boorus.'
   String get tabsSyncModeMerge =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.tabsSyncModeMerge', {}) ??
-      'Merge: Merge the tabs from this device on the other device, tabs with unknown boorus and already existing tabs will be ignored';
+      'Merge: add missing tabs; skip unknown boorus.';
 
-  /// en: 'Replace: Completely replace the tabs on the other device with the tabs from this device'
+  /// en: 'Replace: replace tabs on the other device.'
   String get tabsSyncModeReplace =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.tabsSyncModeReplace', {}) ??
-      'Replace: Completely replace the tabs on the other device with the tabs from this device';
+      'Replace: replace tabs on the other device.';
 
   /// en: 'Merge'
   String get merge => TranslationOverrides.string(_root.$meta, 'settings.sync.merge', {}) ?? 'Merge';
@@ -6467,15 +7439,15 @@ class Translations$settings$sync$en {
   String get tagsSyncMode =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncMode', {}) ?? 'Tags sync mode';
 
-  /// en: 'Preserve type: Do not overwrite an existing known tag type with an unknown type during import'
+  /// en: 'Preserve type: keep known types when imported types are unknown.'
   String get tagsSyncModePreferTypeIfNone =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncModePreferTypeIfNone', {}) ??
-      'Preserve type: Do not overwrite an existing known tag type with an unknown type during import';
+      'Preserve type: keep known types when imported types are unknown.';
 
-  /// en: 'Overwrite: All tags will be added, if a tag and tag type exists on the other device it will be overwritten'
+  /// en: 'Overwrite: use imported tag types.'
   String get tagsSyncModeOverwrite =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncModeOverwrite', {}) ??
-      'Overwrite: All tags will be added, if a tag and tag type exists on the other device it will be overwritten';
+      'Overwrite: use imported tag types.';
 
   /// en: 'Preserve type'
   String get preferTypeIfNone =>
@@ -6488,12 +7460,12 @@ class Translations$settings$sync$en {
   String get testConnection =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.testConnection', {}) ?? 'Test connection';
 
-  /// en: 'Sends test request to other device.'
+  /// en: 'Send a test request to the other device.'
   String get testConnectionHelpText1 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.testConnectionHelpText1', {}) ??
       'Sends test request to other device.';
 
-  /// en: 'Shows success/failure notification.'
+  /// en: 'Show whether it connects.'
   String get testConnectionHelpText2 =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.testConnectionHelpText2', {}) ??
       'Shows success/failure notification.';
@@ -6501,7 +7473,7 @@ class Translations$settings$sync$en {
   /// en: 'Start sync'
   String get startSync => TranslationOverrides.string(_root.$meta, 'settings.sync.startSync', {}) ?? 'Start sync';
 
-  /// en: 'The Port and IP fields cannot be empty!'
+  /// en: 'Enter an IP address and port.'
   String get portAndIPCannotBeEmpty =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.portAndIPCannotBeEmpty', {}) ??
       'The Port and IP fields cannot be empty!';
@@ -6515,10 +7487,10 @@ class Translations$settings$sync$en {
   String get statsOfThisDevice =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.statsOfThisDevice', {}) ?? 'Stats of this device:';
 
-  /// en: 'Start server to receive data. Avoid public WiFi for security'
+  /// en: 'Start receiving. Avoid public Wi-Fi.'
   String get receiverInstructions =>
       TranslationOverrides.string(_root.$meta, 'settings.sync.receiverInstructions', {}) ??
-      'Start server to receive data. Avoid public WiFi for security';
+      'Start receiving. Avoid public Wi-Fi.';
 
   /// en: 'Available network interfaces'
   String get availableNetworkInterfaces =>
@@ -7621,6 +8593,663 @@ class Translations$media$loading$stopReasons$en {
 extension on Translations {
   dynamic _flatMapFunction(String path) {
     return switch (path) {
+          'init.backingUpDataAfterUpdate' =>
+            TranslationOverrides.string(_root.$meta, 'init.backingUpDataAfterUpdate', {}) ??
+                'Backing up data after update…',
+          'settings.backupAndTransfer.verificationPhrase' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.verificationPhrase', {}) ??
+                'Verification emojis',
+          'settings.backupAndTransfer.compareVerificationPhrase' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.compareVerificationPhrase', {}) ??
+                'Compare all six emojis on both devices. Allow only if they match; otherwise cancel.',
+          'settings.backupAndTransfer.allowVerifiedTransfer' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.allowVerifiedTransfer', {}) ??
+                'Allow transfer',
+          'settings.backupAndTransfer.recoveryFailedTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.recoveryFailedTitle', {}) ??
+                'Recovery incomplete',
+          'settings.backupAndTransfer.recoveryFailedMessage' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.recoveryFailedMessage', {}) ??
+                'Retry recovery before using the app.',
+          'settings.backupAndTransfer.retryRecovery' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.retryRecovery', {}) ??
+                'Retry recovery',
+          'settings.backupAndTransfer.importSucceededAckLost' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importSucceededAckLost', {}) ??
+                'Data restored, but sender was not notified. Do not restore again.',
+          'settings.backupAndTransfer.transferAckUnknown' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferAckUnknown', {}) ??
+                'Check the receiver before trying again.',
+          'settings.backupAndTransfer.title' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.title', {}) ?? 'Backup & Transfer',
+          'settings.backupAndTransfer.exportBackupHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportBackupHint', {}) ??
+                'Save settings and library records. Media files are not included.',
+          'settings.backupAndTransfer.importBackupHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importBackupHint', {}) ??
+                'Choose a file and what to restore',
+          'settings.backupAndTransfer.advancedBackupHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.advancedBackupHint', {}) ??
+                'Export or restore individual categories by file or clipboard',
+          'settings.backupAndTransfer.sendHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.sendHint', {}) ??
+                'Share data over your local network',
+          'settings.backupAndTransfer.receiveHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receiveHint', {}) ??
+                'Choose a device and data to receive',
+          'settings.backupAndTransfer.sendInstructions' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.sendInstructions', {}) ??
+                'Open “${_root.settings.backupAndTransfer.receiveDataTitle}” on the other device. Choose this device and data types, then approve here.',
+          'settings.backupAndTransfer.receiveInstructions' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receiveInstructions', {}) ??
+                'Open “${_root.settings.backupAndTransfer.sendDataTitle}” on the other device. Use the same local network.',
+          'settings.backupAndTransfer.noDevicesHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.noDevicesHint', {}) ??
+                'Keep “${_root.settings.backupAndTransfer.sendDataTitle}” open on the other device, or add its address manually.',
+          'settings.backupAndTransfer.autoBackupScheduleHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackupScheduleHint', {}) ??
+                'Runs when you open or return to the app after the chosen interval',
+          'settings.backupAndTransfer.defaultBackupLocation' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.defaultBackupLocation', {}) ??
+                'Default folder',
+          'settings.backupAndTransfer.resetAutoBackupHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.resetAutoBackupHint', {}) ??
+                'Reset backup preferences and status? Backup files stay.',
+          'settings.backupAndTransfer.operationInProgress' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.operationInProgress', {}) ??
+                'Working…',
+          'settings.backupAndTransfer.exportUnavailable' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportUnavailable', {}) ??
+                'No data available to export',
+          'settings.backupAndTransfer.overwriteTagTypes' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.overwriteTagTypes', {}) ??
+                'Overwrite existing tag types',
+          'settings.backupAndTransfer.tabsImportMode' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.tabsImportMode', {}) ??
+                'Tabs import mode',
+          'settings.backupAndTransfer.favouritesStartIndex' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.favouritesStartIndex', {}) ??
+                'Skip favourites',
+          'settings.backupAndTransfer.snatchedStartIndex' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.snatchedStartIndex', {}) ??
+                'Skip download-history items',
+          'settings.backupAndTransfer.restoreTabsMergeHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreTabsMergeHint', {}) ??
+                'Add missing tabs. Keep current tabs.',
+          'settings.backupAndTransfer.restoreTabsReplaceHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreTabsReplaceHint', {}) ??
+                'Replace open tabs; keep them if none can be restored.',
+          'settings.backupAndTransfer.restoreTagsPreserveHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreTagsPreserveHint', {}) ??
+                'Keep known types when imported types are unknown.',
+          'settings.backupAndTransfer.restoreTagsOverwriteHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreTagsOverwriteHint', {}) ??
+                'Use imported types, including unknown types.',
+          'settings.backupAndTransfer.waitingForApproval' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.waitingForApproval', {}) ??
+                'Connecting and waiting for approval…',
+          'settings.backupAndTransfer.preparingTransfer' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.preparingTransfer', {}) ??
+                'Preparing data…',
+          'settings.backupAndTransfer.verifyingTransfer' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.verifyingTransfer', {}) ??
+                'Checking data…',
+          'settings.backupAndTransfer.waitingForImport' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.waitingForImport', {}) ??
+                'Waiting for restore…',
+          'settings.backupAndTransfer.transferNotCompleted' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferNotCompleted', {}) ??
+                'Transfer not completed',
+          'settings.backupAndTransfer.clearTransferError' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.clearTransferError', {}) ??
+                'Clear error',
+          'settings.backupAndTransfer.stopSharing' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.stopSharing', {}) ?? 'Stop sharing',
+          'settings.backupAndTransfer.manualAddressHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.manualAddressHint', {}) ??
+                'Copy the address from the other device’s “${_root.settings.backupAndTransfer.sendDataTitle}” screen',
+          'settings.backupAndTransfer.invalidDeviceAddress' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidDeviceAddress', {}) ??
+                'Use IPv4:port, e.g. 192.168.1.10:12345',
+          'settings.backupAndTransfer.startIndexHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.startIndexHint', {}) ??
+                'Skip this many items; 0 includes all',
+          'settings.backupAndTransfer.invalidStartIndex' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidStartIndex', {}) ??
+                'Enter a number from 0 to 2147483647',
+          'settings.backupAndTransfer.transferData' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferData', {}) ?? 'Transfer data',
+          'settings.backupAndTransfer.backupData' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupData', {}) ?? 'Backup data',
+          'settings.backupAndTransfer.send' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.send', {}) ?? 'Start sharing',
+          'settings.backupAndTransfer.receive' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receive', {}) ?? 'Receive',
+          'settings.backupAndTransfer.export' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.export', {}) ?? 'Export',
+          'settings.backupAndTransfer.import' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.import', {}) ?? 'Restore',
+          'settings.backupAndTransfer.done' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.done', {}) ?? 'Done',
+          'settings.backupAndTransfer.advancedExportImport' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.advancedExportImport', {}) ??
+                'Advanced export/import',
+          'settings.backupAndTransfer.autoBackup' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackup', {}) ?? 'Automatic backup',
+          'settings.backupAndTransfer.enableAutoBackup' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.enableAutoBackup', {}) ??
+                'Enable automatic backup',
+          'settings.backupAndTransfer.backupAfterUpdates' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdates', {}) ??
+                'Back up after updates',
+          'settings.backupAndTransfer.backupAfterUpdatesSubtitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupAfterUpdatesSubtitle', {}) ??
+                'Keep five update backups in this folder, separately.',
+          'settings.backupAndTransfer.backupLocation' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupLocation', {}) ??
+                'Backup location',
+          'settings.backupAndTransfer.backupLocationNotSelected' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupLocationNotSelected', {}) ??
+                'Default folder',
+          'settings.backupAndTransfer.change' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.change', {}) ?? 'Change',
+          'settings.backupAndTransfer.backupInterval' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupInterval', {}) ??
+                'Backup interval',
+          'settings.backupAndTransfer.daily' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.daily', {}) ?? 'Daily',
+          'settings.backupAndTransfer.weekly' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.weekly', {}) ?? 'Weekly',
+          'settings.backupAndTransfer.monthly' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.monthly', {}) ?? 'Monthly',
+          'settings.backupAndTransfer.maximumBackups' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.maximumBackups', {}) ??
+                'Maximum automatic backups',
+          'settings.backupAndTransfer.maximumBackupsHint' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.maximumBackupsHint', {}) ??
+                'Shared by scheduled backups and “${_root.settings.backupAndTransfer.backupNow}”. Update backups keep five separately.',
+          'settings.backupAndTransfer.backupCountUnlimited' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupCountUnlimited', {}) ??
+                'Unlimited',
+          'settings.backupAndTransfer.backupCount' =>
+            ({required num count}) =>
+                TranslationOverrides.plural(_root.$meta, 'settings.backupAndTransfer.backupCount', {'count': count}) ??
+                (_root.$meta.cardinalResolver ?? LocalizationPluralRules.cardinal('en'))(
+                  count,
+                  one: '${count} backup',
+                  few: '${count} backups',
+                  many: '${count} backups',
+                  other: '${count} backups',
+                ),
+          'settings.backupAndTransfer.lastBackupNever' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lastBackupNever', {}) ??
+                'Last backup: never',
+          'settings.backupAndTransfer.lastBackup' =>
+            ({
+              required String date,
+            }) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lastBackup', {'date': date}) ??
+                'Last backup: ${date}',
+          'settings.backupAndTransfer.backupNow' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupNow', {}) ?? 'Back up now',
+          'settings.backupAndTransfer.backupExported' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupExported', {}) ??
+                'Backup exported',
+          'settings.backupAndTransfer.importedEntries' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importedEntries', {
+                  'count': count,
+                }) ??
+                'Categories restored: ${count}',
+          'settings.backupAndTransfer.autoBackupCreated' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackupCreated', {}) ??
+                'Automatic backup created',
+          'settings.backupAndTransfer.autoBackupLocationDialogTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackupLocationDialogTitle', {}) ??
+                'Automatic backup location',
+          'settings.backupAndTransfer.exportToFile' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportToFile', {}) ?? 'Export to file',
+          'settings.backupAndTransfer.importFromFile' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importFromFile', {}) ??
+                'Import from file',
+          'settings.backupAndTransfer.exportToClipboard' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportToClipboard', {}) ??
+                'Export to clipboard',
+          'settings.backupAndTransfer.importFromClipboard' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importFromClipboard', {}) ??
+                'Import from clipboard',
+          'settings.backupAndTransfer.entryExported' =>
+            ({
+              required String entry,
+            }) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryExported', {
+                  'entry': entry,
+                }) ??
+                'Exported: ${entry}',
+          'settings.backupAndTransfer.entryImported' =>
+            ({
+              required String entry,
+            }) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryImported', {
+                  'entry': entry,
+                }) ??
+                'Restored: ${entry}',
+          'settings.backupAndTransfer.entryCopied' =>
+            ({
+              required String entry,
+            }) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryCopied', {'entry': entry}) ??
+                'Copied: ${entry}',
+          'settings.backupAndTransfer.unavailable' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unavailable', {}) ?? 'Unavailable',
+          'settings.backupAndTransfer.sendDataTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.sendDataTitle', {}) ?? 'Send data',
+          'settings.backupAndTransfer.visibleOnNetwork' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.visibleOnNetwork', {}) ??
+                'Visible on network',
+          'settings.backupAndTransfer.visibleOnNetworkSubtitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.visibleOnNetworkSubtitle', {}) ??
+                'Disable to allow manual address connections only',
+          'settings.backupAndTransfer.includeDeviceSpecificSettings' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.includeDeviceSpecificSettings', {}) ??
+                'Include device preferences',
+          'settings.backupAndTransfer.includeDeviceSpecificSettingsSubtitle' =>
+            TranslationOverrides.string(
+                  _root.$meta,
+                  'settings.backupAndTransfer.includeDeviceSpecificSettingsSubtitle',
+                  {},
+                ) ??
+                'Language, theme, layout and similar preferences',
+          'settings.backupAndTransfer.includeDeviceSpecificSettingsHelpTitle' =>
+            TranslationOverrides.string(
+                  _root.$meta,
+                  'settings.backupAndTransfer.includeDeviceSpecificSettingsHelpTitle',
+                  {},
+                ) ??
+                'Which preferences?',
+          'settings.backupAndTransfer.includeDeviceSpecificSettingsHelp' =>
+            TranslationOverrides.string(
+                  _root.$meta,
+                  'settings.backupAndTransfer.includeDeviceSpecificSettingsHelp',
+                  {},
+                ) ??
+                'Applies to settings and profile overrides. Paths, proxy and app-lock settings stay local.',
+          'settings.backupAndTransfer.address' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.address', {}) ?? 'Address',
+          'settings.backupAndTransfer.name' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.name', {}) ?? 'Name',
+          'settings.backupAndTransfer.status' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.status', {}) ?? 'Status',
+          'settings.backupAndTransfer.starting' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.starting', {}) ?? 'Starting…',
+          'settings.backupAndTransfer.broadcasting' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.broadcasting', {}) ??
+                'Visible to nearby devices',
+          'settings.backupAndTransfer.hidden' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.hidden', {}) ??
+                'Manual connections only',
+          'settings.backupAndTransfer.transferred' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferred', {}) ?? 'Transferred',
+          'settings.backupAndTransfer.received' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.received', {}) ?? 'Received',
+          'settings.backupAndTransfer.total' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.total', {}) ?? 'Total',
+          'settings.backupAndTransfer.elapsed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.elapsed', {}) ?? 'Elapsed',
+          'settings.backupAndTransfer.speed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.speed', {}) ?? 'Speed',
+          'settings.backupAndTransfer.current' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.current', {}) ?? 'Current',
+          'settings.backupAndTransfer.logs' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.logs', {}) ?? 'Logs',
+          'settings.backupAndTransfer.deviceInfo' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.deviceInfo', {}) ?? 'Device info',
+          'settings.backupAndTransfer.history' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.history', {}) ?? 'History',
+          'settings.backupAndTransfer.noHistory' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.noHistory', {}) ??
+                'No transfer history',
+          'settings.backupAndTransfer.selectedData' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.selectedData', {}) ??
+                'Choose data to receive',
+          'settings.backupAndTransfer.receiveDataTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receiveDataTitle', {}) ??
+                'Receive data',
+          'settings.backupAndTransfer.addDevice' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.addDevice', {}) ?? 'Add device',
+          'settings.backupAndTransfer.manualDevice' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.manualDevice', {}) ??
+                'Manually added device',
+          'settings.backupAndTransfer.nearbyDevices' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.nearbyDevices', {}) ??
+                'Nearby devices',
+          'settings.backupAndTransfer.noDevicesFound' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.noDevicesFound', {}) ??
+                'No devices found',
+          'settings.backupAndTransfer.manual' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.manual', {}) ?? 'Manual',
+          'settings.backupAndTransfer.unknown' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unknown', {}) ?? 'Unknown',
+          'settings.backupAndTransfer.transfer' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transfer', {}) ?? 'Transfer',
+          'settings.backupAndTransfer.entrySettingsTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySettingsTitle', {}) ?? 'Settings',
+          'settings.backupAndTransfer.entrySettingsDescription' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySettingsDescription', {}) ??
+                'App settings',
+          'settings.backupAndTransfer.entryBooruProfilesTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryBooruProfilesTitle', {}) ??
+                'Booru configs',
+          'settings.backupAndTransfer.entryBooruProfilesDescription' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryBooruProfilesDescription', {}) ??
+                'Booru addresses, credentials and setting overrides',
+          'settings.backupAndTransfer.entryDatabaseTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryDatabaseTitle', {}) ??
+                'Full database — replace library',
+          'settings.backupAndTransfer.entryDatabaseDescription' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryDatabaseDescription', {}) ??
+                'Library records, tabs, tag metadata, pinned tags and search history',
+          'settings.backupAndTransfer.entryFavouritesTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryFavouritesTitle', {}) ??
+                'Favourites',
+          'settings.backupAndTransfer.entryFavouritesDescription' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryFavouritesDescription', {}) ??
+                'Favourite database items',
+          'settings.backupAndTransfer.entrySnatchedTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySnatchedTitle', {}) ??
+                'Download history',
+          'settings.backupAndTransfer.entrySnatchedDescription' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySnatchedDescription', {}) ??
+                'Downloaded-item records, without the media files',
+          'settings.backupAndTransfer.entryTabsTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryTabsTitle', {}) ?? 'Tabs',
+          'settings.backupAndTransfer.entryTabsDescription' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryTabsDescription', {}) ??
+                'Open tabs, selected tab and saved page positions',
+          'settings.backupAndTransfer.entryTagsTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryTagsTitle', {}) ?? 'Tags',
+          'settings.backupAndTransfer.entryTagsDescription' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryTagsDescription', {}) ??
+                'Local tag metadata',
+          'settings.backupAndTransfer.entryPinnedTagsTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryPinnedTagsTitle', {}) ??
+                'Pinned tags',
+          'settings.backupAndTransfer.entryPinnedTagsDescription' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entryPinnedTagsDescription', {}) ??
+                'Pinned tags, labels, order and booru scope',
+          'settings.backupAndTransfer.entrySearchHistoriesTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.entrySearchHistoriesTitle', {}) ??
+                'Search history',
+          'settings.backupAndTransfer.entrySearchHistoriesDescription' =>
+            TranslationOverrides.string(
+                  _root.$meta,
+                  'settings.backupAndTransfer.entrySearchHistoriesDescription',
+                  {},
+                ) ??
+                'Saved search history and favourite searches',
+          'settings.backupAndTransfer.databaseFileNotFound' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.databaseFileNotFound', {}) ??
+                'Database file not found',
+          'settings.backupAndTransfer.autoBackupLocationEmpty' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.autoBackupLocationEmpty', {}) ??
+                'Automatic backup location is empty',
+          'settings.backupAndTransfer.exportBackupDialogTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportBackupDialogTitle', {}) ??
+                'Export backup',
+          'settings.backupAndTransfer.importBackupDialogTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importBackupDialogTitle', {}) ??
+                'Restore backup',
+          'settings.backupAndTransfer.backupManifestNotFound' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.backupManifestNotFound', {}) ??
+                'Backup manifest not found',
+          'settings.backupAndTransfer.unsupportedBackupFormat' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unsupportedBackupFormat', {}) ??
+                'Unsupported backup format',
+          'settings.backupAndTransfer.approveTransferTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.approveTransferTitle', {}) ??
+                'Allow data transfer?',
+          'settings.backupAndTransfer.approveTransferRequest' =>
+            ({required String device, required String address}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.approveTransferRequest', {
+                  'device': device,
+                  'address': address,
+                }) ??
+                '${device} (${address}) wants to receive:',
+          'settings.backupAndTransfer.allowTransfer' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.allowTransfer', {}) ?? 'Allow',
+          'settings.backupAndTransfer.transferDeclined' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferDeclined', {}) ??
+                'The transfer request was declined',
+          'settings.backupAndTransfer.unsupportedTransferProtocol' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unsupportedTransferProtocol', {}) ??
+                'This device uses an unsupported transfer protocol',
+          'settings.backupAndTransfer.invalidTransferData' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidTransferData', {}) ??
+                'Invalid data from the other device.',
+          'settings.backupAndTransfer.transferBusy' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferBusy', {}) ??
+                'Another transfer is already in progress',
+          'settings.backupAndTransfer.transferChecksumMismatch' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferChecksumMismatch', {}) ??
+                'The received package failed its integrity check',
+          'settings.backupAndTransfer.importingPackage' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importingPackage', {}) ??
+                'Restoring data…',
+          'settings.backupAndTransfer.importExtracting' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importExtracting', {}) ??
+                'Unpacking backup…',
+          'settings.backupAndTransfer.importValidating' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importValidating', {}) ??
+                'Checking records…',
+          'settings.backupAndTransfer.importRechecking' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRechecking', {}) ??
+                'Rechecking records…',
+          'settings.backupAndTransfer.importPreparingDatabase' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importPreparingDatabase', {}) ??
+                'Preparing database…',
+          'settings.backupAndTransfer.importCleaningUp' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importCleaningUp', {}) ??
+                'Finishing changes…',
+          'settings.backupAndTransfer.importRefreshing' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRefreshing', {}) ??
+                'Refreshing data…',
+          'settings.backupAndTransfer.importRecordsProcessed' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRecordsProcessed', {
+                  'count': count,
+                }) ??
+                'Records processed: ${count}',
+          'settings.backupAndTransfer.importRecordsTotal' =>
+            ({required int count, required int total}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRecordsTotal', {
+                  'count': count,
+                  'total': total,
+                }) ??
+                'Records processed: ${count} / ${total}',
+          'settings.backupAndTransfer.importLastProgress' =>
+            ({required String elapsed}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importLastProgress', {
+                  'elapsed': elapsed,
+                }) ??
+                'Last update: ${elapsed} ago',
+          'settings.backupAndTransfer.transferStartFailed' =>
+            ({required String error}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferStartFailed', {
+                  'error': error,
+                }) ??
+                'Could not start the transfer: ${error}',
+          'settings.backupAndTransfer.importBackupTitle' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importBackupTitle', {}) ??
+                'Restore backup',
+          'settings.backupAndTransfer.databaseReplacementWarning' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.databaseReplacementWarning', {}) ??
+                'Replaces library records, tabs, tags, pins and search history. Merge options do not apply.',
+          'settings.backupAndTransfer.selectedImportOnly' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.selectedImportOnly', {}) ??
+                'Restore selected categories only',
+          'settings.backupAndTransfer.retryUpdateBackup' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.retryUpdateBackup', {}) ??
+                'Retry update backup',
+          'settings.backupAndTransfer.lastBackupFailed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lastBackupFailed', {}) ??
+                'Backup failed',
+          'settings.backupAndTransfer.lastUpdateBackupFailed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lastUpdateBackupFailed', {}) ??
+                'Update backup failed',
+          'settings.backupAndTransfer.unsupportedBackupFile' =>
+            ({required String fileName}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unsupportedBackupFile', {
+                  'fileName': fileName,
+                }) ??
+                'Unsupported backup file: ${fileName}',
+          'settings.backupAndTransfer.serverListening' =>
+            ({required String address}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.serverListening', {
+                  'address': address,
+                }) ??
+                'Ready for connections at ${address}',
+          'settings.backupAndTransfer.serverStopped' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.serverStopped', {}) ??
+                'Sharing stopped',
+          'settings.backupAndTransfer.clientConnected' =>
+            ({required String address}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.clientConnected', {
+                  'address': address,
+                }) ??
+                'Receiving device connected: ${address}',
+          'settings.backupAndTransfer.expectedSelectionFrame' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.expectedSelectionFrame', {}) ??
+                'Invalid data selection request',
+          'settings.backupAndTransfer.missingSelectedEntries' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.missingSelectedEntries', {}) ??
+                'No data categories selected',
+          'settings.backupAndTransfer.exportingEntries' =>
+            ({required int count}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.exportingEntries', {
+                  'count': count,
+                }) ??
+                'Preparing categories: ${count}',
+          'settings.backupAndTransfer.transferComplete' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferComplete', {}) ??
+                'Transfer complete',
+          'settings.backupAndTransfer.transferFailed' =>
+            ({required String error}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferFailed', {
+                  'error': error,
+                }) ??
+                'Transfer failed: ${error}',
+          'settings.backupAndTransfer.invalidSenderHello' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidSenderHello', {}) ??
+                'Invalid response from the sending device',
+          'settings.backupAndTransfer.connectedTo' =>
+            ({
+              required String device,
+            }) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.connectedTo', {
+                  'device': device,
+                }) ??
+                'Connected to ${device}',
+          'settings.backupAndTransfer.receivingEntry' =>
+            ({required String entry, required String size}) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.receivingEntry', {
+                  'entry': entry,
+                  'size': size,
+                }) ??
+                'Receiving ${entry} (${size})',
+          'settings.backupAndTransfer.importedReceivedPackage' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importedReceivedPackage', {}) ??
+                'Received data imported',
+          'settings.backupAndTransfer.senderError' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.senderError', {}) ?? 'Sender error',
+          'settings.backupAndTransfer.ignoredFrame' =>
+            ({
+              required String frame,
+            }) =>
+                TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.ignoredFrame', {'frame': frame}) ??
+                'Ignored frame: ${frame}',
+          'settings.backupAndTransfer.transferCancelled' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.transferCancelled', {}) ??
+                'Transfer stopped',
+          'settings.backupAndTransfer.operationFailed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.operationFailed', {}) ??
+                'Could not finish. See details.',
+          'settings.backupAndTransfer.storageFailure' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.storageFailure', {}) ??
+                'Check folder access and free space.',
+          'settings.backupAndTransfer.connectionFailure' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.connectionFailure', {}) ??
+                'Connection failed. Check both devices.',
+          'settings.backupAndTransfer.invalidBackupShort' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.invalidBackupShort', {}) ??
+                'Invalid or unsupported backup.',
+          'settings.backupAndTransfer.updateBothDevices' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.updateBothDevices', {}) ??
+                'Update both devices and try again.',
+          'settings.backupAndTransfer.details' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.details', {}) ?? 'Details',
+          'settings.backupAndTransfer.recovering' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.recovering', {}) ?? 'Recovering…',
+          'settings.backupAndTransfer.importSnapshotting' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importSnapshotting', {}) ??
+                'Saving recovery copy…',
+          'settings.backupAndTransfer.importRollingBack' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.importRollingBack', {}) ??
+                'Restoring previous data…',
+          'settings.backupAndTransfer.finishRestoreFirst' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.finishRestoreFirst', {}) ??
+                'Keep this screen open until restore finishes.',
+          'settings.backupAndTransfer.otherDeviceMayFinish' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.otherDeviceMayFinish', {}) ??
+                'The receiver may still finish restoring.',
+          'settings.backupAndTransfer.stopWaiting' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.stopWaiting', {}) ?? 'Stop waiting',
+          'settings.backupAndTransfer.restoreUnconfirmed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreUnconfirmed', {}) ??
+                'Restore unconfirmed',
+          'settings.backupAndTransfer.dataRestored' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.dataRestored', {}) ?? 'Data restored',
+          'settings.backupAndTransfer.connecting' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.connecting', {}) ?? 'Connecting…',
+          'settings.backupAndTransfer.choosingData' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.choosingData', {}) ?? 'Choosing data…',
+          'settings.backupAndTransfer.replaceLibrary' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.replaceLibrary', {}) ??
+                'Replace library',
+          'settings.backupAndTransfer.unavailableOnSender' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.unavailableOnSender', {}) ??
+                'Not available on the sender',
+          'settings.backupAndTransfer.enableDatabaseFirst' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.enableDatabaseFirst', {}) ??
+                'Enable database storage to restore this category',
+          'settings.backupAndTransfer.lookingForDevices' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.lookingForDevices', {}) ??
+                'Looking for devices…',
+          'settings.backupAndTransfer.discoveryFailed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.discoveryFailed', {}) ??
+                'Could not find nearby devices.',
+          'settings.backupAndTransfer.retryDiscovery' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.retryDiscovery', {}) ?? 'Search again',
+          'settings.backupAndTransfer.advancedOptions' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.advancedOptions', {}) ??
+                'Advanced options',
+          'settings.backupAndTransfer.recentHistory' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.recentHistory', {}) ??
+                'Recent transfers (up to 20)',
+          'settings.backupAndTransfer.sharingStartFailed' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.sharingStartFailed', {}) ??
+                'Could not start sharing.',
+          'settings.backupAndTransfer.clipboardEmpty' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.clipboardEmpty', {}) ??
+                'Clipboard is empty.',
+          'settings.backupAndTransfer.restoreFailedRecovered' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.restoreFailedRecovered', {}) ??
+                'Restore failed. Previous data restored.',
+          'settings.backupAndTransfer.vpnNotice' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.vpnNotice', {}) ??
+                'VPNs may block transfers. Turn them off on both devices.',
+          'settings.backupAndTransfer.noLocalAddress' =>
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndTransfer.noLocalAddress', {}) ??
+                'No local IPv4 address found.',
           'locale' => TranslationOverrides.string(_root.$meta, 'locale', {}) ?? 'en-US',
           'localeName' => TranslationOverrides.string(_root.$meta, 'localeName', {}) ?? 'English',
           'appName' => TranslationOverrides.string(_root.$meta, 'appName', {}) ?? 'LoliSnatcher',
@@ -9523,7 +11152,8 @@ extension on Translations {
                 }) ??
                 'The file ${fileName} already exists. Do you want to overwrite it? If you choose no, the backup will be cancelled.',
           'settings.backupAndRestore.androidOnlyFeatureMsg' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.androidOnlyFeatureMsg', {}) ?? 'This feature is only available on Android, on Desktop builds you can just copy/paste files from/to app\'s data folder, respective to your system',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.androidOnlyFeatureMsg', {}) ??
+                'Android only. Use “${_root.settings.backupAndTransfer.title}” on other platforms.',
           'settings.backupAndRestore.selectBackupDir' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.selectBackupDir', {}) ??
                 'Select backup directory',
@@ -9564,9 +11194,11 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.resetBackupDir', {}) ??
                 'Reset backup directory',
           'settings.backupAndRestore.backupBoorus' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupBoorus', {}) ?? 'Backup boorus',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupBoorus', {}) ??
+                'Back up booru configs',
           'settings.backupAndRestore.restoreBoorus' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreBoorus', {}) ?? 'Restore boorus',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreBoorus', {}) ??
+                'Restore booru configs',
           'settings.backupAndRestore.boorusBackedUp' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.boorusBackedUp', {}) ??
                 'Boorus backed up to boorus.json',
@@ -9587,13 +11219,13 @@ extension on Translations {
                 'Restore database',
           'settings.backupAndRestore.restoreDatabaseInfo' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreDatabaseInfo', {}) ??
-                'May take a while depending on the size of the database, will restart the app on success',
+                'Large restores take time. The app restarts when done.',
           'settings.backupAndRestore.databaseBackedUp' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.databaseBackedUp', {}) ??
                 'Database backed up to store.db',
           'settings.backupAndRestore.databaseRestored' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.databaseRestored', {}) ??
-                'Database restored from backup! App will restart in a few seconds!',
+                'Database restored. Restarting shortly.',
           'settings.backupAndRestore.backupDatabaseError' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupDatabaseError', {}) ??
                 'Failed to backup database',
@@ -9602,9 +11234,9 @@ extension on Translations {
                 'Failed to restore database',
           'settings.backupAndRestore.databaseFileNotFound' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.databaseFileNotFound', {}) ??
-                'Database file not found or cannot be read!',
+                'Database file not found or unreadable',
           'settings.backupAndRestore.backupTags' =>
-            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupTags', {}) ?? 'Backup tags',
+            TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupTags', {}) ?? 'Back up tags',
           'settings.backupAndRestore.restoreTags' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.restoreTags', {}) ?? 'Restore tags',
           'settings.backupAndRestore.restoreTagsInfo' =>
@@ -9626,10 +11258,10 @@ extension on Translations {
                 'Tags file not found or cannot be read!',
           'settings.backupAndRestore.operationTakesTooLongMsg' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.operationTakesTooLongMsg', {}) ??
-                'Press Hide below if it takes too long, operation will continue in background',
+                'Tap “${_root.hide}” to hide progress. The operation continues.',
           'settings.backupAndRestore.backupFileNotFound' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupFileNotFound', {}) ??
-                'Backup file not found or cannot be read!',
+                'Backup file not found or unreadable',
           'settings.backupAndRestore.backupDirNoAccess' =>
             TranslationOverrides.string(_root.$meta, 'settings.backupAndRestore.backupDirNoAccess', {}) ??
                 'No access to backup directory!',
@@ -10401,12 +12033,12 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText1', {}) ?? 'Allows to set from where the sync should start from, useful if you already synced all your favourites before and want to sync only the newest items',
           'settings.sync.syncFavsFromHelpText2' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText2', {}) ??
-                'If you want to sync from the beginning leave this field blank',
+                'Leave blank to start at the beginning.',
           'settings.sync.syncFavsFromHelpText3' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText3', {}) ?? 'Example: You have X amount of favourites, set this field to 100, sync will start from item #100 and go until it reaches X',
           'settings.sync.syncFavsFromHelpText4' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncFavsFromHelpText4', {}) ??
-                'Order of favourites: From oldest (0) to newest (X)',
+                'Oldest first. Indexes start at 0.',
           'settings.sync.sendSnatchedHistory' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.sendSnatchedHistory', {}) ??
                 'Send snatched history',
@@ -10422,7 +12054,7 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText1', {}) ?? 'Allows to set from where the sync should start from, useful if you already synced all your snatched history before and want to sync only the newest items',
           'settings.sync.syncSnatchedFromHelpText2' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText2', {}) ??
-                'If you want to sync from the beginning leave this field blank',
+                'Leave blank to start at the beginning.',
           'settings.sync.syncSnatchedFromHelpText3' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.syncSnatchedFromHelpText3', {}) ?? 'Example: You have X amount of snatched, set this field to 100, sync will start from item #100 and go until it reaches X',
           'settings.sync.syncSnatchedFromHelpText4' =>
@@ -10452,7 +12084,7 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.sync.tabsSyncModeMerge', {}) ?? 'Merge: Merge the tabs from this device on the other device, tabs with unknown boorus and already existing tabs will be ignored',
           'settings.sync.tabsSyncModeReplace' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.tabsSyncModeReplace', {}) ??
-                'Replace: Completely replace the tabs on the other device with the tabs from this device',
+                'Replace: replace tabs on the other device.',
           'settings.sync.merge' => TranslationOverrides.string(_root.$meta, 'settings.sync.merge', {}) ?? 'Merge',
           'settings.sync.replace' => TranslationOverrides.string(_root.$meta, 'settings.sync.replace', {}) ?? 'Replace',
           'settings.sync.sendTags' =>
@@ -10467,7 +12099,7 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncMode', {}) ?? 'Tags sync mode',
           'settings.sync.tagsSyncModePreferTypeIfNone' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncModePreferTypeIfNone', {}) ??
-                'Preserve type: Do not overwrite an existing known tag type with an unknown type during import',
+                'Preserve type: keep known types when imported types are unknown.',
           'settings.sync.tagsSyncModeOverwrite' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.tagsSyncModeOverwrite', {}) ?? 'Overwrite: All tags will be added, if a tag and tag type exists on the other device it will be overwritten',
           'settings.sync.preferTypeIfNone' =>
@@ -10494,7 +12126,7 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'settings.sync.statsOfThisDevice', {}) ?? 'Stats of this device:',
           'settings.sync.receiverInstructions' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.receiverInstructions', {}) ??
-                'Start server to receive data. Avoid public WiFi for security',
+                'Start receiving. Avoid public Wi-Fi.',
           'settings.sync.availableNetworkInterfaces' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.availableNetworkInterfaces', {}) ??
                 'Available network interfaces',

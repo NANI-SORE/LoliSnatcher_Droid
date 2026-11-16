@@ -8,6 +8,15 @@ on:
         required: false
         default: 'Manual build triggered'
         type: string
+      network_stack:
+        description: 'Network stack to build with'
+        required: false
+        default: 'cronet-gms'
+        type: choice
+        options:
+          - cronet-gms
+          - cronet-embedded
+          - no-cronet
 
 jobs:
   bump-version-and-build:
@@ -88,7 +97,7 @@ jobs:
           EOF
 
       - name: Build APK for testing
-        run: bash build.sh test
+        run: bash build.sh test ${{ inputs.network_stack }}
 
       - name: Upload APK (arm64-v8a)
         uses: actions/upload-artifact@v7

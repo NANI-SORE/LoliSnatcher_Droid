@@ -2,12 +2,16 @@ import 'dart:io';
 
 import 'package:sqflite/sqflite.dart';
 
+import 'package:lolisnatcher/src/services/backup_transfer/backup_transfer_logger.dart';
+
 /// File operations run on private staging files, never on a partially copied
 /// live database. Uses the same SQLite implementation as the app connection.
 class DatabaseBackupService {
   const DatabaseBackupService();
 
   Future<void> createSnapshot(File source, File destination, {Database? database}) async {
+    final timer = Stopwatch()..start();
+    BackupTransferLogger.info('Starting database snapshot', 'DatabaseBackupService', 'createSnapshot');
     if (!await source.exists()) throw StateError('Database file does not exist');
     if (await destination.exists()) throw StateError('Snapshot destination already exists');
     final connection = database ?? await openDatabase(source.path, singleInstance: false);
@@ -20,19 +24,36 @@ class DatabaseBackupService {
       try {
         // Switching out of WAL checkpoints committed pages into the main file.
         // This also works on Android versions too old to support VACUUM INTO.
+        final checkpointTimer = Stopwatch()..start();
         final mode = (await connection.rawQuery('PRAGMA journal_mode = DELETE')).single.values.single;
         if (mode != 'delete') throw StateError('Unable to checkpoint database for backup');
+        BackupTransferLogger.info(
+          'Database snapshot checkpoint took ${checkpointTimer.elapsedMilliseconds}ms',
+          'DatabaseBackupService',
+          'createSnapshot',
+        );
         await connection.transaction((txn) async {
           // Keep other app operations queued and other connections locked out
           // until the local copy is complete. No database writes in this block.
           await txn.rawQuery('SELECT count(*) FROM sqlite_master');
+          final copyTimer = Stopwatch()..start();
           await source.copy(destination.path);
+          BackupTransferLogger.info(
+            'Database snapshot copy took ${copyTimer.elapsedMilliseconds}ms',
+            'DatabaseBackupService',
+            'createSnapshot',
+          );
         }, exclusive: true);
       } finally {
         await _setJournalMode(connection, originalMode);
       }
     } finally {
       if (database == null) await connection.close();
+      BackupTransferLogger.info(
+        'Database snapshot attempt finished after ${timer.elapsedMilliseconds}ms',
+        'DatabaseBackupService',
+        'createSnapshot',
+      );
     }
   }
 
@@ -47,7 +68,14 @@ class DatabaseBackupService {
     }
     final connection = await openDatabase(file.path, readOnly: true, singleInstance: false);
     try {
+      final timer = Stopwatch()..start();
+      BackupTransferLogger.info('Starting database integrity check', 'DatabaseBackupService', 'validate');
       final integrity = await connection.rawQuery('PRAGMA integrity_check');
+      BackupTransferLogger.info(
+        'Database integrity check took ${timer.elapsedMilliseconds}ms',
+        'DatabaseBackupService',
+        'validate',
+      );
       if (integrity.length != 1 || integrity.single.values.single != 'ok') {
         throw const FormatException('Database backup failed integrity validation');
       }

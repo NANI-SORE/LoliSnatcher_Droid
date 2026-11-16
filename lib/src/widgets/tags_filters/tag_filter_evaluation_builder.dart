@@ -17,12 +17,14 @@ class TagFilterEvaluationBuilder extends StatelessWidget {
     required this.builder,
     this.handler,
     this.booru,
+    this.allowHiddenPreview = false,
     super.key,
   });
 
   final BooruItem item;
   final BooruHandler? handler;
   final Booru? booru;
+  final bool allowHiddenPreview;
   final Widget Function(BuildContext context, TagFilterEvaluation evaluation) builder;
 
   @override
@@ -50,7 +52,9 @@ class TagFilterEvaluationBuilder extends StatelessWidget {
             ),
           );
         }
-        return evaluation.isHidden ? const SizedBox.shrink() : builder(context, evaluation);
+        return evaluation.isHidden && !allowHiddenPreview
+            ? const SizedBox.shrink()
+            : builder(context, allowHiddenPreview ? evaluation.forDisplay() : evaluation);
       },
     );
   }

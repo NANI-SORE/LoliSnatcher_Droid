@@ -28,6 +28,7 @@ import 'package:lolisnatcher/src/handlers/search_handler.dart';
 import 'package:lolisnatcher/src/handlers/secure_storage_handler.dart';
 import 'package:lolisnatcher/src/handlers/service_handler.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
+import 'package:lolisnatcher/src/services/backup_transfer/auto_backup_service.dart';
 import 'package:lolisnatcher/src/services/saf_file_cache.dart';
 import 'package:lolisnatcher/src/utils/clipboard.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
@@ -104,6 +105,8 @@ class SettingsHandler {
   final Map<String, Future<void>> _fileWriteQueues = {};
   Future<void> _settingsSaveQueue = Future<void>.value();
   bool _settingsSaveBatchScheduled = false;
+  bool scheduledSettingsSavesPaused = false;
+  final backupRecoveryRetry = ValueNotifier<Future<void> Function()?>(null);
 
   static const Duration updateCheckInterval = Duration(hours: 12);
   Timer? _updateCheckTimer;
@@ -210,8 +213,12 @@ class SettingsHandler {
       if (!Tools.isTestMode) {
         if (SX.dbEnabled.value) {
           if (SX.indexesEnabled.value) {
-            postInitMessage.value = '${loc.settings.database.indexingDatabase}...\n${loc.thisMayTakeSomeTime}';
-            await dbHandler.createIndexes();
+            postInitMessage.value = '${loc.settings.database.indexingDatabase}...';
+            await dbHandler.createIndexes(
+              onCreate: () {
+                postInitMessage.value = '${loc.settings.database.indexingDatabase}...\n${loc.thisMayTakeSomeTime}';
+              },
+            );
           } else {
             postInitMessage.value = '${loc.settings.database.droppingIndexes}...\n${loc.thisMayTakeSomeTime}';
             await dbHandler.dropIndexes();
@@ -274,6 +281,9 @@ class SettingsHandler {
     bool restate = false,
     String? booruName,
   }) {
+    // Restore explicitly checkpoints state. Do not retain callbacks that could
+    // persist partially imported values after a rollback.
+    if (scheduledSettingsSavesPaused) return;
     Future<void> save() async {
       if (booruName != null) {
         Booru? booru;
@@ -357,6 +367,11 @@ class SettingsHandler {
       final queue = _settingsSaveQueue;
       await queue;
       if (identical(queue, _settingsSaveQueue) && !_settingsSaveBatchScheduled && _pendingSettingsSaves.isEmpty) {
+        // Direct saveSettings/saveBooru calls also use these per-file queues.
+        if (_fileWriteQueues.isNotEmpty) {
+          await Future.wait(_fileWriteQueues.values.toList());
+          continue;
+        }
         return;
       }
     }
@@ -1293,6 +1308,8 @@ class SettingsHandler {
     }
 
     try {
+      await _runAfterUpdateBackupIfDue();
+
       postInitMessage.value = loc.init.settingUpProxy;
       await initProxy();
 
@@ -1347,6 +1364,23 @@ class SettingsHandler {
     isPostInit.value = true;
     postInitMessage.value = '';
     return;
+  }
+
+  Future<void> _runAfterUpdateBackupIfDue() async {
+    try {
+      await AutoBackupService().runAfterUpdateIfDue(() async {
+        postInitMessage.value = loc.init.backingUpDataAfterUpdate;
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+    } catch (e, s) {
+      Logger.Inst().log(
+        e.toString(),
+        'SettingsHandler',
+        'runAfterUpdateBackup',
+        LogTypes.settingsLoad,
+        s: s,
+      );
+    }
   }
 }
 

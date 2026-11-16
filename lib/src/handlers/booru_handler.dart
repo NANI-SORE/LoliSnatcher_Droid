@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:get/get.dart' hide Response;
-import 'package:get_it/get_it.dart';
 import 'package:html/parser.dart';
 
 import 'package:lolisnatcher/src/data/booru.dart';
@@ -129,7 +128,15 @@ abstract class BooruHandler {
   Booru filterSettingsBooruFor(BooruItem item) => booru;
 
   bool Function(BooruItem, TagFilterEvaluation) _itemFilterFor(Booru source, {Booru? traversal}) {
-    final timers = GetIt.instance.isRegistered<TagFilterHandler>() ? TagFilterHandler.instance : null;
+    final reasons = _filterReasonsFor(source, traversal: traversal);
+    return (item, evaluation) => reasons(item, evaluation).isEmpty;
+  }
+
+  List<BooruItemFilterReason> Function(BooruItem, TagFilterEvaluation) _filterReasonsFor(
+    Booru source, {
+    Booru? traversal,
+  }) {
+    final timers = (TagFilterHandler.maybeInstance != null) ? TagFilterHandler.instance : null;
     final filterMarked =
         timers?.optionEnabled(TimedFilterOption.marked, booruName: source.name) ??
         SX.filterMarked.valueForBooru(source.name);
@@ -146,19 +153,20 @@ abstract class BooruHandler {
         source.type?.isDownloads != true &&
         traversal?.type?.isDownloads != true;
 
-    return (item, evaluation) =>
-        !evaluation.isHidden &&
-        !(filterMarked && evaluation.isMarked) &&
-        !(filterAi && item.isAI) &&
-        !(filterFavourites && item.isFavourite.value == true) &&
-        !(filterSnatched && item.isSnatched.value == true);
+    return (item, evaluation) => [
+      if (evaluation.isHidden) BooruItemFilterReason.hiddenTags,
+      if (filterMarked && evaluation.isMarked) BooruItemFilterReason.markedTags,
+      if (filterAi && item.isAI) BooruItemFilterReason.ai,
+      if (filterFavourites && item.isFavourite.value == true) BooruItemFilterReason.favourite,
+      if (filterSnatched && item.isSnatched.value == true) BooruItemFilterReason.snatched,
+    ];
   }
 
   bool eligibleForDownload(BooruItem item, {Booru? source, Booru? traversal}) {
     final origin = source ?? booru;
     final context = FilterContext(viewBooru: traversal ?? booru, sourceBooru: origin);
-    final evaluation = GetIt.instance.isRegistered<TagFilterHandler>()
-        ? _evaluateFilter(item, context, TagFilterHandler.instance)
+    final evaluation = (TagFilterHandler.maybeInstance != null)
+        ? TagFilterHandler.instance.evaluate(item, context)
         : const TagFilterEvaluation.empty();
     return ContentPolicy.isItemAllowed(origin, item) &&
         !evaluation.isBlurred &&
@@ -194,7 +202,12 @@ abstract class BooruHandler {
 
   /// Also evaluates standalone items and metadata refreshed after fetching.
   TagFilterEvaluation filterEvaluationFor(BooruItem item) {
-    if (!GetIt.instance.isRegistered<TagFilterHandler>()) return const TagFilterEvaluation.empty();
+    final raw = rawFilterEvaluationFor(item);
+    return _restoredFilterItems.contains(item) ? raw.forDisplay(reveal: true) : raw;
+  }
+
+  TagFilterEvaluation rawFilterEvaluationFor(BooruItem item) {
+    if (!(TagFilterHandler.maybeInstance != null)) return const TagFilterEvaluation.empty();
     return _evaluateFilter(item, filterContextFor(item), TagFilterHandler.instance);
   }
 
@@ -244,9 +257,7 @@ abstract class BooruHandler {
   /// (See gelbooru of favourites handlers for example)
   void filterFetched({bool forceRefresh = false}) {
     final generation = ++_filterGeneration;
-    final revision = GetIt.instance.isRegistered<TagFilterHandler>()
-        ? TagFilterHandler.instance.evaluationRevision
-        : -1;
+    final revision = (TagFilterHandler.maybeInstance != null) ? TagFilterHandler.instance.evaluationRevision : -1;
     final catalogKey = _filterContextCatalogKey();
     final canAppend =
         !forceRefresh &&
@@ -290,7 +301,7 @@ abstract class BooruHandler {
     final List<BooruItem> filteredItems = start == 0 ? [] : [...filteredFetched];
     final Set<String> seenFileUrls = start == 0 ? {} : {..._seenFileURLs};
     final Set<String> seenServerIds = start == 0 ? {} : {..._seenServerIds};
-    final bool hasTagFilterHandler = GetIt.instance.isRegistered<TagFilterHandler>();
+    final bool hasTagFilterHandler = (TagFilterHandler.maybeInstance != null);
     final filterHandler = hasTagFilterHandler ? TagFilterHandler.instance : null;
     final sharedContext = hasTagFilterHandler ? sharedFilterContext : null;
     final contextCatalogKey = hasTagFilterHandler && sharedContext == null ? _filterContextCatalogKey() : '';
@@ -332,13 +343,7 @@ abstract class BooruHandler {
       final settingsSource = filterSettingsBooruFor(item);
       final includeItem = filters.putIfAbsent(settingsSource, () => _itemFilterFor(settingsSource));
       if (!_restoredFilterItems.contains(item) && !includeItem(item, evaluation)) {
-        hidden[item] = [
-          if (evaluation.isHidden) BooruItemFilterReason.hiddenTags,
-          if (evaluation.isMarked) BooruItemFilterReason.markedTags,
-          if (item.isAI) BooruItemFilterReason.ai,
-          if (item.isFavourite.value == true) BooruItemFilterReason.favourite,
-          if (item.isSnatched.value == true) BooruItemFilterReason.snatched,
-        ];
+        hidden[item] = _filterReasonsFor(settingsSource)(item, evaluation);
         continue;
       }
       if (extraFilter?.call(item) == false) continue;

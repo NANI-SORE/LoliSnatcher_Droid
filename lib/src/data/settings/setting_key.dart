@@ -106,6 +106,7 @@ enum SettingKey {
   extPathOverride,
   cacheStatsSlot,
   backupPath,
+  syncVisibleOnNetwork,
 
   // Database
   dbEnabled,
@@ -151,8 +152,6 @@ enum SettingKey {
   desktopListsDrag,
   mousewheelScrollSpeed,
   locale,
-  lastSyncIp,
-  lastSyncPort,
   appAlias,
   usePredictiveBack,
   captureLogcat,
@@ -303,6 +302,7 @@ abstract class SX {
   static const jsonWrite = TypedKey<bool>(SettingKey.jsonWrite);
   static const extPathOverride = TypedKey<String>(SettingKey.extPathOverride);
   static const backupPath = TypedKey<String>(SettingKey.backupPath);
+  static const syncVisibleOnNetwork = TypedKey<bool>(SettingKey.syncVisibleOnNetwork);
 
   // Database
   static const dbEnabled = TypedKey<bool>(SettingKey.dbEnabled);
@@ -346,8 +346,6 @@ abstract class SX {
   static const desktopListsDrag = TypedKey<bool>(SettingKey.desktopListsDrag);
   static const mousewheelScrollSpeed = TypedKey<double>(SettingKey.mousewheelScrollSpeed);
   static const locale = TypedKey<AppLocale?>(SettingKey.locale);
-  static const lastSyncIp = TypedKey<String>(SettingKey.lastSyncIp);
-  static const lastSyncPort = TypedKey<String>(SettingKey.lastSyncPort);
   static const appAlias = TypedKey<AppAlias>(SettingKey.appAlias);
   static const usePredictiveBack = TypedKey<bool>(SettingKey.usePredictiveBack);
   static const captureLogcat = TypedKey<bool>(SettingKey.captureLogcat);

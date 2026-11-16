@@ -161,6 +161,7 @@ class Logger {
 
 // TODO more types
 enum LogTypes {
+  backupTransferInfo,
   booruHandlerFetchFailed,
   booruHandlerInfo,
   booruHandlerParseFailed,
@@ -198,6 +199,7 @@ enum LogTypes {
         return LogLevel.error;
       //
       case LogTypes.booruHandlerInfo:
+      case LogTypes.backupTransferInfo:
       case LogTypes.booruHandlerRawFetched:
       case LogTypes.booruHandlerSearchURL:
       case LogTypes.booruHandlerTagInfo:

@@ -1,3 +1,7 @@
+import 'package:lolisnatcher/src/services/offline_cache.dart';
+import 'package:lolisnatcher/src/services/offline_media_resolver.dart';
+import 'package:lolisnatcher/src/services/offline_thumbnail_service.dart';
+import 'package:lolisnatcher/src/handlers/tag_filter_handler.dart';
 import 'package:dio/dio.dart';
 import 'package:lolisnatcher/src/downloads/download_localizations.dart';
 
@@ -314,6 +318,7 @@ class SnatchHandler with WidgetsBindingObserver {
     }
     _poller = Timer.periodic(const Duration(milliseconds: 500), (_) => unawaited(refresh()));
     SettingsHandler.instance.onDownloadConfigurationChanged = _configurationChanged;
+    TagFilterHandler.maybeInstance?.revision.addListener(_configurationChanged);
     await refresh();
   }
 
@@ -386,7 +391,7 @@ class SnatchHandler with WidgetsBindingObserver {
   Future<void> _completionEvents() async {
     if (!_foreground) return;
     final settings = SettingsHandler.instance;
-    final acknowledged = <String>[];
+
     for (final event in await _store!.completionEvents()) {
       final value = downloadMap(event['payload']);
       final transfer = PreparedTransfer.fromJson(downloadMap(value['transfer']));
@@ -395,18 +400,58 @@ class SnatchHandler with WidgetsBindingObserver {
       if (SX.dbEnabled.value && settings.dbHandler.db != null) {
         final tracked = await settings.dbHandler.getTrackedValues(item);
         item.isFavourite.value = tracked[1];
+      }
+      final previousName = item.savedFileName;
+      item.savedFileName = receipt.filename ?? transfer.filename;
+      final source = settings.booruList.where((source) => source.name == transfer.sourceName).firstOrNull;
+      final resolver = OfflineMediaResolver.instance;
+      final currentPath = Platform.isIOS || SX.extPathOverride.value.isEmpty
+          ? await ServiceHandler.getPicturesDir()
+          : SX.extPathOverride.value;
+      final sameDestination = transfer.destination.path == currentPath;
+      final storageIdentity =
+          transfer.destination.storageIdentity ??
+          (sameDestination
+              ? resolver.storageIdentity
+              : '${transfer.destination.isSaf ? 'saf' : 'file'}:${transfer.destination.path}');
+      if (transfer.overwrite && source != null) {
+        OfflineCache.beginClear();
+        try {
+          for (final name in {previousName, item.savedFileName}) {
+            item.savedFileName = name;
+            await resolver.invalidateCopies(item, source, storageIdentity);
+            await OfflineThumbnailService.instance.invalidate(item, source, storageIdentity);
+          }
+        } finally {
+          item.savedFileName = receipt.filename ?? transfer.filename;
+          OfflineCache.endClear();
+        }
+      }
+      if (SX.dbEnabled.value && settings.dbHandler.db != null) {
         await settings.dbHandler.updateBooruItem(item, BooruUpdateMode.local);
       }
       for (final tab in SearchHandler.instance.tabs) {
         for (final shown in tab.booruHandler.fetched.where((e) => e.postURL == item.postURL)) {
           shown.isSnatched.value = true;
+          shown.savedFileName = item.savedFileName;
+        }
+        if (tab.booruHandler.fetched.any((shown) => shown.postURL == item.postURL)) {
+          tab.booruHandler.refilterAll();
         }
       }
-      SAFFileCache.instance.onFileCreated(receipt.filename ?? transfer.filename);
+      if (transfer.destination.isSaf) {
+        SAFFileCache.instance.onFileCreated(item.savedFileName!, safUri: transfer.destination.path);
+      }
+      if (sameDestination && source != null) {
+        try {
+          await OfflineThumbnailService.instance.generateAfterSave(item, source);
+        } catch (_) {
+          /* Saved file remains complete if thumbnail preparation fails. */
+        }
+      }
       await onCompleted?.call(transfer, receipt);
-      acknowledged.add(event['id'] as String);
+      await _store!.acknowledgeEvents([event['id'] as String]);
     }
-    await _store!.acknowledgeEvents(acknowledged);
   }
 
   Future<DownloadConfiguration> _capture({Iterable<String> urls = const []}) async {
@@ -681,15 +726,38 @@ class SnatchHandler with WidgetsBindingObserver {
     await temporary.rename(file.path);
   }
 
-  Future<List<Map<String, dynamic>>> portablePresets() async => (await (await store).presets())
-      .map(
-        (row) => {
-          'id': row['id'],
-          'name': row['name'],
-          'payload': downloadMap(row['payload']),
+  Future<List<Map<String, dynamic>>> portablePresets() async {
+    final file = File(p.join(await ServiceHandler.getConfigDir(), 'download_presets.json'));
+    final rows = _store != null
+        ? await _store!.presets()
+        : await file.exists()
+        ? jsonDecode(await file.readAsString()) as List
+        : <dynamic>[];
+    return rows.map((raw) {
+      final row = downloadMap(raw);
+      final payload = downloadMap(row['payload']);
+      return {
+        'id': row['id'],
+        'name': row['name'],
+        'payload': {
+          for (final key in ['query', 'amount', 'delay', 'startPage', 'sourceNames', 'quality', 'overwrite'])
+            if (payload.containsKey(key)) key: payload[key],
         },
-      )
-      .toList();
+      };
+    }).toList();
+  }
+
+  Future<void> reloadPresetsFromDisk() async {
+    if (_store == null) return;
+    final file = File(p.join(await ServiceHandler.getConfigDir(), 'download_presets.json'));
+    final rows = await file.exists() ? jsonDecode(await file.readAsString()) as List : <dynamic>[];
+    await _store!.db.delete('presets');
+    for (final raw in rows) {
+      final row = downloadMap(raw);
+      await _store!.putPreset(row['id'] as String, row['name'] as String, downloadMap(row['payload']));
+    }
+  }
+
   Future<void> importPresets(Object? value) async {
     if (value is! List) return;
     for (final raw in value) {
@@ -768,6 +836,7 @@ class SnatchHandler with WidgetsBindingObserver {
     onShareCancel();
     _stopShareProgressStuckTimer();
     SettingsHandler.instance.onDownloadConfigurationChanged = null;
+    TagFilterHandler.maybeInstance?.revision.removeListener(_configurationChanged);
     _configurationTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _poller?.cancel();

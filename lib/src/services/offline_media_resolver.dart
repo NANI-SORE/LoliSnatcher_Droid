@@ -1,3 +1,5 @@
+import 'package:lolisnatcher/src/utils/booru_source_resolver.dart';
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -5,9 +7,6 @@ import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
 
-import 'package:lolisnatcher/src/boorus/booru_type.dart';
-import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
-import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
@@ -252,45 +251,14 @@ class OfflineMediaResolver {
     }
   }
 
-  Booru? resolveSourceBooru(BooruItem item, {Booru? fallback}) {
-    final itemFileUri = Uri.tryParse(item.fileURL);
-    final itemPostUri = Uri.tryParse(item.postURL);
-    final itemPostHost = itemPostUri?.host;
-    bool matchesSource(Uri? itemUri, Booru source) {
-      final sourceUri = Uri.tryParse(source.baseURL ?? '');
-      return itemUri?.host.isNotEmpty == true && itemUri!.host == sourceUri?.host && itemUri.port == sourceUri?.port;
-    }
-
-    // Keep the caller's account/configuration first, but only when its source
-    // matches. A media-host guess must never bypass a known post source.
-    final sources =
-        [
-          ?fallback,
-          ...SettingsHandler.instance.booruList,
-        ].where((booru) {
-          return booru.type?.isFavouritesOrDownloads != true &&
-              booru.type?.isMerge != true &&
-              Uri.tryParse(booru.baseURL ?? '')?.host.isNotEmpty == true;
-        }).toList();
-
-    // Prefer the post's source over a different site sharing its media host.
-    return sources.firstWhereOrNull(
-          (booru) => matchesSource(itemPostUri, booru),
-        ) ??
-        sources.firstWhereOrNull(
-          (booru) =>
-              itemPostHost?.isNotEmpty == true &&
-              itemPostUri!.port == Uri.tryParse(booru.baseURL ?? '')?.port &&
-              switch (booru.type) {
-                BooruType.IdolSankaku => IdolSankakuHandler.knownUrls.contains(itemPostHost),
-                BooruType.Sankaku => SankakuHandler.knownPostUrls.contains(itemPostHost),
-                _ => false,
-              },
-        ) ??
-        sources.firstWhereOrNull(
-          (booru) => matchesSource(itemFileUri, booru),
-        );
-  }
+  Booru? resolveSourceBooru(BooruItem item, {Booru? fallback}) => BooruSourceResolver.resolve(
+    item,
+    preferred: fallback,
+    sources: [
+      if (fallback != null && !SettingsHandler.instance.booruList.contains(fallback)) fallback,
+      ...SettingsHandler.instance.booruList,
+    ],
+  );
 
   Future<void> invalidateCopies(BooruItem item, Booru sourceBooru, String selectedStorage) async {
     for (final fileName in filenameCandidates(item, sourceBooru)) {

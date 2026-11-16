@@ -375,8 +375,9 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                       if (widget.readOnly) return;
 
                       // save on S
+                      final item = widget.tab.booruHandler.filteredFetched[page.value];
                       final saved = await snatchHandler.queue(
-                        [widget.tab.booruHandler.filteredFetched[page.value]],
+                        [item],
                         widget.tab.booruHandler.booru,
                         SX.snatchCooldown.value,
                         false,
@@ -384,10 +385,10 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                         useSourceCooldown: true,
                       );
                       if (!saved) return;
-                      if (widget.tab.shouldFavouriteOnSnatch(widget.tab.booruHandler.filteredFetched[page.value])) {
-                        await widget.tab.toggleItemFavourite(
-                          page.value,
-                          forcedValue: true,
+                      if (widget.tab.shouldFavouriteOnSnatch(item)) {
+                        await widget.tab.updateFavForMultipleItems(
+                          [item],
+                          newValue: true,
                           skipSnatching: true,
                         );
                       }

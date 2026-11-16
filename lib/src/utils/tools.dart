@@ -259,6 +259,44 @@ class Tools {
     return stringsToFind.any((t) => content.contains(t));
   }
 
+  static Map<String, String> parseCookieHeader(String cookieHeader) {
+    final Map<String, String> cookies = {};
+    for (final part in cookieHeader.split(';')) {
+      final trimmed = part.trim();
+      if (trimmed.isEmpty) continue;
+
+      final separatorIndex = trimmed.indexOf('=');
+      if (separatorIndex <= 0) continue;
+
+      final name = trimmed.substring(0, separatorIndex).trim();
+      final value = trimmed.substring(separatorIndex + 1).trim();
+      if (name.isEmpty) continue;
+
+      cookies[name] = value;
+    }
+
+    return cookies;
+  }
+
+  static String? getCookieValue(String cookieHeader, String name) {
+    return parseCookieHeader(cookieHeader)[name];
+  }
+
+  static String mergeCookieHeaders(
+    Iterable<String> cookieHeaders, {
+    Set<String> removeNames = const {},
+  }) {
+    final Map<String, String> cookies = {};
+    for (final cookieHeader in cookieHeaders) {
+      cookies.addAll(parseCookieHeader(cookieHeader));
+    }
+    for (final name in removeNames) {
+      cookies.remove(name);
+    }
+
+    return cookies.entries.map((e) => '${e.key}=${e.value}').join('; ');
+  }
+
   static Future<bool> checkForCaptcha(
     Response? response,
     Uri uri, {

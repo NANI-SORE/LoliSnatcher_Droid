@@ -38,9 +38,10 @@ class DDSelectionActions extends StatelessWidget {
             onSelected: (action) async {
               switch (action) {
                 case 'hidden':
-                  if (tab != null)
+                  if (tab != null) {
                     await Navigator.of(context)
                         .push(MaterialPageRoute<void>(builder: (_) => HiddenItemsPage(tab: tab)));
+                  }
                 case 'again':
                   await controller.onStartSnatching(context, true);
                 case 'favourite':

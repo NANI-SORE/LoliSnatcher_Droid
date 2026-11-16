@@ -1,10 +1,8 @@
+import 'package:lolisnatcher/src/utils/booru_source_resolver.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart' hide FirstWhereOrNullExt;
 
-import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/boorus/hydrus_handler.dart';
-import 'package:lolisnatcher/src/boorus/idol_sankaku_handler.dart';
-import 'package:lolisnatcher/src/boorus/sankaku_handler.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/settings/setting_key.dart';
@@ -579,6 +577,7 @@ class DownloadsDrawerController {
       selected.last,
       firstBooru: firstBooru,
       secondBooru: secondBooru,
+      viewBooru: tab.booruHandler.booru,
     );
   }
 
@@ -787,29 +786,7 @@ class DownloadsDrawerController {
     return source.type?.isFavouritesOrDownloads == true ? _sourceBooruForItem(item) ?? source : source;
   }
 
-  Booru? _sourceBooruForItem(BooruItem item) {
-    final itemFileHost = Uri.tryParse(item.fileURL)?.host;
-    final itemPostHost = Uri.tryParse(item.postURL)?.host;
-
-    final booru = settingsHandler.booruList.firstWhereOrNull((booru) {
-      if (booru.type?.isFavouritesOrDownloads == true) {
-        return false;
-      }
-
-      final booruHost = Uri.tryParse(booru.baseURL ?? '')?.host;
-      return (itemPostHost?.isNotEmpty == true &&
-              booruHost?.isNotEmpty == true &&
-              (itemPostHost! == booruHost! ||
-                  switch (booru.type) {
-                    BooruType.IdolSankaku => IdolSankakuHandler.knownUrls.contains(itemPostHost),
-                    BooruType.Sankaku => SankakuHandler.knownPostUrls.contains(itemPostHost),
-                    _ => false,
-                  })) ||
-          (itemFileHost?.isNotEmpty == true && booruHost?.isNotEmpty == true && itemFileHost! == booruHost!);
-    });
-
-    return booru;
-  }
+  Booru? _sourceBooruForItem(BooruItem item) => BooruSourceResolver.resolve(item);
 
   Future<int?> _askRefreshDelay(BuildContext context) async {
     final controller = TextEditingController(text: '500');

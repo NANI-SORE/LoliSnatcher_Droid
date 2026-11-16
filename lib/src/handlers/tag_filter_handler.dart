@@ -1,3 +1,5 @@
+import 'package:lolisnatcher/src/utils/request_scope.dart';
+
 import 'dart:async';
 import 'dart:collection';
 
@@ -81,7 +83,17 @@ String? _longestString(Iterable<String> values) => values.fold<String?>(
 class TagFilterHandler {
   TagFilterHandler(this._repository, {DateTime Function()? clock}) : _clock = clock ?? DateTime.now;
 
-  static TagFilterHandler get instance => GetIt.instance<TagFilterHandler>();
+  factory TagFilterHandler.fromConfiguration(TagFilterConfiguration configuration, {DateTime Function()? clock}) {
+    final handler = TagFilterHandler(null, clock: clock);
+    handler._configuration = configuration;
+    handler._compile();
+    return handler;
+  }
+
+  static TagFilterHandler? get maybeInstance =>
+      RequestScope.current?.filters ??
+      (GetIt.instance.isRegistered<TagFilterHandler>() ? GetIt.instance<TagFilterHandler>() : null);
+  static TagFilterHandler get instance => maybeInstance!;
 
   static TagFilterHandler register({FilterRepository? repository, DateTime Function()? clock}) {
     if (!GetIt.instance.isRegistered<TagFilterHandler>()) {
@@ -108,6 +120,7 @@ class TagFilterHandler {
   bool _refilterForceRefresh = false;
   DateTime? _nextExpiry;
   bool _disposed = false;
+  bool _restoring = false;
   int _evaluationRevision = 0;
   final List<SettingState<bool>> _activeFilterSettings = [];
   final List<VoidCallback> _optionListenerDisposers = [];
@@ -131,6 +144,24 @@ class TagFilterHandler {
   FilterRepository get repository => _repository!;
   FilterRecovery? get recovery =>
       _repository is JsonFilterRepository ? (_repository! as JsonFilterRepository).recovery : null;
+
+  Future<void> suspendForRestore() async {
+    _restoring = true;
+    _expiryTimer?.cancel();
+    _refilterTimer?.cancel();
+    _refilterGeneration++;
+    await _pendingOperations;
+  }
+
+  Future<void> reloadAfterRestore() async {
+    _configuration = await repository.load();
+    _configurationChanged();
+  }
+
+  void finishRestore() {
+    _restoring = false;
+    _configurationChanged();
+  }
 
   Future<void> initialize() async {
     _repository ??= JsonFilterRepository(SettingsHandler.instance.path);
@@ -179,7 +210,7 @@ class TagFilterHandler {
     for (final option in TimedFilterOption.values) {
       final setting = _optionSetting(option);
       void changed() {
-        if (_disposed || _applyingOptionTimers) return;
+        if (_disposed || _restoring || _applyingOptionTimers) return;
         final expected = configuration.enabledUntil[option];
         if (expected == null) return;
         final manualValue = setting.globalValue;
@@ -555,9 +586,9 @@ class TagFilterHandler {
   }
 
   void _configurationChanged() {
-    _applyOptionTimers();
+    if (!_restoring) _applyOptionTimers();
     _compile();
-    if (_disposed) return;
+    if (_disposed || _restoring) return;
     _evaluationRevision++;
     _scheduleExpiry();
     _refilterLoadedTabs();
@@ -615,6 +646,7 @@ class TagFilterHandler {
   }
 
   void _scheduleExpiry() {
+    if (_restoring) return;
     _expiryTimer?.cancel();
     _nextExpiry = null;
     final now = _clock().toUtc();
@@ -641,7 +673,7 @@ class TagFilterHandler {
   }
 
   void handleAppResumed() {
-    if (_disposed) return;
+    if (_disposed || _restoring) return;
     final now = _clock().toUtc();
     final expiryReached = _nextExpiry != null && !now.isBefore(_nextExpiry!);
     if (!expiryReached) {
@@ -657,6 +689,7 @@ class TagFilterHandler {
   }
 
   void _refilterLoadedTabs({bool forceRefresh = true}) {
+    if (_disposed || _restoring) return;
     final generation = ++_refilterGeneration;
     _refilterForceRefresh |= forceRefresh;
     _refilterTimer?.cancel();
@@ -668,9 +701,9 @@ class TagFilterHandler {
   }
 
   Future<void> _runRefilter(int generation, {required bool forceRefresh}) async {
-    if (_disposed) return;
+    if (_disposed || _restoring) return;
     final search = GetIt.instance.isRegistered<SearchHandler>() ? SearchHandler.instance : null;
-    bool shouldCancel() => _disposed || generation != _refilterGeneration;
+    bool shouldCancel() => _disposed || _restoring || generation != _refilterGeneration;
     try {
       final handlers = <BooruHandler>{..._activeHandlers.keys, ...?search?.tabs.map((tab) => tab.booruHandler)};
       for (final handler in handlers) {

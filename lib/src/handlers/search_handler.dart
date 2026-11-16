@@ -13,6 +13,7 @@ import 'package:get_it/get_it.dart';
 import 'package:lolisnatcher/src/utils/extensions.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 import 'package:uuid/uuid.dart';
+import 'package:path/path.dart' as p;
 
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/booru_item.dart';
@@ -1087,7 +1088,9 @@ class SearchHandler {
   RxBool isRestored = false.obs;
   RxBool canBackup = false.obs;
   Timer? _tabsBackupDebounceTimer;
-  Future<void> _tabsBackupWriteChain = Future<void>.value();
+  Future<void> _tabBackupWrites = Future.value();
+
+  Future<void> waitForTabBackups() => _tabBackupWrites;
 
   // keeps track of the last time tabs were backupped
   DateTime lastBackupTime = DateTime.now();
@@ -1343,7 +1346,7 @@ class SearchHandler {
   bool _sameImportedGroup(TabGroup existing, TabGroup incoming) =>
       existing.name.value == incoming.name.value && existing.color.value == incoming.color.value;
 
-  void _importTabs(String input, {required bool replace}) {
+  void _importTabs(String input, {required bool replace, bool resetIfEmpty = false}) {
     final _TabImportSnapshot snapshot;
     try {
       snapshot = _decodeTabsImport(input);
@@ -1368,18 +1371,26 @@ class SearchHandler {
     final count = restored.length;
     if (replace) {
       final groups = snapshot.groups.toList();
-      bool collapsed = snapshot.collapsed;
+      final bool collapsed = snapshot.collapsed;
       if (restored.isEmpty) {
         final fallback = _defaultImportedTab();
         if (fallback == null) {
+          if (resetIfEmpty) {
+            _cancelAutoSearch();
+            tabGroups.assignAll(groups);
+            tabs.clear();
+            index.value = 0;
+            tabId.value = null;
+            searchTextController.clear();
+            ungroupedCollapsed.value = collapsed;
+            return;
+          }
           // Nothing usable to install; preserve the current session/onboarding.
           _showTabsImportResult(replace: true, count: 0, hadIssues: true);
           return;
         }
         restored.add(fallback);
         selected = fallback;
-        groups.clear();
-        collapsed = false;
       }
       _publishTabs(restored, groups: groups, selected: selected ?? restored.first, collapsed: collapsed);
     } else {
@@ -1538,7 +1549,7 @@ class SearchHandler {
         final String defaultText = defaultBooru.defTags?.isNotEmpty == true ? defaultBooru.defTags! : SX.defTags.value;
         if (defaultBooru.type != null) {
           tabs.add(SearchTab(defaultBooru, null, defaultText));
-          await changeTabIndex(0);
+          await changeTabIndex(0, switchOnly: true);
         }
         searchTextController.text = defaultText;
       }
@@ -1606,7 +1617,7 @@ class SearchHandler {
       tabs.value = normalized;
 
       final int newSelectedIndex = selectedTab != null ? normalized.indexOf(selectedTab) : 0;
-      await changeTabIndex(newSelectedIndex < 0 ? 0 : newSelectedIndex);
+      await changeTabIndex(newSelectedIndex < 0 ? 0 : newSelectedIndex, switchOnly: true);
 
       final context = NavigationHandler.instance.navContext;
       FlashElements.showSnackbar(
@@ -1645,7 +1656,7 @@ class SearchHandler {
       final String defaultText = defaultBooru.defTags?.isNotEmpty == true ? defaultBooru.defTags! : SX.defTags.value;
       if (defaultBooru.type != null) {
         tabs.add(SearchTab(defaultBooru, null, defaultText));
-        await changeTabIndex(0);
+        await changeTabIndex(0, switchOnly: true);
       }
       searchTextController.text = defaultText;
     }
@@ -1655,7 +1666,7 @@ class SearchHandler {
 
   void replaceTabsV2(String tabStr) => replaceTabs(tabStr);
 
-  String? generateBackupJson() {
+  String? generateBackupJson({bool includeDefaultTab = false}) {
     final SettingsHandler settingsHandler = SettingsHandler.instance;
     // if there are only one tab - check that its not with default booru and tags
     // if there are more than 1 tab or check return false - start backup
@@ -1667,13 +1678,13 @@ class SearchHandler {
         (_getTabCurrentPage(tabs[0]) ?? tabs[0].firstPage) <= tabs[0].firstPage &&
         tabs[0].savePageEnabled.value == SX.defaultSavePageEnabled.value &&
         tabGroups.isEmpty;
-    if (!onlyDefaultTab && settingsHandler.booruList.isNotEmpty) {
+    if (includeDefaultTab || (!onlyDefaultTab && settingsHandler.booruList.isNotEmpty)) {
       final List<String> dump = tabs.map((tab) {
         final String tags = tab.tags;
         final String booruName = tab.selectedBooru.value.name ?? 'unknown';
         final List<String> secondaryBoorusNames =
             tab.secondaryBoorus.value?.map((b) => b.name ?? 'unknown').toList() ?? [];
-        final bool selected = tab == tabs[tabIndex];
+        final bool selected = tabIndex >= 0 && tabIndex < tabs.length && tab == tabs[tabIndex];
 
         // Save page number only if enabled for this tab
         final int? savedPageNum = tab.savePageEnabled.value ? _getTabCurrentPage(tab) : null;
@@ -1779,9 +1790,20 @@ class SearchHandler {
     // TODO restoring database from the backup may have corrupted tab data when there are a lot of tabs?
     final settingsHandler = SettingsHandler.instance;
     try {
-      final String? result = await settingsHandler.dbHandler.getTabRestore();
+      final String? result;
+      if (!SX.dbEnabled.value) {
+        final file = File(p.join(await ServiceHandler.getConfigDir(), 'tabs.json'));
+        if (await file.exists()) {
+          if (await file.length() > 64 * 1024 * 1024) throw const FormatException('Saved tabs exceed 64 MiB');
+          result = await file.readAsString();
+        } else {
+          result = null;
+        }
+      } else {
+        result = await settingsHandler.dbHandler.getTabRestore();
+      }
       if (result == null) {
-        await restoreTabsNew(null);
+        await restoreTabsNew(result);
       } else {
         final String trimmed = result.trimLeft();
         if (trimmed.startsWith('{')) {
@@ -1851,7 +1873,8 @@ class SearchHandler {
 
   void mergeTabs(String tabStr) => _importTabs(tabStr, replace: false);
 
-  void replaceTabs(String tabStr) => _importTabs(tabStr, replace: true);
+  void replaceTabs(String tabStr, {bool resetIfEmpty = false}) =>
+      _importTabs(tabStr, replace: true, resetIfEmpty: resetIfEmpty);
 
   void _scheduleTabsBackup() {
     if (!canBackup.value) {
@@ -1864,32 +1887,36 @@ class SearchHandler {
     });
   }
 
-  Future<void> backupTabs() {
-    if (!canBackup.value) {
-      return Future<void>.value();
-    }
-
+  Future<void> backupTabs({bool duringRestore = false}) {
+    if (!canBackup.value && !duringRestore) return Future.value();
     _tabsBackupDebounceTimer?.cancel();
     _tabsBackupDebounceTimer = null;
     final String? backupString = generateBackupJson();
-    final write = _tabsBackupWriteChain.then((_) async {
-      final SettingsHandler settingsHandler = SettingsHandler.instance;
-      if (backupString != null) {
+    final write = _tabBackupWrites.then((_) async {
+      // A restore may have started while this snapshot was queued.
+      if (!canBackup.value && !duringRestore) return;
+      final settingsHandler = SettingsHandler.instance;
+      if (!SX.dbEnabled.value) {
+        final file = File(p.join(await ServiceHandler.getConfigDir(), 'tabs.json'));
+        await file.parent.create(recursive: true);
+        final temporary = File('${file.path}.tmp');
+        await temporary.writeAsString(backupString ?? '[]', flush: true);
+        await temporary.rename(file.path);
+      } else if (backupString != null) {
+        if (settingsHandler.dbHandler.db == null) throw StateError('Cannot persist tabs without an open database');
         await settingsHandler.dbHandler.addTabRestore(backupString);
       } else {
+        if (settingsHandler.dbHandler.db == null) throw StateError('Cannot clear tabs without an open database');
         await settingsHandler.dbHandler.clearTabRestore();
       }
       lastBackupTime = DateTime.now();
     });
-    _tabsBackupWriteChain = write.catchError((Object error, StackTrace stackTrace) {
-      Logger.Inst().log(
-        error,
-        'SearchHandler',
-        'backupTabs',
-        LogTypes.exception,
-        s: stackTrace,
-      );
-    });
+    _tabBackupWrites = write.then<void>(
+      (_) {},
+      onError: (Object error, StackTrace stack) {
+        Logger.Inst().log(error, 'SearchHandler', 'backupTabs', LogTypes.exception, s: stack);
+      },
+    );
     return write;
   }
 
@@ -2343,6 +2370,48 @@ class TabBackup {
     };
   }
 
+  /// External backup imports are strict; startup recovery remains tolerant.
+  static List<TabBackup> parseImport(String input) => TabBackupSnapshot.parse(input).tabs;
+
+  static List<TabBackup> _parseImportTabs(String input) {
+    final text = input.trim().replaceFirst(RegExp(r'^\uFEFF'), '').trimLeft();
+    if (text.startsWith('[')) {
+      final decoded = jsonDecode(text);
+      if (decoded is! List) throw const FormatException('Expected a tab array');
+      return decoded.map((raw) {
+        if (raw is! Map<String, dynamic> ||
+            raw['t'] is! String ||
+            raw['b'] is! String ||
+            (raw['b'] as String).isEmpty) {
+          throw const FormatException('Invalid tab record');
+        }
+        for (final field in ['s', 'sp']) {
+          if (raw.containsKey(field) && raw[field] is! bool) throw FormatException('Invalid tab $field');
+        }
+        if (raw.containsKey('p') && (raw['p'] is! int || (raw['p'] as int) < 0)) {
+          throw const FormatException('Invalid tab page');
+        }
+        if (raw.containsKey('sb') && (raw['sb'] is! List || (raw['sb'] as List).any((value) => value is! String))) {
+          throw const FormatException('Invalid secondary boorus');
+        }
+        if (raw['g'] != null && (raw['g'] is! String || (raw['g'] as String).isEmpty)) {
+          throw const FormatException('Invalid tab group');
+        }
+        return fromJson(raw)!;
+      }).toList();
+    }
+    if (text.isEmpty || text.startsWith('{')) throw const FormatException('Unsupported tab backup format');
+    return decodeBackupString(text).map((fields) {
+      if (fields.length < 2 ||
+          fields.length > 3 ||
+          fields[0].isEmpty ||
+          (fields.length == 3 && fields[2] != 'selected' && fields[2].isNotEmpty)) {
+        throw const FormatException('Invalid legacy tab record');
+      }
+      return TabBackup(booru: fields[0], tags: fields[1], selected: fields.length == 3 && fields[2] == 'selected');
+    }).toList();
+  }
+
   static TabBackup? fromJson(Map<String, dynamic> json) {
     try {
       return TabBackup(
@@ -2475,4 +2544,59 @@ enum SearchReaction {
   int get limit => switch (this) {
     uoh => 5,
   };
+}
+
+/// Portable tab snapshot, retaining the V2 group envelope across source renames.
+class TabBackupSnapshot {
+  const TabBackupSnapshot({required this.tabs, this.groups, this.ungroupedCollapsed = false});
+
+  factory TabBackupSnapshot.parse(String input) {
+    final text = input.trim().replaceFirst(RegExp(r'^\uFEFF'), '').trimLeft();
+    if (!text.startsWith('{')) return TabBackupSnapshot(tabs: TabBackup._parseImportTabs(text));
+    final raw = jsonDecode(text);
+    if (raw is! Map<String, dynamic> ||
+        raw['v'] != 2 ||
+        raw['tabs'] is! List ||
+        raw['groups'] is! List ||
+        (raw['uc'] != null && raw['uc'] is! bool)) {
+      throw const FormatException('Invalid or unsupported grouped tab snapshot');
+    }
+    for (final group in raw['groups'] as List) {
+      if (group is! Map ||
+          group['c'] is! String ||
+          !RegExp(r'^#?(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$').hasMatch(group['c'] as String)) {
+        throw const FormatException('Invalid tab group color');
+      }
+    }
+    final groups = TabGroup.fromJsonList(raw['groups'] as List);
+    if (groups.length != (raw['groups'] as List).length) throw const FormatException('Invalid or duplicate tab group');
+    final tabs = TabBackup._parseImportTabs(jsonEncode(raw['tabs']));
+    final ids = groups.map((group) => group.id).toSet();
+    if (tabs.any((tab) => tab.groupId != null && !ids.contains(tab.groupId))) {
+      throw const FormatException('Unknown tab group');
+    }
+    return TabBackupSnapshot(tabs: tabs, groups: groups, ungroupedCollapsed: raw['uc'] == true);
+  }
+
+  final List<TabBackup> tabs;
+  final List<TabGroup>? groups;
+  final bool ungroupedCollapsed;
+
+  String encode({Map<String, String> sourceNames = const {}}) {
+    final rows = tabs
+        .map(
+          (tab) => tab
+              .copyWith(
+                booru: sourceNames[tab.booru] ?? tab.booru,
+                secondaryBoorus: tab.secondaryBoorus.map((name) => sourceNames[name] ?? name).toList(),
+              )
+              .toJson(),
+        )
+        .toList();
+    return jsonEncode(
+      groups == null
+          ? rows
+          : {'v': 2, 'groups': groups!.map((group) => group.toJson()).toList(), 'tabs': rows, 'uc': ungroupedCollapsed},
+    );
+  }
 }

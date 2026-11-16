@@ -261,6 +261,7 @@ class BooruItem extends Equatable {
       tagsList: tags,
       postURL: json['postURL'].toString(),
       fileExt: json['fileExt']?.toString(),
+      fileNameExtras: json['fileNameExtras']?.toString() ?? '',
       serverId: json['serverId']?.toString(),
       rating: json['rating']?.toString(),
       score: json['score']?.toString(),

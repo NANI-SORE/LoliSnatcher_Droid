@@ -1,3 +1,5 @@
+import 'package:lolisnatcher/src/utils/booru_source_resolver.dart';
+
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
@@ -67,6 +69,7 @@ class DownloadDiscovery {
       cookies: configuration.cookies,
       saveCookies: configuration.saveCookies,
       settings: settings,
+      filters: await configuration.filterEvaluator,
       headless: true,
     );
     await scope.run(
@@ -88,32 +91,52 @@ class DownloadDiscovery {
         }
         final transfers = <PreparedTransfer>[];
         for (final entry in page.items) {
-          var item = entry.item;
-          final handler = BooruHandlerFactory().getBooruHandler([entry.source], 100).booruHandler;
-          if (item.mediaType.value == MediaType.needToLoadItem) {
-            if (!handler.hasLoadItemSupport) throw const DownloadBlocked('detailRequired');
-            final loaded = await handler.loadItem(item: item, withCapcthaCheck: false);
-            if (loaded.failed || loaded.item == null || loaded.item!.mediaType.value == MediaType.needToLoadItem) {
-              throw const DownloadBlocked('detailRequired');
+          final entryNetwork = DownloadNetwork(
+            configuration: configuration,
+            gate: gate,
+            site: sourceIdentity(entry.source),
+            sourceName: entry.source.name ?? '',
+            cooldown: (configuration.policy(entry.source.name ?? '')['cooldownMs'] as num?)?.toInt() ?? 1000,
+          );
+          await RequestScope(
+            client: entryNetwork.client,
+            cookies: configuration.cookies,
+            saveCookies: configuration.saveCookies,
+            settings: settings,
+            filters: scope.filters,
+            headless: true,
+          ).run(() async {
+            var item = entry.item;
+            final handler = BooruHandlerFactory().getBooruHandler([entry.source], 100).booruHandler;
+            if (item.mediaType.value == MediaType.needToLoadItem) {
+              if (!handler.hasLoadItemSupport) throw const DownloadBlocked('detailRequired');
+              final loaded = await handler.loadItem(item: item, withCapcthaCheck: false);
+              if (loaded.failed || loaded.item == null || loaded.item!.mediaType.value == MediaType.needToLoadItem) {
+                throw const DownloadBlocked('detailRequired');
+              }
+              final original = item;
+              item = loaded.item!;
+              item.isFavourite.value = original.isFavourite.value;
+              item.isSnatched.value = original.isSnatched.value;
+              item.savedFileName ??= original.savedFileName;
             }
-            item = loaded.item!;
-          }
-          if (!handler.eligibleForDownload(item, traversal: source)) continue;
-          final policies = downloadMap(spec.policy['sources']);
-          final output = downloadMap(
-            policies[source.type?.isFavouritesOrDownloads == true ? source.name : entry.source.name],
-          );
-          transfers.add(
-            await prepareTransfer(
-              source: entry.source,
-              item: item,
-              batchId: spec.id,
-              configuration: configuration,
-              policy: output.isEmpty ? configuration.policy(entry.source.name ?? '') : output,
-              overwrite: spec.policy['overwrite'] == true,
-              cooldownMs: (spec.policy['delayMs'] as num?)?.toInt(),
-            ),
-          );
+            if (!handler.eligibleForDownload(item, traversal: source)) return;
+            final policies = downloadMap(spec.policy['sources']);
+            final output = downloadMap(
+              policies[source.type?.isFavouritesOrDownloads == true ? source.name : entry.source.name],
+            );
+            transfers.add(
+              await prepareTransfer(
+                source: entry.source,
+                item: item,
+                batchId: spec.id,
+                configuration: configuration,
+                policy: output.isEmpty ? configuration.policy(entry.source.name ?? '') : output,
+                overwrite: spec.policy['overwrite'] == true,
+                cooldownMs: (spec.policy['delayMs'] as num?)?.toInt(),
+              ),
+            );
+          });
         }
         DioNetwork.throwIfCancelled();
         children['$index'] = {'checkpoint': page.next.toJson(), 'done': page.exhausted};
@@ -166,12 +189,9 @@ class DownloadDiscovery {
     for (final item in items) {
       var origin = source;
       if (source.type?.isFavouritesOrDownloads == true) {
-        final host = Uri.tryParse(item.postURL)?.host;
-        final candidates = configuration.sources
-            .where((s) => s.type?.isFavouritesOrDownloads != true && Uri.tryParse(s.baseURL ?? '')?.host == host)
-            .toList();
-        if (candidates.length != 1) throw const DownloadBlocked('sourceAmbiguous');
-        origin = candidates.single;
+        final resolved = BooruSourceResolver.resolve(item, sources: configuration.sources);
+        if (resolved == null) throw const DownloadBlocked('sourceAmbiguous');
+        origin = resolved;
       }
       entries.add((source: origin, item: item));
     }

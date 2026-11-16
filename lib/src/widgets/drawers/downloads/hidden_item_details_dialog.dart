@@ -39,6 +39,9 @@ class HiddenItemDetailsDialog extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Thumbnail(
+              allowHiddenPreview: true,
+              allowOfflineLocalMedia: true,
+              allowOfflineThumbnailGeneration: true,
               item: item,
               booru: booru,
               isStandalone: true,

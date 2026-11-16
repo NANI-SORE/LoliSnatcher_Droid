@@ -42,6 +42,7 @@ class Thumbnail extends StatelessWidget {
     this.allowOfflineThumbnailGeneration = false,
     this.forceThumbnail = false,
     this.forceUnblur = false,
+    this.allowHiddenPreview = false,
     super.key,
   });
 
@@ -56,6 +57,7 @@ class Thumbnail extends StatelessWidget {
   final bool allowOfflineThumbnailGeneration;
   final bool forceThumbnail;
   final bool forceUnblur;
+  final bool allowHiddenPreview;
 
   @override
   Widget build(BuildContext context) {
@@ -66,12 +68,14 @@ class Thumbnail extends StatelessWidget {
     return TagFilterEvaluationBuilder(
       item: item,
       booru: booru,
+      allowHiddenPreview: allowHiddenPreview,
       builder: _buildThumbnail,
     );
   }
 
   Widget _buildThumbnail(BuildContext context, TagFilterEvaluation evaluation) {
-    if (evaluation.isHidden) return const SizedBox.shrink();
+    if (evaluation.isHidden && !allowHiddenPreview) return const SizedBox.shrink();
+    if (allowHiddenPreview) evaluation = evaluation.forDisplay();
     // Hero flights must own their loading state instead of sharing the source's notifiers.
     final Widget child = _ThumbnailImage(
       item: item,
@@ -370,6 +374,10 @@ class _ThumbnailState extends State<_ThumbnailImage> {
   void _handleProviderError(Object error, int loadGeneration) {
     if (!_isCurrentLoad(loadGeneration) || _handlingErrorGeneration == loadGeneration) return;
     if (error is DioException && CancelToken.isCancel(error)) return;
+    if (error is ImageMemoryException) {
+      onError(error);
+      return;
+    }
     _handlingErrorGeneration = loadGeneration;
     unawaited(() async {
       try {
@@ -1057,8 +1065,8 @@ class _ThumbnailState extends State<_ThumbnailImage> {
                         child = TickerMode(
                           enabled: !_shouldShowFirstFrame,
                           child: Image(
-                            image: widget.filterEvaluation.isBlurred && SX.shitDevice.value
-                                ? ResizeImage(
+                            image: !widget.forceUnblur && widget.filterEvaluation.isBlurred && SX.shitDevice.value
+                                ? SafeResizeImage(
                                     mainProvider is ResizeImage ? mainProvider.imageProvider : mainProvider,
                                     width: 10,
                                     height: 10,
