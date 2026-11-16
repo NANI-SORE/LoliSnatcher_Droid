@@ -4,7 +4,7 @@
 /// To regenerate, run: `dart run slang`
 ///
 /// Locales: 15
-/// Strings: 13607 (907 per locale)
+/// Strings: 14717 (981 per locale)
 
 // coverage:ignore-file
 // ignore_for_file: type=lint, unused_import
@@ -336,8 +336,7 @@ Translations get loc => LocaleSettings.instance.currentTranslations;
 class TranslationProvider extends BaseTranslationProvider<AppLocale, Translations> {
   TranslationProvider({required super.child}) : super(settings: LocaleSettings.instance);
 
-  static InheritedLocaleData<AppLocale, Translations> of(BuildContext context) =>
-      InheritedLocaleData.of<AppLocale, Translations>(context);
+  static InheritedLocaleData<AppLocale, Translations> of(BuildContext context) => InheritedLocaleData.of<AppLocale, Translations>(context);
 }
 
 /// Method B shorthand via [BuildContext] extension method.
@@ -367,27 +366,17 @@ class LocaleSettings extends BaseFlutterLocaleSettings<AppLocale, Translations> 
   static Future<AppLocale> setLocaleRaw(String rawLocale, {bool? listenToDeviceLocale = false}) =>
       instance.setLocaleRaw(rawLocale, listenToDeviceLocale: listenToDeviceLocale);
   static Future<AppLocale> useDeviceLocale() => instance.useDeviceLocale();
-  static Future<void> setPluralResolver({
-    String? language,
-    AppLocale? locale,
-    PluralResolver? cardinalResolver,
-    PluralResolver? ordinalResolver,
-  }) => instance.setPluralResolver(
-    language: language,
-    locale: locale,
-    cardinalResolver: cardinalResolver,
-    ordinalResolver: ordinalResolver,
-  );
-  static Future<void> overrideTranslations({
-    required AppLocale locale,
-    required FileType fileType,
-    required String content,
-  }) => instance.overrideTranslations(locale: locale, fileType: fileType, content: content);
-  static Future<void> overrideTranslationsFromMap({
-    required AppLocale locale,
-    required bool isFlatMap,
-    required Map map,
-  }) => instance.overrideTranslationsFromMap(locale: locale, isFlatMap: isFlatMap, map: map);
+  static Future<void> setPluralResolver({String? language, AppLocale? locale, PluralResolver? cardinalResolver, PluralResolver? ordinalResolver}) =>
+      instance.setPluralResolver(
+        language: language,
+        locale: locale,
+        cardinalResolver: cardinalResolver,
+        ordinalResolver: ordinalResolver,
+      );
+  static Future<void> overrideTranslations({required AppLocale locale, required FileType fileType, required String content}) =>
+      instance.overrideTranslations(locale: locale, fileType: fileType, content: content);
+  static Future<void> overrideTranslationsFromMap({required AppLocale locale, required bool isFlatMap, required Map map}) =>
+      instance.overrideTranslationsFromMap(locale: locale, isFlatMap: isFlatMap, map: map);
 
   // synchronous versions
   static AppLocale setLocaleSync(AppLocale locale, {bool? listenToDeviceLocale = false}) =>
@@ -395,22 +384,15 @@ class LocaleSettings extends BaseFlutterLocaleSettings<AppLocale, Translations> 
   static AppLocale setLocaleRawSync(String rawLocale, {bool? listenToDeviceLocale = false}) =>
       instance.setLocaleRawSync(rawLocale, listenToDeviceLocale: listenToDeviceLocale);
   static AppLocale useDeviceLocaleSync() => instance.useDeviceLocaleSync();
-  static void setPluralResolverSync({
-    String? language,
-    AppLocale? locale,
-    PluralResolver? cardinalResolver,
-    PluralResolver? ordinalResolver,
-  }) => instance.setPluralResolverSync(
-    language: language,
-    locale: locale,
-    cardinalResolver: cardinalResolver,
-    ordinalResolver: ordinalResolver,
-  );
-  static void overrideTranslationsSync({
-    required AppLocale locale,
-    required FileType fileType,
-    required String content,
-  }) => instance.overrideTranslationsSync(locale: locale, fileType: fileType, content: content);
+  static void setPluralResolverSync({String? language, AppLocale? locale, PluralResolver? cardinalResolver, PluralResolver? ordinalResolver}) =>
+      instance.setPluralResolverSync(
+        language: language,
+        locale: locale,
+        cardinalResolver: cardinalResolver,
+        ordinalResolver: ordinalResolver,
+      );
+  static void overrideTranslationsSync({required AppLocale locale, required FileType fileType, required String content}) =>
+      instance.overrideTranslationsSync(locale: locale, fileType: fileType, content: content);
   static void overrideTranslationsFromMapSync({required AppLocale locale, required bool isFlatMap, required Map map}) =>
       instance.overrideTranslationsFromMapSync(locale: locale, isFlatMap: isFlatMap, map: map);
 }

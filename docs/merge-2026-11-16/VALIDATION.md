@@ -1,6 +1,6 @@
 # Validation of merge-2026-11-16
 
-Validation date: 2026-11-16. Implementation merge: `91b0f3c6`. The following documentation-only commit records these results. No remote push was performed.
+Validation date: 2026-11-16. Implementation merge: `91b0f3c6`, followed by documentation and the user-confirmed regenerated localization output. No remote push was performed.
 
 ## Results
 
@@ -16,7 +16,7 @@ Validation date: 2026-11-16. Implementation merge: `91b0f3c6`. The following doc
 | Excluded branch | **Passed:** server-favourites tip is not an ancestor |
 | Merge/conflict check | **Passed:** no unmerged index entries or conflict markers; `git diff --check` clean |
 | Independent analysis/review | Completed read-only passes; concrete integration findings corrected, including comparison view/source context |
-| Localization generator | **Not completed:** existing SDK requirement mismatch; manual regeneration required |
+| Localization generator | **Completed by the user:** regenerated output preserved and revalidated |
 | Real-device / iOS / release validation | **Not executed**; procedures and boundaries below |
 
 The aggregate passing suite includes 48 new cross-feature tests (the two page/filter tests were added earlier in the merge sequence). These use temporary SQLite/filesystem fixtures, controlled loopback HTTP/TCP peers, and Flutter widget bindings. No user credentials were read and no real application profile was launched.
@@ -41,7 +41,7 @@ Artifacts left locally:
 - `build/app/outputs/flutter-apk/app-debug.apk`
 - `build/windows/x64/runner/Debug/lolisnatcher.exe` (with its adjacent runtime files)
 
-Detailed command output remains in the ignored local integration directory: `verified-tests.log`, `final-analysis.log`, `verified-android-cronet-build.log`, `verified-windows-build.log`, and `toolchains.log`. Earlier failed logs are retained as diagnosis history and are superseded by these final results. They are not bundled as source artifacts.
+Detailed command output remains in the ignored local integration directory: `regenerated-tests.log`, `final-analysis.log`, `regenerated-android-build.log`, `regenerated-windows-build.log`, and `toolchains.log`. Earlier failed logs are retained as diagnosis history and are superseded by these final results. They are not bundled as source artifacts.
 
 ## Regression coverage added
 
@@ -63,8 +63,8 @@ Failures found and repaired during integration included numeric ID decoding, dou
 ## Environment and limits
 
 - FVM provides Flutter **3.47.8 / Dart 3.13.7**; `pubspec.yaml` requires Flutter **3.47.9**. The project constraint/pin was not changed. Ordinary dependency/localization commands encounter that pre-existing mismatch.
-- To make this machine's verification concrete, dependencies were resolved offline using a temporary diagnostic manifest with an environment-only SDK accommodation. The resulting lockfile preserves the project's real constraint. Local package configuration and graph were corrected together, and the pinned Flutter tools refreshed plugin metadata/symlinks. The temporary manifest and helper are ignored and not committed. A clean checkout should resolve normally once the supported project SDK is available.
-- `dart run slang` failed on the mismatch and was not retried, as instructed. Generated English/Russian unions were repaired and analyzed/tested, but **the user should regenerate localization files manually before release**.
+- To make this machine's verification concrete, dependencies were resolved offline using a temporary diagnostic manifest with an environment-only SDK accommodation. The environment-resolution lockfile preserved the project constraint; the user's later normal resolution superseded it with the exact Flutter 3.47.9 SDK entry. Local package configuration and graph were corrected together, and the pinned Flutter tools refreshed plugin metadata/symlinks. The temporary manifest and helper are ignored and not committed. A clean checkout should resolve normally once the supported project SDK is available.
+- `dart run slang` initially failed on the mismatch and was not retried by the agent, as instructed. During final checks, the user regenerated the localization files and confirmed doing so. That output and the refreshed lockfile were preserved, re-analyzed, tested and rebuilt; no manual localization follow-up remains.
 - Initial Windows builds exposed stale Bonsoir plugin metadata. The first Android build used an incomplete graph; it is not the final validation result. Rebuilding with the complete graph exposed Cronet's duplicate AAR namespace; the documented AGP compatibility flag fixed it, and the final real-Cronet build passed.
 - Toolchain warnings remain: Kotlin plugin migration warnings for the app/dependencies, Flutter InAppWebView CMake CMP0175 warning, and FVP linker incremental warning. They did not fail the final debug builds. Doctor also reports unaccepted Android licenses and multiple adb installations; no licenses were accepted by this task.
 - `test/booru_test.dart` was excluded because it initializes actual app storage and contacts live third-party sites. Its results would depend on current services, authentication and captcha state. Controlled HTTP/TCP tests provide deterministic network coverage; this is not a claim of live-site compatibility.
