@@ -37,7 +37,7 @@ class ImageRegionDecoder {
     required CancelToken cancelToken,
     required bool Function() isForeground,
     bool Function()? isSourceVisible,
-  }) {
+  }) async {
     if (left < 0 ||
         top < 0 ||
         right <= left ||
@@ -52,20 +52,26 @@ class ImageRegionDecoder {
     if (expectedWidth > 1024 || expectedHeight > 1024) {
       return Future.error(const ImageMemoryException('Image region exceeds the tile limit'));
     }
+    cancelToken.throwIfCancellationRequested();
+    final sourceLength = await file.length();
+    cancelToken.throwIfCancellationRequested();
+    if (sourceLength <= 0 || sourceLength > ImageMemoryManager.maxEncodedBytes) {
+      throw const ImageMemoryException('Image source exceeds the encoded limit');
+    }
     final visible = isSourceVisible ?? isForeground;
     final timeline = TimelineTask()..start('ImageRegionDecoder.load');
     return _memory
         .runDecode(
-          ImageMemoryManager.maxEncodedBytes + _nativeOverhead + _tileTransientBytes,
+          sourceLength + _nativeOverhead + _tileTransientBytes,
           () async {
             timeline.instant('admitted');
             try {
               cancelToken.throwIfCancellationRequested();
-              if (_session != null && (_memory.underPressure.value || (visible() && _session!.path != file.path))) {
+              if (_session != null && visible() && _session!.path != file.path) {
                 await _close(_session!);
               }
               cancelToken.throwIfCancellationRequested();
-              if (_session == null && visible() && !_memory.underPressure.value) {
+              if (_session == null && visible()) {
                 final length = await file.length();
                 cancelToken.throwIfCancellationRequested();
                 if (length <= 0 || length > ImageMemoryManager.maxEncodedBytes) {
@@ -75,14 +81,14 @@ class ImageRegionDecoder {
                 // Optional caching must never provoke pressure or evict visible tiles.
                 // The check and reservation are synchronous on this isolate.
                 if (visible() &&
-                    !_memory.underPressure.value &&
                     _memory.retainedBytes + reservation + expectedWidth * expectedHeight * 8 <=
                         ImageMemoryManager.maxRetainedBytes) {
-                  _session = _RegionDecoderSession(file.path, _memory.reserveImage(reservation));
+                  _session = _RegionDecoderSession(file.path, _memory.reserveImage(reservation), visible);
                 }
               }
               cancelToken.throwIfCancellationRequested();
               final session = _session?.path == file.path ? _session : null;
+              if (session != null && visible()) session.isVisible = visible;
               Map<String, dynamic> response;
               try {
                 response = await ServiceHandler.decodeImageRegion(
@@ -99,7 +105,7 @@ class ImageRegionDecoder {
                 if (session != null) await _close(session);
                 rethrow;
               }
-              if (session != null && (_memory.underPressure.value || !visible())) {
+              if (session != null && !session.isVisible()) {
                 await _close(session);
               }
               cancelToken.throwIfCancellationRequested();
@@ -221,7 +227,9 @@ class ImageRegionDecoder {
   void _onPressure() {
     if (!_memory.underPressure.value) return;
     final session = _session;
-    if (session == null) return;
+    // The active decoder is part of the visible working set. Closing it during
+    // the cooldown makes every tile copy/reopen the same encoded source again.
+    if (session == null || session.isVisible()) return;
     unawaited(
       release(session.path).catchError((Object error, StackTrace stack) {
         ServiceHandler.log(error, s: stack);
@@ -238,8 +246,9 @@ class DecodedImageRegion {
 }
 
 class _RegionDecoderSession {
-  _RegionDecoderSession(this.path, this.lease);
+  _RegionDecoderSession(this.path, this.lease, this.isVisible);
 
   final String path;
   final ImageMemoryLease lease;
+  bool Function() isVisible;
 }

@@ -46,16 +46,16 @@ class ImageMemoryManager with WidgetsBindingObserver {
 
   static final ImageMemoryManager instance = ImageMemoryManager._();
 
-  static const int maxEncodedBytes = 64 * 1024 * 1024;
+  static const int maxEncodedBytes = 256 * 1024 * 1024;
   static const int maxSourcePixels = 32 * 1000 * 1000;
   static const int maxAnimatedSourcePixels = 8 * 1000 * 1000;
   static const int maxAvifSourcePixels = 4 * 1000 * 1000;
   static const int maxSourceDimension = 32768;
   static const int maxOutputPixels = 16 * 1000 * 1000;
   static const int maxTextureDimension = 8192;
-  static const int maxRetainedBytes = 128 * 1024 * 1024;
+  static const int maxRetainedBytes = 256 * 1024 * 1024;
   static const int maxCacheBytes = 64 * 1024 * 1024;
-  static const int maxTransientBytes = 256 * 1024 * 1024;
+  static const int maxTransientBytes = 512 * 1024 * 1024;
   static const Duration pressureCooldown = Duration(seconds: 30);
 
   final ValueNotifier<bool> underPressure = ValueNotifier(false);

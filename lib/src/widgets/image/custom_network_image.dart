@@ -1039,7 +1039,9 @@ class NetworkImageLoader {
 
   static void _checkLength(int length) {
     if (length > ImageMemoryManager.maxEncodedBytes) {
-      throw const ImageMemoryException('Encoded image exceeds 64 MiB');
+      throw const ImageMemoryException(
+        'Encoded image exceeds ${ImageMemoryManager.maxEncodedBytes ~/ (1024 * 1024)} MiB',
+      );
     }
   }
 

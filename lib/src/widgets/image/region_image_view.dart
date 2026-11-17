@@ -146,7 +146,7 @@ class RegionImageView extends StatefulWidget {
 
 class _RegionImageViewState extends State<RegionImageView> {
   static const _overviewSide = 1024;
-  static const _maxDecodedSide = 512;
+  static const _maxDecodedSide = 1024;
   static const _tileSide = _maxDecodedSide - 2; // One decoded gutter pixel on each side.
   static const _tileBudget = 32 * 1024 * 1024;
   static const _pressureTileBudget = 8 * 1024 * 1024;
@@ -161,9 +161,14 @@ class _RegionImageViewState extends State<RegionImageView> {
   Rect _visible = Rect.zero;
   int? _sample;
   bool _loading = false;
+  bool _overviewLoading = false;
   bool _scheduled = false;
   bool _ready = false;
   bool _failed = false;
+  Timer? _tileRetry;
+  Timer? _overviewRetry;
+  int _tileFailures = 0;
+  int _overviewFailures = 0;
   bool? _coverageComplete;
   int _cacheHits = 0;
   int _decodedTiles = 0;
@@ -199,15 +204,20 @@ class _RegionImageViewState extends State<RegionImageView> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.viewport != widget.viewport || oldWidget.isViewed != widget.isViewed) _schedule();
     if (oldWidget.isViewed && !widget.isViewed) {
+      _overviewRetry?.cancel();
+      _overviewRetry = null;
       unawaited(
         widget.source.releaseDecoder().catchError((Object error, StackTrace stack) {
           developer.log('Unable to release idle image decoder', name: 'ImageRegions', error: error, stackTrace: stack);
         }),
       );
     }
+    if (!oldWidget.isViewed && widget.isViewed && _overview == null) unawaited(_loadOverview());
   }
 
   Future<void> _loadOverview() async {
+    if (!mounted || _failed || _overviewLoading || _overview != null) return;
+    _overviewLoading = true;
     int sample = 1;
     while (widget.source.size.longestSide / sample > _overviewSide) {
       sample *= 2;
@@ -224,17 +234,34 @@ class _RegionImageViewState extends State<RegionImageView> {
         return;
       }
       setState(() => _overview = tile);
+      _overviewFailures = 0;
       widget.onPreviewReady();
       _schedule();
     } catch (error) {
-      if (mounted && !_lifetime.isCancelled) _fail(error);
+      if (!mounted || _lifetime.isCancelled) return;
+      if (error is ImageMemoryException && error.isTransient) {
+        if (widget.isViewed) {
+          _overviewRetry = Timer(_retryDelay(++_overviewFailures), () {
+            _overviewRetry = null;
+            if (mounted && widget.isViewed && !_failed) unawaited(_loadOverview());
+          });
+        }
+      } else {
+        _fail(error);
+      }
+    } finally {
+      _overviewLoading = false;
     }
   }
+
+  Duration _retryDelay(int failures) => Duration(milliseconds: 250 * (1 << math.min(failures - 1, 3)));
 
   void _fail(Object error) {
     if (!mounted || _failed) return;
     _failed = true;
     _tileRequest?.cancel();
+    _tileRetry?.cancel();
+    _overviewRetry?.cancel();
     widget.onError(error);
   }
 
@@ -258,6 +285,8 @@ class _RegionImageViewState extends State<RegionImageView> {
   void _updateVisibleTiles() {
     if (_failed) return;
     if (!widget.isViewed) {
+      _tileRetry?.cancel();
+      _tileRetry = null;
       _wanted = [];
       _prefetch = null;
       _tileRequest?.cancel();
@@ -339,6 +368,9 @@ class _RegionImageViewState extends State<RegionImageView> {
     });
     final wantedChanged = wanted.length != _wanted.length || !wanted.every(_wanted.contains);
     if (wantedChanged) {
+      _tileRetry?.cancel();
+      _tileRetry = null;
+      _tileFailures = 0;
       _cacheHits += wanted.where((key) => !_wanted.contains(key) && _tiles.containsKey(key)).length;
       _finishCoverage();
     }
@@ -470,7 +502,7 @@ class _RegionImageViewState extends State<RegionImageView> {
   }
 
   Future<void> _loadTiles() async {
-    if (_loading || !mounted || _failed) return;
+    if (_loading || !mounted || _failed || _tileRetry != null) return;
     _loading = true;
     try {
       while (mounted && widget.isViewed && !_failed) {
@@ -514,6 +546,7 @@ class _RegionImageViewState extends State<RegionImageView> {
               _trimTiles();
             });
             _decodedTiles++;
+            _tileFailures = 0;
             if (_wanted.isNotEmpty && _wanted.every(_tiles.containsKey)) _markReady();
             _trackCoverage();
           }
@@ -526,8 +559,16 @@ class _RegionImageViewState extends State<RegionImageView> {
             if (_prefetch == key) _prefetch = null;
             continue;
           }
-          // The overview is a temporary placeholder, not a quality fallback.
-          // The viewer retries transient contention and surfaces hard failures.
+          if (error is ImageMemoryException && error.isTransient) {
+            // Keep the source, zoom and existing pixels while other owners
+            // release memory. Retrying the entire viewer discards all progress.
+            _tileRetry = Timer(_retryDelay(++_tileFailures), () {
+              _tileRetry = null;
+              if (mounted && widget.isViewed && !_failed) unawaited(_loadTiles());
+            });
+            break;
+          }
+          // Permanent failures still surface without substituting lower quality.
           _fail(error);
           break;
         }
@@ -543,6 +584,8 @@ class _RegionImageViewState extends State<RegionImageView> {
   void dispose() {
     _lifetime.cancel();
     _tileRequest?.cancel();
+    _tileRetry?.cancel();
+    _overviewRetry?.cancel();
     _subscription?.cancel();
     _finishCoverage();
     ImageMemoryManager.instance.underPressure.removeListener(_schedule);

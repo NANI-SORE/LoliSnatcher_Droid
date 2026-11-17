@@ -489,7 +489,7 @@ class ImageViewerState extends State<ImageViewer> {
       final canTryRegions = Platform.isAndroid && !_hasAnimation && !isAvif;
       if (canTryRegions) {
         sourceSize = await ImageMemoryManager.instance.runDecode(
-          ImageMemoryManager.maxEncodedBytes + 16 * 1024 * 1024,
+          await download.file.length() + 16 * 1024 * 1024,
           () => ServiceHandler.getImageRegionInfo(download.file.path),
           cancelToken: token,
           isForeground: () => mounted && isViewed.value,
@@ -935,39 +935,43 @@ class ImageViewerState extends State<ImageViewer> {
                         child: !isProviderLoaded
                             ? const SizedBox.shrink()
                             : ((isTiled && _regionSource != null)
-                                  ? PhotoView.customChild(
-                                      childSize: tiledSize,
-                                      backgroundDecoration: const BoxDecoration(color: Colors.transparent),
-                                      customSize: MediaQuery.sizeOf(context),
-                                      minScale: PhotoViewComputedScale.contained,
-                                      maxScale: PhotoViewComputedScale.covered * 8,
-                                      initialScale: PhotoViewComputedScale.contained,
-                                      enableRotation: settingsHandler.allowRotation,
-                                      basePosition: Alignment.center,
-                                      controller: viewController,
-                                      scaleStateController: scaleController,
-                                      child: RegionImageView(
-                                        key: ObjectKey(_regionSource),
-                                        source: _regionSource!,
-                                        controller: viewController,
-                                        viewport: MediaQuery.sizeOf(context),
-                                        isViewed: isViewed.value,
-                                        onPreviewReady: () {
-                                          if (_isCurrentLoad(loadGeneration)) isDisplayReady.value = true;
-                                        },
-                                        onCoverageChanged: (complete) {
-                                          if (_isCurrentLoad(loadGeneration)) isDetailReady.value = complete;
-                                        },
-                                        onReady: () {
-                                          if (!_isCurrentLoad(loadGeneration) || _regionSource == null) return;
-                                          isLoaded.value = true;
-                                          viewerHandler.setLoaded(widget.key, true);
-                                        },
-                                        onError: (error) {
-                                          if (_isCurrentLoad(loadGeneration)) {
-                                            onError(error);
-                                          }
-                                        },
+                                  ? LayoutBuilder(
+                                      builder: (context, constraints) => ClipRect(
+                                        child: PhotoView.customChild(
+                                          childSize: tiledSize,
+                                          backgroundDecoration: const BoxDecoration(color: Colors.transparent),
+                                          customSize: constraints.biggest,
+                                          minScale: PhotoViewComputedScale.contained,
+                                          maxScale: PhotoViewComputedScale.covered * 8,
+                                          initialScale: PhotoViewComputedScale.contained,
+                                          enableRotation: settingsHandler.allowRotation,
+                                          basePosition: Alignment.center,
+                                          controller: viewController,
+                                          scaleStateController: scaleController,
+                                          child: RegionImageView(
+                                            key: ObjectKey(_regionSource),
+                                            source: _regionSource!,
+                                            controller: viewController,
+                                            viewport: constraints.biggest,
+                                            isViewed: isViewed.value,
+                                            onPreviewReady: () {
+                                              if (_isCurrentLoad(loadGeneration)) isDisplayReady.value = true;
+                                            },
+                                            onCoverageChanged: (complete) {
+                                              if (_isCurrentLoad(loadGeneration)) isDetailReady.value = complete;
+                                            },
+                                            onReady: () {
+                                              if (!_isCurrentLoad(loadGeneration) || _regionSource == null) return;
+                                              isLoaded.value = true;
+                                              viewerHandler.setLoaded(widget.key, true);
+                                            },
+                                            onError: (error) {
+                                              if (_isCurrentLoad(loadGeneration)) {
+                                                onError(error);
+                                              }
+                                            },
+                                          ),
+                                        ),
                                       ),
                                     )
                                   : PhotoView(

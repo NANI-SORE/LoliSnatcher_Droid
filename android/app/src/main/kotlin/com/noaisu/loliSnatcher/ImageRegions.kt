@@ -32,7 +32,7 @@ class ImageRegions {
     }
 
     private fun open(path: String): BitmapRegionDecoder {
-        require(File(path).length() in 1..64L * 1024 * 1024)
+        require(File(path).length() in 1..256L * 1024 * 1024)
         // Coordinates are encoded-image coordinates; transformed EXIF sources
         // remain on the ordinary bounded codec path.
         val orientation = try {
