@@ -753,7 +753,8 @@ class ImageViewerState extends State<ImageViewer> {
 
   Future<void> onManualRestart() async {
     if (stopReason.value == ViewerStopReason.memoryLimit) return;
-    _ignoreTagsForLoad = true;
+    // Rebuild painting as well as loading controls when this item is revealed.
+    setState(() => _ignoreTagsForLoad = true);
     widget.onReveal?.call();
     _loadRetries = 0;
     final int loadGeneration = ++_loadGeneration;

@@ -16,3 +16,10 @@ Compatibility changes:
 Critical regressions cover retry/reuse/disposal and a valid 65 MiB encoded source; a 257 MiB source is still rejected without deleting the original. Profiling/synthetic-app tools remain in local documentation only.
 
 Validation: 11 tests passed across `region_image_recovery_test.dart`, `image_memory_limits_test.dart`, `image_cache_lifecycle_test.dart` and `thumbnail_lifecycle_test.dart`; targeted Dart analysis reported no issues. Sustained pressure and gesture behavior on the affected physical device remain to be confirmed.
+
+
+## Explicit viewer reveal
+
+`Load anyway` now rebuilds the viewer when recording its per-item reveal choice. Loading/provider notifications rebuild only parts of the viewer; a painting layer outside those builders otherwise retains the previous blur state when combined with `filtering-rework`.
+
+The reveal-state implementation originates on this branch, so its rebuild notification is fixed here. The symptom requires the combined filter UI. Integration regressions cover real loaded pixels for Blur and Hide-as-Blur, unchanged filter results and a newly opened post remaining blocked. The regression fixture belongs to the combined branch because it uses its filter/offline/standalone viewer APIs. No filter rules, persistent settings or storage formats change.
