@@ -390,24 +390,27 @@ class TabSelector extends StatelessWidget {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        TabRow(
-                                          tab: currentTab,
-                                          color: color,
-                                          withFavicon: false,
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: TabRow(
+                                                tab: currentTab,
+                                                color: color,
+                                                withFavicon: false,
+                                              ),
+                                            ),
+                                            if (currentTab.savePageEnabled.value)
+                                              const Padding(
+                                                padding: EdgeInsets.only(left: 3),
+                                                child: Icon(Icons.bookmark, size: 16),
+                                              ),
+                                          ],
                                         ),
                                         Expanded(
                                           child: Row(
                                             mainAxisSize: .min,
                                             crossAxisAlignment: .center,
                                             children: [
-                                              if (currentTab.savePageEnabled.value)
-                                                const Padding(
-                                                  padding: EdgeInsets.only(right: 2),
-                                                  child: Icon(
-                                                    Icons.bookmark,
-                                                    size: 16,
-                                                  ),
-                                                ),
                                               MarqueeText(
                                                 text: [
                                                   if (currentTab.booruHandler is MergebooruHandler)
