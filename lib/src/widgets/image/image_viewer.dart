@@ -27,6 +27,7 @@ import 'package:lolisnatcher/src/widgets/common/media_loading.dart';
 import 'package:lolisnatcher/src/widgets/common/preserve_media_animations.dart';
 import 'package:lolisnatcher/src/widgets/image/custom_network_image.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
+import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_hero.dart';
 
 enum ViewerStopReason {
   user,
@@ -355,7 +356,6 @@ class ImageViewerState extends State<ImageViewer> {
         await WidgetsBinding.instance.endOfFrame;
         await WidgetsBinding.instance.endOfFrame;
         if (!_isCurrentLoad(loadGeneration)) return;
-        PaintingBinding.instance.imageCache.clear();
       }
       newProvider = await getImageProvider(
         loadGeneration: loadGeneration,
@@ -839,8 +839,13 @@ class ImageViewerState extends State<ImageViewer> {
                 return AnimatedOpacity(
                   duration: const Duration(milliseconds: 300),
                   opacity: (isDisplayReady.value && isProviderLoaded) ? 0 : 1,
-                  child: Hero(
+                  child: ThumbnailHero.preview(
                     tag: 'imageHero${isViewed.value ? '' : '-ignore-'}${widget.booruItem.hashCode}',
+                    // Keep the seed through the full-image fade and retries.
+                    // Only the currently viewed item can retain this handle.
+                    keepFlightImage: isViewed.value,
+                    obscureFlightImage:
+                        settingsHandler.blurImages || (widget.booruItem.isHidden && !_ignoreTagsForLoad),
                     child: child!,
                   ),
                 );

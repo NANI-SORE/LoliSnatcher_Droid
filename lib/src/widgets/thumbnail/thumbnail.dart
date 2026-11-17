@@ -24,6 +24,7 @@ import 'package:lolisnatcher/src/widgets/common/thumbnail_loading.dart';
 import 'package:lolisnatcher/src/widgets/image/custom_network_image.dart';
 import 'package:lolisnatcher/src/services/image_memory_manager.dart';
 import 'package:lolisnatcher/src/widgets/preview/shimmer_builder.dart';
+import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail_hero.dart';
 
 class Thumbnail extends StatelessWidget {
   const Thumbnail({
@@ -43,7 +44,6 @@ class Thumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Hero flights must own their loading state instead of sharing the source's notifiers.
     final Widget child = _ThumbnailImage(
       item: item,
       booru: booru,
@@ -54,12 +54,8 @@ class Thumbnail extends StatelessWidget {
       final settingsHandler = SettingsHandler.instance;
       return HeroMode(
         enabled: settingsHandler.enableHeroTransitions && !settingsHandler.shitDevice,
-        child: Hero(
+        child: ThumbnailHero(
           tag: 'imageHero${item.hashCode}',
-          placeholderBuilder: (BuildContext context, Size heroSize, Widget child) {
-            // Keep the image visible in the grid behind the gallery.
-            return child;
-          },
           child: child,
         ),
       );
