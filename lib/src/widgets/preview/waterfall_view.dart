@@ -341,12 +341,13 @@ class _WaterfallViewState extends State<WaterfallView> with RouteAware {
   }
 
   void onViewerPageChanged(int index) {
+    final pageChanged = index != _rootViewerIndex;
     _rootViewerIndex = index;
 
     final currentFetched = searchHandler.currentFetchedOrNull;
     if (currentFetched == null || index >= currentFetched.length) return;
     viewedItems.add(currentFetched[index]);
-    if (isMobile) {
+    if (isMobile && pageChanged) {
       jumpTo(index);
     } else {
       // don't auto scroll on viewed index change on desktop

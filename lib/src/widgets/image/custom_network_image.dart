@@ -544,6 +544,32 @@ class _MemoryImageCompleter extends MultiFrameImageStreamCompleter {
     }
   }
 
+  bool _idleCacheCleanupScheduled = false;
+  static final _idleListener = ImageStreamListener((image, _) => image.dispose());
+
+  @override
+  void addOnLastListenerRemovedCallback(VoidCallback callback) {
+    super.addOnLastListenerRemovedCallback(callback);
+    _scheduleIdleCacheCleanup();
+  }
+
+  void _scheduleIdleCacheCleanup() {
+    if (!session.hasEmittedFrame || hasListeners || _idleCacheCleanupScheduled) return;
+    _idleCacheCleanupScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _idleCacheCleanupScheduled = false;
+      if (session.disposed || hasListeners) return;
+      // A paused Image can resolve the same cached completer on a dependency
+      // change without attaching a listener. Flutter then leaves a new live
+      // cache handle waiting for a last-listener-removal notification forever.
+      // Removing an unattached listener flushes those idle callbacks without
+      // subscribing, decoding a frame, or evicting the reusable cached image.
+      // Real widgets still retain their own keep-alive handles.
+      super.removeListener(_idleListener);
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
   void _forgetCacheOwner() {
     if (identical(_cacheOwners[cacheKey]?.target, this)) _cacheOwners.remove(cacheKey);
   }
