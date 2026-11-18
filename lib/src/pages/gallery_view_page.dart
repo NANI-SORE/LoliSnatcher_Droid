@@ -147,12 +147,26 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
 
     _itemsChanged();
 
+    // A nested viewer may have changed the shared current item without
+    // changing this gallery's list or page position.
+    final item = _position.current;
+    if (item == null) {
+      viewerHandler.dropCurrent();
+    } else {
+      viewerHandler.setCurrent(item);
+    }
+
     // reset full screen state in case user leaves the fulscreen route through system back button/gesture
     viewerHandler.setFullScreenState(false);
   }
 
   void _itemsChanged() {
+    final previousIndex = _position.index;
+    final previousKey = _position.current?.key;
     _position.update(_observedHandler.filteredFetched);
+    // Metadata refreshes and appended results must not snap an active drag
+    // back to the selected page or scroll the grid behind the viewer.
+    if (_position.index == previousIndex && _position.current?.key == previousKey) return;
     final generation = ++_listGeneration;
     void reconcile() {
       if (!mounted || generation != _listGeneration) return;
@@ -584,6 +598,7 @@ class _GalleryViewPageState extends State<GalleryViewPage> with RouteAware {
                               if (_aligningPage || index < 0 || index >= _observedHandler.filteredFetched.length) {
                                 return;
                               }
+                              if (index == page.value) return;
                               _position.select(index);
                               page.value = index;
                               widget.onPageChanged?.call(index);
