@@ -17,7 +17,7 @@ Tasks:
 - [x] Surface runtime failures and meaningful queue/batch status; avoid restarting unchanged active work on another enqueue; keep cooldown/attempt/publication rules intact.
 - [x] Restore contextual icons/counts, safe long presses, item menus and number controls; preserve merged selection/share/filter contracts and English/Russian parity.
 - [x] Verify on emulator with controlled downloads, offline/reconnect, VPN admission, backgrounding, pause/resume/cancel and adding work during a transfer. Run scoped analysis/build checks. No automated test suite unless explicitly authorized.
-- [ ] Review the final change, verify merge compatibility against current integration/feature heads, commit and push the downloads branch; integrate narrowly without losing existing checkout changes.
+- [x] Review the final change, verify merge compatibility against current integration/feature heads, commit and push the downloads branch; integrate narrowly without losing existing checkout changes.
 
 Acceptance evidence and any limitations will be recorded here before completion.
 
@@ -33,3 +33,4 @@ Verification (2026-11-20):
 - Controlled HTTP 429 entered a cooldown and completed on its second attempt; HTTP 401 stopped as `needsAction/http401`; cancelling a queued fixture left zero attempts and issued no request. Pause/resume used Range at byte 147456 and completed.
 - The integration checkout based on `31bb2f87` builds and passes scoped analysis. Conflict resolutions preserve filter snapshots, offline receipts, sharing callbacks, pinned tab selection and restore barriers. The merged favourite-selection action delegates source policy/provenance to the tab; select-by-query uses the button's own long-press callback (the outer detector lost gestures to its tooltip).
 - Manual touch verification of the merged build opens the query-selection sheet. Runtime error inspection reports none. Russian download keys and placeholders remain in parity with English.
+- Delivery: source fixes `189b0dc7` and `29dec930` were pushed to `origin/downloads-background-rework`; local integration `2ca5d8d1` preserves the existing uncommitted SDK/settings/localization changes. The merged controlled transfer also completed through its filtering and offline receipt hooks.
