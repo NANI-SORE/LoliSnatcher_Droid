@@ -115,23 +115,21 @@ class DDNavigationButtons extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 4),
-        GestureDetector(
+        IconButton(
           onLongPress: onSelectByQuery == null
               ? null
               : () async {
                   if (await onSelectByQuery!(context)) toggleDrawer();
                 },
-          child: IconButton(
-            tooltip: context.loc.selectAll,
-            onPressed: () {
-              final tab = controller.currentTabOrNull;
-              if (tab == null) return;
-              final items = tab.booruHandler.filteredFetched;
-              tab.selected.addAll(items.where((item) => !tab.selected.contains(item)));
-              toggleDrawer();
-            },
-            icon: const Icon(Icons.select_all),
-          ),
+          tooltip: context.loc.selectAll,
+          onPressed: () {
+            final tab = controller.currentTabOrNull;
+            if (tab == null) return;
+            final items = tab.booruHandler.filteredFetched;
+            tab.selected.addAll(items.where((item) => !tab.selected.contains(item)));
+            toggleDrawer();
+          },
+          icon: const Icon(Icons.select_all),
         ),
         IconButton(
           tooltip: context.loc.snatcher.snatchingHistory,
