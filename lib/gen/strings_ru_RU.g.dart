@@ -1986,6 +1986,14 @@ class _Translations$downloadQueue$ru_RU extends Translations$downloadQueue$en {
   String get adding => TranslationOverrides.string(_root.$meta, 'downloadQueue.adding', {}) ?? 'Добавление…';
   @override
   String get fixIssue => TranslationOverrides.string(_root.$meta, 'downloadQueue.fixIssue', {}) ?? 'Устранить проблему';
+  @override
+  String get details => TranslationOverrides.string(_root.$meta, 'downloadQueue.details', {}) ?? 'Подробности';
+  @override
+  String get starting => TranslationOverrides.string(_root.$meta, 'downloadQueue.starting', {}) ?? 'Запуск загрузок';
+  @override
+  String get waitingSystem => TranslationOverrides.string(_root.$meta, 'downloadQueue.waitingSystem', {}) ?? 'Ожидание Android';
+  @override
+  String get executionError => TranslationOverrides.string(_root.$meta, 'downloadQueue.executionError', {}) ?? 'Загрузки требуют внимания';
 }
 
 // Path: tabs.filters
@@ -6819,6 +6827,11 @@ extension on TranslationsRuRu {
           'downloadQueue.addToQueue' => TranslationOverrides.string(_root.$meta, 'downloadQueue.addToQueue', {}) ?? 'Добавить в загрузки',
           'downloadQueue.adding' => TranslationOverrides.string(_root.$meta, 'downloadQueue.adding', {}) ?? 'Добавление…',
           'downloadQueue.fixIssue' => TranslationOverrides.string(_root.$meta, 'downloadQueue.fixIssue', {}) ?? 'Устранить проблему',
+          'downloadQueue.details' => TranslationOverrides.string(_root.$meta, 'downloadQueue.details', {}) ?? 'Подробности',
+          'downloadQueue.starting' => TranslationOverrides.string(_root.$meta, 'downloadQueue.starting', {}) ?? 'Запуск загрузок',
+          'downloadQueue.waitingSystem' => TranslationOverrides.string(_root.$meta, 'downloadQueue.waitingSystem', {}) ?? 'Ожидание Android',
+          'downloadQueue.executionError' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.executionError', {}) ?? 'Загрузки требуют внимания',
           _ => null,
         };
   }

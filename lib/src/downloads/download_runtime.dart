@@ -37,6 +37,8 @@ class DownloadRuntime {
   Timer? _timer;
   bool _pumping = false;
   bool _enabled = false;
+  String? _lastRuntimeError;
+  bool _settingsReleased = false;
   int _nativeBatchOffset = 0;
   bool _foreground = true;
   bool get foreground => _foreground;
@@ -65,14 +67,17 @@ class DownloadRuntime {
   }
 
   Future<void> reload() async {
-    if (headless) await quiesce();
     final latest = await DownloadConfiguration.load();
     if (latest != null) {
+      final replaceSettings =
+          headless && (_settingsReleased || latest.executionIdentity != configuration.executionIdentity);
+      if (replaceSettings) await quiesce();
       configuration = latest;
       await configuration.attachCookies(store.db);
-      if (headless) {
+      if (replaceSettings) {
         final previous = settings;
         settings = await configuration.backgroundSettings();
+        _settingsReleased = false;
         if (previous.dbHandler.db?.isOpen == true) await previous.dbHandler.db?.close();
       }
     }
@@ -89,6 +94,7 @@ class DownloadRuntime {
       await Future<void>.delayed(const Duration(milliseconds: 20));
     }
     if (headless && settings.dbHandler.db?.isOpen == true) await settings.dbHandler.db?.close();
+    if (headless) _settingsReleased = true;
   }
 
   Future<void> pump() async {
@@ -199,12 +205,24 @@ class DownloadRuntime {
       if (Platform.isAndroid) {
         await downloadPlatform.invokeMethod<void>('progress', summary);
       }
+      if (_lastRuntimeError != null || summary['runtimeError'] != null) {
+        await store.db.delete('metadata', where: 'key = ?', whereArgs: ['runtimeError']);
+        _lastRuntimeError = null;
+      }
     } catch (error) {
       // Persist a generic cause; URLs and credentials never enter notifications.
-      await store.db.insert('metadata', {
-        'key': 'runtimeError',
-        'value': DownloadNetwork.errorCode(error),
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      final code = DownloadNetwork.errorCode(error);
+      if (code != _lastRuntimeError) {
+        try {
+          await store.db.insert('metadata', {
+            'key': 'runtimeError',
+            'value': code,
+          }, conflictAlgorithm: ConflictAlgorithm.replace);
+          _lastRuntimeError = code;
+        } catch (_) {
+          // The foreground store poll reports inaccessible queue storage.
+        }
+      }
     } finally {
       _pumping = false;
     }
@@ -512,6 +530,9 @@ Future<void> _runDownloadWorker() async {
       switch (call.method) {
         case 'resume':
           await runtime.reload();
+        case 'wake':
+          // A new batch does not cancel already running transfers.
+          break;
         case 'suspend':
           await runtime.suspend();
         case 'quiesce':

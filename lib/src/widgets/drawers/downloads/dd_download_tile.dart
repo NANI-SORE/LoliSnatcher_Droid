@@ -11,6 +11,7 @@ import 'package:lolisnatcher/src/handlers/settings_handler.dart';
 import 'package:lolisnatcher/src/handlers/snatch_handler.dart';
 import 'package:lolisnatcher/src/utils/content_policy.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_presentation.dart';
+import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_action_label.dart';
 import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
 
 typedef DownloadItemAction = Future<void> Function(String command, DownloadTask item);
@@ -29,6 +30,48 @@ class _DDDownloadTileState extends State<DDDownloadTile> {
   late BooruItem _preview;
   DateTime _sampledAt = DateTime.now(), _lastMovement = DateTime.now();
   double _speed = 0;
+
+  List<({String command, String label, IconData icon})> get _actions {
+    final item = widget.item;
+    final primary = downloadPrimaryAction(item);
+    return [
+      if (primary != null && primary.command != 'details') primary,
+      if (widget.onTap != null) (command: 'details', label: 'details', icon: Icons.info_outline),
+      if (item.state.terminal)
+        (command: 'redownload', label: 'redownload', icon: Icons.download_outlined)
+      else if (item.state != .finalizing && item.stage != 'publishing')
+        (command: 'cancel', label: 'cancel', icon: Icons.close),
+    ];
+  }
+
+  Future<void> _showActions() async {
+    if (widget.busy || _actions.isEmpty) return;
+    final command = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final action in _actions)
+              ListTile(
+                leading: Icon(action.icon),
+                title: Text(downloadText(action.label)),
+                onTap: () => Navigator.pop(context, action.command),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (mounted && command != null) _act(command);
+  }
+
+  void _act(String command) {
+    if (command == 'details') {
+      widget.onTap?.call();
+    } else {
+      unawaited(widget.onAction(command, widget.item));
+    }
+  }
 
   void _readPreview() {
     final data = widget.item.transfer.item;
@@ -85,13 +128,15 @@ class _DDDownloadTileState extends State<DDDownloadTile> {
     final status = needsHelp ? downloadErrorText(item.error) : itemStateText(item);
     final postId = transfer.item['serverId']?.toString();
     final title = postId?.isNotEmpty == true ? '${transfer.sourceName} · #$postId' : transfer.filename;
+    final sample = transfer.quality.toLowerCase() == 'sample';
     final metadata = [
       if (postId?.isNotEmpty != true) transfer.sourceName,
       p.extension(transfer.filename).replaceFirst('.', '').toUpperCase(),
-      downloadText(transfer.quality.toLowerCase() == 'sample' ? 'sample' : 'original'),
+      downloadText(sample ? 'sample' : 'original'),
     ].where((s) => s.isNotEmpty).join(' · ');
     return InkWell(
       onTap: widget.onTap,
+      onLongPress: widget.busy ? null : _showActions,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
@@ -171,12 +216,16 @@ class _DDDownloadTileState extends State<DDDownloadTile> {
             ),
             SizedBox(
               width: 40,
-              child: action == null
-                  ? Padding(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (action == null)
+                    Padding(
                       padding: const EdgeInsets.only(top: 6),
                       child: Icon(downloadStateIcon(item), size: 20, color: scheme.onSurfaceVariant),
                     )
-                  : IconButton(
+                  else
+                    IconButton(
                       tooltip: downloadText(action.label),
                       onPressed: widget.busy
                           ? null
@@ -185,6 +234,22 @@ class _DDDownloadTileState extends State<DDDownloadTile> {
                           : () => widget.onAction(action.command, item),
                       icon: Icon(action.icon),
                     ),
+                  if (_actions.isNotEmpty)
+                    PopupMenuButton<String>(
+                      tooltip: downloadText('actions'),
+                      enabled: !widget.busy,
+                      padding: EdgeInsets.zero,
+                      onSelected: _act,
+                      itemBuilder: (_) => [
+                        for (final entry in _actions)
+                          PopupMenuItem(
+                            value: entry.command,
+                            child: DDActionLabel(icon: entry.icon, label: downloadText(entry.label)),
+                          ),
+                      ],
+                    ),
+                ],
+              ),
             ),
           ],
         ),

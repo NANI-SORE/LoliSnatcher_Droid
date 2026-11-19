@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lolisnatcher/src/downloads/download_localizations.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_controller.dart';
+import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_action_label.dart';
 
 class DDQueueControls extends StatefulWidget {
   const DDQueueControls({required this.controller, super.key});
@@ -44,7 +45,9 @@ class _DDQueueControlsState extends State<DDQueueControls> {
     final paused = count('paused') + count('discoveryPaused');
     final failed = count('failed') + count('needsAction') + count('discoveryAttention');
     final finished = count('completed') + count('skipped') + count('cancelled');
-    final needsResume = handler.status.value == 'resumeRequired' || pending == 0 && paused > 0;
+    final needsResume =
+        const ['resumeRequired', 'executionError', 'storage'].contains(handler.status.value) ||
+        pending == 0 && paused > 0;
     final command = needsResume
         ? 'resume'
         : pending > 0
@@ -85,17 +88,65 @@ class _DDQueueControlsState extends State<DDQueueControls> {
                   onSelected: _command,
                   itemBuilder: (_) => [
                     if (paused > 0 && command != 'resume')
-                      PopupMenuItem(value: 'resume', child: Text(downloadText('resumeAll'))),
+                      PopupMenuItem(
+                        value: 'resume',
+                        child: DDActionLabel(
+                          icon: Icons.play_arrow_rounded,
+                          label: downloadText('resumeAll'),
+                          count: count('paused') > 0 ? count('paused') : null,
+                        ),
+                      ),
                     if (failed > 0 && command != 'retry')
-                      PopupMenuItem(value: 'retry', child: Text(downloadText('retry'))),
+                      PopupMenuItem(
+                        value: 'retry',
+                        child: DDActionLabel(
+                          icon: Icons.refresh,
+                          label: downloadText('retry'),
+                          count: count('failed') + count('needsAction') > 0
+                              ? count('failed') + count('needsAction')
+                              : null,
+                        ),
+                      ),
                     if (pending + paused + failed > 0)
-                      PopupMenuItem(value: 'cancel', child: Text(downloadText('cancelAll'))),
-                    if (finished > 0) PopupMenuItem(value: 'clear', child: Text(downloadText('clearHistory'))),
+                      PopupMenuItem(
+                        value: 'cancel',
+                        child: DDActionLabel(icon: Icons.close, label: downloadText('cancelAll')),
+                      ),
+                    if (finished > 0)
+                      PopupMenuItem(
+                        value: 'clear',
+                        child: DDActionLabel(
+                          icon: Icons.playlist_remove,
+                          label: downloadText('clearHistory'),
+                          count: finished,
+                        ),
+                      ),
                   ],
                 ),
             ],
           ),
         ),
+        if (pending + paused + failed + finished > 0)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(
+                spacing: 14,
+                runSpacing: 6,
+                children: [
+                  for (final entry in [
+                    ('activeItems', Icons.downloading_outlined, pending - count('discovery')),
+                    ('paused', Icons.pause_circle_outline, count('paused')),
+                    ('completed', Icons.check_circle_outline, count('completed')),
+                    ('skipped', Icons.file_download_done, count('skipped')),
+                    ('needsAction', Icons.error_outline, count('failed') + count('needsAction')),
+                  ])
+                    if (entry.$3 > 0) DDStatusCount(icon: entry.$2, label: downloadText(entry.$1), count: entry.$3),
+                ],
+              ),
+            ),
+          ),
         if (_busy) const LinearProgressIndicator(minHeight: 2),
         if (_failed) Padding(padding: const EdgeInsets.all(8), child: Text(downloadText('actionError'))),
       ],

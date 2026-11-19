@@ -6,6 +6,7 @@ import android.app.job.*
 import android.content.*
 import android.content.pm.PackageManager
 import android.net.NetworkRequest
+import android.net.NetworkCapabilities
 import android.os.*
 import androidx.core.app.NotificationCompat
 import io.flutter.FlutterInjector
@@ -83,12 +84,21 @@ object DownloadHost {
                 }
                 "consumeOpen" -> { result.success(pendingOpen); pendingOpen = null }
                 "start" -> result.success(schedule(app))
-                "executionState" -> result.success(if (desiredRunning) "running" else if (prefs(app).getBoolean("resumeRequired", false)) "resumeRequired" else "idle")
+                "executionState" -> result.success(executionState(app))
                 "workerReady" -> {
+                    if (engine !== flutterEngine) { result.success(false); return@setMethodCallHandler }
                     ready = true
                     result.success(desiredRunning)
                 }
-                "workerUnavailable" -> { stop(app, true); result.success(null) }
+                "workerUnavailable" -> {
+                    if (engine === flutterEngine) {
+                        stop(app, true)
+                        // A failed entrypoint cannot respond to resume. Recreate
+                        // it on the next explicit start, after replying here.
+                        main.post { discardFailedEngine(flutterEngine) }
+                    }
+                    result.success(null)
+                }
                 "refresh" -> { if (ready && desiredRunning) worker?.invokeMethod("resume", null); result.success(null) }
                 "quiesce" -> {
                     stop(app, false)
@@ -97,6 +107,7 @@ object DownloadHost {
                     else worker?.invokeMethod("quiesce", null, result)
                 }
                 "progress" -> {
+                    if (engine !== flutterEngine || !ready) { result.success(null); return@setMethodCallHandler }
                     summary = call.arguments as? Map<*, *> ?: emptyMap<Any, Any>()
                     progress(app)
                     result.success(null)
@@ -134,8 +145,8 @@ object DownloadHost {
 
     fun schedule(context: Context): String {
         if (desiredRunning) {
-            if (ready) worker?.invokeMethod("resume", null)
-            return "running"
+            if (ready) worker?.invokeMethod("wake", null)
+            return if (ready) "running" else "starting"
         }
         // Called only for a foreground user's enqueue/resume action. Let the
         // platform decide eligibility, including permission-dialog transitions
@@ -143,13 +154,17 @@ object DownloadHost {
         return try {
             if (Build.VERSION.SDK_INT >= 34) {
                 val scheduler = context.getSystemService(JobScheduler::class.java)
-                if (scheduler.getPendingJob(JOB) == null || prefs(context).getBoolean("resumeRequired", false)) {
-                    val job = JobInfo.Builder(JOB, ComponentName(context, DownloadJob::class.java))
-                        .setUserInitiated(true).setPersisted(true)
-                        .setRequiredNetwork(NetworkRequest.Builder().build())
-                        .build()
-                    if (scheduler.schedule(job) != JobScheduler.RESULT_SUCCESS) throw IllegalStateException()
-                }
+                // This is a fresh user request, not an automatic retry. Replace
+                // an older pending job so its system backoff cannot hide new work.
+                // Running jobs are handled above and retain the same executor.
+                val network = NetworkRequest.Builder()
+                    .removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+                    .build()
+                val job = JobInfo.Builder(JOB, ComponentName(context, DownloadJob::class.java))
+                    .setUserInitiated(true).setPersisted(true)
+                    .setRequiredNetwork(network)
+                    .build()
+                if (scheduler.schedule(job) != JobScheduler.RESULT_SUCCESS) throw IllegalStateException()
             } else {
                 val intent = Intent(context, DownloadService::class.java)
                 if (Build.VERSION.SDK_INT >= 26) context.startForegroundService(intent) else context.startService(intent)
@@ -160,6 +175,27 @@ object DownloadHost {
             prefs(context).edit().putBoolean("resumeRequired", true).apply()
             "resumeRequired"
         }
+    }
+
+    private fun executionState(context: Context): String {
+        if (desiredRunning) return if (ready) "running" else "starting"
+        if (prefs(context).getBoolean("resumeRequired", false)) return "resumeRequired"
+        if (Build.VERSION.SDK_INT >= 34) {
+            val scheduler = context.getSystemService(JobScheduler::class.java)
+            if (scheduler.getPendingJob(JOB) != null) {
+                return if (scheduler.getPendingJobReason(JOB) == JobScheduler.PENDING_JOB_REASON_CONSTRAINT_CONNECTIVITY)
+                    "waitingNetwork" else "waitingSystem"
+            }
+        }
+        return "idle"
+    }
+
+    private fun discardFailedEngine(failed: FlutterEngine) {
+        if (engine !== failed) return
+        ready = false
+        worker = null
+        engine = null
+        failed.destroy()
     }
 
     fun begin(context: Context, token: Any, finish: () -> Unit) {
@@ -183,6 +219,12 @@ object DownloadHost {
             attach(context, created)
             worker = MethodChannel(created.dartExecutor.binaryMessenger, "lolisnatcher/downloads/worker")
             created.dartExecutor.executeDartEntrypoint(DartExecutor.DartEntrypoint(loader.findAppBundlePath(), "downloadMain"))
+            main.postDelayed({
+                if (engine === created && !ready) {
+                    stop(context, true)
+                    discardFailedEngine(created)
+                }
+            }, 60_000L)
         } else if (ready) worker?.invokeMethod("resume", null)
     }
 

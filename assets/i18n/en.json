@@ -1554,6 +1554,10 @@
         "batchAdded": "Added to downloads",
         "addToQueue": "Add to downloads",
         "adding": "Adding…",
-        "fixIssue": "Resolve issue"
+        "fixIssue": "Resolve issue",
+        "details": "Details",
+        "starting": "Starting downloads",
+        "waitingSystem": "Waiting for Android",
+        "executionError": "Downloads need attention"
     }
 }

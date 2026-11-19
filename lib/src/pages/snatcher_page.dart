@@ -233,6 +233,7 @@ class _SnatcherPageState extends State<SnatcherPage> {
       return false;
     }
     final first = int.tryParse(start.text);
+    final count = int.tryParse(amount.text);
     final seconds = double.tryParse(delay.text);
     final validOptions =
         (!supportsStart || first != null && first > 0) &&
@@ -241,7 +242,7 @@ class _SnatcherPageState extends State<SnatcherPage> {
         seconds >= 1 &&
         seconds <= 3600;
     if (!validOptions) _options.expand();
-    return (_form.currentState?.validate() ?? false) && validOptions;
+    return (_form.currentState?.validate() ?? false) && count != null && count > 0 && validOptions;
   }
 
   Future<void> _enqueue() async {
@@ -280,22 +281,30 @@ class _SnatcherPageState extends State<SnatcherPage> {
     TextEditingController controller,
     String label, {
     bool seconds = false,
+    String Function()? resetText,
     ValueChanged<String>? onChanged,
-  }) => TextFormField(
+  }) => SettingsTextInput(
     controller: controller,
+    title: label,
+    onlyInput: true,
+    titleAsLabel: true,
+    margin: EdgeInsets.zero,
+    resetText: resetText ?? () => '1',
+    numberButtons: true,
+    alwaysShowNumberButtons: true,
+    numberMin: 1,
+    numberMax: seconds ? 3600 : 2147483647,
     onChanged: onChanged,
-    keyboardType: TextInputType.numberWithOptions(decimal: seconds),
+    inputType: TextInputType.numberWithOptions(decimal: seconds),
     inputFormatters: [
       if (seconds) FilteringTextInputFormatter.allow(RegExp('[0-9.]')) else FilteringTextInputFormatter.digitsOnly,
     ],
-    autovalidateMode: AutovalidateMode.onUserInteraction,
     validator: (text) {
       final value = seconds ? double.tryParse(text ?? '') : int.tryParse(text ?? '');
       if (value == null || !value.isFinite || value < 1) return downloadText('positiveNumber');
       if (seconds && value > 3600) return downloadText('delayMaximum');
       return null;
     },
-    decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
   );
   String get _destinationName {
     if (destination.isEmpty) return downloadText('loading');
@@ -385,7 +394,12 @@ class _SnatcherPageState extends State<SnatcherPage> {
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: _number(amount, downloadText('postCount'), onChanged: (_) => _amountEdited = true),
+                child: _number(
+                  amount,
+                  downloadText('postCount'),
+                  resetText: () => SX.limit.valueForBooru(source.name).toString(),
+                  onChanged: (_) => _amountEdited = true,
+                ),
               ),
               ExpansionTile(
                 controller: _options,
@@ -421,19 +435,17 @@ class _SnatcherPageState extends State<SnatcherPage> {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Wrap(
+                    child: Column(
                       spacing: 12,
-                      runSpacing: 12,
                       children: [
-                        if (supportsStart) SizedBox(width: 150, child: _number(start, downloadText('startingPage'))),
-                        SizedBox(
-                          width: 150,
-                          child: _number(
-                            delay,
-                            downloadText('delaySeconds'),
-                            seconds: true,
-                            onChanged: (_) => _delayEdited = true,
-                          ),
+                        if (supportsStart) _number(start, downloadText('startingPage')),
+                        _number(
+                          delay,
+                          downloadText('delaySeconds'),
+                          seconds: true,
+                          resetText: () =>
+                              (SX.snatchCooldown.valueForBooru(source.name).clamp(1000, 3600000) / 1000).toString(),
+                          onChanged: (_) => _delayEdited = true,
                         ),
                       ],
                     ),

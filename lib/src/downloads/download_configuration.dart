@@ -46,6 +46,14 @@ class DownloadPaths {
 class DownloadConfiguration {
   DownloadConfiguration(this.data);
   final Map<String, dynamic> data;
+  // Cookie captures get a new version on every enqueue. Only execution policy
+  // changes require draining active work and replacing background settings.
+  String get executionIdentity => downloadIdentity([
+    <String, dynamic>{
+      for (final entry in data.entries)
+        if (!const {'version', 'cookies', 'cookieHosts'}.contains(entry.key)) entry.key: entry.value,
+    },
+  ]);
   static const storage = FlutterSecureStorage(
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
   );

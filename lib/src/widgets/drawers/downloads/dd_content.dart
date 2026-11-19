@@ -10,6 +10,7 @@ import 'package:lolisnatcher/src/pages/settings/booru_edit_page.dart';
 import 'package:lolisnatcher/src/pages/settings/booru_page.dart';
 import 'package:lolisnatcher/src/services/get_perms.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_controller.dart';
+import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_action_label.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_download_tile.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_presentation.dart';
 
@@ -296,12 +297,32 @@ class _DDContentState extends State<DDContent> {
                     onSelected: (value) => _command(value, batch: id),
                     itemBuilder: (_) => [
                       if (failed > 0 && primary != 'retry')
-                        PopupMenuItem(value: 'retry', child: Text(downloadText('retry'))),
+                        PopupMenuItem(
+                          value: 'retry',
+                          child: DDActionLabel(icon: Icons.refresh, label: downloadText('retry'), count: failed),
+                        ),
                       if (pending || paused || failed > 0 || discoveryError)
-                        PopupMenuItem(value: 'cancel', child: Text(downloadText('cancelBatch')))
+                        PopupMenuItem(
+                          value: 'cancel',
+                          child: DDActionLabel(icon: Icons.close, label: downloadText('cancelBatch')),
+                        )
                       else ...[
-                        PopupMenuItem(value: 'redownload', child: Text(downloadText('redownload'))),
-                        PopupMenuItem(value: 'clear', child: Text(downloadText('clearHistory'))),
+                        PopupMenuItem(
+                          value: 'redownload',
+                          child: DDActionLabel(
+                            icon: Icons.download_outlined,
+                            label: downloadText('redownload'),
+                            count: total,
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'clear',
+                          child: DDActionLabel(
+                            icon: Icons.playlist_remove,
+                            label: downloadText('clearHistory'),
+                            count: done,
+                          ),
+                        ),
                       ],
                     ],
                   ),
@@ -396,19 +417,27 @@ class _DDContentState extends State<DDContent> {
     final handler = widget.controller.snatchHandler;
     return Column(
       children: [
-        Obx(
-          () => handler.status.value == 'resumeRequired'
-              ? ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.pause_circle_outline),
-                  title: Text(downloadText('resumeRequired')),
-                  trailing: TextButton(
+        Obx(() {
+          final status = handler.status.value;
+          final blocked = const ['resumeRequired', 'executionError', 'storage'].contains(status);
+          final waiting = const ['scheduled', 'waitingSystem', 'starting', 'waitingNetwork'].contains(status);
+          if (!blocked && (!waiting || !handler.active.value)) return const SizedBox.shrink();
+          return ListTile(
+            dense: true,
+            leading: Icon(blocked ? Icons.error_outline : Icons.schedule),
+            title: Text(downloadText(status == 'scheduled' ? 'waitingSystem' : status)),
+            subtitle: status == 'executionError'
+                ? Text(downloadErrorText(handler.summary['runtimeError'] as String?))
+                : null,
+            trailing: blocked || status == 'waitingSystem' || status == 'scheduled'
+                ? IconButton(
+                    tooltip: downloadText('resume'),
                     onPressed: _busy ? null : () => _command('resume'),
-                    child: Text(downloadText('resume')),
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
+                    icon: const Icon(Icons.play_arrow_rounded),
+                  )
+                : null,
+          );
+        }),
         if (_error != null)
           Padding(
             padding: const EdgeInsets.all(12),

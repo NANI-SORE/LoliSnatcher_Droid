@@ -153,7 +153,10 @@ class SnatchHandler with WidgetsBindingObserver {
       received.value = first?.received ?? 0;
       total.value = first?.total ?? 0;
       active.value =
-          (data['transferring'] as int? ?? 0) +
+          (data['queued'] as int? ?? 0) +
+              (data['waitingNetwork'] as int? ?? 0) +
+              (data['waitingRate'] as int? ?? 0) +
+              (data['transferring'] as int? ?? 0) +
               (data['prepared'] as int? ?? 0) +
               (data['finalizing'] as int? ?? 0) +
               (data['discovery'] as int? ?? 0) >
@@ -167,8 +170,11 @@ class SnatchHandler with WidgetsBindingObserver {
         current.value = null;
       }
       queueProgress.value = 0;
+      // Recompute transient errors on every successful read on every platform.
+      status.value = active.value ? 'running' : 'idle';
       if (Platform.isAndroid || Platform.isIOS) {
         status.value = await downloadPlatform.invokeMethod<String>('executionState') ?? '';
+        if (Platform.isAndroid && active.value && status.value == 'idle') status.value = 'resumeRequired';
         if (_launchFailed && status.value != 'running') status.value = 'resumeRequired';
         if (status.value == 'resumeRequired') attention.value++;
         if (_foreground &&
@@ -183,6 +189,10 @@ class SnatchHandler with WidgetsBindingObserver {
             );
           }
         }
+      }
+      if (data['runtimeError'] != null && active.value) {
+        status.value = 'executionError';
+        attention.value++;
       }
       await _completionEvents();
       await _notices?.check();

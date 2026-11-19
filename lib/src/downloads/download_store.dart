@@ -122,6 +122,8 @@ CREATE TABLE completion_events (
       SUM(CASE WHEN t.state IN ('failed','needsAction') THEN 1 ELSE 0 END) AS failed,
       SUM(CASE WHEN t.state = 'cancelled' THEN 1 ELSE 0 END) AS cancelled,
       SUM(CASE WHEN t.state = 'paused' THEN 1 ELSE 0 END) AS paused,
+      SUM(CASE WHEN t.state = 'waitingNetwork' THEN 1 ELSE 0 END) AS waitingNetwork,
+      SUM(CASE WHEN t.state = 'waitingRate' THEN 1 ELSE 0 END) AS waitingRate,
       SUM(CASE WHEN t.state IN ('transferring','finalizing') THEN 1 ELSE 0 END) AS running,
       SUM(CASE WHEN t.state IN ('queued','prepared','waitingNetwork','waitingRate') THEN 1 ELSE 0 END) AS waiting
     FROM batches b LEFT JOIN tasks t ON t.batchId = b.id
@@ -496,6 +498,7 @@ CREATE TABLE completion_events (
   });
 
   Future<Map<String, dynamic>> summary() async {
+    final runtimeError = await db.query('metadata', columns: ['value'], where: 'key = ?', whereArgs: ['runtimeError']);
     final counts = await db.rawQuery('SELECT state, COUNT(*) AS count FROM tasks GROUP BY state');
     final discovery = await db.rawQuery(
       "SELECT COUNT(*) AS count FROM batches WHERE discoveryDone = 0 AND state = 'active' AND discoveryState = 'active'",
@@ -510,6 +513,7 @@ CREATE TABLE completion_events (
       "SELECT COALESCE(SUM(selectedCount),0) AS selected, COALESCE(SUM(requestedCount),0) AS requested FROM batches WHERE discoveryDone = 0 AND state = 'active' AND discoveryState = 'active'",
     )).single;
     return {
+      'runtimeError': runtimeError.firstOrNull?['value'],
       for (final row in counts) row['state']! as String: row['count'],
       'discovery': discovery.single['count'],
       'discoveryAttention': discoveryAttention.single['count'],

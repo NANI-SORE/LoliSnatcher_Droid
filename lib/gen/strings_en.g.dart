@@ -2469,6 +2469,18 @@ class Translations$downloadQueue$en {
 
   /// en: 'Resolve issue'
   String get fixIssue => TranslationOverrides.string(_root.$meta, 'downloadQueue.fixIssue', {}) ?? 'Resolve issue';
+
+  /// en: 'Details'
+  String get details => TranslationOverrides.string(_root.$meta, 'downloadQueue.details', {}) ?? 'Details';
+
+  /// en: 'Starting downloads'
+  String get starting => TranslationOverrides.string(_root.$meta, 'downloadQueue.starting', {}) ?? 'Starting downloads';
+
+  /// en: 'Waiting for Android'
+  String get waitingSystem => TranslationOverrides.string(_root.$meta, 'downloadQueue.waitingSystem', {}) ?? 'Waiting for Android';
+
+  /// en: 'Downloads need attention'
+  String get executionError => TranslationOverrides.string(_root.$meta, 'downloadQueue.executionError', {}) ?? 'Downloads need attention';
 }
 
 // Path: tabs.filters
@@ -7867,6 +7879,11 @@ extension on Translations {
           'downloadQueue.addToQueue' => TranslationOverrides.string(_root.$meta, 'downloadQueue.addToQueue', {}) ?? 'Add to downloads',
           'downloadQueue.adding' => TranslationOverrides.string(_root.$meta, 'downloadQueue.adding', {}) ?? 'Adding…',
           'downloadQueue.fixIssue' => TranslationOverrides.string(_root.$meta, 'downloadQueue.fixIssue', {}) ?? 'Resolve issue',
+          'downloadQueue.details' => TranslationOverrides.string(_root.$meta, 'downloadQueue.details', {}) ?? 'Details',
+          'downloadQueue.starting' => TranslationOverrides.string(_root.$meta, 'downloadQueue.starting', {}) ?? 'Starting downloads',
+          'downloadQueue.waitingSystem' => TranslationOverrides.string(_root.$meta, 'downloadQueue.waitingSystem', {}) ?? 'Waiting for Android',
+          'downloadQueue.executionError' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.executionError', {}) ?? 'Downloads need attention',
           _ => null,
         };
   }

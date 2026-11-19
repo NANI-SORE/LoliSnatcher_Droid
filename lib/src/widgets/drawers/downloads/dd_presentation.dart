@@ -113,8 +113,14 @@ bool batchPending(Map<String, dynamic> batch) =>
 String batchStateText(Map<String, dynamic> batch) {
   if (batch['state'] == 'paused' || batch['state'] == 'cancelled') return downloadText(batch['state'] as String);
   if (batch['discoveryState'] == 'needsAction' && batch['discoveryDone'] == 0) return downloadText('needsAction');
+  if (batchCount(batch, 'running') > 0) return downloadText('transferring');
+  if (batchFinding(batch) && batchCount(batch, 'nextEligible') > DateTime.now().millisecondsSinceEpoch) {
+    return downloadText(batch['error'] == 'network' ? 'waitingNetwork' : 'retrying');
+  }
   if (batchFinding(batch)) return downloadText('discovering');
-  if (batchCount(batch, 'running') + batchCount(batch, 'waiting') > 0) return downloadText('transferring');
+  if (batchCount(batch, 'waitingNetwork') > 0) return downloadText('waitingNetwork');
+  if (batchCount(batch, 'waitingRate') > 0) return downloadText('waitingRate');
+  if (batchCount(batch, 'waiting') > 0) return downloadText('queued');
   if (batchCount(batch, 'failed') > 0) return downloadText('needsAction');
   if (batchCount(batch, 'paused') > 0) return downloadText('paused');
   return downloadText('finished');

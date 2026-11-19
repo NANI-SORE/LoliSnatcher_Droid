@@ -23,6 +23,7 @@ class DownloadsDrawerController {
   final SnatchHandler snatchHandler = SnatchHandler.instance;
   final SettingsHandler settingsHandler = SettingsHandler.instance;
   final SearchHandler searchHandler = SearchHandler.instance;
+  SearchTab? get currentTabOrNull => searchHandler.currentTabOrNull;
 
   final RxBool updating = false.obs;
   late final ScrollController scrollController;
@@ -40,7 +41,12 @@ class DownloadsDrawerController {
   void clearHandlerCache() => _handlerCache.clear();
 
   Future<void> onStartSnatching(BuildContext context, bool isLongTap) async {
+    final currentTab = currentTabOrNull;
+    final currentBooru = currentTab?.selectedBooru.value;
+    final currentSelected = currentTab?.selected.toList();
+    if (currentTab == null || currentBooru == null || currentSelected == null) return;
     if (!await setPermissions()) {
+      if (!context.mounted) return;
       FlashElements.showSnackbar(
         context: context,
         title: Text(
@@ -51,13 +57,6 @@ class DownloadsDrawerController {
         sideColor: Colors.red,
         leadingIconColor: Colors.red,
       );
-      return;
-    }
-
-    final currentTab = searchHandler.currentTabOrNull;
-    final currentBooru = searchHandler.currentBooruOrNull;
-    final currentSelected = searchHandler.currentSelectedOrNull;
-    if (currentTab == null || currentBooru == null || currentSelected == null) {
       return;
     }
 
@@ -80,7 +79,7 @@ class DownloadsDrawerController {
         );
       }
       await Future.delayed(const Duration(milliseconds: 100));
-      currentTab.selected.clear();
+      currentTab.selected.removeWhere(currentSelected.contains);
     } else {
       FlashElements.showSnackbar(
         context: context,
