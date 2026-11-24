@@ -1562,5 +1562,20 @@
         "starting": "Starting downloads",
         "waitingSystem": "Waiting for Android",
         "executionError": "Downloads need attention"
+    },
+    "downloadNotifications(ignoreUnused)": {
+        "title": "Downloads",
+        "progress": "Saved: {saved} · Active: {active}",
+        "inProgress": "Downloads in progress",
+        "progressChannel": "Download progress",
+        "attentionChannel": "Download alerts",
+        "pause": "Pause",
+        "cancel": "Cancel",
+        "completeTitle": "Downloads complete",
+        "attentionTitle": "Downloads need attention",
+        "completeBody": "Open downloads to view results",
+        "attentionBody": "Open downloads to resolve the issue",
+        "discoveryTitle": "Finding files",
+        "discoveryBody": "Preparing your download queue"
     }
 }

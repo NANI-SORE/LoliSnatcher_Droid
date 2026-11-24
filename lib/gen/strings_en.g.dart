@@ -327,6 +327,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
   late final Translations$preview$en preview = Translations$preview$en.internal(_root);
   late final Translations$tagType$en tagType = Translations$tagType$en.internal(_root);
   late final Translations$downloadQueue$en downloadQueue = Translations$downloadQueue$en.internal(_root);
+  late final Translations$downloadNotifications$en downloadNotifications = Translations$downloadNotifications$en.internal(_root);
 }
 
 // Path: ios
@@ -2490,6 +2491,55 @@ class Translations$downloadQueue$en {
 
   /// en: 'Downloads need attention'
   String get executionError => TranslationOverrides.string(_root.$meta, 'downloadQueue.executionError', {}) ?? 'Downloads need attention';
+}
+
+// Path: downloadNotifications
+class Translations$downloadNotifications$en {
+  Translations$downloadNotifications$en.internal(this._root);
+
+  final Translations _root; // ignore: unused_field
+
+  // Translations
+
+  /// en: 'Downloads'
+  String get title => TranslationOverrides.string(_root.$meta, 'downloadNotifications.title', {}) ?? 'Downloads';
+
+  /// en: 'Saved: {saved} · Active: {active}'
+  String get progress => TranslationOverrides.string(_root.$meta, 'downloadNotifications.progress', {}) ?? 'Saved: {saved} · Active: {active}';
+
+  /// en: 'Downloads in progress'
+  String get inProgress => TranslationOverrides.string(_root.$meta, 'downloadNotifications.inProgress', {}) ?? 'Downloads in progress';
+
+  /// en: 'Download progress'
+  String get progressChannel => TranslationOverrides.string(_root.$meta, 'downloadNotifications.progressChannel', {}) ?? 'Download progress';
+
+  /// en: 'Download alerts'
+  String get attentionChannel => TranslationOverrides.string(_root.$meta, 'downloadNotifications.attentionChannel', {}) ?? 'Download alerts';
+
+  /// en: 'Pause'
+  String get pause => TranslationOverrides.string(_root.$meta, 'downloadNotifications.pause', {}) ?? 'Pause';
+
+  /// en: 'Cancel'
+  String get cancel => TranslationOverrides.string(_root.$meta, 'downloadNotifications.cancel', {}) ?? 'Cancel';
+
+  /// en: 'Downloads complete'
+  String get completeTitle => TranslationOverrides.string(_root.$meta, 'downloadNotifications.completeTitle', {}) ?? 'Downloads complete';
+
+  /// en: 'Downloads need attention'
+  String get attentionTitle => TranslationOverrides.string(_root.$meta, 'downloadNotifications.attentionTitle', {}) ?? 'Downloads need attention';
+
+  /// en: 'Open downloads to view results'
+  String get completeBody => TranslationOverrides.string(_root.$meta, 'downloadNotifications.completeBody', {}) ?? 'Open downloads to view results';
+
+  /// en: 'Open downloads to resolve the issue'
+  String get attentionBody =>
+      TranslationOverrides.string(_root.$meta, 'downloadNotifications.attentionBody', {}) ?? 'Open downloads to resolve the issue';
+
+  /// en: 'Finding files'
+  String get discoveryTitle => TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryTitle', {}) ?? 'Finding files';
+
+  /// en: 'Preparing your download queue'
+  String get discoveryBody => TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryBody', {}) ?? 'Preparing your download queue';
 }
 
 // Path: tabs.filters
@@ -7897,6 +7947,29 @@ extension on Translations {
           'downloadQueue.waitingSystem' => TranslationOverrides.string(_root.$meta, 'downloadQueue.waitingSystem', {}) ?? 'Waiting for Android',
           'downloadQueue.executionError' =>
             TranslationOverrides.string(_root.$meta, 'downloadQueue.executionError', {}) ?? 'Downloads need attention',
+          'downloadNotifications.title' => TranslationOverrides.string(_root.$meta, 'downloadNotifications.title', {}) ?? 'Downloads',
+          'downloadNotifications.progress' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.progress', {}) ?? 'Saved: {saved} · Active: {active}',
+          'downloadNotifications.inProgress' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.inProgress', {}) ?? 'Downloads in progress',
+          'downloadNotifications.progressChannel' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.progressChannel', {}) ?? 'Download progress',
+          'downloadNotifications.attentionChannel' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.attentionChannel', {}) ?? 'Download alerts',
+          'downloadNotifications.pause' => TranslationOverrides.string(_root.$meta, 'downloadNotifications.pause', {}) ?? 'Pause',
+          'downloadNotifications.cancel' => TranslationOverrides.string(_root.$meta, 'downloadNotifications.cancel', {}) ?? 'Cancel',
+          'downloadNotifications.completeTitle' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.completeTitle', {}) ?? 'Downloads complete',
+          'downloadNotifications.attentionTitle' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.attentionTitle', {}) ?? 'Downloads need attention',
+          'downloadNotifications.completeBody' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.completeBody', {}) ?? 'Open downloads to view results',
+          'downloadNotifications.attentionBody' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.attentionBody', {}) ?? 'Open downloads to resolve the issue',
+          'downloadNotifications.discoveryTitle' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryTitle', {}) ?? 'Finding files',
+          'downloadNotifications.discoveryBody' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryBody', {}) ?? 'Preparing your download queue',
           _ => null,
         };
   }

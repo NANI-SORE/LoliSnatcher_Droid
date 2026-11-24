@@ -55,9 +55,16 @@ Future<void> main(List<String> args) async {
   }
 }
 
-Future<int> _buildIOS({bool check = false}) async {
+Future<int> _buildIOS({bool check = false, bool android = false}) async {
   try {
-    return await buildIOSLocalizations(check: check) ? 0 : 1;
+    final permissions = await buildIOSLocalizations(check: check);
+    final notifications = await buildIOSLocalizations(
+      check: check,
+      sectionName: 'downloadNotifications',
+      catalogName: 'DownloadNotifications',
+      android: android,
+    );
+    return permissions && notifications ? 0 : 1;
   } on FormatException catch (error) {
     stderr.writeln(error.message);
     return 65;
@@ -99,7 +106,7 @@ Future<int> buildLocalizations({bool iosOnly = false}) async {
     return 65;
   }
   stdout.writeln('Adapted $replacements cardinal resolver calls to Intl.');
-  return _buildIOS();
+  return _buildIOS(android: true);
 }
 
 Future<int> runSlang(List<String> arguments) async {

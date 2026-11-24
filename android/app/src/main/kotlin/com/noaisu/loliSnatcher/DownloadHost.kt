@@ -15,6 +15,7 @@ import io.flutter.embedding.engine.dart.DartExecutor
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
 import java.util.concurrent.Executors
+import java.util.Locale
 
 /** One process-wide worker. Activities only attach a command endpoint. */
 object DownloadHost {
@@ -50,6 +51,15 @@ object DownloadHost {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "lolisnatcher/downloads").setMethodCallHandler { call, result ->
             when (call.method) {
                 "runtimeDirectory" -> result.success(root(app).absolutePath)
+                "notificationLocale" -> {
+                    prefs(app).edit().putString("notificationLocale", call.arguments as? String).apply()
+                    channels(app)
+                    if (desiredRunning) {
+                        try { app.getSystemService(NotificationManager::class.java).notify(NOTIFICATION, notification(app)) }
+                        catch (_: SecurityException) {}
+                    }
+                    result.success(null)
+                }
                 "cookieGeneration" -> {
                     prefs(app).edit().putString("cookieGeneration", call.arguments as? String).apply()
                     result.success(null)
@@ -258,11 +268,19 @@ object DownloadHost {
         if (pending == 0) stop(context, false)
     }
 
+    private fun notificationContext(context: Context): Context {
+        val tag = prefs(context).getString("notificationLocale", null) ?: return context
+        val configuration = android.content.res.Configuration(context.resources.configuration)
+        configuration.setLocale(Locale.forLanguageTag(tag))
+        return context.createConfigurationContext(configuration)
+    }
+
     private fun channels(context: Context) {
         if (Build.VERSION.SDK_INT >= 26) {
+            val strings = notificationContext(context)
             val manager = context.getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(NotificationChannel(CHANNEL, "Download progress", NotificationManager.IMPORTANCE_LOW))
-            manager.createNotificationChannel(NotificationChannel(ALERTS, "Download attention", NotificationManager.IMPORTANCE_DEFAULT))
+            manager.createNotificationChannel(NotificationChannel(CHANNEL, strings.getString(R.string.download_notification_progress_channel), NotificationManager.IMPORTANCE_LOW))
+            manager.createNotificationChannel(NotificationChannel(ALERTS, strings.getString(R.string.download_notification_attention_channel), NotificationManager.IMPORTANCE_DEFAULT))
         }
     }
 
@@ -280,25 +298,32 @@ object DownloadHost {
         channels(context)
         val saved = (summary["completed"] as? Number)?.toInt() ?: 0
         val active = (summary["transferring"] as? Number)?.toInt() ?: 0
+        val strings = notificationContext(context)
         val builder = NotificationCompat.Builder(context, CHANNEL).setSmallIcon(android.R.drawable.stat_sys_download)
-            .setContentTitle("Downloads").setContentText("$saved saved · $active active")
+            .setContentTitle(strings.getString(R.string.download_notification_title))
+            .setContentText(strings.getString(R.string.download_notification_progress)
+                .replace("{saved}", saved.toString()).replace("{active}", active.toString()))
             .setOngoing(true).setOnlyAlertOnce(true).setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setContentIntent(openIntent(context))
             .setPublicVersion(NotificationCompat.Builder(context, CHANNEL)
-                .setSmallIcon(android.R.drawable.stat_sys_download).setContentTitle("Downloads in progress").build())
+                .setSmallIcon(android.R.drawable.stat_sys_download)
+                .setContentTitle(strings.getString(R.string.download_notification_in_progress)).build())
         for (command in listOf("pause", "cancel")) {
             val intent = Intent(context, DownloadActionReceiver::class.java).putExtra("command", command)
             val action = PendingIntent.getBroadcast(context, command.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-            builder.addAction(0, command.replaceFirstChar { it.uppercase() }, action)
+            builder.addAction(0, strings.getString(if (command == "pause")
+                R.string.download_notification_pause else R.string.download_notification_cancel), action)
         }
         return builder.build()
     }
 
     private fun alert(context: Context, id: String, complete: Boolean, batchId: String?) {
+        channels(context)
+        val strings = notificationContext(context)
         val notification = NotificationCompat.Builder(context, ALERTS)
             .setSmallIcon(if (complete) android.R.drawable.stat_sys_download_done else android.R.drawable.stat_notify_error)
-            .setContentTitle(if (complete) "Downloads complete" else "Downloads need attention")
-            .setContentText(if (complete) "Open downloads to view results" else "Open downloads to resolve the issue")
+            .setContentTitle(strings.getString(if (complete) R.string.download_notification_complete_title else R.string.download_notification_attention_title))
+            .setContentText(strings.getString(if (complete) R.string.download_notification_complete_body else R.string.download_notification_attention_body))
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE).setAutoCancel(true).setGroup("download_results")
             .setContentIntent(openIntent(context, batchId)).build()
         try { context.getSystemService(NotificationManager::class.java).notify(id.hashCode(), notification) } catch (_: SecurityException) {}

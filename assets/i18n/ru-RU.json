@@ -1590,5 +1590,20 @@
         "starting": "Запуск загрузок",
         "waitingSystem": "Ожидание Android",
         "executionError": "Загрузки требуют внимания"
+    },
+    "downloadNotifications(ignoreUnused)": {
+        "title": "Загрузки",
+        "progress": "Сохранено: {saved} · Загружается: {active}",
+        "inProgress": "Идёт загрузка",
+        "progressChannel": "Ход загрузок",
+        "attentionChannel": "Уведомления о загрузках",
+        "pause": "Приостановить",
+        "cancel": "Отменить",
+        "completeTitle": "Загрузки завершены",
+        "attentionTitle": "Загрузки требуют внимания",
+        "completeBody": "Откройте загрузки, чтобы посмотреть результаты",
+        "attentionBody": "Откройте загрузки, чтобы устранить проблему",
+        "discoveryTitle": "Поиск файлов",
+        "discoveryBody": "Подготовка очереди загрузок"
     }
 }

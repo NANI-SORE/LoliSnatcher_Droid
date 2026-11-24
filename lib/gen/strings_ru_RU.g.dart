@@ -282,6 +282,8 @@ class TranslationsRuRu extends Translations with BaseTranslations<AppLocale, Tra
   late final _Translations$tagType$ru_RU tagType = _Translations$tagType$ru_RU._(_root);
   @override
   late final _Translations$downloadQueue$ru_RU downloadQueue = _Translations$downloadQueue$ru_RU._(_root);
+  @override
+  late final _Translations$downloadNotifications$ru_RU downloadNotifications = _Translations$downloadNotifications$ru_RU._(_root);
 }
 
 // Path: ios
@@ -2000,6 +2002,44 @@ class _Translations$downloadQueue$ru_RU extends Translations$downloadQueue$en {
   String get waitingSystem => TranslationOverrides.string(_root.$meta, 'downloadQueue.waitingSystem', {}) ?? 'Ожидание Android';
   @override
   String get executionError => TranslationOverrides.string(_root.$meta, 'downloadQueue.executionError', {}) ?? 'Загрузки требуют внимания';
+}
+
+// Path: downloadNotifications
+class _Translations$downloadNotifications$ru_RU extends Translations$downloadNotifications$en {
+  _Translations$downloadNotifications$ru_RU._(TranslationsRuRu root) : this._root = root, super.internal(root);
+
+  final TranslationsRuRu _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get title => TranslationOverrides.string(_root.$meta, 'downloadNotifications.title', {}) ?? 'Загрузки';
+  @override
+  String get progress =>
+      TranslationOverrides.string(_root.$meta, 'downloadNotifications.progress', {}) ?? 'Сохранено: {saved} · Загружается: {active}';
+  @override
+  String get inProgress => TranslationOverrides.string(_root.$meta, 'downloadNotifications.inProgress', {}) ?? 'Идёт загрузка';
+  @override
+  String get progressChannel => TranslationOverrides.string(_root.$meta, 'downloadNotifications.progressChannel', {}) ?? 'Ход загрузок';
+  @override
+  String get attentionChannel => TranslationOverrides.string(_root.$meta, 'downloadNotifications.attentionChannel', {}) ?? 'Уведомления о загрузках';
+  @override
+  String get pause => TranslationOverrides.string(_root.$meta, 'downloadNotifications.pause', {}) ?? 'Приостановить';
+  @override
+  String get cancel => TranslationOverrides.string(_root.$meta, 'downloadNotifications.cancel', {}) ?? 'Отменить';
+  @override
+  String get completeTitle => TranslationOverrides.string(_root.$meta, 'downloadNotifications.completeTitle', {}) ?? 'Загрузки завершены';
+  @override
+  String get attentionTitle => TranslationOverrides.string(_root.$meta, 'downloadNotifications.attentionTitle', {}) ?? 'Загрузки требуют внимания';
+  @override
+  String get completeBody =>
+      TranslationOverrides.string(_root.$meta, 'downloadNotifications.completeBody', {}) ?? 'Откройте загрузки, чтобы посмотреть результаты';
+  @override
+  String get attentionBody =>
+      TranslationOverrides.string(_root.$meta, 'downloadNotifications.attentionBody', {}) ?? 'Откройте загрузки, чтобы устранить проблему';
+  @override
+  String get discoveryTitle => TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryTitle', {}) ?? 'Поиск файлов';
+  @override
+  String get discoveryBody => TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryBody', {}) ?? 'Подготовка очереди загрузок';
 }
 
 // Path: tabs.filters
@@ -6842,6 +6882,28 @@ extension on TranslationsRuRu {
           'downloadQueue.waitingSystem' => TranslationOverrides.string(_root.$meta, 'downloadQueue.waitingSystem', {}) ?? 'Ожидание Android',
           'downloadQueue.executionError' =>
             TranslationOverrides.string(_root.$meta, 'downloadQueue.executionError', {}) ?? 'Загрузки требуют внимания',
+          'downloadNotifications.title' => TranslationOverrides.string(_root.$meta, 'downloadNotifications.title', {}) ?? 'Загрузки',
+          'downloadNotifications.progress' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.progress', {}) ?? 'Сохранено: {saved} · Загружается: {active}',
+          'downloadNotifications.inProgress' => TranslationOverrides.string(_root.$meta, 'downloadNotifications.inProgress', {}) ?? 'Идёт загрузка',
+          'downloadNotifications.progressChannel' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.progressChannel', {}) ?? 'Ход загрузок',
+          'downloadNotifications.attentionChannel' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.attentionChannel', {}) ?? 'Уведомления о загрузках',
+          'downloadNotifications.pause' => TranslationOverrides.string(_root.$meta, 'downloadNotifications.pause', {}) ?? 'Приостановить',
+          'downloadNotifications.cancel' => TranslationOverrides.string(_root.$meta, 'downloadNotifications.cancel', {}) ?? 'Отменить',
+          'downloadNotifications.completeTitle' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.completeTitle', {}) ?? 'Загрузки завершены',
+          'downloadNotifications.attentionTitle' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.attentionTitle', {}) ?? 'Загрузки требуют внимания',
+          'downloadNotifications.completeBody' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.completeBody', {}) ?? 'Откройте загрузки, чтобы посмотреть результаты',
+          'downloadNotifications.attentionBody' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.attentionBody', {}) ?? 'Откройте загрузки, чтобы устранить проблему',
+          'downloadNotifications.discoveryTitle' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryTitle', {}) ?? 'Поиск файлов',
+          'downloadNotifications.discoveryBody' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryBody', {}) ?? 'Подготовка очереди загрузок',
           _ => null,
         };
   }

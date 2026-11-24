@@ -15,6 +15,7 @@ import 'package:lolisnatcher/src/pages/settings/language_page.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import 'package:lolisnatcher/gen/strings.g.dart';
+import 'package:lolisnatcher/src/downloads/download_configuration.dart' show downloadPlatform;
 import 'package:lolisnatcher/src/boorus/booru_type.dart';
 import 'package:lolisnatcher/src/data/booru.dart';
 import 'package:lolisnatcher/src/data/constants.dart';
@@ -1224,6 +1225,9 @@ class SettingsHandler {
     SX.locale.state.value = enabledLocale;
     // Device changes are handled by MainApp so they also respect the allowlist.
     await LocaleSettings.setLocale(enabledLocale ?? AppLocaleExt.findDeviceLocale());
+    if (Platform.isAndroid || Platform.isIOS) {
+      await downloadPlatform.invokeMethod<void>('notificationLocale', enabledLocale?.languageTag);
+    }
   }
 
   Future<void> initialize() async {

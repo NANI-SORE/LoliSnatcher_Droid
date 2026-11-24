@@ -92,6 +92,10 @@ final class DownloadBackend: NSObject, URLSessionDownloadDelegate {
   func attach(_ messenger: FlutterBinaryMessenger) {
     channel = FlutterMethodChannel(name: "lolisnatcher/downloads", binaryMessenger: messenger)
     channel?.setMethodCallHandler { call, result in
+      if call.method == "notificationLocale" {
+        UserDefaults.standard.set(call.arguments as? String, forKey: "downloadNotificationLocale")
+        result(nil); return
+      }
       if call.method == "requestPermissions" {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
         PHPhotoLibrary.requestAuthorization(for: .addOnly) { _ in DispatchQueue.main.async { result(nil) } }
@@ -742,10 +746,22 @@ final class DownloadBackend: NSObject, URLSessionDownloadDelegate {
     let completed = try ledger.count("kind = 'transfer' AND state IN ('completed','skipped') AND json_extract(payload,'$.batchId') = ? AND id IN (SELECT json_extract(payload,'$.attempt') FROM records WHERE kind = 'latest')", [batch])
     if completed == expected { try notifyOnce(id: "notice:\(batch):complete", complete: true, batch: batch) }
   }
+  private func notificationText(_ key: String) -> String {
+    var bundle = Bundle.main
+    if let tag = UserDefaults.standard.string(forKey: "downloadNotificationLocale") {
+      let languages = [tag, String(tag.split(separator: "-").first ?? "en"), "en"]
+      for language in languages {
+        if let path = Bundle.main.path(forResource: language, ofType: "lproj"), let localized = Bundle(path: path) {
+          bundle = localized; break
+        }
+      }
+    }
+    return NSLocalizedString(key, tableName: "DownloadNotifications", bundle: bundle, comment: "")
+  }
   private func notify(id: String, complete: Bool, batch: String?) {
     let content = UNMutableNotificationContent()
-    content.title = complete ? "Downloads complete" : "Downloads need attention"
-    content.body = "Open downloads to view results and available actions."
+    content.title = notificationText(complete ? "completeTitle" : "attentionTitle")
+    content.body = notificationText(complete ? "completeBody" : "attentionBody")
     content.threadIdentifier = "downloads"
     content.userInfo = ["downloads": true, "batchId": batch ?? ""]
     UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: id, content: content, trigger: nil))
@@ -784,7 +800,8 @@ final class DownloadBackend: NSObject, URLSessionDownloadDelegate {
     #if compiler(>=6.2)
     if #available(iOS 26.0, *), continuationRegistered, continuation == nil {
       let identifier = (Bundle.main.bundleIdentifier ?? "com.noaisu.loliSnatcher") + ".downloads.discovery.active"
-      let request = BGContinuedProcessingTaskRequest(identifier: identifier, title: "Finding files", subtitle: "Preparing downloads")
+      let request = BGContinuedProcessingTaskRequest(identifier: identifier,
+        title: notificationText("discoveryTitle"), subtitle: notificationText("discoveryBody"))
       request.strategy = .fail
       try? BGTaskScheduler.shared.submit(request)
     }
