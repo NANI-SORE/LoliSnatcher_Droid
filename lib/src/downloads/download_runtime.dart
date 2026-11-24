@@ -317,13 +317,8 @@ class DownloadRuntime {
   }
 
   Future<DownloadTask?> _refreshDescriptor(DownloadTask task) async {
+    if (task.stage == 'publishing' || task.stage == 'downloaded') return task;
     final descriptor = task.transfer;
-    final legacyVideoSample =
-        descriptor.quality.toLowerCase() == 'sample' &&
-        (descriptor.mediaType == 'video' || MediaType.fromExtension(descriptor.item['fileExt'] as String?).isVideo);
-    // Never replace media whose publication is already authorized. An old
-    // downloaded sample without that authorization still needs the full video.
-    if (task.stage == 'publishing' || task.stage == 'downloaded' && !legacyVideoSample) return task;
     final source = configuration.source(descriptor.sourceName);
     if (source == null || sourceIdentity(source) != descriptor.sourceKey) throw const DownloadBlocked('sourceMissing');
     final network = DownloadNetwork(
@@ -383,12 +378,10 @@ class DownloadRuntime {
           'writeJson': descriptor.writeJson,
         },
       );
-      final correctVideoVariant = prepared.mediaType == 'video' && descriptor.quality != prepared.quality;
-      final changedMedia = refreshed || correctVideoVariant;
       final next = prepared.withValues({
         'id': descriptor.id,
-        'filename': needsDetail || correctVideoVariant ? prepared.filename : descriptor.filename,
-        if (!changedMedia) 'url': descriptor.url,
+        'filename': needsDetail ? prepared.filename : descriptor.filename,
+        if (!refreshed) 'url': descriptor.url,
         'sourceKey': descriptor.sourceKey,
       });
       final current = await store.task(task.id);
@@ -400,10 +393,10 @@ class DownloadRuntime {
         'payload': jsonEncode(next.toJson()),
         'host': next.host,
         'identity': next.identity,
-        if (changedMedia) 'validator': null,
-        if (changedMedia) 'stage': '',
-        if (changedMedia) 'received': 0,
-        if (changedMedia) 'total': 0,
+        if (refreshed) 'validator': null,
+        if (refreshed) 'stage': '',
+        if (refreshed) 'received': 0,
+        if (refreshed) 'total': 0,
       });
       return store.task(task.id);
     });

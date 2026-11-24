@@ -8,9 +8,6 @@ Other sources and images retain their checksum validation. Source evidence:
 https://rule34.xxx/?id=4216&page=forum&pid=4620&s=view (administrator reply).
 
 Videos always select the full file URL, including when image quality is Sample.
-Retry preparation corrects legacy sample descriptors, including downloaded files
-whose publication was not yet authorized. Authorized publication still reconciles
-the existing physical outcome.
 
 The drawer follows new unfinished batches until the user explicitly expands,
 collapses, filters, pages, or inspects a file. Automatic expansion collapses on
@@ -27,7 +24,6 @@ Validation (no automated tests run):
 - Android 17 emulator, local 61,584-byte MP4: Rule34 Original and Sample settings
   both saved on attempt one despite intentionally mismatched upload metadata.
   The sample URL received no requests.
-- A legacy downloaded sample resumed as the full MP4 and saved on attempt one.
 - Another source's deliberately wrong checksum still triggered retries; its
   failure reason and countdown were visible during cooldown.
 - New batches expanded and automatically completed batches collapsed. Thumbnails,
