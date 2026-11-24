@@ -29,7 +29,7 @@ class _DDContentState extends State<DDContent> {
   List<DownloadTask> _items = [];
   String? _focused, _expanded, _filter, _error;
   int _batchPage = 0, _itemPage = 0, _generation = 0;
-  bool _loading = false, _busy = false, _automatic = true;
+  bool _loading = true, _refreshing = false, _busy = false, _automatic = true;
   bool _moreBatches = false, _moreItems = false, _reload = false;
 
   @override
@@ -59,11 +59,12 @@ class _DDContentState extends State<DDContent> {
   }
 
   Future<void> _load() async {
-    if (_loading) {
+    if (_refreshing) {
       _reload = true;
       return;
     }
-    _loading = true;
+    // Periodic refreshes keep the current view, including an empty result.
+    _refreshing = true;
     final generation = _generation;
     try {
       final store = await widget.controller.snatchHandler.store;
@@ -115,6 +116,7 @@ class _DDContentState extends State<DDContent> {
             );
       if (mounted && generation == _generation) {
         setState(() {
+          _loading = false;
           _batches = rows.take(pageSize).toList();
           _items = items.take(pageSize).toList();
           _moreBatches = rows.length > pageSize;
@@ -127,9 +129,14 @@ class _DDContentState extends State<DDContent> {
         });
       }
     } catch (_) {
-      if (mounted && generation == _generation) setState(() => _error = downloadText('readError'));
+      if (mounted && generation == _generation) {
+        setState(() {
+          _loading = false;
+          _error = downloadText('readError');
+        });
+      }
     } finally {
-      _loading = false;
+      _refreshing = false;
       if (mounted && (_reload || generation != _generation)) {
         _reload = false;
         unawaited(_load());
@@ -140,6 +147,7 @@ class _DDContentState extends State<DDContent> {
   void _change(VoidCallback change) {
     setState(() {
       change();
+      _loading = true;
       _error = null;
       _generation++;
     });
