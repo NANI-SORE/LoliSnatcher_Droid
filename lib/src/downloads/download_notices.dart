@@ -47,6 +47,7 @@ class DownloadNotices {
             'id': key,
             'batchId': batch['id'],
             'complete': cause == 'complete',
+            'progress': {'saved': batch['saved'], 'skipped': batch['skipped'], 'failed': batch['failed']},
           });
         } catch (_) {
           await store.db.delete('metadata', where: 'key = ?', whereArgs: [key]);

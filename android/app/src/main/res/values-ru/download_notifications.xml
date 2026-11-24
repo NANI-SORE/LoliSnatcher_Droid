@@ -4,14 +4,22 @@
     <string name="download_notification_attention_body" formatted="false">"Открой загрузки, чтобы устранить проблему"</string>
     <string name="download_notification_attention_channel" formatted="false">"Уведомления о загрузках"</string>
     <string name="download_notification_attention_title" formatted="false">"Загрузки требуют внимания"</string>
+    <string name="download_notification_batches" formatted="false">"Группы: {count}"</string>
     <string name="download_notification_cancel" formatted="false">"Отменить"</string>
     <string name="download_notification_complete_body" formatted="false">"Открой загрузки, чтобы посмотреть результаты"</string>
     <string name="download_notification_complete_title" formatted="false">"Загрузки завершены"</string>
     <string name="download_notification_discovery_body" formatted="false">"Подготовка очереди загрузок"</string>
+    <string name="download_notification_discovery_progress" formatted="false">"Найдено постов: {selected} &#47; {requested}"</string>
     <string name="download_notification_discovery_title" formatted="false">"Поиск файлов"</string>
     <string name="download_notification_in_progress" formatted="false">"Идёт загрузка"</string>
     <string name="download_notification_pause" formatted="false">"Приостановить"</string>
-    <string name="download_notification_progress" formatted="false">"Сохранено: {saved} · Загружается: {active}"</string>
+    <string name="download_notification_progress" formatted="false">"Файлы: {done} &#47; {total}"</string>
     <string name="download_notification_progress_channel" formatted="false">"Ход загрузок"</string>
+    <string name="download_notification_result_progress" formatted="false">"Сохранено: {saved} · Пропущено: {skipped} · Ошибок: {failed}"</string>
+    <string name="download_notification_saving" formatted="false">"Сохранение файлов"</string>
     <string name="download_notification_title" formatted="false">"Загрузки"</string>
+    <string name="download_notification_transfer_progress" formatted="false">"Скачивание: {percent}% · {received} &#47; {total}"</string>
+    <string name="download_notification_transfer_unknown" formatted="false">"Скачано: {received}"</string>
+    <string name="download_notification_waiting_network" formatted="false">"Ожидание сети"</string>
+    <string name="download_notification_waiting_rate" formatted="false">"Пауза по лимиту сайта"</string>
 </resources>

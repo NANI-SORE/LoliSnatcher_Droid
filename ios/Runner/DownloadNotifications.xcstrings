@@ -55,6 +55,24 @@
         }
       }
     },
+    "batches": {
+      "comment": "Generated from assets/i18n/*.json (downloadNotifications(ignoreUnused)). Edit the JSON sources, then run loc_build.dart.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Batches: {count}"
+          }
+        },
+        "ru-RU": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Группы: {count}"
+          }
+        }
+      }
+    },
     "cancel": {
       "comment": "Generated from assets/i18n/*.json (downloadNotifications(ignoreUnused)). Edit the JSON sources, then run loc_build.dart.",
       "extractionState": "manual",
@@ -127,6 +145,24 @@
         }
       }
     },
+    "discoveryProgress": {
+      "comment": "Generated from assets/i18n/*.json (downloadNotifications(ignoreUnused)). Edit the JSON sources, then run loc_build.dart.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Found: {selected} / {requested} posts"
+          }
+        },
+        "ru-RU": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Найдено постов: {selected} / {requested}"
+          }
+        }
+      }
+    },
     "discoveryTitle": {
       "comment": "Generated from assets/i18n/*.json (downloadNotifications(ignoreUnused)). Edit the JSON sources, then run loc_build.dart.",
       "extractionState": "manual",
@@ -188,13 +224,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Saved: {saved} · Active: {active}"
+            "value": "Files: {done} / {total}"
           }
         },
         "ru-RU": {
           "stringUnit": {
             "state": "translated",
-            "value": "Сохранено: {saved} · Загружается: {active}"
+            "value": "Файлы: {done} / {total}"
           }
         }
       }
@@ -217,6 +253,42 @@
         }
       }
     },
+    "resultProgress": {
+      "comment": "Generated from assets/i18n/*.json (downloadNotifications(ignoreUnused)). Edit the JSON sources, then run loc_build.dart.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved: {saved} · Skipped: {skipped} · Failed: {failed}"
+          }
+        },
+        "ru-RU": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохранено: {saved} · Пропущено: {skipped} · Ошибок: {failed}"
+          }
+        }
+      }
+    },
+    "saving": {
+      "comment": "Generated from assets/i18n/*.json (downloadNotifications(ignoreUnused)). Edit the JSON sources, then run loc_build.dart.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving files"
+          }
+        },
+        "ru-RU": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохранение файлов"
+          }
+        }
+      }
+    },
     "title": {
       "comment": "Generated from assets/i18n/*.json (downloadNotifications(ignoreUnused)). Edit the JSON sources, then run loc_build.dart.",
       "extractionState": "manual",
@@ -231,6 +303,78 @@
           "stringUnit": {
             "state": "translated",
             "value": "Загрузки"
+          }
+        }
+      }
+    },
+    "transferProgress": {
+      "comment": "Generated from assets/i18n/*.json (downloadNotifications(ignoreUnused)). Edit the JSON sources, then run loc_build.dart.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloading: {percent}% · {received} / {total}"
+          }
+        },
+        "ru-RU": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скачивание: {percent}% · {received} / {total}"
+          }
+        }
+      }
+    },
+    "transferUnknown": {
+      "comment": "Generated from assets/i18n/*.json (downloadNotifications(ignoreUnused)). Edit the JSON sources, then run loc_build.dart.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloaded: {received}"
+          }
+        },
+        "ru-RU": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скачано: {received}"
+          }
+        }
+      }
+    },
+    "waitingNetwork": {
+      "comment": "Generated from assets/i18n/*.json (downloadNotifications(ignoreUnused)). Edit the JSON sources, then run loc_build.dart.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for network"
+          }
+        },
+        "ru-RU": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ожидание сети"
+          }
+        }
+      }
+    },
+    "waitingRate": {
+      "comment": "Generated from assets/i18n/*.json (downloadNotifications(ignoreUnused)). Edit the JSON sources, then run loc_build.dart.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for site cooldown"
+          }
+        },
+        "ru-RU": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пауза по лимиту сайта"
           }
         }
       }

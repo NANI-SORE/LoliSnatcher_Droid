@@ -1565,7 +1565,7 @@
     },
     "downloadNotifications(ignoreUnused)": {
         "title": "Downloads",
-        "progress": "Saved: {saved} · Active: {active}",
+        "progress": "Files: {done} / {total}",
         "inProgress": "Downloads in progress",
         "progressChannel": "Download progress",
         "attentionChannel": "Download alerts",
@@ -1576,6 +1576,14 @@
         "completeBody": "Open downloads to view results",
         "attentionBody": "Open downloads to resolve the issue",
         "discoveryTitle": "Finding files",
-        "discoveryBody": "Preparing your download queue"
+        "discoveryBody": "Preparing your download queue",
+        "batches": "Batches: {count}",
+        "transferProgress": "Downloading: {percent}% · {received} / {total}",
+        "transferUnknown": "Downloaded: {received}",
+        "saving": "Saving files",
+        "waitingNetwork": "Waiting for network",
+        "waitingRate": "Waiting for site cooldown",
+        "discoveryProgress": "Found: {selected} / {requested} posts",
+        "resultProgress": "Saved: {saved} · Skipped: {skipped} · Failed: {failed}"
     }
 }

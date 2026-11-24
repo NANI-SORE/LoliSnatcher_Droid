@@ -2504,8 +2504,8 @@ class Translations$downloadNotifications$en {
   /// en: 'Downloads'
   String get title => TranslationOverrides.string(_root.$meta, 'downloadNotifications.title', {}) ?? 'Downloads';
 
-  /// en: 'Saved: {saved} · Active: {active}'
-  String get progress => TranslationOverrides.string(_root.$meta, 'downloadNotifications.progress', {}) ?? 'Saved: {saved} · Active: {active}';
+  /// en: 'Files: {done} / {total}'
+  String get progress => TranslationOverrides.string(_root.$meta, 'downloadNotifications.progress', {}) ?? 'Files: {done} / {total}';
 
   /// en: 'Downloads in progress'
   String get inProgress => TranslationOverrides.string(_root.$meta, 'downloadNotifications.inProgress', {}) ?? 'Downloads in progress';
@@ -2540,6 +2540,34 @@ class Translations$downloadNotifications$en {
 
   /// en: 'Preparing your download queue'
   String get discoveryBody => TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryBody', {}) ?? 'Preparing your download queue';
+
+  /// en: 'Batches: {count}'
+  String get batches => TranslationOverrides.string(_root.$meta, 'downloadNotifications.batches', {}) ?? 'Batches: {count}';
+
+  /// en: 'Downloading: {percent}% · {received} / {total}'
+  String get transferProgress =>
+      TranslationOverrides.string(_root.$meta, 'downloadNotifications.transferProgress', {}) ?? 'Downloading: {percent}% · {received} / {total}';
+
+  /// en: 'Downloaded: {received}'
+  String get transferUnknown => TranslationOverrides.string(_root.$meta, 'downloadNotifications.transferUnknown', {}) ?? 'Downloaded: {received}';
+
+  /// en: 'Saving files'
+  String get saving => TranslationOverrides.string(_root.$meta, 'downloadNotifications.saving', {}) ?? 'Saving files';
+
+  /// en: 'Waiting for network'
+  String get waitingNetwork => TranslationOverrides.string(_root.$meta, 'downloadNotifications.waitingNetwork', {}) ?? 'Waiting for network';
+
+  /// en: 'Waiting for site cooldown'
+  String get waitingRate => TranslationOverrides.string(_root.$meta, 'downloadNotifications.waitingRate', {}) ?? 'Waiting for site cooldown';
+
+  /// en: 'Found: {selected} / {requested} posts'
+  String get discoveryProgress =>
+      TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryProgress', {}) ?? 'Found: {selected} / {requested} posts';
+
+  /// en: 'Saved: {saved} · Skipped: {skipped} · Failed: {failed}'
+  String get resultProgress =>
+      TranslationOverrides.string(_root.$meta, 'downloadNotifications.resultProgress', {}) ??
+      'Saved: {saved} · Skipped: {skipped} · Failed: {failed}';
 }
 
 // Path: tabs.filters
@@ -7949,7 +7977,7 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'downloadQueue.executionError', {}) ?? 'Downloads need attention',
           'downloadNotifications.title' => TranslationOverrides.string(_root.$meta, 'downloadNotifications.title', {}) ?? 'Downloads',
           'downloadNotifications.progress' =>
-            TranslationOverrides.string(_root.$meta, 'downloadNotifications.progress', {}) ?? 'Saved: {saved} · Active: {active}',
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.progress', {}) ?? 'Files: {done} / {total}',
           'downloadNotifications.inProgress' =>
             TranslationOverrides.string(_root.$meta, 'downloadNotifications.inProgress', {}) ?? 'Downloads in progress',
           'downloadNotifications.progressChannel' =>
@@ -7970,6 +7998,22 @@ extension on Translations {
             TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryTitle', {}) ?? 'Finding files',
           'downloadNotifications.discoveryBody' =>
             TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryBody', {}) ?? 'Preparing your download queue',
+          'downloadNotifications.batches' => TranslationOverrides.string(_root.$meta, 'downloadNotifications.batches', {}) ?? 'Batches: {count}',
+          'downloadNotifications.transferProgress' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.transferProgress', {}) ??
+                'Downloading: {percent}% · {received} / {total}',
+          'downloadNotifications.transferUnknown' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.transferUnknown', {}) ?? 'Downloaded: {received}',
+          'downloadNotifications.saving' => TranslationOverrides.string(_root.$meta, 'downloadNotifications.saving', {}) ?? 'Saving files',
+          'downloadNotifications.waitingNetwork' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.waitingNetwork', {}) ?? 'Waiting for network',
+          'downloadNotifications.waitingRate' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.waitingRate', {}) ?? 'Waiting for site cooldown',
+          'downloadNotifications.discoveryProgress' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryProgress', {}) ?? 'Found: {selected} / {requested} posts',
+          'downloadNotifications.resultProgress' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.resultProgress', {}) ??
+                'Saved: {saved} · Skipped: {skipped} · Failed: {failed}',
           _ => null,
         };
   }

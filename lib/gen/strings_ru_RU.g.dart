@@ -2014,8 +2014,7 @@ class _Translations$downloadNotifications$ru_RU extends Translations$downloadNot
   @override
   String get title => TranslationOverrides.string(_root.$meta, 'downloadNotifications.title', {}) ?? 'Загрузки';
   @override
-  String get progress =>
-      TranslationOverrides.string(_root.$meta, 'downloadNotifications.progress', {}) ?? 'Сохранено: {saved} · Загружается: {active}';
+  String get progress => TranslationOverrides.string(_root.$meta, 'downloadNotifications.progress', {}) ?? 'Файлы: {done} / {total}';
   @override
   String get inProgress => TranslationOverrides.string(_root.$meta, 'downloadNotifications.inProgress', {}) ?? 'Идёт загрузка';
   @override
@@ -2040,6 +2039,26 @@ class _Translations$downloadNotifications$ru_RU extends Translations$downloadNot
   String get discoveryTitle => TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryTitle', {}) ?? 'Поиск файлов';
   @override
   String get discoveryBody => TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryBody', {}) ?? 'Подготовка очереди загрузок';
+  @override
+  String get batches => TranslationOverrides.string(_root.$meta, 'downloadNotifications.batches', {}) ?? 'Группы: {count}';
+  @override
+  String get transferProgress =>
+      TranslationOverrides.string(_root.$meta, 'downloadNotifications.transferProgress', {}) ?? 'Скачивание: {percent}% · {received} / {total}';
+  @override
+  String get transferUnknown => TranslationOverrides.string(_root.$meta, 'downloadNotifications.transferUnknown', {}) ?? 'Скачано: {received}';
+  @override
+  String get saving => TranslationOverrides.string(_root.$meta, 'downloadNotifications.saving', {}) ?? 'Сохранение файлов';
+  @override
+  String get waitingNetwork => TranslationOverrides.string(_root.$meta, 'downloadNotifications.waitingNetwork', {}) ?? 'Ожидание сети';
+  @override
+  String get waitingRate => TranslationOverrides.string(_root.$meta, 'downloadNotifications.waitingRate', {}) ?? 'Пауза по лимиту сайта';
+  @override
+  String get discoveryProgress =>
+      TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryProgress', {}) ?? 'Найдено постов: {selected} / {requested}';
+  @override
+  String get resultProgress =>
+      TranslationOverrides.string(_root.$meta, 'downloadNotifications.resultProgress', {}) ??
+      'Сохранено: {saved} · Пропущено: {skipped} · Ошибок: {failed}';
 }
 
 // Path: tabs.filters
@@ -6886,7 +6905,7 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'downloadQueue.executionError', {}) ?? 'Загрузки требуют внимания',
           'downloadNotifications.title' => TranslationOverrides.string(_root.$meta, 'downloadNotifications.title', {}) ?? 'Загрузки',
           'downloadNotifications.progress' =>
-            TranslationOverrides.string(_root.$meta, 'downloadNotifications.progress', {}) ?? 'Сохранено: {saved} · Загружается: {active}',
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.progress', {}) ?? 'Файлы: {done} / {total}',
           'downloadNotifications.inProgress' => TranslationOverrides.string(_root.$meta, 'downloadNotifications.inProgress', {}) ?? 'Идёт загрузка',
           'downloadNotifications.progressChannel' =>
             TranslationOverrides.string(_root.$meta, 'downloadNotifications.progressChannel', {}) ?? 'Ход загрузок',
@@ -6906,6 +6925,21 @@ extension on TranslationsRuRu {
             TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryTitle', {}) ?? 'Поиск файлов',
           'downloadNotifications.discoveryBody' =>
             TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryBody', {}) ?? 'Подготовка очереди загрузок',
+          'downloadNotifications.batches' => TranslationOverrides.string(_root.$meta, 'downloadNotifications.batches', {}) ?? 'Группы: {count}',
+          'downloadNotifications.transferProgress' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.transferProgress', {}) ?? 'Скачивание: {percent}% · {received} / {total}',
+          'downloadNotifications.transferUnknown' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.transferUnknown', {}) ?? 'Скачано: {received}',
+          'downloadNotifications.saving' => TranslationOverrides.string(_root.$meta, 'downloadNotifications.saving', {}) ?? 'Сохранение файлов',
+          'downloadNotifications.waitingNetwork' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.waitingNetwork', {}) ?? 'Ожидание сети',
+          'downloadNotifications.waitingRate' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.waitingRate', {}) ?? 'Пауза по лимиту сайта',
+          'downloadNotifications.discoveryProgress' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryProgress', {}) ?? 'Найдено постов: {selected} / {requested}',
+          'downloadNotifications.resultProgress' =>
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.resultProgress', {}) ??
+                'Сохранено: {saved} · Пропущено: {skipped} · Ошибок: {failed}',
           _ => null,
         };
   }

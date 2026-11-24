@@ -107,8 +107,14 @@ final class DownloadBackend: NSObject, URLSessionDownloadDelegate {
         let args = call.arguments as? [String: Any] ?? [:]
         #if compiler(>=6.2)
         if #available(iOS 26.0, *), let task = self.continuation as? BGContinuedProcessingTask {
-          task.progress.totalUnitCount = max(1, (args["requested"] as? NSNumber)?.int64Value ?? 1)
-          task.progress.completedUnitCount = (args["selected"] as? NSNumber)?.int64Value ?? 0
+          let requested = max(0, (args["requested"] as? NSNumber)?.int64Value ?? 0)
+          let selected = max(0, (args["selected"] as? NSNumber)?.int64Value ?? 0)
+          task.progress.totalUnitCount = max(1, max(requested, selected))
+          task.progress.completedUnitCount = selected
+          task.updateTitle(self.notificationText("discoveryTitle"),
+            subtitle: self.notificationText("discoveryProgress")
+              .replacingOccurrences(of: "{selected}", with: String(selected))
+              .replacingOccurrences(of: "{requested}", with: String(requested)))
         }
         #endif
         if args["done"] as? Bool == true { self.endDiscovery() }
@@ -222,7 +228,8 @@ final class DownloadBackend: NSObject, URLSessionDownloadDelegate {
             self.pump()
           case "alert":
             try self.notifyOnce(id: args["id"] as? String ?? UUID().uuidString,
-              complete: args["complete"] as? Bool == true, batch: args["batchId"] as? String)
+              complete: args["complete"] as? Bool == true, batch: args["batchId"] as? String,
+              progress: args["progress"] as? [String: Any])
           case "publishForeground":
             guard let path = args["path"] as? String else { throw DownloadError.invalidDescriptor }
             self.photos(args, file: URL(fileURLWithPath: path)) { error in
@@ -734,17 +741,23 @@ final class DownloadBackend: NSObject, URLSessionDownloadDelegate {
       try notifyOnce(id: id, complete: false, batch: batch)
     } catch {}
   }
-  private func notifyOnce(id: String, complete: Bool, batch: String?) throws {
+  private func notifyOnce(id: String, complete: Bool, batch: String?, progress: [String: Any]? = nil) throws {
     guard let ledger = ledger, try ledger.record(id) == nil else { return }
     try ledger.save(["id": id, "state": "shown"], kind: "notice")
-    notify(id: id, complete: complete, batch: batch)
+    notify(id: id, complete: complete, batch: batch, progress: progress)
   }
   private func checkCompletion(_ batch: String) throws {
     guard let ledger = ledger, let spec = try ledger.record("batch:" + batch),
       spec["done"] as? Bool == true, spec["notifications"] as? Bool != false,
       let expected = spec["expected"] as? Int, expected > 0 else { return }
+    let notice = "notice:\(batch):complete"
+    if try ledger.record(notice) != nil { return }
     let completed = try ledger.count("kind = 'transfer' AND state IN ('completed','skipped') AND json_extract(payload,'$.batchId') = ? AND id IN (SELECT json_extract(payload,'$.attempt') FROM records WHERE kind = 'latest')", [batch])
-    if completed == expected { try notifyOnce(id: "notice:\(batch):complete", complete: true, batch: batch) }
+    if completed == expected {
+      let saved = try ledger.count("kind = 'transfer' AND state = 'completed' AND json_extract(payload,'$.batchId') = ? AND id IN (SELECT json_extract(payload,'$.attempt') FROM records WHERE kind = 'latest')", [batch])
+      try notifyOnce(id: notice, complete: true, batch: batch,
+        progress: ["saved": saved, "skipped": completed - saved, "failed": 0])
+    }
   }
   private func notificationText(_ key: String) -> String {
     var bundle = Bundle.main
@@ -758,10 +771,17 @@ final class DownloadBackend: NSObject, URLSessionDownloadDelegate {
     }
     return NSLocalizedString(key, tableName: "DownloadNotifications", bundle: bundle, comment: "")
   }
-  private func notify(id: String, complete: Bool, batch: String?) {
+  private func notify(id: String, complete: Bool, batch: String?, progress: [String: Any]?) {
     let content = UNMutableNotificationContent()
     content.title = notificationText(complete ? "completeTitle" : "attentionTitle")
     content.body = notificationText(complete ? "completeBody" : "attentionBody")
+    if let progress = progress {
+      var counts = notificationText("resultProgress")
+      for key in ["saved", "skipped", "failed"] {
+        counts = counts.replacingOccurrences(of: "{\(key)}", with: String(max(0, (progress[key] as? NSNumber)?.int64Value ?? 0)))
+      }
+      content.body = counts + "\n" + content.body
+    }
     content.threadIdentifier = "downloads"
     content.userInfo = ["downloads": true, "batchId": batch ?? ""]
     UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: id, content: content, trigger: nil))

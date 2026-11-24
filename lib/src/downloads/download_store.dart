@@ -497,7 +497,7 @@ CREATE TABLE completion_events (
     }
   });
 
-  Future<Map<String, dynamic>> summary() async {
+  Future<Map<String, dynamic>> summary({bool notificationProgress = false}) async {
     final runtimeError = await db.query('metadata', columns: ['value'], where: 'key = ?', whereArgs: ['runtimeError']);
     final counts = await db.rawQuery('SELECT state, COUNT(*) AS count FROM tasks GROUP BY state');
     final discovery = await db.rawQuery(
@@ -513,6 +513,7 @@ CREATE TABLE completion_events (
       "SELECT COALESCE(SUM(selectedCount),0) AS selected, COALESCE(SUM(requestedCount),0) AS requested FROM batches WHERE discoveryDone = 0 AND state = 'active' AND discoveryState = 'active'",
     )).single;
     return {
+      if (notificationProgress) 'notificationProgress': await _notificationProgress(),
       'unfinishedBatches': (await db.rawQuery('''
         SELECT COUNT(*) AS count FROM batches b WHERE b.state != 'cancelled' AND
           (b.discoveryDone = 0 OR EXISTS (SELECT 1 FROM tasks t WHERE t.batchId = b.id
@@ -532,6 +533,23 @@ CREATE TABLE completion_events (
       )).map((r) => DownloadTask.fromRow(r).toJson()).toList(),
     };
   }
+
+  Future<Map<String, dynamic>> _notificationProgress() async => (await db.rawQuery('''
+    WITH current_batches AS (
+      SELECT b.id FROM batches b
+      WHERE (b.state = 'active' AND b.discoveryDone = 0 AND b.discoveryState = 'active')
+        OR EXISTS (SELECT 1 FROM tasks t WHERE t.batchId = b.id
+          AND t.state IN ('queued','prepared','transferring','finalizing','waitingNetwork','waitingRate'))
+    )
+    SELECT COUNT(DISTINCT b.id) AS batches, MIN(b.id) AS batchId, COUNT(t.id) AS total,
+      COALESCE(SUM(t.state IN ('completed','skipped')),0) AS done,
+      COALESCE(SUM(t.state = 'transferring'),0) AS active,
+      COALESCE(SUM(t.state = 'finalizing'),0) AS saving,
+      COALESCE(SUM(CASE WHEN t.state = 'transferring' THEN MAX(t.received,0) ELSE 0 END),0) AS received,
+      COALESCE(SUM(CASE WHEN t.state = 'transferring' THEN MAX(t.total,0) ELSE 0 END),0) AS bytesTotal,
+      COALESCE(SUM(t.state = 'transferring' AND t.total <= 0),0) AS unknownSize
+    FROM current_batches b LEFT JOIN tasks t ON t.batchId = b.id
+  ''')).single;
 
   Future<void> putPreset(String id, String name, Map<String, dynamic> payload) async {
     await db.insert('presets', {

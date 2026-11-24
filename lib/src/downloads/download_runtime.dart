@@ -183,7 +183,7 @@ class DownloadRuntime {
           unawaited(_transfer(task, token));
         }
       }
-      final summary = await store.summary();
+      final summary = await store.summary(notificationProgress: Platform.isAndroid);
       final pending = [
         'queued',
         'prepared',

@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.net.NetworkRequest
 import android.net.NetworkCapabilities
 import android.os.*
+import android.text.format.Formatter
 import androidx.core.app.NotificationCompat
 import io.flutter.FlutterInjector
 import io.flutter.embedding.engine.FlutterEngine
@@ -125,7 +126,7 @@ object DownloadHost {
                 "alert" -> {
                     val values = call.arguments as? Map<*, *> ?: emptyMap<Any, Any>()
                     alert(app, values["id"]?.toString() ?: "downloads", values["complete"] == true,
-                        values["batchId"]?.toString())
+                        values["batchId"]?.toString(), values["progress"] as? Map<*, *>)
                     result.success(null)
                 }
                 "hasLocalNetworkPermission" -> result.success(Build.VERSION.SDK_INT < 37 ||
@@ -158,6 +159,8 @@ object DownloadHost {
             if (ready) worker?.invokeMethod("wake", null)
             return if (ready) "running" else "starting"
         }
+        summary = emptyMap<Any, Any>()
+        lastNotification = 0L
         // Called only for a foreground user's enqueue/resume action. Let the
         // platform decide eligibility, including permission-dialog transitions
         // and allowed launch exemptions; Activity.onPause is too restrictive.
@@ -296,18 +299,60 @@ object DownloadHost {
 
     fun notification(context: Context): Notification {
         channels(context)
-        val saved = (summary["completed"] as? Number)?.toInt() ?: 0
-        val active = (summary["transferring"] as? Number)?.toInt() ?: 0
         val strings = notificationContext(context)
+        val progress = summary["notificationProgress"] as? Map<*, *> ?: emptyMap<Any, Any>()
+        fun count(key: String) = ((progress[key] as? Number)?.toLong() ?: 0L).coerceAtLeast(0L)
+        val total = count("total")
+        val done = count("done").coerceAtMost(total)
+        val active = count("active")
+        val received = count("received")
+        val bytesTotal = count("bytesTotal")
+        val discovering = ((summary["discovery"] as? Number)?.toInt() ?: 0) > 0
+        val knownSize = bytesTotal > 0 && count("unknownSize") == 0L
+        val percent = if (knownSize) (received.toDouble() / bytesTotal * 100).toInt().coerceIn(0, 100) else 0
+        val files = strings.getString(R.string.download_notification_progress)
+            .replace("{done}", done.toString()).replace("{total}", total.toString())
+        val current = when {
+            active > 0 && knownSize -> strings.getString(R.string.download_notification_transfer_progress)
+                .replace("{percent}", percent.toString())
+                .replace("{received}", Formatter.formatShortFileSize(strings, received))
+                .replace("{total}", Formatter.formatShortFileSize(strings, bytesTotal))
+            active > 0 -> strings.getString(R.string.download_notification_transfer_unknown)
+                .replace("{received}", Formatter.formatShortFileSize(strings, received))
+            count("saving") > 0 -> strings.getString(R.string.download_notification_saving)
+            ((summary["waitingNetwork"] as? Number)?.toInt() ?: 0) > 0 -> strings.getString(R.string.download_notification_waiting_network)
+            ((summary["waitingRate"] as? Number)?.toInt() ?: 0) > 0 -> strings.getString(R.string.download_notification_waiting_rate)
+            else -> null
+        }
+        val discovery = if (discovering) strings.getString(R.string.download_notification_discovery_progress)
+            .replace("{selected}", (summary["discoverySelected"] ?: 0).toString())
+            .replace("{requested}", (summary["discoveryRequested"] ?: 0).toString()) else null
+        val text = current ?: discovery ?: if (total > 0) files else strings.getString(R.string.download_notification_in_progress)
+        // Bytes describe the current transfers; the file counter describes the batches.
+        val indeterminate = when {
+            active > 0 -> !knownSize
+            count("saving") > 0 || discovering -> true
+            else -> total == 0L
+        }
+        val fraction = if (active > 0 && knownSize) received.toDouble() / bytesTotal
+            else if (total > 0) done.toDouble() / total else 0.0
+        val bar = (fraction.coerceIn(0.0, 1.0) * 1000).toInt()
+        val batches = strings.getString(R.string.download_notification_batches).replace("{count}", count("batches").toString())
+        val details = listOfNotNull(if (total > 0) files else null, current, discovery,
+            if (count("batches") > 1) batches else null).joinToString("\n")
+        val batchId = if (count("batches") == 1L) progress["batchId"] as? String else null
         val builder = NotificationCompat.Builder(context, CHANNEL).setSmallIcon(android.R.drawable.stat_sys_download)
             .setContentTitle(strings.getString(R.string.download_notification_title))
-            .setContentText(strings.getString(R.string.download_notification_progress)
-                .replace("{saved}", saved.toString()).replace("{active}", active.toString()))
+            .setContentText(text).setSubText(if (total > 0) files else null)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(details.ifEmpty { text }))
+            .setProgress(1000, bar, indeterminate).setCategory(NotificationCompat.CATEGORY_PROGRESS)
+            .setShowWhen(false)
             .setOngoing(true).setOnlyAlertOnce(true).setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-            .setContentIntent(openIntent(context))
+            .setContentIntent(openIntent(context, batchId))
             .setPublicVersion(NotificationCompat.Builder(context, CHANNEL)
                 .setSmallIcon(android.R.drawable.stat_sys_download)
-                .setContentTitle(strings.getString(R.string.download_notification_in_progress)).build())
+                .setContentTitle(strings.getString(R.string.download_notification_in_progress))
+                .setContentText(text).setProgress(1000, bar, indeterminate).setShowWhen(false).build())
         for (command in listOf("pause", "cancel")) {
             val intent = Intent(context, DownloadActionReceiver::class.java).putExtra("command", command)
             val action = PendingIntent.getBroadcast(context, command.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
@@ -317,13 +362,22 @@ object DownloadHost {
         return builder.build()
     }
 
-    private fun alert(context: Context, id: String, complete: Boolean, batchId: String?) {
+    private fun alert(context: Context, id: String, complete: Boolean, batchId: String?, progress: Map<*, *>?) {
         channels(context)
         val strings = notificationContext(context)
+        val action = strings.getString(if (complete) R.string.download_notification_complete_body else R.string.download_notification_attention_body)
+        val counts = progress?.let { values ->
+            var text = strings.getString(R.string.download_notification_result_progress)
+            for (key in listOf("saved", "skipped", "failed")) {
+                text = text.replace("{$key}", ((values[key] as? Number)?.toLong() ?: 0L).coerceAtLeast(0L).toString())
+            }
+            text
+        }
         val notification = NotificationCompat.Builder(context, ALERTS)
             .setSmallIcon(if (complete) android.R.drawable.stat_sys_download_done else android.R.drawable.stat_notify_error)
             .setContentTitle(strings.getString(if (complete) R.string.download_notification_complete_title else R.string.download_notification_attention_title))
-            .setContentText(strings.getString(if (complete) R.string.download_notification_complete_body else R.string.download_notification_attention_body))
+            .setContentText(counts ?: action)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(listOfNotNull(counts, action).joinToString("\n")))
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE).setAutoCancel(true).setGroup("download_results")
             .setContentIntent(openIntent(context, batchId)).build()
         try { context.getSystemService(NotificationManager::class.java).notify(id.hashCode(), notification) } catch (_: SecurityException) {}

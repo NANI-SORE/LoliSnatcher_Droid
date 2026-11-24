@@ -1593,7 +1593,7 @@
     },
     "downloadNotifications(ignoreUnused)": {
         "title": "Загрузки",
-        "progress": "Сохранено: {saved} · Загружается: {active}",
+        "progress": "Файлы: {done} / {total}",
         "inProgress": "Идёт загрузка",
         "progressChannel": "Ход загрузок",
         "attentionChannel": "Уведомления о загрузках",
@@ -1604,6 +1604,14 @@
         "completeBody": "Открой загрузки, чтобы посмотреть результаты",
         "attentionBody": "Открой загрузки, чтобы устранить проблему",
         "discoveryTitle": "Поиск файлов",
-        "discoveryBody": "Подготовка очереди загрузок"
+        "discoveryBody": "Подготовка очереди загрузок",
+        "batches": "Группы: {count}",
+        "transferProgress": "Скачивание: {percent}% · {received} / {total}",
+        "transferUnknown": "Скачано: {received}",
+        "saving": "Сохранение файлов",
+        "waitingNetwork": "Ожидание сети",
+        "waitingRate": "Пауза по лимиту сайта",
+        "discoveryProgress": "Найдено постов: {selected} / {requested}",
+        "resultProgress": "Сохранено: {saved} · Пропущено: {skipped} · Ошибок: {failed}"
     }
 }
