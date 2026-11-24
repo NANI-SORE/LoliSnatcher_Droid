@@ -264,6 +264,13 @@ class _DDContentState extends State<DDContent> {
         : failed > 0 || discoveryError
         ? 'retry'
         : null;
+    final rowHasPrimary =
+        expanded &&
+        total == 1 &&
+        !finding &&
+        !discoveryError &&
+        _items.length == 1 &&
+        downloadPrimaryAction(_items.single)?.command == primary;
     final query = batch['query'] as String?;
     final title = query?.trim().isNotEmpty == true ? query! : batch['title'] as String? ?? downloadText('downloads');
     final count = finding
@@ -319,7 +326,7 @@ class _DDContentState extends State<DDContent> {
                       ],
                     ),
                   ),
-                  if (primary != null)
+                  if (primary != null && !rowHasPrimary)
                     IconButton(
                       tooltip: downloadText(primary == 'retry' ? 'retry' : primary),
                       onPressed: _busy ? null : () => _command(primary, batch: id),
@@ -336,6 +343,18 @@ class _DDContentState extends State<DDContent> {
                     tooltip: downloadText('actions'),
                     onSelected: (value) => _command(value, batch: id),
                     itemBuilder: (_) => [
+                      if (rowHasPrimary && primary != null)
+                        PopupMenuItem(
+                          value: primary,
+                          child: DDActionLabel(
+                            icon: primary == 'pause'
+                                ? Icons.pause_rounded
+                                : primary == 'resume'
+                                ? Icons.play_arrow_rounded
+                                : Icons.refresh,
+                            label: downloadText(primary),
+                          ),
+                        ),
                       if (pending && primary != 'pause')
                         PopupMenuItem(
                           value: 'pause',

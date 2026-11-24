@@ -45,15 +45,14 @@ class _DDQueueControlsState extends State<DDQueueControls> {
     final paused = count('paused') + count('discoveryPaused');
     final failed = count('failed') + count('needsAction') + count('discoveryAttention');
     final finished = count('completed') + count('skipped') + count('cancelled');
-    final needsResume =
-        const [
-          'resumeRequired',
-          'executionError',
-          'storage',
-          'waitingSystem',
-          'scheduled',
-        ].contains(handler.status.value) ||
-        pending == 0 && paused > 0;
+    final hostNeedsResume = const [
+      'resumeRequired',
+      'executionError',
+      'storage',
+      'waitingSystem',
+      'scheduled',
+    ].contains(handler.status.value);
+    final needsResume = hostNeedsResume || pending == 0 && paused > 0;
     final command = needsResume
         ? 'resume'
         : pending > 0
@@ -61,7 +60,8 @@ class _DDQueueControlsState extends State<DDQueueControls> {
         : failed > 0
         ? 'retry'
         : null;
-    final showPrimary = command != null && (count('batchCount') > 1 || needsResume);
+    final showPrimary =
+        command != null && (hostNeedsResume || count('unfinishedBatches') > 1 && handler.focusedBatch.value == null);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [

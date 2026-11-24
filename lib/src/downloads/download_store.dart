@@ -513,7 +513,11 @@ CREATE TABLE completion_events (
       "SELECT COALESCE(SUM(selectedCount),0) AS selected, COALESCE(SUM(requestedCount),0) AS requested FROM batches WHERE discoveryDone = 0 AND state = 'active' AND discoveryState = 'active'",
     )).single;
     return {
-      'batchCount': (await db.rawQuery('SELECT COUNT(*) AS count FROM batches')).single['count'],
+      'unfinishedBatches': (await db.rawQuery('''
+        SELECT COUNT(*) AS count FROM batches b WHERE b.state != 'cancelled' AND
+          (b.discoveryDone = 0 OR EXISTS (SELECT 1 FROM tasks t WHERE t.batchId = b.id
+            AND t.state NOT IN ('completed','skipped','cancelled')))
+      ''')).single['count'],
       'runtimeError': runtimeError.firstOrNull?['value'],
       for (final row in counts) row['state']! as String: row['count'],
       'discovery': discovery.single['count'],

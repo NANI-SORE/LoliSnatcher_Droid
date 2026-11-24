@@ -35,6 +35,7 @@ ThemeData downloadDrawerTheme(ThemeData theme) {
     textButtonTheme: TextButtonThemeData(
       style: (theme.textButtonTheme.style ?? const ButtonStyle()).copyWith(
         foregroundColor: enabledColor,
+        iconColor: enabledColor,
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
