@@ -109,6 +109,14 @@ bool batchFinding(Map<String, dynamic> batch) =>
     batch['discoveryDone'] == 0 && batch['state'] == 'active' && batch['discoveryState'] == 'active';
 bool batchPending(Map<String, dynamic> batch) =>
     batchFinding(batch) || batchCount(batch, 'running') + batchCount(batch, 'waiting') > 0;
+bool batchAttention(Map<String, dynamic> batch) =>
+    batchCount(batch, 'failed') > 0 ||
+    batch['discoveryDone'] == 0 && batch['discoveryState'] == 'needsAction' && batch['state'] != 'cancelled';
+bool batchUnfinished(Map<String, dynamic> batch) =>
+    batchPending(batch) ||
+    batchAttention(batch) ||
+    batchCount(batch, 'paused') > 0 ||
+    batch['discoveryDone'] == 0 && batch['state'] == 'paused';
 
 String batchStateText(Map<String, dynamic> batch) {
   if (batch['state'] == 'paused' || batch['state'] == 'cancelled') return downloadText(batch['state'] as String);

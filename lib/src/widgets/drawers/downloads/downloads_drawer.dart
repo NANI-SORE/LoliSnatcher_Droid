@@ -4,6 +4,7 @@ import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_content.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_control_panel.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_controller.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_queue_controls.dart';
+import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_theme.dart';
 
 class DownloadsDrawer extends StatefulWidget {
   const DownloadsDrawer({
@@ -34,18 +35,21 @@ class _DownloadsDrawerState extends State<DownloadsDrawer> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Theme.of(context).colorScheme.surface,
-      child: SafeArea(
-        child: Column(
-          children: [
-            DDQueueControls(controller: controller),
-            Expanded(child: DDContent(controller: controller)),
-            DDControlPanel(
-              controller: controller,
-              toggleDrawer: widget.toggleDrawer,
-            ),
-          ],
+    return Theme(
+      data: downloadDrawerTheme(Theme.of(context)),
+      child: Material(
+        color: Theme.of(context).colorScheme.surface,
+        child: SafeArea(
+          child: Column(
+            children: [
+              DDQueueControls(controller: controller),
+              Expanded(child: DDContent(controller: controller)),
+              DDControlPanel(
+                controller: controller,
+                toggleDrawer: widget.toggleDrawer,
+              ),
+            ],
+          ),
         ),
       ),
     );

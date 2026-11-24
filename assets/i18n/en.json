@@ -1432,6 +1432,9 @@
         "none": "None/General"
     },
     "downloadQueue": {
+        "errorCode": "Error code",
+        "otherActiveBatch": "Downloading in another batch",
+        "followActive": "Follow active downloads",
         "queued": "Queued",
         "prepared": "Queued",
         "discovering": "Finding files",

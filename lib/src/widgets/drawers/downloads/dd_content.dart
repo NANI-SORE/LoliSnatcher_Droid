@@ -28,7 +28,7 @@ class _DDContentState extends State<DDContent> {
   List<DownloadTask> _items = [];
   String? _focused, _expanded, _filter, _error;
   int _batchPage = 0, _itemPage = 0, _generation = 0;
-  bool _loading = false, _busy = false, _selectedOnce = false;
+  bool _loading = false, _busy = false, _automatic = true;
   bool _moreBatches = false, _moreItems = false, _reload = false;
 
   @override
@@ -41,6 +41,7 @@ class _DDContentState extends State<DDContent> {
       handler.focusedBatch,
       (String? value) => _change(() {
         _focused = _expanded = value;
+        _automatic = value == null;
         _itemPage = _batchPage = 0;
         _filter = null;
         _items = [];
@@ -70,15 +71,46 @@ class _DDContentState extends State<DDContent> {
         offset: _focused == null ? _batchPage * pageSize : 0,
         limit: pageSize + 1,
       );
+      if (mounted && generation == _generation && _focused != null && rows.isEmpty) {
+        widget.controller.snatchHandler.focusedBatch.value = null;
+        return;
+      }
       var expanded = _expanded;
-      if (!_selectedOnce && expanded == null) expanded = rows.firstOrNull?['id'] as String?;
+      final visible = rows.take(pageSize).toList();
+      var automatic = _automatic;
+      if (expanded != null && !visible.any((row) => row['id'] == expanded)) {
+        expanded = null;
+        automatic = _focused == null;
+      }
+      if (_focused == null && automatic && _batchPage == 0) {
+        final fresh = visible.where((row) => !_batches.any((old) => old['id'] == row['id']) && batchUnfinished(row));
+        final current = visible.where((row) => row['id'] == expanded).firstOrNull;
+        if (_batches.isNotEmpty && fresh.isNotEmpty) {
+          expanded = fresh.first['id'] as String;
+        } else if (current == null || !batchUnfinished(current)) {
+          final candidates = visible.where(batchUnfinished);
+          expanded =
+              (candidates.where(batchAttention).firstOrNull ??
+                      candidates.where(batchPending).firstOrNull ??
+                      candidates.firstOrNull)?['id']
+                  as String?;
+        }
+      }
+      final switched = expanded != _expanded;
+      final selected = visible.where((row) => row['id'] == expanded).firstOrNull;
+      final filter = automatic && _focused == null
+          ? selected != null && batchAttention(selected) && !batchPending(selected)
+                ? 'attention'
+                : 'active'
+          : _filter;
+      final itemPage = switched || filter != _filter ? 0 : _itemPage;
       final items = expanded == null
           ? <DownloadTask>[]
           : await store.tasks(
               batchId: expanded,
-              offset: _itemPage * pageSize,
+              offset: itemPage * pageSize,
               limit: pageSize + 1,
-              filter: _filter,
+              filter: filter,
             );
       if (mounted && generation == _generation) {
         setState(() {
@@ -87,7 +119,9 @@ class _DDContentState extends State<DDContent> {
           _moreBatches = rows.length > pageSize;
           _moreItems = items.length > pageSize;
           _expanded = expanded;
-          _selectedOnce = _selectedOnce || rows.isNotEmpty;
+          _automatic = automatic;
+          _filter = filter;
+          _itemPage = itemPage;
           if (_error == downloadText('readError')) _error = null;
         });
       }
@@ -171,6 +205,7 @@ class _DDContentState extends State<DDContent> {
   }
 
   void _details(DownloadTask item) {
+    setState(() => _automatic = false);
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -218,6 +253,10 @@ class _DDContentState extends State<DDContent> {
     final paused = batch['state'] == 'paused' || batchCount(batch, 'paused') > 0;
     final pending = batchPending(batch);
     final discoveryError = batch['discoveryState'] == 'needsAction' && batch['discoveryDone'] == 0;
+    final live = (widget.controller.snatchHandler.summary['activeTasks'] as List? ?? [])
+        .map((row) => DownloadTask.fromRow(downloadMap(row)))
+        .where((task) => task.transfer.batchId == id && !_items.any((item) => item.id == task.id))
+        .toList();
     final primary = paused
         ? 'resume'
         : pending && !discoveryError
@@ -241,6 +280,7 @@ class _DDContentState extends State<DDContent> {
         children: [
           InkWell(
             onTap: () => _change(() {
+              _automatic = false;
               _expanded = expanded ? null : id;
               _itemPage = 0;
               _items = [];
@@ -274,7 +314,7 @@ class _DDContentState extends State<DDContent> {
                           Text(
                             downloadText('failedCount', {'count': failed}),
                             style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: Theme.of(context).colorScheme.error),
+                                ?.copyWith(color: Theme.of(context).colorScheme.onSurface),
                           ),
                       ],
                     ),
@@ -296,6 +336,11 @@ class _DDContentState extends State<DDContent> {
                     tooltip: downloadText('actions'),
                     onSelected: (value) => _command(value, batch: id),
                     itemBuilder: (_) => [
+                      if (pending && primary != 'pause')
+                        PopupMenuItem(
+                          value: 'pause',
+                          child: DDActionLabel(icon: Icons.pause_rounded, label: downloadText('pause')),
+                        ),
                       if (failed > 0 && primary != 'retry')
                         PopupMenuItem(
                           value: 'retry',
@@ -374,6 +419,7 @@ class _DDContentState extends State<DDContent> {
                         label: Text(downloadText(filter.$2)),
                         selected: (_filter ?? 'all') == filter.$1,
                         onSelected: (_) => _change(() {
+                          _automatic = false;
                           _filter = filter.$1 == 'all' ? null : filter.$1;
                           _itemPage = 0;
                           _items = [];
@@ -383,6 +429,8 @@ class _DDContentState extends State<DDContent> {
                 ],
               ),
             ),
+            if (_filter == null || _filter == 'active')
+              for (final item in live) _tile(item),
             for (final item in _items) _tile(item),
             if (_items.isEmpty)
               Padding(
@@ -402,6 +450,7 @@ class _DDContentState extends State<DDContent> {
               _itemPage,
               _moreItems,
               (value) => _change(() {
+                _automatic = false;
                 _itemPage = value;
                 _items = [];
               }),
@@ -429,13 +478,6 @@ class _DDContentState extends State<DDContent> {
             subtitle: status == 'executionError'
                 ? Text(downloadErrorText(handler.summary['runtimeError'] as String?))
                 : null,
-            trailing: blocked || status == 'waitingSystem' || status == 'scheduled'
-                ? IconButton(
-                    tooltip: downloadText('resume'),
-                    onPressed: _busy ? null : () => _command('resume'),
-                    icon: const Icon(Icons.play_arrow_rounded),
-                  )
-                : null,
           );
         }),
         if (_error != null)
@@ -447,12 +489,23 @@ class _DDContentState extends State<DDContent> {
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
-              onPressed: () => _change(() {
-                _focused = null;
-                _batchPage = 0;
-              }),
+              onPressed: () => handler.focusedBatch.value = null,
               icon: const Icon(Icons.arrow_back, size: 18),
               label: Text(downloadText('allBatches')),
+            ),
+          ),
+        if (_focused == null && !_automatic)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => _change(() {
+                _automatic = true;
+                _batchPage = _itemPage = 0;
+                _expanded = _filter = null;
+                _items = [];
+              }),
+              icon: const Icon(Icons.my_location, size: 18),
+              label: Text(downloadText('followActive')),
             ),
           ),
         if (_busy) const LinearProgressIndicator(minHeight: 2),
@@ -460,7 +513,7 @@ class _DDContentState extends State<DDContent> {
           child: Obx(() {
             final active = (handler.summary['activeTasks'] as List? ?? [])
                 .map((row) => DownloadTask.fromRow(downloadMap(row)))
-                .where((task) => !_items.any((item) => item.id == task.id))
+                .where((task) => _focused == null && !_batches.any((batch) => batch['id'] == task.transfer.batchId))
                 .toList();
             if (_batches.isEmpty && active.isEmpty) {
               return Center(
@@ -479,13 +532,13 @@ class _DDContentState extends State<DDContent> {
             return ListView(
               padding: const EdgeInsets.only(bottom: 8),
               children: [
-                if (active.isNotEmpty) ...[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                    child: Text(downloadText('transferring'), style: Theme.of(context).textTheme.labelLarge),
+                for (final batchId in active.map((item) => item.transfer.batchId).toSet())
+                  ListTile(
+                    leading: const Icon(Icons.downloading_outlined),
+                    title: Text(downloadText('otherActiveBatch')),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => handler.focusedBatch.value = batchId,
                   ),
-                  for (final item in active) _tile(item),
-                ],
                 for (final batch in _batches) _batch(batch),
                 if (_focused == null)
                   _pager(
@@ -493,7 +546,10 @@ class _DDContentState extends State<DDContent> {
                     _moreBatches,
                     (value) => _change(() {
                       _batchPage = value;
+                      _automatic = value == 0;
                       _expanded = null;
+                      _itemPage = 0;
+                      _filter = null;
                       _items = [];
                     }),
                   ),

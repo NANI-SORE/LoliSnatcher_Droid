@@ -1460,6 +1460,9 @@
         "none": "Нет/Общее"
     },
     "downloadQueue": {
+        "errorCode": "Код ошибки",
+        "otherActiveBatch": "Загрузка в другой группе",
+        "followActive": "К текущим загрузкам",
         "queued": "В очереди",
         "prepared": "В очереди",
         "discovering": "Поиск файлов",

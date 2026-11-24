@@ -37,7 +37,7 @@ class DDStatusCount extends StatelessWidget {
         children: [
           Icon(icon, size: 16),
           const SizedBox(width: 4),
-          Text('$count', style: Theme.of(context).textTheme.bodySmall),
+          Text('$label $count', style: Theme.of(context).textTheme.bodySmall),
         ],
       ),
     ),

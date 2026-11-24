@@ -46,7 +46,13 @@ class _DDQueueControlsState extends State<DDQueueControls> {
     final failed = count('failed') + count('needsAction') + count('discoveryAttention');
     final finished = count('completed') + count('skipped') + count('cancelled');
     final needsResume =
-        const ['resumeRequired', 'executionError', 'storage'].contains(handler.status.value) ||
+        const [
+          'resumeRequired',
+          'executionError',
+          'storage',
+          'waitingSystem',
+          'scheduled',
+        ].contains(handler.status.value) ||
         pending == 0 && paused > 0;
     final command = needsResume
         ? 'resume'
@@ -55,6 +61,7 @@ class _DDQueueControlsState extends State<DDQueueControls> {
         : failed > 0
         ? 'retry'
         : null;
+    final showPrimary = command != null && (count('batchCount') > 1 || needsResume);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -63,7 +70,7 @@ class _DDQueueControlsState extends State<DDQueueControls> {
           child: Row(
             children: [
               Expanded(child: Text(downloadText('downloads'), style: Theme.of(context).textTheme.titleLarge)),
-              if (command != null)
+              if (showPrimary)
                 IconButton(
                   tooltip: downloadText(
                     command == 'pause'
@@ -87,7 +94,12 @@ class _DDQueueControlsState extends State<DDQueueControls> {
                   tooltip: downloadText('actions'),
                   onSelected: _command,
                   itemBuilder: (_) => [
-                    if (paused > 0 && command != 'resume')
+                    if (pending > 0 && (!showPrimary || command != 'pause'))
+                      PopupMenuItem(
+                        value: 'pause',
+                        child: DDActionLabel(icon: Icons.pause_rounded, label: downloadText('pauseAll')),
+                      ),
+                    if ((paused > 0 || needsResume) && (!showPrimary || command != 'resume'))
                       PopupMenuItem(
                         value: 'resume',
                         child: DDActionLabel(
@@ -96,7 +108,7 @@ class _DDQueueControlsState extends State<DDQueueControls> {
                           count: count('paused') > 0 ? count('paused') : null,
                         ),
                       ),
-                    if (failed > 0 && command != 'retry')
+                    if (failed > 0 && (!showPrimary || command != 'retry'))
                       PopupMenuItem(
                         value: 'retry',
                         child: DDActionLabel(

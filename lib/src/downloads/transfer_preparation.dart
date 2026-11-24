@@ -48,8 +48,17 @@ Future<PreparedTransfer> prepareTransfer({
   Future<String> Function(String)? cookiesOverride,
 }) async {
   final output = policy ?? configuration.policy(source.name ?? '');
-  final sample = output['quality'] == 'Sample' || output['quality'] == 'sample';
+  // Video sample URLs can be still-image previews. Quality only selects images.
+  final video =
+      item.mediaType.value.isVideo ||
+      MediaType.fromExtension(item.fileExt).isVideo ||
+      MediaType.fromExtension(Tools.getFileExt(item.fileURL)).isVideo;
+  final sample = !video && (output['quality'] == 'Sample' || output['quality'] == 'sample');
   final url = sample && item.sampleURL.isNotEmpty ? item.sampleURL : item.fileURL;
+  final sourceHost = Uri.tryParse(source.baseURL ?? '')?.host.toLowerCase() ?? '';
+  // Rule34 retains the uploaded video's MD5 while serving a converted file.
+  // Keep that hash on the post for identity, not as a checksum of CDN bytes.
+  final convertedVideo = video && (sourceHost == 'rule34.xxx' || sourceHost.endsWith('.rule34.xxx'));
   final headers = await Tools.getFileCustomHeaders(source, item: item, checkForReferer: true);
   final cookies = await (cookiesOverride ?? configuration.cookies)(url);
   headers.remove('Cookie');
@@ -91,9 +100,11 @@ Future<PreparedTransfer> prepareTransfer({
     overwrite: overwrite,
     writeJson: output['writeJson'] == true,
     quality: sample ? 'sample' : 'original',
-    mediaType: item.mediaType.value.toJson(),
-    expectedSize: sample ? null : item.fileSize,
-    checksum: !sample && RegExp(r'^[a-fA-F0-9]{32}$').hasMatch(item.md5String ?? '') ? item.md5String : null,
+    mediaType: video ? MediaType.video.toJson() : item.mediaType.value.toJson(),
+    expectedSize: sample || convertedVideo ? null : item.fileSize,
+    checksum: !sample && !convertedVideo && RegExp(r'^[a-fA-F0-9]{32}$').hasMatch(item.md5String ?? '')
+        ? item.md5String
+        : null,
     foregroundOnly:
         !{'direct', 'system'}.contains(proxyType.toLowerCase()) ||
         transport['allowSelfSigned'] == true ||

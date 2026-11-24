@@ -70,7 +70,7 @@ class DDControlPanel extends StatelessWidget {
               child: controller.updating.value
                   ? Container(
                       alignment: Alignment.center,
-                      color: Colors.black.withValues(alpha: 0.66),
+                      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.96),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [

@@ -2082,6 +2082,15 @@ class Translations$downloadQueue$en {
 
   // Translations
 
+  /// en: 'Error code'
+  String get errorCode => TranslationOverrides.string(_root.$meta, 'downloadQueue.errorCode', {}) ?? 'Error code';
+
+  /// en: 'Downloading in another batch'
+  String get otherActiveBatch => TranslationOverrides.string(_root.$meta, 'downloadQueue.otherActiveBatch', {}) ?? 'Downloading in another batch';
+
+  /// en: 'Follow active downloads'
+  String get followActive => TranslationOverrides.string(_root.$meta, 'downloadQueue.followActive', {}) ?? 'Follow active downloads';
+
   /// en: 'Queued'
   String get queued => TranslationOverrides.string(_root.$meta, 'downloadQueue.queued', {}) ?? 'Queued';
 
@@ -7728,6 +7737,10 @@ extension on Translations {
           'tagType.species' => TranslationOverrides.string(_root.$meta, 'tagType.species', {}) ?? 'Species',
           'tagType.lore' => TranslationOverrides.string(_root.$meta, 'tagType.lore', {}) ?? 'Lore',
           'tagType.none' => TranslationOverrides.string(_root.$meta, 'tagType.none', {}) ?? 'None/General',
+          'downloadQueue.errorCode' => TranslationOverrides.string(_root.$meta, 'downloadQueue.errorCode', {}) ?? 'Error code',
+          'downloadQueue.otherActiveBatch' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.otherActiveBatch', {}) ?? 'Downloading in another batch',
+          'downloadQueue.followActive' => TranslationOverrides.string(_root.$meta, 'downloadQueue.followActive', {}) ?? 'Follow active downloads',
           'downloadQueue.queued' => TranslationOverrides.string(_root.$meta, 'downloadQueue.queued', {}) ?? 'Queued',
           'downloadQueue.prepared' => TranslationOverrides.string(_root.$meta, 'downloadQueue.prepared', {}) ?? 'Queued',
           'downloadQueue.discovering' => TranslationOverrides.string(_root.$meta, 'downloadQueue.discovering', {}) ?? 'Finding files',

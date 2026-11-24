@@ -17,11 +17,19 @@ import 'package:lolisnatcher/src/widgets/thumbnail/thumbnail.dart';
 typedef DownloadItemAction = Future<void> Function(String command, DownloadTask item);
 
 class DDDownloadTile extends StatefulWidget {
-  const DDDownloadTile({required this.item, required this.onAction, this.onTap, this.busy = false, super.key});
+  const DDDownloadTile({
+    required this.item,
+    required this.onAction,
+    this.onTap,
+    this.busy = false,
+    this.showActions = true,
+    super.key,
+  });
   final DownloadTask item;
   final DownloadItemAction onAction;
   final VoidCallback? onTap;
   final bool busy;
+  final bool showActions;
   @override
   State<DDDownloadTile> createState() => _DDDownloadTileState();
 }
@@ -117,6 +125,7 @@ class _DDDownloadTileState extends State<DDDownloadTile> {
     final hasThumbnail = Uri.tryParse(_preview.thumbnailURL)?.hasAuthority == true;
     final primary = downloadPrimaryAction(item);
     final action = primary?.command == 'details' && widget.onTap == null ? null : primary;
+    final overflow = _actions.where((entry) => entry.command != action?.command).toList();
     final size = item.total > 0 ? item.total : transfer.expectedSize ?? 0;
     final moving = downloadIsMoving(item);
     final saving = item.state == .finalizing || item.stage == 'publishing' && moving;
@@ -125,7 +134,9 @@ class _DDDownloadTileState extends State<DDDownloadTile> {
     final progress = downloadProgressText(item);
     final needsHelp = item.state == .failed || item.state == .needsAction;
     final countdown = ((item.nextEligible - DateTime.now().millisecondsSinceEpoch) / 1000).ceil();
-    final status = needsHelp ? downloadErrorText(item.error) : itemStateText(item);
+    final hasError =
+        item.error != null && item.state != .completed && item.state != .skipped && item.state != .cancelled;
+    final status = itemStateText(item);
     final postId = transfer.item['serverId']?.toString();
     final title = postId?.isNotEmpty == true ? '${transfer.sourceName} · #$postId' : transfer.filename;
     final sample = transfer.quality.toLowerCase() == 'sample';
@@ -136,7 +147,7 @@ class _DDDownloadTileState extends State<DDDownloadTile> {
     ].where((s) => s.isNotEmpty).join(' · ');
     return InkWell(
       onTap: widget.onTap,
-      onLongPress: widget.busy ? null : _showActions,
+      onLongPress: widget.busy || !widget.showActions ? null : _showActions,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
@@ -190,9 +201,16 @@ class _DDDownloadTileState extends State<DDDownloadTile> {
                         : status,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall
-                        ?.copyWith(color: needsHelp ? scheme.error : scheme.primary),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurface),
                   ),
+                  if (hasError)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        downloadErrorText(item.error),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.error),
+                      ),
+                    ),
                   if (moving || saving) ...[
                     const SizedBox(height: 6),
                     LinearProgressIndicator(
@@ -214,43 +232,44 @@ class _DDDownloadTileState extends State<DDDownloadTile> {
                 ],
               ),
             ),
-            SizedBox(
-              width: 40,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (action == null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Icon(downloadStateIcon(item), size: 20, color: scheme.onSurfaceVariant),
-                    )
-                  else
-                    IconButton(
-                      tooltip: downloadText(action.label),
-                      onPressed: widget.busy
-                          ? null
-                          : action.command == 'details'
-                          ? widget.onTap
-                          : () => widget.onAction(action.command, item),
-                      icon: Icon(action.icon),
-                    ),
-                  if (_actions.isNotEmpty)
-                    PopupMenuButton<String>(
-                      tooltip: downloadText('actions'),
-                      enabled: !widget.busy,
-                      padding: EdgeInsets.zero,
-                      onSelected: _act,
-                      itemBuilder: (_) => [
-                        for (final entry in _actions)
-                          PopupMenuItem(
-                            value: entry.command,
-                            child: DDActionLabel(icon: entry.icon, label: downloadText(entry.label)),
-                          ),
-                      ],
-                    ),
-                ],
+            if (widget.showActions)
+              SizedBox(
+                width: 40,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (action == null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Icon(downloadStateIcon(item), size: 20, color: scheme.onSurfaceVariant),
+                      )
+                    else
+                      IconButton(
+                        tooltip: downloadText(action.label),
+                        onPressed: widget.busy
+                            ? null
+                            : action.command == 'details'
+                            ? widget.onTap
+                            : () => widget.onAction(action.command, item),
+                        icon: Icon(action.icon),
+                      ),
+                    if (overflow.isNotEmpty)
+                      PopupMenuButton<String>(
+                        tooltip: downloadText('actions'),
+                        enabled: !widget.busy,
+                        padding: EdgeInsets.zero,
+                        onSelected: _act,
+                        itemBuilder: (_) => [
+                          for (final entry in overflow)
+                            PopupMenuItem(
+                              value: entry.command,
+                              child: DDActionLabel(icon: entry.icon, label: downloadText(entry.label)),
+                            ),
+                        ],
+                      ),
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -331,10 +350,11 @@ class _DDDownloadDetailsState extends State<DDDownloadDetails> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          DDDownloadTile(item: item, busy: _busy, onAction: _act),
+          DDDownloadTile(item: item, busy: _busy, onAction: _act, showActions: false),
           const Divider(height: 1),
           _field(downloadText('file'), item.transfer.filename),
           _field(downloadText('destination'), item.result ?? item.transfer.destination.path),
+          if (item.error != null) _field(downloadText('errorCode'), item.error!),
           if (item.attempts > 1) _field(downloadText('attempts'), '${item.attempts} / 5'),
           if (item.warning?.isNotEmpty == true) _field(downloadText('notice'), downloadText('providerRenamed')),
           if (_error != null)
@@ -347,6 +367,12 @@ class _DDDownloadDetailsState extends State<DDDownloadDetails> {
             child: Wrap(
               spacing: 8,
               children: [
+                if (downloadPrimaryAction(item) case final action? when action.command != 'details')
+                  FilledButton.icon(
+                    onPressed: _busy ? null : () => _act(action.command, item),
+                    icon: Icon(action.icon),
+                    label: Text(downloadText(action.label)),
+                  ),
                 if (downloadPrimaryAction(item)?.command == 'details' && item.error != 'photosAmbiguous')
                   FilledButton.icon(
                     onPressed: _busy ? null : () => _act('retry', item),

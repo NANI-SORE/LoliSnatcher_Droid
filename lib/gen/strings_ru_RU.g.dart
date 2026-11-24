@@ -1719,6 +1719,12 @@ class _Translations$downloadQueue$ru_RU extends Translations$downloadQueue$en {
 
   // Translations
   @override
+  String get errorCode => TranslationOverrides.string(_root.$meta, 'downloadQueue.errorCode', {}) ?? 'Код ошибки';
+  @override
+  String get otherActiveBatch => TranslationOverrides.string(_root.$meta, 'downloadQueue.otherActiveBatch', {}) ?? 'Загрузка в другой группе';
+  @override
+  String get followActive => TranslationOverrides.string(_root.$meta, 'downloadQueue.followActive', {}) ?? 'К текущим загрузкам';
+  @override
   String get queued => TranslationOverrides.string(_root.$meta, 'downloadQueue.queued', {}) ?? 'В очереди';
   @override
   String get prepared => TranslationOverrides.string(_root.$meta, 'downloadQueue.prepared', {}) ?? 'В очереди';
@@ -6669,6 +6675,10 @@ extension on TranslationsRuRu {
           'tagType.species' => TranslationOverrides.string(_root.$meta, 'tagType.species', {}) ?? 'Раса',
           'tagType.lore' => TranslationOverrides.string(_root.$meta, 'tagType.lore', {}) ?? 'Лор',
           'tagType.none' => TranslationOverrides.string(_root.$meta, 'tagType.none', {}) ?? 'Нет/Общее',
+          'downloadQueue.errorCode' => TranslationOverrides.string(_root.$meta, 'downloadQueue.errorCode', {}) ?? 'Код ошибки',
+          'downloadQueue.otherActiveBatch' =>
+            TranslationOverrides.string(_root.$meta, 'downloadQueue.otherActiveBatch', {}) ?? 'Загрузка в другой группе',
+          'downloadQueue.followActive' => TranslationOverrides.string(_root.$meta, 'downloadQueue.followActive', {}) ?? 'К текущим загрузкам',
           'downloadQueue.queued' => TranslationOverrides.string(_root.$meta, 'downloadQueue.queued', {}) ?? 'В очереди',
           'downloadQueue.prepared' => TranslationOverrides.string(_root.$meta, 'downloadQueue.prepared', {}) ?? 'В очереди',
           'downloadQueue.discovering' => TranslationOverrides.string(_root.$meta, 'downloadQueue.discovering', {}) ?? 'Поиск файлов',
