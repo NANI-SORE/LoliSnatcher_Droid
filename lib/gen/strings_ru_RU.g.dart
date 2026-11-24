@@ -2032,10 +2032,10 @@ class _Translations$downloadNotifications$ru_RU extends Translations$downloadNot
   String get attentionTitle => TranslationOverrides.string(_root.$meta, 'downloadNotifications.attentionTitle', {}) ?? 'Загрузки требуют внимания';
   @override
   String get completeBody =>
-      TranslationOverrides.string(_root.$meta, 'downloadNotifications.completeBody', {}) ?? 'Откройте загрузки, чтобы посмотреть результаты';
+      TranslationOverrides.string(_root.$meta, 'downloadNotifications.completeBody', {}) ?? 'Открой загрузки, чтобы посмотреть результаты';
   @override
   String get attentionBody =>
-      TranslationOverrides.string(_root.$meta, 'downloadNotifications.attentionBody', {}) ?? 'Откройте загрузки, чтобы устранить проблему';
+      TranslationOverrides.string(_root.$meta, 'downloadNotifications.attentionBody', {}) ?? 'Открой загрузки, чтобы устранить проблему';
   @override
   String get discoveryTitle => TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryTitle', {}) ?? 'Поиск файлов';
   @override
@@ -2345,7 +2345,7 @@ class _Translations$settings$booru$ru_RU extends Translations$settings$booru$en 
   String get cantDeleteThisBooru => TranslationOverrides.string(_root.$meta, 'settings.booru.cantDeleteThisBooru', {}) ?? 'Нельзя удалить этот сайт!';
   @override
   String get removeRelatedTabsFirst =>
-      TranslationOverrides.string(_root.$meta, 'settings.booru.removeRelatedTabsFirst', {}) ?? 'Сначала удалите связанные вкладки';
+      TranslationOverrides.string(_root.$meta, 'settings.booru.removeRelatedTabsFirst', {}) ?? 'Сначала удали связанные вкладки';
   @override
   String get sourceLimitNotice =>
       TranslationOverrides.string(_root.$meta, 'settings.booru.sourceLimitNotice', {}) ??
@@ -3797,7 +3797,7 @@ class _Translations$settings$about$ru_RU extends Translations$settings$about$en 
   @override
   String get appDescription =>
       TranslationOverrides.string(_root.$meta, 'settings.about.appDescription', {}) ??
-      'LoliSnatcher - это открытое программное обеспечение, распространяемое по лицензии GPLv3. Исходный код доступен на GitHub. Пожалуйста, сообщайте о любых проблемах или просьбах в разделе issues репозитория.';
+      'LoliSnatcher - это открытое программное обеспечение, распространяемое по лицензии GPLv3. Исходный код доступен на GitHub. Пожалуйста, сообщай о любых проблемах или просьбах в разделе issues репозитория.';
   @override
   String get appOnGitHub => TranslationOverrides.string(_root.$meta, 'settings.about.appOnGitHub', {}) ?? 'LoliSnatcher на Github';
   @override
@@ -3807,7 +3807,7 @@ class _Translations$settings$about$ru_RU extends Translations$settings$about$en 
   @override
   String get logoArtistThanks =>
       TranslationOverrides.string(_root.$meta, 'settings.about.logoArtistThanks', {}) ??
-      'Большая благодарность Showers-U за разрешение на использование их работы для лого приложения. Пожалуйста, зацените их работы на Pixiv';
+      'Большая благодарность Showers-U за разрешение на использование их работы для лого приложения. Пожалуйста, зацени их работы на Pixiv';
   @override
   String get developers => TranslationOverrides.string(_root.$meta, 'settings.about.developers', {}) ?? 'Разработчики';
   @override
@@ -5118,7 +5118,7 @@ extension on TranslationsRuRu {
           'settings.booru.cantDeleteThisBooru' =>
             TranslationOverrides.string(_root.$meta, 'settings.booru.cantDeleteThisBooru', {}) ?? 'Нельзя удалить этот сайт!',
           'settings.booru.removeRelatedTabsFirst' =>
-            TranslationOverrides.string(_root.$meta, 'settings.booru.removeRelatedTabsFirst', {}) ?? 'Сначала удалите связанные вкладки',
+            TranslationOverrides.string(_root.$meta, 'settings.booru.removeRelatedTabsFirst', {}) ?? 'Сначала удали связанные вкладки',
           'settings.booru.sourceLimitNotice' => TranslationOverrides.string(_root.$meta, 'settings.booru.sourceLimitNotice', {}) ?? 'Некоторые действия при настройке сайтов могут зависеть от параметров совместимости ниже. Содержимое размещается и предоставляется внешними сайтами и не контролируется приложением.',
           'settings.booru.advanced' => TranslationOverrides.string(_root.$meta, 'settings.booru.advanced', {}) ?? 'Расширенные настройки',
           'settings.booru.expandedSourceCompatibility' =>
@@ -6125,11 +6125,13 @@ extension on TranslationsRuRu {
           'settings.sync.startReceiverServer' =>
             TranslationOverrides.string(_root.$meta, 'settings.sync.startReceiverServer', {}) ?? 'Запустить сервер получателя',
           'settings.about.title' => TranslationOverrides.string(_root.$meta, 'settings.about.title', {}) ?? 'О приложении',
-          'settings.about.appDescription' => TranslationOverrides.string(_root.$meta, 'settings.about.appDescription', {}) ?? 'LoliSnatcher - это открытое программное обеспечение, распространяемое по лицензии GPLv3. Исходный код доступен на GitHub. Пожалуйста, сообщайте о любых проблемах или просьбах в разделе issues репозитория.',
+          'settings.about.appDescription' => TranslationOverrides.string(_root.$meta, 'settings.about.appDescription', {}) ?? 'LoliSnatcher - это открытое программное обеспечение, распространяемое по лицензии GPLv3. Исходный код доступен на GitHub. Пожалуйста, сообщай о любых проблемах или просьбах в разделе issues репозитория.',
           'settings.about.appOnGitHub' => TranslationOverrides.string(_root.$meta, 'settings.about.appOnGitHub', {}) ?? 'LoliSnatcher на Github',
           'settings.about.contact' => TranslationOverrides.string(_root.$meta, 'settings.about.contact', {}) ?? 'Связаться',
           'settings.about.emailCopied' => TranslationOverrides.string(_root.$meta, 'settings.about.emailCopied', {}) ?? 'Email скопирован',
-          'settings.about.logoArtistThanks' => TranslationOverrides.string(_root.$meta, 'settings.about.logoArtistThanks', {}) ?? 'Большая благодарность Showers-U за разрешение на использование их работы для лого приложения. Пожалуйста, зацените их работы на Pixiv',
+          'settings.about.logoArtistThanks' =>
+            TranslationOverrides.string(_root.$meta, 'settings.about.logoArtistThanks', {}) ??
+                'Большая благодарность Showers-U за разрешение на использование их работы для лого приложения. Пожалуйста, зацени их работы на Pixiv',
           'settings.about.developers' => TranslationOverrides.string(_root.$meta, 'settings.about.developers', {}) ?? 'Разработчики',
           'settings.about.localizers' => TranslationOverrides.string(_root.$meta, 'settings.about.localizers', {}) ?? 'Переводчики',
           'settings.about.releases' => TranslationOverrides.string(_root.$meta, 'settings.about.releases', {}) ?? 'Релизы',
@@ -6897,9 +6899,9 @@ extension on TranslationsRuRu {
           'downloadNotifications.attentionTitle' =>
             TranslationOverrides.string(_root.$meta, 'downloadNotifications.attentionTitle', {}) ?? 'Загрузки требуют внимания',
           'downloadNotifications.completeBody' =>
-            TranslationOverrides.string(_root.$meta, 'downloadNotifications.completeBody', {}) ?? 'Откройте загрузки, чтобы посмотреть результаты',
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.completeBody', {}) ?? 'Открой загрузки, чтобы посмотреть результаты',
           'downloadNotifications.attentionBody' =>
-            TranslationOverrides.string(_root.$meta, 'downloadNotifications.attentionBody', {}) ?? 'Откройте загрузки, чтобы устранить проблему',
+            TranslationOverrides.string(_root.$meta, 'downloadNotifications.attentionBody', {}) ?? 'Открой загрузки, чтобы устранить проблему',
           'downloadNotifications.discoveryTitle' =>
             TranslationOverrides.string(_root.$meta, 'downloadNotifications.discoveryTitle', {}) ?? 'Поиск файлов',
           'downloadNotifications.discoveryBody' =>
