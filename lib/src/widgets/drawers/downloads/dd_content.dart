@@ -12,6 +12,7 @@ import 'package:lolisnatcher/src/services/get_perms.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_controller.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_action_label.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_download_tile.dart';
+import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_empty_state.dart';
 import 'package:lolisnatcher/src/widgets/drawers/downloads/dd_presentation.dart';
 
 class DDContent extends StatefulWidget {
@@ -451,20 +452,17 @@ class _DDContentState extends State<DDContent> {
             if (_filter == null || _filter == 'active')
               for (final item in live) _tile(item),
             for (final item in _items) _tile(item),
-            if (_items.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  downloadText(
-                    _loading
-                        ? 'loading'
-                        : finding
-                        ? 'discovering'
-                        : 'noMatchingItems',
+            if (_items.isEmpty && (live.isEmpty || _filter != null && _filter != 'active'))
+              if (_loading || finding)
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Text(
+                    downloadText(_loading ? 'loading' : 'discovering'),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
+                )
+              else
+                DDEmptyState(message: downloadText('noMatchingItems'), compact: true),
             _pager(
               _itemPage,
               _moreItems,
@@ -535,18 +533,9 @@ class _DDContentState extends State<DDContent> {
                 .where((task) => _focused == null && !_batches.any((batch) => batch['id'] == task.transfer.batchId))
                 .toList();
             if (_batches.isEmpty && active.isEmpty) {
-              return Center(
-                child: _loading
-                    ? const CircularProgressIndicator()
-                    : Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.download_outlined, size: 40),
-                          const SizedBox(height: 12),
-                          Text(downloadText('empty')),
-                        ],
-                      ),
-              );
+              return _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : DDEmptyState(message: downloadText('empty'));
             }
             return ListView(
               padding: const EdgeInsets.only(bottom: 8),
